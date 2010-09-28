@@ -10,15 +10,23 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet import defer, error, task
+from twisted.internet import (
+    defer,
+    error,
+    task,
+    )
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.testing import TwistedLayer
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.processmonitor import (
-    ProcessMonitorProtocol, ProcessMonitorProtocolWithTimeout,
-    ProcessProtocolWithTwoStageKill, run_process_with_timeout)
+    ProcessMonitorProtocol,
+    ProcessMonitorProtocolWithTimeout,
+    ProcessProtocolWithTwoStageKill,
+    ProcessWithTimeout,
+    run_process_with_timeout,
+    )
 
 
 def makeFailure(exception_factory, *args, **kwargs):
@@ -89,6 +97,40 @@ class ProcessTestsMixin:
         self.protocol.transport = self.StubTransport(
             self.protocol, self.clock)
         self.protocol.connectionMade()
+
+
+class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
+    """Tests for `ProcessWithTimeout`."""
+
+    layer = TwistedLayer
+    TIMEOUT = 100
+
+    def makeProtocol(self):
+        """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
+        self._deferred = defer.Deferred()
+        return ProcessWithTimeout(
+            self._deferred, self.TIMEOUT, clock=self.clock)
+
+    def test_end_versus_timeout_race_condition(self):
+        # If the timeout fires around the same time as the process ends,
+        # then there is a race condition.  The timeoutConnection()
+        # method can try and kill the process which has already exited
+        # which normally throws a
+        # twisted.internet.error.ProcessExitedAlready - the code should
+        # catch this and ignore it.
+
+        # Simulate process exit without "killing" it:
+        self.protocol._process_transport = self.protocol.transport
+        self.protocol.transport.exited = True
+
+        # Without catching the ProcessExitedAlready this will blow up.
+        self.clock.advance(self.TIMEOUT+1)
+
+        # At this point, processEnded is yet to be called so the
+        # Deferred has not fired.  Ideally it would be nice to test for
+        # something more concrete here but the stub transport doesn't
+        # work exactly like the real one.
+        self.assertFalse(self._deferred.called)
 
 
 class TestProcessProtocolWithTwoStageKill(

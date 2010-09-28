@@ -11,7 +11,6 @@ __all__ = [
 
 from bzrlib import errors as bzr_errors
 from twisted.conch.ssh import filetransfer
-
 from zope.event import notify
 
 from lp.services.sshserver import events

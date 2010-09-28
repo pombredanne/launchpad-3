@@ -8,7 +8,6 @@ Run the doctests.
 import os
 
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.services.testing import build_test_suite
 
 

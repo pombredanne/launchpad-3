@@ -15,33 +15,55 @@ import os
 from StringIO import StringIO
 import unittest
 
-from twisted.internet import reactor, defer
+from lazr.uri import URI
+from sqlobject import SQLObjectNotFound
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
-from sqlobject import SQLObjectNotFound
-
 import canonical
 from canonical.config import config
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    TwistedLayer,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
-    ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
-    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
-    MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager,
-    LoggingMixin)
+    _build_request_for_cdimage_file_list,
+    ArchiveMirrorProberCallbacks,
+    BadResponseCode,
+    ConnectionSkipped,
+    InfiniteLoopDetected,
+    LoggingMixin,
+    MAX_REDIRECTS,
+    MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO,
+    MirrorCDImageProberCallbacks,
+    MultiLock,
+    OVERALL_REQUESTS,
+    PER_HOST_REQUESTS,
+    probe_archive_mirror,
+    probe_cdimage_mirror,
+    ProberFactory,
+    ProberTimeout,
+    RedirectAwareProberFactory,
+    RedirectAwareProberProtocol,
+    RequestManager,
+    restore_http_proxy,
+    should_skip_host,
+    UnknownURLScheme,
+    )
 from lp.registry.tests.distributionmirror_http_server import (
-    DistributionMirrorTestHTTPServer)
-from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
+    DistributionMirrorTestHTTPServer,
+    )
 
 
 class HTTPServerTestSetup(TacTestSetup):

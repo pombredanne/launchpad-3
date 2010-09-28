@@ -12,19 +12,31 @@ __all__ = [
     'BugNotificationSet',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-from datetime import datetime, timedelta
-
-from sqlobject import ForeignKey, BoolCol, StringCol
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
 from storm.store import Store
-
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.bugs.interfaces.bugnotification import (
-    IBugNotification, IBugNotificationRecipient, IBugNotificationSet)
+    IBugNotification,
+    IBugNotificationRecipient,
+    IBugNotificationSet,
+    )
 
 
 class BugNotification(SQLBase):

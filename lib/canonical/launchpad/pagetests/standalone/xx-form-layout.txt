@@ -96,24 +96,20 @@ right of the label:
 Checkbox widgets
 ----------------
 
-Checkboxes have their label to the right. One example is the checkbox for
-specifying whether your project uses Launchpad Translations.
+Checkboxes have their label to the right. Let's look at one example.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/evolution/+configure-translations')
-    >>> content = find_main_content(admin_browser.contents)
-
-    >>> print content
+    ...     'http://launchpad.dev/firefox/+review-license')
+    >>> print find_tag_by_id(admin_browser.contents, 'launchpad-form-widgets')
     <...
     <tr>
       <td colspan="2">
-        ...
-        <input ... name="field.official_rosetta" type="checkbox" ... />
-        <label for="field.official_rosetta">Translations...</label>...
+       <div>
+          <input ... name="field.license_reviewed" type="checkbox" ...  />
+          <label for="field.license_reviewed">Project reviewed</label>...
       </td>
     </tr>
     ...
-
 
 Rendering just the form content
 -------------------------------

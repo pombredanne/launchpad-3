@@ -8,10 +8,15 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.answers.browser.question import QuestionEditMenu, QuestionExtrasMenu
+from lp.answers.browser.question import (
+    QuestionEditMenu,
+    QuestionExtrasMenu,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.menu import check_menu_links
 
 

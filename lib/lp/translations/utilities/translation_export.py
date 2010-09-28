@@ -13,10 +13,10 @@ __all__ = [
     ]
 
 import os
+from StringIO import StringIO
 import tarfile
 import tempfile
 import time
-from StringIO import StringIO
 
 from zope.component import subscribers
 from zope.interface import implements
@@ -24,9 +24,11 @@ from zope.interface import implements
 from lp.translations.interfaces.translationexporter import (
     IExportedTranslationFile,
     ITranslationExporter,
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 
 
 class ExportedTranslationFile:

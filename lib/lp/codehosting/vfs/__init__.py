@@ -5,7 +5,6 @@
 
 __all__ = [
     'AsyncLaunchpadTransport',
-    'BlockingProxy',
     'branch_id_to_path',
     'BranchFileSystemClient',
     'get_lp_server',
@@ -16,7 +15,16 @@ __all__ = [
     ]
 
 from lp.codehosting.vfs.branchfs import (
-    AsyncLaunchpadTransport, LaunchpadServer, branch_id_to_path,
-    get_lp_server, get_ro_server, get_rw_server, make_branch_mirrorer)
+    AsyncLaunchpadTransport,
+    branch_id_to_path,
+    get_lp_server,
+    get_ro_server,
+    get_rw_server,
+    LaunchpadServer,
+    make_branch_mirrorer,
+    )
 from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy,BranchFileSystemClient)
+    BranchFileSystemClient,
+    )
+
+

@@ -6,19 +6,26 @@
 __metaclass__ = type
 
 
-from BeautifulSoup import BeautifulSoup, SoupStrainer
-
+from BeautifulSoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import IPersonSet
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_initialized_view, create_view
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class LaunchpadRootPermissionTest(TestCaseWithFactory):

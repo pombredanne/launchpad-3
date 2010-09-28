@@ -10,10 +10,12 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
+    action,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.browser.bugrole import BugRoleMixin
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 
 
 class SecurityContactEditView(BugRoleMixin, LaunchpadFormView):

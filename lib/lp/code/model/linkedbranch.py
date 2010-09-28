@@ -8,15 +8,18 @@ __metaclass__ = type
 # adapting another object.
 __all__ = []
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.component import adapts
 from zope.interface import implements
-
-from lazr.enum import EnumeratedType, Item
 
 from lp.archivepublisher.debversion import Version
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct

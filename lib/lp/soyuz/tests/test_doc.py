@@ -11,13 +11,21 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    commit, ISOLATION_LEVEL_READ_COMMITTED)
+    commit,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    )
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, setGlobs, tearDown)
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -131,12 +139,6 @@ special = {
     'buildd-slavescanner.txt': LayeredDocFileSuite(
         '../doc/buildd-slavescanner.txt',
         setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
-        ),
-    'buildd-slave.txt': LayeredDocFileSuite(
-        '../doc/buildd-slave.txt',
-        setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         stdout_logging_level=logging.WARNING
         ),

@@ -11,31 +11,64 @@ import os
 import unittest
 
 from bzrlib import errors
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.tests import (
-    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
+    TestCase as BzrTestCase,
+    TestCaseInTempDir,
+    TestCaseWithTransport,
+    )
 from bzrlib.transport import (
-    get_transport, _get_protocol_handlers, register_transport, Server,
-    unregister_transport)
+    _get_protocol_handlers,
+    get_transport,
+    register_transport,
+    Server,
+    unregister_transport,
+    )
 from bzrlib.transport.chroot import ChrootTransport
-from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.urlutils import escape, local_path_to_url
-
+from bzrlib.transport.memory import (
+    MemoryServer,
+    MemoryTransport,
+    )
+from bzrlib.urlutils import (
+    escape,
+    local_path_to_url,
+    )
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.codehosting.vfs.branchfs import (
-    AsyncLaunchpadTransport, BranchTransportDispatch,
-    DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
-    TransportDispatch, UnknownTransportType, branch_id_to_path, get_lp_server)
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
-from lp.codehosting.sftp import FatLocalTransport
-from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from canonical.testing import (
+    TwistedLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from lp.testing import TestCase, TestCaseWithFactory
-from canonical.testing import TwistedLayer, ZopelessDatabaseLayer
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    )
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.sftp import FatLocalTransport
+from lp.codehosting.vfs.branchfs import (
+    AsyncLaunchpadTransport,
+    branch_id_to_path,
+    BranchTransportDispatch,
+    DirectDatabaseLaunchpadServer,
+    get_lp_server,
+    LaunchpadInternalServer,
+    LaunchpadServer,
+    TransportDispatch,
+    UnknownTransportType,
+    )
+from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 def branch_to_path(branch, add_slash=True):

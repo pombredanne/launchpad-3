@@ -12,9 +12,9 @@ __metaclass__ = type
 
 # This code came from sourcerer but has been heavily modified since.
 
-from debian import changelog
-
 import re
+
+from debian import changelog
 
 # Regular expressions make validating things easy
 valid_epoch = re.compile(r'^[0-9]+$')

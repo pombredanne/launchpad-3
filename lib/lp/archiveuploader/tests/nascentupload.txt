@@ -27,7 +27,7 @@ managed archive.
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
@@ -213,13 +213,10 @@ Other ChangesFile information are also checked across the uploads
 files specified. For instance, the changesfile Architecture list line
 should match the files target architectures:
 
-XXX cprov 20070404: we need to a policy that accepts unsigned
-changesfiles and binary, source and mixed uploads ...
-
+  # Use the buildd policy as it accepts unsigned changes files and binary
+  # uploads.
   >>> modified_buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
-  >>> modified_buildd_policy.can_upload_source = True
-  >>> modified_buildd_policy.can_upload_mixed = True
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> ed_mismatched_upload = NascentUpload.from_changesfile_path(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
@@ -229,84 +226,70 @@ changesfiles and binary, source and mixed uploads ...
 
   >>> for f in ed_mismatched_upload.changes.files:
   ...     print f.filename, f
-  ed_0.2-20.dsc <...DSCFile...>
-  ed_0.2-20.diff.gz <...SourceUploadFile...>
   ed_0.2-20_i386.deb <...DebBinaryUploadFile...>
 
   >>> [a for a in ed_mismatched_upload.changes.architectures]
-  ['source', 'amd64']
+  ['amd64']
 
-Since the changesfile specify that only 'source' (pseudo-architecture
-to represent source in debian format) and 'amd64' will be used and
+Since the changesfile specify that only 'amd64' will be used and
 there is a file that depends on 'i386' the upload is rejected:
 
   >>> print ed_mismatched_upload.rejection_message
   ed_0.2-20_i386.deb: control file lists arch as 'i386' which isn't in the changes file.
 
 
-=== Mixed Uploads ===
+=== Uploads missing ORIG files ===
 
-Uploads can also contain sources and binaries together and we call it
-'mixed' mode. This feature is specially useful for uploading security
-fixed into ubuntu since they are assembled and built in a external
-system.
+Uploads don't need to include the ORIG files when they're known to be in the
+archive already.
 
-XXX cprov 20070404: we need a policy that accepts mixed uploads to
-RELEASE pocket ...
-
-  >>> modified_insecure_policy = getPolicy(
+  >>> insecure_policy_changed = getPolicy(
   ...     name='insecure', distro='ubuntu', distroseries='hoary')
-  >>> modified_insecure_policy.can_upload_binaries = True
-  >>> modified_insecure_policy.can_upload_mixed = True
 
-  >>> ed_mixed_upload = NascentUpload.from_changesfile_path(
-  ...     datadir("ed_0.2-20_i386.changes"),
-  ...     modified_insecure_policy, mock_logger_quiet)
+  # Copy the .orig so that NascentUpload has access to it, although it
+  # wouldn't have been uploaded in practice because (as you can see below) the
+  # .orig was not included in the .changes file.
+  >>> import shutil
+  >>> shutil.copy(datadir("ed_0.2.orig.tar.gz"), datadir("ed-0.2-21/"))
 
-  >>> ed_mixed_upload.process()
-  >>> ed_mixed_upload.is_rejected
+  >>> ed_upload = NascentUpload.from_changesfile_path(
+  ...     datadir("ed-0.2-21/ed_0.2-21_source.changes"),
+  ...     insecure_policy_changed, mock_logger_quiet)
+
+  >>> ed_upload.process()
+  >>> ed_upload.is_rejected
+  False
+  >>> ed_upload.rejection_message
+  ''
+
+As we see here, the ORIG files were not included.
+
+  >>> has_orig(ed_upload)
   False
 
-The NascentUpload can tell us if it is sourceful or not, (ditto binaryful)
+And because of that it's not considered native.
 
-  >>> ed_mixed_upload.sourceful
-  True
-  >>> ed_mixed_upload.binaryful
-  True
-
-Also provide architecture dependent status:
-
-  >>> ed_mixed_upload.archindep
-  False
-  >>> ed_mixed_upload.archdep
-  True
-
-This mixed upload explores another feature in Soyuz, it does not
-upload the ORIG files assuming it is already published by its
-ancestries (it saves a lot of bandwidth). So, the upload is not
-'native', neither 'hasorig':
-
-  >>> has_native(ed_mixed_upload)
-  False
-  >>> has_orig(ed_mixed_upload)
+  >>> has_native(ed_upload)
   False
 
 But if we check the DSC we will find the reference to the already
 known ORIG file:
 
-  >>> [f.filename for f in ed_mixed_upload.changes.dsc.files]
-  ['ed_0.2.orig.tar.gz', 'ed_0.2-20.diff.gz']
+  >>> [f.filename for f in ed_upload.changes.dsc.files]
+  ['ed_0.2.orig.tar.gz', 'ed_0.2-21.diff.gz']
 
-  >>> success = ed_mixed_upload.do_accept()
+  >>> success = ed_upload.do_accept()
   >>> success
   True
 
 The notification message generated is described in more detail in
 doc/nascentupload-announcements.txt.
 
-Roll back everything related with ed_mixed_upload:
+Roll back everything related with ed_upload:
 
   >>> transaction.abort()
+  >>> import os
+  >>> os.remove(datadir("ed-0.2-21/ed_0.2.orig.tar.gz"))
 
 
 == Acceptance Work-flow ==
@@ -495,7 +478,7 @@ queue entry in the database.
   >>> print ed_src_dup.queue_root.status.name
   REJECTED
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> hoary.getQueueItems(
   ...     status=PackageUploadStatus.REJECTED, name="ed").count()
   1
@@ -516,9 +499,10 @@ XXX cprov 20070404: we are using a modified sync policy because we
 need unsigned changes and binaries uploads (same as security, but also
 accepts non-security uploads)
 
+  >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
   >>> modified_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
 
   >>> ed_bin = NascentUpload.from_changesfile_path(
   ...      datadir('split-upload-test/ed_0.2-20_i386.changes'),
@@ -656,13 +640,12 @@ At this point slave-scanner moves the upload to the appropriate path
 the 'buildd' upload policy and the build record id.
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distroseries='hoary',
-  ...     buildid=multibar_build.id)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary')
 
   >>> multibar_bin_upload = NascentUpload.from_changesfile_path(
   ...     datadir('suite/multibar_1.0-1/multibar_1.0-1_i386.changes'),
   ...     buildd_policy, mock_logger_quiet)
-  >>> multibar_bin_upload.process()
+  >>> multibar_bin_upload.process(build=multibar_build)
   >>> success = multibar_bin_upload.do_accept()
 
 Now that we have successfully processed the binaries coming from a
@@ -906,8 +889,8 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, ISourcePackageNameSet)
+    >>> from lp.soyuz.enums import ArchivePermissionType
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> bar_name = getUtility(ISourcePackageNameSet).getOrCreateByName("bar")
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=name16,
@@ -932,8 +915,8 @@ Now try the "bar" upload:
 
 Uploads to copy archives are not allowed.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> copy_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.COPY,

@@ -13,8 +13,11 @@ __all__ = [
     'IGPGKeyValidationForm',
     ]
 
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Text
-from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import IAuthToken

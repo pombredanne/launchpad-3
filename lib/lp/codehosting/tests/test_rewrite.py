@@ -5,22 +5,24 @@
 
 __metaclass__ = type
 
-import re
 import os
+import re
 import signal
 import subprocess
 import unittest
 
 import transaction
-
 from zope.security.proxy import removeSecurityProxy
 
-from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.rewrite import BranchRewriter
 from canonical.config import config
-from lp.testing import FakeTime, TestCaseWithFactory
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.codehosting.rewrite import BranchRewriter
+from lp.codehosting.vfs import branch_id_to_path
+from lp.testing import (
+    FakeTime,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchRewriter(TestCaseWithFactory):

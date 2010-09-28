@@ -15,13 +15,20 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, List, TextLine
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 
 
 class UnknownTranslationExporterError(TranslationImportExportBaseException):

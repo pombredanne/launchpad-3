@@ -13,18 +13,17 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lazr.delegates import delegates
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 class DistroSeriesSourcePackageRelease:

@@ -188,7 +188,8 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components"/>
+                components
+                isAutoSyncUpload"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -510,6 +511,18 @@
             permission="launchpad.Edit"
             set_attributes="log date_finished date_started builder
                             status dependencies upload_log"/>
+
+        <!-- XXX bigjools 2010-07-27 bug=570939
+             Work around the fact that not all BuildFarmJobs are concrete
+             objects.
+
+             This should not be required once the old BuildFarmJob stuff is
+             removed when the Translation Template jobs and Recipe jobs
+             use the new infrastructure -->
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
+
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -853,5 +866,16 @@
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
     </class>
+
+    <call
+      callable="lp.archiveuploader.uploadpolicy.register_archive_upload_policy_adapters"
+      />
+
+    <!-- Although the policies defined in lp.archiveuploader.tests are only
+         required by tests, they're used when testing scripts manually on
+         dogfood/staging, so they're registered here. -->
+    <call
+      callable="lp.archiveuploader.tests.register_archive_upload_policy_adapters"
+      />
 
 </configure>

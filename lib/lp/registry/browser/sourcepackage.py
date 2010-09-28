@@ -17,53 +17,80 @@ __all__ = [
     'SourcePackageView',
     ]
 
-from apt_pkg import ParseSrcDepends
 from cgi import escape
 import string
 import urllib
+
+from apt_pkg import ParseSrcDepends
+from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
-from zope.component import getUtility, getMultiAdapter
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.formlib.form import Fields
 from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lazr.restful.interface import copy_field
-
-from canonical.widgets import LaunchpadRadioWidget
-
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder)
+    relationship_builder,
+    )
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    GetitemNavigation,
+    Link,
+    redirection,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    )
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.utils import smartquote
+from canonical.widgets import LaunchpadRadioWidget
+from lp.app.enums import ServiceUsage
 from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from lp.services.worlddata.interfaces.country import ICountry
+    QuestionTargetAnswersMenu,
+    QuestionTargetFacetMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
-from lp.registry.interfaces.packaging import IPackaging, IPackagingUtil
+from lp.registry.interfaces.packaging import (
+    IPackaging,
+    IPackagingUtil,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, Link, redirection,
-    StandardLaunchpadFacets, stepto)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, ReturnToReferrerMixin)
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
-
-from canonical.lazr.utils import smartquote
 
 
 def get_register_upstream_url(source_package):
@@ -257,8 +284,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
         self.product = getUtility(IProductSet)[product_name]
         series_list = [
             series for series in self.product.series
-            if series.status != SeriesStatus.OBSOLETE
-            ]
+            if series.status != SeriesStatus.OBSOLETE]
 
         # If the product is not being changed, then the current
         # productseries can be the default choice. Otherwise,
@@ -280,8 +306,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
             series_list.remove(dev_focus)
         vocab_terms = [
             SimpleTerm(series, series.name, series.name)
-            for series in series_list
-            ]
+            for series in series_list]
         dev_focus_term = SimpleTerm(
             dev_focus, dev_focus.name, "%s (Recommended)" % dev_focus.name)
         vocab_terms.insert(0, dev_focus_term)
@@ -313,6 +338,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     next_url = None
 
     main_action_label = u'Change'
+    
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't
@@ -516,7 +542,7 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         self.form_fields = Fields(
             Choice(__name__='upstream',
                    title=_('Registered upstream project'),
-                   default=None,
+                   default=self.other_upstream,
                    vocabulary=upstream_vocabulary,
                    required=True))
 
@@ -549,7 +575,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if self.context.productseries is None:
             return False
         product = self.context.productseries.product
-        if product.official_malone:
+        if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return True
         bugtracker = product.bugtracker
         if bugtracker is None:

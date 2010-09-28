@@ -9,9 +9,11 @@ __all__ = [
     'IPackagesetGroup',
     ]
 
-from zope.schema import Datetime, Int
-
 from lazr.restful.fields import Reference
+from zope.schema import (
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson

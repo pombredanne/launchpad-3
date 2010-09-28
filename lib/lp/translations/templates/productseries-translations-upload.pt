@@ -24,7 +24,7 @@
 
   <p>
     <strong>Note:</strong> it's quicker and easier to <a tal:attributes="
-    href string:${context/fmt:url}/+translations-settings">import from a
+    href context/fmt:url:translations/+translations-settings">import from a
     Bazaar branch</a> instead (<a href="/+help/importing-from-bzr.html"
     target="help">More about importing from Bazaar</a>)
   </p>

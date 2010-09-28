@@ -15,17 +15,22 @@ import os
 import shutil
 import tempfile
 
-from zope.component import getUtility
-
-from bzrlib.transport import get_transport, Server
-
+from bzrlib.transport import (
+    get_transport,
+    Server,
+    )
 from twisted.python.util import sibpath
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces import (
-    IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
+    IPersonSet,
+    ISSHKeySet,
+    SSHKeyType,
+    TeamSubscriptionPolicy,
+    )
 
 
 def set_up_test_user(test_user, test_team):

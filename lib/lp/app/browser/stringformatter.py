@@ -20,12 +20,13 @@ from xml.sax.saxutils import unescape as xml_unescape
 from zope.component import getUtility
 from zope.interface import implements
 from zope.traversing.interfaces import (
-    ITraversable, TraversalError)
+    ITraversable,
+    TraversalError,
+    )
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lp.answers.interfaces.faq import IFAQSet
 from lp.registry.interfaces.person import IPersonSet
 

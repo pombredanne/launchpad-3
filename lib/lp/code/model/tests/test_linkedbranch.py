@@ -14,10 +14,16 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, get_linked_to_branch, ICanHasLinkedBranch)
+    CannotHaveLinkedBranch,
+    get_linked_to_branch,
+    ICanHasLinkedBranch,
+    )
 from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 
 

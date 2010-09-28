@@ -10,22 +10,34 @@ __all__ = [
     ]
 
 import pytz
-
-from storm.expr import And, Desc, LeftJoin, Select
-from storm.locals import DateTime, Int, Reference, Store, Storm, Unicode
+from storm.expr import (
+    And,
+    Desc,
+    LeftJoin,
+    Select,
+    )
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
 from storm.store import EmptyResultSet
-
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriber)
+    IArchiveSubscriber,
+    )
+from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 
 class ArchiveSubscriber(Storm):

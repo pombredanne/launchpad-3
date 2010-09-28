@@ -5,26 +5,56 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.errors import NotFoundError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.browser.person import (
+    PersonEditView,
+    PersonView,
+    TeamInvitationView,
+    )
+
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.browser.person import PersonEditView, PersonView
-from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    IPersonSet,
+    )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+
 from lp.registry.model.karma import KarmaCategory
+from lp.soyuz.enums import (
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.soyuz.interfaces.archive import ArchiveStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.testing import TestCaseWithFactory, login_person
-from lp.testing.views import create_initialized_view, create_view
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -183,7 +213,8 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.person = self.factory.makePerson()
+        self.valid_email_address = self.factory.getUniqueEmailAddress()
+        self.person = self.factory.makePerson(email=self.valid_email_address)
         login_person(self.person)
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = PersonEditView(
@@ -232,6 +263,94 @@ class TestPersonEditView(TestCaseWithFactory):
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
 
+    def test_add_email_good_data(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+
+        # If everything worked, there should now be a login token to validate
+        # this email address for this user.
+        token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+            email_address,
+            self.person,
+            LoginTokenType.VALIDATEEMAIL)
+        self.assertTrue(token is not None)
+
+    def test_add_email_address_taken(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        account = self.factory.makeAccount(
+            displayname='deadaccount',
+            email=email_address,
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+        error_msg = view.errors[0]
+        expected_msg = ("The email address '%s' is already registered to an "
+                        "account, deadaccount." % email_address)
+        self.assertEqual(expected_msg, error_msg)
+
+
+class TestTeamCreationView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamCreationView, self).setUp()
+        person = self.factory.makePerson()
+        login_person(person)
+
+    def test_team_creation_good_data(self):
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.contactemail': 'contactemail@example.com',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(
+            person_set, '+newteam', form=form)
+        team = person_set.getByName('libertyland')
+        self.assertTrue(team is not None)
+        self.assertEqual('libertyland', team.name)
+
+    def test_validate_email_catches_taken_emails(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        account = self.factory.makeAccount(
+            displayname='libertylandaccount',
+            email=email_address,
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.contactemail': email_address,
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(person_set, '+newteam', form=form)
+        expected_msg = ('%s is already registered in Launchpad and is '
+                        'associated with the libertylandaccount '
+                        'account.' % email_address)
+        error_msg = view.errors[0].errors[0]
+        self.assertEqual(expected_msg, error_msg)
+
 
 class TestPersonParticipationView(TestCaseWithFactory):
 
@@ -253,7 +372,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         team = self.factory.makeTeam()
         login_person(team.teamowner)
         team.addMember(self.user, team.teamowner)
-        for membership in self.user.myactivememberships:
+        for membership in self.user.team_memberships:
             membership.setStatus(
                 TeamMembershipStatus.ADMIN, team.teamowner)
         [participation] = self.view.active_participations
@@ -345,7 +464,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         self.assertEqual(['A', 'B', 'C'], display_names)
         self.assertEqual(None, participations[0]['via'])
         self.assertEqual('A', participations[1]['via'])
-        self.assertEqual('A, B', participations[2]['via'])
+        self.assertEqual('B, A', participations[2]['via'])
 
     def test_has_participations_false(self):
         participations = self.view.active_participations
@@ -577,3 +696,86 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+
+
+class TestTeamInvitationView(TestCaseWithFactory):
+    """Tests for TeamInvitationView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamInvitationView, self).setUp()
+        self.a_team = self.factory.makeTeam(name="team-a",
+                                            displayname="A-Team")
+        self.b_team = self.factory.makeTeam(name="team-b",
+                                            displayname="B-Team")
+        transaction.commit()
+
+    def test_circular_invite(self):
+        """Two teams can invite each other without horrifying results."""
+
+        # Make the criss-cross invitations.
+        # A invites B.
+        login_person(self.a_team.teamowner)
+        form = {
+            'field.newmember': 'team-b',
+            'field.actions.add': 'Add Member',
+            }
+        view = create_initialized_view(
+            self.a_team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'B-Team (team-b) has been invited to join this team.',
+            notifications[0].message)
+
+        # B invites A.
+        login_person(self.b_team.teamowner)
+        form['field.newmember'] = 'team-a'
+        view = create_initialized_view(
+            self.b_team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'A-Team (team-a) has been invited to join this team.',
+            notifications[0].message)
+
+        # Team A accepts the invitation.
+        login_person(self.a_team.teamowner)
+        form = {
+            'field.actions.accept': 'Accept',
+            'field.acknowledger_comment': 'Thanks for inviting us.',
+            }
+        request = LaunchpadTestRequest(form=form, method='POST')
+        request.setPrincipal(self.a_team.teamowner)
+        membership_set = getUtility(ITeamMembershipSet)
+        membership = membership_set.getByPersonAndTeam(self.a_team,
+                                                       self.b_team)
+        view = TeamInvitationView(membership, request)
+        view.initialize()
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            u'This team is now a member of B-Team.',
+            notifications[0].message)
+
+        # Team B attempts to accept the invitation.
+        login_person(self.b_team.teamowner)
+        request = LaunchpadTestRequest(form=form, method='POST')
+        request.setPrincipal(self.b_team.teamowner)
+        membership = membership_set.getByPersonAndTeam(self.b_team,
+                                                       self.a_team)
+        view = TeamInvitationView(membership, request)
+        view.initialize()
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = (
+            u'This team may not be added to A-Team because it is a member '
+            'of B-Team.')
+        self.assertEqual(
+            expected,
+            notifications[0].message)

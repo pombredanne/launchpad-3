@@ -19,15 +19,19 @@ decrypt data in pagetests.
 
 __metaclass__ = type
 
-import os
 from cStringIO import StringIO
-
-from zope.component import getUtility
+import os
 
 import gpgme
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IGPGKeySet, IGPGHandler, IPersonSet, GPGKeyAlgorithm)
+    GPGKeyAlgorithm,
+    IGPGHandler,
+    IGPGKeySet,
+    IPersonSet,
+    )
+
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
 

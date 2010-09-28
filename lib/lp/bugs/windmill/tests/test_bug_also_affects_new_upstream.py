@@ -3,12 +3,17 @@
 
 import unittest
 
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from canonical.launchpad.windmill.testing.widgets import (
-    FormPickerWidgetTest)
-from canonical.launchpad.windmill.testing import lpuser, constants
-from canonical.launchpad.windmill.testing.widgets import search_picker_widget
+    FormPickerWidgetTest,
+    search_picker_widget,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 CHOOSE_AFFECTED_URL = ('http://bugs.launchpad.dev:8085/tomcat/+bug/3/'
                        '+choose-affected-product')

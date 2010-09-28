@@ -13,23 +13,36 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.formlib import form
-from zope.schema import Choice, List
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema import (
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionForm)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url, custom_widget, stepthrough)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.registry.enum import BugNotificationLevel
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.milestone import IProjectGroupMilestone
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionForm,
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscriptionView(LaunchpadFormView):
@@ -158,6 +171,10 @@ class StructuralSubscriptionView(LaunchpadFormView):
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
         return self.isSubscribed(self.user)
+
+    def userCanAlter(self):
+        if self.context.userCanAlterBugSubscription(self.user, self.user):
+            return True
 
     @action(u'Save these changes', name='save')
     def save_action(self, action, data):
@@ -313,4 +330,8 @@ class StructuralSubscriptionMenuMixin:
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon, enabled=enabled)
+        if enabled == False or (
+            not sst.userCanAlterBugSubscription(self.user, self.user)):
+            return Link('+subscribe', text, icon=icon, enabled=False)
+        else:
+            return Link('+subscribe', text, icon=icon, enabled=enabled)

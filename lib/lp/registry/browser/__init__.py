@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
@@ -16,17 +17,21 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 
 
 class StatusCount:
@@ -76,7 +81,7 @@ class MilestoneOverlayMixin:
     @property
     def milestone_table_class(self):
         """The milestone table will be unseen if there are no milestones."""
-        if len(self.context.all_milestones) > 0:
+        if self.context.has_milestones:
             return 'listing'
         else:
             # The page can remove the 'unseen' class to make the table
@@ -218,7 +223,7 @@ class RegistryDeleteViewMixin:
         self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
             if bugtask.conjoined_master is not None:
-                Store.of(bugtask).remove(bugtask)
+                Store.of(bugtask).remove(bugtask.conjoined_master)
             else:
                 bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
@@ -252,3 +257,30 @@ class RegistryEditFormView(LaunchpadEditFormView):
     @action("Change", name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
+
+
+class BaseRdfView:
+    """A view that sets its mime-type to application/rdf+xml."""
+
+    template = None
+    filename = None
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader(
+            'Content-Disposition', 'attachment; filename=%s.rdf' % (
+             self.filename))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata

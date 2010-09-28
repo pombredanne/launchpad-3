@@ -10,7 +10,6 @@ import time
 import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 

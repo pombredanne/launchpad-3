@@ -11,26 +11,34 @@ __all__ = [
     'LaunchpadStatisticSet',
     ]
 
-from zope.interface import implements
+from sqlobject import (
+    IntCol,
+    StringCol,
+    )
 from zope.component import getUtility
+from zope.interface import implements
 
-from sqlobject import IntCol, StringCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces import (
+    ILaunchpadStatistic,
+    ILaunchpadStatisticSet,
+    IPersonSet,
+    QuestionStatus,
+    )
+from lp.answers.model.question import Question
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
-from lp.services.worlddata.model.language import Language
-from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.pofile import POFile
 from lp.registry.model.product import Product
+from lp.services.worlddata.model.language import Language
+from lp.translations.model.pofile import POFile
 from lp.translations.model.pomsgid import POMsgID
-from lp.answers.model.question import Question
-
-from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
-    )
+from lp.translations.model.potemplate import POTemplate
 
 
 class LaunchpadStatistic(SQLBase):

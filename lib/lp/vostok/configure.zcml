@@ -8,10 +8,14 @@
   <include package=".browser" />
 
   <publisher
-     name="vostok"
-     factory="lp.vostok.publisher.vostok_request_publication_factory"
-     methods="*"
-     mimetypes="*" />
+      name="vostok"
+      factory="lp.vostok.publisher.vostok_request_publication_factory"
+      methods="*"
+      mimetypes="*" />
+  <utility
+      component="lp.vostok.publisher.VostokLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="vostok" />
 
   <securedutility
      class="lp.vostok.publisher.VostokRoot"

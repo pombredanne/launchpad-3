@@ -23,36 +23,54 @@ __all__ = [
     ]
 
 import csv
-import pytz
 from StringIO import StringIO
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission)
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from canonical.widgets.date import DateTimeWidget
-
 from lp.app.interfaces.headings import IMajorHeadingView
 from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin, HasSpecificationsView)
+    HasSpecificationsMenuMixin,
+    HasSpecificationsView,
+    )
 from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
-    SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):

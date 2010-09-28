@@ -22,26 +22,44 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
-from signal import getsignal, SIGCHLD, SIGHUP, signal
+from signal import (
+    getsignal,
+    SIGCHLD,
+    SIGHUP,
+    signal,
+    )
 import sys
 
-from ampoule import child, pool, main
+from ampoule import (
+    child,
+    main,
+    pool,
+    )
+from lazr.delegates import delegates
 import transaction
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols import amp
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from lazr.delegates import delegates
 
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
+from canonical.lp import initZopeless
+from lp.services.job.interfaces.job import (
+    IJob,
+    IRunnableJob,
+    LeaseHeld,
+    )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
+    ParallelLimitedTaskConsumer,
+    PollingTaskSource,
+    )
 
 
 class BaseRunnableJob:
@@ -199,10 +217,8 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Failed to notify users about a failure.")
                 info = sys.exc_info()
-                self.error_utility.raising(info)
-                oops = self.error_utility.getLastOopsReport()
                 # Returning the oops says something went wrong.
-                return oops
+                return self.error_utility.raising(info)
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -211,8 +227,7 @@ class BaseJobRunner(object):
         :param info: The standard sys.exc_info() value.
         :return: the Oops that was reported.
         """
-        self.error_utility.raising(info)
-        oops = self.error_utility.getLastOopsReport()
+        oops = self.error_utility.raising(info)
         job.notifyOops(oops)
         return oops
 

@@ -10,7 +10,10 @@ import os
 import unittest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
 
 

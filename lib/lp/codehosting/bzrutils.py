@@ -18,28 +18,44 @@ __all__ = [
     'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'read_locked',
     'remove_exception_logging_hook',
     'safe_open',
     'UnsafeUrlSeen',
     ]
 
+from contextlib import contextmanager
 import os
 import sys
 import threading
 
-from bzrlib import config, trace
+from bzrlib import (
+    config,
+    trace,
+    )
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
-from bzrlib.transport import register_transport, unregister_transport
+    NotStacked,
+    UnstackableBranchFormat,
+    UnstackableRepositoryFormat,
+    )
+from bzrlib.remote import (
+    RemoteBranch,
+    RemoteBzrDir,
+    RemoteRepository,
+    )
+from bzrlib.transport import (
+    register_transport,
+    unregister_transport,
+    )
 from bzrlib.transport.local import LocalTransport
+from lazr.uri import URI
 
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-
-from lazr.uri import URI
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 
 
 def is_branch_stackable(bzr_branch):
@@ -349,3 +365,12 @@ def get_stacked_on_url(branch):
         return branch.get_stacked_on_url()
     except (NotStacked, UnstackableBranchFormat):
         return None
+
+
+@contextmanager
+def read_locked(branch):
+    branch.lock_read()
+    try:
+        yield
+    finally:
+        branch.unlock()

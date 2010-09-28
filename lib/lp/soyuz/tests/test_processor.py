@@ -6,9 +6,11 @@
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
-
-from lp.soyuz.interfaces.processor import (IProcessor, IProcessorFamily,
-    IProcessorFamilySet)
+from lp.soyuz.interfaces.processor import (
+    IProcessor,
+    IProcessorFamily,
+    IProcessorFamilySet,
+    )
 from lp.testing import TestCaseWithFactory
 
 

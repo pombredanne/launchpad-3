@@ -13,16 +13,27 @@ __all__ = [
     'IBugMessageSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import Title
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint)
+    attachment_size_constraint,
+    )
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.services.fields import Title
 
 
 class IBugMessage(IHasBug):
@@ -104,9 +115,6 @@ class IBugComment(IMessage):
         to construct the correct URL.
         """)
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
-    can_be_shown = Bool(
-        title=u'Whether or not the comment can be displayed',
-        readonly=True)
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)

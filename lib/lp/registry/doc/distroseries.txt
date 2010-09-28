@@ -127,10 +127,10 @@ and version values consistently.
     Warty (4.10)
 
 
-Published releases
-------------------
+Published sources
+-----------------
 
-DistroSeries.getPublishedReleases:
+DistroSeries.getPublishedSources:
 
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
@@ -138,27 +138,27 @@ DistroSeries.getPublishedReleases:
 
 Passing a ISourcePackageName as argument:
 
-    >>> prs = warty2.getPublishedReleases(
+    >>> prs = warty2.getPublishedSources(
     ...       SourcePackageName.byName('mozilla-firefox'))
-    >>> print len(prs)
+    >>> print prs.count()
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
 
 Passing a string name:
 
-    >>> print len(warty2.getPublishedReleases('mozilla-firefox'))
+    >>> print warty2.getPublishedSources('mozilla-firefox').count()
     1
 
 Including pending publication records in the result:
 
-    >>> print len(warty2.getPublishedReleases('mozilla-firefox',
-    ...           include_pending=True))
+    >>> print warty2.getPublishedSources('mozilla-firefox',
+    ...           include_pending=True).count()
     2
 
 Not found as empty list:
 
-    >>> print len(warty2.getPublishedReleases('nosuchpackage'))
+    >>> print warty2.getPublishedSources('nosuchpackage').count()
     0
 
 See distroseries-publishing-lookups.txt for more information.
@@ -317,9 +317,9 @@ again" type set of assertions.
     ...                          '99.2',hoary, hoary.owner)
     >>> ids = InitialiseDistroSeries(humpy)
     >>> ids.initialise()
-    >>> len(hoary.getPublishedReleases('pmount'))
+    >>> hoary.getPublishedSources('pmount').count()
     1
-    >>> len(humpy.getPublishedReleases('pmount'))
+    >>> humpy.getPublishedSources('pmount').count()
     1
     >>> len(hoary['i386'].getReleasedPackages('pmount'))
     1
@@ -619,9 +619,7 @@ the future.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    PackagePublishingStatus)
-
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
     ...     PackagePublishingStatus.PUBLISHED,
     ...     PackagePublishingPocket.RELEASE)

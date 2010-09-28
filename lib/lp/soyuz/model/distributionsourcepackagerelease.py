@@ -11,34 +11,33 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+from lazr.delegates import delegates
+from storm.expr import Desc
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Desc
-
 from canonical.database.sqlbase import sqlvalues
-
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
+    IDistributionSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.publishing import \
-    SourcePackagePublishingHistory
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from lazr.delegates import delegates
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistributionSourcePackageRelease:

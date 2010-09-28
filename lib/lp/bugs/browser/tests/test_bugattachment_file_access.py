@@ -4,24 +4,35 @@
 __metaclass__ = type
 
 import re
-import transaction
 
-from zope.component import getMultiAdapter, getUtility
+import transaction
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView)
+    StreamOrRedirectLibraryFileAliasView,
+    SafeStreamOrRedirectLibraryFileAliasView,
+    )
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
-from canonical.testing import LaunchpadFunctionalLayer
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugattachment import (
-    BugAttachmentFileNavigation, SafeStreamOrRedirectLibraryFileAliasView)
-from lp.testing import login_person, TestCaseWithFactory
+    BugAttachmentFileNavigation,
+    )
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+import lp.services.features
+from lp.services.features.flags import NullFeatureController
 
 
 class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
@@ -71,7 +82,10 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):
-        # Requests of restricted files are handled by ProxiedLibraryFileAlias.
+        # Requests of restricted files are handled by ProxiedLibraryFileAlias
+        # until we enable the publicrestrictedlibrarian (at which point
+        # this test should check the view like
+        # test_access_to_unrestricted_file.
         lfa_with_parent = getMultiAdapter(
             (self.bugattachment.libraryfile, self.bugattachment),
             ILibraryFileAliasWithParent)
@@ -82,6 +96,11 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
+        # XXX Ensure the feature will be off - everything is off with
+        # NullFeatureController. bug=631884
+        lp.services.features.per_thread.features = NullFeatureController()
+        self.addCleanup(
+            setattr, lp.services.features.per_thread, 'features', None)
         next_view, traversal_path = view.browserDefault(request)
         self.assertEqual(view, next_view)
         file_ = next_view()
@@ -121,6 +140,11 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
+        # XXX Ensure the feature will be off - everything is off with
+        # NullFeatureController. bug=631884
+        lp.services.features.per_thread.features = NullFeatureController()
+        self.addCleanup(
+            setattr, lp.services.features.per_thread, 'features', None)
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(
             next_view, SafeStreamOrRedirectLibraryFileAliasView)

@@ -11,7 +11,6 @@ from zope.traversing.interfaces import IPathAdapter
 from canonical.launchpad.webapp.publisher import rootObject
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import FunctionalLayer
-
 from lp.testing import TestCase
 
 

@@ -5,8 +5,9 @@
 
 # arch-tag: f815ad2f-cd34-4399-81a1-c226a949e6b5
 
-import unittest
 import sys
+import unittest
+
 from lp.archiveuploader.tests import datadir
 
 

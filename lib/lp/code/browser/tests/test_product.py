@@ -5,20 +5,31 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 from mechanize import LinkNotFoundError
 import pytz
-
-from zope.component import getMultiAdapter, getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 from lp.code.interfaces.revision import IRevisionSet
 from lp.testing import (
-    ANONYMOUS, login, login_person, time_counter, TestCaseWithFactory)
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestProductCodeIndexView(TestCaseWithFactory):
@@ -43,7 +54,6 @@ class TestProductCodeIndexView(TestCaseWithFactory):
 
         :raises Something: if the branch is not found.
         """
-        url = canonical_url(product, rootsite='code')
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
         return browser.getLink('browse the source code')
 
@@ -82,30 +92,25 @@ class TestProductCodeIndexView(TestCaseWithFactory):
         # +code-index page.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
-        url = canonical_url(product, rootsite='code')
         self.factory.makeProductBranch(product=product)
         # This is just "assertNotRaises"
         self.getUserBrowser(canonical_url(product, rootsite='code'))
 
     def test_initial_branches_contains_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
+        view = create_initialized_view(product, '+code-index', rootsite='code')
         self.assertIn(branch, view.initial_branches)
 
     def test_initial_branches_does_not_contain_private_dev_focus_branch(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             private=True)
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
+        view = create_initialized_view(product, '+code-index', rootsite='code')
         self.assertNotIn(branch, view.initial_branches)
 
     def test_committer_count_with_revision_authors(self):
         # Test that the code pathing for calling committer_count with
         # valid revision authors is truly tested.
-        cthulu = self.factory.makePerson(email='cthulu@example.com')
+        self.factory.makePerson(email='cthulu@example.com')
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         date_generator = time_counter(
             datetime.now(pytz.UTC) - timedelta(days=30),
@@ -115,9 +120,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
+        view = create_initialized_view(product, '+code-index', rootsite='code')
         self.assertEqual(view.committer_count, 1)
 
     def test_committers_count_private_branch(self):
@@ -135,9 +138,7 @@ class TestProductCodeIndexView(TestCaseWithFactory):
             date_generator=date_generator)
         getUtility(IRevisionSet).updateRevisionCacheForBranch(branch)
 
-        view = getMultiAdapter(
-            (product, LaunchpadTestRequest()), name='+code-index')
-        view.initialize()
+        view = create_initialized_view(product, '+code-index', rootsite='code')
         self.assertEqual(view.committer_count, 1)
 
 

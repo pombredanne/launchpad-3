@@ -6,11 +6,13 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import WindmillTestCase
-
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.windmill.testing import lpuser
+from lp.app.enums import ServiceUsage
+from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 class DocumentationLinksTest(WindmillTestCase):
     """Test that the documentation links on translation pages work."""
@@ -51,7 +53,7 @@ class DocumentationLinksTest(WindmillTestCase):
         project = self.factory.makeProduct(
             name='test-product',
             displayname='Test Product',
-            official_rosetta=True)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         removeSecurityProxy(project).translationgroup = group
 
         potemplate = self.createPOTemplateWithPOTMsgSets(

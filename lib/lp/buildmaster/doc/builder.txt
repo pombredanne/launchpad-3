@@ -43,16 +43,6 @@ behavior is dealing with binary packages.
     ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
     True
 
-A builder has an XML-RPC proxy in the 'slave' attribute, which allows
-us to easily call methods on the slave machines.
-
-    >>> s = builder.slave
-
-The base URL of the proxy matches the builder's URL.
-
-    >>> s.urlbase == builder.url
-    True
-
 
 BuilderSet
 ==========
@@ -273,7 +263,7 @@ will use a special behavior that just checks if the cookie reads 'good'.
 
     >>> import logging
     >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
+    >>> from lp.buildmaster.tests.mock_slaves import (
     ...    BuildingSlave, MockBuilder, OkSlave, WaitingSlave)
 
     >>> class TestBuildBehavior:
@@ -301,7 +291,7 @@ or cleaned.
 
     >>> rescue_slave_if_lost(BuildingSlave(build_id='bad'))
     Aborting slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 
 Slaves having completed an incorrect build are also declared lost,
 but there's no need to abort a completed build. Such builders are
@@ -309,5 +299,5 @@ instead simply cleaned, ready for the next build.
 
     >>> rescue_slave_if_lost(WaitingSlave(build_id='bad'))
     Cleaning slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
+    INFO:root:Builder 'mock' rescued from 'bad': 'Bad value'
 

@@ -8,14 +8,20 @@ __all__ = [
     'DtdFile'
     ]
 
-from old_xmlplus.parsers.xmlproc import dtdparser, xmldtd, utils
+from old_xmlplus.parsers.xmlproc import (
+    dtdparser,
+    utils,
+    xmldtd,
+    )
 
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
-from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData,
+    )
 
 
 class MozillaDtdConsumer(xmldtd.WFCDTD):

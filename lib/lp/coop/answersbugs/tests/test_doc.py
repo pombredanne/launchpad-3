@@ -11,19 +11,34 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.ftests.test_system_documentation import (
-    uploaderSetUp, uploadQueueSetUp)
+    uploaderSetUp,
+    uploadQueueSetUp,
+    )
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
-    IPersonSet)
+    CreateBugParams,
+    IBugTaskSet,
+    IDistributionSet,
+    ILanguageSet,
+    IPersonSet,
+    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.testing import build_test_suite
+from lp.testing.mail_helpers import pop_notifications
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 

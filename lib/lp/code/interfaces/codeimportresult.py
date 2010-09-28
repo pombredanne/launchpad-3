@@ -11,15 +11,23 @@ __all__ = [
     'ICodeImportResultSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Object, Text
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimport import ICodeImport
-from lp.code.interfaces.codeimportmachine import \
-     ICodeImportMachine
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.code.interfaces.codeimportmachine import ICodeImportMachine
 from lp.registry.interfaces.person import IPerson
 
 

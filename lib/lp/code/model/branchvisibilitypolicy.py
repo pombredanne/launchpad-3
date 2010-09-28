@@ -12,22 +12,21 @@ __all__ = [
     'BranchVisibilityPolicyMixin',
     ]
 
-from zope.interface import implements
-
 from sqlobject import ForeignKey
-
-from canonical.cachedproperty import cachedproperty
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.helpers import shortlist
 from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.branchvisibilitypolicy import (
-    IBranchVisibilityTeamPolicy, InvalidVisibilityPolicy)
+    IBranchVisibilityTeamPolicy,
+    InvalidVisibilityPolicy,
+    )
 from lp.registry.interfaces.person import validate_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 class BranchVisibilityTeamPolicy(SQLBase):

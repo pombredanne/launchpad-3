@@ -11,17 +11,18 @@ __all__ = [
 
 
 import datetime
-import transaction
 
+from bzrlib.urlutils import (
+    escape,
+    unescape,
+    )
 import pytz
-
-from bzrlib.urlutils import escape, unescape
-
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
@@ -29,24 +30,45 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.helpers import return_fault
-
-from lp.app.errors import NameLookupFailed, NotFoundError
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.app.errors import (
+    NameLookupFailed,
+    NotFoundError,
+    )
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.errors import (
-    BranchCreationException, InvalidNamespace, NoLinkedBranch,
-    UnknownBranchTypeError)
+    BranchCreationException,
+    InvalidNamespace,
+    NoLinkedBranch,
+    UnknownBranchTypeError,
+    )
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraverser)
+    IBranchLookup,
+    ILinkedBranchTraverser,
+    )
 from lp.code.interfaces.branchnamespace import (
-    lookup_branch_namespace, split_unique_name)
+    lookup_branch_namespace,
+    split_unique_name,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
-    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT, ICodehostingAPI,
-    LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES)
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    ICodehostingAPI,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    NoSuchPerson,
+    )
 from lp.registry.interfaces.product import NoSuchProduct
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split

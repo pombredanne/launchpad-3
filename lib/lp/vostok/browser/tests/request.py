@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
 from lp.vostok.publisher import VostokRequestMixin
 
 

@@ -17,12 +17,21 @@ __all__ = [
     ]
 
 from datetime import datetime
-from pytz import utc
-
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from lazr.restful.fields import Reference
+from pytz import utc
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
@@ -71,13 +80,17 @@ class ILibraryFileAlias(Interface):
     # byte strings.
     http_url = Attribute(_("The http URL to this file"))
     https_url = Attribute(_("The https URL to this file"))
+    private_url = Attribute(_("The secure URL to this file (private files)"))
 
     def getURL():
         """Return this file's http or https URL.
 
+        If the file is a restricted file, the private_url will be returned,
+        which is on https and uses unique domains per file alias.
+
         The generated URL will be https if the use_https config variable is
         set, in order to prevent warnings about insecure objects from
-        happening in some browsers.
+        happening in some browsers (this is used for, e.g., branding).
 
         If config.launchpad.virtual_host.use_https is set, then return the
         https URL. Otherwise return the http URL.

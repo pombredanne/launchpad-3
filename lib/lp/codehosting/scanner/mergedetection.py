@@ -10,13 +10,14 @@ __all__ = [
     ]
 
 from bzrlib.revision import NULL_REVISION
-
 from zope.component import getUtility
 
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES, notify_modified)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    notify_modified,
+    )
 from lp.services.utils import CachingIterator
 
 

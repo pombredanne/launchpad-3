@@ -11,13 +11,12 @@ __all__ = [
 
 import transaction
 
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistroSeriesBinaryPackage(TestCaseWithFactory):

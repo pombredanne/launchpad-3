@@ -7,12 +7,17 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
 from canonical.testing import DatabaseFunctionalLayer
-
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import (
-    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
+    ClaimReviewFailed,
+    ReviewNotPending,
+    UserHasExistingReview,
+    )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewVote(TestCaseWithFactory):

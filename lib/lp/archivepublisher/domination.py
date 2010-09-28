@@ -59,14 +59,18 @@ import operator
 
 import apt_pkg
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor,
-    clear_current_connection_cache)
-
-from canonical.launchpad.interfaces import PackagePublishingStatus
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+    clear_current_connection_cache,
+    cursor,
+    flush_database_updates,
+    sqlvalues,
+    )
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 
 
 def clear_cache():

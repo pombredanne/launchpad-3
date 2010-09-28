@@ -55,7 +55,7 @@
             <h3>Administration</h3>
             <p>Translation files that are waiting to be imported are shown in
               the
-              <a tal:attributes="href context/fmt:url/+imports"
+              <a tal:attributes="href context/fmt:url:translations/+imports"
                  tal:content="string:${context/displayname} import queue">
                 import queue</a>.
             </p>

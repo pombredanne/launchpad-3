@@ -111,7 +111,7 @@ def add_ssh_public_keys(person):
     key_set = getUtility(ISSHKeySet)
     for filename in ('id_rsa.pub', 'id_dsa.pub'):
         try:
-            public_key_file = open(filename, 'r')
+            public_key_file = open(os.path.join(ssh_dir, filename), 'r')
             try:
                 public_key = public_key_file.read()
             finally:
@@ -120,6 +120,9 @@ def add_ssh_public_keys(person):
             continue
         key_set.new(person, public_key)
         print 'Registered SSH key: %s' % (filename,)
+        break
+    else:
+        print 'No SSH key files found in %s' % ssh_dir 
 
 
 def parse_fingerprints(gpg_output):

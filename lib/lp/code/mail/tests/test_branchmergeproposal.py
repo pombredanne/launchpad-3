@@ -6,30 +6,39 @@
 from difflib import unified_diff
 import operator
 from textwrap import dedent
-import transaction
 from unittest import TestLoader
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
-from lp.code.model.diff import PreviewDiff
-from lazr.lifecycle.event import ObjectModifiedEvent
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    MergeProposalUpdatedEmailJob, ReviewRequestedEmailJob)
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    MergeProposalUpdatedEmailJob,
+    ReviewRequestedEmailJob,
+    )
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from canonical.launchpad.webapp import canonical_url
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

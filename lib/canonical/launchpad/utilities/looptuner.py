@@ -17,10 +17,13 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
 import canonical.launchpad.scripts
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-from canonical.launchpad.interfaces.looptuner import ITunableLoop
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 
 
 class LoopTuner:
@@ -310,6 +313,10 @@ class TunableLoop:
     def __init__(self, log, abort_time=None):
         self.log = log
         self.abort_time = abort_time
+
+    def isDone(self):
+        """Return True when the TunableLoop is complete."""
+        raise NotImplementedError(self.isDone)
 
     def run(self):
         assert self.maximum_chunk_size is not None, (

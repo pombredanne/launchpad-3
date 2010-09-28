@@ -7,13 +7,18 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
     <subscriber
-        for="canonical.launchpad.webapp.interfaces.IStartRequestEvent"
         handler="lp.services.profile.profile.start_request"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
         handler="lp.services.profile.profile.end_request"
+        />
+
+    <!-- Create a namespace to request a profile. -->
+    <view
+        name="profile" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory=".profile.ProfileNamespace"
         />
 
 </configure>

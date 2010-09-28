@@ -13,10 +13,7 @@ team.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
-    >>> registry_expert = factory.makePerson()
-    >>> login_person(registry_experts.teamowner)
-    >>> ignored = registry_experts.addMember(
-    ...     registry_expert, registry_experts.teamowner)
+    >>> registry_expert= factory.makeRegistryExpert()
     >>> login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).

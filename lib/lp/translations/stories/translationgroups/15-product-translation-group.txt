@@ -15,9 +15,7 @@ First make sure it uses Launchpad for translations.
     >>> print netapplet_owner_browser.title
     Configure Translations : NetApplet
 
-    >>> netapplet_owner_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> netapplet_owner_browser.getControl('Launchpad').click()
     >>> netapplet_owner_browser.getControl('Change').click()
     >>> print netapplet_owner_browser.title
     Network Applet in Launchpad
@@ -36,7 +34,7 @@ can see that from the translations page.
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'translation-permissions'))
-    NetApplet (Unspecified) is translated with Open permissions.
+    NetApplet is translated with Open permissions.
 
 Now let's make sure we can see the page to let us change translation
 group and permissions.

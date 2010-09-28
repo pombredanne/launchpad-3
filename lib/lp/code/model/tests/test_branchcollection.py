@@ -14,23 +14,35 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
+    remove_all_sample_data_branches,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import GenericBranchCollection
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchCollectionAdaptation(TestCaseWithFactory):

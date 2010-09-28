@@ -6,13 +6,17 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.pofile import DummyPOFile
-from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.pofile import DummyPOFile
+from lp.translations.model.potemplate import (
+    get_pofiles_for,
+    POTemplateSet,
+    )
 
 
 class TestPOTemplate(TestCaseWithFactory):
@@ -324,8 +328,8 @@ class TestTemplatePrecedence(TestCaseWithFactory):
 
     def setUp(self):
         super(TestTemplatePrecedence, self).setUp(user='mark@example.com')
-        self.product = self.factory.makeProduct()
-        self.product.official_rosetta = True
+        self.product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.trunk = self.product.getSeries('trunk')
         self.one_dot_oh = self.factory.makeProductSeries(
             product=self.product, name='one')

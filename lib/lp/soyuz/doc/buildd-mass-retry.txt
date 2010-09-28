@@ -53,7 +53,7 @@ and set it to SUPERSEDED.
   >>> from zope.security.proxy import removeSecurityProxy
   >>> from lp.soyuz.interfaces.binarypackagebuild import (
   ...     IBinaryPackageBuildSet)
-  >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+  >>> from lp.soyuz.enums import PackagePublishingStatus
   >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(12)
   >>> pub = removeSecurityProxy(build.current_source_publication)
 

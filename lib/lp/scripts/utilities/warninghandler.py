@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 import atexit
-import warnings
-import sys
 import inspect
 import StringIO
+import sys
+import warnings
+
 
 class WarningReport:
 

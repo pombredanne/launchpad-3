@@ -79,8 +79,27 @@ access to that bug, though.
     >>> check_permission('launchpad.View', bug_1)
     False
 
-Users logged in through the web application, though, have full access,
-which means they can read/change any object they have access to.
+Now consider a principal authorized to create OAuth tokens. Whenever
+it's not creating OAuth tokens, it has a level of permission
+equivalent to READ_PUBLIC.
+
+    >>> principal.access_level = AccessLevel.GRANT_PERMISSIONS
+    >>> setupInteraction(principal)
+    >>> check_permission('launchpad.View', bug_1)
+    False
+
+    >>> check_permission('launchpad.Edit', sample_person)
+    False
+
+This may seem useless from a security standpoint, since once a
+malicious client is authorized to create OAuth tokens, it can escalate
+its privileges at any time by creating a new token for itself. The
+security benefit is more subtle: by discouraging feature creep in
+clients that have this super-access level, we reduce the risk that a
+bug in a _trusted_ client will enable privilege escalation attacks.
+
+Users logged in through the web application have full access, which
+means they can read/change any object they have access to.
 
     >>> mock_participation = Participation()
     >>> login('test@canonical.com', mock_participation)

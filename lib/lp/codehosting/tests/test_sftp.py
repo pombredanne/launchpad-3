@@ -8,27 +8,33 @@ from contextlib import closing
 import os
 import unittest
 
+from bzrlib import (
+    errors as bzr_errors,
+    urlutils,
+    )
 from bzrlib.tests import TestCaseInTempDir
-from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
-from bzrlib import urlutils
-
-from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPServer
 from twisted.conch.ls import lsLine
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
+from canonical.testing.layers import TwistedLayer
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
 from lp.codehosting.sftp import (
-    FatLocalTransport, TransportSFTPServer)
+    FatLocalTransport,
+    TransportSFTPServer,
+    )
 from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.services.sshserver.sftp import FileIsADirectory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import TwistedLayer
 
 
 class AsyncTransport:

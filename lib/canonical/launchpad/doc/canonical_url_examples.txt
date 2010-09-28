@@ -39,7 +39,7 @@ The Malone homepage.
 The Bazaar homepage.
 
     >>> canonical_url(getUtility(IBazaarApplication))
-    u'http://launchpad.dev/+code'
+    u'http://code.launchpad.dev/+code'
 
 The Answer Tracker
 

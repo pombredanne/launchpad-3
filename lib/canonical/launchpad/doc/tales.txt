@@ -113,8 +113,8 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='rebuild')
@@ -197,7 +197,7 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
@@ -1292,7 +1292,7 @@ have an EnumCol for sqlobject.
 
 Test the 'lp:' namespace for presenting DBSchema items.
 
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB.value
     >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
     'Ubuntu Package'
@@ -1329,7 +1329,6 @@ template matches a particular valid value for that DBSchema enum.
 This was going to be called 'enum-value', but Zope doesn't allow this.
 To be fixed upstream.
 
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB
     >>> udeb = BinaryPackageFormat.UDEB
     >>> test_tales('deb/enumvalue:DEB', deb=deb)

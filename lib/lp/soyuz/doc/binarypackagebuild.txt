@@ -136,7 +136,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> at_build = getUtility(IBinaryPackageBuildSet).getByBuildID(15)
@@ -304,26 +304,14 @@ given build record entry.
     >>> version = '0.0.1-demo'
     >>> summary = 'Summmmmmmmary'
     >>> description = 'Descripppppppption'
-    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+    >>> from lp.soyuz.enums import BinaryPackageFormat
     >>> binpackageformat = BinaryPackageFormat.DEB
     >>> component = firefox_build.source_package_release.component.id
     >>> section = firefox_build.source_package_release.section.id
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> priority = PackagePublishingPriority.STANDARD
-    >>> shlibdeps = None
-    >>> depends = None
-    >>> recommends = None
-    >>> suggests = None
-    >>> conflicts = None
-    >>> replaces = None
-    >>> provides = None
-    >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
-    >>> pre_depends = None
-    >>> enhances = None
-    >>> breaks = None
-    >>> debug_package = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -331,11 +319,11 @@ Invoke createBinaryPackageRelease with all required arguments.
     >>> pmount_build = getUtility(IBinaryPackageBuildSet).getByBuildID(19)
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...     binarypackagename, version, summary, description,
-    ...     binpackageformat, component, section, priority, shlibdeps,
-    ...     depends, recommends, suggests, conflicts, replaces, provides,
-    ...     pre_depends, enhances, breaks, essential, installedsize,
-    ...     architecturespecific, debug_package)
+    ...     binarypackagename=binarypackagename, version=version,
+    ...     summary=summary, description=description,
+    ...     binpackageformat=binpackageformat, component=component,
+    ...     section=section, priority=priority, installedsize=installedsize,
+    ...     architecturespecific=architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -364,11 +352,12 @@ Emulate a huge list of binaries for 'pmount':
     ...     version = "%d" % i
     ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...         binarypackagename, version, summary, description,
-    ...         binpackageformat, component, section, priority, shlibdeps,
-    ...         depends, recommends, suggests, conflicts, replaces, provides,
-    ...         pre_depends, enhances, breaks, essential, installedsize,
-    ...         architecturespecific, debug_package)
+    ...         binarypackagename=binarypackagename, version=version,
+    ...         summary=summary, description=description,
+    ...         binpackageformat=binpackageformat, component=component,
+    ...         section=section, priority=priority,
+    ...         installedsize=installedsize,
+    ...         architecturespecific=architecturespecific)
 
 
 Check if the property is still working:
@@ -600,7 +589,7 @@ getBuildRecords() ordered by descending creation date.
 
     # Create a DELETED and a SUPERSEDED source publication in
     # ubuntutest/breezy-autotest.
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> login('foo.bar@canonical.com')
     >>> old_source_pub = test_publisher.getPubSource(
     ...     sourcename='old-source', version='1.0',
@@ -627,7 +616,7 @@ domain of SourcePackage.
     # Create a rebuild archive, copy the 'old-source' source
     # publications to it and create builds in the rebuild archive
     # context.
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> login('foo.bar@canonical.com')
     >>> rebuild_archive = factory.makeArchive(
     ...     ubuntutest, ubuntutest.owner, 'test-rebuild',

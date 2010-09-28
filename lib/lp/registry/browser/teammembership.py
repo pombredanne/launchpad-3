@@ -10,9 +10,9 @@ __all__ = [
     ]
 
 
-import pytz
 from datetime import datetime
 
+import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
@@ -21,11 +21,13 @@ from zope.schema import Date
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets import DateWidget
-
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 

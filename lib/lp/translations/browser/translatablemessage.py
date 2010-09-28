@@ -10,6 +10,7 @@ __all__ = ['TranslatableMessageView']
 from canonical.launchpad.webapp import LaunchpadView
 from lp.translations.browser.browser_helpers import text_to_html
 
+
 class TranslatableMessageView(LaunchpadView):
     """View class to render an `ITranslatableMessage`."""
 

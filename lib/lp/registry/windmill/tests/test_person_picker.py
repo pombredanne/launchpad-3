@@ -8,8 +8,10 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import constants, lpuser
-
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 

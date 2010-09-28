@@ -17,42 +17,75 @@ __all__ = [
 from datetime import datetime
 import itertools
 import operator
-import pytz
-
-from zope.component import getUtility
-from zope.interface import implements, Interface
 
 from lazr.delegates import delegates
+import pytz
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
-from lp.bugs.interfaces.bug import IBugSet
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadView, Navigation, StandardLaunchpadFacets,
-    action, canonical_url, redirection)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-
+from canonical.launchpad.webapp.tales import CustomizableFormatter
+from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
-        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.interfaces.bug import IBugSet
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers, extract_email_addresses, linkify_changelog)
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
-from lp.soyuz.interfaces.packagediff import IPackageDiffSet
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourcepackagerelease import (
+    extract_bug_numbers,
+    extract_email_addresses,
+    linkify_changelog,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
+    HasCustomLanguageCodesTraversalMixin,
+    )
+
+
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
@@ -380,10 +413,10 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
         :param sourcepackage: ISourcePackage
         """
-        publications = sourcepackage.distroseries.getPublishedReleases(
+        publications = sourcepackage.distroseries.getPublishedSources(
             sourcepackage.sourcepackagename)
         pocket_dict = {}
-        for pub in publications:
+        for pub in shortlist(publications):
             version = pub.source_package_version
             pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict

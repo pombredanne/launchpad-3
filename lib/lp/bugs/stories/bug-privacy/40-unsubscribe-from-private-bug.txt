@@ -11,10 +11,10 @@ Ubuntu evolution is, so we can avoid hardcoding its ID here:
     >>> launchbag = getUtility(ILaunchBag)
     >>> evo = getUtility(ISourcePackageNameSet).queryByName("evolution")
     >>> params = BugTaskSearchParams(user=launchbag.user,
-    ...     sourcepackagename=evo, orderby="id")
+    ...     sourcepackagename=evo, orderby="-id")
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> latest_evo_task = ubuntu.searchTasks(params)[-1]
+    >>> latest_evo_task = ubuntu.searchTasks(params)[0]
     >>> latest_evo_bug = latest_evo_task.bug.id
     >>> logout()
 

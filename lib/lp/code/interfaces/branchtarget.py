@@ -18,13 +18,16 @@ __all__ = [
     'IHasBranchTarget',
     ]
 
-from zope.interface import Attribute, Interface
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.security.interfaces import Unauthorized
 
-from lp.code.enums import BranchType
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from lazr.restful.fields import Reference
+from lp.code.enums import BranchType
 
 
 def check_default_stacked_on(branch):

@@ -9,15 +9,16 @@ __all__ = [
     'BugSupervisorEditView',
     ]
 
+from lazr.restful.interface import copy_field
 from zope.interface import Interface
 
-from lazr.restful.interface import copy_field
-
 from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadEditFormView)
+    action,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.browser.bugrole import BugRoleMixin
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 
 
 class BugSupervisorEditSchema(Interface):

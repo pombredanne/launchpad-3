@@ -11,8 +11,11 @@ from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource, IMergeProposalUpdatedEmailJobSource,
-    IReviewRequestedEmailJobSource, IUpdatePreviewDiffJobSource)
+    IMergeProposalCreatedJobSource,
+    IMergeProposalUpdatedEmailJobSource,
+    IReviewRequestedEmailJobSource,
+    IUpdatePreviewDiffJobSource,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.services.utils import text_delta
 

@@ -11,9 +11,8 @@ __all__ = [
     'IPersonProductFactory',
     ]
 
-from zope.interface import Interface
-
 from lazr.restful.fields import Reference
+from zope.interface import Interface
 
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct

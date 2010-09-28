@@ -14,57 +14,94 @@ __all__ = [
 import datetime
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import Sum, Max
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    Max,
+    Sum,
+    )
+from storm.locals import (
+    And,
+    Desc,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import And, Desc
-from storm.store import Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, sqlvalues)
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad)
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
 from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.services.worlddata.model.language import Language
-from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from lp.registry.model.packaging import Packaging
+from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.milestone import (
+    HasMilestonesMixin,
+    Milestone,
+    )
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.productrelease import ProductRelease
+from lp.registry.model.series import SeriesMixin
+from lp.registry.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate,
-    TranslationTemplatesCollection)
-from lp.registry.model.productrelease import ProductRelease
-from lp.translations.model.productserieslanguage import (
-    ProductSeriesLanguage)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
+    TranslationTemplatesCollection,
+    )
+from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.packaging import PackagingType
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.registry.model.series import SeriesMixin
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+    HasTranslationImportsMixin,
+    )
+
+
+MAX_TIMELINE_MILESTONES = 20
 
 
 def landmark_key(landmark):
@@ -82,7 +119,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries)
+    implements(IHasBugHeat, IProductSeries, IServiceUsage)
 
     _table = 'ProductSeries'
 
@@ -117,6 +154,52 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        # If translations_usage is set for the Product, respect it.
+        usage = self.product.translations_usage
+        if usage != ServiceUsage.UNKNOWN:
+            return usage
+
+        # If not, usage is based on the presence of current translation
+        # templates for the series.
+        if self.potemplate_count > 0:
+            return ServiceUsage.LAUNCHPAD
+        else:
+            return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
+
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -340,6 +423,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.product._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -513,7 +599,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for milestone in self.all_milestones:
+        for milestone in self.all_milestones[:MAX_TIMELINE_MILESTONES]:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.

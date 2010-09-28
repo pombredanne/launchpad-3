@@ -65,12 +65,10 @@ launchpad.Edit on the records:
 Construct an upload.
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distroseries='hoary')
-  >>> anything_policy.can_upload_binaries = True
-  >>> anything_policy.can_upload_mixed = True
+  ...     name='absolutely-anything', distro='ubuntu', distroseries='hoary')
 
   >>> ed_upload = NascentUpload.from_changesfile_path(
-  ...     datadir('ed_0.2-20_i386.changes'),
+  ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
   ...     anything_policy, mock_logger_quiet)
 
   >>> ed_upload.process()
@@ -84,7 +82,7 @@ convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
   ...      QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -110,14 +108,12 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   ...     pub_records = item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
-  DEBUG: Publishing build to ubuntu/hoary/i386
-  DEBUG: ... ed/0.2-20 (Arch Specific)
 
 
 Confirm we can now find ed published in hoary.
 
   >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> from lp.soyuz.enums import PackagePublishingStatus
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -166,7 +162,6 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 Retrieve some data from DB to play more with counter.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -862,7 +857,7 @@ Similarly for binaries:
     ...     binary_package.priority.title)
     main/base/Important
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,
@@ -905,14 +900,14 @@ PackageUpload records for the supplied distroseries.
 
 Filtering by status:
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
     >>> warty.getPackageUploads(
     ...     status=PackageUploadStatus.DONE).count()
     1
 
 Filtering by archive:
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     warty.distribution, ArchivePurpose.PARTNER)
     >>> warty.getPackageUploads(archive=partner_archive).count()
@@ -926,7 +921,7 @@ Filtering by pocket:
 
 Filtering by custom_type.  We need to add some custom uploads to show this.
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
     >>> def add_static_xlat_upload():
     ...     upload = warty.createQueueEntry(

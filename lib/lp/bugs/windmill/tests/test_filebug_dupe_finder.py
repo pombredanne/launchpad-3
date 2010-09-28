@@ -3,9 +3,13 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser, constants
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
 

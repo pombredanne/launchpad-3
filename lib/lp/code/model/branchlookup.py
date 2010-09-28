@@ -8,44 +8,67 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import adapts, getUtility, queryMultiAdapter
+from lazr.enum import DBItem
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+from sqlobject import SQLObjectNotFound
+from storm.expr import Join
+from zope.component import (
+    adapts,
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.interface import implements
 
-from storm.expr import Join
-from sqlobject import SQLObjectNotFound
-
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
+from lp.code.interfaces.branchlookup import (
+    IBranchLookup,
+    ILinkedBranchTraversable,
+    ILinkedBranchTraverser,
+    )
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    NoSuchDistroSeries,
+    )
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.code.errors import (
-    CannotHaveLinkedBranch, InvalidNamespace, NoLinkedBranch, NoSuchBranch)
-from lp.code.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
-from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
-from lp.code.interfaces.linkedbranch import get_linked_to_branch
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
-from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    InvalidProductName, IProduct, NoSuchProduct)
-from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
 from lp.services.utils import iter_split
-from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from lazr.enum import DBItem
-from lazr.uri import InvalidURIError, URI
 
 
 def adapt(provided, interface):

@@ -14,16 +14,17 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
-
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.buildmaster.interfaces.builder import CannotBuild
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
+from lp.soyuz.enums import ArchivePurpose
 
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
@@ -98,8 +99,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
            distroseries state.
         """
         build = self.build
-        assert not (not self._builder.virtualized and build.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
+        if build.is_virtualized and not self._builder.virtualized:
+            raise AssertionError(
+                "Attempt to build non-virtual item on a virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY

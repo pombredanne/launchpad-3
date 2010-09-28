@@ -23,17 +23,32 @@ __all__ = [
     'SignedCodeOfConductDeactiveView',
     ]
 
-from zope.app.form.browser.add import AddView, EditView
+from zope.app.form.browser.add import (
+    AddView,
+    EditView,
+    )
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission,
-    GetitemNavigation, LaunchpadView, Link)
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.codeofconduct import (
-    ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
-    ISignedCodeOfConduct, ISignedCodeOfConductSet)
+    ICodeOfConduct,
+    ICodeOfConductConf,
+    ICodeOfConductSet,
+    ISignedCodeOfConduct,
+    ISignedCodeOfConductSet,
+    )
 from lp.registry.interfaces.person import IPerson
 
 

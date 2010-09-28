@@ -161,13 +161,13 @@ appears as if there is no series branch set.
     >>> print_development_focus(owner_browser)
     Development focus:
     trunk series     Change details
-    lp://dev/~eric/fooix/trunk   Change branch
+    lp://dev/fooix   Change branch
     View the branch content
     Links:
       trunk series (/fooix/trunk)
       <span class="invisible-link">Change details</span>
         (http://launchpad.dev/fooix/+edit)
-      lp://dev/~eric/fooix/trunk (http://code.launchpad.dev/~eric/fooix/trunk)
+      lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       <span class="invisible-link">Change branch</span>
       Change the branch for this series
         (http://launchpad.dev/fooix/trunk/+linkbranch)

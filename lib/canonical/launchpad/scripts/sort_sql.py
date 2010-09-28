@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sort SQL dumps.
@@ -10,7 +10,7 @@ database/schema/.
 __metaclass__ = type
 
 import re
-import sys
+
 
 class Parser:
     r"""Parse an SQL dump into logical lines.
@@ -100,34 +100,29 @@ class Parser:
 
         Something trickier: multiple lines, and a ');' in the middle.
 
-        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (3, 'blah',
-        ... 'blah
-        ... blah);
-        ... blah');
+        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (3, 'b',
+        ... 'b
+        ... b);
+        ... b');
         ... ''')
-        (3, "INSERT INTO foo (id, x) VALUES (3, 'blah',\n'blah\nblah);\nblah');\n")
+        (3, "INSERT INTO foo (id, x) VALUES (3, 'b',\n'b\nb);\nb');\n")
         """
 
         if not line.startswith('INSERT '):
             return (None, line)
+
+        if not self.is_complete_insert_statement(line):
+            raise ValueError("Incomplete line")
 
         insert_pattern = re.compile('''
             ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \((\d+)
             ''', re.X)
         match = insert_pattern.match(line)
 
-        if not match:
-            raise RuntimeError("Failed to parse INSERT statement: " + `line`)
-
-        value = int(match.group(1))
-        end = line[len(match.group(0)):]
-
-        # Make sure that the line is complete.
-
-        if self.is_complete_insert_statement(line):
-            return value, line
+        if match:
+            return int(match.group(1)), line
         else:
-            raise ValueError("Incomplete line")
+            return line, line
 
     def feed(self, s):
         """Give the parser some text to parse."""
@@ -145,6 +140,7 @@ class Parser:
             else:
                 self.lines.append((value, self.line[:-1]))
                 self.line = ''
+
 
 def print_lines_sorted(file, lines):
     r"""Print a set of (value, line) pairs in sorted order.

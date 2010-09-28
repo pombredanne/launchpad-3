@@ -4,8 +4,9 @@ In order to prepare the tests below some initialization is required.
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.database.sqlbase import commit
+    >>> from lp.soyuz.enums import ArchivePermissionType
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IArchivePermissionSet, IPackagesetSet,
+    ...     IArchivePermissionSet, IPackagesetSet,
     ...     IPersonSet, ISourcePackageNameSet)
     >>> from canonical.testing import LaunchpadZopelessLayer
 

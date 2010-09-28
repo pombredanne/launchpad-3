@@ -7,17 +7,20 @@ __metaclass__ = type
 
 
 import logging
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import syncUpdate
+from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.testing.faketransaction import FakeTransaction
 from lp.translations.scripts.copy_distroseries_translations import (
-    copy_distroseries_translations)
-
-from canonical.testing import LaunchpadZopelessLayer
+    copy_distroseries_translations,
+    )
 
 
 class TestCopying(TestCase):

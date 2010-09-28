@@ -9,9 +9,14 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
+    ILibraryFileAliasWithParent,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+
 
 class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
     """Tests for ILibraryFileAliasWithParent."""

@@ -10,18 +10,26 @@ __all__ = [
     ]
 
 import logging
-
-from optparse import Option, OptionValueError
+from optparse import (
+    Option,
+    OptionValueError,
+    )
 
 from zope.component import getUtility
 
 from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import IPersonSet
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    )
 
 
 def check_bool_option(option, opt, value):

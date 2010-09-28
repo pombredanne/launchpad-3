@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 
 class PPAMissingBuilds(LaunchpadScript):

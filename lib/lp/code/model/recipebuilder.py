@@ -14,17 +14,19 @@ from zope.component import adapts
 from zope.interface import implements
 
 from canonical.config import config
-
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
 
 
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):

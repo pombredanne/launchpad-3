@@ -12,17 +12,19 @@ __all__ = [
 from sqlobject import SQLObjectNotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import cursor, sqlvalues
-
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
-
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translations import TranslationConstants
 
 
 def getOrCreatePOMsgID(msgid):

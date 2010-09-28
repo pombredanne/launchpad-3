@@ -11,14 +11,18 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadXMLRPCView,
+    )
+from canonical.launchpad.xmlrpc import faults
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
-from canonical.launchpad.xmlrpc import faults
+
 
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""

@@ -8,7 +8,11 @@ __all__ = ["LPOptionParser"]
 
 from copy import copy
 from datetime import datetime
-from optparse import Option, OptionParser, OptionValueError
+from optparse import (
+    Option,
+    OptionParser,
+    OptionValueError,
+    )
 
 from canonical.launchpad.scripts.logger import logger_options
 

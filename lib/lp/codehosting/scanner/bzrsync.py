@@ -15,19 +15,22 @@ __all__ = [
     ]
 
 import logging
+
 import pytz
 import transaction
-
 from zope.component import getUtility
 from zope.event import notify
 
+from canonical.config import config
+
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
+from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.scanner import events
-from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.branchrevision import IBranchRevisionSet
-from lp.code.interfaces.revision import IRevisionSet
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource,
+    )
+
 
 UTC = pytz.timezone('UTC')
 
@@ -80,13 +83,11 @@ class BzrSync:
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.retrieveDatabaseAncestry())
+        db_ancestry, db_history = self.retrieveDatabaseAncestry()
 
         (added_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history,
-            db_branch_revision_map)
+            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history)
         added_ancestry.difference_update(
             getUtility(IRevisionSet).onlyPresent(added_ancestry))
         self.logger.info("Adding %s new revisions.", len(added_ancestry))
@@ -127,9 +128,8 @@ class BzrSync:
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""
         self.logger.info("Retrieving ancestry from database.")
-        db_ancestry, db_history, db_branch_revision_map = (
-            self.db_branch.getScannerData())
-        return db_ancestry, db_history, db_branch_revision_map
+        db_ancestry, db_history = self.db_branch.getScannerData()
+        return db_ancestry, db_history
 
     def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
@@ -145,7 +145,7 @@ class BzrSync:
         return bzr_ancestry, bzr_history
 
     def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
-                            db_ancestry, db_history, db_branch_revision_map):
+                            db_ancestry, db_history):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
@@ -188,9 +188,8 @@ class BzrSync:
 
         # We must delete BranchRevision rows for all revisions which where
         # removed from the ancestry or whose sequence value has changed.
-        branchrevisions_to_delete = set(
-            db_branch_revision_map[revid]
-            for revid in removed_merged.union(removed_history))
+        branchrevisions_to_delete = list(
+            removed_merged.union(removed_history))
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
@@ -242,13 +241,19 @@ class BzrSync:
         for revision_id in revision_subset.difference(set(bzr_history)):
             yield revision_id, None
 
-    def deleteBranchRevisions(self, branchrevisions_to_delete):
+    def deleteBranchRevisions(self, revision_ids_to_delete):
         """Delete a batch of BranchRevision rows."""
         self.logger.info("Deleting %d branchrevision records.",
-            len(branchrevisions_to_delete))
-        branch_revision_set = getUtility(IBranchRevisionSet)
-        for branchrevision in sorted(branchrevisions_to_delete):
-            branch_revision_set.delete(branchrevision)
+            len(revision_ids_to_delete))
+        # Use a config value to work out how many to delete at a time.
+        # Deleting more than one at a time is significantly more efficient
+        # than doing one at a time, but the actual optimal count is a bit up
+        # in the air.
+        batch_size = config.branchscanner.branch_revision_delete_count
+        while revision_ids_to_delete:
+            batch = revision_ids_to_delete[:batch_size]
+            revision_ids_to_delete[:batch_size] = []
+            self.db_branch.removeBranchRevisions(batch)
 
     def insertBranchRevisions(self, bzr_branch, revids_to_insert):
         """Insert a batch of BranchRevision rows."""

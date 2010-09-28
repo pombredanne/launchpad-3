@@ -9,12 +9,18 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
 
-    <publisher
-       name="blueprints"
-       factory="lp.blueprints.publisher.blueprints_request_publication_factory"/>
+  <include package=".browser"/>
+  <include package=".vocabularies"/>
+
+  <publisher
+      name="blueprints"
+      factory="lp.blueprints.publisher.blueprints_request_publication_factory"/>
+  <utility
+      component="lp.blueprints.publisher.BlueprintsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="blueprints" />
+
 
     <lp:help-folder
         folder="help" type="lp.blueprints.publisher.BlueprintsLayer" />

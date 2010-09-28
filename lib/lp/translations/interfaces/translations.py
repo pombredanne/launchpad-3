@@ -3,7 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+
 
 __metaclass__ = type
 
