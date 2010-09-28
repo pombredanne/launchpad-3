@@ -370,7 +370,7 @@
                     bugtrackertype
                     componentForDistroSourcePackage
                     contactdetails
-                    getAllRemoteComponentGroups
+                    component_groups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
