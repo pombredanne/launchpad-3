@@ -161,7 +161,7 @@ class PoppyTac(TacTestSetup):
     def __init__(self, fs_root):
         self.fs_root = fs_root
         # The setUp check for stale pids races with self._root being assigned,
-        # so store a valid path temporarily. Once all fixtures use unique
+        # so store a plausible path temporarily. Once all fixtures use unique
         # environments this can go.
         self._root = '/var/does/not/exist'
 

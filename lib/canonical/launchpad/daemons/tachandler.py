@@ -134,7 +134,7 @@ class TacTestSetup(Fixture):
         Fixture.setUp(self)
         if get_pid_from_file(self.pidfile):
             # An attempt to run while there was an existing live helper
-            # was made. Note that this races with helpers which use unnique
+            # was made. Note that this races with helpers which use unique
             # roots, so when moving/eliminating this code check subclasses
             # for workarounds and remove those too.
             pid = get_pid_from_file(self.pidfile)
