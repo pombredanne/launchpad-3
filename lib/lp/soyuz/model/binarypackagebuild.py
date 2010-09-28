@@ -251,6 +251,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     @property
@@ -671,6 +672,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             buildduration = 'not available'
             buildlog_url = 'not available'
             builder_url = 'not available'
+        elif self.status == BuildStatus.UPLOADING:
+            buildduration = 'uploading'
+            buildlog_url = 'see builder page'
+            builder_url = 'not available'
         elif self.status == BuildStatus.BUILDING:
             # build in process
             buildduration = 'not finished'
@@ -754,6 +759,10 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # If we are asked to adapt an object that is already a binary
         # package build, then don't hit the db.
         return self
+
+    def getUploader(self, changes):
+        """See `IBinaryPackageBuild`."""
+        return changes.signer
 
 
 class BinaryPackageBuildSet:
@@ -959,11 +968,14 @@ class BinaryPackageBuildSet:
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED & All by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if status in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING]:
             orderBy = ["-BuildQueue.lastscore", "BinaryPackageBuild.id"]
             clauseTables.append('BuildQueue')
             clauseTables.append('BuildPackageJob')
@@ -1079,7 +1091,8 @@ class BinaryPackageBuildSet:
                                 BuildStatus.CHROOTWAIT,
                                 BuildStatus.FAILEDTOUPLOAD)
         needsbuild = collect_builds(BuildStatus.NEEDSBUILD)
-        building = collect_builds(BuildStatus.BUILDING)
+        building = collect_builds(BuildStatus.BUILDING,
+                                  BuildStatus.UPLOADING)
         successful = collect_builds(BuildStatus.FULLYBUILT)
 
         # Note: the BuildStatus DBItems are used here to summarize the
