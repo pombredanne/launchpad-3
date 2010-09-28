@@ -41,6 +41,7 @@ class NoSuchDistroSeries(NameLookupFailed):
     webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such distribution series"
 
+
 # Done
 class UserCannotChangeMembershipSilently(Unauthorized):
     """User not permitted to change membership status silently.
@@ -51,6 +52,7 @@ class UserCannotChangeMembershipSilently(Unauthorized):
     webservice_error(httplib.UNAUTHORIZED)
 
 
+#Done
 class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
     webservice_error(httplib.BAD_REQUEST)

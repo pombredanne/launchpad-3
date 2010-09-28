@@ -51,7 +51,10 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
-from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import (
     IDistributionSet,
     NoSuchDistribution,
@@ -70,10 +73,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet,
-    NoSuchSourcePackageName,
-    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.utils import iter_split
 
