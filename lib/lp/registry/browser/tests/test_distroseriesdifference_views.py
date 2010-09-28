@@ -266,7 +266,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('div', {'class': 'blacklist-options'})))
 
-    def test_blacklist_options_initial_values_NONE(self):
+    def test_blacklist_options_initial_values_none(self):
         ds_diff = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
 
@@ -274,7 +274,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         # as the default value for the field.
         self.assertEqual('NONE', view.initial_values.get('blacklist_options'))
 
-    def test_blacklist_options_initial_values_CURRENT(self):
+    def test_blacklist_options_initial_values_current(self):
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
@@ -283,7 +283,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             view.initial_values.get('blacklist_options'))
 
-    def test_blacklist_options_initial_values_ALWAYS(self):
+    def test_blacklist_options_initial_values_always(self):
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
