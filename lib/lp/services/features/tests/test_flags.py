@@ -174,20 +174,16 @@ class TestStormFeatureRuleSource(TestCase):
 
     layer = layers.DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestStormFeatureRuleSource, self).setUp()
-        if os.environ.get("STORM_TRACE", None):
-            from storm.tracer import debug
-            debug(True)
-        self.source = StormFeatureRuleSource()
-        self.source.setAllRules(test_rules_list)
-
     def test_getAllRulesAsTuples(self):
-        self.assertEquals(list(self.source.getAllRulesAsTuples()),
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        self.assertEquals(list(source.getAllRulesAsTuples()),
             test_rules_list)
 
     def test_getAllRulesAsText(self):
-        self.assertEquals(self.source.getAllRulesAsText(),
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        self.assertEquals(source.getAllRulesAsText(),
             """\
 %s\tbeta_user\t100\t%s
 ui.icing\tbeta_user\t300\t4.0
@@ -195,13 +191,16 @@ ui.icing\tdefault\t100\t3.0
 """ % (notification_name, notification_value))
 
     def test_setAllRulesFromText(self):
-        self.source.setAllRulesFromText("""
+        # We will overwrite existing data.
+        source = StormFeatureRuleSource()
+        source.setAllRules(test_rules_list)
+        source.setAllRulesFromText("""
 
 flag1   beta_user   200   alpha
 flag1   default     100   gamma with spaces
 flag2   default     0\ton
 """)
-        self.assertEquals(self.source.getAllRulesAsDict(), {
+        self.assertEquals(source.getAllRulesAsDict(), {
             'flag1': [
                 ('beta_user', 200, 'alpha'),
                 ('default', 100, 'gamma with spaces'), ],
