@@ -130,7 +130,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.binary_summaries)
 
-    def test_show_blacklist_options_non_ajax(self):
+    def test_show_edit_options_non_ajax(self):
         # Blacklist options are not shown for non-ajax requests.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
@@ -138,9 +138,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         with person_logged_in(ds_diff.owner):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
-        self.assertFalse(view.show_blacklist_options)
+        self.assertFalse(view.show_edit_options)
 
-    def test_show_blacklist_options_editor(self):
+    def test_show_edit_options_editor(self):
         # Blacklist options are shown if requested by an editor via
         # ajax.
         ds_diff = self.factory.makeDistroSeriesDifference()
@@ -149,16 +149,16 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         with person_logged_in(ds_diff.owner):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
-            self.assertTrue(view.show_blacklist_options)
+            self.assertTrue(view.show_edit_options)
 
-    def test_show_blacklist_options_non_editor(self):
+    def test_show_edit_options_non_editor(self):
         # Even with a JS request, non-editors do not see the options.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         view = create_initialized_view(
             ds_diff, '+listing-distroseries-extra', request=request)
-        self.assertFalse(view.show_blacklist_options)
+        self.assertFalse(view.show_edit_options)
 
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):

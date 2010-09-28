@@ -86,7 +86,7 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
                 comment in self.context.getComments()]
 
     @property
-    def show_blacklist_options(self):
+    def show_edit_options(self):
         """Only show the options if an editor requests via JS."""
         return self.request.is_ajax and check_permission(
             'launchpad.Edit', self.context)
