@@ -41,7 +41,7 @@ from lp.code.model.branchnamespace import (
     )
 from lp.registry.errors import (
     NoSuchDistroSeries,
-    NoSuchSourcePackageName
+    NoSuchSourcePackageName,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import NoSuchPerson

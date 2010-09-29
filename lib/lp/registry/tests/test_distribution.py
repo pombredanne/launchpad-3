@@ -12,8 +12,8 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,

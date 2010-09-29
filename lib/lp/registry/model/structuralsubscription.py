@@ -17,11 +17,11 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,

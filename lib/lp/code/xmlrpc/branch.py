@@ -67,6 +67,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 
+
 class IBranchSetAPI(Interface):
     """An XMLRPC interface for dealing with branches.
 

@@ -59,9 +59,7 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet,
     NoSuchDistribution,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,

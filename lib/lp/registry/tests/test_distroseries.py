@@ -26,16 +26,12 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status,
-    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (

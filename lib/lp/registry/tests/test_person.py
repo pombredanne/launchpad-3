@@ -9,9 +9,9 @@ from datetime import datetime
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+from storm.store import Store
 from testtools.matchers import LessThan
 import transaction
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
