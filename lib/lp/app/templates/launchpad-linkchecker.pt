@@ -3,7 +3,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
-  <!-- one way to hook in a script with an onload function-->
   <metal:load-javascript define-macro="check_lp_links"
     tal:define="
         revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
@@ -14,7 +13,6 @@
         tal:attributes="src string:${lp_js}/app/lp-linkchecker.js">
     </script>
 
-    <!-- and another way to hook in some callbacks -->
     <tal:script
     replace="structure
     string:&lt;script id='linkchecker-script' type='text/javascript'&gt;" />
@@ -25,12 +23,8 @@
         return;
     }
 
-    Y.on('load', function() {
-        Y.lp.app.linkchecker.hello("from onload 1");
-    });
-
     Y.on('domready', function() {
-        Y.lp.app.linkchecker.hello("from domready");
+        Y.lp.app.linkchecker.checklinks();
     });
 
     });
