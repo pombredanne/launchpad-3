@@ -232,6 +232,9 @@ class BugWatch(SQLBase):
             not self.getImportedBugMessages().is_empty()):
             raise BugWatchDeletionError(
                 "Can't delete bug watches linked to tasks or comments.")
+        # XXX 2010-09-29 gmb bug=647103
+        #     We flush the store to make sure that errors bubble up and
+        #     are caught by the OOPS machinery.
         SQLBase.destroySelf(self)
         store = Store.of(self)
         store.flush()
