@@ -1870,7 +1870,8 @@ class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
         """getIncrementalDiffs returns the requested values or None.
 
         None is returned if there is no IncrementalDiff for the requested
-        revision pair and branch_merge_proposal."""
+        revision pair and branch_merge_proposal.
+        """
         bmp = self.factory.makeBranchMergeProposal()
         diff1 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
         diff2 = self.factory.makeIncrementalDiff(merge_proposal=bmp)
