@@ -476,8 +476,7 @@ class StructuralSubscriptionTargetMixin:
 
         bugtasks = [
             bugtask for bugtask in bug.bugtasks
-            if bugtask.target in targets
-            ]
+            if bugtask.target in targets]
 
         assert len(bugtasks) != 0, repr(self)
 
@@ -496,7 +495,7 @@ class StructuralSubscriptionTargetMixin:
         conditions = [
             Or(BugSubscriptionFilter.id == None,
                BugSubscriptionFilterStatus.status.is_in(
-                    bugtask.status for bugtask in bugtasks))
+                    bugtask.status for bugtask in bugtasks)),
             ]
 
         return Store.of(self.__helper.pillar).using(*origin).find(
