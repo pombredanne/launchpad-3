@@ -14,10 +14,12 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_write_operation,
     exported,
     operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
@@ -25,6 +27,7 @@ from zope.schema import (
     Bool,
     Choice,
     Int,
+    Text,
     TextLine,
     )
 
@@ -134,7 +137,11 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 class IDistroSeriesDifferenceEdit(Interface):
     """Difference attributes requiring launchpad.Edit."""
 
-    def addComment(owner, comment):
+    @call_with(commenter=REQUEST_USER)
+    @operation_parameters(
+        comment=Text(title=_("Comment text"), required=True))
+    @export_write_operation()
+    def addComment(commenter, comment):
         """Add a comment on this difference."""
 
     @operation_parameters(

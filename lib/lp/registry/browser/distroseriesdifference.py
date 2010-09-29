@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
@@ -19,14 +20,39 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp import LaunchpadFormView
+from canonical.launchpad.webapp import (
+    LaunchpadFormView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
 from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+
+
+class DistroSeriesDifferenceNavigation(Navigation):
+    usedfor = IDistroSeriesDifference
+
+    @stepthrough('comments')
+    def traverse_comment(self, id_str):
+        try:
+            id = int(id_str)
+        except ValueError:
+            return None
+
+        return getUtility(
+            IDistroSeriesDifferenceCommentSource).getForDifference(
+                self.context, id)
 
 
 class IDistroSeriesDifferenceForm(Interface):
@@ -86,7 +112,7 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
                 comment in self.context.getComments()]
 
     @property
-    def show_blacklist_options(self):
+    def show_edit_options(self):
         """Only show the options if an editor requests via JS."""
         return self.request.is_ajax and check_permission(
             'launchpad.Edit', self.context)
@@ -103,7 +129,6 @@ class DistroSeriesDifferenceDisplayComment:
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""
-        self.message_body = comment.comment
-        self.comment_author = comment.message.owner
-        self.comment_date = comment.message.datecreated
-        self.body_text = comment.comment
+        self.comment_author = comment.comment_author
+        self.comment_date = comment.comment_date
+        self.body_text = comment.body_text
