@@ -555,12 +555,14 @@ class FileImporter(object):
                             "Conflicting updates on message %d." % potmsgset.id)
                     # The message remains a suggestion.
                     return None
-            else:
+            elif self.translation_import_queue_entry.from_upstream:
                 # XXX: henninge 2010-09-21: Mixed models!
                 # This is mimicking the old behavior to still mark these messages
                 # as "imported". Will have to be removed when
                 # getPOTMsgSetsWithErrors is updated to the new model.
                 new_message.makeCurrentUpstream(True)
+            else:
+                pass
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
