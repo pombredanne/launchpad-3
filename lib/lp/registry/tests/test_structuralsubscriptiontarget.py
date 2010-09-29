@@ -36,7 +36,6 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
@@ -169,15 +168,13 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
     """Tests for filtered structural subscriptions."""
 
+    def makeBugTask(self):
+        return self.factory.makeBugTask(target=self.target)
+
     def test_getSubscriptionsForBug(self):
         # If no one has a filtered subscription for the given bug, the result
         # of getSubscriptionsForBug() is the same as for getSubscriptions().
-        if IMilestone.providedBy(self.target):
-            bugtask = self.factory.makeBugTask(
-                target=self.target.series_target)
-        else:
-            bugtask = self.factory.makeBugTask(target=self.target)
-
+        bugtask = self.makeBugTask()
         subscriptions = self.target.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.NOTHING)
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
@@ -187,12 +184,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
     def test_getSubscriptionsForBug_with_filter_on_status(self):
         # If a status filter exists for a subscription, the result of
         # getSubscriptionsForBug() may be a subset of getSubscriptions().
-
-        if IMilestone.providedBy(self.target):
-            bugtask = self.factory.makeBugTask(
-                target=self.target.series_target)
-        else:
-            bugtask = self.factory.makeBugTask(target=self.target)
+        bugtask = self.makeBugTask()
 
         # Create a new subscription on self.target.
         login_person(self.ordinary_subscriber)
@@ -325,6 +317,10 @@ class TestStructuralSubscriptionForMilestone(
         self.target = self.factory.makeMilestone()
         self.target = ProxyFactory(self.target)
 
+    def makeBugTask(self):
+        # XXX Should test with target *and* series_target.
+        return self.factory.makeBugTask(target=self.target.series_target)
+
 
 class TestStructuralSubscriptionForDistroSeries(
     UnrestrictedStructuralSubscription,
@@ -339,7 +335,34 @@ class TestStructuralSubscriptionForDistroSeries(
         self.target = ProxyFactory(self.target)
 
 
-# XXX Wot no ProjectGroup or ProductSeries?
+class TestStructuralSubscriptionForProjectGroup(
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionForProjectGroup, self).setUp()
+        self.target = self.factory.makeProject()
+        self.target = ProxyFactory(self.target)
+
+    def makeBugTask(self):
+        return self.factory.makeBugTask(
+            target=self.factory.makeProduct(project=self.target))
+
+
+class TestStructuralSubscriptionForProductSeries(
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionForProductSeries, self).setUp()
+        self.target = self.factory.makeProductSeries()
+        self.target = ProxyFactory(self.target)
 
 
 class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
