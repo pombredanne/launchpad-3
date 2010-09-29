@@ -72,7 +72,10 @@ from lp.code.model.branchmergeproposaljob import (
     MergeProposalCreatedJob,
     UpdatePreviewDiffJob,
     )
-from lp.code.tests.helpers import add_revision_to_branch
+from lp.code.tests.helpers import (
+    add_revision_to_branch,
+    make_merge_proposal_without_reviewers,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
@@ -1012,7 +1015,7 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         # Check the resulting format of the dict.  getVotesForProposals
         # returns a dict mapping merge proposals to a list of votes for that
         # proposal.
-        mp_no_reviews = self.factory.makeBranchMergeProposalWithNoReviewers()
+        mp_no_reviews = make_merge_proposal_without_reviewers(self.factory)
         reviewer = self.factory.makePerson()
         mp_with_reviews = self.factory.makeBranchMergeProposal(
             reviewer=reviewer)
@@ -1509,7 +1512,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_comment_without_a_vote_does_not_create_reference(self):
         """A comment with a vote creates a vote reference."""
         reviewer = self.factory.makePerson()
-        merge_proposal = self.factory.makeBranchMergeProposalWithNoReviewers()
+        merge_proposal = make_merge_proposal_without_reviewers(self.factory)
         merge_proposal.createComment(
             reviewer, 'Message subject', 'Message content')
         self.assertEqual([], list(merge_proposal.votes))

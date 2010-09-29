@@ -16,6 +16,8 @@ In order to test notifications, we need a subscriber for the branch.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
     >>> subscriber = getUtility(IPersonSet).getByEmail(
     ...     'foo.bar@canonical.com')
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
@@ -687,8 +689,8 @@ one without a reviewer.
     >>> source_branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~fred/fooix/feature')
     >>> fooix = getUtility(IProductSet).getByName('fooix')
-    >>> bmp = factory.makeBranchMergeProposalWithNoReviewers(
-    ...     registrant=eric, source_branch=source_branch,
+    >>> bmp = make_merge_proposal_without_reviewers(
+    ...     factory, registrant=eric, source_branch=source_branch,
     ...     target_branch=fooix.development_focus.branch,
     ...     set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
     >>> bmp_url = canonical_url(bmp)

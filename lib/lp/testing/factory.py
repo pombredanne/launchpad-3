@@ -1207,33 +1207,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return proposal
 
-    def makeBranchMergeProposalWithNoReviewers(self, target_branch=None,
-                                registrant=None, set_state=None,
-                                prerequisite_branch=None, product=None,
-                                review_diff=None, initial_comment=None,
-                                source_branch=None, preview_diff=None,
-                                date_created=None, description=None):
-        """ Create a merge proposal with no reviewers.
-
-        See `makeBranchMergeProposal`.
-
-        A newly created merge proposal will, if no reviewer is specified, be
-        set up with a reviewer who is the default for the branch. Some tests
-        require that we have a merge proposal with no reviewer, for those
-        times where all the reviewers have been deleted.
-        """
-
-        bmp = self.makeBranchMergeProposal(target_branch, registrant,
-                                set_state, prerequisite_branch,
-                                product, review_diff,
-                                initial_comment, source_branch,
-                                preview_diff, date_created,
-                                description)
-        #ensure bmp initially has no reviewers
-        for vote in bmp.votes:
-            removeSecurityProxy(vote).destroySelf()
-        return bmp
-
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):
         """Create a BranchSubscription.

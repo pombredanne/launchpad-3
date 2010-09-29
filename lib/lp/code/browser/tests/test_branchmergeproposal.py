@@ -45,6 +45,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -152,7 +153,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # permissions on the merge proposals for adding comments, or
         # nominating reviewers.
         TestCaseWithFactory.setUp(self, user="admin@canonical.com")
-        self.bmp = self.factory.makeBranchMergeProposalWithNoReviewers()
+        self.bmp = make_merge_proposal_without_reviewers(self.factory)
         self.date_generator = time_counter(delta=timedelta(days=1))
 
     def _createComment(self, reviewer, vote):

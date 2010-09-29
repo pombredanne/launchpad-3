@@ -68,6 +68,7 @@ from lp.code.model.branchmergeproposaljob import (
     MergeProposalCreatedJob,
     )
 from lp.code.model.diff import PreviewDiff
+from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
@@ -344,13 +345,10 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
-        bmp = self.factory.makeBranchMergeProposal()
         sender = self.factory.makePerson()
-        bmp.nominateReviewer(sender, bmp.registrant)
+        bmp = self.factory.makeBranchMergeProposal(reviewer=sender)
         email_addr = bmp.address
-        votes = list(bmp.votes)
-        self.assertEqual(bmp.target_branch.code_reviewer, votes[0].reviewer)
-        vote = votes[1]
+        [vote] = list(bmp.votes)
         self.assertEqual(sender, vote.reviewer)
         self.assertTrue(vote.comment is None)
         self.switchDbUser(config.processmail.dbuser)
@@ -360,7 +358,7 @@ class TestCodeHandler(TestCaseWithFactory):
         comment = bmp.all_comments[0]
         self.assertEqual(CodeReviewVote.ABSTAIN, comment.vote)
         self.assertEqual('ebailiwick', comment.vote_tag)
-        vote = list(bmp.votes)[1]
+        [vote] = list(bmp.votes)
         self.assertEqual(sender, vote.reviewer)
         self.assertEqual(comment, vote.comment)
 
@@ -695,15 +693,15 @@ class TestCodeHandler(TestCaseWithFactory):
             None, None)
         # To record the diff in the librarian.
         transaction.commit()
-        bmp = self.factory.makeBranchMergeProposal(preview_diff=preview_diff)
+        bmp = make_merge_proposal_without_reviewers(
+            self.factory, preview_diff=preview_diff)
         eric = self.factory.makePerson(name="eric", email="eric@example.com")
         mail = self.factory.makeSignedMessage(body=' reviewer eric')
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        votes = list(bmp.votes)
-        self.assertEqual(bmp.target_branch.code_reviewer, votes[0].reviewer)
-        self.assertEqual(eric, votes[1].reviewer)
+        [vote] = bmp.votes
+        self.assertEqual(eric, vote.reviewer)
 
     def test_processMergeProposalDefaultReviewer(self):
         # If no reviewer was requested in the comment body, then the default
@@ -1160,7 +1158,7 @@ class TestVoteEmailCommand(TestCase):
 
     def setUp(self):
         super(TestVoteEmailCommand, self).setUp()
-        
+
         class FakeExecutionContext:
             vote = None
             vote_tags = None
@@ -1363,7 +1361,8 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
         super(TestAddReviewerEmailCommand, self).setUp(
             user='test@canonical.com')
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal = (
+            make_merge_proposal_without_reviewers(self.factory))
         # Default the user to be the target branch owner, so they are
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(
@@ -1390,30 +1389,22 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
         # The simple case is to add a reviewer with no tags.
         command = AddReviewerEmailCommand('reviewer', [self.reviewer.name])
         command.execute(self.context)
-        vote_refs = list(self.context.merge_proposal.votes)
-        self.assertEqual(
-            self.context.merge_proposal.target_branch.code_reviewer,
-            vote_refs[0].reviewer)
-        vote_ref_to_check = vote_refs[1]
-        self.assertEqual(self.reviewer, vote_ref_to_check.reviewer)
-        self.assertEqual(self.context.user, vote_ref_to_check.registrant)
-        self.assertIs(None, vote_ref_to_check.review_type)
-        self.assertIs(None, vote_ref_to_check.comment)
+        [vote_ref] = list(self.context.merge_proposal.votes)
+        self.assertEqual(self.reviewer, vote_ref.reviewer)
+        self.assertEqual(self.context.user, vote_ref.registrant)
+        self.assertIs(None, vote_ref.review_type)
+        self.assertIs(None, vote_ref.comment)
 
     def test_add_reviewer_with_tags(self):
         # The simple case is to add a reviewer with no tags.
         command = AddReviewerEmailCommand(
             'reviewer', [self.reviewer.name, 'DB', 'Foo'])
         command.execute(self.context)
-        vote_refs = list(self.context.merge_proposal.votes)
-        self.assertEqual(
-            self.context.merge_proposal.target_branch.code_reviewer,
-            vote_refs[0].reviewer)
-        vote_ref_to_check = vote_refs[1]
-        self.assertEqual(self.reviewer, vote_ref_to_check.reviewer)
-        self.assertEqual(self.context.user, vote_ref_to_check.registrant)
-        self.assertEqual('db foo', vote_ref_to_check.review_type)
-        self.assertIs(None, vote_ref_to_check.comment)
+        [vote_ref] = list(self.context.merge_proposal.votes)
+        self.assertEqual(self.reviewer, vote_ref.reviewer)
+        self.assertEqual(self.context.user, vote_ref.registrant)
+        self.assertEqual('db foo', vote_ref.review_type)
+        self.assertIs(None, vote_ref.comment)
 
     def test_unknown_reviewer(self):
         # An unknown user raises.
