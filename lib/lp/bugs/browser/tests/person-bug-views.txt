@@ -621,7 +621,7 @@ are found.
 Once new_user has subscribed, the related milestones appear.
 
     >>> bug.subscribe(new_user, new_user)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> print pretty(subscribed_bugs_view.getMilestoneWidgetValues())
     [{'checked': False,

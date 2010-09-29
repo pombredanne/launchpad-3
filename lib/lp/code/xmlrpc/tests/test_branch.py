@@ -139,8 +139,9 @@ class TestExpandURL(TestCaseWithFactory):
         # and to the branch associated with the product series 'series' on
         # 'product'.
         product = self.factory.makeProduct()
-        branch = branch=self.factory.makeProductBranch(product=product)
-        series = self.factory.makeSeries(product=product, branch=branch)
+        branch = self.factory.makeProductBranch(product=product)
+        series = self.factory.makeProductSeries(
+            product=product, branch=branch)
         lp_path = '%s/%s' % (product.name, series.name)
         self.assertResolves(lp_path, branch.unique_name, lp_path)
 
@@ -151,7 +152,7 @@ class TestExpandURL(TestCaseWithFactory):
 
     def test_series_has_no_branch(self):
         # A series with no branch resolves to the writable alias.
-        series = self.factory.makeSeries(branch=None)
+        series = self.factory.makeProductSeries(branch=None)
         self.assertOnlyWritableResolves(
             '%s/%s' % (series.product.name, series.name))
 
@@ -317,7 +318,7 @@ class TestExpandURL(TestCaseWithFactory):
         # attributes of a private branch and these tests are running as an
         # anonymous user.
         branch = self.factory.makeAnyBranch(private=True)
-        series = self.factory.makeSeries(branch=branch)
+        series = self.factory.makeProductSeries(branch=branch)
         lp_path='%s/%s' % (series.product.name, series.name)
         self.assertOnlyWritableResolves(lp_path)
 

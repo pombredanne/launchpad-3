@@ -95,7 +95,10 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
         """Get the list of subscriptions to duplicates of this bug."""
         return [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getSubscriptionsFromDuplicates()]
+            for subscription in sorted(
+                self.context.getSubscriptionsFromDuplicates(),
+                key=(lambda subscription: subscription.person.displayname))
+            ]
 
 
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):

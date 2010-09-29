@@ -84,7 +84,7 @@ After approving the nominated bugs, the listing is empty.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> from lp.registry.model.distribution import Distribution
     >>> login('admin@canonical.com')
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')

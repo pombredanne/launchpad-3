@@ -352,7 +352,7 @@ doc/bugactivity.txt for details of the BugActivityItem class).
 
     >>> bug_comment = BugComment(
     ...     index=0, message=message, bugtask=bug_task,
-    ...     display_if_from_bugwatch=True, activity=[activity_item])
+    ...     activity=[activity_item])
 
     >>> for activity in bug_comment.activity:
     ...     print "%s: %s" % (
