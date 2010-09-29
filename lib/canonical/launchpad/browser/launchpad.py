@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -95,7 +95,7 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
     PageTemplateContextsAPI,
