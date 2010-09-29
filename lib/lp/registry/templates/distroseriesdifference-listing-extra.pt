@@ -3,6 +3,18 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   i18n:domain="launchpad">
+
+  <tal:show_options condition="view/show_blacklist_options">
+  <div class="blacklist-options" style="float:right">
+      <dl>
+        <dt>Blacklisted:</dt>
+        <dd>
+          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
+        </dd>
+      </dl>
+  </div>
+  </tal:show_options>
+
   <dl>
     <dt>Binary descriptions:</dt>
       <dd><ul>

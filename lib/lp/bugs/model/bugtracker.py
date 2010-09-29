@@ -208,8 +208,6 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
-    component_groups = SQLMultipleJoin(
-        'BugTrackerComponentGroup', joinColumn='bug_tracker_id', orderBy='name')
 
     _filing_url_patterns = {
         BugTrackerType.BUGZILLA: (
@@ -543,6 +541,17 @@ class BugTracker(SQLBase):
 
         return component_group
 
+    def getAllRemoteComponentGroups(self):
+        """See `IBugTracker`."""
+        component_groups = []
+
+        component_groups = Store.of(self).find(
+            BugTrackerComponentGroup,
+            BugTrackerComponentGroup.bug_tracker == self.id)
+        component_groups = component_groups.order_by(
+            BugTrackerComponentGroup.name)
+        return component_groups
+
     def getRemoteComponentGroup(self, component_group_name):
         """See `IBugTracker`."""
         component_group = None
@@ -788,7 +797,7 @@ class BugTrackerComponentGroup(Storm):
         component = BugTrackerComponent()
         component.name = component_name
         component.component_group = self
-        component.setCustom()
+        component.is_custom = True
 
         store = IStore(BugTrackerComponent)
         store.add(component)

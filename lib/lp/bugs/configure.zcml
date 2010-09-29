@@ -369,6 +369,7 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
+                    component_groups
                     contactdetails
                     component_groups
                     getBugFilingAndSearchLinks
@@ -468,7 +469,7 @@
         <!--BugTrackerComponent -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerComponent">
+            class="lp.bugs.model.bugtracker.BugTrackerComponent">
             <require
                 permission="zope.Public"
                 attributes="
@@ -478,7 +479,7 @@
                     is_custom
                     "/>
             <require
-                permission="launchpad.Edit"
+                permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
@@ -490,7 +491,7 @@
         <!--BugTrackerComponentGroup -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerComponentGroup">
+            class="lp.bugs.model.bugtracker.BugTrackerComponentGroup">
             <require
                 permission="zope.Public"
                 attributes="

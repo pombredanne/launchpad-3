@@ -199,72 +199,6 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
     ]
 
 
-class IBugTrackerComponent(Interface):
-    """The software component in the remote bug tracker.
-
-    Most bug trackers organize bug reports by the software 'component'
-    they affect.  This class provides a mapping of this upstream component
-    to the corresponding source package in the distro.
-    """
-    export_as_webservice_entry()
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    is_visible = Bool(
-        title=_('Is Visible?'),
-        description=_("Should the component be shown in "
-                      "the Launchpad web interface?"),
-        readonly=True)
-    is_custom = Bool(
-        title=_('Is Custom?'),
-        description=_("Was the component added locally in "
-                      "Launchpad?  If it was, we must retain "
-                      "it across updates of bugtracker data."),
-        readonly=True)
-
-    name = exported(
-        Text(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_('The name of a software component'
-                          'in a remote bug tracker')))
-
-# XXX: Bug 644794 will implement this link
-#    distro_source_package = exported(
-#        Reference(
-#            title=_('Distribution Source Package'),
-#            schema=Interface,
-#            description=_('The distribution source package for this '
-#                          'component, if one has been defined.')))
-
-
-class IBugTrackerComponentGroup(Interface):
-    """A collection of components in a remote bug tracker.
-
-    Some bug trackers organize sets of components into higher level groups,
-    such as Bugzilla's 'product'.
-    """
-    export_as_webservice_entry()
-
-    id = Int(title=_('ID'))
-    name = exported(
-        Text(
-            title=_('Name'),
-            constraint=name_validator,
-            description=_('The name of the bug tracker product.')))
-    components = exported(
-        Reference(title=_('Components'), schema=IBugTrackerComponent))
-    bug_tracker = exported(
-        Reference(title=_('BugTracker'), schema=Interface)) # Specify later
-
-    @operation_parameters(
-        component_name=TextLine(
-            title=u"The name of the remote software component to be added",
-            required=True))
-    @export_write_operation()
-    def addComponent(component_name):
-        """Adds a component to be tracked as part of this component group"""
-
-
 class IBugTracker(Interface):
     """A remote bug system."""
     export_as_webservice_entry()
@@ -336,10 +270,6 @@ class IBugTracker(Interface):
             required=False, default=False))
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
-    component_groups = exported(
-        Reference(
-            title=_('ComponentGroups'),
-            schema=IBugTrackerComponentGroup))
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
@@ -433,19 +363,18 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    def getAllRemoteComponentGroups():
+        """Return collection of all component groups for this bug tracker"""
+
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
-    @operation_returns_entry(IBugTrackerComponentGroup)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
 
         :param component_group_name: Name of the component group to retrieve.
         """
-
-# We can define the schema now that IBugTracker is defined
-IBugTrackerComponentGroup['bug_tracker'].schema = IBugTracker
 
 
 class IBugTrackerSet(Interface):
@@ -557,6 +486,72 @@ class IBugTrackerAliasSet(Interface):
 
     def queryByBugTracker(bugtracker):
         """Query IBugTrackerAliases by BugTracker."""
+
+
+class IBugTrackerComponent(Interface):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    is_visible = Bool(
+        title=_('Is Visible?'),
+        description=_("Should the component be shown in "
+                      "the Launchpad web interface?"),
+        readonly=True)
+    is_custom = Bool(
+        title=_('Is Custom?'),
+        description=_("Was the component added locally in "
+                      "Launchpad?  If it was, we must retain "
+                      "it across updates of bugtracker data."),
+        readonly=True)
+
+    name = exported(
+        Text(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of a software component'
+                          'in a remote bug tracker')))
+
+# XXX: Bug 644794 will implement this link
+#    distro_source_package = exported(
+#        Reference(
+#            title=_('Distribution Source Package'),
+#            schema=Interface,
+#            description=_('The distribution source package for this '
+#                          'component, if one has been defined.')))
+
+
+class IBugTrackerComponentGroup(Interface):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'))
+    name = exported(
+        Text(
+            title=_('Name'),
+            constraint=name_validator,
+            description=_('The name of the bug tracker product.')))
+    components = exported(
+        Reference(title=_('Components'), schema=IBugTrackerComponent))
+    bug_tracker = exported(
+        Reference(title=_('BugTracker'), schema=IBugTracker))
+
+    @operation_parameters(
+        component_name=TextLine(
+            title=u"The name of the remote software component to be added",
+            required=True))
+    @export_write_operation()
+    def addComponent(component_name):
+        """Adds a component to be tracked as part of this component group"""
 
 
 class IRemoteBug(Interface):

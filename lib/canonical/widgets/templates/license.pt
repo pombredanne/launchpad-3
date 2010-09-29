@@ -245,7 +245,7 @@ YUI().use('node', 'lazr.effects', function(Y) {
             voucher management page</a>.
         </li>
       </ol>
-      <a href="mailto:feedback@launchpad.net">Contact us</a>
+      <a href="mailto:commercial@launchpad.net">Contact us</a>
       for more information regarding commercial subscriptions.
     </div>
 </div>

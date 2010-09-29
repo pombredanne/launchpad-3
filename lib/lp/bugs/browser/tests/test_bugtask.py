@@ -6,16 +6,12 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from contextlib import nested
 from doctest import DocTestSuite
 import unittest
 
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+from testtools.matchers import LessThan
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -33,7 +29,6 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
-    BugTaskView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
@@ -62,23 +57,23 @@ class TestBugTaskView(TestCaseWithFactory):
 
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
-        bugtask = self.factory.makeBugTask()
+        task = self.factory.makeBugTask()
         person_no_teams = self.factory.makePerson(password='test')
         person_with_teams = self.factory.makePerson(password='test')
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
-        url = canonical_url(bugtask)
+        url = canonical_url(task)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in there.
-        self.assertThat(recorder, HasQueryCount(LessThan(64)))
+        self.assertThat(recorder, HasQueryCount(LessThan(62)))
         count_with_no_teams = recorder.count
         # count with many teams
-        self.invalidate_caches(bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, person_with_teams)
         # Allow an increase of one because storm bug 619017 causes additional
         # queries, revalidating things unnecessarily. An increase which is

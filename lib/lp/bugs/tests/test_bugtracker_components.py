@@ -13,7 +13,6 @@ from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
-
 class TestBugTrackerComponent(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -101,7 +100,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
         self.assertEqual(comp_group, None)
 
         # Verify it contains no component groups
-        comp_groups = self.bug_tracker.component_groups
+        comp_groups = self.bug_tracker.getAllRemoteComponentGroups()
         self.assertEqual(len(list(comp_groups)), 0)
 
     def test_single_product_bugtracker(self):

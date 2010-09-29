@@ -272,3 +272,8 @@ class DistroSeriesDifference(Storm):
             self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
         else:
             self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+
+    def unblacklist(self):
+        """See `IDistroSeriesDifference`."""
+        self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        self.update()
