@@ -14,6 +14,7 @@ from canonical.launchpad.browser.feeds import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
+from canonical.launchpad.browser.linkchecker import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.oauth import *
 from canonical.launchpad.browser.packagerelationship import *

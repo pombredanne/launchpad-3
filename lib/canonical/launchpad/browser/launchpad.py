@@ -65,6 +65,9 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from canonical.launchpad.interfaces.linkchecker import (
+    ILinkCheckerAPI,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
@@ -604,6 +607,7 @@ class LaunchpadRootNavigation(Navigation):
         'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         'temporary-blobs': ITemporaryStorageManager,
+        '+check-links':ILinkCheckerAPI,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

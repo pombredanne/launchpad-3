@@ -11,15 +11,4 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
-
-  <class class="lp.app.browser.linkchecker.LinkCheckerAPI">
-    <allow interface="lp.app.browser.linkchecker.ILinkCheckerAPI"/>
-  </class>
-
-  <browser:url
-     for="lp.app.browser.linkchecker.ILinkCheckerAPI"
-     path_expression="string:check-links"
-     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
 </configure>
