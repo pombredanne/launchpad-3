@@ -519,6 +519,8 @@ class FileImporter(object):
             self.pofile.language.pluralforms)
         if potmsgset.is_translation_credit:
             # Translation credits cannot be added as suggestions.
+            if not self.translation_import_queue_entry.from_upstream:
+                return None
             new_message = potmsgset.setCurrentTranslation(
                 self.pofile, self.last_translator, sanitized_translations,
                 RosettaTranslationOrigin.SCM, self.share_with_other_side)
