@@ -49,7 +49,8 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         # The comment author just proxies the author from the message.
         dsd_comment = self.factory.makeDistroSeriesDifferenceComment()
 
-        self.assertEqual(dsd_comment.message.owner, dsd_comment.comment_author)
+        self.assertEqual(
+            dsd_comment.message.owner, dsd_comment.comment_author)
 
     def test_comment_date(self):
         # The comment date attribute just proxies from the message.
@@ -67,4 +68,3 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         self.assertEqual(
             dsd_comment, comment_src.getForDifference(
                 dsd_comment.distro_series_difference, dsd_comment.id))
-

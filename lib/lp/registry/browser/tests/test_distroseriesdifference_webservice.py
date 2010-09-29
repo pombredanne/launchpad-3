@@ -8,7 +8,6 @@ __metaclass__ = type
 import transaction
 
 from lazr.restfulclient.errors import Unauthorized
-from storm.store import Store
 from zope.component import getUtility
 
 from canonical.testing import AppServerLayer
@@ -18,7 +17,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.testing import (
-    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
