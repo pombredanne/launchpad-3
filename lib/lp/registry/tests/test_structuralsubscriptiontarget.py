@@ -222,7 +222,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.assertEqual([subscription], list(subscriptions_for_bug))
 
     def test_getSubscriptionsForBug_with_filter_on_importance(self):
-        # If a status filter exists for a subscription, the result of
+        # If an importance filter exists for a subscription, the result of
         # getSubscriptionsForBug() may be a subset of getSubscriptions().
         bugtask = self.makeBugTask()
 
@@ -250,6 +250,46 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.assertEqual([], list(subscriptions_for_bug))
 
         # If the filter is adjusted, the subscription is found again.
+        subscription_filter_importance.importance = bugtask.importance
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_multiple_filters(self):
+        # If multiple filters exist for a subscription, all filters must
+        # match.
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+
+        # Filter the subscription to bugs in the CRITICAL state.
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = subscription
+        subscription_filter_status = BugSubscriptionFilterStatus()
+        subscription_filter_status.filter = subscription_filter
+        subscription_filter_status.status = BugTaskStatus.CONFIRMED
+        subscription_filter_importance = BugSubscriptionFilterImportance()
+        subscription_filter_importance.filter = subscription_filter
+        subscription_filter_importance.importance = BugTaskImportance.CRITICAL
+
+        # With the filter the subscription is not found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted to match status but not importance, the
+        # subscription is still not found.
+        subscription_filter_status.status = bugtask.status
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted to also match importance, the subscription
+        # is found again.
         subscription_filter_importance.importance = bugtask.importance
         subscriptions_for_bug = self.target.getSubscriptionsForBug(
             bugtask.bug, BugNotificationLevel.NOTHING)
