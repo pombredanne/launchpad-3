@@ -29,7 +29,7 @@ class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
     webservice_error(httplib.FORBIDDEN)
 
-    
+
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(httplib.CONFLICT)
@@ -91,6 +91,7 @@ class MirrorNotProbed(CannotTransitionToCountryMirror):
     Raised when a user tries to set an official mirror as a country mirror,
     however the mirror has not been probed yet.
     """
+
 
 class DeleteSubscriptionError(Exception):
     """Delete Subscription Error.

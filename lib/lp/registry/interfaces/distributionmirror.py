@@ -148,13 +148,13 @@ class MirrorSpeed(DBEnumeratedType):
     S2G = DBItem(90, """
         2 Gbps
 
-        The upstream link of this mirror can make up to 2 gigabit per second.
+        The upstream link of this mirror can make up to 2 gigabits per second.
         """)
 
     S4G = DBItem(100, """
         4 Gbps
 
-        The upstream link of this mirror can make up to 4 gigabit per second.
+        The upstream link of this mirror can make up to 4 gigabits per second.
         """)
 
     S10G = DBItem(110, """
@@ -316,7 +316,8 @@ class IDistributionMirror(Interface):
     owner = exported(PublicPersonChoice(
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
         required=True, description=_(
-            "The person who is set as the current administrator of this mirror.")))
+            "The person who is set as the current administrator of this"
+            "mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -418,7 +419,7 @@ class IDistributionMirror(Interface):
     @operation_parameters(country_dns_mirror=copy_field(country_dns_mirror))
     @export_write_operation()
     def transitionToCountryMirror(country_dns_mirror):
-       """Method run on changing country_dns_mirror."""
+        """Method run on changing country_dns_mirror."""
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -553,7 +554,6 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
-
 
 
 class UnableToFetchCDImageFileList(Exception):

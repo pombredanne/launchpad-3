@@ -1256,7 +1256,7 @@ class Person(
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:
-                pass 
+                pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:

@@ -355,7 +355,8 @@ class DistributionMirror(SQLBase):
         if mirror is not None:
             mirror.destroySelf()
 
-    def _getMirrorDistroArchSeries(self, distro_arch_series, pocket, component):
+    def _getMirrorDistroArchSeries(
+        self, distro_arch_series, pocket, component):
         """Return MirrorDistroArchSeries given a arch series and pocket."""
 
         return IStore(MirrorDistroArchSeries).find(
@@ -527,7 +528,7 @@ class DistributionMirror(SQLBase):
 class DistributionMirrorSet:
     """See IDistributionMirrorSet"""
 
-    implements (IDistributionMirrorSet)
+    implements(IDistributionMirrorSet)
 
     def __getitem__(self, mirror_id):
         """See IDistributionMirrorSet"""
@@ -654,7 +655,7 @@ class _MirrorSeriesMixIn:
         (MirrorFreshness.SIXHOURSBEHIND, 6.5),
         (MirrorFreshness.ONEDAYBEHIND, 24.5),
         (MirrorFreshness.TWODAYSBEHIND, 48.5),
-        (MirrorFreshness.ONEWEEKBEHIND, 168.5)
+        (MirrorFreshness.ONEWEEKBEHIND, 168.5),
         ]
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
@@ -801,7 +802,6 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
             query, clauseTables=['BinaryPackageFile'],
             orderBy='-datepublished')
 
-
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
         """Given a BinaryPackagePublishingHistory, return the URL on
         this mirror from where the BinaryPackageRelease file can be downloaded.
@@ -882,4 +882,3 @@ class MirrorProbeRecord(SQLBase):
     log_file = ForeignKey(
         dbName='log_file', foreignKey='LibraryFileAlias', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-

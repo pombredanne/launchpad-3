@@ -62,7 +62,6 @@ from lazr.restful.declarations import (
     rename_parameters_as,
     REQUEST_USER,
     )
-from lazr.restful.error import expose
 from lazr.restful.fields import (
     CollectionField,
     Reference,
@@ -117,7 +116,6 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.errors import (
-    NameAlreadyTaken,
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.gpg import IGPGKey

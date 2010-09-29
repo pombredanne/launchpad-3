@@ -23,7 +23,6 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from lp.app.errors import NameLookupFailed
 
 
 class ISourcePackageName(Interface):
@@ -52,7 +51,8 @@ class ISourcePackageNameSet(Interface):
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
-        If the sourcepackagename can't be found a NotFoundError will be raised.
+        If the sourcepackagename can't be found a NotFoundError will be
+        raised.
         """
 
     def getAll():

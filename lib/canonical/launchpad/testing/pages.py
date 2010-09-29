@@ -329,7 +329,7 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
+    buttons = main.findAll(
         'input', {'name': 'field.%s' % name})
     for button in buttons:
         if button.parent.name == 'label':

@@ -88,7 +88,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
-    SpecificationSort,
     )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,

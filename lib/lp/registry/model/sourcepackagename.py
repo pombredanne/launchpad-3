@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'getSourcePackageDescriptions'
-]
+    'getSourcePackageDescriptions',
+    ]
 
 from sqlobject import (
     SQLMultipleJoin,
@@ -155,4 +155,3 @@ def getSourcePackageDescriptions(
                 description = ", %s" % binarypackagename
             descriptions[sourcepackagename] += description
     return descriptions
-

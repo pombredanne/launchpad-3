@@ -300,7 +300,7 @@ class PersonalNamespace(_BaseNamespace):
     @property
     def name(self):
         """See `IBranchNamespace`."""
-        return '~%s/+junk' % (self.owner.name,)
+        return '~%s/+junk' % self.owner.name
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""
