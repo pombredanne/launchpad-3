@@ -261,12 +261,10 @@ class TestSanitizeTranslations(TestCase):
         # Some languages don't provide a plural form, so 2 is assumed.
         translations = {
             0: u'Plural form 0  ',
-            1: u'Plural form 1  ',
-            2: u'Plural form 2  ',
             }
         expected_sanitized = {
-            0: u'Plural\nform 0',
-            1: u'Plural\nform 1',
+            0: u'Plural form 0',
+            1: None,
             }
         self.assertEqual(
             expected_sanitized,
