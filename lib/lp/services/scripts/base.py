@@ -140,8 +140,6 @@ class LaunchpadScript:
         self.options, self.args = self.parser.parse_args(args=test_args)
         self.logger = scripts.logger(self.options, name)
 
-        self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
-
     #
     # Hooks that we expect users to redefine.
     #
@@ -189,6 +187,10 @@ class LaunchpadScript:
         """
         return "launchpad-%s.lock" % self.name
 
+    @property
+    def lockfilepath(self):
+        return os.path.join(LOCK_PATH, self.lockfilename)
+
     def setup_lock(self):
         """Create lockfile.
 
@@ -234,8 +236,10 @@ class LaunchpadScript:
         self.lock.release(skip_delete=skip_delete)
 
     def run(self, use_web_security=False, implicit_begin=True,
-            isolation=ISOLATION_LEVEL_DEFAULT):
+            isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+        if isolation is None:
+            isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
         self._init_db(implicit_begin=implicit_begin, isolation=isolation)
 
@@ -297,8 +301,9 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
-        """Initialize, and sys.exit() if the cronscript is disabled.
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=None):
+        """Run if the cronscript is not disabled by the control file.
 
         Rather than hand editing crontab files, cronscripts can be
         enabled and disabled using a config file.
@@ -306,12 +311,12 @@ class LaunchpadCronScript(LaunchpadScript):
         The control file location is specified by
         config.canonical.cron_control_file.
         """
-        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
-
         enabled = cronscript_enabled(
             config.canonical.cron_control_file, self.name, self.logger)
         if not enabled:
             sys.exit(0)
+        super(LaunchpadCronScript, self).run(
+            use_web_security, implicit_begin, isolation)
 
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""

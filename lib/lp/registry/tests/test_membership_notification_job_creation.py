@@ -22,6 +22,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class CreateMembershipNotificationJobTest(TestCaseWithFactory):
@@ -48,9 +49,9 @@ class CreateMembershipNotificationJobTest(TestCaseWithFactory):
             str(jobs))
 
     def test_setstatus_silent(self):
-        login('admin@canonical.com')
         person_set = getUtility(IPersonSet)
-        admin = person_set.getByEmail('admin@canonical.com')
+        admin = person_set.getByEmail(ADMIN_EMAIL)
+        login_person(admin)
         self.team.addMember(self.person, self.team.teamowner)
         membership_set = getUtility(ITeamMembershipSet)
         tm = membership_set.getByPersonAndTeam(self.person, self.team)

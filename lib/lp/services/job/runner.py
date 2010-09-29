@@ -446,13 +446,17 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
+    config_name = None
+
     def __init__(self, runner_class=JobRunner, test_args=None,
                  script_name=None):
-        self.dbuser = getattr(config, self.config_name).dbuser
         if script_name is None:
             script_name = self.config_name
+        # The dbuser is set in run(), since the config_name might not
+        # be set until the command-line arguments can be processed using
+        # the OptionParser set up by LaunchpadScript.__init__().
         super(JobCronScript, self).__init__(
-            script_name, self.dbuser, test_args)
+            script_name, None, test_args)
         self.runner_class = runner_class
 
     def job_counts(self, jobs):
@@ -461,6 +465,12 @@ class JobCronScript(LaunchpadCronScript):
         for job in jobs:
             counts[job.__class__.__name__] += 1
         return sorted(counts.items())
+
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=None):
+        self.dbuser = getattr(config, self.config_name).dbuser
+        super(JobCronScript, self).run(
+            use_web_security, implicit_begin, isolation)
 
     def main(self):
         section = config[self.config_name]

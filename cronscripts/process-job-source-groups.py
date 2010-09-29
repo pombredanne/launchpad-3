@@ -47,6 +47,13 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
             '-e', '--exclude', dest='excluded_job_sources',
             metavar="JOB_SOURCE", default=[], action='append',
             help="Exclude specific job sources.")
+        self.parser.add_option(
+            '--wait', dest='do_wait', default=False, action='store_true',
+            help="Wait for the child processes to finish. This is useful "
+                 "for testing, but it shouldn't be used in a cronjob, since "
+                 "it would prevent the cronjob from processing new jobs "
+                 "if just one of the child processes is still processing, "
+                 "and each process only handles a single job source class.")
 
     def main(self):
         selected_groups = self.args

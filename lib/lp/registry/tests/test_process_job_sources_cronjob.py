@@ -12,6 +12,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -28,21 +29,20 @@ class ProcessJobSourceTest(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def _run(self, *args):
-        script = os.path.join(
-            config.root, 'cronscripts', 'process-job-source.py')
-        cmd = [script] + list(args)
-        process = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        (stdout, empty_stderr) = process.communicate()
-        return stdout
+        returncode, stdout, stderr = run_script(
+            'cronscripts/process-job-source.py', list(args))
+        return stdout + stderr
 
     def test_missing_argument(self):
+        # The script should display usage info when called without any
+        # arguments.
         output = self._run()
         self.assertIn('Usage:', output)
         self.assertIn('process-job-source.py [options] JOB_SOURCE', output)
 
     def test_empty_queue(self):
+        # The script should just create a lockfile and exit if no jobs
+        # are in the queue.
         output = self._run('IMembershipNotificationJobSource')
         expected = (
             'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
@@ -51,6 +51,7 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         self.assertEqual(expected, output)
 
     def test_processed(self):
+        # The script should output the number of jobs it processed.
         person = self.factory.makePerson(name='murdock')
         team = self.factory.makeTeam(name='a-team')
         login_person(team.teamowner)
@@ -73,16 +74,13 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def _run(self, *args):
-        script = os.path.join(
-            config.root, 'cronscripts', 'process-job-source-groups.py')
-        cmd = [script] + list(args)
-        process = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        (stdout, empty_stderr) = process.communicate()
-        return stdout
+        returncode, stdout, stderr = run_script(
+            'cronscripts/process-job-source-groups.py', list(args))
+        return stdout + stderr
 
     def test_missing_argument(self):
+        # The script should display usage info when called without any
+        # arguments.
         output = self._run()
         self.assertIn(
             ('Usage: process-job-source-groups.py '
@@ -94,6 +92,8 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
                       output)
 
     def test_empty_queue(self):
+        # The script should just create a lockfile, launch a child for
+        # each job source class, and then exit if no jobs are in the queue.
         output = self._run('MAIN')
         expected = (
             'INFO    Creating lockfile: /var/lock/launchpad-'
@@ -104,6 +104,8 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         self.assertEqual(expected, output)
 
     def test_processed(self):
+        # The script should output the number of jobs that have been
+        # processed by its child processes.
         person = self.factory.makePerson(name='murdock')
         team = self.factory.makeTeam(name='a-team')
         login_person(team.teamowner)
