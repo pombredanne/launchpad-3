@@ -9,28 +9,28 @@
     i18n_domain="launchpad">
 
   <class class="canonical.launchpad.database.LibraryFileAlias">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileAlias" />
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAlias" />
   </class>
 
   <class class="canonical.launchpad.database.LibraryFileAliasWithParent">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileAliasWithParent" />
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent" />
     <require
       permission="launchpad.Edit"
       set_attributes="restricted" />
   </class>
 
   <class class="canonical.launchpad.database.LibraryFileContent">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileContent" />
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileContent" />
   </class>
 
   <securedutility
     class="canonical.launchpad.database.LibraryFileAliasSet"
-    provides="canonical.launchpad.interfaces.ILibraryFileAliasSet">
-    <allow interface="canonical.launchpad.interfaces.ILibraryFileAliasSet" />
+    provides="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet">
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet" />
   </securedutility>
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ILibraryFileAlias"
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
     name="+index"
     />
 
@@ -38,14 +38,14 @@
     name="+index"
     facet="overview"
     permission="zope.Public"
-    for="canonical.launchpad.interfaces.ILibraryFileAlias"
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
     class="canonical.launchpad.browser.LibraryFileAliasView"
     />
 
   <browser:page
     name="+md5"
     permission="zope.Public"
-    for="canonical.launchpad.interfaces.ILibraryFileAlias"
+    for="canonical.launchpad.interfaces.librarian.ILibraryFileAlias"
     class="canonical.launchpad.browser.LibraryFileAliasMD5View"
     />
 

@@ -11,7 +11,7 @@
   <!-- TemporaryBlobStorage -->
   <class class="canonical.launchpad.database.TemporaryBlobStorage">
     <allow
-      interface="canonical.launchpad.interfaces.ITemporaryBlobStorage" />
+      interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage" />
   </class>
 
   <browser:page
@@ -26,14 +26,14 @@
   <!-- TemporaryStorageManager -->
   <class class="canonical.launchpad.database.TemporaryStorageManager">
     <allow
-      interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+      interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
   </class>
 
   <securedutility
       class="canonical.launchpad.database.TemporaryStorageManager"
-      provides="canonical.launchpad.interfaces.ITemporaryStorageManager">
+      provides="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager">
       <allow
-        interface="canonical.launchpad.interfaces.ITemporaryStorageManager" />
+        interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
   </securedutility>
 
   <browser:navigation
@@ -44,12 +44,12 @@
   <browser:url
       for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage"
       urldata="canonical.launchpad.browser.temporaryblobstorage.TemporaryBlobStorageURL"
-      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
+      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
       path_expression="string:temporary-blobs/${uuid}"
       />
 
   <browser:url
       for="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager"
       path_expression="string:temporary-blobs"
-      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
+      parent_utility="canonical.launchpad.interfaces.launchpad.IWebServiceApplication"/>
 </configure>

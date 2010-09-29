@@ -155,7 +155,7 @@
 
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
-      provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
+      provides="canonical.launchpad.interfaces.launchpad.ILaunchpadCelebrities">
   </utility>
 
   <browser:page
@@ -323,11 +323,11 @@
 <class
     class="canonical.launchpad.utilities.personroles.PersonRoles">
     <allow
-        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+        interface="canonical.launchpad.interfaces.launchpad.IPersonRoles"/>
 </class>
 <adapter
     for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.IPersonRoles"
+    provides="canonical.launchpad.interfaces.launchpad.IPersonRoles"
     factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
@@ -372,7 +372,7 @@ these URLs in Apache.
   permission="zope.Public"
   />
 <xmlrpc:view
-  for="canonical.launchpad.interfaces.IRosettaApplication"
+  for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
   interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
   class="canonical.launchpad.xmlrpc.RosettaSelfTest"
   permission="zope.Public"
@@ -401,7 +401,7 @@ these URLs in Apache.
 </class>
 
 <class class="canonical.launchpad.mailnotification.NotificationRecipientSet">
-  <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
+  <allow interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet" />
 </class>
 
 </configure>

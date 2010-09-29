@@ -12,7 +12,7 @@
 
     <!-- BinaryAndSourcePackagename -->
     <class class="canonical.launchpad.database.BinaryAndSourcePackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
+        <allow interface="lp.soyuz.interfaces.binarypackagename.IBinaryAndSourcePackageName" />
     </class>
 
     <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">

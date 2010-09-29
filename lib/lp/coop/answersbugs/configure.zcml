@@ -10,7 +10,7 @@
 <facet facet="answers">
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugTask
+   for="lp.bugs.interfaces.bugtask.IBugTask
         lazr.lifecycle.interfaces.IObjectModifiedEvent"
    handler=".notification.dispatch_linked_question_notifications"
    />

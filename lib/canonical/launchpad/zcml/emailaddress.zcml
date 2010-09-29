@@ -17,18 +17,18 @@
             attributes="email" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IEmailAddress"
+            set_schema="canonical.launchpad.interfaces.emailaddress.IEmailAddress"
             attributes="destroySelf syncUpdate" />
     </class>
 
     <securedutility
         class="canonical.launchpad.database.EmailAddressSet"
-        provides="canonical.launchpad.interfaces.IEmailAddressSet">
-        <allow interface="canonical.launchpad.interfaces.IEmailAddressSet" />
+        provides="canonical.launchpad.interfaces.emailaddress.IEmailAddressSet">
+        <allow interface="canonical.launchpad.interfaces.emailaddress.IEmailAddressSet" />
     </securedutility>
 
     <browser:url
-        for="canonical.launchpad.interfaces.IEmailAddress"
+        for="canonical.launchpad.interfaces.emailaddress.IEmailAddress"
         path_expression="string:+email/${email}"
         rootsite="api"
         attribute_to_parent="person" />
