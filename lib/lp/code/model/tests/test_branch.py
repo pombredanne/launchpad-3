@@ -1595,15 +1595,14 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
         # There should be one pending vote for the reviewer with the specified
         # review type.
-        votes = list(proposal.votes)
-        self.assertEqual(1, len(votes))
-        self.assertEqual(reviewer, votes[0].reviewer)
-        self.assertEqual(self.user, votes[0].registrant)
-        self.assertIs(None, votes[0].comment)
+        [vote] = list(proposal.votes)
+        self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual(self.user, vote.registrant)
+        self.assertIs(None, vote.comment)
         if review_type is None:
-            self.assertIs(None, votes[0].review_type)
+            self.assertIs(None, vote.review_type)
         else:
-            self.assertEqual(review_type, votes[0].review_type)
+            self.assertEqual(review_type, vote.review_type)
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
