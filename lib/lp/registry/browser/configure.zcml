@@ -499,6 +499,12 @@
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageFormatterAPI"
         name="fmt"
         />
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.registry.browser.sourcepackage.SourcePackageFormatterAPI"
+        name="fmt"
+        />
     <browser:url
         for="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"
         path_expression="string:+commercialsubscription/${id}"
