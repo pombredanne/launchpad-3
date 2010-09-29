@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugzillaRemoteComponentFinder',
+    'BugzillaComponentScraper',
     ]
 
 import re
@@ -19,7 +20,8 @@ from BeautifulSoup import BeautifulSoup
 from canonical.launchpad.scripts.logger import log as default_log
 
 
-class BugzillaRemoteComponentFinder:
+class BugzillaRemoteComponentScraper:
+    """Scrapes Bugzilla query.cgi page for lists of products and components"""
 
     re_cpts = re.compile(r'cpts\[(\d+)\] = \[(.*)\]')
     re_vers = re.compile(r'vers\[(\d+)\] = \[(.*)\]')
@@ -34,6 +36,8 @@ class BugzillaRemoteComponentFinder:
         elif (bzurl == "https://bugzilla.mozilla.org/"):
             bzurl = " https://bugzilla.mozilla.org"
 
+        #TODO: All the sampledata urls are failing, just force it to fdo for now
+        bzurl = "https://bugzilla.freedesktop.org"
         self.url = "%s/query.cgi?format=advanced" %(bzurl)
 
     def _getPage(self, url):
@@ -50,7 +54,7 @@ class BugzillaRemoteComponentFinder:
                 }
         return items_dict
 
-    def retrieveProducts(self):
+    def parsePage(self, page):
         try:
             body = self._getPage(self.url)
             soup = BeautifulSoup(body)
@@ -88,3 +92,14 @@ class BugzillaRemoteComponentFinder:
         for product in products:
             product_name = product['name']
             self.products[product_name] = product
+
+class BugzillaRemoteComponentFinder:
+    """Updates remote components for all Bugzillas registered in Launchpad"""
+
+    def __init__(self, txn, logger=None):
+        self.txn = txn
+        self.logger = logger
+        if logger is None:
+            self.logger = default_log
+
+    
