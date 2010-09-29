@@ -321,22 +321,30 @@ class BaseLayer:
         BaseLayer.test_name = None
         BaseLayer.check()
 
-        for loop in range(0,100):
-            # Check for tests that leave live threads around early.
-            # A live thread may be the cause of other failures, such as
-            # uncollectable garbage.
-            new_threads = [
+        def new_live_threads():
+            return [
                 thread for thread in threading.enumerate()
-                if thread not in BaseLayer._threads and thread.isAlive()
-                ]
-            if not new_threads:
-                break
-            for new_thread in new_threads:
-                new_thread.join(0.1)
-                if new_thread.isAlive():
-                    # Trigger full garbage collection that might be blocking
-                    # threads from exiting.
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+
+        if BaseLayer.disable_thread_check:
+            new_threads = new_live_threads()
+        else:
+            for loop in range(0,100):
+                # Check for tests that leave live threads around early.
+                # A live thread may be the cause of other failures, such as
+                # uncollectable garbage.
+                new_threads = new_live_threads()
+                has_live_threads = False
+                for new_thread in new_threads:
+                    new_thread.join(0.1)
+                    if new_thread.isAlive():
+                        has_live_threads = True
+                if has_live_threads:
+                    # Trigger full garbage collection that might be
+                    # blocking threads from exiting.
                     gc.collect()
+                else:
+                    break
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop
