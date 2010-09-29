@@ -89,7 +89,7 @@ class BugWatchEditForm(Interface):
                       "forwarded (as a mailto: URL)."))
 
 
-class BugWatchEditView(LaunchpadFormView, BugWatchView):
+class BugWatchEditView(LaunchpadFormView):
     """View for editing a bug watch."""
 
     schema = BugWatchEditForm
@@ -132,11 +132,9 @@ class BugWatchEditView(LaunchpadFormView, BugWatchView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        imported_messages = getUtility(IBugMessageSet).getImportedBugMessages(
-            self.context.bug)
         return (
             len(self.context.bugtasks) == 0 and
-            imported_messages.count() == 0)
+            self.context.getImportedBugMessages().is_empty())
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):
