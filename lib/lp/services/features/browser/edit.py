@@ -20,7 +20,11 @@ from zope.schema import (
 
 from canonical.launchpad.webapp import (
     action,
+    enabled_with_permission,
     LaunchpadFormView,
+    )
+from canonical.launchpad.webapp.authorization import (
+    check_permission,
     )
 
 
@@ -53,6 +57,8 @@ class FeatureControlView(LaunchpadFormView):
 
     @action(u"Change", name="change")
     def change_action(self, action, data):
+        if not check_permission('launchpad.Admin', self.context):
+            raise Unauthorized()
         rules_text = data['feature_rules']
         logger = logging.getLogger('lp.services.features')
         logger.warning("Change feature rules to: %s" % (rules_text,))

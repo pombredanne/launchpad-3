@@ -70,13 +70,13 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getFeatureRulesEditURL(self):
         root = getUtility(ILaunchpadRoot)
-        return canonical_url(root, view_name='+feature-rules-edit')
+        return canonical_url(root, view_name='+feature-rules')
 
     def test_feature_page_default_value(self):
         """No rules in the sampledata gives no content in the page"""
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesViewURL())
-        textarea = browser.getControl(name="feature_rules")
+        textarea = browser.getControl(name="field.feature_rules")
         # and by default, since there are no rules in the sample data, it's
         # empty
         self.assertThat(textarea.value, Equals(''))
@@ -88,7 +88,7 @@ class TestFeatureControlPage(BrowserTestCase):
             ])
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesViewURL())
-        textarea = browser.getControl(name="feature_rules")
+        textarea = browser.getControl(name="field.feature_rules")
         self.assertThat(textarea.value.replace('\r', ''), Equals("""\
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
@@ -119,7 +119,7 @@ ui.icing\tdefault\t100\t3.0
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesEditURL())
         new_value = 'beta_user some_key 10 some value with spaces'
-        textarea = browser.getControl(name="feature_rules")
+        textarea = browser.getControl(name="field.feature_rules")
         textarea.value = new_value
         browser.getControl(name="field.actions.change").click()
         self.assertThat(
