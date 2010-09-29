@@ -321,7 +321,7 @@ class BaseLayer:
         BaseLayer.test_name = None
         BaseLayer.check()
 
-        for loop in range(0,10):
+        for loop in range(0,100):
             # Check for tests that leave live threads around early.
             # A live thread may be the cause of other failures, such as
             # uncollectable garbage.
@@ -331,10 +331,12 @@ class BaseLayer:
                 ]
             if not new_threads:
                 break
-            # Trigger full garbage collection that might be blocking
-            # threads from exiting.
-            gc.collect()
-            time.sleep(1) # Wait a while before our next check.
+            for new_thread in new_threads:
+                new_thread.join(0.1)
+                if new_thread.isAlive():
+                    # Trigger full garbage collection that might be blocking
+                    # threads from exiting.
+                    gc.collect()
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop

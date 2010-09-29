@@ -6,9 +6,14 @@
 __metaclass__ = type
 __all__ = []
 
+import threading
 import unittest
 
-from canonical.testing.layers import BaseWindmillLayer, DatabaseLayer
+from canonical.testing.layers import (
+    BaseLayer,
+    BaseWindmillLayer,
+    DatabaseLayer,
+    )
 from lp.testing import TestCase
 
 
@@ -23,6 +28,16 @@ class TestBaseWindmillLayer(TestCase):
             issubclass(self.layer_to_test, DatabaseLayer))
         self.assertTrue(self.layer_to_test._reset_between_tests)
 
+
+class TestThreadWaiting(TestCase):
+    layer = BaseLayer
+
+    def test_slow_thread(self):
+        # BaseLayer waits a few seconds for threads spawned by the test
+        # to shutdown. Test this is working by creating a thread that
+        # will shut itself down in 0.5 seconds time.
+        t = threading.Timer(0.5, lambda: None)
+        t.start()
 
 
 def test_suite():
