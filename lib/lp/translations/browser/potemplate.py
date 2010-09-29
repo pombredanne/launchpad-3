@@ -60,7 +60,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.lazr.utils import smartquote
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError

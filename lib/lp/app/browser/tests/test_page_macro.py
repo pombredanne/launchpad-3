@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import os
+
 from zope.component import getMultiAdapter
 from zope.traversing.interfaces import IPathAdapter
 
@@ -23,6 +25,7 @@ class TestPageMacroDispatcher(TestCase):
         root_view = getMultiAdapter(
             (rootObject, LaunchpadTestRequest()), name='index.html')
         adapter = getMultiAdapter([root_view], IPathAdapter, name='macro')
-        self.assertIn('lp/app/templates', adapter.base.filename)
+        template_path = os.path.normpath(adapter.base.filename)
+        self.assertIn('lp/app/templates', template_path)
         # The base template defines a 'master' macro as the adapter expects.
         self.assertIn('master', adapter.base.macros.keys())
