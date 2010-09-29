@@ -64,11 +64,20 @@ class FeatureRuleSource(object):
         self.setAllRules(self.parseRules(text_form))
 
     def parseRules(self, text_form):
+        """Return a list of tuples for the parsed form of the text input.
+
+        For each non-blank line gives back a tuple of (flag, scope, priority, value).
+        
+        Returns a list rather than a generator so that you see any syntax
+        errors immediately.
+        """
+        r = []
         for line in text_form.splitlines():
             if line.strip() == '':
                 continue
             flag, scope, priority_str, value = re.split('[ \t]+', line, 3)
-            yield (flag, scope, int(priority_str), unicode(value))
+            r.append((flag, scope, int(priority_str), unicode(value)))
+        return r
 
 
 class StormFeatureRuleSource(FeatureRuleSource):
