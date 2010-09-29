@@ -100,7 +100,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
         # XXX: would be slightly better to only update rules as necessary so we keep
         # timestamps, and to avoid the direct sql etc -- mbp 20100924
         store = getFeatureStore()
-        store.execute('delete from featureflag')
+        store.execute('DELETE FROM FeatureFlag')
         for (flag, scope, priority, value) in new_rules:
             store.add(FeatureFlag(
                 scope=unicode(scope),
