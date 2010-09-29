@@ -257,6 +257,22 @@ class TestSanitizeTranslations(TestCase):
             expected_sanitized,
             sanitize_translations_from_webui(self.english, translations, 3))
 
+    def test_sanitize_translations_pluralforms_none(self):
+        # Some languages don't provide a plural form, so 2 is assumed.
+        translations = {
+            0: u'Plural form 0  ',
+            1: u'Plural form 1  ',
+            2: u'Plural form 2  ',
+            }
+        expected_sanitized = {
+            0: u'Plural\nform 0',
+            1: u'Plural\nform 1',
+            }
+        self.assertEqual(
+            expected_sanitized,
+            sanitize_translations_from_webui(
+                self.english, translations, None))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
