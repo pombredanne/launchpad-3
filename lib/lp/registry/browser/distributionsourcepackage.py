@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -44,7 +44,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-from canonical.launchpad.webapp.tales import CustomizableFormatter
+from lp.app.browser.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
