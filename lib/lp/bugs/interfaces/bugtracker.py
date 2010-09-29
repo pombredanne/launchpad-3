@@ -369,7 +369,6 @@ class IBugTracker(Interface):
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
-    @operation_returns_entry(Interface) # TODO: This ought to be IBugTrackerComponentGroup
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
