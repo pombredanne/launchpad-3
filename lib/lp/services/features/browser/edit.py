@@ -62,13 +62,14 @@ class FeatureControlView(LaunchpadFormView):
         rules_text = data['feature_rules']
         logger = logging.getLogger('lp.services.features')
         logger.warning("Change feature rules to: %s" % (rules_text,))
-        return self.request.features.rule_source.setAllRulesFromText(
+        self.request.features.rule_source.setAllRulesFromText(
             rules_text)
 
     @property
-    def feature_rules(self):
-        """Default value for rules is what's currently defined."""
-        return self.request.features.rule_source.getAllRulesAsText()
+    def initial_values(self):
+        return dict(
+            feature_rules=self.request.features.rule_source.getAllRulesAsText(),
+            )
 
     def validate(self, data):
         # Try parsing the rules so we give a clean error: at the moment the
