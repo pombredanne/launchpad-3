@@ -14,7 +14,9 @@ __all__ = [
     'IMirrorCDImageDistroSeries',
     'PROBE_INTERVAL',
     'MirrorContent',
+    'MirrorSpeed',
     'MirrorFreshness',
+    'MirrorStatus',
     'UnableToFetchCDImageFileList',
     ]
 
