@@ -7,15 +7,12 @@ __all__ = [
     ]
 
 
-__metaclass__ = type
-
-
-from storm.locals import Desc
-
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
+from lp.services.features.rulesource import (
+    StormFeatureRuleSource,
     )
+
+
+__metaclass__ = type
 
 
 class Memoize(object):
@@ -65,11 +62,11 @@ class FeatureController(object):
     of code that has consistent configuration values.  For instance there will
     be one per web app request.
 
-    Intended performance: when this object is first constructed, it will read
-    the whole feature flag table from the database.  It is expected to be
-    reasonably small.  The scopes may be expensive to compute (eg checking
-    team membership) so they are checked at most once when they are first
-    needed.
+    Intended performance: when this object is first asked about a flag, it
+    will read the whole feature flag table from the database.  It is expected
+    to be reasonably small.  The scopes may be expensive to compute (eg
+    checking team membership) so they are checked at most once when
+    they are first needed.
 
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
@@ -77,17 +74,22 @@ class FeatureController(object):
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """
 
-    def __init__(self, scope_check_callback):
+    def __init__(self, scope_check_callback, rule_source=None):
         """Construct a new view of the features for a set of scopes.
 
         :param scope_check_callback: Given a scope name, says whether
-        it's active or not.
+            it's active or not.
+
+        :param rule_source: Instance of StormFeatureRuleSource or similar.
         """
         self._known_scopes = Memoize(scope_check_callback)
         self._known_flags = Memoize(self._checkFlag)
         # rules are read from the database the first time they're needed
         self._rules = None
         self.scopes = ScopeDict(self)
+        if rule_source is None:
+            rule_source = StormFeatureRuleSource()
+        self.rule_source = rule_source
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
@@ -102,7 +104,7 @@ class FeatureController(object):
     def _checkFlag(self, flag):
         self._needRules()
         if flag in self._rules:
-            for scope, value in self._rules[flag]:
+            for scope, priority, value in self._rules[flag]:
                 if self._known_scopes.lookup(scope):
                     return value
 
@@ -132,21 +134,9 @@ class FeatureController(object):
         self._needRules()
         return dict((f, self.getFlag(f)) for f in self._rules)
 
-    def _loadRules(self):
-        store = getFeatureStore()
-        d = {}
-        rs = (store
-                .find(FeatureFlag)
-                .order_by(Desc(FeatureFlag.priority))
-                .values(FeatureFlag.flag, FeatureFlag.scope,
-                    FeatureFlag.value))
-        for flag, scope, value in rs:
-            d.setdefault(str(flag), []).append((str(scope), value))
-        return d
-
     def _needRules(self):
         if self._rules is None:
-            self._rules = self._loadRules()
+            self._rules = self.rule_source.getAllRulesAsDict()
 
     def usedFlags(self):
         """Return dict of flags used in this controller so far."""
