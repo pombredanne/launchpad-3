@@ -649,9 +649,17 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
 
     @property
     def next_url(self):
-        next_url = self.request.get('next_url')
+        """Provided so returning to the page they came from works."""
+        next_url = self.request.getHeader('referer')
         if next_url:
             return next_url
+
+    @property
+    def cancel_url(self):
+        """Provided so returning to the page they came from works."""
+        cancel_url = self.request.getHeader('referer')
+        if cancel_url:
+            return cancel_url
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -734,8 +742,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
         # bug page would raise Unauthorized errors!
         if self._redirecting_to_bug_list:
             return u''
-        elif self.next_url:
-            self.request.response.redirect(self.next_url)
+        elif self._isSubscriptionRequest() and self.request.get('next_url'):
+            self.request.response.redirect(self.request.get('next_url'))
             return u''
         else:
             return LaunchpadView.render(self)

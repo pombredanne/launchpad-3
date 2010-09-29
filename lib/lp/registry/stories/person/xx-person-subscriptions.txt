@@ -100,7 +100,7 @@ member.
 
 Sample Person chooses to review the subscriptions for his HWDB team.
 
-    >>> sample_browser.open('https://launchpad.dev/~hwdb-team/+subscriptions')
+    >>> sample_browser.open('https://bugs.launchpad.dev/~hwdb-team/+subscriptions')
     >>> print sample_browser.title
     Subscriptions : “HWDB Team” team
 

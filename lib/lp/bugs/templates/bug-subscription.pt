@@ -47,8 +47,8 @@
 
           <div class="actions">
             <input type="hidden" name="next_url"
-                   tal:condition="view/_return_url | nothing"
-                   tal:attributes="value view/_return_url" />
+                   tal:condition="view/next_url | nothing"
+                   tal:attributes="value view/next_url" />
             <input tal:condition="not: view/userIsSubscribed"
                    type="submit"
                    name="subscribe"
@@ -57,8 +57,8 @@
                    type="submit"
                    name="unsubscribe"
                    value="Continue" />
-                   or <a tal:condition="view/_return_url | nothing"
-                         tal:attributes="href view/_return_url">Cancel</a>
+                   or <a tal:condition="view/cancel_url | nothing"
+                         tal:attributes="href view/cancel_url">Cancel</a>
           </div>
         </form>
 
