@@ -51,7 +51,8 @@ class DistroSeriesDifferenceNavigation(Navigation):
             return None
 
         return getUtility(
-            IDistroSeriesDifferenceCommentSource).get(id)
+            IDistroSeriesDifferenceCommentSource).getForDifference(
+                self.context, id)
 
 
 class IDistroSeriesDifferenceForm(Interface):

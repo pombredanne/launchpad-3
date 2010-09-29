@@ -80,9 +80,11 @@ class DistroSeriesDifferenceComment(Storm):
         return store.add(dsd_comment)
 
     @staticmethod
-    def get(id):
+    def getForDifference(distro_series_difference, id):
         """See `IDistroSeriesDifferenceCommentSource`."""
         store = IStore(DistroSeriesDifferenceComment)
+        DSDComment = DistroSeriesDifferenceComment
         return store.find(
-            DistroSeriesDifferenceComment,
-            DistroSeriesDifferenceComment.id == id).one()
+            DSDComment,
+            DSDComment.distro_series_difference == distro_series_difference,
+            DSDComment.id == id).one()

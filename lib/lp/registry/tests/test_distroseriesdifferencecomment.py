@@ -58,11 +58,13 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
         self.assertEqual(
             dsd_comment.message.datecreated, dsd_comment.comment_date)
 
-    def test_get_comment(self):
+    def test_getForDifference(self):
         # The utility can get comments by id.
         dsd_comment = self.factory.makeDistroSeriesDifferenceComment()
         Store.of(dsd_comment).flush()
 
         comment_src = getUtility(IDistroSeriesDifferenceCommentSource)
-        self.assertEqual(dsd_comment, comment_src.get(dsd_comment.id))
+        self.assertEqual(
+            dsd_comment, comment_src.getForDifference(
+                dsd_comment.distro_series_difference, dsd_comment.id))
 
