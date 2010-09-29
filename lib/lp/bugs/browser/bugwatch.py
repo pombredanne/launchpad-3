@@ -220,16 +220,3 @@ class BugWatchActivityPortletView(LaunchpadFormView):
                 })
 
         return activity_items
-
-
-class BugWatchBugTasksAndCommentsPortletView(BugWatchView):
-    """A portlet displaying objects linked to the BugWatch."""
-
-    @property
-    def imported_comments_count(self):
-        return len(self.comments)
-
-    @property
-    def comments_link(self):
-        return canonical_url(self.context, view_name="+comments")
-

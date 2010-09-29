@@ -18,10 +18,6 @@ imported for it, it's possible to delete from the bug watch edit page.
     >>> print find_portlet(
     ...     user_browser.contents, 'Bug watch links').span.renderContents()
     There are currently no links to this bug watch.
-    >>> print find_portlet(
-    ...     user_browser.contents, 'Imported bug comments'
-    ...     ).span.renderContents()
-    There are currently no comments linked to this bug watch.
 
     >>> user_browser.getControl('Delete Bug Watch').click()
 
