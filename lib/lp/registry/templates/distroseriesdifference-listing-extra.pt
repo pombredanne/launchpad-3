@@ -53,6 +53,9 @@
   </dl>
 
   <h2>Comments:</h2>
+  <tal:show_options condition="view/show_edit_options">
+    <div class="add-comment-placeholder"></div>
+  </tal:show_options>
   <tal:conversation replace="structure view/@@+render"/>
 
 </tal:root>

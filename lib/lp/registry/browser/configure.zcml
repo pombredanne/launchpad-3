@@ -171,6 +171,10 @@
         path_expression="string:comments/${id}"
         attribute_to_parent="distro_series_difference"
         rootsite="mainsite"/>
+    <broowser:page
+        name="+fragment"
+        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
+        template="../templates/distroseriesdifferencecomment-fragment.pt"/>
     <browser:menus
         classes="
             DistroSeriesFacets
