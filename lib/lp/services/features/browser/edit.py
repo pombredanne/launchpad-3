@@ -41,7 +41,9 @@ class IFeatureControlForm(Interface):
             u"On each line: (flag, scope, priority, value), "
             u"whitespace-separated.  Numerically higher "
             u"priorities match first."
-        ))
+            ),
+        required=False,
+        )
 
 
 class FeatureControlView(LaunchpadFormView):
@@ -59,7 +61,7 @@ class FeatureControlView(LaunchpadFormView):
     def change_action(self, action, data):
         if not check_permission('launchpad.Admin', self.context):
             raise Unauthorized()
-        rules_text = data['feature_rules']
+        rules_text = data.get('feature_rules') or ''
         logger = logging.getLogger('lp.services.features')
         logger.warning("Change feature rules to: %s" % (rules_text,))
         self.request.features.rule_source.setAllRulesFromText(
@@ -75,7 +77,8 @@ class FeatureControlView(LaunchpadFormView):
         # Try parsing the rules so we give a clean error: at the moment the
         # message is not great, but it's better than an oops.
         try:
+            # Unfortunately if the field is '', zope leaves it out of data.
             self.request.features.rule_source.parseRules(
-                data['feature_rules'])
+                data.get('feature_rules') or '')
         except (IndexError, TypeError, ValueError), e:
             self.setFieldError('feature_rules', 'Invalid rule syntax: %s' % e)

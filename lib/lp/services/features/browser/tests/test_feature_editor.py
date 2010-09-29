@@ -89,10 +89,11 @@ class TestFeatureControlPage(BrowserTestCase):
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureRulesViewURL())
         textarea = browser.getControl(name="field.feature_rules")
-        self.assertThat(textarea.value.replace('\r', ''), Equals("""\
-ui.icing\tbeta_user\t300\t4.0
-ui.icing\tdefault\t100\t3.0
-"""))
+        self.assertThat(
+            textarea.value.replace('\r', ''),
+            Equals(
+                "ui.icing\tbeta_user\t300\t4.0\n"
+                "ui.icing\tdefault\t100\t3.0\n"))
 
     def test_feature_rules_anonymous_unauthorized(self):
         browser = self.getUserBrowser()
@@ -107,13 +108,6 @@ ui.icing\tdefault\t100\t3.0
             browser.open,
             self.getFeatureRulesViewURL())
 
-    def test_feature_rules_plebian_unauthorized_edit(self):
-        """Logged in, but not a member of any interesting teams."""
-        browser = self.getUserBrowserAsTeamMember([])
-        self.assertRaises(Unauthorized,
-            browser.open,
-            self.getFeatureRulesEditURL())
-
     def test_feature_page_submit_changes(self):
         """Submitted changes show up in the db."""
         browser = self.getUserBrowserAsAdmin()
@@ -126,4 +120,19 @@ ui.icing\tdefault\t100\t3.0
             list(StormFeatureRuleSource().getAllRulesAsTuples()),
             Equals([
                 ('beta_user', 'some_key', 10, 'some value with spaces'),
+                ]))
+
+    def test_feature_page_submit_change_to_empty(self):
+        """Correctly handle submitting an empty value."""
+        # Zope has the quirk of conflating empty with absent; make sure we
+        # handle it properly.
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        new_value = ''
+        textarea = browser.getControl(name="field.feature_rules")
+        textarea.value = new_value
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            list(StormFeatureRuleSource().getAllRulesAsTuples()),
+            Equals([
                 ]))
