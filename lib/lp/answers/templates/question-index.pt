@@ -19,7 +19,7 @@
   </head>
   <body>
     <metal:registering fill-slot="registering">
-        xAsked by
+        Asked by
         <a tal:replace="structure context/owner/fmt:link" />
         on <span
           tal:attributes="title context/datecreated/fmt:datetime"
@@ -34,9 +34,6 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
-
-    <div metal:use-macro="context/@@launchpad_linkchecker/check_lp_links"/>
-
       <tal:description
         define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
 
