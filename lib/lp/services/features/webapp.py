@@ -10,6 +10,7 @@ __metaclass__ = type
 import canonical.config
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.services.propertycache import cachedproperty
 
 
@@ -80,7 +81,8 @@ class ScopesFromRequest(object):
 def start_request(event):
     """Register FeatureController."""
     event.request.features = per_thread.features = FeatureController(
-        ScopesFromRequest(event.request).lookup)
+        ScopesFromRequest(event.request).lookup,
+        StormFeatureRuleSource())
 
 
 def end_request(event):
