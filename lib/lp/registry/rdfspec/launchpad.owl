@@ -5,7 +5,7 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
-<!ENTITY launchpad "https://launchpad.net/rdf/launchpad#">
+<!ENTITY launchpad "https://launchpad.net/rdf-spec/launchpad#">
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY doaml "http://ns.balbinus.net/doaml#">
 ]>

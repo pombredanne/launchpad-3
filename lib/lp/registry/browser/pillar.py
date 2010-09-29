@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     nearest,
     )
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad,
@@ -79,7 +79,7 @@ class InvolvedMenu(NavigationMenu):
 
     def submit_code(self):
         if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.LAUNCHPAD,
                 ServiceUsage.EXTERNAL,
                 ]:
             enabled = True
