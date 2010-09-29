@@ -3,7 +3,7 @@
 
 from __future__ import with_statement
 
-"""Tests for the login helpers."""
+"""Tests for the testing module."""
 
 __metaclass__ = type
 
