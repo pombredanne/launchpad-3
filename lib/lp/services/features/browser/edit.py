@@ -37,7 +37,7 @@ class IFeatureControlForm(Interface):
     feature_rules = Text(
         title=u"Feature rules",
         description=(
-            u"Rules to control feature flags on Launchpad."
+            u"Rules to control feature flags on Launchpad.  "
             u"On each line: (flag, scope, priority, value), "
             u"whitespace-separated.  Numerically higher "
             u"priorities match first."
