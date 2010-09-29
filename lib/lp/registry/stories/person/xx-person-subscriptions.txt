@@ -71,7 +71,7 @@ He chooses to unsubscribe from bug 9 - "Thunderbird crashes".
     >>> sample_browser.getControl("Unsubscribe me from this bug").selected = True
     >>> sample_browser.getControl("Continue").click()
     >>> print sample_browser.title
-    Bug #9 in thunderbird (Ubuntu): “Thunderbird crashes”
+    Subscriptions : Sample Person
 
 Sample Person can see that bug 9 is no longer listed in his direct bug
 subscriptions.
