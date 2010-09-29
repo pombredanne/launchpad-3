@@ -650,16 +650,20 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
-        next_url = self.request.getHeader('referer')
-        if next_url:
-            return next_url
+        if self.request.getHeader('referer'):
+            next_url = self.request.getHeader('referer')
+        else:
+            next_url = canonical_url(self.context)
+        return next_url
 
     @property
     def cancel_url(self):
         """Provided so returning to the page they came from works."""
-        cancel_url = self.request.getHeader('referer')
-        if cancel_url:
-            return cancel_url
+        if self.request.getHeader('referer'):
+            cancel_url = self.request.getHeader('referer')
+        else:
+            cancel_url = canonical_url(self.context)
+        return cancel_url
 
     def initialize(self):
         """Set up the needed widgets."""

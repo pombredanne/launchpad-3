@@ -28,7 +28,7 @@ this.
   >>> submit.click()
 
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...   print tag.renderContents()
@@ -72,7 +72,7 @@ the user this time, and inform the user.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
-  You have been unsubscribed from this bug.
+  You have been unsubscribed from bug 1.
 
 Users can unsubscribe teams to which they belong. Let's demonstrate by
 first subscribing one of Foo Bar's teams.
@@ -120,7 +120,7 @@ Let's unsubscribe the Launchpad team.
   >>> browser.getControl('Continue').click()
 
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
@@ -146,7 +146,7 @@ the browser to the bug page.
   ['name16']
   >>> browser.getLink('Cancel').click()
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1/'
 
 Foo Bar wasn't subscribed to the bug.
 
@@ -227,7 +227,7 @@ dupe of bug #3, so he'll no longer get mail from bug #3.
   >>> for tag in find_tags_by_class(
   ...     stevea_browser.contents, 'informational message'):
   ...   print tag.renderContents()
-  You have been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
+  You have been unsubscribed from bug 3 and 1 duplicate (<a...#2</a>)...
 
 (Except for Mark, who has a structural subscription to the target,
 there are no longer any indirect subscribers, because Steve was
@@ -258,8 +258,9 @@ gets unsubscribed from more than one duplicate.
 previous example.)
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/tomcat/+bug/2/+subscribe")
-  >>> stevea_browser.getControl("Continue").click()
+  ...     "http://launchpad.dev/tomcat/+bug/2/+addsubscriber")
+  >>> stevea_browser.getControl('Person').value = 'stevea'
+  >>> stevea_browser.getControl('Subscribe user').click()
 
   >>> stevea_browser.open(
   ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
@@ -282,7 +283,7 @@ previous example.)
   >>> for tag in find_tags_by_class(
   ...     stevea_browser.contents, 'informational message'):
   ...   print tag.renderContents()
-  You have been unsubscribed from this bug and 2 duplicates (<a...#1</a>, <a...#2</a>)...
+  You have been unsubscribed from bug 3 and 2 duplicates (<a...#1</a>, <a...#2</a>)...
 
 (Let's undupe bug #1 from bug #3, since it's unneeded for the examples
 that follow.)
