@@ -8,6 +8,7 @@ __metaclass__ = type
 import transaction
 
 from lazr.restfulclient.errors import Unauthorized
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.testing import AppServerLayer
@@ -17,6 +18,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
@@ -85,24 +87,15 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
 
-
-class DSDCommentWebServiceTestCase(TestCaseWithFactory):
-
-    layer = AppServerLayer
-
-    def test_get_difference_comment(self):
-        # DistroSeriesDifferencesComments are available on the web service.
+    def test_addComment(self):
+        # Comments can be added via the API
         ds_diff = self.factory.makeDistroSeriesDifference()
-        from lp.testing import person_logged_in
-        from storm.store import Store
-        with person_logged_in(ds_diff.owner):
-            comment = ds_diff.addComment(ds_diff.owner, "Hey there")
-        Store.of(comment).flush()
-        transaction.commit()
-        dsd_comment_path = canonical_url(comment).replace(
-            'http://launchpad.dev', '')
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
 
-        ws_diff = ws_object(self.factory.makeLaunchpadService(), comment)
+        result = ws_diff.addComment(comment='Hey there')
 
+        self.assertEqual('Hey there', result['body_text'])
         self.assertTrue(
-            ws_diff.self_link.endswith(dsd_comment_path))
+            result['resource_type_link'].endswith(
+                '#distro_series_difference_comment'))
