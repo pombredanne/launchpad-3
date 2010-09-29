@@ -115,9 +115,7 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
-from lp.registry.errors import (
-    PrivatePersonLinkageError,
-    )
+from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
