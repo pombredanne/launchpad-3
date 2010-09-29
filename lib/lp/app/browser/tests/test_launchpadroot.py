@@ -86,9 +86,11 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
 
 class TestLaunchpadRootNavigation(TestCaseWithFactory):
     """Test for the LaunchpadRootNavigation."""
+
     layer = DatabaseFunctionalLayer
 
     def test_support(self):
+        # The /support link redirects to answers.
         context, view, request = test_traverse(
             'http://launchpad.dev/support')
         view()
@@ -98,6 +100,7 @@ class TestLaunchpadRootNavigation(TestCaseWithFactory):
             request.response.getHeader('location'))
 
     def test_feedback(self):
+        # The /feedback link redirects to the help site.
         context, view, request = test_traverse(
             'http://launchpad.dev/feedback')
         view()

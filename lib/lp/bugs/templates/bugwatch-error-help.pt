@@ -52,7 +52,7 @@
     <p>
       Check that the remote bug tracker
       (<a tal:replace="structure watch/bugtracker/fmt:external-link" />)
-      is on-line. If it is, you should 
+      is on-line. If it is, you should
       <a href="/support">contact us</a> and let us
       know about the problem.
     </p>
