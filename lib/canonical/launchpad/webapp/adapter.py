@@ -6,7 +6,7 @@
 
 __metaclass__ = type
 
-import datetime
+import logging
 import os
 import re
 import sys
@@ -47,7 +47,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import (
     config,
     DatabaseConfig,
-    dbconfig,
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import (
@@ -67,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
+from lp.services.features import getFeatureFlag
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -82,8 +82,6 @@ __all__ = [
     'get_request_start_time',
     'get_request_duration',
     'get_store_name',
-    'hard_timeout_expired',
-    'launchpad_default_timeout',
     'soft_timeout_expired',
     'StoreSelector',
     ]
@@ -260,7 +258,7 @@ def get_request_duration(now=None):
 def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     """Return how many seconds are remaining in the current request budget.
 
-    If timouts are disabled, None is returned. 
+    If timeouts are disabled, None is returned.
 
     :param no_exception: If True, do not raise an error if the request
         is out of time. Instead return a float e.g. -2.0 for 2 seconds over
@@ -271,6 +269,13 @@ def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     """
     if not getattr(_local, 'enable_timeout', True):
         return None
+    if timeout is None:
+        timeout_str = getFeatureFlag('hard_timeout')
+        if timeout_str:
+            try:
+                timeout = float(timeout_str)
+            except ValueError:
+                logging.error('invalid hard timeout flag %r', timeout_str)
     if timeout is None:
         timeout = config.database.db_statement_timeout
     if not timeout:

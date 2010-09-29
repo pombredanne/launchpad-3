@@ -79,6 +79,47 @@ and a TimeoutError is never raised.
 
     >>> wait_a_little()
 
+= Overriding the global timeout value with FeatureFlags =
+
+It's possible to add a FeatureFlag to override the global timeout value. Some
+pages are very hard to optimize or are seldomly used. In that context they
+should be able to take more time to be rendered without triggering a timeout OOPS.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
+    >>> from lp.services.features.webapp import ScopesFromRequest
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features import per_thread
+
+Install the feature flag to increase the timeout value.
+
+    >>> config.push('timeout', dedent('''\
+    ... [database]
+    ... db_statement_timeout = 10000'''))
+
+    >>> empty_request = LaunchpadTestRequest()
+    >>> per_thread.features = FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup)
+    >>> ignore = getFeatureStore().add(FeatureFlag(
+    ...     scope=u'default', flag=u'hard_timeout', value=u'20000',
+    ...     priority=1))
+
+Now the request can take longer to complete.
+
+    >>> now = time.time()
+    >>> set_request_started(now-15)
+    >>> timeout_func() - now <= 5
+    True
+
+And the request still raises a RequestExpired when it takes longer than the flag
+timeout value.
+
+    >>> clear_request_started()
+    >>> set_request_started(now-22)
+    >>> timeout_func()
+    Traceback (most recent call last):
+      ...
+    RequestExpired: request expired.
 
 == Clean up ===
 
