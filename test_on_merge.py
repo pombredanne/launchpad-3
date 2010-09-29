@@ -73,17 +73,28 @@ def setup_test_database():
     except psycopg2.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
-    cur.execute("""
-        select count(*) from pg_stat_activity
-        where datname in ('launchpad_dev',
-            'launchpad_ftest_template', 'launchpad_ftest')
-        """)
-    existing_connections = cur.fetchone()[0]
-    if existing_connections > 0:
-        print 'Cannot rebuild database. There are %d open connections.' % (
-                existing_connections,
-                )
+
+    # If there are existing database connections, terminate. We have
+    # rogue processes still connected to the database.
+    for loop in range(2):
+        cur.execute("""
+            SELECT usename, current_query
+            FROM pg_stat_activity
+            WHERE datname IN (
+                'launchpad_dev', 'launchpad_ftest_template', 'launchpad_ftest')
+            """)
+        results = list(cur.fetchall())
+        if not results:
+            break
+        # Rogue processes. Report, sleep for a bit, and try again.
+        for usename, current_query in results:
+            print '!! Open connection %s - %s' % (usename, current_query)
+        print 'Sleeping'
+        time.sleep(20)
+    else:
+        print 'Cannot rebuild database. There are open connections.'
         return 1
+
     cur.close()
     con.close()
 
