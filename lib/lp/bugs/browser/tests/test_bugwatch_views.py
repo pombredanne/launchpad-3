@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.testing import LaunchpadFunctionalLayer
 
-from lp.testing import login, login_person, logout, TestCaseWithFactory
+from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
@@ -44,8 +44,11 @@ class TestBugWatchEditView(TestCaseWithFactory):
         # comment.
         message = getUtility(IMessageSet).fromText(
             "Example message", "With some example content to read.")
+        # We need to log in as an admin here as only admins can link a
+        # watch to a comment.
         login(ADMIN_EMAIL)
         bug_message = self.bug_watch.addComment('comment-id', message)
+        login_person(self.person)
         view = create_initialized_view(self.bug_watch, '+edit')
         self.assertFalse(
             view.bugWatchIsUnlinked(None),
