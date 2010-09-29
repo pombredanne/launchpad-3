@@ -152,6 +152,11 @@ when starting a web request.
 
 
 def get_relevant_feature_controller():
+    """Get a FeatureController for this thread."""
+
+    # The noncommittal name "relevant" is because this function may change to
+    # look things up from the current request or some other mechanism in
+    # future.
     return getattr(per_thread, 'features', None)
 
 
