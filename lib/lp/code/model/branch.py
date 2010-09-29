@@ -459,7 +459,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.branchmergeproposaljob import (
                 GenerateIncrementalDiffJob,
                 UpdatePreviewDiffJob,
-        )
+            )
         jobs = []
         for merge_proposal in self.active_landing_targets:
             if merge_proposal.target_branch.last_scanned_id is None:

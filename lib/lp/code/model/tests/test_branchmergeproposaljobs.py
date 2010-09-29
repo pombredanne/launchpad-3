@@ -264,6 +264,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         verifyObject(IBranchMergeProposalJob, job)
 
     def test_getOperationDescription(self):
+        """The description of the job is sane."""
         bmp = self.factory.makeBranchMergeProposal()
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
         self.assertEqual(
@@ -271,6 +272,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
             job.getOperationDescription())
 
     def test_run(self):
+        """The job runs successfully, and its results can be committed."""
         job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
@@ -278,6 +280,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         transaction.commit()
 
     def test_run_all(self):
+        """The job can be run under the JobRunner successfully."""
         job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
@@ -286,6 +289,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         self.assertEqual([job], runner.completed_jobs)
 
     def test_10_minute_lease(self):
+        """Newly-created jobs have a ten-minute lease."""
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')

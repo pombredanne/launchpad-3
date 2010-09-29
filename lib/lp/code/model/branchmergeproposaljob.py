@@ -776,13 +776,14 @@ class BranchMergeProposalJobSource:
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         SourceBranch = ClassAlias(Branch)
         TargetBranch = ClassAlias(Branch)
-        clauses = [BranchMergeProposalJob.job == Job.id,
-                Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
-                BranchMergeProposalJob.branch_merge_proposal
-                    == BranchMergeProposal.id,
-                BranchMergeProposal.source_branch == SourceBranch.id,
-                BranchMergeProposal.target_branch == TargetBranch.id,
-                ]
+        clauses = [
+            BranchMergeProposalJob.job == Job.id,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
+            BranchMergeProposalJob.branch_merge_proposal ==
+            BranchMergeProposal.id, BranchMergeProposal.source_branch ==
+            SourceBranch.id, BranchMergeProposal.target_branch ==
+            TargetBranch.id,
+            ]
         if job_type is not None:
             clauses.append(BranchMergeProposalJob.job_type == job_type)
         jobs = store.find(
