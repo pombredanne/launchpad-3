@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 
+from BeautifulSoup import BeautifulSoup
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -232,3 +234,43 @@ class TestHasSpecificationsConfiguration(TestCaseWithFactory):
         login_person(project_group.owner)
         view = create_initialized_view(project_group, '+specs')
         self.assertEqual(False, view.can_configure_blueprints)
+
+
+class TestSpecificationsRobots(TestCaseWithFactory):
+    """Test the behaviour of specfications when usage is UNKNOWN."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSpecificationsRobots, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.naked_product = removeSecurityProxy(self.product)
+
+    def _configure_project(self, usage):
+        self.naked_product.blueprints_usage = usage
+        view = create_initialized_view(self.product, '+specs')
+        soup = BeautifulSoup(view())
+        robots = soup.find('meta', attrs={'name': 'robots'})
+        return soup, robots
+
+    def _verify_robots_not_blocked(self, usage):
+        soup, robots = self._configure_project(usage)
+        self.assertTrue(robots is None)
+        self.assertTrue(soup.find(True, id='specs-unknown') is None)
+
+    def _verify_robots_are_blocked(self, usage):
+        soup, robots = self._configure_project(usage)
+        self.assertEqual('noindex,nofollow', robots['content'])
+        self.assertTrue(soup.find(True, id='specs-unknown') is not None)
+
+    def test_UNKNOWN_blocks_robots(self):
+        self._verify_robots_are_blocked(ServiceUsage.UNKNOWN)
+
+    def test_EXTERNAL_blocks_robots(self):
+        self._verify_robots_are_blocked(ServiceUsage.EXTERNAL)
+
+    def test_NOT_APPLICABLE_blocks_robots(self):
+        self._verify_robots_are_blocked(ServiceUsage.NOT_APPLICABLE)
+
+    def test_LAUNCHPAD_does_not_block_robots(self):
+        self._verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)

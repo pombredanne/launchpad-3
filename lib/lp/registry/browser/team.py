@@ -25,10 +25,7 @@ __all__ = [
 
 from datetime import datetime
 import math
-from urllib import (
-    quote,
-    unquote,
-    )
+from urllib import unquote
 
 import pytz
 from zope.app.form.browser import TextAreaWidget
@@ -64,14 +61,13 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )
 from lp.app.errors import UnexpectedFormData
-from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -1083,7 +1079,7 @@ class TeamMemberAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(msg)
 
 
-class TeamMapView(MapMixin, LaunchpadView):
+class TeamMapView(LaunchpadView):
     """Show all people with known locations on a map.
 
     Also provides links to edit the locations of people in the team without
@@ -1092,12 +1088,6 @@ class TeamMapView(MapMixin, LaunchpadView):
 
     label = "Team member locations"
     limit = None
-
-    def initialize(self):
-        # Tell our base-layout to include Google's gmap2 javascript so that
-        # we can render the map.
-        if self.gmap2_enabled and self.mapped_participants_count > 0:
-            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):

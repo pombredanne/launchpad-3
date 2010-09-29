@@ -217,10 +217,8 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Failed to notify users about a failure.")
                 info = sys.exc_info()
-                self.error_utility.raising(info)
-                oops = self.error_utility.getLastOopsReport()
                 # Returning the oops says something went wrong.
-                return oops
+                return self.error_utility.raising(info)
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -229,8 +227,7 @@ class BaseJobRunner(object):
         :param info: The standard sys.exc_info() value.
         :return: the Oops that was reported.
         """
-        self.error_utility.raising(info)
-        oops = self.error_utility.getLastOopsReport()
+        oops = self.error_utility.raising(info)
         job.notifyOops(oops)
         return oops
 

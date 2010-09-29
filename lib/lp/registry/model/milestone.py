@@ -107,14 +107,15 @@ class HasMilestonesMixin:
         result = store.find(Milestone, self._getMilestoneCondition())
         return result.order_by(self._milestone_order)
 
-    @property
-    def milestones(self):
+    def _get_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
         return result.order_by(self._milestone_order)
+
+    milestones = property(_get_milestones)
 
 
 class MultipleProductReleases(Exception):

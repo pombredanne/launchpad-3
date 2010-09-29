@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0702
@@ -27,7 +27,7 @@ from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from lp.app.browser.tales import ObjectImageDisplayAPI
 from lp.registry.interfaces.location import IObjectWithLocation
 from lp.services.geoip.interfaces import IGeoIPRecord
 
@@ -42,6 +42,7 @@ class LocationValue:
     This is a single object which contains the latitude, longitude and time
     zone of the location.
     """
+
     def __init__(self, latitude, longitude, time_zone):
         self.latitude = latitude
         self.longitude = longitude
@@ -59,13 +60,16 @@ class LocationWidget(BrowserWidget, InputWidget):
         # json-handling, so we flag that in the request so that our
         # base-layout includes the necessary javascript files.
         request.needs_json = True
-        request.needs_gmap2 = True
         super(LocationWidget, self).__init__(context, request)
         fields = form.Fields(
             Float(__name__='latitude', title=_('Latitude'), required=False),
             Float(__name__='longitude', title=_('Longitude'), required=False),
-            Choice(__name__='time_zone', vocabulary='TimezoneName',
-                   title=_('Time zone'), required=True))
+            Choice(
+                __name__='time_zone', vocabulary='TimezoneName',
+                title=_('Time zone'), required=True,
+                description=_(
+                    'Once the time zone is correctly set, events '
+                    'in Launchpad will be displayed in local time.')))
         # This will be the initial zoom level and center of the map.
         self.zoom = 2
         self.center_lat = 15.0
