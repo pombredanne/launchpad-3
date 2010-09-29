@@ -504,29 +504,30 @@ class FileImporter(object):
             self.pofile, self.last_translator, credits,
             RosettaTranslationOrigin.SCM, self.share_with_other_side)
 
-    def _validateMessage(self, potmsgset, translations):
+    def _validateMessage(self, potmsgset, message,
+                         translations, message_data):
         """Validate the message and report success or failure."""
         try:
             validate_translation(
                 potmsgset.singular_text, potmsgset.plural_text,
-                sanitized_translations, potmsgset.flags)
+                translations, potmsgset.flags)
         except GettextValidationError, e:
-            self._addUpdateError(message, potmsgset, unicode(e))
-            new_message.validation_status = (
+            self._addUpdateError(message_data, potmsgset, unicode(e))
+            message.validation_status = (
                 TranslationValidationStatus.UNKNOWNERROR)
             return False
 
-        new_message.validation_status = TranslationValidationStatus.OK
+        message.validation_status = TranslationValidationStatus.OK
         return True
 
-    def _approveMessage(self, potmsgset, message):
+    def _approveMessage(self, potmsgset, message, message_data):
         """Try to approve the message, return None on TranslationConflict."""
         try:
             message.approve(
                 self.pofile, self.last_translator,
                 self.share_with_other_side, self.lock_timestamp)
         except TranslationConflict:
-            self._addConflictError(message, potmsgset)
+            self._addConflictError(message_data, potmsgset)
             if self.logger is not None:
                 self.logger.info(
                     "Conflicting updates on message %d." % potmsgset.id)
@@ -538,7 +539,7 @@ class FileImporter(object):
 
         return message
 
-    def storeTranslationsInDatabase(self, message, potmsgset):
+    def storeTranslationsInDatabase(self, message_data, potmsgset):
         """Try to store translations in the database.
 
         Perform check if a PO file is available and if the message has any
@@ -546,7 +547,8 @@ class FileImporter(object):
         is added to the list in self.errors but the translations are stored
         anyway, marked as having an error.
 
-        :param message: The message for which translations will be stored.
+        :param message_data: The message data for which translations will be
+            stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
 
         :return: The updated translation_message entry or None, if no storing
@@ -557,27 +559,31 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        if message.translations == [] or not any(message.translations): 
+        no_translations =  (
+            message_data.translations == [] or
+            message_data.translations is None or
+            not any(message_data.translations))
+        if no_translations: 
             # We don't have anything to import.
             return None
 
         sanitized_translations = sanitize_translations_from_import(
-            potmsgset.singular_text, message.translations,
+            potmsgset.singular_text, message_data.translations,
             self.pofile.language.pluralforms)
 
         if potmsgset.is_translation_credit:
             # Translation credits cannot be added as suggestions.
-            return self._storeCredits(potmsget, sanitized_translations)
+            return self._storeCredits(potmsgset, sanitized_translations)
 
         # The message is first stored as a suggestion and only made
-        # current if it validates ok.
+        # current if it validates.
         new_message = potmsgset.submitSuggestion(
             self.pofile, self.last_translator, sanitized_translations)
 
         validation_ok = self._validateMessage(
-            potmsgset, sanitized_translations) 
+            potmsgset, new_message, sanitized_translations, message_data) 
         if validation_ok and self.is_editor:
-            return self.approveMessage(potmsgset, new_message)
+            return self._approveMessage(potmsgset, new_message, message_data)
 
         if self.translation_import_queue_entry.from_upstream:
             # XXX: henninge 2010-09-21: Mixed models!
