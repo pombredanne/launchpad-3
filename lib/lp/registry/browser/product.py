@@ -123,7 +123,7 @@ from canonical.launchpad.webapp.launchpadform import (
     safe_action,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -155,6 +155,7 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.distribution import UsesLaunchpadMixin
@@ -296,14 +297,13 @@ class ProductLicenseMixin:
             pass
 
     def notifyCommercialMailingList(self):
-        """Email feedback@canonical.com to review product license."""
-        if (License.OTHER_PROPRIETARY in self.product.licenses
-            or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            review_needed = True
-        elif (len(self.product.licenses) == 1
-            and License.DONT_KNOW in self.product.licenses):
-            review_needed = False
-        else:
+        """Notify user about Launchpad license rules."""
+        licenses = list(self.product.licenses)
+        needs_email = (
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
+        if not needs_email:
             # The project has a recognized license.
             return
 
@@ -331,16 +331,6 @@ class ProductLicenseMixin:
             product_summary=indent(self.product.summary),
             license_titles=indent(license_titles),
             license_info=indent(self.product.license_info))
-        if review_needed:
-            # Email the Commercial team that a project needs review.
-            subject = (
-                "Project License Submitted for %(product_name)s "
-                "by %(user_name)s" % substitutions)
-            template = helpers.get_email_template('product-license.txt')
-            message = template % substitutions
-            simple_sendmail(
-                from_address, commercial_address,
-                subject, message, headers={'Reply-To': user_address})
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "
@@ -1406,7 +1396,7 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars.  But when referring to
+            # The usage fields are shared among pillars. But when referring to
             # an individual object in Launchpad it is better to call it by its
             # real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
@@ -1730,31 +1720,15 @@ class ProductSeriesView(ProductView):
     page_title = label
 
 
-class ProductRdfView:
+class ProductRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/product-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                        self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return self.context.name
 
 
 class Icon:

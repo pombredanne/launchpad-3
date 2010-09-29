@@ -233,7 +233,7 @@ If the request contains no attachment description the filename should be used.
 Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     ** Attachment added: "RA.txt"
@@ -477,7 +477,7 @@ The libraryfile of this bug attachment is marked as "deleted".
 Deleting an attachment causes a notification to be sent. It's worth
 noting that the notification still includes the URL to the attachment.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> latest_notification.is_comment
