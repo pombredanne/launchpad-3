@@ -127,7 +127,7 @@ question and that the bugtasks are Invalid.
     >>> 'test@canonical.com' in recipients.getEmails()
     True
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> bug_notifications = BugNotification.select(orderBy='-id')
     >>> for notification in bug_notifications:
     ...     print notification.message.text_contents
