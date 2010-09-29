@@ -46,7 +46,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.webapp.tales import CustomizableFormatter
+from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
