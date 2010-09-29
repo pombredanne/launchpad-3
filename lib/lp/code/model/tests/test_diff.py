@@ -556,6 +556,25 @@ class TestIncrementalDiff(DiffTestCase):
 
         Changes merged from the prerequisite and target are ignored in the
         diff.
+
+        We generate an incremental diff from old_revision_id to
+        new_revision_id.
+
+        old_revision_id has:
+        a
+        b
+        e
+
+        new_revision_id has:
+        d
+        a
+        c
+        e
+        f
+
+        Because the prerequisite branch adds "d", this change is ignored.
+        Because the target branch adds "f", this change is ignored.
+        So the incremental diff shows that "c" was added and "b" was removed.
         """
         self.useBzrBranches(direct_database=True)
         prerequisite_branch = self.factory.makeAnyBranch()
