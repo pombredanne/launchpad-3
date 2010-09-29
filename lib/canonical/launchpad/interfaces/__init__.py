@@ -56,6 +56,7 @@ from lp.registry.interfaces.distribution import *
 from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.registry.interfaces.distroseriesdifference import *
+from lp.registry.interfaces.distroseriesdifferencecomment import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
 from lp.registry.interfaces.series import *

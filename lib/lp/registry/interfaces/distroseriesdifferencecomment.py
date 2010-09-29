@@ -10,6 +10,10 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
@@ -27,6 +31,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 
 class IDistroSeriesDifferenceComment(Interface):
     """A comment for a distroseries difference record."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -39,17 +44,17 @@ class IDistroSeriesDifferenceComment(Interface):
         IMessage, title=_("Message"), required=True, readonly=True,
         description=_("A comment about this difference."))
 
-    body_text = Text(
+    body_text = exported(Text(
         title=_("Comment text"), readonly=True, description=_(
-            "The comment text for the related distro series difference."))
+            "The comment text for the related distro series difference.")))
 
-    comment_author = Reference(
+    comment_author = exported(Reference(
         # Really IPerson.
         Interface, title=_("The author of the comment."),
-        readonly=True)
+        readonly=True))
 
-    comment_date = Datetime(
-        title=_('Comment date.'), readonly=True)
+    comment_date = exported(Datetime(
+        title=_('Comment date.'), readonly=True))
 
 
 class IDistroSeriesDifferenceCommentSource(Interface):
