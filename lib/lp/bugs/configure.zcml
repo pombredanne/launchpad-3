@@ -469,7 +469,7 @@
         <!--BugTrackerComponent -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerComponent">
+            class="lp.bugs.model.bugtracker.BugTrackerComponent">
             <require
                 permission="zope.Public"
                 attributes="
@@ -491,7 +491,7 @@
         <!--BugTrackerComponentGroup -->
 
         <class
-            class="canonical.launchpad.database.BugTrackerComponentGroup">
+            class="lp.bugs.model.bugtracker.BugTrackerComponentGroup">
             <require
                 permission="zope.Public"
                 attributes="
