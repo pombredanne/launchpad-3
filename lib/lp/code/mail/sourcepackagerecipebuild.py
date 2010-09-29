@@ -1,7 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 __metaclass__ = type
 
 __all__ = [
@@ -11,7 +10,7 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.services.mail.basemailer import (
     BaseMailer,
     RecipientReason,

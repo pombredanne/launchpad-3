@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -163,7 +163,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -263,6 +263,7 @@ from lp.services.propertycache import cachedproperty
 @implementer(IFieldHTMLRenderer)
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
+
     def render(value):
         if context.assignee is None:
             return ''
@@ -277,6 +278,7 @@ def assignee_renderer(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
+
     def render(value):
         html = """<span>
           <a href="%(href)s" class="%(class)s">%(displayname)s</a>
@@ -1454,7 +1456,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 not self.userCanEditImportance()):
                 editable_field_names.remove("importance")
         else:
-            editable_field_names = set(('bugwatch',))
+            editable_field_names = set(('bugwatch', ))
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
@@ -2269,11 +2271,11 @@ class BugTaskListingItem:
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
-    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
+        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
+        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         TableBatchNavigator.__init__(
@@ -2353,7 +2355,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
             return bugtask_listing_item
 
         review_action_field = Choice(
-            __name__='review_action_%d' % (bug_nomination.id,),
+            __name__='review_action_%d' % bug_nomination.id,
             vocabulary=NominatedBugReviewAction,
             title=u'Review action', required=True)
 
@@ -3248,8 +3250,8 @@ class BugTasksAndNominationsView(LaunchpadView):
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
-        # for each bug task.
-        # This query is redundant: the publisher also queries all the bugtasks.
+        # for each bug task. This query is redundant:
+        # the publisher also queries all the bugtasks.
         self.bugtasks = list(self.context.bugtasks)
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
@@ -3608,12 +3610,17 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         return items
 
+    @cachedproperty
+    def _visible_milestones(self):
+        """The visible milestones for this context."""
+        return MilestoneVocabulary(self.context).visible_milestones
+
     @property
     def milestone_widget_items(self):
         """The available milestone items as JSON."""
         if self.user is not None:
             items = vocabulary_to_choice_edit_items(
-                MilestoneVocabulary(self.context),
+                self._visible_milestones,
                 value_fn=lambda item: canonical_url(
                     item, request=IWebServiceClientRequest(self.request)))
             items.append({
@@ -3627,9 +3634,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     @cachedproperty
     def target_has_milestones(self):
-        """Are there any milestones we can target?"""
-        return MilestoneVocabulary.getMilestoneTarget(
-            self.context).has_milestones
+        """Are there any milestones we can target?
+
+        We always look up all milestones, so there's no harm
+        using len on the list here and avoid the COUNT query.
+        """
+        return len(self._visible_milestones) > 0
 
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""

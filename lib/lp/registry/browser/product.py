@@ -123,7 +123,7 @@ from canonical.launchpad.webapp.launchpadform import (
     safe_action,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -297,14 +297,13 @@ class ProductLicenseMixin:
             pass
 
     def notifyCommercialMailingList(self):
-        """Email feedback@canonical.com to review product license."""
-        if (License.OTHER_PROPRIETARY in self.product.licenses
-            or License.OTHER_OPEN_SOURCE in self.product.licenses):
-            review_needed = True
-        elif (len(self.product.licenses) == 1
-            and License.DONT_KNOW in self.product.licenses):
-            review_needed = False
-        else:
+        """Notify user about Launchpad license rules."""
+        licenses = list(self.product.licenses)
+        needs_email = (
+            License.OTHER_PROPRIETARY in licenses
+            or License.OTHER_OPEN_SOURCE in licenses
+            or [License.DONT_KNOW] == licenses)
+        if not needs_email:
             # The project has a recognized license.
             return
 
@@ -332,16 +331,6 @@ class ProductLicenseMixin:
             product_summary=indent(self.product.summary),
             license_titles=indent(license_titles),
             license_info=indent(self.product.license_info))
-        if review_needed:
-            # Email the Commercial team that a project needs review.
-            subject = (
-                "Project License Submitted for %(product_name)s "
-                "by %(user_name)s" % substitutions)
-            template = helpers.get_email_template('product-license.txt')
-            message = template % substitutions
-            simple_sendmail(
-                from_address, commercial_address,
-                subject, message, headers={'Reply-To': user_address})
         # Email the user about license policy.
         subject = (
             "License information for %(product_name)s "
@@ -469,9 +458,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
-        set_branch.summary = "Specify the location of this projects code."
-        set_branch.configured = (
-            )
+        set_branch.summary = "Specify the location of this project's code."
         config_list.append(
             dict(link=set_branch,
                  configured=config_statuses['configure_codehosting']))
@@ -480,11 +467,8 @@ class ProductInvolvementView(PillarView):
     @property
     def registration_completeness(self):
         """The percent complete for registration."""
-        configured = 0
         config_statuses = self.configuration_states
-        for key, value in config_statuses.items():
-            if value:
-                configured += 1
+        configured = sum(1 for val in config_statuses.values() if val)
         scale = 100
         done = int(float(configured) / len(config_statuses) * scale)
         undone = scale - done
@@ -1407,9 +1391,9 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars. But when referring to
-            # an individual object in Launchpad it is better to call it by its
-            # real name, i.e. 'project' instead of 'pillar'.
+            # The usage fields are shared among pillars.  But when referring
+            # to an individual object in Launchpad it is better to call it by
+            # its real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
             if usage_field:
                 usage_field.custom_widget = CustomWidgetFactory(
