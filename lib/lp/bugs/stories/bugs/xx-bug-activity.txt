@@ -61,6 +61,7 @@ page.
     ...     "Here's a comment for testing, like.")
     >>> user_browser.getControl('Post Comment').click()
     >>> print_comments(user_browser.contents)
+    In...
     Bug Watch Updater
     on 2007-12-18
     Changed in thunderbird:
@@ -84,6 +85,7 @@ that have been added.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(user_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -103,6 +105,7 @@ Alterations to a bug's privacy will show up as 'visibility' changes.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -121,6 +124,7 @@ vulnerability' changes, with values of 'yes' or 'no'.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -140,6 +144,7 @@ Changes will be grouped together if they occur at the same time.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -159,6 +164,7 @@ updated', since such changes can be quite long.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -177,6 +183,7 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -192,6 +199,7 @@ added.
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------
@@ -223,6 +231,7 @@ We'll add a milestone to Redfish to demonstrate this.
     >>> admin_browser.getControl("Save Changes").click()
 
     >>> print_comments(admin_browser.contents)
+    In...
     Bug
     ...
     --------

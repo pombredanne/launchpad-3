@@ -446,7 +446,7 @@ class LaunchpadBrowserPublication(
 
         # The view may be security proxied
         view = removeSecurityProxy(ob)
-        # It's possible that the view is a bounded method.
+        # It's possible that the view is a bound method.
         view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(getattr(view, 'context', None))
         pageid = self.constructPageID(view, context)

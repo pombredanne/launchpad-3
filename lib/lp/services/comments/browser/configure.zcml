@@ -15,10 +15,18 @@
       permission="zope.Public"
       template="../templates/conversation.pt"/>
 
-  <browser:page
-      name="+render"
+  <browser:pages
       for="lp.services.comments.interfaces.conversation.IComment"
-      permission="zope.Public"
-      template="../templates/comment.pt"/>
+      permission="zope.Public">
+      <browser:page
+          name="+render"
+          template="../templates/comment.pt"/>
+      <browser:page
+          name="+comment-header"
+          template="../templates/comment-header.pt"/>
+      <browser:page
+          name="+comment-body"
+          template="../templates/comment-body.pt"/>
+  </browser:pages>
 
 </configure>

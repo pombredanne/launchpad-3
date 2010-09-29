@@ -149,6 +149,20 @@
         class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        path_expression="string:+difference/${source_package_name/name}"
+        rootsite="mainsite"
+        attribute_to_parent="derived_series"/>
+    <browser:page
+        name="+listing-distroseries-extra"
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
+        template="../templates/distroseriesdifference-listing-extra.pt"
+        permission="zope.Public"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        name="+listing-distroseries-extra"/>
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -818,7 +832,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditLocationView"
             permission="launchpad.Edit"
-            template="../templates/person-editlocation.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+contactuser"
             for="lp.registry.interfaces.person.IPerson"
@@ -1066,11 +1080,6 @@
             class="lp.registry.browser.team.TeamMapLtdData"
             template="../templates/team-map-data.pt"
             name="+mapdataltd"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.person.TeamEditLocationView"
-            name="+editlocation"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"

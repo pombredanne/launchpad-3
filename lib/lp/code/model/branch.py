@@ -26,7 +26,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Max,
     NamedFunc,
     Not,
     Or,
@@ -58,12 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -804,6 +799,17 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchRevision.branch == self,
             query).one()
 
+    def removeBranchRevisions(self, revision_ids):
+        """See `IBranch`."""
+        if isinstance(revision_ids, basestring):
+            revision_ids = [revision_ids]
+        IMasterStore(BranchRevision).find(
+            BranchRevision,
+            BranchRevision.branch == self,
+            BranchRevision.revision_id.is_in(
+                Select(Revision.id,
+                       Revision.revision_id.is_in(revision_ids)))).remove()
+
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
         branch_revision = BranchRevision(
@@ -913,7 +919,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def getScannerData(self):
         """See `IBranch`."""
         columns = (
-            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+            BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -921,13 +927,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        branch_revision_map = {}
-        for branch_revision_id, sequence, revision_id in rows:
+        for sequence, revision_id in rows:
             ancestry.add(revision_id)
-            branch_revision_map[revision_id] = branch_revision_id
             if sequence is not None:
                 history.append(revision_id)
-        return ancestry, history, branch_revision_map
+        return ancestry, history
 
     def getPullURL(self):
         """See `IBranch`."""
@@ -986,8 +990,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
-        if self.last_mirrored_id != last_revision_id:
-            self.last_mirrored_id = last_revision_id
+        self.last_mirrored_id = last_revision_id
+        if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             BranchScanJob.create(self)
         self.control_format = control_format
@@ -1023,10 +1027,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Delete jobs for this branch prior to deleting branch.
 
         This deletion includes `BranchJob`s associated with the branch,
-        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s.
+        as well as `BuildQueue` entries for `TranslationTemplateBuildJob`s
+        and `TranslationTemplateBuild`s.
         """
         # Avoid circular imports.
         from lp.code.model.branchjob import BranchJob
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
 
         store = Store.of(self)
         affected_jobs = Select(
@@ -1039,6 +1047,10 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
+
+        store.find(
+            TranslationTemplatesBuild,
+            TranslationTemplatesBuild.branch == self).remove()
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
