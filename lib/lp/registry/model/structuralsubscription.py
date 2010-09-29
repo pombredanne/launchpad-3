@@ -27,6 +27,9 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterimportance import (
+    BugSubscriptionFilterImportance,
+    )
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
@@ -490,12 +493,27 @@ class StructuralSubscriptionTargetMixin:
                 BugSubscriptionFilterStatus,
                 BugSubscriptionFilterStatus.filter_id == (
                     BugSubscriptionFilter.id)),
+            LeftJoin(
+                BugSubscriptionFilterImportance,
+                BugSubscriptionFilterImportance.filter_id == (
+                    BugSubscriptionFilter.id)),
             ]
 
         conditions = [
+            # There's no filter or ...
             Or(BugSubscriptionFilter.id == None,
-               BugSubscriptionFilterStatus.status.is_in(
-                    bugtask.status for bugtask in bugtasks)),
+               # there is a filter ...
+               And(
+                    # there's no status filter, or there is a status filter
+                    # and and it matches.
+                    Or(BugSubscriptionFilterStatus.id == None,
+                       BugSubscriptionFilterStatus.status.is_in(
+                            bugtask.status for bugtask in bugtasks)),
+                    # there's no importance filter, or there is an importance
+                    # filter and it matches.
+                    Or(BugSubscriptionFilterImportance.id == None,
+                       BugSubscriptionFilterImportance.importance.is_in(
+                            bugtask.importance for bugtask in bugtasks)))),
             ]
 
         return Store.of(self.__helper.pillar).using(*origin).find(
