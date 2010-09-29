@@ -455,12 +455,6 @@
       name="fmt"
       />
   <adapter
-      for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-      provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.SourcePackageFormatterAPI"
-      name="fmt"
-      />
-  <adapter
       for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SourcePackageReleaseFormatterAPI"

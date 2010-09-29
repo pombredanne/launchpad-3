@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -83,15 +83,18 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.tales import MenuAPI
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,
     )
 from lp.bugs.interfaces.bugbranch import IBugBranchSet
+from lp.code.browser.branch import BranchMirrorMixin
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
@@ -124,7 +127,6 @@ from lp.registry.interfaces.personproduct import (
     IPersonProduct,
     IPersonProductFactory,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
@@ -421,8 +423,7 @@ class BranchListingItemsMixin:
         return sorted(links, key=attrgetter('pocket'))
 
     def getDistroDevelSeries(self, distribution):
-        """Since distribution.currentseries hits the DB every time, cache it."""
-        self._distro_series_map = {}
+        """distribution.currentseries hits the DB every time so cache it."""
         try:
             return self._distro_series_map[distribution]
         except KeyError:
@@ -777,7 +778,7 @@ class NoContextBranchListingView(BranchListingView):
     """A branch listing that has no associated product or person."""
 
     field_names = ['lifecycle']
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
 
     no_branch_message = (
         'There are no branches that match the current status filter.')
@@ -932,8 +933,8 @@ class PersonBranchesMenu(ApplicationMenu):
     def active_reviews(self):
         text = get_plural_text(
             self.active_review_count,
-            'active review or unmerged proposal',
-            'active reviews or unmerged proposals')
+            'active review',
+            'active reviews')
         return Link('+activereviews', text)
 
     def addbranch(self):
@@ -1022,7 +1023,7 @@ class PersonSubscribedBranchesView(PersonBaseBranchListingView):
 
     page_title = _('Subscribed')
     label_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
 
     def _getCollection(self):
         return getUtility(IAllBranches).subscribedBy(self.context)
@@ -1122,8 +1123,8 @@ class ProductBranchesMenu(ApplicationMenu):
     def active_reviews(self):
         text = get_plural_text(
             self.active_review_count,
-            'active review or unmerged proposal',
-            'active reviews or unmerged proposals')
+            'Active review',
+            'Active reviews')
         return Link('+activereviews', text, site='code')
 
     @enabled_with_permission('launchpad.Commercial')
@@ -1140,7 +1141,7 @@ class ProductBranchListingView(BranchListingView):
     """A base class for product branch listings."""
 
     show_series_links = True
-    no_sort_by = (BranchListingSort.PRODUCT,)
+    no_sort_by = (BranchListingSort.PRODUCT, )
     label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
@@ -1180,8 +1181,23 @@ class ProductBranchListingView(BranchListingView):
         return message % self.context.displayname
 
 
+class ProductBranchStatisticsView(BranchCountSummaryView,
+                                  ProductBranchListingView):
+    """Portlet containing branch statistics."""
+
+    @property
+    def branch_text(self):
+        text = super(ProductBranchStatisticsView, self).branch_text
+        return text.capitalize()
+
+    @property
+    def commit_text(self):
+        text = super(ProductBranchStatisticsView, self).commit_text
+        return text.capitalize()
+
+
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, BranchMirrorMixin):
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
@@ -1191,6 +1207,10 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         self.product = self.context
         revision_cache = getUtility(IRevisionCache)
         self.revision_cache = revision_cache.inProduct(self.product)
+
+    @property
+    def branch(self):
+        return self.development_focus_branch
 
     @property
     def form_action(self):
@@ -1240,6 +1260,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
         sorted_series = self.sorted_active_series_list
+
         def show_branch(branch):
             if self.selected_lifecycle_status is None:
                 return True
@@ -1323,6 +1344,14 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def committer_text(self):
         return get_plural_text(self.committer_count, _('person'), _('people'))
 
+    @property
+    def configure_codehosting(self):
+        """Get the menu link for configuring code hosting."""
+        series_menu = MenuAPI(self.context.development_focus).overview
+        set_branch = series_menu['set_branch']
+        set_branch.text = 'Configure code hosting'
+        return set_branch
+
 
 class ProductBranchesView(ProductBranchListingView):
     """View for branch listing for a product."""
@@ -1353,7 +1382,7 @@ class ProductBranchesView(ProductBranchListingView):
 class ProjectBranchesView(BranchListingView):
     """View for branch listing for a project."""
 
-    no_sort_by = (BranchListingSort.DEFAULT,)
+    no_sort_by = (BranchListingSort.DEFAULT, )
     extra_columns = ('author', 'product')
     label_template = 'Bazaar branches of %(displayname)s'
     show_series_links = True

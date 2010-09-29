@@ -27,7 +27,10 @@ from zope.component import adapts, getUtility, queryAdapter, getMultiAdapter
 from zope.app import zapi
 from zope.publisher.browser import BrowserView
 from zope.traversing.interfaces import (
-    ITraversable, IPathAdapter, TraversalError)
+    ITraversable,
+    IPathAdapter,
+    TraversalError,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.schema import TextLine
@@ -1318,16 +1321,6 @@ class DistroSeriesFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(displayname)s'
     _link_permission = 'zope.Public'
-
-    def _link_summary_values(self):
-        displayname = self._context.displayname
-        return {'displayname': displayname}
-
-
-class SourcePackageFormatterAPI(CustomizableFormatter):
-    """Adapter for ISourcePackage objects to a formatted string."""
-
-    _link_summary_template = '%(displayname)s'
 
     def _link_summary_values(self):
         displayname = self._context.displayname
