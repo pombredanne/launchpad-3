@@ -6,24 +6,21 @@
 __metaclass__ = type
 __all__ = [
     'BugzillaRemoteComponentFinder',
-    'LaunchpadBugTracker',
     ]
 
 import re
 from StringIO import StringIO
-
 import urllib
 from urllib2 import (
         HTTPError,
         urlopen,
         )
 from BeautifulSoup import BeautifulSoup
+from canonical.launchpad.scripts.logger import log as default_log
 
 
 class BugzillaRemoteComponentFinder:
 
-    re_products_select = re.compile(r'<select name="product".*onchange="doOnSelectProduct\(2\);">(.*?)</select>', re.DOTALL)
-    re_product = re.compile(r'<option value="(.*)">(.*)</option>')
     re_cpts = re.compile(r'cpts\[(\d+)\] = \[(.*)\]')
     re_vers = re.compile(r'vers\[(\d+)\] = \[(.*)\]')
 
@@ -91,64 +88,3 @@ class BugzillaRemoteComponentFinder:
         for product in products:
             product_name = product['name']
             self.products[product_name] = product
-
-
-# TODO: Perhaps this can be replaced by the BugTracker model class?
-class LaunchpadBugTracker:
-    def __init__(self, bugtracker_name):
-        self.name = bugtracker_name
-        self.products = {}
-
-    def getComponentGroup(self, bz_product_name):
-        # TODO: Look to see if the Bugzilla product name is registered with
-        #       a Launchpad product, and if so, return it
-        return None
-
-    def retrieveProducts(self):
-        # TODO: Retrieve the bugtracker object from launchpad
-
-        launchpad_components = {
-            'libglx': {
-                'name': 'libglx',
-                'is_visible': True,
-                'is_custom': False,
-                },
-            'DRM/ObsoleteDriver': {
-                'name': 'DRM/ObsoleteDriver',
-                'is_visible': True,
-                'is_custom': False,
-                },
-            'DRM/other': {
-                'name': 'DRM/other',
-                'is_visible': False,
-                'is_custom': False,
-                },
-            'DRM/fglrx': {
-                'name': 'DRM/fglrx',
-                'is_visible': True,
-                'is_custom': True,
-                },
-            'deleted-custom-component': {
-                'name': 'deleted-custom-component',
-                'is_visible': False,
-                'is_custom': True,
-                }
-            }
-
-        self.products['DRI'] = {
-            'name': 'DRI',
-            'components': launchpad_components,
-            }
-
-    def components(self, product_name=None):
-        if not product_name:
-            product_name = 'default'
-
-        if not product_name in self.products:
-            return {}
-
-        product = self.products[product_name]
-
-        return product['components']
-
-
