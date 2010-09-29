@@ -13,7 +13,10 @@
 
       <p tal:condition="view/referrer">
         If this is blocking your work, let us know by asking a question at
-        <a href="/support">Launchpad Support</a>.
+        <a tal:condition="not: view/user|nothing"
+            href="/feedback">Launchpad Support</a>
+        <a tal:condition="view/user|nothing"
+          href="/support">Launchpad Support</a>.
         Otherwise, complain to the maintainers of the page that linked here.
       </p>
 

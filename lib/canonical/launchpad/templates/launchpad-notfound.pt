@@ -22,7 +22,10 @@
         </p>
         <p>
           If this is blocking your work, let us know by asking a question at
-          <a href="/support">Launchpad Support</a>.
+          <a tal:condition="not: view/user|nothing"
+            href="/feedback">Launchpad Support</a>
+          <a tal:condition="view/user|nothing"
+            href="/support">Launchpad Support</a>.
           Include the error <abbr>ID</abbr>
           <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
           in your message.
