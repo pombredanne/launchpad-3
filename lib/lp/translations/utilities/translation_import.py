@@ -495,7 +495,6 @@ class FileImporter(object):
             self.importer.uses_source_string_msgids and
             self.pofile.language.code == 'en')
 
-
     def _storeCredits(self, potmsgset, credits):
         """Store credits but only from upstream."""
         if not self.translation_import_queue_entry.from_upstream:
@@ -559,11 +558,11 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        no_translations =  (
+        no_translations = (
             message_data.translations == [] or
             message_data.translations is None or
             not any(message_data.translations))
-        if no_translations: 
+        if no_translations:
             # We don't have anything to import.
             return None
 
@@ -581,7 +580,7 @@ class FileImporter(object):
             self.pofile, self.last_translator, sanitized_translations)
 
         validation_ok = self._validateMessage(
-            potmsgset, new_message, sanitized_translations, message_data) 
+            potmsgset, new_message, sanitized_translations, message_data)
         if validation_ok and self.is_editor:
             return self._approveMessage(potmsgset, new_message, message_data)
 

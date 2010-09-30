@@ -379,11 +379,11 @@ class FileImporterTestCase(TestCaseWithFactory):
     def test_FileImporter_importFile_ok(self):
         # Test correct import operation for both
         # exported and upstream files.
-        importers = (
+        used_importers = (
             self._createImporterForExportedEntries(),
             self._createImporterForUpstreamEntries(),
             )
-        for (pot_importer, po_importer) in importers:
+        for (pot_importer, po_importer) in used_importers:
             # Run the import and see if PotMsgSet and TranslationMessage
             # entries are correctly created in the DB.
             errors, warnings = pot_importer.importFile()

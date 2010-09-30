@@ -384,7 +384,8 @@ Let's see the description we have atm:
 We do the update and see the karma being assigned.
 
     >>> status = potemplate_view.initialize()
-    Karma added: action=translationtemplatedescriptionchanged, product=evolution
+    Karma added:
+    action=translationtemplatedescriptionchanged, product=evolution
 
 And the new one is:
 
