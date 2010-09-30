@@ -49,7 +49,10 @@ from lp.buildmaster.manager import (
     SlaveScanner,
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
-from lp.buildmaster.tests.mock_slaves import BuildingSlave
+from lp.buildmaster.tests.mock_slaves import (
+    BuildingSlave,
+    OkSlave,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import TestCase as LaunchpadTestCase
@@ -595,44 +598,12 @@ class TestSlaveScannerScan(TrialTestCase):
         return manager
 
     def _checkDispatch(self, slave, builder):
-        """`SlaveScanner.scan` returns a `RecordingSlave`.
+        # SlaveScanner.scan returns a slave when a dispatch was
+        # successful.  We also check that the builder has a job on it.
 
-        The single slave returned should match the given builder and
-        contain interactions that should be performed asynchronously for
-        properly dispatching the sampledata job.
-        """
-        self.assertFalse(
-            slave is None, "Unexpected recording_slaves.")
-
-        self.assertEqual(slave.name, builder.name)
-        self.assertEqual(slave.url, builder.url)
-        self.assertEqual(slave.vm_host, builder.vm_host)
+        self.assertTrue(slave is not None, "Expected a slave.")
         self.assertEqual(0, builder.failure_count)
-
-        self.assertEqual(
-            [('ensurepresent',
-              ('0feca720e2c29dafb2c900713ba560e03b758711',
-               'http://localhost:58000/93/fake_chroot.tar.gz',
-               '', '')),
-             ('ensurepresent',
-              ('4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33',
-               'http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc',
-               '', '')),
-             ('build',
-              ('6358a89e2215e19b02bf91e2e4d009640fae5cf8',
-               'binarypackage', '0feca720e2c29dafb2c900713ba560e03b758711',
-               {'alsa-utils_1.0.9a-4ubuntu1.dsc':
-                '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33'},
-               {'arch_indep': True,
-                'arch_tag': 'i386',
-                'archive_private': False,
-                'archive_purpose': 'PRIMARY',
-                'archives':
-                ['deb http://ftpmaster.internal/ubuntu hoary main'],
-                'build_debug_symbols': False,
-                'ogrecomponent': 'main',
-                'suite': u'hoary'}))],
-            slave.calls, "Job was not properly dispatched.")
+        self.assertTrue(builder.currentjob is not None)
 
     def testScanDispatchForResetBuilder(self):
         # A job gets dispatched to the sampledata builder after it's reset.
@@ -640,11 +611,13 @@ class TestSlaveScannerScan(TrialTestCase):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
         # Set this to 1 here so that _checkDispatch can make sure it's
         # reset to 0 after a successful dispatch.
         builder.failure_count = 1
 
         # Run 'scan' and check its result.
+        self.layer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
         d = defer.maybeDeferred(manager.scan)

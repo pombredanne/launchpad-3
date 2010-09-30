@@ -668,7 +668,9 @@ class Builder(SQLBase):
         logger = logging.getLogger('slave-scanner')
         return logger
 
-    @write_transaction
+    # XXX: fix later, this is causing cache issue because it resets the
+    # store after committing.
+    #@write_transaction
     def acquireBuildCandidate(self):
         """Acquire a build candidate in an atomic fashion.
 
@@ -762,8 +764,14 @@ class Builder(SQLBase):
         :param candidate: The job to dispatch.
         """
         logger = self._getSlaveScannerLogger()
-        d = self.startBuild(candidate, logger)
+        # Using maybeDeferred ensures that any exceptions are also
+        # wrapped up and caught below.
+        d = defer.maybeDeferred(self.startBuild, candidate, logger)
+
         def warn_on_error(failure):
+            # Reverse the effects of markAsBuilding() called from
+            # acquireBuildCandidate.
+            candidate.reset()
             failure.trap(
                 BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch)
             err = failure.value
