@@ -14,12 +14,12 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IBinaryAndSourcePackageName
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
+from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 from lp.soyuz.model.binarypackagename import getBinaryPackageDescriptions
 
 
