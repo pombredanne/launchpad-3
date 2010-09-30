@@ -15,6 +15,9 @@ from storm.locals import (
     )
 
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.model.bugsubscriptionfilterimportance import (
+    BugSubscriptionFilterImportance,
+    )
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
@@ -73,3 +76,37 @@ class BugSubscriptionFilter(Storm):
     statuses = property(
         _get_statuses, _set_statuses, doc=(
             "A frozenset of statuses filtered on."))
+
+    def _get_importances(self):
+        """Return a frozenset of importances to filter on."""
+        return frozenset(
+            IStore(BugSubscriptionFilterImportance).find(
+                BugSubscriptionFilterImportance,
+                BugSubscriptionFilterImportance.filter == self).values(
+                BugSubscriptionFilterImportance.importance))
+
+    def _set_importances(self, importances):
+        """Update the importances to filter on.
+
+        The importances must be from the `BugTaskImportance` enum, but can be
+        bundled in any iterable.
+        """
+        importances = frozenset(importances)
+        current_importances = self.importances
+        store = IStore(BugSubscriptionFilterImportance)
+        # Add additional importances.
+        for importance in importances.difference(current_importances):
+            importance_filter = BugSubscriptionFilterImportance()
+            importance_filter.filter = self
+            importance_filter.importance = importance
+            store.add(importance_filter)
+        # Delete unused ones.
+        store.find(
+            BugSubscriptionFilterImportance,
+            BugSubscriptionFilterImportance.filter == self,
+            BugSubscriptionFilterImportance.importance.is_in(
+                current_importances.difference(importances))).remove()
+
+    importances = property(
+        _get_importances, _set_importances, doc=(
+            "A frozenset of importances filtered on."))

@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.testing import (
     login_person,
@@ -86,3 +89,24 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.statuses = []
         self.assertEqual(frozenset(), bug_subscription_filter.statuses)
+
+    def test_importances(self):
+        # The importances property is a frozenset of the importances that are
+        # filtered upon.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(frozenset(), bug_subscription_filter.importances)
+
+    def test_importances_set(self):
+        # Assigning any iterable to importances updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.importances = [
+            BugTaskImportance.HIGH, BugTaskImportance.LOW]
+        self.assertEqual(
+            frozenset((BugTaskImportance.HIGH, BugTaskImportance.LOW)),
+            bug_subscription_filter.importances)
+
+    def test_importances_set_empty(self):
+        # Assigning an empty iterable to importances updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.importances = []
+        self.assertEqual(frozenset(), bug_subscription_filter.importances)
