@@ -620,7 +620,7 @@ class BugTaskTextView(LaunchpadView):
 
 
 class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
-                  FeedsMixin, ReturnToReferrerMixin):
+                  FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
@@ -782,7 +782,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
-        self.notices.append("You have been subscribed to this bug.")
+        self.request.response.addNotification("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
         """Handle an unsubscribe request."""
