@@ -9,22 +9,22 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="launchpad">
 
-  <class class="canonical.launchpad.database.OAuthConsumer">
+  <class class="canonical.launchpad.database.oauth.OAuthConsumer">
       <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumer"/>
   </class>
 
-  <class class="canonical.launchpad.database.OAuthConsumerSet">
+  <class class="canonical.launchpad.database.oauth.OAuthConsumerSet">
       <allow interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
   </class>
 
   <securedutility
-      class="canonical.launchpad.database.OAuthConsumerSet"
+      class="canonical.launchpad.database.oauth.OAuthConsumerSet"
       provides="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet">
       <allow
           interface="canonical.launchpad.interfaces.oauth.IOAuthConsumerSet"/>
   </securedutility>
 
-  <class class="canonical.launchpad.database.OAuthRequestToken">
+  <class class="canonical.launchpad.database.oauth.OAuthRequestToken">
       <allow interface="canonical.launchpad.interfaces.oauth.IOAuthRequestToken"/>
       <require
           permission="launchpad.Edit"
@@ -32,20 +32,20 @@
   </class>
 
   <securedutility
-      class="canonical.launchpad.database.OAuthRequestTokenSet"
+      class="canonical.launchpad.database.oauth.OAuthRequestTokenSet"
       provides="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet">
       <allow
           interface="canonical.launchpad.interfaces.oauth.IOAuthRequestTokenSet"/>
   </securedutility>
 
-  <class class="canonical.launchpad.database.OAuthAccessToken">
+  <class class="canonical.launchpad.database.oauth.OAuthAccessToken">
       <allow interface="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.oauth.IOAuthAccessToken"/>
   </class>
 
-  <class class="canonical.launchpad.database.OAuthNonce">
+  <class class="canonical.launchpad.database.oauth.OAuthNonce">
       <allow interface="canonical.launchpad.interfaces.oauth.IOAuthNonce"/>
   </class>
 </configure>

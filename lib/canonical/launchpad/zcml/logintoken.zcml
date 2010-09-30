@@ -11,7 +11,7 @@
 <facet facet="overview">
 
     <!-- LoginToken -->
-    <class class="canonical.launchpad.database.LoginToken">
+    <class class="canonical.launchpad.database.logintoken.LoginToken">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.logintoken.ILoginToken" />
@@ -90,12 +90,12 @@
         />
 
     <!-- LoginTokenSet -->
-    <class class="canonical.launchpad.database.LoginTokenSet">
+    <class class="canonical.launchpad.database.logintoken.LoginTokenSet">
         <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.LoginTokenSet"
+        class="canonical.launchpad.database.logintoken.LoginTokenSet"
         provides="canonical.launchpad.interfaces.logintoken.ILoginTokenSet">
         <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
     </securedutility>
