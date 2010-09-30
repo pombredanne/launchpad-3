@@ -12,8 +12,6 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.temporaryblobstorage import *
 from lp.buildmaster.model.builder import *
-from lp.coop.answersbugs.model import *
-from lp.registry.model.personnotification import *
 from lp.services.worlddata.model.language import *
 from lp.services.worlddata.model.spokenin import *
 from lp.soyuz.model.archive import *
