@@ -157,17 +157,13 @@ class TestSlaveScanner(TrialTestCase):
             isinstance(result, TestingFailDispatchResult),
             'Dispatch failure did not result in a FailBuildResult object')
 
-    def test_checkResume(self):
+    def test_checkResume_success(self):
         """`SlaveScanner.checkResume` is chained after resume requests.
 
         If the resume request succeed it returns None, otherwise it returns
         a `ResetBuildResult` (the one in the test context) that will be
         collect and evaluated later.
-
-        See `RecordingSlave.resumeHost` for more information about the resume
-        result contents.
         """
-        #slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
         slave = OkSlave()
 
         successful_response = ['', '', os.EX_OK]
@@ -175,7 +171,17 @@ class TestSlaveScanner(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful resume checks should return None')
 
+    def test_checkResume_fail(self):
+        slave = OkSlave()
         failed_response = ['stdout', 'stderr', 1]
+        result = self.manager.checkResume(failed_response, slave)
+        self.assertIsDispatchReset(result)
+        self.assertIn('reset failure', repr(result))
+        self.assertEqual(result.info, "stdout\nstderr")
+
+    def test_checkResume_Failure(self):
+        slave = OkSlave()
+        failed_response = Failure(['stdout', 'stderr', 1])
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
         self.assertIn('reset failure', repr(result))
