@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.testing import (
     login_person,
@@ -64,3 +65,24 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(False, bug_subscription_filter.exclude_any_tags)
         self.assertIs(None, bug_subscription_filter.other_parameters)
         self.assertIs(None, bug_subscription_filter.description)
+
+    def test_statuses(self):
+        # The statuses property is a frozenset of the statuses that are
+        # filtered upon.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(frozenset(), bug_subscription_filter.statuses)
+
+    def test_statuses_set(self):
+        # Assigning any iterable to statuses updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.statuses = [
+            BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]
+        self.assertEqual(
+            frozenset((BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)),
+            bug_subscription_filter.statuses)
+
+    def test_statuses_set_empty(self):
+        # Assigning an empty iterable to statuses updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.statuses = []
+        self.assertEqual(frozenset(), bug_subscription_filter.statuses)
