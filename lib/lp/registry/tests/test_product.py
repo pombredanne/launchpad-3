@@ -1,30 +1,37 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
+from cStringIO import StringIO
 import datetime
+import unittest
+
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
-from cStringIO import StringIO
-
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import (
+    login,
+    syncUpdate,
+    )
 from canonical.launchpad.testing.pages import (
-    find_main_content, get_feedback_messages, setupBrowser)
+    find_main_content,
+    get_feedback_messages,
+    setupBrowser,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
-
-from canonical.launchpad.ftests import syncUpdate
-
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import License
-from lp.registry.model.product import Product
+from lp.registry.interfaces.product import (
+    IProduct,
+    License,
+    )
+from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.product import Product, UnDeactivateable
 from lp.registry.model.productlicense import ProductLicense
-from lp.registry.model.commercialsubscription import (
-    CommercialSubscription)
 from lp.testing import TestCaseWithFactory
+
 
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
@@ -41,7 +48,7 @@ class TestProduct(TestCaseWithFactory):
         source_package.setPackaging(
             product.development_focus, self.factory.makePerson())
         self.assertRaises(
-            AssertionError,
+            UnDeactivateable,
             setattr, product, 'active', False)
 
     def test_deactivation_success(self):
@@ -52,6 +59,82 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(True, product.active)
         product.active = False
         self.assertEqual(False, product.active)
+
+    def test_milestone_sorting_getMilestonesAndReleases(self):
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        milestone_0_1 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.1')
+        milestone_0_2 = self.factory.makeMilestone(
+            product=product,
+            productseries=series,
+            name='0.2')
+        release_1 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_1)
+        release_2 = self.factory.makeProductRelease(
+            product=product,
+            milestone=milestone_0_2)
+        release_file1 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_1,
+            productseries=series,
+            milestone=milestone_0_1)
+        release_file2 = self.factory.makeProductReleaseFile(
+            product=product,
+            release=release_2,
+            productseries=series,
+            milestone=milestone_0_2)
+        expected = [(milestone_0_2, release_2), (milestone_0_1, release_1)]
+        self.assertEqual(
+            expected,
+            list(product.getMilestonesAndReleases()))
+
+    def test_getTimeline_limit(self):
+        # Only 20 milestones/releases per series should be included in the
+        # getTimeline() results. The results are sorted by
+        # descending dateexpected and name, so the presumed latest
+        # milestones should be included.
+        product = self.factory.makeProduct(name='foo')
+        for i in range(25):
+            milestone_list = self.factory.makeMilestone(
+                product=product,
+                productseries=product.development_focus,
+                name=str(i))
+
+        # 0 through 4 should not be in the list.
+        expected_milestones = [
+            '/foo/+milestone/24',
+            '/foo/+milestone/23',
+            '/foo/+milestone/22',
+            '/foo/+milestone/21',
+            '/foo/+milestone/20',
+            '/foo/+milestone/19',
+            '/foo/+milestone/18',
+            '/foo/+milestone/17',
+            '/foo/+milestone/16',
+            '/foo/+milestone/15',
+            '/foo/+milestone/14',
+            '/foo/+milestone/13',
+            '/foo/+milestone/12',
+            '/foo/+milestone/11',
+            '/foo/+milestone/10',
+            '/foo/+milestone/9',
+            '/foo/+milestone/8',
+            '/foo/+milestone/7',
+            '/foo/+milestone/6',
+            '/foo/+milestone/5',
+            ]
+
+        [series] = product.getTimeline()
+        timeline_milestones = [
+            landmark['uri']
+            for landmark in series['landmarks']]
+        self.assertEqual(
+            expected_milestones,
+            timeline_milestones)
 
 
 class TestProductFiles(unittest.TestCase):
@@ -84,7 +167,7 @@ class TestProductFiles(unittest.TestCase):
         firefox_owner.open('http://launchpad.dev/firefox/+download')
         content = find_main_content(firefox_owner.contents)
         rows = content.findAll('tr')
-        print
+
         a_list = rows[-1].findAll('a')
         # 1st row
         a_element = a_list[0]
@@ -176,6 +259,32 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
                          'new')
+
+
+class ProductSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for product snapshots."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(ProductSnapshotTestCase, self).setUp()
+        self.product = self.factory.makeProduct(name="shamwow")
+
+    def test_snapshot(self):
+        """Snapshots of products should not include marked attribues.
+
+        Wrap an export with 'doNotSnapshot' to force the snapshot to not
+        include that attribute.
+        """
+        snapshot = Snapshot(self.product, providing=IProduct)
+        omitted = [
+            'series',
+            'releases',
+            ]
+        for attribute in omitted:
+            self.assertFalse(
+                hasattr(snapshot, attribute),
+                "Snapshot should not include %s." % attribute)
 
 
 class BugSupervisorTestCase(TestCaseWithFactory):

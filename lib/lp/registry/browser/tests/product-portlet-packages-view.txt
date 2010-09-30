@@ -103,7 +103,7 @@ for the current Ubuntu series will NOT be suggested.
 A source package that does NOT have a publishing history in the PENDING
 or PUBLISHED statuses will NOT be suggested.
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
     ...     status=PackagePublishingStatus.DELETED)

@@ -7,6 +7,7 @@ import unittest
 
 from canonical.testing import LaunchpadLayer
 
+
 class KarmaSampleDataTestCase(unittest.TestCase):
     layer = LaunchpadLayer
 

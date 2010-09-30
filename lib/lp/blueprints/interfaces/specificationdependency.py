@@ -16,9 +16,17 @@ __all__ = [
     'SpecDependencyIsAlsoRemoval',
     ]
 
-from zope.interface import Interface, implements
-from zope.schema import Choice, Int
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Int,
+    )
+
 from canonical.launchpad import _
+
 
 class ISpecificationDependency(Interface):
     """A link between a specification and another specification on which it
@@ -46,7 +54,6 @@ class ISpecificationDependencyRemoval(Interface):
 
 class SpecDependencyIsAlsoRemoval:
     implements(ISpecificationDependencyRemoval)
-    __used_for__ = ISpecificationDependency
 
     def __init__(self, specdep):
         self.specdep = specdep

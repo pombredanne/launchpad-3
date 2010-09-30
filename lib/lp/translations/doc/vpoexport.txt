@@ -45,7 +45,7 @@ current POFiles in a given distro series.
     pmount    pmount cs
     pmount    pmount de
     pmount    pmount es
-    pmount    pmount es
+    pmount    pmount es@test
     pmount    pmount fr
     pmount    pmount hr
     pmount    pmount it_IT

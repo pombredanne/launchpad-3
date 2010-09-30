@@ -14,8 +14,14 @@ import logging
 import os
 import tempfile
 
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer
-from zope.component import adapter, provideHandler
+from twisted.conch.interfaces import (
+    ISFTPFile,
+    ISFTPServer,
+    )
+from zope.component import (
+    adapter,
+    provideHandler,
+    )
 import zope.component.event
 from zope.interface import implements
 

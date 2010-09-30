@@ -94,14 +94,14 @@ session.
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
-  ...     if tf.has_key("source"):
-  ...         package_names.append(tf["source"])
+  ...     if tf.has_key("Source"):
+  ...         package_names.append(tf["Source"])
   ...
   ...     send_filepaths = [changes_filepath]
-  ...     if tf.has_key("files"):
+  ...     if tf.has_key("Files"):
   ...         send_filepaths.extend(
   ...             [os.path.join(test_files_dir, line.split()[-1])
-  ...              for line in tf["files"].splitlines() if line])
+  ...              for line in tf["Files"].splitlines() if line])
   ...
   ...     sent_filenames.extend(
   ...         os.path.basename(filepath) for filepath in send_filepaths)
@@ -429,8 +429,9 @@ candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> from lp.soyuz.interfaces.queue import (
-  ...     PackageUploadStatus, QueueInconsistentStateError)
+  ...     QueueInconsistentStateError)
 
 Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
@@ -708,7 +709,7 @@ and SHA256) for each index published.
   Version: 6.6.6
   Codename: breezy-autotest
   Date: ...
-  Architectures: 
+  Architectures:
   Components: main restricted universe multiverse
   Description: ubuntutest Breezy Badger Autotest 6.6.6
   MD5Sum:

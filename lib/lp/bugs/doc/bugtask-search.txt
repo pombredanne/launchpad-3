@@ -10,7 +10,7 @@ method accepts a single parameter; an BugTaskSearchParams instance.
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
 
-    >>> from canonical.launchpad.database import BugTask
+    >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
     ...     "BugTask.bug = Bug.id AND Bug.private = false",
     ...     clauseTables=['Bug'])
@@ -245,7 +245,7 @@ nominated_for parameter.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
 
-    >>> from canonical.launchpad.database import BugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> print list(BugNomination.selectBy(distroseries=warty))
     []
 
@@ -1037,7 +1037,7 @@ We mark bug #10 as a duplicate of bug #9.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> bug_ten = getUtility(IBugSet).get(10)
-    >>> bug_ten.duplicateof = bug_nine
+    >>> bug_ten.markAsDuplicate(bug_nine)
     >>> flush_database_updates()
 
 Searching again reveals bug #9 at the top of the list, since it now has a duplicate.

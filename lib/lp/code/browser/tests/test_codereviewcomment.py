@@ -7,9 +7,12 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewCommentPrimaryContext(TestCaseWithFactory):

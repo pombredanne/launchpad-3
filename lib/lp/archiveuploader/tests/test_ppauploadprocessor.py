@@ -17,27 +17,38 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archiveuploader.uploadprocessor import UploadProcessor
-from lp.archiveuploader.tests.test_uploadprocessor import (
-    TestUploadProcessorBase)
 from canonical.config import config
 from canonical.launchpad.database import Component
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities,
+    ILibraryFileAliasSet,
+    )
+from canonical.launchpad.testing.fakepackager import FakePackager
+from lp.app.errors import NotFoundError
+from lp.archiveuploader.tests.test_uploadprocessor import (
+    TestUploadProcessorBase,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
-from canonical.launchpad.testing.fakepackager import FakePackager
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.services.mail import stub
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.queue import (
+    NonBuildableSourceUploadError,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -73,8 +84,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
         # Set up the uploadprocessor with appropriate options and logger
         self.options.context = 'insecure'
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def assertEmail(self, contents=None, recipients=None,
                     ppa_header='name16'):
@@ -345,10 +355,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name="bar")
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary_universe", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # No mails are sent for successful binary uploads.
         self.assertEqual(len(stub.test_emails), 0,
@@ -395,9 +405,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -449,9 +459,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'
-        self.options.buildid = build_bar_i386.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~cprov/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build_bar_i386)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -673,12 +683,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1-mixed", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            'Upload rejected because it contains binary packages. Ensure '
-            'you are using `debuild -S`, or an equivalent command, to '
-            'generate only the source package before re-uploading. See '
-            'https://help.launchpad.net/Packaging/PPA for more information.')
+        self.assertIn(
+            'Source/binary (i.e. mixed) uploads are not allowed.',
+            self.uploadprocessor.last_processed_upload.rejection_message)
 
     def testPGPSignatureNotPreserved(self):
         """PGP signatures should be removed from PPA .changes files.
@@ -753,9 +760,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name='bar')
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -797,10 +804,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Binary uploads should exhibit the same behaviour:
         [build] = self.name16.archive.getBuildRecords(name="bar")
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(self.uploadprocessor, upload_dir, build=build)
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
@@ -1223,8 +1229,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
 
         # Re-initialize uploadprocessor since it depends on the new
         # transaction reset by switchDbUser.
-        self.uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        self.uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
     def testPPASizeQuotaSourceRejection(self):
         """Verify the size quota check for PPA uploads.
@@ -1300,14 +1305,14 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name='bar')
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
 
         # Stuff 1024 MiB in name16 PPA, so anything will be above the
         # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted, and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(

@@ -14,14 +14,12 @@ in the root element. The template provides common layout to Launchpad.
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
-
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.testing.pages import find_tag_by_id
-
 from lp.testing import TestCaseWithFactory
 
 
@@ -161,3 +159,21 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertEqual(None, document.find(True, id='watermark'))
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
+
+    def test_contact_support_logged_in(self):
+        # The support link points to /support when the user is logged in.
+        view = self.makeTemplateView('main_only')
+        view._user = self.user
+        content = BeautifulSoup(view())
+        footer = find_tag_by_id(content, 'footer')
+        link = footer.find('a', text='Contact Launchpad Support').parent
+        self.assertEqual('/support', link['href'])
+
+    def test_contact_support_anonymous(self):
+        # The support link points to /feedback when the user is anonymous.
+        view = self.makeTemplateView('main_only')
+        view._user = None
+        content = BeautifulSoup(view())
+        footer = find_tag_by_id(content, 'footer')
+        link = footer.find('a', text='Contact Launchpad Support').parent
+        self.assertEqual('/feedback', link['href'])

@@ -6,11 +6,20 @@
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
+
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
-    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
+    IBugTrackerSet,
+    IDistributionMirrorSet,
+    IDistributionSet,
+    ILanguageSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    )
+from lp.app.errors import NotFoundError
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.

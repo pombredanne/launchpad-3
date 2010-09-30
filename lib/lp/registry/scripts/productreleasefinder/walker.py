@@ -12,17 +12,26 @@ __all__ = [
     'combine_url',
     ]
 
-import os
 import ftplib
+import os
 import socket
-import urllib2
 from urllib import unquote_plus
-from urlparse import urlsplit, urljoin
+import urllib2
+from urlparse import (
+    urljoin,
+    urlsplit,
+    )
 
 from BeautifulSoup import BeautifulSoup
+from cscvs.dircompare.path import (
+    as_dir,
+    subdir,
+    )
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 
-from cscvs.dircompare.path import as_dir, subdir
-from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
 

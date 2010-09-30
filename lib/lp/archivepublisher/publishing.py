@@ -9,55 +9,47 @@ __all__ = [
 
 __metaclass__ = type
 
+from datetime import datetime
 import hashlib
 import logging
 import os
 import shutil
 
-from datetime import datetime
-
+from debian.deb822 import Release
 from zope.component import getUtility
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
+from lp.archivepublisher.config import (
+    getPubConfig,
+    LucilleConfigError,
+    )
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.config import getPubConfig, LucilleConfigError
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey)
+    IArchiveSigningKey,
+    )
 from lp.archivepublisher.utils import (
-    RepositoryIndexFile, get_ppa_reference)
-from canonical.database.sqlbase import sqlvalues
+    get_ppa_reference,
+    RepositoryIndexFile,
+    )
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose, ArchiveStatus
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
-from canonical.librarian.client import LibrarianClient
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
-DISTRORELEASE_STANZA = """Origin: %s
-Label: %s
-Suite: %s
-Version: %s
-Codename: %s
-Date: %s
-Architectures: %s
-Components: %s
-Description: %s
-"""
-
-DISTROARCHRELEASE_STANZA = """Archive: %s
-Version: %s
-Component: %s
-Origin: %s
-Label: %s
-Architecture: %s
-"""
 
 def reorder_components(components):
     """Return a list of the components provided.
@@ -91,6 +83,7 @@ def _getDiskPool(pubconf, log):
     dp.logger.setLevel(logging.INFO)
 
     return dp
+
 
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
@@ -487,33 +480,43 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
+        release_file = Release()
+        release_file["Origin"] = self._getOrigin()
+        release_file["Label"] = self._getLabel()
+        release_file["Suite"] = full_name
+        release_file["Version"] = distroseries.version
+        release_file["Codename"] = distroseries.name
+        release_file["Date"] = datetime.utcnow().strftime(
+            "%a, %d %b %Y %k:%M:%S UTC")
+        release_file["Architectures"] = " ".join(
+            sorted(list(all_architectures)))
+        release_file["Components"] = " ".join(
+            reorder_components(all_components))
+        release_file["Description"] = drsummary
+
+        for filename in sorted(list(all_files), key=os.path.dirname):
+            entry = self._readIndexFileContents(full_name, filename)
+            if entry is None:
+                continue
+            release_file.setdefault("MD5Sum", []).append({
+                "md5sum": hashlib.md5(entry).hexdigest(),
+                "name": filename,
+                "size": len(entry)})
+            release_file.setdefault("SHA1", []).append({
+                "sha1": hashlib.sha1(entry).hexdigest(),
+                "name": filename,
+                "size": len(entry)})
+            release_file.setdefault("SHA256", []).append({
+                "sha256": hashlib.sha256(entry).hexdigest(),
+                "name": filename,
+                "size": len(entry)})
+
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
-
-        stanza = (DISTRORELEASE_STANZA % (
-                    self._getOrigin(),
-                    self._getLabel(),
-                    full_name,
-                    distroseries.version,
-                    distroseries.name,
-                    datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-                    " ".join(sorted(list(all_architectures))),
-                    " ".join(reorder_components(all_components)),
-                    drsummary)).encode("utf-8")
-        f.write(stanza)
-
-        f.write("MD5Sum:\n")
-        all_files = sorted(list(all_files), key=os.path.dirname)
-        for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.md5)
-        f.write("SHA1:\n")
-        for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.sha1)
-        f.write("SHA256:\n")
-        for file_name in all_files:
-            self._writeSumLine(full_name, f, file_name, hashlib.sha256)
-
-        f.close()
+        try:
+            release_file.dump(f, "utf-8")
+        finally:
+            f.close()
 
         # Skip signature if the archive signing key is undefined.
         if self.archive.signing_key is None:
@@ -562,26 +565,29 @@ class Publisher(object):
 
         all_files.add(os.path.join(component, architecture, "Release"))
 
+        release_file = Release()
+        release_file["Archive"] = full_name
+        release_file["Version"] = distroseries.version
+        release_file["Component"] = component
+        release_file["Origin"] = self._getOrigin()
+        release_file["Label"] = self._getLabel()
+        release_file["Architecture"] = clean_architecture
+
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
-
-        stanza = (DISTROARCHRELEASE_STANZA % (
-                full_name,
-                distroseries.version,
-                component,
-                self._getOrigin(),
-                self._getLabel(),
-                unicode(clean_architecture))).encode("utf-8")
-        f.write(stanza)
-        f.close()
+        try:
+            release_file.dump(f, "utf-8")
+        finally:
+            f.close()
 
         return clean_architecture
 
-    def _writeSumLine(self, distroseries_name, out_file, file_name, sum_form):
-        """Write out a checksum line.
+    def _readIndexFileContents(self, distroseries_name, file_name):
+        """Read an index files' contents.
 
-        Writes a checksum to the given file for the given filename in
-        the given form.
+        :param distroseries_name: Distro series name
+        :param file_name: Filename relative to the parent container directory.
+        :return: File contents, or None if the file could not be found.
         """
         full_name = os.path.join(self._config.distsroot,
                                  distroseries_name, file_name)
@@ -590,25 +596,21 @@ class Publisher(object):
             # Most likely we have an incomplete archive (E.g. no sources
             # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
-            return
+            return None
 
         in_file = open(full_name, 'r')
         try:
-            contents = in_file.read()
-            length = len(contents)
-            checksum = sum_form(contents).hexdigest()
+            return in_file.read()
         finally:
             in_file.close()
 
-        out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-
     def deleteArchive(self):
         """Delete the archive.
-        
-        Physically remove the entire archive from disk and set the archive's 
+
+        Physically remove the entire archive from disk and set the archive's
         status to DELETED.
 
-        Any errors encountered while removing the archive from disk will 
+        Any errors encountered while removing the archive from disk will
         be caught and an OOPS report generated.
         """
 
@@ -627,7 +629,7 @@ class Publisher(object):
                 self.log.warning(
                     "Failed to delete directory '%s' for archive "
                     "'%s/%s'\n%s" % (
-                    directory, self.archive.owner.name, 
+                    directory, self.archive.owner.name,
                     self.archive.name, e))
 
         self.archive.status = ArchiveStatus.DELETED

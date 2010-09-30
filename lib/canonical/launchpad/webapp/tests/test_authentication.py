@@ -11,16 +11,21 @@ import unittest
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 from canonical.launchpad.ftests import login
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestAuthenticationOfPersonlessAccounts(TestCaseWithFactory):

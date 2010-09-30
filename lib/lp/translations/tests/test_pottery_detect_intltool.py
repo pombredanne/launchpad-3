@@ -4,20 +4,26 @@
 from __future__ import with_statement
 
 import os
+from StringIO import StringIO
 import tarfile
+from textwrap import dedent
 import unittest
 
-from StringIO import StringIO
-from textwrap import dedent
-
 from bzrlib.bzrdir import BzrDir
-from canonical.launchpad.scripts.tests import run_script
-from lp.translations.pottery.detect_intltool import is_intltool_structure
+
 from canonical.buildd.pottery.intltool import (
-    ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
-    generate_pot, generate_pots, get_translation_domain)
+    check_potfiles_in,
+    ConfigFile,
+    find_intltool_dirs,
+    find_potfiles_in,
+    generate_pot,
+    generate_pots,
+    get_translation_domain,
+    )
+from canonical.launchpad.scripts.tests import run_script
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
 class SetupTestPackageMixin(object):

@@ -4,14 +4,17 @@
 # pylint: disable-msg=E0213
 
 from lazr.restful.fields import Reference
-
 from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.rosettastats import IRosettaStats
 from lp.translations.interfaces.translatedlanguage import ITranslatedLanguage
+
 
 __metaclass__ = type
 
@@ -41,6 +44,5 @@ class IProductSeriesLanguage(IRosettaStats, ITranslatedLanguage):
 class IProductSeriesLanguageSet(Interface):
     """The set of productserieslanguages."""
 
-    def getProductSeriesLanguage(productseries, language, variant=None,
-                                 pofile=None):
+    def getProductSeriesLanguage(productseries, language, pofile=None):
         """Return a PSL for a productseries and a language."""

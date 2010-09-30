@@ -12,21 +12,26 @@ __all__ = [
 
 from datetime import datetime
 
+import bzrlib
 from zope.component import getUtility
 
-import bzrlib
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.authorization import (
-    precache_permission_for_objects)
-
+    precache_permission_for_objects,
+    )
 from lp.code.enums import CodeImportReviewStatus
-from lp.code.interfaces.branch import IBranchCloud, IBranchSet
+from lp.code.interfaces.branch import (
+    IBranchCloud,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class BazaarApplicationView(LaunchpadView):
@@ -88,17 +93,17 @@ class BazaarApplicationView(LaunchpadView):
 
 class ProductInfo:
 
-    def __init__(
-        self, product_name, num_branches, branch_size, elapsed):
-        self.name = product_name
-        self.url = '/' + product_name
-        self.num_branches = num_branches
-        self.branch_size = branch_size
+    def __init__(self, name, commits, author_count, size, elapsed):
+        self.name = name
+        self.url = '/' + name
+        self.commits = commits
+        self.author_count = author_count
+        self.size = size
         self.elapsed_since_commit = elapsed
 
     @property
-    def branch_class(self):
-        return "cloud-size-%s" % self.branch_size
+    def tag_class(self):
+        return "cloud-size-%s" % self.size
 
     @property
     def time_darkness(self):
@@ -106,30 +111,32 @@ class ProductInfo:
             return "light"
         if self.elapsed_since_commit.days < 7:
             return "dark"
-        if self.elapsed_since_commit.days < 31:
+        if self.elapsed_since_commit.days < 14:
             return "medium"
         return "light"
 
     @property
     def html_class(self):
-        return "%s cloud-%s" % (self.branch_class, self.time_darkness)
+        return "%s cloud-%s" % (self.tag_class, self.time_darkness)
 
     @property
     def html_title(self):
-        if self.num_branches == 1:
-            size = "1 branch"
+        if self.commits == 1:
+            size = "1 commit"
         else:
-            size = "%d branches" % self.num_branches
-        if self.elapsed_since_commit is None:
-            commit = "no commits yet"
-        elif self.elapsed_since_commit.days == 0:
+            size = "%d commits" % self.commits
+        if self.author_count == 1:
+            who = "1 person"
+        else:
+            who = "%s people" % self.author_count
+        if self.elapsed_since_commit.days == 0:
             commit = "last commit less than a day old"
         elif self.elapsed_since_commit.days == 1:
             commit = "last commit one day old"
         else:
             commit = (
                 "last commit %d days old" % self.elapsed_since_commit.days)
-        return "%s, %s" % (size, commit)
+        return "%s by %s, %s" % (size, who, commit)
 
 
 class BazaarProjectsRedirect(LaunchpadView):
@@ -172,7 +179,9 @@ class BazaarProductView:
         # is the first item of the tuple returned, and is guaranteed to be
         # unique by the sql query.
         product_info = sorted(
-            list(getUtility(IBranchCloud).getProductsWithInfo(num_products)))
+            getUtility(IBranchCloud).getProductsWithInfo(num_products))
+        if len(product_info) == 0:
+            return
         now = datetime.today()
         counts = sorted(zip(*product_info)[1])
         size_mapping = {
@@ -182,14 +191,10 @@ class BazaarProductView:
             0.8: 'large',
             1.0: 'largest',
             }
-        num_branches_to_size = self._make_distribution_map(
+        num_commits_to_size = self._make_distribution_map(
             counts, size_mapping)
 
-        for product_name, num_branches, last_revision_date in product_info:
-            # Projects with no branches are not interesting.
-            if num_branches == 0:
-                continue
-            branch_size = num_branches_to_size[num_branches]
+        for name, commits, author_count, last_revision_date in product_info:
+            size = num_commits_to_size[commits]
             elapsed = now - last_revision_date
-            yield ProductInfo(
-                product_name, num_branches, branch_size, elapsed)
+            yield ProductInfo(name, commits, author_count, size, elapsed)

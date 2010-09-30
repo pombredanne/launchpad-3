@@ -8,14 +8,21 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import (
+    Deferred,
+    succeed,
+    )
 from twisted.internet.task import Clock
-
 from zope.interface import implements
 
 from lp.services.twistedsupport.task import (
-    AlreadyRunningError, ITaskConsumer, ITaskSource, NotRunningError,
-    ParallelLimitedTaskConsumer, PollingTaskSource)
+    AlreadyRunningError,
+    ITaskConsumer,
+    ITaskSource,
+    NotRunningError,
+    ParallelLimitedTaskConsumer,
+    PollingTaskSource,
+    )
 from lp.testing import TestCase
 
 

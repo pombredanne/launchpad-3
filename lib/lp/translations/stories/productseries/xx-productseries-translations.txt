@@ -5,9 +5,10 @@ This page shows a list of available languages for user to translate to in
 a single product series, or instructions on how to set up a series for
 translation.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('foo.bar@canonical.com')
-    >>> frobnicator = factory.makeProduct(name='frobnicator')
-    >>> frobnicator.official_rosetta = True
+    >>> frobnicator = factory.makeProduct(name='frobnicator',
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> frobnicator_trunk = frobnicator.getSeries('trunk')
     >>> frobnicator_trunk_url = canonical_url(
     ...     frobnicator_trunk, rootsite='translations')
@@ -148,7 +149,8 @@ Launchpad Translations.
 
     # Use the raw DB object to bypass the security proxy.
     >>> from lp.registry.model.product import Product
-    >>> Product.byName('bazaar').official_rosetta = False
+    >>> product = Product.byName('bazaar')
+    >>> product.translations_usage = ServiceUsage.NOT_APPLICABLE
 
 When the owner now visits the upload page for trunk, there's a notice.
 
@@ -158,9 +160,13 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         owner_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    Configure translations
+    trunk does not translate its messages.
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         owner_browser.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using imports or a branch.
     Getting started with translating your project in Launchpad
+    Configure translations
 
 The notice links to the page for configuring translations on the project.
 
@@ -176,9 +182,13 @@ An administrator also sees the notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         admin_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    Configure translations
+    trunk does not translate its messages.
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         admin_browser.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using imports or a branch.
     Getting started with translating your project in Launchpad
+    Configure translations
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the
@@ -212,9 +222,7 @@ notice but not the link to the project's settings.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         jtv_browser.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    Getting started with translating your project in Launchpad
-
+    trunk does not translate its messages.
 
 Branch synchronization options
 ------------------------------

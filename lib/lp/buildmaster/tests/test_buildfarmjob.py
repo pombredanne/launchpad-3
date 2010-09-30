@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -16,14 +19,25 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError)
+    IBuildFarmJob,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.testing import login, TestCaseWithFactory
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 
 
 class TestBuildFarmJobMixin:
@@ -49,6 +63,7 @@ class TestBuildFarmJobMixin:
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=job_type, status=status)
         removeSecurityProxy(build_farm_job).builder = builder
+        removeSecurityProxy(build_farm_job).date_started = date_finished
         removeSecurityProxy(build_farm_job).date_finished = date_finished
         return build_farm_job
 
@@ -80,6 +95,8 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         # The job type is required to create a build farm job.
         self.assertEqual(
             BuildFarmJobType.PACKAGEBUILD, self.build_farm_job.job_type)
+        # Failure count defaults to zero.
+        self.assertEqual(0, self.build_farm_job.failure_count)
         # Other attributes are unset by default.
         self.assertEqual(None, self.build_farm_job.processor)
         self.assertEqual(None, self.build_farm_job.virtualized)
@@ -301,3 +318,17 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
 
         self.assertEqual([build_1, build_2], list(result))
+
+    def test_getByID(self):
+        # getByID returns a job by id.
+        build_1 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 10, 10, tzinfo=pytz.UTC))
+        flush_database_updates()
+        self.assertEquals(
+            build_1, self.build_farm_job_set.getByID(build_1.id))
+
+    def test_getByID_nonexistant(self):
+        # getByID raises NotFoundError for unknown job ids.
+        self.assertRaises(NotFoundError,
+            self.build_farm_job_set.getByID, 423432432432)

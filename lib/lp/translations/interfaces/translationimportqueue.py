@@ -5,30 +5,56 @@
 
 from datetime import timedelta
 
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 from zope.security.interfaces import Unauthorized
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
-
-from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (call_with,
-    collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation,
-    export_write_operation, operation_parameters,
-    operation_returns_entry, operation_returns_collection_of,
-    REQUEST_USER, webservice_error)
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.fields import PersonChoice
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+
 
 __metaclass__ = type
 
@@ -189,7 +215,7 @@ class ITranslationImportQueueEntry(Interface):
             required=True))
 
     importer = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Uploader"),
             required=True,
             readonly=True,
@@ -585,11 +611,3 @@ class IEditTranslationImportQueueEntry(Interface):
             "For translations only: "
             "The language this PO file translates to."),
         vocabulary="Language")
-
-    variant = TextLine(
-        title=_("Variant"),
-        description=_(
-            "For translations only: "
-            "Language variant, usually used to note the script used to"
-            " write the translations (like 'Latn' for Latin)"),
-        required=False)

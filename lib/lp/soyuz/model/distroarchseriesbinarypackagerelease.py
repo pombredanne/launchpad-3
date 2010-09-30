@@ -14,15 +14,16 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
-    IDistroArchSeriesBinaryPackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from canonical.database.sqlbase import sqlvalues
-
+from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
+    IDistroArchSeriesBinaryPackageRelease,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
+    DistributionSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
 
 class DistroArchSeriesBinaryPackageRelease:
 

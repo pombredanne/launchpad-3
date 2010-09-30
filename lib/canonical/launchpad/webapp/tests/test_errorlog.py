@@ -17,11 +17,12 @@ from textwrap import dedent
 import traceback
 import unittest
 
+from lazr.restful.declarations import webservice_error
 import pytz
 import testtools
-
 from zope.app.publication.tests.test_zopepublication import (
-    UnauthenticatedPrincipal)
+    UnauthenticatedPrincipal,
+    )
 from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -29,15 +30,18 @@ from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
-from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
-    _is_sensitive)
-from canonical.launchpad.webapp.interfaces import (
-    NoReferrerError, TranslationUnavailable)
-from lazr.restful.declarations import webservice_error
+    _is_sensitive,
+    ErrorReport,
+    ErrorReportingUtility,
+    OopsLoggingHandler,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interfaces import NoReferrerError
+from canonical.testing import reset_logging
+from lp.app.errors import TranslationUnavailable
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase

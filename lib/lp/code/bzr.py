@@ -14,27 +14,49 @@ __all__ = [
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this comment or the line
-# below this comment.
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
 import lp.codehosting
-from bzrlib.branch import (
-    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7)
-from bzrlib.bzrdir import (
-    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
-from bzrlib.plugins.loom.branch import (
-    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
-from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
-    RepositoryFormatKnit3, RepositoryFormatKnit4)
-from bzrlib.repofmt.pack_repo import (
-    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5)
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
-    RepositoryFormat7)
-from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
 
-from lazr.enum import DBEnumeratedType, DBItem
+from bzrlib.branch import (
+    BranchReferenceFormat,
+    BzrBranchFormat4,
+    BzrBranchFormat5,
+    BzrBranchFormat6,
+    BzrBranchFormat7,
+    )
+from bzrlib.bzrdir import (
+    BzrDirFormat4,
+    BzrDirFormat5,
+    BzrDirFormat6,
+    BzrDirMetaFormat1,
+    )
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1,
+    BzrBranchLoomFormat6,
+    )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+from bzrlib.repofmt.knitrepo import (
+    RepositoryFormatKnit1,
+    RepositoryFormatKnit3,
+    RepositoryFormatKnit4,
+    )
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1,
+    RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4,
+    RepositoryFormatKnitPack5,
+    )
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 def _format_enum(num, format, format_string=None, description=None):

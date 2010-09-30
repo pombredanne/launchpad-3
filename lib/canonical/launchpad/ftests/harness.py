@@ -16,8 +16,14 @@ from zope.app.testing.functional import FunctionalTestSetup
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import FunctionalLayer, ZopelessLayer
-from canonical.testing.layers import disconnect_stores, reconnect_stores
+from canonical.testing import (
+    FunctionalLayer,
+    ZopelessLayer,
+    )
+from canonical.testing.layers import (
+    disconnect_stores,
+    reconnect_stores,
+    )
 
 
 __all__ = [

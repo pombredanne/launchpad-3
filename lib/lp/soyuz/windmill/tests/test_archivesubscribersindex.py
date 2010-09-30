@@ -6,17 +6,21 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
 import unittest
 
+import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.windmill.testing.lpuser import LaunchpadUser
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.windmill.testing import constants
+from canonical.launchpad.windmill.testing.lpuser import LaunchpadUser
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'
 CHOOSE_SUBSCRIBER_LINK = u'//a[@id="show-widget-field-subscriber"]'

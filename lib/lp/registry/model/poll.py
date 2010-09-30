@@ -15,26 +15,44 @@ __all__ = [
     'VoteCastSet',
     ]
 
-import pytz
-import random
 from datetime import datetime
+import random
 
-from storm.store import Store
-from zope.interface import implements
-from zope.component import getUtility
-
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND, OR)
+    AND,
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    OR,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollOptionSet, IPollSet, IVote, IVoteCast,
-    IVoteCastSet, IVoteSet, OptionIsNotFromSimplePoll, PollAlgorithm,
-    PollSecrecy, PollStatus)
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.poll import (
+    IPoll,
+    IPollOption,
+    IPollOptionSet,
+    IPollSet,
+    IVote,
+    IVoteCast,
+    IVoteCastSet,
+    IVoteSet,
+    OptionIsNotFromSimplePoll,
+    PollAlgorithm,
+    PollSecrecy,
+    PollStatus,
+    )
 
 
 class Poll(SQLBase):

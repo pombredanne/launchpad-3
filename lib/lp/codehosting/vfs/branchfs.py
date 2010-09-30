@@ -63,37 +63,58 @@ __all__ = [
 
 import xmlrpclib
 
+from bzrlib import urlutils
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    )
 from bzrlib.config import TransportConfig
-from bzrlib.errors import NoSuchFile, PermissionDenied, TransportNotPossible
+from bzrlib.errors import (
+    NoSuchFile,
+    PermissionDenied,
+    TransportNotPossible,
+    )
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
-from bzrlib import urlutils
-
 from lazr.uri import URI
-
 from twisted.internet import defer
-from twisted.python import failure, log
-
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from lp.codehosting.bzrutils import get_stacked_on_url
-from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy, BranchFileSystemClient)
-from lp.codehosting.vfs.transport import (
-    AsyncVirtualServer, AsyncVirtualTransport, TranslationError,
-    get_chrooted_transport, get_readonly_transport)
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
-from lp.services.twistedsupport.xmlrpc import trap_fault
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    LAUNCHPAD_SERVICES,
+    )
+from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.codehosting.vfs.branchfsclient import (
+    BranchFileSystemClient,
+    )
+from lp.codehosting.vfs.transport import (
+    AsyncVirtualServer,
+    AsyncVirtualTransport,
+    get_chrooted_transport,
+    get_readonly_transport,
+    TranslationError,
+    )
+from lp.services.twistedsupport.xmlrpc import (
+    DeferredBlockingProxy,
+    trap_fault,
+    )
 
 
 class BadUrl(Exception):
@@ -170,7 +191,7 @@ def is_lock_directory(absolute_path):
 def get_ro_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-    codehosting_endpoint = BlockingProxy(proxy)
+    codehosting_endpoint = DeferredBlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
@@ -193,7 +214,7 @@ def get_rw_server(direct_database=False):
         return DirectDatabaseLaunchpadServer('lp-internal:///', transport)
     else:
         proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-        codehosting_endpoint = BlockingProxy(proxy)
+        codehosting_endpoint = DeferredBlockingProxy(proxy)
         return LaunchpadInternalServer(
             'lp-internal:///', codehosting_endpoint, transport)
 
@@ -700,7 +721,7 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
 
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(codehosting_client), user_id, branch_transport,
+        DeferredBlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
 

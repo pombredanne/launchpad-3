@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 import pytz
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -18,7 +20,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchpuller import IBranchPuller
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestMirroringForImportedBranches(TestCaseWithFactory):

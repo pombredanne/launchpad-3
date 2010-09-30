@@ -52,13 +52,16 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -235,24 +238,8 @@ def create_series(parent, full_name, version, status):
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    # This bit copied from scripts/ftpmaster-tools/initialise-from-parent.py.
-    assert new_series.architectures.count() == 0, (
-        "Cannot copy distroarchseries from parent; this series already has "
-        "distroarchseries.")
-
-    store = Store.of(parent)
-    store.execute("""
-        INSERT INTO DistroArchSeries
-          (distroseries, processorfamily, architecturetag, owner, official)
-        SELECT %s, processorfamily, architecturetag, %s, official
-        FROM DistroArchSeries WHERE distroseries = %s
-        """ % sqlvalues(new_series, owner, parent))
-
-    i386 = new_series.getDistroArchSeries('i386')
-    i386.supports_virtualized = True
-    new_series.nominatedarchindep = i386
-
-    new_series.initialiseFromParent()
+    ids = InitialiseDistroSeries(new_series)
+    ids.initialise()
     return new_series
 
 

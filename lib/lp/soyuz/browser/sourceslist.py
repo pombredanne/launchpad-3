@@ -5,12 +5,14 @@
 
 """Browser views for sources list entries."""
 
-from zope.schema import Choice
-from zope.app.form.utility import setUpWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
@@ -31,7 +33,6 @@ class SourcesListEntries:
 class SourcesListEntriesView(LaunchpadView):
     """Renders sources.list entries with a Javascript menu."""
 
-    __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
     def __init__(self, context, request, initially_without_selection=False,

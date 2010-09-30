@@ -19,13 +19,11 @@
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         registered by
         <a tal:replace="structure context/owner/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -85,7 +83,8 @@
 
           <div
             tal:content="structure context/@@+portlet-latestspecs"
-            tal:condition="context/@@+get-involved/official_blueprints" />
+            tal:define="blueprints_usage context/@@+get-involved/blueprints_usage"
+            condition="blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div
            tal:replace="structure context/distribution/@@+portlet-coming-sprints" />

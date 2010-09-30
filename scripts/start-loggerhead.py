@@ -53,7 +53,7 @@ def setup_logging(home, foreground):
     if not log_folder:
         log_folder = os.path.join(home, 'logs')
     if not os.path.exists(log_folder):
-        os.mkdir(log_folder)
+        os.makedirs(log_folder)
 
     f = logging.Formatter(
         '%(levelname)-.3s [%(asctime)s.%(msecs)03d] [%(thread)d] %(name)s: %(message)s',
@@ -119,7 +119,7 @@ if getattr(bzrlib.plugins, 'loom', None) is None:
 
 from launchpad_loggerhead.debug import (
     change_kill_thread_criteria, threadpool_debug)
-from launchpad_loggerhead.app import RootApp
+from launchpad_loggerhead.app import RootApp, oops_middleware
 from launchpad_loggerhead.session import SessionHandler
 
 SESSION_VAR = 'lh.session'
@@ -153,6 +153,7 @@ def set_scheme(app):
     return wrapped
 app = set_scheme(app)
 app = change_kill_thread_criteria(app)
+app = oops_middleware(app)
 
 try:
     httpserver.serve(

@@ -5,13 +5,12 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
 from operator import attrgetter
-
-from lp.registry.vocabularies import ProductSeriesVocabulary
-from lp.testing import TestCaseWithFactory
+from unittest import TestLoader
 
 from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.vocabularies import ProductSeriesVocabulary
+from lp.testing import TestCaseWithFactory
 
 
 class TestProductSeriesVocabulary(TestCaseWithFactory):

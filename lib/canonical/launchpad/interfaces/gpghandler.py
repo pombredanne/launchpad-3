@@ -3,7 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 __all__ = [
     'GPGKeyExpired',
@@ -34,7 +38,7 @@ class GPGKeyNotFoundError(Exception):
         self.fingerprint = fingerprint
         self.pubkey = pubkey
         super(GPGKeyNotFoundError, self).__init__(
-            "No GPG key found with the given content: %s" % (fingerprint,))
+            "No GPG key found with the given content: %s" % (fingerprint, ))
 
 
 class GPGKeyRevoked(Exception):
@@ -43,7 +47,7 @@ class GPGKeyRevoked(Exception):
     def __init__(self, key):
         self.key = key
         super(GPGKeyRevoked, self).__init__(
-            "%s has been publicly revoked" % (key.keyid,))
+            "%s has been publicly revoked" % (key.keyid, ))
 
 
 class GPGKeyExpired(Exception):
@@ -51,7 +55,7 @@ class GPGKeyExpired(Exception):
 
     def __init__(self, key):
         self.key = key
-        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid,))
+        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid, ))
 
 
 class SecretGPGKeyImportDetected(Exception):
@@ -271,6 +275,7 @@ class IPymeSignature(Interface):
 
     fingerprint = Attribute("Signer Fingerprint.")
     plain_data = Attribute("Plain Signed Text.")
+    timestamp = Attribute("The time at which the message was signed.")
 
 
 class IPymeKey(Interface):

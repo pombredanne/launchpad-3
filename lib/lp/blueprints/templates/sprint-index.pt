@@ -10,11 +10,10 @@
 <body>
 
 <tal:registering metal:fill-slot="registering">
-  <p>Registered by <a tal:replace="structure context/owner/fmt:link" />
+  Registered by <a tal:replace="structure context/owner/fmt:link" />
     on <span tal:content="context/datecreated/fmt:displaydate"
              tal:attributes="title context/datecreated/fmt:datetime"
          >on 2005-01-01</span>
-  </p>
 </tal:registering>
 
 <div metal:fill-slot="main"
@@ -107,7 +106,7 @@
           <tal:proposed define="proposed view/proposed_count"
                         condition="proposed">
             There are <span tal:replace="proposed">7</span>
-            specifications 
+            specifications
             <a tal:omit-tag="not: context/required:launchpad.Driver" href="+settopics">
               proposed
             </a> which the organisers will review.

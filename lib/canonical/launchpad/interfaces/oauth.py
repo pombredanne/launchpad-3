@@ -22,13 +22,24 @@ __all__ = [
     'ClockSkew',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Object, TextLine
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    OAuthPermission,
+    )
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.webapp.interfaces import AccessLevel, OAuthPermission
-
 
 # The challenge included in responses with a 401 status.
 OAUTH_REALM = 'https://api.launchpad.net'

@@ -5,13 +5,20 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 
 
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
@@ -98,6 +105,29 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
             text="110%", search_products=False)
         self.assertEqual(1, results.count())
         self.assertEqual(self.project3, results[0])
+
+
+class TestLaunchpadlibAPI(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):
+        # Make sure a 400 error and not an OOPS is returned when a ValueError
+        # is raised when trying to deactivate a project that has source
+        # releases.
+        last_oops = globalErrorUtility.getLastOopsReport()
+        launchpad = launchpadlib_for("test", "salgado", "WRITE_PUBLIC")
+
+        project = launchpad.projects['evolution']
+        project.active = False
+        e = self.assertRaises(ClientError, project.lp_save)
+
+        # no OOPS was generated as a result of the exception
+        self.assertNoNewOops(last_oops)
+        self.assertEqual(400, e.response.status)
+        self.assertIn(
+            'This project cannot be deactivated since it is linked to source '
+            'packages.', e.content)
 
 
 def test_suite():

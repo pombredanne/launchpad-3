@@ -16,7 +16,11 @@ import time
 from openid.association import Association
 from openid.store import nonce
 from openid.store.interface import OpenIDStore
-from storm.properties import Int, RawStr, Unicode
+from storm.properties import (
+    Int,
+    RawStr,
+    Unicode,
+    )
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 

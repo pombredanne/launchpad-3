@@ -7,17 +7,21 @@ __metaclass__ = type
 __all__ = ['start_launchpad']
 
 
-import os
-import sys
 import atexit
+import os
 import signal
 import subprocess
+import sys
+
+from zope.app.server.main import main
 
 from canonical.config import config
-from canonical.lazr.pidfile import make_pidfile, pidfile_path
-from zope.app.server.main import main
-from canonical.launchpad.mailman import runmailman
+from lp.services.mailman import runmailman
 from canonical.launchpad.testing import googletestservice
+from canonical.lazr.pidfile import (
+    make_pidfile,
+    pidfile_path,
+    )
 
 
 def make_abspath(path):
@@ -28,6 +32,7 @@ TWISTD_SCRIPT = make_abspath('bin/twistd')
 
 
 class Service(object):
+
     @property
     def should_launch(self):
         """Return true if this service should be launched."""
@@ -48,7 +53,8 @@ class TacFile(Service):
             script.
         :param section_name: The config section name that provides the
             launch, logfile and spew options.
-        :param pre_launch: A callable that is called before the launch process.
+        :param pre_launch: A callable that is called before the launch
+            process.
         """
         # No point calling super's __init__.
         # pylint: disable-msg=W0231
@@ -115,6 +121,7 @@ class TacFile(Service):
 
 
 class MailmanService(Service):
+
     @property
     def should_launch(self):
         return config.mailman.launch
@@ -128,6 +135,7 @@ class MailmanService(Service):
 
 
 class CodebrowseService(Service):
+
     @property
     def should_launch(self):
         return False
@@ -154,10 +162,10 @@ class GoogleWebService(Service):
 
 class MemcachedService(Service):
     """A local memcached service for developer environments."""
+
     @property
     def should_launch(self):
         return config.memcached.launch
-
 
     def launch(self):
         cmd = [
@@ -183,6 +191,7 @@ def stop_at_exit(process):
 
     :param process: An instance of subprocess.Popen.
     """
+
     def stop_process():
         if process.poll() is None:
             os.kill(process.pid, signal.SIGTERM)
@@ -223,10 +232,10 @@ def split_out_runlaunchpad_arguments(args):
     """Split the given command-line arguments into services to start and Zope
     arguments.
 
-    The runlaunchpad script can take an optional '-r services,...' argument. If
-    this argument is present, then the value is returned as the first element
-    of the return tuple. The rest of the arguments are returned as the second
-    element of the return tuple.
+    The runlaunchpad script can take an optional '-r services,...' argument.
+    If this argument is present, then the value is returned as the first
+    element of the return tuple. The rest of the arguments are returned as the
+    second element of the return tuple.
 
     Returns a tuple of the form ([service_name, ...], remaining_argv).
     """

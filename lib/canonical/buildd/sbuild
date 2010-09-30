@@ -564,6 +564,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::build_source++;
 		$conf::purge_build_directory = "never";
 	}
+        elsif (/^--architecture=(.)/) {
+                $conf::arch=$1.$';
+	}
 	elsif (/^--archive=(.)/) {
 		$main::archive=$1.$';
 	}

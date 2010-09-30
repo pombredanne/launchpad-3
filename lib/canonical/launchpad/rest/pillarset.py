@@ -9,12 +9,11 @@ __all__ = [
     'PillarSetLink',
     ]
 
+from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-
-from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):

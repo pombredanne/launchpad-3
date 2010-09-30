@@ -4,22 +4,31 @@
 import os
 import unittest
 
-from zope.interface import implements
-
-from twisted.cred.error import UnauthorizedLogin
-from twisted.cred.portal import IRealm, Portal
-
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
-from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.keys import BadKeyError, Key
-from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
+from twisted.conch.ssh.common import (
+    getNS,
+    NS,
+    )
+from twisted.conch.ssh.keys import (
+    BadKeyError,
+    Key,
+    )
+from twisted.conch.ssh.transport import (
+    SSHCiphers,
+    SSHServerTransport,
+    )
+from twisted.cred.error import UnauthorizedLogin
+from twisted.cred.portal import (
+    IRealm,
+    Portal,
+    )
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
-
 from twisted.trial.unittest import TestCase as TrialTestCase
+from zope.interface import implements
 
 from canonical.launchpad.xmlrpc import faults
 from canonical.testing.layers import TwistedLayer

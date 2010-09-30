@@ -172,7 +172,7 @@ so that they appear in his +packages page.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> login("foo.bar@canonical.com")
@@ -299,8 +299,8 @@ public archives.
 Now we'll publish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> primary = getUtility(IArchiveSet).getByDistroPurpose(ubuntu,

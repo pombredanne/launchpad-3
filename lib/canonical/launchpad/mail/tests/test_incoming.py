@@ -8,12 +8,15 @@ import unittest
 import transaction
 
 from canonical.launchpad.mail.ftests.helpers import testmails_path
-from canonical.launchpad.mail.incoming import handleMail, MailErrorUtility
+from canonical.launchpad.mail.incoming import (
+    handleMail,
+    MailErrorUtility,
+    )
 from canonical.testing import LaunchpadZopelessLayer
-from lp.testing import TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestIncoming(TestCaseWithFactory):

@@ -287,8 +287,6 @@ for all of its tasks is calculated and cached.
 
     >>> product = factory.makeProduct()
     >>> bug = factory.makeBug(product=product)
-    >>> print product.max_bug_heat
-    None
     >>> bug.setHeat(123)
     >>> print product.max_bug_heat
     123

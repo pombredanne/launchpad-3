@@ -8,35 +8,51 @@
 __metaclass__ = type
 
 from cStringIO import StringIO as cStringIO
-from email.utils import getaddresses, parseaddr
 import email.errors
+from email.utils import (
+    getaddresses,
+    parseaddr,
+    )
 import logging
 import re
 import sys
+from uuid import uuid1
 
 import dkim
 import dns.exception
-
 import transaction
 from zope.component import getUtility
-from zope.interface import directlyProvides, directlyProvidedBy
+from zope.interface import (
+    directlyProvidedBy,
+    directlyProvides,
+    )
 
-from uuid import uuid1
 from canonical.launchpad.interfaces import (
-    AccountStatus, GPGVerificationError, IGPGHandler, ILibraryFileAliasSet,
-    IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.webapp.interaction import setupInteraction
+    AccountStatus,
+    GPGVerificationError,
+    IGPGHandler,
+    ILibraryFileAliasSet,
+    IMailBox,
+    IPerson,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
+from canonical.launchpad.mailnotification import (
+    send_process_error_notification,
+    )
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interaction import (
+    get_current_principal,
+    setupInteraction,
+    )
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.librarian.interfaces import UploadFailed
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
-from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
-from canonical.librarian.interfaces import UploadFailed
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a # '\n', and all '\n' that are not preceded by a '\r'.

@@ -9,7 +9,7 @@ from zope.datetime import parse, DateTimeError
 from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 
-from canonical.launchpad.interfaces import UnexpectedFormData
+from lp.app.errors import UnexpectedFormData
 
 # XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to
 # this module?

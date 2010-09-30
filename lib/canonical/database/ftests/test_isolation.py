@@ -52,12 +52,14 @@ class TestIsolation(unittest.TestCase):
         # by seeing if we an roll back
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NULL")
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
-        cur.execute("UPDATE Person SET country=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.rollback()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NOT NULL")
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
@@ -76,9 +78,9 @@ class TestIsolation(unittest.TestCase):
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET country=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.commit()
-        cur.execute("UPDATE Person SET country=61")
+        cur.execute("UPDATE Person SET homepage_content='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_rollback(self):
@@ -89,7 +91,7 @@ class TestIsolation(unittest.TestCase):
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET country=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 

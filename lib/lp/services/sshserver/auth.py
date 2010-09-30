@@ -21,28 +21,29 @@ __all__ = [
 import binascii
 
 from twisted.conch import avatar
+from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.interfaces import IConchUser
-from twisted.conch.ssh import keys, userauth
-from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.checkers import SSHPublicKeyDatabase
-
-from twisted.cred.error import UnauthorizedLogin
-from twisted.cred.checkers import ICredentialsChecker
+from twisted.conch.ssh import (
+    keys,
+    userauth,
+    )
+from twisted.conch.ssh.common import (
+    getNS,
+    NS,
+    )
 from twisted.cred import credentials
-
+from twisted.cred.checkers import ICredentialsChecker
+from twisted.cred.error import UnauthorizedLogin
 from twisted.internet import defer
-
 from twisted.python import failure
-
 from zope.event import notify
 from zope.interface import implements
 
 from canonical.launchpad.xmlrpc import faults
-
 from lp.services.sshserver import events
-from lp.services.sshserver.sftp import FileTransferServer
 from lp.services.sshserver.session import PatchedSSHSession
+from lp.services.sshserver.sftp import FileTransferServer
 from lp.services.twistedsupport.xmlrpc import trap_fault
 
 

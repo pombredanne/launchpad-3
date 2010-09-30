@@ -8,12 +8,14 @@ __metaclass__ = type
 import hashlib
 import os
 import shutil
+from tempfile import mkdtemp
 import unittest
 
-from tempfile import mkdtemp
-
+from lp.archivepublisher.diskpool import (
+    DiskPool,
+    poolify,
+    )
 from lp.archivepublisher.tests.util import FakeLogger
-from lp.archivepublisher.diskpool import DiskPool, poolify
 
 
 class MockFile:

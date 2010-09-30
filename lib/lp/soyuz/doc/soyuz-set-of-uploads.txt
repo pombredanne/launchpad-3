@@ -70,6 +70,10 @@ Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from lp.registry.model.distribution import Distribution
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.enums import PackageUploadStatus
+  >>> from lp.soyuz.scripts.initialise_distroseries import (
+  ...     InitialiseDistroSeries)
   >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -78,13 +82,11 @@ for the ubuntutest distribution.
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
   ...     breezy_autotest.owner)
-  >>> breezy_i386 = breezy.newArch(
-  ...     'i386', breezy_autotest['i386'].processorfamily, True, breezy.owner)
-  >>> breezy.nominatedarchindep = breezy_i386
+  >>> ids = InitialiseDistroSeries(breezy)
+  >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
-  >>> breezy.initialiseFromParent()
   >>> fake_chroot = LibraryFileAlias.get(1)
-  >>> unused = breezy_i386.addOrUpdateChroot(fake_chroot)
+  >>> unused = breezy['i386'].addOrUpdateChroot(fake_chroot)
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
@@ -117,21 +119,17 @@ And then we need a way to process the uploads from the queue
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
   >>> from canonical.testing import LaunchpadZopelessLayer
-  >>> def process_uploads(upload_policy, build_id, series, loglevel):
+  >>> def process_uploads(upload_policy, series, loglevel):
   ...     """Simulate process-upload.py script run.
   ...
   ...     :param upload_policy: context in which to consider the upload
   ...         (equivalent to script's --context option).
-  ...     :param build_id: build to which to attach this upload.
-  ...         (equivalent to script's --buildid option).
   ...     :param series: distro series to give back from.
   ...         (equivalent to script's --series option).
   ...     :param loglevel: logging level (as defined in logging module).  Any
   ...         log messages below this level will be suppressed.
   ...     """
   ...     args = [temp_dir, "-C", upload_policy]
-  ...     if build_id is not None:
-  ...         args.extend(["-b", build_id])
   ...     if series is not None:
   ...         args.extend(["-s", series])
   ...     # Run script under 'uploader' DB user.  The dbuser argument to the
@@ -151,7 +149,6 @@ And we need a way to process the accepted queue
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -190,7 +187,7 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.launchpad.database import (
   ...     SourcePackagePublishingHistory as SPPH,
   ...     BinaryPackagePublishingHistory as BPPH)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus as PPS
+  >>> from lp.soyuz.enums import PackagePublishingStatus as PPS
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""
@@ -229,11 +226,11 @@ A helper function, simulate_upload does that with all the checking.
   >>> from lp.services.mail import stub
 
   >>> def simulate_upload(
-  ...     leafname, is_new=False, upload_policy='anything', build_id=None,
+  ...     leafname, is_new=False, upload_policy='anything',
   ...     series=None, distro="ubuntutest", loglevel=logging.WARN):
   ...     """Process upload(s).  Options are as for process_uploads()."""
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     process_uploads(upload_policy, build_id, series, loglevel)
+  ...     process_uploads(upload_policy, series, loglevel)
   ...     # We seem to be leaving a lock file behind here for some reason.
   ...     # Naturally it doesn't count as an unprocessed incoming file, which
   ...     # is what we're really looking for.
@@ -288,19 +285,6 @@ and arch-independent binaries.
 
   >>> simulate_upload('bar_1.0-2')
 
-Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
-
-  >>> simulate_upload(
-  ...     'bar_1.0-2_binary', upload_policy="buildd", build_id="2",
-  ...     loglevel=logging.ERROR)
-  log> Exception while accepting:
-  Attempt to upload binaries specifying build 2, where they don't fit.
-  ...
-  Rejected uploads: ['bar_1.0-2_binary']
-
-Try it again without the bogus build id.  This succeeds without
-complaints.
-
   >>> simulate_upload('bar_1.0-2_binary')
 
 Check the rejection of a malicious version of bar package which refers
@@ -315,22 +299,6 @@ to a different 'bar_1.0.orig.tar.gz'.
       Foo Bar <foo.bar@canonical.com>,
       Daniel Silverstone <daniel.silverstone@canonical.com>
   Subject: bar_1.0-3_source.changes rejected
-  ...
-
-Check the rejection (instead of failure) of an upload to a series or
-pocket which does not exist. We use the security upload policy for easier
-testing, as unsigned uploads are allowed.
-
-  >>> simulate_upload(
-  ...     'unstable_1.0-1', upload_policy="security", loglevel=logging.ERROR)
-  Rejected uploads: ['unstable_1.0-1']
-
-  >>> read_email()
-  To: Celso Providelo <celso.providelo@canonical.com>
-  Subject: unstable_1.0-1_source.changes rejected
-  ...
-  Rejected:
-  Unable to find distroseries: unstable
   ...
 
 Force weird behavior with rfc2047 sentences containing '.' on
@@ -603,6 +571,9 @@ rest of the test:
 
 == Staged Security Uploads ==
 
+XXX: Salgado, 2010-08-25, bug=624078: This entire section should be removed
+but if you do so publish-distro.py (called further down) will hang.
+
 Perform a staged (source-first) security upload, simulating a run of
 the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
 allowed a security upload, we need to use a released distroseries,
@@ -615,12 +586,12 @@ eg ubuntu/warty.
   >>> ss = SectionSelection(distroseries=warty, section=devel)
 
   >>> simulate_upload(
-  ...     'baz_1.0-1', is_new=True, upload_policy="security",
+  ...     'baz_1.0-1', is_new=True, upload_policy="anything",
   ...     series="warty-security", distro="ubuntu")
 
 Check there's a SourcePackageRelease with no build.
 
-  >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+  >>> from lp.buildmaster.enums import BuildStatus
   >>> from lp.registry.model.sourcepackagename import SourcePackageName
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -648,7 +619,7 @@ Check build created
 Upload the i386 binary:
 
   >>> simulate_upload(
-  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
+  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="anything",
   ...     distro="ubuntu", series="warty-security")
 
 Should still just have one build, and it should now be FULLYBUILT.

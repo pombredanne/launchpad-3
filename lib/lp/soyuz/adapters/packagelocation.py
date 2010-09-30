@@ -14,7 +14,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.soyuz.enums import ArchivePurpose
 
 
 class PackageLocation:
@@ -94,7 +95,7 @@ def build_package_location(distribution_name, suite=None, purpose=None,
 
     # Avoid circular imports.
     from lp.registry.interfaces.distribution import IDistributionSet
-    from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    from lp.soyuz.interfaces.archive import IArchiveSet
     from lp.soyuz.interfaces.packageset import IPackagesetSet
     from lp.registry.interfaces.pocket import PackagePublishingPocket
 

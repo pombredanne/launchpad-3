@@ -7,49 +7,75 @@ __metaclass__ = type
 __all__ = [
     'BugWatch',
     'BugWatchActivity',
+    'BugWatchDeletionError',
     'BugWatchSet',
     ]
 
+from datetime import datetime
 import re
 import urllib
-
-from datetime import datetime
-from pytz import utc
 from urlparse import urlunsplit
-
-from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.component import getUtility
-
-# SQL imports
-from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
-
-from storm.base import Storm
-from storm.expr import Desc, In, Not
-from storm.locals import Int, Reference, Unicode
-from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import find_uris_in_text
+from pytz import utc
+# SQL imports
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.base import Storm
+from storm.expr import (
+    Desc,
+    In,
+    Not,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
+from storm.store import Store
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.interfaces import NotFoundError
-
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
+from canonical.launchpad.webapp import (
+    urlappend,
+    urlsplit,
+    )
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import (
-    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES, BugWatchActivityStatus,
-    BugWatchCannotBeRescheduled, IBugWatch, IBugWatchActivity,
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
+    BugWatchActivityStatus,
+    BugWatchCannotBeRescheduled,
+    IBugWatch,
+    IBugWatchActivity,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
@@ -87,6 +113,10 @@ def get_bug_watch_ids(references):
         else:
             raise AssertionError(
                 '%r is not a bug watch or an ID.' % (reference,))
+
+
+class BugWatchDeletionError(Exception):
+    """Raised when someone attempts to delete a linked watch."""
 
 
 class BugWatch(SQLBase):
@@ -198,8 +228,16 @@ class BugWatch(SQLBase):
 
     def destroySelf(self):
         """See `IBugWatch`."""
-        assert len(self.bugtasks) == 0, "Can't delete linked bug watches"
+        if (len(self.bugtasks) > 0 or
+            not self.getImportedBugMessages().is_empty()):
+            raise BugWatchDeletionError(
+                "Can't delete bug watches linked to tasks or comments.")
+        # XXX 2010-09-29 gmb bug=647103
+        #     We flush the store to make sure that errors bubble up and
+        #     are caught by the OOPS machinery.
         SQLBase.destroySelf(self)
+        store = Store.of(self)
+        store.flush()
 
     @property
     def unpushed_comments(self):
@@ -338,6 +376,15 @@ class BugWatch(SQLBase):
             raise BugWatchCannotBeRescheduled()
 
         self.next_check = next_check
+
+    def reset(self):
+        """See `IBugWatch`."""
+        self.last_error_type = None
+        self.lastchanged = None
+        self.lastchecked = None
+        self.next_check = UTC_NOW
+        self.remote_importance = None
+        self.remotestatus = None
 
 
 class BugWatchSet(BugSetBase):

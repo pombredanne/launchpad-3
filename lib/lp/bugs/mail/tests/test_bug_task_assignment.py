@@ -5,22 +5,19 @@
 
 from unittest import TestLoader
 
-import transaction
-
-from zope.component import getUtility
-from zope.interface import providedBy
-from zope.event import notify
-
-from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.database import BugNotification
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
-from lp.services.mail import stub
-from lp.bugs.scripts.bugnotification import construct_email_notifications
-from lp.testing import TestCaseWithFactory
-
-from lazr.lifecycle.event import (ObjectModifiedEvent)
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import transaction
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import providedBy
+
+from lp.bugs.model.bugnotification import BugNotification
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing import DatabaseFunctionalLayer
+from lp.bugs.scripts.bugnotification import construct_email_notifications
+from lp.services.mail import stub
+from lp.testing import TestCaseWithFactory
 
 
 class TestAssignmentNotification(TestCaseWithFactory):

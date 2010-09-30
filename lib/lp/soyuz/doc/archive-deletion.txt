@@ -9,8 +9,9 @@ disabled and the status is set to DELETING.
 This status tells the publisher to then delete the repository area.  Once
 it completes that task it will set the status to DELETED.
 
+    >>> from lp.soyuz.enums import ArchiveStatus
     >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchiveStatus, IArchiveSet, IArchive)
+    ...     IArchiveSet, IArchive)
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login("admin@canonical.com")
     >>> stp = SoyuzTestPublisher()
@@ -28,7 +29,7 @@ The archive is currently active:
 
 We can create some packages in it using the test publisher:
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> ignore = stp.getPubBinaries(
     ...     archive=archive, binaryname="foo-bin1",
     ...     status=PackagePublishingStatus.PENDING)

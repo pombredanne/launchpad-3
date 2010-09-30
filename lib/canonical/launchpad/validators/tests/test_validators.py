@@ -8,7 +8,10 @@ __metaclass__ = type
 from doctest import DocTestSuite
 from unittest import TestSuite
 
-from canonical.launchpad.testing.systemdocs import setUp, tearDown
+from canonical.launchpad.testing.systemdocs import (
+    setUp,
+    tearDown,
+    )
 from canonical.testing import LaunchpadFunctionalLayer
 
 

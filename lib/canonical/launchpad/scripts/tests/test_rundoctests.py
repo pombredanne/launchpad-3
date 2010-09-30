@@ -8,6 +8,7 @@ import unittest
 
 from canonical.testing import reset_logging
 
+
 def tearDown(test):
     reset_logging()
 

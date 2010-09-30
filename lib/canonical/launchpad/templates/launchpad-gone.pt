@@ -12,8 +12,11 @@
       <p>There&#8217;s no page with this address in Launchpad.</p>
 
       <p tal:condition="view/referrer">
-        If this is blocking your work, let us know by sending an message to
-        <a href="mailto:feedback@launchpad.net">feedback@launchpad.net</a>.
+        If this is blocking your work, let us know by asking a question at
+        <a tal:condition="not: view/user|nothing"
+            href="/feedback">Launchpad Support</a>
+        <a tal:condition="view/user|nothing"
+          href="/support">Launchpad Support</a>.
         Otherwise, complain to the maintainers of the page that linked here.
       </p>
 

@@ -1,6 +1,6 @@
 = Answer Tracker Email Interface =
 
-The Answer TRacker has an email interface, although it's quite limited
+The Answer Tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is post new messages on the
 question. This is an important feature, though, since it ensures that if
 a user decides to reply to a question notification, his email won't be

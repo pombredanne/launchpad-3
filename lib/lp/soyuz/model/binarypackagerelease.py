@@ -11,22 +11,42 @@ __all__ = [
     ]
 
 
+import simplejson
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm
-
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
-
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseDownloadCount, IBinaryPackageReleaseSet)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
-from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageRelease,
+    IBinaryPackageReleaseDownloadCount,
+    IBinaryPackageReleaseSet,
+    )
 from lp.soyuz.model.files import BinaryPackageFile
 
 
@@ -61,10 +81,29 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
+    homepage = StringCol(dbName='homepage')
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    debug_package = ForeignKey(dbName='debug_package',
+                              foreignKey='BinaryPackageRelease')
 
     files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease', orderBy="libraryfile")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(BinaryPackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def title(self):

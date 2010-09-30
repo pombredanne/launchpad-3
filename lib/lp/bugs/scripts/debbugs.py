@@ -3,12 +3,13 @@
 
 # pylint: disable-msg=W0703
 
+import cStringIO
+from datetime import datetime
+import email
 import os
 import re
 import subprocess
-from datetime import datetime
-import email
-import cStringIO
+
 
 class Bug:
     def __init__(self, db, id, package=None, date=None, status=None,

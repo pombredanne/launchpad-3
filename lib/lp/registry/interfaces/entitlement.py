@@ -17,12 +17,23 @@ __all__ = [
     'IEntitlementSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Int
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Whiteboard
+from lp.services.fields import Whiteboard
 
 
 class EntitlementQuotaExceededError(Exception):

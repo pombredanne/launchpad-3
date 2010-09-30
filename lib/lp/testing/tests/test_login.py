@@ -28,11 +28,11 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    TestCaseWithFactory,
     with_anonymous_login,
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-from lp.testing import TestCaseWithFactory
 
 
 class TestLoginHelpers(TestCaseWithFactory):

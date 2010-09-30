@@ -4,7 +4,18 @@
 
 # We do this to maintain backwards compatibility with tests.
 from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase, commit_before, with_interaction)
+    commit_before,
+    with_interaction,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.core import (
-    BaseScheduler, CheckwatchesMaster, CheckWatchesCronScript, SerialScheduler,
-    TooMuchTimeSkew, TwistedThreadScheduler, externalbugtracker)
+    BaseScheduler,
+    CheckWatchesCronScript,
+    CheckwatchesMaster,
+    externalbugtracker,
+    SerialScheduler,
+    TooMuchTimeSkew,
+    TwistedThreadScheduler,
+    )
+
+

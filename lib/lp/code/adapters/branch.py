@@ -5,13 +5,16 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
-
 from lazr.lifecycle import snapshot
 from lazr.lifecycle.objectdelta import ObjectDelta
+from zope.interface import implements
 
-from lp.code.interfaces.branch import IBranch, IBranchDelta
+from lp.code.interfaces.branch import (
+    IBranch,
+    IBranchDelta,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+
 # XXX: thumper 2006-12-20: This needs to be extended
 # to cover bugs and specs linked and unlinked, as
 # well as landing target when it is added to the UI

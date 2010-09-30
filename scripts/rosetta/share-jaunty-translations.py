@@ -52,8 +52,7 @@ class ShareJauntyTranslationMessages:
                 FlagHolder.%(flag)s IS TRUE AND
                 FlagHolder.potmsgset = Candidate.potmsgset AND
                 FlagHolder.potemplate IS NULL AND
-                FlagHolder.language = Candidate.language AND
-                FlagHolder.variant IS NOT DISTINCT FROM Candidate.variant
+                FlagHolder.language = Candidate.language
             WHERE
                 POTemplate.distroseries = %(series_id)s AND
                 POTemplate.iscurrent IS TRUE AND
