@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DistroSeriesDifferenceCommentView',
     'DistroSeriesDifferenceView',
     ]
 
@@ -22,6 +23,7 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView,
+    LaunchpadView,
     Navigation,
     stepthrough,
     )
@@ -132,3 +134,12 @@ class DistroSeriesDifferenceDisplayComment:
         self.comment_author = comment.comment_author
         self.comment_date = comment.comment_date
         self.body_text = comment.body_text
+
+
+class DistroSeriesDifferenceCommentView(LaunchpadView):
+    """Provide the comment for rendering."""
+
+    @property
+    def comment(self):
+        return DistroSeriesDifferenceDisplayComment(self.context)
+
