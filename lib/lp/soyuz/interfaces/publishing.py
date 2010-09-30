@@ -514,7 +514,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
     def createMissingBuilds(architectures_available=None, pas_verify=None,
-                            logger=None):
+                            logger=None, always_create=False):
         """Create missing Build records for a published source.
 
         P-a-s should be used when accepting sources to the PRIMARY archive
@@ -528,6 +528,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :param pas_verify: optional Package-architecture-specific (P-a-s)
             object, to be used, when convinient, for creating builds;
         :param logger: optional context Logger object (used on DEBUG level).
+        :param always_create: A boolean, that if set will always create a
+            new build, irregardless of the status of the build found.
 
         :return: a list of `Builds` created for this source publication.
         """

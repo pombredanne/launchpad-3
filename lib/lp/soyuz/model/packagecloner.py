@@ -130,17 +130,10 @@ class PackageCloner:
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
+            always_create = (not distroarchseries_list)
             builds = pubrec.createMissingBuilds(
-                architectures_available=architectures)
-            # If a distroarchseries_list wasn't passed in, we don't copy any
-            # binary packages at all -- if the last build was sucessful, we
-            # should create a new build, since createMissingBuilds() won't.
-            if not distroarchseries_list and not builds:
-                for arch in architectures:
-                    build = pubrec.sourcepackagerelease.createBuild(
-                        distro_arch_series=arch, archive=archive,
-                        pocket=PackagePublishingPocket.RELEASE)
-                    build.queueBuild(suspended=not archive.enabled)
+                architectures_available=architectures,
+                always_create=always_create)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 

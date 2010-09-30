@@ -560,7 +560,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None,
-                            pas_verify=None, logger=None):
+                            pas_verify=None, logger=None,
+                            always_create=False):
         """See `ISourcePackagePublishingHistory`."""
         if self.archive.is_ppa:
             pas_verify = None
@@ -578,24 +579,26 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         builds = []
         for arch in build_architectures:
             build_candidate = self._createMissingBuildForArchitecture(
-                arch, logger=logger)
+                arch, always_create=always_create, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
 
         return builds
 
-    def _createMissingBuildForArchitecture(self, arch, logger=None):
+    def _createMissingBuildForArchitecture(
+        self, arch, always_create, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
         Return the just-created `IBinaryPackageBuild` record already
-        scored or None if a suitable build is already present.
+        scored or None if a suitable build is already present, except if
+        always_create is True, in which case a build is always created.
         """
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 
         # Check DistroArchSeries database IDs because the object belongs
         # to different transactions (architecture_available is cached).
-        if (build_candidate is not None and
+        if not always_create and (build_candidate is not None and
             (build_candidate.distro_arch_series.id == arch.id or
              build_candidate.status == BuildStatus.FULLYBUILT)):
             return None
