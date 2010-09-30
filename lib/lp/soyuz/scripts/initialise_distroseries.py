@@ -132,10 +132,8 @@ class InitialiseDistroSeries:
             include = "AND architecturetag IN %s" % sqlvalues(self.arches)
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processorfamily, architecturetag, owner,
-            official, supports_virtualized)
-            SELECT %s, processorfamily, architecturetag, %s, official,
-            supports_virtualized
+            (distroseries, processorfamily, architecturetag, owner, official)
+            SELECT %s, processorfamily, architecturetag, %s, official
             FROM DistroArchSeries WHERE distroseries = %s %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
