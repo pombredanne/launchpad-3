@@ -340,11 +340,9 @@ class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
-        if 'PYTHONPATH' in os.environ:
-            env['PYTHONPATH'] = os.environ['PYTHONPATH']
-        lp_config = os.environ.get('LPCONFIG')
-        if lp_config is not None:
-            env['LPCONFIG'] = lp_config
+        for name in ('PYTHONPATH', 'LPCONFIG'):
+            if name in os.environ:
+                env[name] = os.environ[name]
         starter = main.ProcessStarter(
             packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)

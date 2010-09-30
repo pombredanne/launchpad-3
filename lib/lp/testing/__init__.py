@@ -546,6 +546,16 @@ class TestCaseWithFactory(TestCase):
         self.direct_database_server = False
         self._use_bzr_branch_called = False
 
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
+
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
 
@@ -676,16 +686,6 @@ class BrowserTestCase(TestCaseWithFactory):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
-
-    def assertTextMatchesExpressionIgnoreWhitespace(self,
-                                                    regular_expression_txt,
-                                                    text):
-        def normalise_whitespace(text):
-            return ' '.join(text.split())
-        pattern = re.compile(
-            normalise_whitespace(regular_expression_txt), re.S)
-        self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)), text)
 
     def getViewBrowser(self, context, view_name=None):
         login(ANONYMOUS)

@@ -47,10 +47,9 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['IMembershipNotificationJobSource'])
         expected = (
-            'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
-            'source-IMembershipNotificationJobSource.lock\n'
-            'INFO    Running synchronously.\n')
-        self.assertEqual(expected, error)
+            'INFO    Creating lockfile: .*launchpad-process-job-'
+            'source-IMembershipNotificationJobSource.lock.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, error)
 
     def test_processed(self):
         # The script should output the number of jobs it processed.
@@ -100,12 +99,10 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         # each job source class, and then exit if no jobs are in the queue.
         returncode, output, error = run_script(self.script, ['MAIN'])
         expected = (
-            'INFO    Creating lockfile: /var/lock/launchpad-'
-            'processjobsourcegroups.lock\n'
-            'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
-            'source-IMembershipNotificationJobSource.lock\n'
-            'INFO    Running synchronously.\n')
-        self.assertEqual(expected, error)
+            '.*Creating lockfile:.*launchpad-processjobsourcegroups.lock'
+            '.*Creating lockfile:.*launchpad-process-job-'
+            'source-IMembershipNotificationJobSource.lock.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, error)
 
     def test_processed(self):
         # The script should output the number of jobs that have been
@@ -120,8 +117,8 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         transaction.commit()
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
-        self.assertIn(
-            ('DEBUG   Running <MEMBERSHIP_NOTIFICATION branch job (1) '
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            ('DEBUG Running <MEMBERSHIP_NOTIFICATION branch job (.*) '
              'for murdock as part of a-team. status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)

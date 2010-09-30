@@ -85,6 +85,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
+    ITwistedJobSource,
     )
 
 
@@ -544,7 +545,7 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
-class IBranchMergeProposalJobSource(IJobSource):
+class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 

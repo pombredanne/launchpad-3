@@ -167,16 +167,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
             ])
         return vars
 
-    @classmethod
-    def get(cls, id):
-        """Return the instance of this class whose id is supplied."""
-        store = IMasterStore(PersonTransferJob)
-        instance = store.get(PersonTransferJob, id)
-        if instance is None:
-            raise SQLObjectNotFound(
-                'No occurrence of PersonTransferJob with id %s' % id)
-        return cls(instance)
-
 
 class MembershipNotificationJob(PersonTransferJobDerived):
     """A Job that sends notifications about team membership changes."""
