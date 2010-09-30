@@ -171,15 +171,9 @@
         path_expression="string:comments/${id}"
         attribute_to_parent="distro_series_difference"
         rootsite="mainsite"/>
-    <browser:page
-        name="+fragment"
-        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
-        class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceCommentView"
-        template="../templates/distroseriesdifferencecomment-fragment.pt"
-        permission="zope.Public"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
-        name="+fragment"/>
+    <adapter
+      factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
+      name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
             DistroSeriesFacets

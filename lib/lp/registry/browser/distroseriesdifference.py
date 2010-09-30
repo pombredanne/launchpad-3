@@ -5,12 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
-    'DistroSeriesDifferenceCommentView',
+    'CommentXHTMLRepresentation',
     'DistroSeriesDifferenceView',
     ]
 
+from lazr.restful.interfaces import IWebServiceClientRequest
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.component import getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -34,6 +39,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.services.comments.interfaces.conversation import (
@@ -136,10 +142,14 @@ class DistroSeriesDifferenceDisplayComment:
         self.body_text = comment.body_text
 
 
-class DistroSeriesDifferenceCommentView(LaunchpadView):
-    """Provide the comment for rendering."""
+class CommentXHTMLRepresentation(LaunchpadView):
+    """Render individual comments when requested via the API."""
+    adapts(IDistroSeriesDifferenceComment, IWebServiceClientRequest)
+    implements(Interface)
+
+    template = ViewPageTemplateFile(
+        '../templates/distroseriesdifferencecomment-fragment.pt')
 
     @property
     def comment(self):
         return DistroSeriesDifferenceDisplayComment(self.context)
-
