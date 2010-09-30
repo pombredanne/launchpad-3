@@ -43,6 +43,7 @@ class BinaryAndSourcePackageNameIterator(BatchedCountableIterator):
     Builds descriptions from source and binary descriptions it can
     identify based on the names returned when queried.
     """
+
     def getTermsWithDescriptions(self, results):
         # Note that we grab first source package descriptions and then
         # binary package descriptions, giving preference to the latter,
@@ -70,5 +71,3 @@ class BinaryAndSourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     displayname = 'Select a Package'
     _orderBy = 'name'
     iterator = BinaryAndSourcePackageNameIterator
-
-
