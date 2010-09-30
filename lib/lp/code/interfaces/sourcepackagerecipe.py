@@ -80,63 +80,18 @@ class ISourcePackageRecipeData(Interface):
         """An iterator of the branches referenced by this recipe."""
 
 
-class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
-    """An ISourcePackageRecipe describes how to build a source package.
-
-    More precisely, it describes how to combine a number of branches into a
-    debianized source tree.
-    """
-    export_as_webservice_entry()
+class ISourcePackageRecipeView(Interface):
+    """IBranch attributes that require launchpad.View permission."""
 
     id = Int()
 
-    daily_build_archive = exported(Reference(
-        IArchive, title=_("The archive to use for daily builds.")))
-
     date_created = Datetime(required=True, readonly=True)
-    date_last_modified = Datetime(required=True, readonly=True)
 
     registrant = exported(
         PublicPersonChoice(
             title=_("The person who created this recipe."),
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
-
-    owner = exported(
-        PersonChoice(
-            title=_('Owner'),
-            required=True, readonly=False,
-            vocabulary='UserTeamsParticipationPlusSelf',
-            description=_("The person or team who can edit this recipe.")))
-
-    distroseries = CollectionField(
-        Reference(IDistroSeries), title=_("The distroseries this recipe will"
-            " build a source package for"),
-        readonly=False)
-    build_daily = exported(Bool(
-        title=_("Build daily")))
-    is_stale = Bool(title=_('Recipe is stale.'))
-
-    name = exported(TextLine(
-            title=_("Name"), required=True,
-            constraint=name_validator,
-            description=_("The name of this recipe.")))
-
-    description = Text(
-        title=_('Description'), required=True,
-        description=_('A short description of the recipe.'))
-
-    builder_recipe = Attribute(
-        _("The bzr-builder data structure for the recipe."))
-
-    base_branch = Reference(
-        IBranch, title=_("The base branch used by this recipe."),
-        required=True, readonly=True)
-
-    @operation_parameters(recipe_text=Text())
-    @export_write_operation()
-    def setRecipeText(recipe_text):
-        """Set the text of the recipe."""
 
     recipe_text = exported(Text())
 
@@ -146,6 +101,16 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         :param requester: The Person requesting a build.
         :param distroseries: The distroseries to build for.
         """
+
+    def getBuilds(pending=False):
+        """Return a ResultSet of all the builds in the given state.
+
+        :param pending: If True, select all builds that are pending.  If
+            False, select all builds that are not pending.
+        """
+
+    def getLastBuild():
+        """Return the the most recent build of this recipe."""
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
@@ -164,15 +129,14 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
             able to upload to the archive.
         """
 
-    def getBuilds(pending=False):
-        """Return a ResultSet of all the builds in the given state.
 
-        :param pending: If True, select all builds that are pending.  If
-            False, select all builds that are not pending.
-        """
+class ISourcePackageRecipeEdit(Interface):
+    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
-    def getLastBuild():
-        """Return the the most recent build of this recipe."""
+    @operation_parameters(recipe_text=Text())
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
 
     def destroySelf():
         """Remove this SourcePackageRecipe from the database.
@@ -180,6 +144,58 @@ class ISourcePackageRecipe(IHasOwner, ISourcePackageRecipeData):
         This requires deleting any rows with non-nullable foreign key
         references to this object.
         """
+
+class ISourcePackageRecipeEditableAttributes(IHasOwner):
+    """ISourcePackageRecipe attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
+    daily_build_archive = exported(Reference(
+        IArchive, title=_("The archive to use for daily builds.")))
+
+    builder_recipe = Attribute(
+        _("The bzr-builder data structure for the recipe."))
+
+    owner = exported(
+        PersonChoice(
+            title=_('Owner'),
+            required=True, readonly=False,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The person or team who can edit this recipe.")))
+
+    distroseries = CollectionField(
+        Reference(IDistroSeries), title=_("The distroseries this recipe will"
+            " build a source package for"),
+        readonly=False)
+    build_daily = exported(Bool(
+        title=_("Build daily")))
+
+    name = exported(TextLine(
+            title=_("Name"), required=True,
+            constraint=name_validator,
+            description=_("The name of this recipe.")))
+
+    description = Text(
+        title=_('Description'), required=True,
+        description=_('A short description of the recipe.'))
+
+    date_last_modified = Datetime(required=True, readonly=True)
+
+    is_stale = Bool(title=_('Recipe is stale.'))
+
+
+class ISourcePackageRecipe(ISourcePackageRecipeData,
+    ISourcePackageRecipeEdit, ISourcePackageRecipeEditableAttributes,
+    ISourcePackageRecipeView):
+    """An ISourcePackageRecipe describes how to build a source package.
+
+    More precisely, it describes how to combine a number of branches into a
+    debianized source tree.
+    """
+    export_as_webservice_entry()
+    base_branch = Reference(
+        IBranch, title=_("The base branch used by this recipe."),
+        required=True, readonly=True)
 
 
 class ISourcePackageRecipeSource(Interface):

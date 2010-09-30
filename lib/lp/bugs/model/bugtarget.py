@@ -338,22 +338,26 @@ class OfficialBugTagTargetMixin:
 
     Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
+
+    See also `Bug.official_bug_tags` which calculates this efficiently for
+    a single bug.
     """
+
+    def _getOfficialTagClause(self):
+        if IDistribution.providedBy(self):
+            return (OfficialBugTag.distribution == self)
+        elif IProduct.providedBy(self):
+            return (OfficialBugTag.product == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        elif IProduct.providedBy(self):
-            target_clause = (OfficialBugTag.product == self)
-        else:
-            raise AssertionError(
-                '%s is not a valid official bug target' % self)
-        tags = [
-            obt.tag for obt
-            in store.find(OfficialBugTag, target_clause).order_by('tag')]
-        return tags
+        target_clause = self._getOfficialTagClause()
+        return list(store.find(
+            OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
         """Set the official bug tags from a list of strings."""
@@ -374,10 +378,7 @@ class OfficialBugTagTargetMixin:
         If the tag is not defined for this target, None is returned.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        else:
-            target_clause = (OfficialBugTag.product == self)
+        target_clause = self._getOfficialTagClause()
         return store.find(
             OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
 

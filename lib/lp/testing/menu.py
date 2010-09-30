@@ -11,7 +11,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 def check_menu_links(menu):
     context = menu.context
     for link in menu.iterlinks():
-        if link.target.startswith('/'):
+        if link.target.startswith(('/', 'http://')):
             # The context is not the context of this target.
             continue
         if '?' in link.target:
@@ -22,6 +22,6 @@ def check_menu_links(menu):
             view_name = None
         try:
             canonical_url(context, view_name=view_name, rootsite=link.site)
-        except:
+        except Exception:
             return 'Bad link %s: %s' % (link.name, canonical_url(context))
     return True

@@ -1252,13 +1252,18 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
 
     @property
-    def uses_launchpad_bugtracker(self):
-        """Whether this distro or product tracks bugs in launchpad.
+    def can_have_external_bugtracker(self):
+        return (IProduct.providedBy(self.context)
+                or IProductSeries.providedBy(self.context))
 
-        :returns: boolean
+    @property
+    def bug_tracking_usage(self):
+        """Whether the context tracks bugs in launchpad.
+
+        :returns: ServiceUsage enum value
         """
         service_usage = IServiceUsage(self.context)
-        return service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+        return service_usage.bug_tracking_usage
 
     @property
     def external_bugtracker(self):
@@ -1278,7 +1283,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
 
         :returns: str which may contain HTML.
         """
-        if self.uses_launchpad_bugtracker:
+        if self.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return 'Launchpad'
         elif self.external_bugtracker:
             return BugTrackerFormatterAPI(self.external_bugtracker).link(None)

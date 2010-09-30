@@ -335,6 +335,10 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
+
     def getRootURL(rootsite):
         """Return this request's root URL.
 
@@ -876,7 +880,7 @@ class IWebBrowserOriginatingRequest(Interface):
 
 try:
     from zope.publisher.interfaces import StartRequestEvent
-except:
+except ImportError:
     class IStartRequestEvent(Interface):
         """An event that gets sent before the start of a request."""
 

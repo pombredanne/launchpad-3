@@ -78,6 +78,7 @@ from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
     )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -204,7 +205,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return self.default_template
         involvement = getMultiAdapter(
             (self.context, self.request), name='+get-involved')
-        if involvement.official_answers:
+        if service_uses_launchpad(involvement.answers_usage):
             # Primary contexts that officially use answers have a
             # search and listing presentation.
             return self.default_template
@@ -504,22 +505,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return '<a href="%s">%s</a>' % (
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
-
-    @property
-    def ubuntu_packages(self):
-        """The Ubuntu `IDistributionSourcePackage`s linked to the context.
-
-        If the context is an `IProduct` and it has `IPackaging` links to
-        Ubuntu, a list is returned. Otherwise None is returned
-        """
-        if IProduct.providedBy(self.context):
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            packages = [
-                package for package in self.context.distrosourcepackages
-                if package.distribution == ubuntu]
-            if len(packages) > 0:
-                return packages
-        return None
 
     @property
     def can_configure_answers(self):

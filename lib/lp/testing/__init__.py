@@ -75,6 +75,7 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.transport import get_transport
+import fixtures
 import pytz
 from storm.expr import Variable
 from storm.store import Store
@@ -302,7 +303,7 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(testtools.TestCase):
+class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     """Provide Launchpad-specific test facilities."""
 
     def becomeDbUser(self, dbuser):
@@ -699,10 +700,17 @@ class BrowserTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None, pattern.search(normalise_whitespace(text)), text)
 
-    def getViewBrowser(self, context, view_name=None):
+    def getViewBrowser(self, context, view_name=None, no_login=False):
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name)
-        return self.getUserBrowser(url, self.user)
+        logout()
+        if no_login:
+            from canonical.launchpad.testing.pages import setupBrowser
+            browser = setupBrowser()
+            browser.open(url)
+            return browser
+        else:
+            return self.getUserBrowser(url, self.user)
 
     def getMainText(self, context, view_name=None):
         """Return the main text of a context's page."""

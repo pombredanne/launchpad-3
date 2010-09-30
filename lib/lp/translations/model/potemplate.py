@@ -66,6 +66,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
@@ -1387,6 +1388,9 @@ class POTemplateSet:
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return IMasterStore(POTemplate).execute("""
             INSERT INTO SuggestivePOTemplate (
                 SELECT POTemplate.id
@@ -1688,8 +1692,9 @@ class HasTranslationTemplatesMixin:
         collection = self.getTemplatesCollection()
 
         # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # official_rosetta distinction into browser code.
-        if collection.target_pillar.official_rosetta:
+        # translations_usage distinction into browser code.
+        pillar = collection.target_pillar
+        if service_uses_launchpad(pillar.translations_usage):
             return collection.restrictCurrent(current_value)
         else:
             # Product/Distribution does not have translation enabled.

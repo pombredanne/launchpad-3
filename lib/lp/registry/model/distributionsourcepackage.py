@@ -34,8 +34,6 @@ from storm.locals import (
     Unicode,
     )
 from storm.store import EmptyResultSet
-from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
@@ -113,13 +111,6 @@ class DistributionSourcePackageProperty:
 
     def __set__(self, obj, value):
         if obj._self_in_database is None:
-            # Log an oops without raising an error.
-            exception = AssertionError(
-                "DistributionSourcePackage record should have been created "
-                "earlier in the database for distro=%s, sourcepackagename=%s"
-                % (obj.distribution.name, obj.sourcepackagename.name))
-            getUtility(IErrorReportingUtility).raising(
-                (exception.__class__, exception, None))
             spph = Store.of(obj.distribution).find(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.distroseriesID ==
@@ -502,6 +493,9 @@ class DistributionSourcePackage(BugTargetBase,
             And(BugTask.distribution == self.distribution,
                 BugTask.sourcepackagename == self.sourcepackagename),
             user)
+
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):

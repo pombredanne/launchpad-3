@@ -243,7 +243,3 @@ def test_suite():
     suite.addTest(DocTestSuite('lp.services.mail.sendmail'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

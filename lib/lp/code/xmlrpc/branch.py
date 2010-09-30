@@ -15,6 +15,8 @@ __all__ = [
     ]
 
 
+from xmlrpclib import Fault
+
 from bzrlib import urlutils
 from zope.component import getUtility
 from zope.interface import (
@@ -214,9 +216,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         'http': _compose_http_url,
         }
 
-    def _getResultDict(self, branch, lp_path, suffix=None,
-                       supported_schemes=None):
-        """Return a result dict with a list of URLs for the given branch.
+    def _getUrlsForBranch(self, branch, lp_path, suffix=None,
+                          supported_schemes=None):
+        """Return a list of URLs for the given branch.
 
         :param branch: A Branch object.
         :param lp_path: The path that was used to traverse to the branch.
@@ -226,8 +228,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         """
         if branch.branch_type == BranchType.REMOTE:
             if branch.url is None:
-                return faults.NoUrlForBranch(branch.unique_name)
-            return dict(urls=[branch.url])
+                raise faults.NoUrlForBranch(branch.unique_name)
+            return [branch.url]
         else:
             return self._getUniqueNameResultDict(
                 branch.unique_name, suffix, supported_schemes, lp_path)
@@ -238,11 +240,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             supported_schemes = SUPPORTED_SCHEMES
         if path is None:
             path = unique_name
-        result = dict(urls=[])
-        for scheme in supported_schemes:
-            result['urls'].append(
-                self.scheme_funcs[scheme](unique_name, path, suffix))
-        return result
+        return [self.scheme_funcs[scheme](unique_name, path, suffix)
+                for scheme in supported_schemes]
 
     @return_fault
     def _resolve_lp_path(self, path):
@@ -254,11 +253,39 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
         strip_path = path.strip('/')
         if strip_path == '':
             raise faults.InvalidBranchIdentifier(path)
-        supported_schemes = SUPPORTED_SCHEMES
+        supported_schemes = list(SUPPORTED_SCHEMES)
         hot_products = [product.strip() for product
                         in config.codehosting.hot_products.split(',')]
-        if strip_path in hot_products:
-            supported_schemes = ['http']
+        # If we have been given something that looks like a branch name, just
+        # look that up.
+        if strip_path.startswith('~'):
+            urls = self._getBranchPaths(strip_path, supported_schemes)
+        else:
+            # We only check the hot product code when accessed through the
+            # short name, so we can check it here.
+            if strip_path in hot_products:
+                supported_schemes = ['http']
+                urls = []
+            else:
+                urls = [self.scheme_funcs['bzr+ssh'](None, strip_path, None)]
+                supported_schemes.remove('bzr+ssh')
+            # Try to look up the branch at that url and add alternative URLs.
+            # This may well fail, and if it does, we just return the aliased
+            # url.
+            try:
+                urls.extend(
+                    self._getBranchPaths(strip_path, supported_schemes))
+            except Fault:
+                pass
+        return dict(urls=urls)
+
+    def _getBranchPaths(self, strip_path, supported_schemes):
+        """Get the specific paths for a branch.
+
+        If the branch is not found, but it looks like a branch name, then we
+        return a writable URL for it.  If it doesn't look like a branch name a
+        fault is raised.
+        """
         branch_set = getUtility(IBranchLookup)
         try:
             branch, suffix = branch_set.getByLPPath(strip_path)
@@ -267,7 +294,9 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             # resolve it anyway, treating the path like a branch's unique
             # name. This lets people push new branches up to Launchpad using
             # lp: URL syntax.
-            return self._getUniqueNameResultDict(strip_path)
+            supported_schemes = ['bzr+ssh']
+            return self._getUniqueNameResultDict(
+                strip_path, supported_schemes=supported_schemes)
         # XXX: JonathanLange 2009-03-21 bug=347728: All of this is repetitive
         # and thus error prone. Alternatives are directly raising faults from
         # the model code(blech) or some automated way of reraising as faults
@@ -298,7 +327,8 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
             # E.g. 'project/trunk/filename.txt' the suffix is 'filename.txt'
             # we want lp_path to be 'project/trunk'.
             lp_path = lp_path[:-(len(suffix)+1)]
-        return self._getResultDict(branch, lp_path, suffix, supported_schemes)
+        return self._getUrlsForBranch(
+            branch, lp_path, suffix, supported_schemes)
 
     def resolve_lp_path(self, path):
         """See `IPublicCodehostingAPI`."""

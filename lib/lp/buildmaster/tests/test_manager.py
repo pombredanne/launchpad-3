@@ -6,7 +6,6 @@
 import os
 import signal
 import time
-import unittest
 
 import transaction
 
@@ -51,9 +50,9 @@ from lp.buildmaster.manager import (
     SlaveScanner,
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
+from lp.buildmaster.tests.mock_slaves import BuildingSlave
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.tests.soyuzbuilddhelpers import BuildingSlave
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase as LaunchpadTestCase
 from lp.testing.factory import LaunchpadObjectFactory

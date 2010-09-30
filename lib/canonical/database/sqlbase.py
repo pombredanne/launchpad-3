@@ -27,11 +27,12 @@ __all__ = [
     'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
+    'session_store',
     'SQLBase',
     'sqlvalues',
     'StupidCache',
     'ZopelessTransactionManager',
-]
+    ]
 
 
 from datetime import datetime
@@ -578,7 +579,7 @@ def quote_like(x):
 
     """
     if not isinstance(x, basestring):
-        raise TypeError, 'Not a string (%s)' % type(x)
+        raise TypeError('Not a string (%s)' % type(x))
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
 
@@ -692,6 +693,7 @@ def convert_storm_clause_to_string(storm_clause):
         parameters = [param.get(to_db=True) for param in state.parameters]
         clause = clause.replace('?', '%s') % sqlvalues(*parameters)
     return clause
+
 
 def flush_database_updates():
     """Flushes all pending database updates.
@@ -833,6 +835,7 @@ class cursor:
     DEPRECATED - use of this class is deprecated in favour of using
     Store.execute().
     """
+
     def __init__(self):
         self._connection = _get_sqlobject_store()._connection
         self._result = None
@@ -861,3 +864,8 @@ class cursor:
         if self._result is not None:
             self._result.close()
             self._result = None
+
+
+def session_store():
+    """Return a store connected to the session DB."""
+    return getUtility(IZStorm).get('session', 'launchpad-session:')

@@ -10,6 +10,8 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
 
+  <authorizations module=".security" />
+
   <include package=".browser"/>
 
   <publisher
@@ -189,6 +191,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    productseriesID
                     task_age
                     bug_subscribers
                     is_complete
@@ -590,6 +593,7 @@
                     isMentor
                     getNullBugTask
                     is_complete
+                    official_tags
                     who_made_private
                     date_made_private
                     userCanView
@@ -622,6 +626,7 @@
                     initial_message
                     linked_branches
                     watches
+                    has_cves
                     cves
                     cve_links
                     duplicates

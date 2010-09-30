@@ -13,10 +13,7 @@ __all__ = [
     ]
 
 from itertools import groupby
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 
 import transaction
 from zope.component import getUtility
@@ -108,25 +105,6 @@ def construct_email_notifications(bug_notifications):
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(person, bug)
-    # comment_syncing_team can be either None or '' to indicate unset.
-    if comment is not None and config.malone.comment_syncing_team:
-        # The first time we import comments from a bug watch, a comment
-        # notification is added, originating from the Bug Watch Updater.
-        bug_watch_updater = getUtility(
-            ILaunchpadCelebrities).bug_watch_updater
-        is_initial_import_notification = (comment.owner == bug_watch_updater)
-        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-            bug, comment)
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
-        # Only members of the comment syncing team should get comment
-        # notifications related to bug watches or initial comment imports.
-        if (is_initial_import_notification or
-            (bug_message is not None and bug_message.bugwatch is not None)):
-            recipients = dict(
-                (email_person, recipient)
-                for email_person, recipient in recipients.items()
-                if recipient.person.inTeam(comment_syncing_team))
     bug_notification_builder = BugNotificationBuilder(bug, person)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
@@ -196,10 +174,14 @@ def notification_comment_batches(notifications):
         yield comment_count or 1, notification
 
 
+def get_bug_and_owner(notification):
+    """Retrieve `notification`'s `bug` and `message.owner` attributes."""
+    return notification.bug, notification.message.owner
+
+
 def notification_batches(notifications):
     """Batch notifications for `get_email_notifications`."""
-    notifications_grouped = groupby(
-        notifications, attrgetter("bug", "message.owner"))
+    notifications_grouped = groupby(notifications, get_bug_and_owner)
     for (bug, person), notification_group in notifications_grouped:
         batches = notification_comment_batches(notification_group)
         for comment_group, batch in groupby(batches, itemgetter(0)):

@@ -80,7 +80,7 @@ criteria).
     Und jetzt auf deutsch.
 
     >>> options = [
-    ...     '-vvv',
+    ...     '-v',
     ...     '--submitter=%s' % nl_message.submitter.id,
     ...     '--reviewer=%s' % nl_message.reviewer.id,
     ...     '--id=%s' % str(1),
@@ -140,7 +140,7 @@ has a --dry-run option that stops it from committing its changes to the
 database.
 
     >>> (returncode, out, err) = run_script(script, [
-    ...     '-vvv',
+    ...     '-v',
     ...     '--potemplate=%s' % de_pofile.potemplate.id,
     ...     '--force',
     ...     '--dry-run',
