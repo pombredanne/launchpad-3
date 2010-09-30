@@ -77,6 +77,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonPublic,
@@ -89,6 +92,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
+from lp.services.comments.interfaces.conversation import IComment
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -321,6 +325,9 @@ patch_plain_parameter_type(
 IBuildFarmJob['status'].vocabulary = BuildStatus
 IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
 
+# IComment
+IComment['comment_author'].schema = IPerson
+
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
@@ -365,6 +372,9 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+
+# IDistroSeriesDifferenceComment
+IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -17,7 +17,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'NavigationMenuTabs',
-    'RDFIndexView',
     'SoftTimeoutView',
     'get_launchpad_views',
     ]
@@ -95,7 +94,7 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
     PageTemplateContextsAPI,
@@ -521,33 +520,47 @@ class LaunchpadRootNavigation(Navigation):
         with a suitable error message.
         """
 
-        # The default url to go to will be back to the referring page (in
-        # the case that there is an error resolving the branch url)
-        url = self.request.getHeader('referer')
+        # The default target url to go to will be back to the referring page
+        # (in the case that there is an error resolving the branch url).
+        # Note: the http referer may be None if someone has hacked a url
+        # directly rather than following a /+branch/<foo> link.
+        target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
             # first check for a valid branch url
             try:
                 branch_data = getUtility(IBranchLookup).getByLPPath(path)
                 branch, trailing = branch_data
-                url = canonical_url(branch)
+                target_url = canonical_url(branch)
                 if trailing is not None:
-                    url = urlappend(url, trailing)
+                    target_url = urlappend(target_url, trailing)
 
-            except (NoLinkedBranch):
+            except (NoLinkedBranch), e:
                 # a valid ICanHasLinkedBranch target exists but there's no
                 # branch or it's not visible
+
+                # If are aren't arriving at this invalid branch URL from
+                # another page then we just raise an exception, otherwise we
+                # end up in a bad recursion loop. The target url will be None
+                # in that case.
+                if target_url is None:
+                    raise e
                 self.request.response.addNotification(
                     "The target %s does not have a linked branch." % path)
 
         except (CannotHaveLinkedBranch, InvalidNamespace,
-                InvalidProductName, NotFoundError) as e:
+                InvalidProductName, NotFoundError), e:
+            # If are aren't arriving at this invalid branch URL from another
+            # page then we just raise an exception, otherwise we end up in a
+            # bad recursion loop. The target url will be None in that case.
+            if target_url is None:
+                raise e
             error_msg = str(e)
             if error_msg == '':
                 error_msg = "Invalid branch lp:%s." % path
             self.request.response.addErrorNotification(error_msg)
 
-        return self.redirectSubTree(url)
+        return self.redirectSubTree(target_url)
 
     @stepto('+builds')
     def redirect_buildfarm(self):
@@ -913,8 +926,3 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
-
-
-class RDFIndexView(LaunchpadView):
-    """View for /rdf page."""
-    page_title = label = "Launchpad RDF"

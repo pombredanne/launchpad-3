@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Distro Series Languages."""
@@ -16,7 +16,7 @@ from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage,

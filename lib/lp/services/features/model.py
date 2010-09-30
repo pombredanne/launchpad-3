@@ -10,6 +10,7 @@ __metaclass__ = type
 
 from storm.locals import (
     DateTime,
+    Desc,
     Int,
     Storm,
     Unicode,

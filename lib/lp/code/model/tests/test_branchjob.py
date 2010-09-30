@@ -518,9 +518,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             except bzr_errors.NoSuchRevision:
                 revno = None
             if existing is not None:
-                branchrevision = IMasterStore(branch).find(
-                    BranchRevision, BranchRevision.id == existing.id)
-                branchrevision.remove()
+                branch.removeBranchRevisions([existing.revision.revision_id])
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):

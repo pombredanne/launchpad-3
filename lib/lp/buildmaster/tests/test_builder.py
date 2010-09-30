@@ -129,6 +129,13 @@ class TestBuilder(TestCaseWithFactory):
         # single EINTR.
         self.assertEqual(0, builder.handleTimeout.call_count)
 
+    def test_slave(self):
+        # Builder.slave is a BuilderSlave that points at the actual Builder.
+        # The Builder is only ever used in scripts that run outside of the
+        # security context.
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        self.assertEqual(builder.url, builder.slave.url)
+
 
 class Test_rescueBuilderIfLost(TestCaseWithFactory):
     """Tests for lp.buildmaster.model.builder.rescueBuilderIfLost."""
@@ -501,7 +508,7 @@ class TestSlave(TestCase):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        return BuilderSlave(self.TEST_URL, 'vmhost')
+        return BuilderSlave.makeBlockingSlave(self.TEST_URL, 'vmhost')
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.

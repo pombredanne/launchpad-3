@@ -67,7 +67,7 @@ And if we unlink it, the count will decrease.
 You can link a CVE to a bug. You can also see which CVEs are currently
 linked to a bug:
 
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> b = Bug.get(1)
     >>> for c in b.cves:
     ...     print c.displayname

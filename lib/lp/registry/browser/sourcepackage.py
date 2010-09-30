@@ -46,6 +46,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
@@ -120,6 +121,18 @@ def get_register_upstream_url(source_package):
     query_string = urllib.urlencode(
         sorted(params.items()), doseq=True)
     return '/projects/+new?%s' % query_string
+
+
+class SourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapter for ISourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -338,7 +351,7 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     next_url = None
 
     main_action_label = u'Change'
-    
+
     def main_action(self, data):
         productseries = data['productseries']
         # Because it is part of a multistep view, the next_url can't

@@ -50,6 +50,7 @@ from canonical.launchpad.webapp import (
 from canonical.lazr.utils import smartquote
 from canonical.widgets import DateTimeWidget
 from lp.registry.browser import (
+    BaseRdfView,
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
     )
@@ -256,33 +257,17 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class ProductReleaseRdfView(object):
+class ProductReleaseRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile('../templates/productrelease-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition',
-            'attachment; filename=%s-%s-%s.rdf' % (
-                self.context.product.name,
-                self.context.productseries.name,
-                self.context.version))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s-%s' % (
+            self.context.product.name,
+            self.context.productseries.name,
+            self.context.version)
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
