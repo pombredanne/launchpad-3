@@ -8,8 +8,6 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadFunctionalLayer
-
-from lp.services.job.interfaces.job import JobStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
@@ -19,6 +17,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.registry.model.persontransferjob import MembershipNotificationJob
+from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
