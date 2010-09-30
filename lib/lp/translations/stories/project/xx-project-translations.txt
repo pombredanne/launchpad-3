@@ -82,16 +82,7 @@ alsa-utils does not belong to GNOME project.
   ...
   LinkNotFoundError
 
-It's using Launchpad Translations officially.
-
-  >>> browser.open('http://launchpad.dev/alsa-utils')
-  >>> print browser.url
-  http://launchpad.dev/alsa-utils
-  >>> uses = find_tag_by_id(browser.contents, 'uses')
-  >>> print extract_text(uses)
-  Uses Launchpad for: Translations.
-
-And it has translations.
+It's using Launchpad Translations officially. And it has translations.
 
   >>> browser.open('http://translations.launchpad.dev/alsa-utils')
   >>> print browser.url
