@@ -44,7 +44,6 @@ from lp.buildmaster.manager import (
     BuilddManager,
     FailDispatchResult,
     NewBuildersScanner,
-    RecordingSlave,
     ResetDispatchResult,
     SlaveScanner,
     )
@@ -59,71 +58,6 @@ from lp.testing import TestCase as LaunchpadTestCase
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
-
-
-class TestRecordingSlaves(TrialTestCase):
-    """Tests for the recording slave class."""
-    layer = TwistedLayer
-
-    def setUp(self):
-        """Setup a fresh `RecordingSlave` for tests."""
-        TrialTestCase.setUp(self)
-        self.slave = RecordingSlave(
-            'foo', 'http://foo:8221/rpc', 'foo.host')
-
-    def test_representation(self):
-        """`RecordingSlave` has a custom representation.
-
-        It encloses builder name and xmlrpc url for debug purposes.
-        """
-        self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
-
-    def assert_ensurepresent(self, func):
-        """Helper function to test results from calling ensurepresent."""
-        self.assertEqual(
-            [True, 'Download'],
-            func('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
-
-    def test_ensurepresent(self):
-        """`RecordingSlave.ensurepresent` always succeeds.
-
-        It returns the expected succeed code and records the interaction
-        information for later use.
-        """
-        self.assert_ensurepresent(self.slave.ensurepresent)
-
-    def test_sendFileToSlave(self):
-        """RecordingSlave.sendFileToSlave always succeeeds.
-
-        It calls ensurepresent() and hence returns the same results.
-        """
-        self.assert_ensurepresent(self.slave.sendFileToSlave)
-
-    def test_build(self):
-        """`RecordingSlave.build` always succeeds.
-
-        It returns the expected succeed code and records the interaction
-        information for later use.
-        """
-        self.assertEqual(
-            ['BuilderStatus.BUILDING', 'boing'],
-            self.slave.build('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('build', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
-
-    def test_resume(self):
-        """`RecordingSlave.resume` always returns successs."""
-        # Resume isn't requested in a just-instantiated RecordingSlave.
-        self.assertFalse(self.slave.resume_requested)
-
-        # When resume is called, it returns the success list and mark
-        # the slave for resuming.
-        self.assertEqual(['', '', os.EX_OK], self.slave.resume())
-        self.assertTrue(self.slave.resume_requested)
 
 
 class TestingXMLRPCProxy:

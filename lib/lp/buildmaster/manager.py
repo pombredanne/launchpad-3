@@ -10,7 +10,6 @@ __all__ = [
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
-    'RecordingSlave',
     'ResetDispatchResult',
     'buildd_success_result_map',
     ]
@@ -34,7 +33,6 @@ from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from lp.services.database import write_transaction
 from lp.buildmaster.enums import BuildStatus
-from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
@@ -64,87 +62,6 @@ class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
     noisy = False
     # Use the protocol with timeout support.
     protocol = QueryWithTimeoutProtocol
-
-
-class RecordingSlave:
-    """An RPC proxy for buildd slaves that records instructions to the latter.
-
-    The idea here is to merely record the instructions that the slave-scanner
-    issues to the buildd slaves and "replay" them a bit later in asynchronous
-    and parallel fashion.
-
-    By dealing with a number of buildd slaves in parallel we remove *the*
-    major slave-scanner throughput issue while avoiding large-scale changes to
-    its code base.
-    """
-
-    def __init__(self, name, url, vm_host):
-        self.name = name
-        self.url = url
-        self.vm_host = vm_host
-
-        self.resume_requested = False
-        self.calls = []
-
-    def __repr__(self):
-        return '<%s:%s>' % (self.name, self.url)
-
-    def cacheFile(self, logger, libraryfilealias):
-        """Cache the file on the server."""
-        self.ensurepresent(
-            libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
-
-    def sendFileToSlave(self, *args):
-        """Helper to send a file to this builder."""
-        return self.ensurepresent(*args)
-
-    def ensurepresent(self, *args):
-        """Download files needed for the build."""
-        self.calls.append(('ensurepresent', args))
-        result = buildd_success_result_map.get('ensurepresent')
-        return [result, 'Download']
-
-    def build(self, *args):
-        """Perform the build."""
-        # XXX: This method does not appear to be used.
-        self.calls.append(('build', args))
-        result = buildd_success_result_map.get('build')
-        return [result, args[0]]
-
-    def resume(self):
-        """Record the request to resume the builder..
-
-        Always succeed.
-
-        :return: a (stdout, stderr, subprocess exitcode) triple
-        """
-        self.resume_requested = True
-        return ['', '', 0]
-
-    def resumeSlave(self, clock=None):
-        """Resume the builder in a asynchronous fashion.
-
-        Used the configuration command-line in the same way
-        `BuilddSlave.resume` does.
-
-        Also use the builddmaster configuration 'socket_timeout' as
-        the process timeout.
-
-        :param clock: An optional twisted.internet.task.Clock to override
-                      the default clock.  For use in tests.
-
-        :return: a Deferred
-        """
-        resume_command = config.builddmaster.vm_resume_command % {
-            'vm_host': self.vm_host}
-        # Twisted API require string and the configuration provides unicode.
-        resume_argv = [str(term) for term in resume_command.split()]
-
-        d = defer.Deferred()
-        p = ProcessWithTimeout(
-            d, config.builddmaster.socket_timeout, clock=clock)
-        p.spawnProcess(resume_argv[0], tuple(resume_argv))
-        return d
 
 
 def get_builder(name):
