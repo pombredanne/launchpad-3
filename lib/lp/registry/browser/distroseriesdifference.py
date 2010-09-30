@@ -42,6 +42,9 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment,
+    )
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
@@ -115,9 +118,11 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     @property
     def comments(self):
         """See `IConversation`."""
+        comments = self.context.getComments().order_by(
+            DistroSeriesDifferenceComment.id)
         return [
             DistroSeriesDifferenceDisplayComment(comment) for
-                comment in self.context.getComments()]
+                comment in comments]
 
     @property
     def show_edit_options(self):
