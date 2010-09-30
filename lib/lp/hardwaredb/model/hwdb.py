@@ -467,7 +467,7 @@ class HWSubmissionSet:
 
         if subscribed_to_bug:
             subscriber_clauses = [
-                BugSubscription.personID == HWSubmission.ownerID,
+                BugSubscription.person_id == HWSubmission.ownerID,
                 BugSubscription.bug == Bug.id,
                 ]
             subscriber_query = Select(
@@ -531,7 +531,7 @@ class HWSubmissionSet:
         person_clauses = [Bug.ownerID == HWSubmission.ownerID]
         if subscribed_to_bug:
             person_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
+                And(BugSubscription.person_id == HWSubmission.ownerID,
                     BugSubscription.bug == Bug.id))
             tables.append(BugSubscription)
         if affected_by_bug:

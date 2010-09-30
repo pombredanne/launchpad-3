@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -12,7 +12,7 @@
 
     <!-- BinaryAndSourcePackagename -->
     <class class="canonical.launchpad.database.BinaryAndSourcePackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
+        <allow interface="lp.soyuz.interfaces.binarypackagename.IBinaryAndSourcePackageName" />
     </class>
 
     <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">

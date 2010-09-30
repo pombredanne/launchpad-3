@@ -136,18 +136,18 @@
         template="../templates/bugtarget-macros-search.pt"/>
     <browser:page
         name="+unlinkbug"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugsUnlinkView"
         permission="launchpad.AnyPerson"
         template="../templates/buglinktarget-unlinkbugs.pt"/>
     <browser:page
         name="+portlet-bugs"
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         class="lp.bugs.browser.buglinktarget.BugLinksListingView"
         permission="zope.Public"
         template="../templates/buglinktarget-portlet-bugs.pt"/>
     <browser:page
-        for="canonical.launchpad.interfaces.IBugLinkTarget"
+        for="lp.bugs.interfaces.buglink.IBugLinkTarget"
         permission="zope.Public"
         name="unlinkbugs_template"
         template="../templates/buglinktarget-unlinkbugs.pt"/>
@@ -164,27 +164,27 @@
             permission="zope.Public"
             template="../templates/bug-attachment-macros.pt"/>
         <browser:defaultView
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"/>
         <browser:url
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             path_expression="string:comments/${index}"
             attribute_to_parent="bugtask"
             rootsite="bugs"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"
             template="../templates/bugcomment-index.pt"
             class="lp.bugs.browser.bugcomment.BugCommentView"
             permission="launchpad.View"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxView"
             permission="launchpad.View"/>
         <browser:page
-            for="canonical.launchpad.interfaces.IBugComment"
+            for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+box-expanded-reply"
             template="../templates/bugcomment-box.pt"
             class="lp.bugs.browser.bugcomment.BugCommentBoxExpandedReplyView"
@@ -197,7 +197,7 @@
     <browser:url
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         path_expression="string:bugs"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:menu
         id="malone_actions"
         title="Menu for Malone-related actions."/>
@@ -829,7 +829,7 @@
         <browser:url
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
             path_expression="string:bugtrackers"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"
             rootsite="bugs"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
@@ -942,7 +942,7 @@
         <browser:url
             for="lp.bugs.interfaces.cve.ICveSet"
             path_expression="string:cve"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
         <browser:navigation
             module="lp.bugs.browser.cve"
             classes="
@@ -1081,7 +1081,7 @@
         <browser:url
             for="lp.bugs.interfaces.bug.IBugSet"
             path_expression="string:bugs"
-            parent_utility="canonical.launchpad.interfaces.IMaloneApplication"/>
+            parent_utility="lp.bugs.interfaces.malone.IMaloneApplication"/>
     </facet>
     <facet
         facet="bugs">

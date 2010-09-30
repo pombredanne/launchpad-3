@@ -683,7 +683,7 @@ Private teams can be subscribed to bugs.
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
-    >>> from canonical.launchpad.database import BugSubscription
+    >>> from lp.bugs.model.bugsubscription import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
     >>> bug = bug_set.get(1)

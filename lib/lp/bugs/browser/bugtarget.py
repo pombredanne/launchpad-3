@@ -80,7 +80,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
+from lp.app.browser.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
