@@ -4,15 +4,11 @@ Product Launchpad usage
 The launchpad usage flags (whether the product uses Bugs, Answers or
 Translations officially) are found on the +edit page.
 
+Only the product registrant and the admins have access to this page.
+
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print anon_browser.title
     Mozilla Firefox in Launchpad
-
-    >>> uses = find_tag_by_id(anon_browser.contents, id='uses')
-    >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Bug Tracking.
-
-Only the product registrant and the admins have access to this page.
 
     >>> anon_browser.getLink('Change details')
     Traceback (most recent call last):
@@ -85,12 +81,17 @@ Answers can be disabled.
     >>> registrant_browser.getControl('Unknown').click()
     >>> registrant_browser.getControl('Change').click()
 
-On the product page, we can see that the product doesn't use any bug
-tracker, not even Launchpad.
+On the product page, we can see that Codehosting, Bugtracking, and Answers
+are all disabled.
 
-    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
-    >>> print extract_text(uses)
-    Uses Launchpad for: Translations.
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> for item in disabled:
+    ...     print extract_text(item)
+    ...
+    Report a bug
+    Ask a question
+    Submit code
+     
 
 Blueprints can be enabled too, though it isn't easy.
 
@@ -110,25 +111,35 @@ Blueprints can be enabled too, though it isn't easy.
     >>> registrant_browser.getControl('Change').click()
 
 
-On the product page, we can see that the product doesn't use any bug
-tracker, not even Launchpad, but does use Translations.
+On the product page, we see that everything but Translations is stil
+disabled. Blueprints isn't shown in the involvment menu, so we don't
+see anything about it, disabled or not.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
-    >>> print extract_text(uses)
-    Uses Launchpad for: Blueprints and Translations.
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> for item in disabled:
+    ...     print extract_text(item)
+    ...
+    Report a bug
+    Ask a question
+    Submit code
 
-Setting a usage to external is reflected in the "Uses" message.
-Change translations to external.
+The menu shows external usage as not using Launchpad. We'll set
+Translations to external.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
     >>> registrant_browser.getLink('Configure translations').click()
     >>> registrant_browser.getControl('External').click()
     >>> registrant_browser.getControl('Change').click()
 
-    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
-    >>> print extract_text(uses)
-    Uses Launchpad for: Blueprints.
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> for item in disabled:
+    ...     print extract_text(item)
+    ...
+    Report a bug
+    Ask a question
+    Help translate
+    Submit code
 
 
 Tracking bugs by email
@@ -204,11 +215,17 @@ support JavaScript so this behaviour is easy to simulate.)
     >>> registrant_browser.getControl('Somewhere else').selected = True
     >>> registrant_browser.getControl('Change').click()
 
-The Status of Launchpad uses shows the bug tracker was changed.
+The Status of Launchpad uses shows the bug tracker was changed, and marked as
+disabled in the involvement menu.
 
-    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
-    >>> print extract_text(uses)
-    Does not use Launchpad for development.
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> for item in disabled:
+    ...     print extract_text(item)
+    ...
+    Report a bug
+    Ask a question
+    Help translate
+    Submit code
 
 Reviewing the edit page again, Dafydd, can see that bug expiration was
 also disabled by the switch from Launchpad Bugs.
