@@ -261,10 +261,9 @@ def get_request_duration(now=None):
     return now - starttime
 
 
-def _get_request_timeout(now=None, timeout=None):
+def _get_request_timeout(timeout=None):
     """Get the timeout value in ms for the current request.
     
-    :param now: Override the result of time.time.
     :param timeout: A custom timeout in ms.
     :return None or a time in ms representing the budget to grant the request.
     """
@@ -298,7 +297,7 @@ def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     :param timeout: A custom timeout in ms.
     :return: None or a float representing the remaining time budget.
     """
-    timeout = _get_request_timeout(now=now, timeout=timeout)
+    timeout = _get_request_timeout(timeout=timeout)
     if not timeout:
         return None
     duration = get_request_duration(now)
