@@ -1582,9 +1582,6 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             name='source-branch', owner=self.user, product=self.product)
         self.target = self.factory.makeProductBranch(
             name='target-branch', owner=self.user, product=self.product)
-        self.target_with_default_reviewer = self.factory.makeProductBranch(
-            name='target-branch-with-reviewer', owner=self.user,
-            product=self.product, reviewer=self.reviewer)
         self.prerequisite = self.factory.makeProductBranch(
             name='prerequisite-branch', owner=self.user, product=self.product)
 
@@ -1686,8 +1683,11 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         """If the target branch has a default reviewer set, this reviewer
         should be assigned to the merge proposal.
         """
+        target_with_default_reviewer = self.factory.makeProductBranch(
+            name='target-branch-with-reviewer', owner=self.user,
+            product=self.product, reviewer=self.reviewer)
         proposal = self.source.addLandingTarget(
-            self.user, self.target_with_default_reviewer)
+            self.user, target_with_default_reviewer)
         self.assertOnePendingReview(proposal, self.reviewer)
 
     def test_default_reviewer_when_owner(self):
@@ -1697,28 +1697,6 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         proposal = self.source.addLandingTarget(
             self.user, self.target)
         self.assertOnePendingReview(proposal, self.source.owner)
-
-    def test_default_reviewer_with_review_type(self):
-        """If the target branch has a default reviewer set, this reviewer
-        should be assigned to the merge proposal and the specified review type
-        used.
-        """
-        proposal = self.source.addLandingTarget(
-            self.user, self.target_with_default_reviewer,
-            default_review_type = 'code')
-        self.assertOnePendingReview(proposal, self.reviewer, 'code')
-
-    def test_notify_on_default_reviewer(self):
-        """Ensure that when a merge proposal is created with default reviewer
-        we only get a new branch merge proposal event and not an event for a
-        new reviewer being added.
-        """
-        result, event = self.assertNotifies(
-            NewBranchMergeProposalEvent,
-            self.source.addLandingTarget,
-            self.user, self.target_with_default_reviewer,
-            default_review_type = 'code')
-        self.assertEqual(result, event.object)
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""

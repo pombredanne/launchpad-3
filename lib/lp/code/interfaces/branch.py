@@ -566,8 +566,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None,
-                         default_review_type=None):
+                         review_diff=None, commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
@@ -587,8 +586,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param description: A description of the bugs fixed, features added,
             or refactorings.
         :param review_requests: An optional list of (`Person`, review_type).
-        :param default_review_type: If no review requests are specified and a
-            default reviewer is used, this is the review type to request.
         """
 
     def scheduleDiffUpdates():
@@ -1033,9 +1030,9 @@ class IBranchEdit(Interface):
         is set, the branch gets moved into the junk namespace of the branch
         owner.
 
-        :raise: `BranchTargetError` if both project and source_package are
-          set, or if either the project or source_package fail to be adapted
-          to an IBranchTarget.
+        :raise: `BranchTargetError` if both project and source_package are set,
+          or if either the project or source_package fail to be adapted to an
+          IBranchTarget.
         """
 
     def requestUpgrade():

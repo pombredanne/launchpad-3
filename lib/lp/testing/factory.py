@@ -1141,8 +1141,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None, date_created=None,
-                                description=None, reviewer=None,
-                                review_type=None):
+                                description=None, reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1169,12 +1168,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         review_requests = []
         if reviewer is not None:
-            review_requests.append((reviewer, review_type))
+            review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            description=description, date_created=date_created,
-            default_review_type=review_type)
+            description=description, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:

@@ -1307,6 +1307,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         review_requests = []
         reviewer = data.get('reviewer')
         review_type = data.get('review_type')
+        if reviewer is None:
+            reviewer = target_branch.code_reviewer
         if reviewer is not None:
             review_requests.append((reviewer, review_type))
 
@@ -1317,8 +1319,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 needs_review=data['needs_review'],
                 description=data.get('comment'),
                 review_requests=review_requests,
-                commit_message=data.get('commit_message'),
-                default_review_type=review_type)
+                commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))

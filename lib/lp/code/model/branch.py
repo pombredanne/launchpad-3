@@ -373,8 +373,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None,
-                         default_review_type=None):
+                         review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -420,12 +419,11 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_requests is None:
             review_requests = []
 
-        # Ensure that if there is a default reviewer specified for the
-        # target branch, and the review requests list is empty, then
-        # use that default reviewer with the specified default_review_type..
+        # If there is a default reviewer specified for the target branch,
+        # and the review requests list is empty, use that default reviewer.
         default_reviewer = target_branch.code_reviewer
         if default_reviewer is not None and len(review_requests) == 0:
-            review_requests.append((default_reviewer, default_review_type))
+            review_requests.append((default_reviewer, None))
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,

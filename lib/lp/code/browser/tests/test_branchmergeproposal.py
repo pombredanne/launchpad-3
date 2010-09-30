@@ -334,8 +334,26 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         view.render()
 
 
-class RegisterBranchMergeProposalViewMixin:
-    """ Mixin class for BranchMergeProposalView tests."""
+class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
+    """Test the merge proposal registration view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.source_branch = self.factory.makeProductBranch()
+        self.user = self.factory.makePerson()
+        login_person(self.user)
+
+    def _makeTargetBranch(self):
+        return self.factory.makeProductBranch(
+            product=self.source_branch.product)
+
+    def _makeTargetBranchWithReviewer(self):
+        albert = self.factory.makePerson(name='albert')
+        target_branch = self.factory.makeProductBranch(
+            reviewer=albert, product=self.source_branch.product)
+        return target_branch, albert
 
     def _createView(self):
         # Construct the view and initialize it.
@@ -344,12 +362,12 @@ class RegisterBranchMergeProposalViewMixin:
         view.initialize()
         return view
 
-    def _getSourceProposal(self):
+    def _getSourceProposal(self, target_branch):
         # There will only be one proposal.
         landing_targets = list(self.source_branch.landing_targets)
         self.assertEqual(1, len(landing_targets))
         proposal = landing_targets[0]
-        self.assertEqual(self.target_branch, proposal.target_branch)
+        self.assertEqual(target_branch, proposal.target_branch)
         return proposal
 
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
@@ -365,160 +383,129 @@ class RegisterBranchMergeProposalViewMixin:
         else:
             self.assertEqual(review_type, votes[0].review_type)
 
-
-class TestRegisterBranchMergeProposalView(
-    TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
-    """Test the merge proposal registration view.
-
-    The target branch has no default reviewer assigned. Hence the reviewer
-    should be set to the branch owner unless specified otherwise.
-    """
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.target_branch = self.factory.makeProductBranch()
-        self.source_branch = self.factory.makeProductBranch(
-            product=self.target_branch.product)
-        self.user = self.factory.makePerson()
-        login_person(self.user)
-
     def test_register_simplest_case(self):
         # This simplest case is where the user only specifies the target
         # branch, and not an initial comment or reviewer. The reviewer will
         # therefore be set to the branch owner.
+        target_branch = self._makeTargetBranch()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'needs_review': True})
-        proposal = self._getSourceProposal()
-        self.assertOnePendingReview(proposal, self.target_branch.owner)
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertIs(None, proposal.description)
 
     def test_register_work_in_progress(self):
         # The needs review checkbox can be unchecked to create a work in
         # progress proposal.
+        target_branch = self._makeTargetBranch()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'needs_review': False})
-        proposal = self._getSourceProposal()
+        proposal = self._getSourceProposal(target_branch)
         self.assertEqual(
             BranchMergeProposalStatus.WORK_IN_PROGRESS,
             proposal.queue_status)
 
     def test_register_with_commit_message(self):
         # A commit message can also be set during the register process.
+        target_branch = self._makeTargetBranch()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'needs_review': True,
              'commit_message': 'Fixed the bug!'})
-        proposal = self._getSourceProposal()
+        proposal = self._getSourceProposal(target_branch)
         self.assertEqual('Fixed the bug!', proposal.commit_message)
 
     def test_register_initial_comment(self):
         # If the user specifies a description, this is recorded on the
         # proposal.
+        target_branch = self._makeTargetBranch()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'comment': "This is the description.",
              'needs_review': True})
 
-        proposal = self._getSourceProposal()
-        self.assertOnePendingReview(proposal, self.target_branch.owner)
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, target_branch.owner)
         self.assertEqual(proposal.description, "This is the description.")
 
     def test_register_request_reviewer(self):
         # If the user requests a reviewer, then a pending vote is added to the
         # proposal.
+        target_branch = self._makeTargetBranch()
         reviewer = self.factory.makePerson()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'reviewer': reviewer,
              'needs_review': True})
 
-        proposal = self._getSourceProposal()
+        proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer)
         self.assertIs(None, proposal.description)
 
     def test_register_request_review_type(self):
         # We can request a specific review type of the reviewer.  If we do, it
         # is recorded along with the pending review.
+        target_branch = self._makeTargetBranch()
         reviewer = self.factory.makePerson()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'reviewer': reviewer,
              'review_type': 'god-like',
              'needs_review': True})
 
-        proposal = self._getSourceProposal()
+        proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
 
     def test_register_comment_and_review(self):
         # The user can give a description and request a review from
         # someone.
+        target_branch = self._makeTargetBranch()
         reviewer = self.factory.makePerson()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'reviewer': reviewer,
              'review_type': 'god-like',
              'comment': "This is the description.",
              'needs_review': True})
 
-        proposal = self._getSourceProposal()
+        proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertEqual(proposal.description, "This is the description.")
 
-
-class TestRegisterBranchWithADefaultReviewerMergeProposalView(
-    TestCaseWithFactory, RegisterBranchMergeProposalViewMixin):
-    """Test the merge proposal registration view.
-
-    The target branch has a default reviewer assigned.
-    """
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        # The default reviewer is albert
-        self.albert = self.factory.makePerson(name='albert')
-        self.target_branch = self.factory.makeProductBranch(
-            reviewer=self.albert)
-        self.source_branch = self.factory.makeProductBranch(
-            product=self.target_branch.product)
-        self.user = self.factory.makePerson()
-        login_person(self.user)
-
-    def test_register_simplest_case(self):
+    def test_register_for_target_with_default_reviewer(self):
         # A simple case is where the user only specifies the target
         # branch, and not an initial comment or reviewer. The target branch
         # has a reviewer so that reviewer should be used
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'needs_review': True})
-        proposal = self._getSourceProposal()
-        self.assertOnePendingReview(proposal, self.albert)
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer)
         self.assertIs(None, proposal.description)
 
     def test_register_request_review_type(self):
         # We can ask for a specific review type. The target branch has a
         # reviewer so that reviewer should be used.
+        target_branch, reviewer = self._makeTargetBranchWithReviewer()
         view = self._createView()
         view.register_action.success(
-            {'target_branch': self.target_branch,
+            {'target_branch': target_branch,
              'review_type': 'god-like',
              'needs_review': True})
-        proposal = self._getSourceProposal()
-        self.assertOnePendingReview(proposal, self.albert, 'god-like')
+        proposal = self._getSourceProposal(target_branch)
+        self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
 
 

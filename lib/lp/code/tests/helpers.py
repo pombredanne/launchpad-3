@@ -316,15 +316,9 @@ def recipe_parser_newest_version(version):
         RecipeParser.NEWEST_VERSION = old_version
 
 
-def make_merge_proposal_without_reviewers(factory, registrant=None,
-                                          source_branch=None,
-                                          target_branch=None, set_state=None,
-                                          preview_diff=None):
+def make_merge_proposal_without_reviewers(factory, **kwargs):
     """Make a merge proposal and strip of any review votes."""
-    proposal = factory.makeBranchMergeProposal(
-        registrant=registrant, source_branch=source_branch,
-        target_branch=target_branch, set_state=set_state,
-        preview_diff=preview_diff)
+    proposal = factory.makeBranchMergeProposal(**kwargs)
     for vote in proposal.votes:
         removeSecurityProxy(vote).destroySelf()
     return proposal

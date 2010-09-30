@@ -240,13 +240,13 @@ class CodeEmailCommands(EmailCommandCollection):
         }
 
     @classmethod
-    def getCommands(klass, message_body, exclude=set()):
+    def getCommands(klass, message_body):
         """Extract the commands from the message body."""
         if message_body is None:
             return []
-        keys = set(klass._commands.keys()) - exclude
         commands = [klass.get(name=name, string_args=args) for
-                    name, args in parse_commands(message_body, keys)]
+                    name, args in parse_commands(message_body,
+                                                 klass._commands.keys())]
         return sorted(commands, key=operator.attrgetter('sort_order'))
 
     @classmethod
@@ -666,17 +666,6 @@ class CodeHandler:
                                               needs_review=True,
                                               description=description,
                                               review_requests=review_requests)
-
-                # So we have the merge proposal. The email body may yet
-                # contain additional commands to process. We need to run
-                # those but exclude any specified reviewer since we have
-                # already handled that.
-                context = CodeReviewEmailCommandExecutionContext(
-                    bmp, submitter, notify_event_listeners=False)
-                commands = (CodeEmailCommands.getCommands(
-                    email_body_text, exclude=set('reviewer')))
-                self.processCommands(context, commands)
-
                 return bmp
 
             except BranchMergeProposalExists:
