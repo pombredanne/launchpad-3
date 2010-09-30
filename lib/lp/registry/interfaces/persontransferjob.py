@@ -61,6 +61,16 @@ class IPersonTransferJobSource(IJobSource):
 class IMembershipNotificationJob(IPersonTransferJob):
     """A Job to notify new members of a team of that change."""
 
+    member = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    team = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
 
 class IMembershipNotificationJobSource(IJobSource):
     """An interface for acquiring IMembershipNotificationJobs."""

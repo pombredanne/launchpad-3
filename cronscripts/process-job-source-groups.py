@@ -68,8 +68,8 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
         # Then, exclude job sources.
         for source in self.options.excluded_job_sources:
             if source not in selected_job_sources:
-                self.logger.warn('%r is not in job source groups %s'
-                                 % (source, self.options.groups))
+                self.logger.info('%r is not in job source groups %s'
+                                  % (source, self.options.groups))
             else:
                 selected_job_sources.remove(source)
         # Process job sources.
@@ -82,8 +82,9 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
         for job_source in selected_job_sources:
             child = subprocess.Popen(child_args + [job_source])
             children.append(child)
-        for child in children:
-            child.wait()
+        if self.options.do_wait:
+            for child in children:
+                child.wait()
 
     @cachedproperty
     def all_job_sources(self):

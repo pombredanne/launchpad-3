@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 
-from optparse import OptionParser
 import sys
 
 import _pythonpath
@@ -19,7 +18,11 @@ from lp.services.job.runner import JobCronScript
 
 
 class ProcessJobSource(JobCronScript):
-    """Run jobs."""
+    """Run jobs for a specified job source class."""
+    usage = (
+        "Usage: %prog [options] JOB_SOURCE\n\n"
+        "For more help, run:\n"
+        "    cronscripts/process-job-source-groups.py --help")
 
     def configure(self):
         """Override configs main() is called by run().
@@ -28,11 +31,8 @@ class ProcessJobSource(JobCronScript):
         option parser.
         """
         if len(self.args) != 1:
-            print "Usage: %s [options] JOB_SOURCE" % sys.argv[0]
-            print
-            print "For help, run:"
-            print "    cronscripts/process-job-source-groups.py --help"
-            sys.exit()
+            self.parser.print_help()
+            sys.exit(1)
         job_source = self.args[0]
         # The dbuser is grabbed from the section matching config_name.
         section = getattr(config, job_source)

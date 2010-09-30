@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -26,29 +26,31 @@ from lp.testing import (
 
 class ProcessJobSourceTest(TestCaseWithFactory):
     """Test the process-job-source.py script."""
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadScriptLayer
+    script = 'cronscripts/process-job-source.py'
 
-    def _run(self, *args):
-        returncode, stdout, stderr = run_script(
-            'cronscripts/process-job-source.py', list(args))
-        return stdout + stderr
+    def tearDown(self):
+        super(ProcessJobSourceTest, self).tearDown()
+        self.layer.force_dirty_database()
 
     def test_missing_argument(self):
         # The script should display usage info when called without any
         # arguments.
-        output = self._run()
+        returncode, output, error = run_script(
+            self.script, [], expect_returncode=1)
         self.assertIn('Usage:', output)
         self.assertIn('process-job-source.py [options] JOB_SOURCE', output)
 
     def test_empty_queue(self):
         # The script should just create a lockfile and exit if no jobs
         # are in the queue.
-        output = self._run('IMembershipNotificationJobSource')
+        returncode, output, error = run_script(
+            self.script, ['IMembershipNotificationJobSource'])
         expected = (
             'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
             'source-IMembershipNotificationJobSource.lock\n'
             'INFO    Running synchronously.\n')
-        self.assertEqual(expected, output)
+        self.assertEqual(expected, error)
 
     def test_processed(self):
         # The script should output the number of jobs it processed.
@@ -60,28 +62,30 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         tm = membership_set.getByPersonAndTeam(person, team)
         tm.setStatus(TeamMembershipStatus.ADMIN, team.teamowner)
         transaction.commit()
-        output = self._run('-v', 'IMembershipNotificationJobSource')
+        returncode, output, error = run_script(
+            self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
             ('DEBUG   Running <MEMBERSHIP_NOTIFICATION branch job (1) '
              'for murdock as part of a-team. status=Waiting>'),
-            output)
-        self.assertIn('DEBUG   MembershipNotificationJob sent email', output)
-        self.assertIn('Ran 1 MembershipNotificationJob jobs.', output)
+            error)
+        self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
+        self.assertIn('Ran 1 MembershipNotificationJob jobs.', error)
 
 
 class ProcessJobSourceGroupsTest(TestCaseWithFactory):
     """Test the process-job-source-groups.py script."""
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadScriptLayer
+    script = 'cronscripts/process-job-source-groups.py'
 
-    def _run(self, *args):
-        returncode, stdout, stderr = run_script(
-            'cronscripts/process-job-source-groups.py', list(args))
-        return stdout + stderr
+    def tearDown(self):
+        super(ProcessJobSourceGroupsTest, self).tearDown()
+        self.layer.force_dirty_database()
 
     def test_missing_argument(self):
         # The script should display usage info when called without any
         # arguments.
-        output = self._run()
+        returncode, output, error = run_script(
+            self.script, [], expect_returncode=1)
         self.assertIn(
             ('Usage: process-job-source-groups.py '
              '[ -e JOB_SOURCE ] GROUP [GROUP]...'),
@@ -94,14 +98,14 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
     def test_empty_queue(self):
         # The script should just create a lockfile, launch a child for
         # each job source class, and then exit if no jobs are in the queue.
-        output = self._run('MAIN')
+        returncode, output, error = run_script(self.script, ['MAIN'])
         expected = (
             'INFO    Creating lockfile: /var/lock/launchpad-'
             'processjobsourcegroups.lock\n'
             'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
             'source-IMembershipNotificationJobSource.lock\n'
             'INFO    Running synchronously.\n')
-        self.assertEqual(expected, output)
+        self.assertEqual(expected, error)
 
     def test_processed(self):
         # The script should output the number of jobs that have been
@@ -114,10 +118,11 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         tm = membership_set.getByPersonAndTeam(person, team)
         tm.setStatus(TeamMembershipStatus.ADMIN, team.teamowner)
         transaction.commit()
-        output = self._run('-v', 'MAIN')
+        returncode, output, error = run_script(
+            self.script, ['-v', '--wait', 'MAIN'])
         self.assertIn(
             ('DEBUG   Running <MEMBERSHIP_NOTIFICATION branch job (1) '
              'for murdock as part of a-team. status=Waiting>'),
-            output)
-        self.assertIn('DEBUG   MembershipNotificationJob sent email', output)
-        self.assertIn('Ran 1 MembershipNotificationJob jobs.', output)
+            error)
+        self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
+        self.assertIn('Ran 1 MembershipNotificationJob jobs.', error)

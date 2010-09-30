@@ -5,10 +5,11 @@
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadFunctionalLayer
+
+from lp.services.job.interfaces.job import JobStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
@@ -17,8 +18,8 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.model.persontransferjob import MembershipNotificationJob
 from lp.testing import (
-    login,
     login_person,
     TestCaseWithFactory,
     )
@@ -41,12 +42,17 @@ class CreateMembershipNotificationJobTest(TestCaseWithFactory):
         membership_set = getUtility(ITeamMembershipSet)
         tm = membership_set.getByPersonAndTeam(self.person, self.team)
         tm.setStatus(TeamMembershipStatus.ADMIN, self.team.teamowner)
-        transaction.commit()
         jobs = list(self.job_source.iterReady())
+        job_info = [
+            (job.__class__, job.member, job.team, job.status)
+            for job in jobs]
         self.assertEqual(
-            ('[<MEMBERSHIP_NOTIFICATION branch job (1) '
-             'for murdock as part of a-team. status=Waiting>]'),
-            str(jobs))
+            [(MembershipNotificationJob,
+              self.person,
+              self.team,
+              JobStatus.WAITING),
+            ],
+            job_info)
 
     def test_setstatus_silent(self):
         person_set = getUtility(IPersonSet)
@@ -57,5 +63,4 @@ class CreateMembershipNotificationJobTest(TestCaseWithFactory):
         tm = membership_set.getByPersonAndTeam(self.person, self.team)
         tm.setStatus(
             TeamMembershipStatus.ADMIN, admin, silent=True)
-        transaction.commit()
         self.assertEqual([], list(self.job_source.iterReady()))
