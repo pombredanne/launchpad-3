@@ -15,6 +15,7 @@ __all__ = [
     'MirrorNotProbed',
     'DeleteSubscriptionError',
     'UserCannotSubscribePerson',
+    'TeamMembershipTransitionError',
     ]
 
 import httplib
@@ -104,3 +105,12 @@ class DeleteSubscriptionError(Exception):
 class UserCannotSubscribePerson(Exception):
     """User does not have permission to subscribe the person or team."""
     webservice_error(httplib.UNAUTHORIZED)
+
+
+class TeamMembershipTransitionError(ValueError):
+    """Indicates something has gone wrong with the transtiion.
+
+    Generally, this indicates a bad transition (e.g. approved to proposed)
+    or an invalid transition (e.g. unicorn).
+    """
+    webservice_error(httplib.BAD_REQUEST)
