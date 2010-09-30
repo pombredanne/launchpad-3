@@ -84,7 +84,7 @@ It's possible to use FeatureFlags to control the hard timeout. This is used to
 deal with pages that suddenly start performing badly, which are being optimised
 but should not hold back the overall timeout decrease, or for which there are
 only a few specific users and we are willing to have them run for longer
-periods.
+periods. For more information on feature flags see lp.services.features.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
