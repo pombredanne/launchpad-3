@@ -115,6 +115,7 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
 
 
+# KILL THIS
 class UsesLaunchpadMixin:
     """This mixin is used for the overview page of products and distros."""
 
