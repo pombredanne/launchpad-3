@@ -15,7 +15,7 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.database import BugNotification
+from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url

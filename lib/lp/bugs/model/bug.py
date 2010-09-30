@@ -51,6 +51,7 @@ from storm.expr import (
     In,
     LeftJoin,
     Max,
+    Min,
     Not,
     Or,
     Select,
@@ -328,10 +329,6 @@ class Bug(SQLBase):
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
-    # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
-    subscriptions = SQLMultipleJoin(
-            'BugSubscription', joinColumn='bug', orderBy='id',
-            prejoins=["person"])
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -791,6 +788,16 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    @property
+    def subscriptions(self):
+        """The set of `BugSubscriptions` for this bug."""
+        # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
+        return DecoratedResultSet(results, operator.itemgetter(1))
+
     def getDirectSubscriptions(self):
         """See `IBug`."""
         # Cache valid persons so that <person>.is_valid_person can
@@ -801,14 +808,14 @@ BugMessage""" % sqlvalues(self.id))
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
-            ValidPersonCache.id == BugSubscription.personID,
+            ValidPersonCache.id == BugSubscription.person_id,
             BugSubscription.bug == self)
         # Suck in all the records so that they're actually cached.
         list(valid_persons)
         # Do the main query.
         return Store.of(self).find(
             BugSubscription,
-            BugSubscription.personID == Person.id,
+            BugSubscription.person_id == Person.id,
             BugSubscription.bug == self).order_by(
             Func('person_sort_key', Person.displayname, Person.name))
 
@@ -842,34 +849,31 @@ BugMessage""" % sqlvalues(self.id))
             self.getAlsoNotifiedSubscribers(recipients, level) +
             self.getSubscribersFromDuplicates(recipients, level))
 
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
-            indirect_subscribers, key=operator.attrgetter("displayname"))
+            indirect_subscribers,
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
         """See `IBug`."""
         if self.private:
             return []
-
-        duplicate_subscriptions = set(
-            BugSubscription.select("""
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                prejoins=["person"], clauseTables=["Bug"]))
-
-        # Only add a subscriber once to the list.
-        duplicate_subscribers = set(
-            sub.person for sub in duplicate_subscriptions)
-        subscriptions = []
-        for duplicate_subscriber in duplicate_subscribers:
-            for duplicate_subscription in duplicate_subscriptions:
-                if duplicate_subscription.person == duplicate_subscriber:
-                    subscriptions.append(duplicate_subscription)
-                    break
-
-        def get_person_displayname(subscription):
-            return subscription.person.displayname
-
-        return sorted(subscriptions, key=get_person_displayname)
+        # For each subscription to each duplicate of this bug, find the
+        # earliest subscription for each subscriber. Eager load the
+        # subscribers.
+        return DecoratedResultSet(
+            IStore(BugSubscription).find(
+                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
+                # hack; it does not seem to be possible to express DISTINCT ON
+                # with Storm.
+                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
+                 Person, BugSubscription),
+                Bug.duplicateof == self,
+                BugSubscription.bug_id == Bug.id,
+                BugSubscription.person_id == Person.id).order_by(
+                BugSubscription.person_id),
+            operator.itemgetter(2))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -884,10 +888,10 @@ BugMessage""" % sqlvalues(self.id))
             Store.of(self).find(
                 (Person, Bug),
                 BugSubscription.person == Person.id,
-                BugSubscription.bug == Bug.id,
+                BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.id))
 
-        dupe_subscribers = set([person for person in dupe_details.keys()])
+        dupe_subscribers = set(dupe_details)
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -911,7 +915,7 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
         def cache_subscriber(row):
             _, subscriber, subscription = row
-            if subscription.bugID == self.id:
+            if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
@@ -928,7 +932,7 @@ BugMessage""" % sqlvalues(self.id))
                 Bug.id == self.id,
                 Bug.duplicateof == self.id),
             # Get subscriptions for these bugs
-            BugSubscription.bug == Bug.id,
+            BugSubscription.bug_id == Bug.id,
             # Filter by subscriptions to any team person is in.
             # Note that teamparticipation includes self-participation entries
             # (person X is in the team X)
@@ -999,9 +1003,11 @@ BugMessage""" % sqlvalues(self.id))
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
             (also_notified_subscribers - direct_subscribers),
-            key=operator.attrgetter('displayname'))
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -1885,7 +1891,7 @@ BugMessage""" % sqlvalues(self.id))
         subscriptions_from_dupes = store.find(
             BugSubscription,
             Bug.duplicateof == self,
-            BugSubscription.bugID == Bug.id,
+            BugSubscription.bug_id == Bug.id,
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()

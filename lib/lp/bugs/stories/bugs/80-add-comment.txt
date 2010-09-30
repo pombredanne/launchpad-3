@@ -6,7 +6,7 @@ In this case, let's add a simple comment to bug #2 as user Foo
 Bar. First, let's clear out the notification table:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.database import BugNotification
+  >>> from lp.bugs.model.bugnotification import BugNotification
   >>> from canonical.launchpad.webapp.interfaces import (
   ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 

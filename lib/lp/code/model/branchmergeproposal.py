@@ -633,7 +633,7 @@ class BranchMergeProposal(SQLBase):
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,
-            TargetRevision.id == None)
+            TargetRevision.branch_id == None)
         return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
@@ -809,12 +809,7 @@ class BranchMergeProposal(SQLBase):
             branch_revision for branch_revision, revision, revision_author
             in resultset)
         # Now group by date created.
-        gby = groupby(branch_revisions, lambda r: r.revision.date_created)
-        # Use a generator expression to wrap the custom iterator so it doesn't
-        # get security-proxied.
-        return (
-            (date, (revision for revision in revisions))
-            for date, revisions in gby)
+        return groupby(branch_revisions, lambda r: r.revision.date_created)
 
 
 class BranchMergeProposalGetter:
