@@ -167,7 +167,8 @@ class TestSlaveScanner(TrialTestCase):
         See `RecordingSlave.resumeHost` for more information about the resume
         result contents.
         """
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        #slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
+        slave = OkSlave()
 
         successful_response = ['', '', os.EX_OK]
         result = self.manager.checkResume(successful_response, slave)
@@ -177,10 +178,8 @@ class TestSlaveScanner(TrialTestCase):
         failed_response = ['stdout', 'stderr', 1]
         result = self.manager.checkResume(failed_response, slave)
         self.assertIsDispatchReset(result)
-        self.assertEqual(
-            '<foo:http://foo.buildd:8221/> reset failure', repr(result))
-        self.assertEqual(
-            result.info, "stdout\nstderr")
+        self.assertIn('reset failure', repr(result))
+        self.assertEqual(result.info, "stdout\nstderr")
 
     def test_fail_to_resume_slave_resets_slave(self):
         # If an attempt to resume and dispatch a slave fails, we reset the
