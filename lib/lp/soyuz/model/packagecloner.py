@@ -26,6 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
@@ -90,9 +91,12 @@ class PackageCloner:
             proc_families = []
 
         self._create_missing_builds(
-            destination.distroseries, destination.archive, proc_families)
+            destination.distroseries, destination.archive,
+            distroarchseries_list, proc_families)
 
-    def _create_missing_builds(self, distroseries, archive, proc_families):
+    def _create_missing_builds(
+        self, distroseries, archive, distroarchseries_list,
+        proc_families):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
@@ -126,7 +130,17 @@ class PackageCloner:
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
-            pubrec.createMissingBuilds(architectures_available=architectures)
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures)
+            # If a distroarchseries_list wasn't passed in, we don't copy any
+            # binary packages at all -- if the last build was sucessful, we
+            # should create a new build, since createMissingBuilds() won't.
+            if not distroarchseries_list and not builds:
+                for arch in architectures:
+                    build = pubrec.sourcepackagerelease.createBuild(
+                        distro_arch_series=arch, archive=archive,
+                        pocket=PackagePublishingPocket.RELEASE)
+                    build.queueBuild(suspended=not archive.enabled)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 
@@ -245,7 +259,8 @@ class PackageCloner:
                 secsrc.sourcepackagerelease = spr.id AND
                 spr.sourcepackagename = spn.id AND
                 spn.name = mcd.sourcepackagename AND
-                debversion_sort_key(spr.version) > debversion_sort_key(mcd.t_version)
+                debversion_sort_key(spr.version) >
+                debversion_sort_key(mcd.t_version)
         """ % sqlvalues(
                 origin.archive,
                 PackagePublishingStatus.PENDING,
