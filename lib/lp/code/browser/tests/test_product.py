@@ -212,7 +212,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login(ANONYMOUS)
         text = extract_text(find_tag_by_id(
             browser.contents, 'branch-count-summary'))
-        expected = "1 active  branch owned by 1 person.*"
+        expected = "1 Active  branch owned by 1 person.*"
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_view_mirror_location(self):

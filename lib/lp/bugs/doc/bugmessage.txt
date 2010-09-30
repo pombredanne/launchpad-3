@@ -109,6 +109,16 @@ scores.
     http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
     http://some.bugzilla/show_bug.cgi?id=9876
 
+Note that although the watch was created when the Message was added to
+the bug, the message and the watch are not linked because the message
+was not imported by the bug watch.
+
+    >>> bug_message = bug_one.bug_messages[-1]
+    >>> print bug_message.message == test_message
+    True
+    >>> print bug_message.bugwatch
+    None
+
 CVE watches and bug watches are also created, when a message is imported from
 an external bug tracker.
 
