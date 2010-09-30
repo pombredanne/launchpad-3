@@ -66,7 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
-from lp.services.features import getFeatureFlag
+from lp.services import features
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -180,6 +180,12 @@ def set_request_started(
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
+    # Calculate the hard timeout: needed because featureflags can be used
+    # to control the hard timeout, and they trigger DB access, but our
+    # DB tracers are not safe for reentrant use, so we nmust do this outside
+    # of the SQL stack.
+    _get_request_timeout()
+
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
@@ -255,6 +261,31 @@ def get_request_duration(now=None):
     return now - starttime
 
 
+def _get_request_timeout(now=None, timeout=None):
+    """Get the timeout value in ms for the current request.
+    
+    :param now: Override the result of time.time.
+    :param timeout: A custom timeout in ms.
+    :return None or a time in ms representing the budget to grant the request.
+    """
+    if not getattr(_local, 'enable_timeout', True):
+        return None
+    if timeout is None:
+        timeout = config.database.db_statement_timeout
+        if not getattr(_local, '_getting_timeout_flag', False):
+            _local._getting_timeout_flag = True
+            try:
+                timeout_str = features.getFeatureFlag('hard_timeout')
+            finally:
+                _local._getting_timeout_flag = False
+            if timeout_str:
+                try:
+                    timeout = float(timeout_str)
+                except ValueError:
+                    logging.error('invalid hard timeout flag %r', timeout_str)
+    return timeout
+
+
 def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     """Return how many seconds are remaining in the current request budget.
 
@@ -267,17 +298,7 @@ def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     :param timeout: A custom timeout in ms.
     :return: None or a float representing the remaining time budget.
     """
-    if not getattr(_local, 'enable_timeout', True):
-        return None
-    if timeout is None:
-        timeout_str = getFeatureFlag('hard_timeout')
-        if timeout_str:
-            try:
-                timeout = float(timeout_str)
-            except ValueError:
-                logging.error('invalid hard timeout flag %r', timeout_str)
-    if timeout is None:
-        timeout = config.database.db_statement_timeout
+    timeout = _get_request_timeout(now=now, timeout=timeout)
     if not timeout:
         return None
     duration = get_request_duration(now)

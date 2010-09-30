@@ -37,20 +37,19 @@ db_statement_timeout is expired.
 (Set the request to have started a few seconds in the past.)
 
     >>> import time
-    >>> from canonical.launchpad.webapp.adapter import set_request_started
-    >>> now = time.time()
-    >>> set_request_started(now-5)
+    >>> from canonical.launchpad.webapp import adapter
+    >>> adapter.set_request_started(time.time()-5)
 
 So the computed timeout should be more or less 5 seconds (10-5).
 
-    >>> timeout_func() - now <= 5
+    >>> timeout_func() <= 5
     True
 
 If the timeout is already expired, a RequestExpired error is raised:
 
     >>> from canonical.launchpad.webapp.adapter import clear_request_started
     >>> clear_request_started()
-    >>> set_request_started(now-12)
+    >>> adapter.set_request_started(time.time()-12)
     >>> timeout_func()
     Traceback (most recent call last):
       ...
@@ -79,11 +78,13 @@ and a TimeoutError is never raised.
 
     >>> wait_a_little()
 
-= Overriding the global timeout value with FeatureFlags =
+= Overriding hard timeouts via FeatureFlags =
 
-It's possible to add a FeatureFlag to override the global timeout value. Some
-pages are very hard to optimize or are seldomly used. In that context they
-should be able to take more time to be rendered without triggering a timeout OOPS.
+It's possible to use FeatureFlags to control the hard timeout. This is used to
+deal with pages that suddenly start performing badly, which are being optimised
+but should not hold back the overall timeout decrease, or for which there are
+only a few specific users and we are willing to have them run for longer
+periods.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
@@ -104,22 +105,12 @@ Install the feature flag to increase the timeout value.
     ...     scope=u'default', flag=u'hard_timeout', value=u'20000',
     ...     priority=1))
 
-Now the request can take longer to complete.
-
-    >>> now = time.time()
-    >>> set_request_started(now-15)
-    >>> timeout_func() - now <= 5
-    True
-
-And the request still raises a RequestExpired when it takes longer than the flag
-timeout value.
+Now the request can take 20 seconds to complete.
 
     >>> clear_request_started()
-    >>> set_request_started(now-22)
-    >>> timeout_func()
-    Traceback (most recent call last):
-      ...
-    RequestExpired: request expired.
+    >>> adapter.set_request_started(time.time())
+    >>> abs(adapter._get_request_timeout()-20000) < 0.001
+    True
 
 == Clean up ===
 
