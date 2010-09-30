@@ -26,7 +26,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
@@ -131,7 +130,7 @@ class PackageCloner:
 
         for pubrec in sources_published:
             always_create = (not distroarchseries_list)
-            builds = pubrec.createMissingBuilds(
+            pubrec.createMissingBuilds(
                 architectures_available=architectures,
                 always_create=always_create)
             # Commit to avoid MemoryError: bug 304459

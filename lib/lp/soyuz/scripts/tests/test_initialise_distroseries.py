@@ -89,7 +89,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_failure_for_already_released_distroseries(self):
         # Initialising a distro series that has already been used will error
         child = self.factory.makeDistroSeries(parent_series=self.parent)
-        das = self.factory.makeDistroArchSeries(distroseries=child)
+        self.factory.makeDistroArchSeries(distroseries=child)
         ids = InitialiseDistroSeries(child)
         self.assertRaisesWithContent(
             InitialisationError,
@@ -170,8 +170,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_initialise_only_one_das(self):
         # Test a full initialise with no errors, but only copy i386 to
         # the child
-        parent_das = self.factory.makeDistroArchSeries(
-            distroseries=self.parent)
+        self.factory.makeDistroArchSeries(distroseries=self.parent)
         child = self._full_initialise(
             arches=[self.parent_das.architecturetag])
         self.assertDistroSeriesInitialisedCorrectly(child)
