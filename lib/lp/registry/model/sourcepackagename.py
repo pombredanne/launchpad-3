@@ -10,16 +10,25 @@ __all__ = [
     'getSourcePackageDescriptions'
 ]
 
+from sqlobject import (
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, SQLMultipleJoin
-
-from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.database.sqlbase import (
+    cursor,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    NoSuchSourcePackageName,
+    )
 
 
 class SourcePackageName(SQLBase):

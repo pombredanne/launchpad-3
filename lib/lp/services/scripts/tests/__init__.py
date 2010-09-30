@@ -8,7 +8,9 @@ __all__ = [
 
 
 import os
+
 import canonical
+
 
 LP_TREE = os.path.dirname(
     os.path.dirname(os.path.dirname(canonical.__file__)))

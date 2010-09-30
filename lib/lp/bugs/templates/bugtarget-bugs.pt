@@ -10,12 +10,15 @@
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
+    <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+          name="robots" content="noindex,nofollow" />
     <style type="text/css">
       p#more-hot-bugs {float:right; margin-top:7px;}
     </style>
   </metal:block>
   <body>
-    <tal:side metal:fill-slot="side" condition="view/uses_launchpad_bugtracker">
+    <tal:side metal:fill-slot="side"
+              condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <div id="involvement" class="portlet">
         <ul class="involvement">
           <li style="border: none">
@@ -95,7 +98,8 @@
 
 
 
-      <tal:uses_malone condition="view/uses_launchpad_bugtracker">
+      <tal:uses_launchpad_bugtracker
+        condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <tal:has_bugtasks condition="context/has_bugtasks">
         <div class="search-box" style="margin-bottom:2em">
           <metal:search
@@ -107,9 +111,7 @@
         --></script>
       </tal:has_bugtasks>
 
-      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks"
-        content="cache:private, 10 minute">
-        <!-- hot_bugs_info/bugtasks cache:private 10 minute -->
+      <tal:has_hot_bugs condition="view/hot_bugs_info/bugtasks">
         <h2>Hot bugs</h2>
 
         <table class="listing" id="hot-bugs"
@@ -160,31 +162,65 @@
       <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no
           <span tal:condition="context/has_bugtasks">open</span> bugs filed
-          against <tal:project_title replace="context/title" />.</strong></p>
+          against <tal:displayname replace="context/displayname" />.</strong></p>
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>
-    </tal:uses_malone>
+    </tal:uses_launchpad_bugtracker>
 
-    <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker"
-     tal:define ="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
-      <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
-        bug tracking.</strong></p>
-          <p tal:condition="view/external_bugtracker"
-             id="bugtracker"><strong>Bugs are tracked in
-            <tal:bugtracker replace="structure view/bugtracker" />.</strong>
-          </p>
+    <p id="no-malone"
+       tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
+      <strong tal:condition="view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        must be configured in order for Launchpad to forward bugs to
+        the project's developers.
+      </strong>
+      <strong tal:condition="not: view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        does not use Launchpad for bug tracking.
+      </strong>
+    </p>
 
-        <p tal:condition="context/required:launchpad.Edit"
-           id="no-malone-edit"
-           >
-          <a tal:condition="configure_bugtracker"
-             tal:replace="structure configure_bugtracker/fmt:link"/>
-          <a tal:condition="not: configure_bugtracker"
-             tal:attributes="href string:${context/fmt:url/+edit}">
-            Enable bug tracking.</a>
-        </p>
-    </tal:not_uses_malone>
+    <p tal:condition="view/external_bugtracker"
+       id="bugtracker">
+      <strong>Bugs are tracked in
+        <tal:bugtracker replace="structure view/bugtracker" />.
+      </strong>
+    </p>
+
+    <tal:also_in_ubuntu
+      condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <p tal:define="packages context/ubuntu_packages | nothing"
+         tal:condition="packages"
+         id="also-in-ubuntu">
+        Ubuntu
+        <tal:also condition="view/external_bugtracker">also</tal:also>
+        tracks bugs for packages derived from this project:
+        <tal:packages repeat="package packages">
+          <span style="white-space: nowrap"
+                tal:content="structure package/fmt:link" /><tal:comma
+          condition="not:repeat/package/end">,</tal:comma></tal:packages>.
+      </p>
+    </tal:also_in_ubuntu>
+
+    <div
+      tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+      tal:define="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
+      <a class="sprite maybe"
+        href="https://help.launchpad.net/Bugs">Getting started
+      with bug tracking in Launchpad</a>.
+
+      <p tal:condition="context/required:launchpad.Edit"
+          id="no-malone-edit"
+          >
+        <a tal:condition="configure_bugtracker"
+          tal:replace="structure configure_bugtracker/fmt:link"/>
+        <a class="sprite edit"
+          tal:condition="not: configure_bugtracker"
+          tal:attributes="href string:${context/fmt:url/+edit}">
+          Enable bug tracking.</a>
+      </p>
+    </div>
 
     </div><!-- main -->
   </body>

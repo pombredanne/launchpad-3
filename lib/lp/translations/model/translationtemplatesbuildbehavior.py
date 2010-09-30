@@ -16,14 +16,14 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 from lp.translations.model.approver import TranslationBuildApprover
 
 
@@ -44,15 +44,20 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         self._builder.slave.cacheFile(logger, chroot)
         cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = self.buildfarmjob.metadata
+        args = {'arch_tag': self._getDistroArchSeries().architecturetag}
+        args.update(self.buildfarmjob.metadata)
+
         filemap = {}
 
         self._builder.slave.build(
             cookie, self.build_type, chroot_sha1, filemap, args)
 
     def _getChroot(self):
+        return self._getDistroArchSeries().getChroot()
+
+    def _getDistroArchSeries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return ubuntu.currentseries.nominatedarchindep.getChroot()
+        return ubuntu.currentseries.nominatedarchindep
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""

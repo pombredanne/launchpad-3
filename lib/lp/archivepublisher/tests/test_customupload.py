@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `CustomUploads`."""
@@ -13,11 +13,13 @@ import tarfile
 import tempfile
 import unittest
 
-from lp.testing import TestCase
-
 from lp.archivepublisher.customupload import (
-    CustomUpload, CustomUploadTarballInvalidFileType,
-    CustomUploadTarballBadFile, CustomUploadTarballBadSymLink)
+    CustomUpload,
+    CustomUploadTarballBadFile,
+    CustomUploadTarballBadSymLink,
+    CustomUploadTarballInvalidFileType,
+    )
+from lp.testing import TestCase
 
 
 class TestCustomUpload(unittest.TestCase):
@@ -177,7 +179,7 @@ class TestTarfileVerification(TestCase):
 
     def test_extract(self):
         """Test that the extract method calls the verify function.
-        
+
         This test is different from the previous tests in that it actually
         pokes a fake tar file on disk.  This is slower, so it's only done
         once, here.
@@ -196,7 +198,3 @@ class TestTarfileVerification(TestCase):
                 self.custom_processor.extract)
         finally:
             shutil.rmtree(self.tarfile_path)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

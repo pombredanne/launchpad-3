@@ -1,12 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
@@ -35,13 +32,15 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
             self.project, rootsite='answers')
 
     def test_product(self):
-        crumbs = self.getBreadcrumbsForObject(self.product, rootsite='answers')
+        crumbs = self.getBreadcrumbsForObject(
+            self.product, rootsite='answers')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
 
     def test_project(self):
-        crumbs = self.getBreadcrumbsForObject(self.project, rootsite='answers')
+        crumbs = self.getBreadcrumbsForObject(
+            self.project, rootsite='answers')
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.project_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
@@ -75,7 +74,3 @@ class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
         crumbs = self.getBreadcrumbsForObject(self.faq)
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.text, 'FAQ #%d' % self.faq.id)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

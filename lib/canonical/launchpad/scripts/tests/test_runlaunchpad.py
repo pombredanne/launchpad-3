@@ -16,12 +16,14 @@ import tempfile
 import unittest
 
 import canonical.config
-import lp.testing
-
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    SERVICES, get_services_to_run, process_config_arguments,
-    split_out_runlaunchpad_arguments)
+    get_services_to_run,
+    process_config_arguments,
+    SERVICES,
+    split_out_runlaunchpad_arguments,
+    )
+import lp.testing
 
 
 class CommandLineArgumentProcessing(lp.testing.TestCase):

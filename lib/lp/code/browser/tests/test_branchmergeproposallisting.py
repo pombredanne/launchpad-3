@@ -15,11 +15,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingItem,
-    BranchMergeProposalListingView)
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+    ActiveReviewsView,
+    BranchMergeProposalListingItem,
+    BranchMergeProposalListingView,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
+
 
 _default = object()
 
@@ -324,7 +335,8 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         login_person(bmp3.source_branch.owner)
         bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
         login(ANONYMOUS)
-        view = create_initialized_view(product, name='+activereviews')
+        view = create_initialized_view(
+            product, name='+activereviews', rootsite='code')
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])

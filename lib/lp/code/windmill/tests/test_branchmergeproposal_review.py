@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 import unittest
+from uuid import uuid1
 
 import transaction
 import windmill
@@ -13,10 +14,14 @@ import windmill
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget)
-from uuid import uuid1
+    search_and_select_picker_widget,
+    )
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import login_person, WindmillTestCase
+from lp.testing import (
+    login_person,
+    WindmillTestCase,
+    )
+
 
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'

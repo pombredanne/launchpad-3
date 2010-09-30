@@ -29,7 +29,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
-from canonical.launchpad.fields import StrippedTextLine
+from lp.services.fields import StrippedTextLine
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -37,7 +37,7 @@ from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
-from canonical.widgets.popup import  VocabularyPickerWidget
+from canonical.widgets.popup import BugTrackerPickerWidget
 from canonical.widgets.textwidgets import (
     LowerCaseTextWidget, StrippedTextWidget)
 from lp.registry.interfaces.product import IProduct
@@ -57,7 +57,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         self.bugtracker = Choice(
             vocabulary="WebBugTracker",
             __name__='bugtracker')
-        self.bugtracker_widget = CustomWidgetFactory(VocabularyPickerWidget)
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerPickerWidget)
         setUpWidget(
             self, 'bugtracker', self.bugtracker, IInputWidget,
             prefix=self.name, value=field.context.bugtracker,
@@ -82,7 +82,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         if self.upstream_email_address_widget.extra is None:
             self.upstream_email_address_widget.extra = ''
         self.upstream_email_address_widget.extra += (
-            ' onkeypress="selectWidget(\'%s.3\', event);"' % self.name)
+            ''' onkeypress="selectWidget('%s.3', event);"\n''' % self.name)
 
     def _renderItem(self, index, text, value, name, cssClass, checked=False):
         # This form has a custom need to render their labels separately,
@@ -192,7 +192,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             self.upstream_email_address_widget.setRenderedValue(
                 value.baseurl.lstrip('mailto:'))
         external_bugtracker_email_text = "%s %s" % (
-            self._renderLabel("By emailing an upstream bug contact:", 3),
+            self._renderLabel("By emailing an upstream bug contact:\n", 3),
             self.upstream_email_address_widget())
         external_bugtracker_email_arguments = dict(
             index=3, text=external_bugtracker_email_text,
@@ -264,33 +264,35 @@ class LicenseWidget(CheckBoxMatrixWidget):
     allow_pending_license = False
 
     CATEGORIES = {
-        'AFFERO'        : 'recommended',
-        'APACHE'        : 'recommended',
-        'BSD'           : 'recommended',
-        'GNU_GPL_V2'    : 'recommended',
-        'GNU_GPL_V3'    : 'recommended',
-        'GNU_LGPL_V2_1' : 'recommended',
-        'GNU_LGPL_V3'   : 'recommended',
-        'MIT'           : 'recommended',
-        'CC_0'          : 'recommended',
-        'ACADEMIC'      : 'more',
-        'ARTISTIC'      : 'more',
-        'ARTISTIC_2_0'  : 'more',
-        'COMMON_PUBLIC' : 'more',
-        'ECLIPSE'       : 'more',
+        'AFFERO': 'recommended',
+        'APACHE': 'recommended',
+        'BSD': 'recommended',
+        'GNU_GPL_V2': 'recommended',
+        'GNU_GPL_V3': 'recommended',
+        'GNU_LGPL_V2_1': 'recommended',
+        'GNU_LGPL_V3': 'recommended',
+        'MIT': 'recommended',
+        'CC_0': 'recommended',
+        'ACADEMIC': 'more',
+        'ARTISTIC': 'more',
+        'ARTISTIC_2_0': 'more',
+        'COMMON_PUBLIC': 'more',
+        'ECLIPSE': 'more',
         'EDUCATIONAL_COMMUNITY': 'more',
-        'MPL'           : 'more',
-        'OPEN_SOFTWARE' : 'more',
-        'PHP'           : 'more',
-        'PUBLIC_DOMAIN' : 'more',
-        'PYTHON'        : 'more',
-        'ZPL'           : 'more',
-        'CC_BY'         : 'more',
-        'CC_BY_SA'      : 'more',
-        'PERL'          : 'deprecated',
-        'OTHER_PROPRIETARY' : 'special',
-        'OTHER_OPEN_SOURCE' : 'special',
-        'DONT_KNOW'     : 'special',
+        'GNU_GFDL_NO_OPTIONS': 'more',
+        'MPL': 'more',
+        'OFL': 'more',
+        'OPEN_SOFTWARE': 'more',
+        'PHP': 'more',
+        'PUBLIC_DOMAIN': 'more',
+        'PYTHON': 'more',
+        'ZPL': 'more',
+        'CC_BY': 'more',
+        'CC_BY_SA': 'more',
+        'PERL': 'deprecated',
+        'OTHER_PROPRIETARY': 'special',
+        'OTHER_OPEN_SOURCE': 'special',
+        'DONT_KNOW': 'special',
         }
 
     items_by_category = None
@@ -316,6 +318,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             self, 'license_info', self.license_info, IInputWidget,
             prefix='field', value=initial_value,
             context=field.context)
+        self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
         # selected licenses in the category.  The actual count doesn't matter,
         # since if it's greater than 0 it will start opened.  NOte that we

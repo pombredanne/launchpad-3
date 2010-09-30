@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -102,6 +102,32 @@
                 date_last_modified
                 person"/>
     </class>
+
+    <!-- DistroSeriesDifference -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifference.DistroSeriesDifference"
+        provides="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
+        <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"/>
+    </class>
+
+    <!-- DistroSeriesDifferenceComment -->
+    <securedutility
+        component="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment"
+        provides="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceCommentSource"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesdifferencecomment.DistroSeriesDifferenceComment">
+        <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
@@ -109,11 +135,14 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+            interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+            interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
@@ -137,7 +166,7 @@
                                  shedloads of data. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
@@ -150,7 +179,8 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -165,9 +195,9 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries_to_launchpadusage"
+        factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -272,9 +302,9 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"/>
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
-            interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+            interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
             interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require
@@ -294,7 +324,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -311,9 +342,16 @@
             attributes="
                 aliases"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             attributes="
                 setAliases"/>
+
+        <!-- IProjectGroupModerate -->
+	<allow
+	    interface="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema="lp.registry.interfaces.projectgroup.IProjectGroupModerate"/>
     </class>
     <adapter
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
@@ -372,6 +410,7 @@
                 name
                 displayname
                 title
+                summary
                 distro
                 get_distroseries_packages
                 subscribers
@@ -402,6 +441,8 @@
                 bugtargetdisplayname
                 bugtargetname
                 getBugCounts
+                bug_count
+                total_bug_heat
                 bug_subscriptions
                 getSubscriptions
                 getSubscription
@@ -411,10 +452,12 @@
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
+                _getOfficialTagClause
                 official_bug_tags
                 findRelatedArchives
                 findRelatedArchivePublications
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -464,7 +507,7 @@
     <class
         class="lp.registry.model.commercialsubscription.CommercialSubscription">
         <require
-            permission="launchpad.View"
+            permission="zope.Public"
             interface="lp.registry.interfaces.commercialsubscription.ICommercialSubscription"/>
         <require
             permission="launchpad.Commercial"
@@ -500,22 +543,6 @@
         provides="lp.registry.interfaces.jabber.IJabberIDSet">
         <allow
             interface="lp.registry.interfaces.jabber.IJabberIDSet"/>
-    </securedutility>
-    <class
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
-    </class>
-    <class
-        class="lp.registry.utilities.salesforce.Voucher">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucher"/>
-    </class>
-    <securedutility
-        class="lp.registry.utilities.salesforce.SalesforceVoucherProxy"
-        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
-        <allow
-            interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy"/>
     </securedutility>
     <class
         class="lp.registry.model.pillar.PillarName">
@@ -707,7 +734,7 @@
         <!-- PollSubset -->
 
         <adapter
-            for="canonical.launchpad.interfaces.ITeam"
+            for="lp.registry.interfaces.person.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
             factory="lp.registry.adapters.PollSubset"
             permission="zope.Public"/>
@@ -835,8 +862,12 @@
                 interface="lp.registry.interfaces.person.IPersonEditRestricted"/>
             <require
                 permission="launchpad.Edit"
-                set_schema="lp.registry.interfaces.person.IPersonPublic                                                                         lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="name displayname"/>
+                set_schema="lp.registry.interfaces.person.IPersonPublic
+                            lp.registry.interfaces.person.ITeamPublic"
+                set_attributes="displayname"/>
+            <require
+                permission="launchpad.Moderate"
+                set_attributes="name"/>
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerate" />
@@ -847,7 +878,7 @@
                 permission="launchpad.Special"
                 interface="lp.registry.interfaces.person.IPersonSpecialRestricted"/>
             <require
-                permission="launchpad.Edit"
+                permission="launchpad.Moderate"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
 
@@ -937,7 +968,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -963,7 +995,7 @@
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1004,7 +1036,17 @@
     <xmlrpc:view
         for="lp.registry.interfaces.mailinglist.IMailingListApplication"
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
-        class="canonical.launchpad.xmlrpc.MailingListAPIView"
+        class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
+        permission="zope.Public"/>
+    <securedutility
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
+        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
+      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
+    </securedutility>
+    <xmlrpc:view
+        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
+        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
+        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
         permission="zope.Public"/>
 
     <!-- Helper page for held message approval -->
@@ -1046,7 +1088,7 @@
     <class
         class="lp.registry.model.gpgkey.GPGKey">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKey"/>
+            interface="lp.registry.interfaces.gpg.IGPGKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
@@ -1057,13 +1099,13 @@
     <class
         class="lp.registry.model.gpgkey.GPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.gpgkey.GPGKeySet"
-        provides="canonical.launchpad.interfaces.IGPGKeySet">
+        provides="lp.registry.interfaces.gpg.IGPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </securedutility>
 
     <!-- Product -->
@@ -1087,6 +1129,9 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
             set_attributes="bug_reporting_guidelines
@@ -1116,8 +1161,9 @@
         <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
                         for further discussion - stub 20070411 -->
 
+	<!-- Per bug 588773, changing to launchpad.Moderate to allow Registry Experts (~registry) -->
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             set_attributes="name autoupdate registrant"/>
         <require
             permission="launchpad.TranslationsAdmin"
@@ -1130,13 +1176,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
+            set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1152,7 +1198,7 @@
             attributes="
                 aliases"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             attributes="
                 setAliases"/>
 
@@ -1180,11 +1226,11 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1198,7 +1244,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1278,7 +1325,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.ProjectReview"
+            permission="launchpad.Moderate"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1288,7 +1335,7 @@
     <class
         class="lp.registry.model.person.SSHKey">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKey"/>
+            interface="lp.registry.interfaces.ssh.ISSHKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="keytext comment"/>
@@ -1299,13 +1346,13 @@
     <class
         class="lp.registry.model.person.SSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.person.SSHKeySet"
-        provides="canonical.launchpad.interfaces.ISSHKeySet">
+        provides="lp.registry.interfaces.ssh.ISSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
@@ -1329,6 +1376,9 @@
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
@@ -1347,7 +1397,8 @@
                 getSubscriptions
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1356,12 +1407,12 @@
                 removeBugSubscription"/>
     </class>
     <adapter
-        provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
+        provides="canonical.launchpad.interfaces.launchpad.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.interfaces.ILaunchpadUsage"
+        provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1399,7 +1450,10 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
         <require
-            permission="launchpad.Append"
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Moderate"
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
@@ -1452,11 +1506,11 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
-            permission="launchpad.Moderate"
+            permission="launchpad.Append"
             attributes="
                 newFAQ"/>
 
@@ -1470,7 +1524,8 @@
                 getBugNotificationsRecipients
                 parent_subscription_target
                 target_type_display
-                userHasBugSubscriptions"/>
+                userHasBugSubscriptions
+                userCanAlterBugSubscription"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1527,7 +1582,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+            interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
 

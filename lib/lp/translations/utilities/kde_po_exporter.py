@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for KDE legacy .po file format.
@@ -14,17 +14,18 @@ You can read more about this file format from:
 __metaclass__ = type
 
 __all__ = [
-    'KdePOExporter'
+    'KdePOExporter',
     ]
 
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.utilities.gettext_po_exporter import (
-    GettextPOExporter)
+    TranslationFileFormat,
+    )
+from lp.translations.utilities.gettext_po_exporter import GettextPOExporter
 
 
 class KdePOExporter(GettextPOExporter):
@@ -32,6 +33,8 @@ class KdePOExporter(GettextPOExporter):
     implements(ITranslationFormatExporter)
 
     msgid_plural_distinguishes_messages = True
+
+    format = TranslationFileFormat.KDEPO
 
     def __init__(self, context=None):
         super(KdePOExporter, self).__init__(context=context)

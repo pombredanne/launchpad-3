@@ -20,8 +20,8 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.archivepublisher.deathrow import getDeathRow
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class DeathRowProcessor(LaunchpadCronScript):

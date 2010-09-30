@@ -37,7 +37,8 @@
         </thead>
         <tbody>
           <tal:batch_repeat repeat="archive batch">
-            <tr tal:define="build_counts archive/getBuildCounters">
+          <tr tal:attributes="class python:not archive.enabled and 'greyed-out'"
+              tal:define="build_counts archive/getBuildCounters">
               <td tal:content="archive/date_created/fmt:approximatedate" />
               <td>
                 <a tal:attributes="href archive/fmt:url"

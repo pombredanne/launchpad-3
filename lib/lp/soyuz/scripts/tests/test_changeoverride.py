@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`ChangeOverride` script class tests."""
@@ -9,19 +9,21 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts import FakeLogger
+from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.scripts import FakeLogger
 from lp.soyuz.scripts.changeoverride import (
-    ChangeOverride, ArchiveOverriderError)
+    ArchiveOverriderError,
+    ChangeOverride,
+    )
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class LocalLogger(FakeLogger):
@@ -517,7 +519,3 @@ class TestChangeOverride(unittest.TestCase):
             SoyuzScriptError, changer.processBinaryChange, 'biscuit')
         self.assertRaises(
             SoyuzScriptError, changer.processChildrenChange, 'cookie')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

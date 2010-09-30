@@ -22,36 +22,43 @@ __all__ = [
     ]
 
 
-import os
-import re
-import time
-import errno
-import pickle
 import datetime
-import transaction
+import errno
+import os
+import pickle
+import re
+from subprocess import (
+    PIPE,
+    Popen,
+    )
+import time
 
-from subprocess import Popen, PIPE
+# This is where the Mailman command line scripts live.
+import Mailman
+from Mailman import mm_cfg
+from Mailman.Errors import NotAMemberError
+from Mailman.MailList import MailList
+from Mailman.MemberAdaptor import (
+    BYUSER,
+    ENABLED,
+    )
+from Mailman.Utils import list_names
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.browser import Browser
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper
 from lp.services.mailman.testing.layers import MailmanLayer
-
-# pylint: disable-msg=F0401
-from Mailman import mm_cfg
-from Mailman.Errors import NotAMemberError
-from Mailman.MailList import MailList
-from Mailman.MemberAdaptor import BYUSER, ENABLED
-from Mailman.Utils import list_names
+from lp.testing.factory import LaunchpadObjectFactory
 
 
-# This is where the Mailman command line scripts live.
-import Mailman
 MAILMAN_PKGDIR = os.path.dirname(Mailman.__file__)
 MAILMAN_BINDIR = os.path.join(os.path.dirname(MAILMAN_PKGDIR), 'bin')
 

@@ -6,16 +6,25 @@ __metaclass__ = type
 __all__ = [
     'IPackageBuild',
     'IPackageBuildSource',
+    'IPackageBuildSet',
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Object, TextLine
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -62,10 +71,6 @@ class IPackageBuild(IBuildFarmJob):
         title=_('Build farm job'), schema=IBuildFarmJob, required=True,
         readonly=True, description=_('The base build farm job.'))
 
-    policy_name = TextLine(
-        title=_("Policy name"), required=True,
-        description=_("The upload policy to use for handling these builds."))
-
     current_component = Attribute(
         'Component where the source related to this build was last '
         'published.')
@@ -82,13 +87,6 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def getUploaderCommand(package_build, upload_leaf, uploader_logfilename):
-        """Get the command to run as the uploader.
-
-        :return: A list of command line arguments, beginning with the
-            executable.
-        """
-
     def getUploadDirLeaf(build_cookie, now=None):
         """Return the directory-leaf where files to be uploaded are stored.
 
@@ -97,28 +95,17 @@ class IPackageBuild(IBuildFarmJob):
             directory name. If not provided, defaults to now.
         """
 
-    def getUploadDir(upload_leaf):
-        """Return the full directory where files to be uploaded are stored.
-
-        :param upload_leaf: The leaf directory name where things will be
-            stored.
+    def getBuildCookie():
+        """Return the build cookie (build id and build queue record id).
         """
 
-    def getLogFromSlave():
+    def getLogFromSlave(build):
         """Get last buildlog from slave. """
-
-    def getUploadLogContent(root, leaf):
-        """Retrieve the upload log contents.
-
-        :param root: Root directory for the uploads
-        :param leaf: Leaf for this particular upload
-        :return: Contents of log file or message saying no log file was found.
-        """
 
     def estimateDuration():
         """Estimate the build duration."""
 
-    def storeBuildInfo(librarian, slave_status):
+    def storeBuildInfo(build, librarian, slave_status):
         """Store available information for the build job.
 
         Derived classes can override this as needed, and call it from
@@ -158,14 +145,44 @@ class IPackageBuild(IBuildFarmJob):
             created in a suspended state.
         """
 
+    def getUploader(changes):
+        """Return the person responsible for the upload.
+
+        This is used to when checking permissions.
+
+        :param changes: Changes file from the upload.
+        """
+
 
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
 
-    def new(archive, pocket, dependencies=None):
+    def new(job_type, virtualized, archive, pocket, processor=None,
+            status=BuildStatus.NEEDSBUILD, dependencies=None):
         """Create a new `IPackageBuild`.
 
+        :param job_type: A `BuildFarmJobType` item.
+        :param virtualized: A boolean indicating whether this build was
+            virtualized.
         :param archive: An `IArchive`.
         :param pocket: An item of `PackagePublishingPocket`.
+        :param processor: An `IProcessor` required to run this build farm
+            job. Default is None (processor-independent).
+        :param status: A `BuildStatus` item defaulting to NEEDSBUILD.
         :param dependencies: An optional debian-like dependency line.
+        """
+
+
+class IPackageBuildSet(Interface):
+    """A utility representing a set of package builds."""
+
+    def getBuildsForArchive(archive, status=None, pocket=None):
+        """Return package build records targeted to a given IArchive.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :param pocket: If pocket is provided only builds for that pocket
+            will be returned.
+        :return: a `ResultSet` representing the requested package builds.
         """

@@ -35,10 +35,11 @@ existing builds that are in sampledata!
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
-  >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+  >>> from lp.soyuz.enums import BinaryPackageFormat
   >>> binpackageformat = BinaryPackageFormat.DEB
+  >>> from lp.soyuz.enums import (
+  ...     PackagePublishingPriority, PackagePublishingStatus)
   >>> from canonical.launchpad.interfaces import (
-  ...     PackagePublishingPriority, PackagePublishingStatus,
   ...     IDistributionSet)
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> priority = PackagePublishingPriority.STANDARD
@@ -66,7 +67,8 @@ needs to be removed.
   ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   architecturespecific=False)
+  ...   architecturespecific=False,
+  ...   debug_package=None)
 
   >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
@@ -107,7 +109,8 @@ needs to be removed.
   ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   architecturespecific=False)
+  ...   architecturespecific=False,
+  ...   debug_package=None)
 
   >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
@@ -226,7 +229,6 @@ us up to demonstrate bug 208233).
   >>> from canonical.launchpad.database import (
   ...   DistroArchSeries, DistroArchSeriesBinaryPackage,
   ...   BinaryPackageName, BinaryPackagePublishingHistory)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> warty_i386 = DistroArchSeries.get(1)
   >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
   >>> pmount_warty_i386 = DistroArchSeriesBinaryPackage(warty_i386,

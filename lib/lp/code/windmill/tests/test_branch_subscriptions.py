@@ -15,7 +15,6 @@ from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-
 class TestBranchSubscriptions(WindmillTestCase):
     """Test subscriptions to branches."""
 

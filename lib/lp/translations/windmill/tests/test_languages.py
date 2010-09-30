@@ -7,9 +7,12 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, SLEEP)
-from lp.translations.windmill.testing import TranslationsWindmillLayer
+    PAGE_LOAD,
+    SLEEP,
+    )
 from lp.testing import WindmillTestCase
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
 
 INPUT_FIELD = (u"//div[contains(@class,'searchform')]"+
              u"//input[@id='field.search_lang']")

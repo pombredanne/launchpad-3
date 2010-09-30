@@ -1,4 +1,4 @@
-YUI().use('node', 'lp.picker', 'plugin', function(Y) {
+YUI().use('node', 'lp.app.picker', 'plugin', function(Y) {
     if (Y.UA.ie) {
         return;
     }
@@ -14,7 +14,7 @@ YUI().use('node', 'lp.picker', 'plugin', function(Y) {
             step_title: args.step_title,
             extra_no_results_message: args.extra_no_results_message
         };
-        var picker = Y.lp.picker.create(args.vocabulary, config);
+        var picker = Y.lp.app.picker.create(args.vocabulary, config);
         if (config.extra_no_results_message !== null) {
             picker.before('resultsChange', function (e) {
                 var new_results = e.details[0].newVal;

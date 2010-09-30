@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -14,9 +13,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing import LaunchpadZopelessLayer
-from lp.soyuz.interfaces.packagediff import PackageDiffStatus
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 
 
@@ -86,7 +88,3 @@ class TestPackageDiffs(TestPackageDiffsBase):
         diff.performDiff()
         # The diff succeeds as expected.
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -29,8 +29,9 @@ BuildQueue entries.
     u'The Hoary Hedgehog Release for i386 (x86)'
 
     >>> from canonical.database.sqlbase import commit
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.launchpad.interfaces import (
-    ...     PackagePublishingStatus, SourcePackageUrgency)
+    ...     SourcePackageUrgency)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -255,8 +256,8 @@ they all have a fixed score of -10. They will get built in the order
 they were created.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from canonical.launchpad.interfaces import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
     ...     name='test-rebuild')

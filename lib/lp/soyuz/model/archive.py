@@ -12,94 +12,172 @@ __all__ = ['Archive', 'ArchiveSet']
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
-from sqlobject import  (
-    BoolCol, ForeignKey, IntCol, StringCol)
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import Or, And, Select, Sum, In, Desc
-from storm.locals import Count, Join
+from storm.expr import (
+    And,
+    Desc,
+    Or,
+    Select,
+    Sum,
+    )
+from storm.locals import (
+    Count,
+    Join,
+    )
 from storm.store import Store
-from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import alsoProvides, implements
-from zope.security.interfaces import Unauthorized
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
-from lp.archivepublisher.debversion import Version
-from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.url import urlappend
+from lp.app.errors import NotFoundError
+from lp.archivepublisher.debversion import Version
+from lp.archiveuploader.utils import (
+    re_isadeb,
+    re_issource,
+    )
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.adapters.packagelocation import PackageLocation
-from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table)
-from lp.soyuz.model.archivedependency import ArchiveDependency
-from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
-from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache)
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias, LibraryFileContent)
-from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.registry.model.teammembership import TeamParticipation
-from lp.soyuz.interfaces.archive import (
-    AlreadySubscribed, ArchiveDependencyError, ArchiveDisabled,
-    ArchiveNotPrivate, ArchivePurpose, ArchiveStatus, CannotCopy,
-    CannotSwitchPrivacy, CannotUploadToPPA, CannotUploadToPocket,
-    DistroSeriesNotFound, IArchive, IArchiveSet, IDistributionArchive,
-    InsufficientUploadRights, InvalidPocketForPPA,
-    InvalidPocketForPartnerArchive, InvalidComponent, IPPA,
-    MAIN_ARCHIVE_PURPOSES, NoRightsForArchive, NoRightsForComponent,
-    NoSuchPPA, NoTokensForTeams, PocketNotFound, VersionRequiresName,
-    default_name_by_purpose)
-from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermissionSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    ArchiveSubscriberStatus, IArchiveSubscriberSet, ArchiveSubscriptionError)
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.person import PersonVisibility
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    validate_person,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import IPropertyCache
+from lp.soyuz.adapters.archivedependencies import expand_dependencies
+from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.enums import (
+    ArchivePermissionType,
+    ArchivePurpose,
+    ArchiveStatus,
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    AlreadySubscribed,
+    ArchiveDependencyError,
+    ArchiveDisabled,
+    ArchiveNotPrivate,
+    CannotCopy,
+    CannotRestrictArchitectures,
+    CannotSwitchPrivacy,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    default_name_by_purpose,
+    DistroSeriesNotFound,
+    IArchive,
+    IArchiveSet,
+    IDistributionArchive,
+    InsufficientUploadRights,
+    InvalidComponent,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    IPPA,
+    MAIN_ARCHIVE_PURPOSES,
+    NoRightsForArchive,
+    NoRightsForComponent,
+    NoSuchPPA,
+    NoTokensForTeams,
+    PocketNotFound,
+    VersionRequiresName,
+    )
+from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    ArchiveSubscriptionError,
+    IArchiveSubscriberSet,
+    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.buildrecords import (
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus, IPublishingSet)
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    active_publishing_status,
+    IPublishingSet,
+    )
+from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
+from lp.soyuz.model.archivedependency import ArchiveDependency
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import (
+    BinaryPackageRelease,
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagediff import PackageDiff
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadSource,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import do_copy
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.validators.name import valid_name
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
 
 
 class Archive(SQLBase):
@@ -109,7 +187,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership, notNull=True)
+        storm_validator=validate_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
         """Only allow renaming of COPY archives.
@@ -170,6 +248,9 @@ class Archive(SQLBase):
     require_virtualized = BoolCol(
         dbName='require_virtualized', notNull=True, default=True)
 
+    build_debug_symbols = BoolCol(
+        dbName='build_debug_symbols', notNull=True, default=False)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
 
@@ -210,10 +291,13 @@ class Archive(SQLBase):
     external_dependencies = StringCol(
         dbName='external_dependencies', notNull=False, default=None)
 
+    commercial = BoolCol(
+        dbName='commercial', notNull=True, default=False)
+
     def _get_arm_builds_enabled(self):
         """Check whether ARM builds are allowed for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -225,7 +309,7 @@ class Archive(SQLBase):
     def _set_arm_builds_enabled(self, value):
         """Set whether ARM builds are enabled for this archive."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedfamilies(self)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
         arm = getUtility(IProcessorFamilySet).getByName('arm')
         for (family, archive_arch) in restricted_families:
             if family == arm:
@@ -329,9 +413,9 @@ class Archive(SQLBase):
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
-            ArchivePurpose.PRIMARY : '',
-            ArchivePurpose.PARTNER : '-partner',
-            ArchivePurpose.DEBUG : '-debug',
+            ArchivePurpose.PRIMARY: '',
+            ArchivePurpose.PARTNER: '-partner',
+            ArchivePurpose.DEBUG: '-debug',
         }
 
         if self.is_ppa:
@@ -366,12 +450,21 @@ class Archive(SQLBase):
         return None
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since anyone already accessing this archive
         # will implicitly have permission to see it.
-        return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
-            self, build_state, name, pocket, arch_tag)
+
+        if binary_only:
+            return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
+                self, build_state, name, pocket, arch_tag)
+        else:
+            if arch_tag is not None or name is not None:
+                raise IncompatibleArguments(
+                    "The 'arch_tag' and 'name' parameters can be used only "
+                    "with binary_only=True.")
+            return getUtility(IPackageBuildSet).getBuildsForArchive(
+                self, status=build_state, pocket=pocket)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -415,7 +508,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -485,7 +578,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -527,7 +620,7 @@ class Archive(SQLBase):
         result = store.find((
             LibraryFileAlias.filename,
             LibraryFileContent.sha1,
-            LibraryFileContent.filesize,),
+            LibraryFileContent.filesize),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -552,7 +645,7 @@ class Archive(SQLBase):
         # the result is empty, so instead:
         return sum(result.values(LibraryFileContent.filesize))
 
-    def _getBinaryPublishingBaseClauses (
+    def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
@@ -599,7 +692,7 @@ class Archive(SQLBase):
             try:
                 status = tuple(status)
             except TypeError:
-                status = (status,)
+                status = (status, )
             clauses.append("""
                 BinaryPackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -608,7 +701,7 @@ class Archive(SQLBase):
             try:
                 distroarchseries = tuple(distroarchseries)
             except TypeError:
-                distroarchseries = (distroarchseries,)
+                distroarchseries = (distroarchseries, )
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
             das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
@@ -632,7 +725,7 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables,
+            ' AND '.join(clauses), clauseTables=clauseTables,
             orderBy=orderBy)
 
         return all_binaries
@@ -704,15 +797,8 @@ class Archive(SQLBase):
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
-
-        # Exclude DDEBs from the repository size, they are not published
-        # on disk for PPAs. See bug #399444 for more information.
-        if self.is_ppa:
-            clauses.append(
-                BinaryPackageFile.filetype != BinaryPackageFileType.DDEB)
-
         result = store.find(LibraryFileContent, *clauses)
 
         # See `IArchive.sources_size`.
@@ -734,10 +820,10 @@ class Archive(SQLBase):
     def allowUpdatesToReleasePocket(self):
         """See `IArchive`."""
         purposeToPermissionMap = {
-            ArchivePurpose.COPY : True,
-            ArchivePurpose.PARTNER : True,
-            ArchivePurpose.PPA : True,
-            ArchivePurpose.PRIMARY : False,
+            ArchivePurpose.COPY: True,
+            ArchivePurpose.PARTNER: True,
+            ArchivePurpose.PPA: True,
+            ArchivePurpose.PRIMARY: False,
         }
 
         try:
@@ -759,6 +845,7 @@ class Archive(SQLBase):
         # gets fixed we should probably change it to a normal list and
         # benefit of the FTI rank for ordering.
         cache_contents = set()
+
         def add_cache_content(content):
             """Sanitise and add contents to the cache."""
             content = clean_text.sub(' ', content)
@@ -792,30 +879,32 @@ class Archive(SQLBase):
         self.sources_cached = sources_cached.count()
         self.binaries_cached = binaries_cached.count()
 
-    def findDepCandidateByName(self, distroarchseries, name):
+    def findDepCandidates(self, distro_arch_series, pocket, component,
+                          source_package_name, dep_name):
         """See `IArchive`."""
-        archives = []
-        if self.is_ppa:
-            archives.append(self.distribution.main_archive.id)
-        archives.append(self.id)
-        archives.extend(
-            IResultSet(self.dependencies).values(
-            ArchiveDependency.dependencyID))
+        deps = expand_dependencies(
+            self, distro_arch_series.distroseries, pocket, component,
+            source_package_name)
+        archive_clause = Or([And(
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            Component.name.is_in(components))
+            for (archive, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
-        candidate = store.find(
+        return store.find(
             BinaryPackagePublishingHistory,
-            BinaryPackageName.name == name,
+            BinaryPackageName.name == dep_name,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.distroarchseries ==
-                distroarchseries,
-            In(BinaryPackagePublishingHistory.archiveID, archives),
+                distro_arch_series,
             BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED
-            ).order_by(Desc(BinaryPackagePublishingHistory.id))
-        return candidate.first()
+                PackagePublishingStatus.PUBLISHED,
+            BinaryPackagePublishingHistory.componentID == Component.id,
+            archive_clause).order_by(
+                Desc(BinaryPackagePublishingHistory.id))
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""
@@ -896,7 +985,7 @@ class Archive(SQLBase):
 
         find_spec = (
             BuildFarmJob.status,
-            Count(BinaryPackageBuild.id)
+            Count(BinaryPackageBuild.id),
             )
         result = store.using(
             BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
@@ -904,8 +993,7 @@ class Archive(SQLBase):
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.archive == self,
             PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs
-            ).group_by(BuildFarmJob.status).order_by(
+            *extra_exprs).group_by(BuildFarmJob.status).order_by(
                 BuildFarmJob.status)
 
         # Create a map for each count summary to a number of buildstates:
@@ -916,10 +1004,9 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 ),
-             # The 'pending' count is a list because we may append to it
-             # later.
             'pending': [
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 ],
             'succeeded': (
                 BuildStatus.FULLYBUILT,
@@ -935,9 +1022,10 @@ class Archive(SQLBase):
                 BuildStatus.FAILEDTOUPLOAD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.FULLYBUILT,
                 BuildStatus.SUPERSEDED,
-                ]
+                ],
             }
 
         # If we were asked to include builds with the state NEEDSBUILD,
@@ -971,7 +1059,6 @@ class Archive(SQLBase):
 
     def checkArchivePermission(self, user, component_or_package=None):
         """See `IArchive`."""
-        assert not self.is_copy, "Uploads to copy archives are not allowed."
         # PPA access is immediately granted if the user is in the PPA
         # team.
         if self.is_ppa:
@@ -986,6 +1073,10 @@ class Archive(SQLBase):
                 # then relax the database constraint on
                 # ArchivePermission.
                 component_or_package = getUtility(IComponentSet)['main']
+
+        # Flatly refuse uploads to copy archives, at least for now.
+        if self.is_copy:
+            return False
 
         # Otherwise any archive, including PPAs, uses the standard
         # ArchivePermission entries.
@@ -1018,6 +1109,11 @@ class Archive(SQLBase):
         elif self.is_ppa:
             if pocket != PackagePublishingPocket.RELEASE:
                 return InvalidPocketForPPA()
+        elif self.is_copy:
+            # Any pocket is allowed for COPY archives, otherwise it can
+            # make the buildd-manager throw exceptions when dispatching
+            # existing builds after a series is released.
+            return
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
@@ -1034,7 +1130,7 @@ class Archive(SQLBase):
         if isinstance(sourcepackagename, basestring):
             sourcepackagename = getUtility(
                 ISourcePackageNameSet)[sourcepackagename]
-        reason = self.checkUpload(person, distroseries, sourcepackagename, 
+        reason = self.checkUpload(person, distroseries, sourcepackagename,
             component, pocket, strict_component)
         if reason is not None:
             raise reason
@@ -1076,7 +1172,11 @@ class Archive(SQLBase):
                 return None
 
         if not self.getComponentsForUploader(person):
-            if not self.getPackagesetsForUploader(person):
+            # XXX: JamesWestby 2010-08-01 bug=612351: We have to use
+            # is_empty() as we don't get an SQLObjectResultSet back, and
+            # so __nonzero__ isn't defined on it, and a straight bool
+            # check wouldn't do the right thing.
+            if self.getPackagesetsForUploader(person).is_empty():
                 return NoRightsForArchive()
             else:
                 return InsufficientUploadRights()
@@ -1378,30 +1478,26 @@ class Archive(SQLBase):
         # Perform the copy, may raise CannotCopy.
         do_copy(sources, self, series, pocket, include_binaries)
 
+    def getAuthToken(self, person):
+        """See `IArchive`."""
+
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(self, person)
+
     def newAuthToken(self, person, token=None, date_created=None):
         """See `IArchive`."""
+
+        # Bail if the archive isn't private
+        if not self.private:
+            raise ArchiveNotPrivate("Archive must be private.")
 
         # Tokens can only be created for individuals.
         if person.is_team:
             raise NoTokensForTeams(
                 "Subscription tokens can be created for individuals only.")
 
-        # First, ensure that a current subscription exists for the
-        # person and archive:
-        # XXX: noodles 2009-03-02 bug=336779: This can be removed once
-        # newAuthToken() is moved into IArchiveView.
-        subscription_set = getUtility(IArchiveSubscriberSet)
-        subscriptions = subscription_set.getBySubscriber(person, archive=self)
-        if subscriptions.count() == 0:
-            raise Unauthorized(
-                "You do not have a subscription for %s." % self.displayname)
-
-        # Second, ensure that the current subscription does not already
-        # have a token:
-        token_set = getUtility(IArchiveAuthTokenSet)
-        previous_token = token_set.getActiveTokenForArchiveAndPerson(
-            self, person)
-        if previous_token:
+        # Ensure that the current subscription does not already have a token
+        if self.getAuthToken(person) is not None:
             raise ArchiveSubscriptionError(
                 "%s already has a token for %s." % (
                     person.displayname, self.displayname))
@@ -1573,6 +1669,39 @@ class Archive(SQLBase):
             LibraryFileContent.id == LibraryFileAlias.contentID).config(
                 distinct=True))
 
+    def _getEnabledRestrictedFamilies(self):
+        """Retrieve the restricted architecture families this archive can
+        build on."""
+        # Main archives are always allowed to build on restricted
+        # architectures.
+        if self.is_main:
+            return getUtility(IProcessorFamilySet).getRestricted()
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
+        return [family for (family, archive_arch) in restricted_families
+                if archive_arch is not None]
+
+    def _setEnabledRestrictedFamilies(self, value):
+        """Set the restricted architecture families this archive can
+        build on."""
+        # Main archives are always allowed to build on restricted
+        # architectures.
+        if self.is_main:
+            proc_family_set = getUtility(IProcessorFamilySet)
+            if set(value) != set(proc_family_set.getRestricted()):
+                raise CannotRestrictArchitectures("Main archives can not "
+                        "be restricted to certain architectures")
+        archive_arch_set = getUtility(IArchiveArchSet)
+        restricted_families = archive_arch_set.getRestrictedFamilies(self)
+        for (family, archive_arch) in restricted_families:
+            if family in value and archive_arch is None:
+                archive_arch_set.new(self, family)
+            if family not in value and archive_arch is not None:
+                Store.of(self).remove(archive_arch)
+
+    enabled_restricted_families = property(_getEnabledRestrictedFamilies,
+                                           _setEnabledRestrictedFamilies)
+
 
 class ArchiveSet:
     implements(IArchiveSet)
@@ -1617,7 +1746,6 @@ class ArchiveSet:
                 "'%s' purpose has no default name." % purpose.name)
 
         return default_name_by_purpose[purpose]
-
 
     def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
@@ -1706,8 +1834,12 @@ class ArchiveSet:
 
         # Signing-key for the default PPA is reused when it's already present.
         signing_key = None
-        if purpose == ArchivePurpose.PPA and owner.archive is not None:
-            signing_key = owner.archive.signing_key
+        if purpose == ArchivePurpose.PPA:
+            if owner.archive is not None:
+                signing_key = owner.archive.signing_key
+            else:
+                # owner.archive is a cached property and we've just cached it.
+                del IPropertyCache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,
@@ -1726,7 +1858,6 @@ class ArchiveSet:
             new_archive.private = True
 
         return new_archive
-
 
     def __iter__(self):
         """See `IArchiveSet`."""
@@ -1760,6 +1891,7 @@ class ArchiveSet:
 
     def getPPAOwnedByPerson(self, person, name=None):
         """See `IArchiveSet`."""
+        # See Person._all_members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
@@ -1802,7 +1934,8 @@ class ArchiveSet:
         origin = (
             Archive,
             Join(SourcePackagePublishingHistory,
-                 SourcePackagePublishingHistory.archive == Archive.id),)
+                 SourcePackagePublishingHistory.archive == Archive.id),
+            )
         results = store.using(*origin).find(
             Archive,
             Archive.signing_key == None,
@@ -1879,6 +2012,7 @@ class ArchiveSet:
                 ),
             'pending': (
                 BuildStatus.BUILDING,
+                BuildStatus.UPLOADING,
                 BuildStatus.NEEDSBUILD,
                 ),
             'succeeded': (
@@ -1910,6 +2044,14 @@ class ArchiveSet:
             Archive.private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
+    def getCommercialPPAs(self):
+        """See `IArchiveSet`."""
+        store = IStore(Archive)
+        return store.find(
+            Archive,
+            Archive.commercial == True,
+            Archive.purpose == ArchivePurpose.PPA)
+
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None,
                                    exclude_disabled=True):
@@ -1919,7 +2061,7 @@ class ArchiveSet:
         # If a single purpose is passed in, convert it into a tuple,
         # otherwise assume a list was passed in.
         if purposes in ArchivePurpose:
-            purposes = (purposes,)
+            purposes = (purposes, )
 
         if purposes:
             extra_exprs.append(Archive.purpose.is_in(purposes))
@@ -1927,11 +2069,8 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        if exclude_disabled:
-            public_archive = And(Archive.private == False,
-                                 Archive._enabled == True)
-        else:
-            public_archive = (Archive.private == False)
+        public_archive = And(Archive.private == False,
+                             Archive._enabled == True)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1955,15 +2094,18 @@ class ArchiveSet:
                 # is unnecessary below because there is a TeamParticipation
                 # entry showing that each person is a member of the "team"
                 # that consists of themselves.
-                extra_exprs.append(
-                    Or(
-                        public_archive,
-                        Archive.ownerID.is_in(user_teams_subselect)))
 
+                # FIXME: Include private PPA's if user is an uploader
+                extra_exprs.append(
+                    Or(public_archive,
+                       Archive.ownerID.is_in(user_teams_subselect)))
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
             extra_exprs.append(public_archive)
+
+        if exclude_disabled:
+            extra_exprs.append(Archive._enabled == True)
 
         query = Store.of(distribution).find(
             Archive,

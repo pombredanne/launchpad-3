@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import email
 import operator
+
 import transaction
 
 from lp.services.mail import stub

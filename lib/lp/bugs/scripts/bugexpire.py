@@ -10,19 +10,23 @@ __all__ = ['BugJanitor']
 
 from logging import getLogger
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.config import config
-from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction)
+    endInteraction,
+    setupInteraction,
+    )
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 
 
 class BugJanitor:

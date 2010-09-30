@@ -6,30 +6,43 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
-    'SilentLaunchpadScriptFailure'
+    'SilentLaunchpadScriptFailure',
     ]
 
+from ConfigParser import SafeConfigParser
 from cProfile import Profile
 import datetime
 import logging
 from optparse import OptionParser
-import os
+import os.path
 import sys
+from urllib2 import urlopen, HTTPError, URLError
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
 import pytz
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.launchpad.scripts.logger import OopsHandler
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 from canonical.lp import initZopeless
+
+from lp.services.log.mappingfilter import MappingFilter
+from lp.services.log.nullhandler import NullHandler
 
 
 LOCK_PATH = "/var/lock/"
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LaunchpadScriptFailure(Exception):
@@ -52,10 +65,40 @@ class LaunchpadScriptFailure(Exception):
 
 class SilentLaunchpadScriptFailure(Exception):
     """A LaunchpadScriptFailure that doesn't log an error."""
+
     def __init__(self, exit_status=1):
         Exception.__init__(self, exit_status)
         self.exit_status = exit_status
     exit_status = 1
+
+
+def log_unhandled_exception_and_exit(func):
+    """Decorator that logs unhandled exceptions via the logging module.
+
+    Exceptions are reraised except at the top level. ie. exceptions are
+    only propagated to the outermost decorated method. At the top level,
+    an exception causes the script to terminate.
+
+    Only for methods of `LaunchpadScript` and subclasses. Not thread safe,
+    which is fine as the decorated LaunchpadScript methods are only
+    invoked from the main thread.
+    """
+
+    def log_unhandled_exceptions_func(self, *args, **kw):
+        try:
+            self._log_unhandled_exceptions_level += 1
+            return func(self, *args, **kw)
+        except Exception:
+            if self._log_unhandled_exceptions_level == 1:
+                # self.logger is setup in LaunchpadScript.__init__() so
+                # we can use it.
+                self.logger.exception("Unhandled exception")
+                sys.exit(1)
+            else:
+                raise
+        finally:
+            self._log_unhandled_exceptions_level -= 1
+    return log_unhandled_exceptions_func
 
 
 class LaunchpadScript:
@@ -92,6 +135,9 @@ class LaunchpadScript:
     description = None
     lockfilepath = None
     loglevel = logging.INFO
+
+    # State for the log_unhandled_exceptions decorator.
+    _log_unhandled_exceptions_level = 0
 
     def __init__(self, name=None, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
@@ -138,7 +184,6 @@ class LaunchpadScript:
     #
     # Hooks that we expect users to redefine.
     #
-
     def main(self):
         """Define the meat of your script here. Must be defined.
 
@@ -162,7 +207,7 @@ class LaunchpadScript:
     #
     # Convenience or death
     #
-
+    @log_unhandled_exception_and_exit
     def login(self, user):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
@@ -172,7 +217,6 @@ class LaunchpadScript:
     # they really want to control the run-and-locking semantics of the
     # script carefully.
     #
-
     @property
     def lockfilename(self):
         """Return lockfilename.
@@ -185,11 +229,12 @@ class LaunchpadScript:
     def setup_lock(self):
         """Create lockfile.
 
-        Note that this will create a lockfile even if you don't actually use it.
-        GlobalLock.__del__ is meant to clean it up though.
+        Note that this will create a lockfile even if you don't actually
+        use it. GlobalLock.__del__ is meant to clean it up though.
         """
         self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
 
+    @log_unhandled_exception_and_exit
     def lock_or_die(self, blocking=False):
         """Attempt to lock, and sys.exit(1) if the lock's already taken.
 
@@ -203,6 +248,7 @@ class LaunchpadScript:
             self.logger.debug('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
+    @log_unhandled_exception_and_exit
     def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
@@ -217,6 +263,7 @@ class LaunchpadScript:
             self.logger.info('Lockfile %s in use' % self.lockfilepath)
             sys.exit(0)
 
+    @log_unhandled_exception_and_exit
     def unlock(self, skip_delete=False):
         """Release the lock. Do this before going home.
 
@@ -226,6 +273,7 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
+    @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=ISOLATION_LEVEL_DEFAULT):
         """Actually run the script, executing zcml and initZopeless."""
@@ -271,7 +319,7 @@ class LaunchpadScript:
     #
     # Make things happen
     #
-
+    @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
                      use_web_security=False, implicit_begin=True,
                      isolation=ISOLATION_LEVEL_DEFAULT):
@@ -290,6 +338,35 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
+    def __init__(self, name=None, dbuser=None, test_args=None):
+        """Initialize, and sys.exit() if the cronscript is disabled.
+
+        Rather than hand editing crontab files, cronscripts can be
+        enabled and disabled using a config file.
+
+        The control file location is specified by
+        config.canonical.cron_control_url.
+        """
+        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+
+        name = self.name
+
+        # Configure the IErrorReportingUtility we use with defaults.
+        # Scripts can override this if they want.
+        globalErrorUtility.configure()
+
+        # Scripts do not have a zlog.
+        globalErrorUtility.copy_to_zlog = False
+
+        # WARN and higher log messages should generate OOPS reports.
+        logging.getLogger().addHandler(OopsHandler(name))
+
+        enabled = cronscript_enabled(
+            config.canonical.cron_control_url, name, self.logger)
+        if not enabled:
+            sys.exit(0)
+
+    @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
@@ -299,3 +376,60 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+
+def cronscript_enabled(control_url, name, log):
+    """Return True if the cronscript is enabled."""
+    try:
+        if sys.version_info[:2] >= (2, 6):
+            # Timeout of 5 seconds should be fine on the LAN. We don't want
+            # the default as it is too long for scripts being run every 60
+            # seconds.
+            control_fp = urlopen(control_url, timeout=5)
+        else:
+            control_fp = urlopen(control_url)
+    # Yuck. API makes it hard to catch 'does not exist'.
+    except HTTPError, error:
+        if error.code == 404:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except URLError, error:
+        if getattr(error.reason, 'errno', None) == 2:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except Exception:
+        log.exception("Error loading %s" % control_url)
+        return True
+
+    cron_config = SafeConfigParser({'enabled': str(True)})
+
+    # Try reading the config file. If it fails, we log the
+    # traceback and continue on using the defaults.
+    try:
+        cron_config.readfp(control_fp)
+    except:
+        log.exception("Error parsing %s", control_url)
+
+    if cron_config.has_option(name, 'enabled'):
+        section = name
+    else:
+        section = 'DEFAULT'
+
+    try:
+        enabled = cron_config.getboolean(section, 'enabled')
+    except:
+        log.exception(
+            "Failed to load value from %s section of %s",
+            section, control_url)
+        enabled = True
+
+    if enabled:
+        log.debug("Enabled by %s section", section)
+    else:
+        log.info("Disabled by %s section", section)
+
+    return enabled

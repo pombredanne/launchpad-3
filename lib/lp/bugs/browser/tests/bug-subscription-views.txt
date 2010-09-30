@@ -30,7 +30,7 @@ be included in that bugs subscriber_ids_js mapping.
     {"name12": "subscriber-12"}
 
     >>> login('foo.bar@canonical.com')
-    >>> bug_15.duplicateof = bug_13
+    >>> bug_15.markAsDuplicate(bug_13)
     >>> bug_13 = getUtility(IBugSet).get(13)
 
     >>> subscriber_ids_view = create_initialized_view(

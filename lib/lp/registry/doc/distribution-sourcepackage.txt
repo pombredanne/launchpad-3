@@ -8,7 +8,8 @@ This is useful for, among other things, tracking bugs in source
 packages, ensuring that bug reports automatically carry forward from one
 distribution series to the next.
 
-== Fetching a Distribution Source Package ==
+Fetching a Distribution Source Package
+--------------------------------------
 
 A common way to fetch a distribution source package is to start with the
 distribution object:
@@ -30,15 +31,36 @@ Use IDistribution.getSourcePackage to get a specific package by name:
     >>> verifyObject(IDistributionSourcePackage, debian_firefox)
     True
 
-== Useful features ==
+
+Descriptive attributes
+----------------------
+
+A distribution source package has a name, displayname, title, and a summary.
 
     >>> dsp = ubuntu.getSourcePackage("pmount")
-    >>> dsp.displayname
+    >>> print dsp.name
+    pmount
+
+    >>> print dsp.displayname
+    pmount in ubuntu
+
+    >>> print dsp.title.encode('ascii', 'ignore')
+    pmount package in Ubuntu
+
+    >>> print dsp.summary
+    pmount: pmount shortdesc
+
+
+Aggregate attributes
+--------------------
+
     u'pmount in ubuntu'
     >>> dsp.bugtasks().count()
     0
 
-=== Publishing-related properties ===
+
+Publishing-related properties
+-----------------------------
 
 Publishing history of 'pmount in Ubuntu':
 
@@ -66,7 +88,7 @@ sorted by distroseries and component with publications in proposed and backports
 excluded.
 
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> warty = ubuntu['warty']
@@ -241,7 +263,6 @@ versions of a given source package have been published in.
     ...     name="beta", distribution=ubuntu_test)
 
     # Next publish some sources in them.
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> gedit_nightly_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_nightly,
     ...     creator=ppa_nightly.owner,

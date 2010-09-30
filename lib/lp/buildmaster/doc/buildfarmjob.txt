@@ -2,7 +2,8 @@ BuildFarmJob
 ============
 
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
-    ...     BuildFarmJobType, IBuildFarmJob)
+    ...     IBuildFarmJob)
+    >>> from lp.buildmaster.enums import BuildFarmJobType
     >>> from lp.buildmaster.model.buildfarmjob import (
     ...     BuildFarmJob, BuildFarmJobDerived)
 

@@ -15,25 +15,38 @@ __all__ = [
     'safe_action',
     ]
 
-import transaction
-from zope.interface import classImplements, providedBy
-from zope.interface.advice import addClassAdvisor
-from zope.event import notify
-from zope.formlib import form
-from zope.formlib.form import action # imported so it may be exported
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.browser import (
-    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import transaction
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import (
+    CheckBoxWidget,
+    DropdownWidget,
+    RadioWidget,
+    TextAreaWidget,
+    )
+from zope.app.form.interfaces import IInputWidget
+from zope.event import notify
+from zope.formlib import form
+# imported so it may be exported
+from zope.formlib.form import action
+from zope.interface import (
+    classImplements,
+    providedBy,
+    )
+from zope.interface.advice import addClassAdvisor
 
 from canonical.launchpad.webapp.interfaces import (
-    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
+    IAlwaysSubmittedWidget,
+    ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout,
+    UnsafeFormGetSubmissionError,
+    )
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -73,6 +86,8 @@ class LaunchpadFormView(LaunchpadView):
 
     actions = ()
 
+    action_taken = None
+
     render_context = False
 
     form_result = None
@@ -111,6 +126,7 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        self.action_taken = action
 
     def render(self):
         """Return the body of the response.
@@ -243,7 +259,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(cleanmsg)
 
     @staticmethod
-    def validate_none(self, action, data):
+    def validate_none(form, action, data):
         """Do not do any validation.
 
         This is to be used in subclasses that have actions in which no
@@ -473,6 +489,10 @@ class ReturnToReferrerMixin:
         if referrer is None:
             # "referer" is misspelled in the HTTP specification.
             referrer = self.request.getHeader('referer')
+            # Windmill doesn't pass in a correct referer.
+            if (referrer is not None
+                and '/windmill-serv/remote.html' in referrer):
+                referrer = None
         else:
             attribute_name = self.request.form.get('_return_attribute_name')
             attribute_value = self.request.form.get('_return_attribute_value')

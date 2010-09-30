@@ -1,4 +1,5 @@
-= Team Membership/Participation =
+Team Membership/Participation
+=============================
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
@@ -57,7 +58,8 @@ XXX: This doctest needs a lot of cleanups!
     >>> flush_database_updates()
 
 
-== Adding new members ==
+Adding new members
+------------------
 
 One way of adding new members to a team is by having the user himself join the
 team he wants.
@@ -138,7 +140,8 @@ Other users must use the join method if they are going to add themselves
 to a team.
 
     >>> mark = personset.getByName('mark')
-    >>> t3.addMember(salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    >>> t3.addMember(salgado, reviewer=mark,
+    ...     status=TeamMembershipStatus.ADMIN)
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -414,7 +417,8 @@ managed.
     True
 
 
-== Changing membership data ==
+Changing membership data
+------------------------
 
 The only bits of a TeamMembership that can be changed are its status, expiry
 date, reviewer[comment] and the date the user joined. From these ones, the
@@ -427,7 +431,7 @@ an extra check to ensure that doesn't happen.
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
     # status/expiry-date by hand.
     >>> login_person(foobar)
-    >>> membership = foobar.myactivememberships[0]
+    >>> membership = foobar.team_memberships[0]
     >>> membership.status = None
     Traceback (most recent call last):
     ...
@@ -552,7 +556,8 @@ date of other's memberships, not his own.
     AssertionError: ...
 
 
-== Flagging expired memberships ==
+Flagging expired memberships
+----------------------------
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
@@ -622,6 +627,43 @@ expire on that date or before.
      (u'ubuntu-team', u'guadamen'), (u'name16', u'launchpad-buildd-admins'),
      (u'name12', u'landscape-developers')]
 
+
+The getMembershipsToExpire() method also accepts an optional
+'exclude_autorewals' argument.  When that argument is provided,
+memberships in teams that are configured to renew the membership
+automatically will be excluded. In that case, there is no reason to send
+a warning email several days before the expiration. The user will just
+be notified that the membership has already been automatically renewed
+on the expiration day.
+
+    >>> autorenewal_team = factory.makeTeam(name="autorenewal-team")
+    >>> autorenewal_team.renewal_policy = (
+    ...     TeamMembershipRenewalPolicy.AUTOMATIC)
+    >>> autorenewal_team.defaultrenewalperiod = 73
+    >>> otto = factory.makePerson(name='otto')
+    >>> ignore = autorenewal_team.addMember(otto, salgado)
+    >>> otto_membership = otto.team_memberships[0]
+    >>> otto_membership.setExpirationDate(utc_now, salgado)
+    >>> original_otto_date_expires = otto_membership.dateexpires
+
+    >>> do_not_warn = factory.makePerson(name='do-not-warn')
+    >>> ignore = autorenewal_team.addMember(do_not_warn, salgado)
+    >>> do_not_warn.team_memberships[0].setExpirationDate(
+    ...     tomorrow, salgado)
+
+    # Not excluding teams with automatic renewals.
+    >>> [(membership.person.name, membership.team.name)
+    ...     for membership in membershipset.getMembershipsToExpire()
+    ...     if membership.team.name == 'autorenewal-team']
+    [(u'otto', u'autorenewal-team')]
+
+    # Excluding teams with automatic renewals.
+    >>> [(membership.person.name, membership.team.name)
+    ...     for membership in membershipset.getMembershipsToExpire(
+    ...         exclude_autorenewals=True)
+    ...     if membership.team.name == 'autorenewal-team']
+    []
+
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
 Bug 3989 -- StuarBishop 20060713
@@ -631,12 +673,22 @@ Bug 3989 -- StuarBishop 20060713
 
     >>> import subprocess
     >>> process = subprocess.Popen(
-    ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
+    ...     'cronscripts/flag-expired-memberships.py -v', shell=True,
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> out, err
-    ('', '')
+    >>> print out
+
+A warning email should not have been sent to otto because it was renewed
+inside the cronscript, and it should not be sent to do_not_warn, because
+teams with automatic renewal don't need warnings.
+
+    >>> print '\n'.join(
+    ...     line for line in err.split('\n') if 'INFO' not in line)
+    DEBUG   ...
+    DEBUG   Sent warning email to name16 in launchpad-buildd-admins team.
+    DEBUG   Sent warning email to name12 in landscape-developers team.
+    DEBUG   Removing lock file: ...launchpad-flag-expired-memberships.lock
     >>> process.returncode
     0
     >>> transaction.abort()
@@ -657,8 +709,16 @@ while the one that was inactive hasn't changed.
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
 
+    >>> otto_on_autorenewal_team = membershipset.getByPersonAndTeam(
+    ...     otto, autorenewal_team)
+    >>> otto_on_autorenewal_team.status.title
+    'Approved'
+    >>> otto_on_autorenewal_team.dateexpires - original_otto_date_expires
+    datetime.timedelta(73)
 
-== Renewing team memberships ==
+
+Renewing team memberships
+-------------------------
 
 A team membership can be renewed before it has been expired by either
 changing its dateexpires (which can be done only by admins of the
@@ -731,12 +791,13 @@ expire soon.
     Approved
 
 
-== Querying team memberships ==
+Querying team memberships
+-------------------------
 
-You can check a person's direct memberships by using myactivememberships:
+You can check a person's direct memberships by using team_memberships:
 
     >>> [(membership.team.name, membership.status.title)
-    ...  for membership in salgado.myactivememberships]
+    ...  for membership in salgado.team_memberships]
     [(u'hwdb-team', 'Approved'), (u'landscape-developers', 'Approved'),
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 
@@ -778,7 +839,8 @@ We can also change the sort order of the results of getMembersByStatus.
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
 
-== Finding team administrators ==
+Finding team administrators
+---------------------------
 
 Another convenient method is getDirectAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
@@ -823,7 +885,8 @@ teams for which the person/team has admin rights.
 
     >>> cprov_team = factory.makeTeam(owner=cprov, name="cprov-team")
     >>> [team.name for team in cprov.getAdministratedTeams()]
-    [u'canonical-partner-dev', u'cprov-team', u'guadamen', u'launchpad-buildd-admins']
+    [u'canonical-partner-dev', u'cprov-team', u'guadamen',
+     u'launchpad-buildd-admins']
 
 If a team is merged it will not show up in the set of administered teams.
 
@@ -834,7 +897,8 @@ If a team is merged it will not show up in the set of administered teams.
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 
-== Querying a person for team participation ==
+Querying a person for team participation
+----------------------------------------
 
 Team membership is direct; team participation is indirect, people being
 participants of teams by virtue of being members of other teams which are in
@@ -887,44 +951,8 @@ for Salgado.
     t4
 
 
-== Membership caches ==
-
-Person instances have membership caches (_inTeam_cache) to avoid the
-need to reissue identical membership queries repeatedly. (This test uses
-Person directly to allow us access to an unproxied object, since
-_inTeam_cache is private, and it uses TeamMembershipSet directly to allow
-us to call TeamMembership.setStatus, which is private).
-
-    >>> from lp.registry.model.person import Person
-    >>> from lp.registry.model.teammembership import TeamMembershipSet
-    >>> no_priv = Person.selectOneBy(name='no-priv')
-    >>> no_priv.inTeam(admins)
-    False
-    >>> no_priv._inTeam_cache
-    {...25: False...}
-
-This cache is cleared when memberships are created:
-
-    >>> membership = TeamMembershipSet().new(
-    ...     no_priv, admins, TeamMembershipStatus.APPROVED, admins.teamowner)
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    True
-    >>> no_priv._inTeam_cache
-    {25: True}
-
-Or changed:
-
-    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, mark)
-    True
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    False
-
-
-== Email to invalid users ==
+Email to invalid users
+----------------------
 
 There are cases where teams have deactivated or suspended users as members.
 This is a data error that needs fixing, but should not interfere with
@@ -953,7 +981,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
+    >>> from lp.services.propertycache import IPropertyCache
+    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

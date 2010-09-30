@@ -47,6 +47,7 @@ class DebianBuildManager(BuildManager):
     def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
 
+        self.arch_tag = extra_args.get('arch_tag', self._slave.getArch())
         self.sources_list = extra_args.get('archives')
 
         BuildManager.initiate(self, files, chroot, extra_args)
@@ -62,8 +63,9 @@ class DebianBuildManager(BuildManager):
 
     def doUpdateChroot(self):
         """Perform the chroot upgrade."""
-        self.runSubProcess(self._updatepath,
-                           ["update-debian-chroot", self._buildid])
+        self.runSubProcess(
+            self._updatepath,
+            ["update-debian-chroot", self._buildid, self.arch_tag])
 
     def doRunBuild(self):
         """Run the main build process.
@@ -95,8 +97,7 @@ class DebianBuildManager(BuildManager):
                 yield filename
 
     def getChangesFilename(self):
-        changes = (
-            self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes")
+        changes = self._dscfile[:-4] + "_" + self.arch_tag + ".changes"
         return get_build_path(self._buildid, changes)
 
     def gatherResults(self):

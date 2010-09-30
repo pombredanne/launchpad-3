@@ -9,11 +9,19 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import keys_for_tests
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
-from lp.registry.scripts.keyringtrustanalyser import (
-    addTrustedKeyring, addOtherKeyring, getValidUids, findEmailClusters,
-    mergeClusters)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    IGPGHandler,
+    IPersonSet,
+    )
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.scripts.keyringtrustanalyser import (
+    addOtherKeyring,
+    addTrustedKeyring,
+    findEmailClusters,
+    getValidUids,
+    mergeClusters,
+    )
 
 
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'

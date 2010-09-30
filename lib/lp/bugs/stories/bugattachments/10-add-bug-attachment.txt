@@ -41,7 +41,7 @@ We can check that the attachment is there
 
   >>> link = user_browser.getLink('Some information')
   >>> link.url
-  'http://localhost:58000/.../foo.txt'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1/+files/foo.txt'
 
   >>> 'Added some information' in user_browser.contents
   True

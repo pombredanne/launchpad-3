@@ -9,7 +9,8 @@ are what we expect them to be for various example objects.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
 The examples are divided into sections by theme.  Each section starts with
@@ -20,10 +21,10 @@ so on.
 
 == Application homepages ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMaloneApplication, IBazaarApplication,
-    ...     ILaunchpadRoot, IQuestionSet
-    ...     )
+    >>> from canonical.launchpad.interfaces.launchpad import IBazaarApplication
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    >>> from lp.answers.interfaces.questioncollection import IQuestionSet
+    >>> from lp.bugs.interfaces.malone import IMaloneApplication
 
 The Launchpad homepage.
 
@@ -38,7 +39,7 @@ The Malone homepage.
 The Bazaar homepage.
 
     >>> canonical_url(getUtility(IBazaarApplication))
-    u'http://launchpad.dev/+code'
+    u'http://code.launchpad.dev/+code'
 
 The Answer Tracker
 

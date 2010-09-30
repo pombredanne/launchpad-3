@@ -11,11 +11,15 @@ __all__ = [
     'BugTrackerPersonAlreadyExists',
     ]
 
-from zope.schema import Datetime, Object, Text
+from zope.schema import (
+    Datetime,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtracker import IBugTracker
 from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.registry.interfaces.person import IPerson
 
 

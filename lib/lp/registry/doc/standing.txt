@@ -56,7 +56,7 @@ are not a member of, their message gets held for moderator approval.
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from lp.testing.logger import MockLogger
     >>> class TestableScript(UpdatePersonalStanding):
     ...     """A testable version of `UpdatePersonalStanding`."""
     ...     def main(self):

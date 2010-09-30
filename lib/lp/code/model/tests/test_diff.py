@@ -3,6 +3,8 @@
 
 """Tests for Diff, etc."""
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 
@@ -12,20 +14,34 @@ import logging
 from unittest import TestLoader
 
 from bzrlib import trace
-
 import transaction
-
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.webapp import canonical_url, errorlog
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
-from lp.code.model.diff import Diff, PreviewDiff, StaticDiff
-from lp.code.model.directbranchcommit import DirectBranchCommit
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from lp.testing import login, login_person, TestCaseWithFactory
+    IDiff,
+    IPreviewDiff,
+    IStaticDiff,
+    IStaticDiffSource,
+    )
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    StaticDiff,
+    )
+from lp.code.model.directbranchcommit import DirectBranchCommit
+from lp.services.osutils import override_environ
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class RecordLister(logging.Handler):
@@ -41,13 +57,14 @@ class RecordLister(logging.Handler):
 class DiffTestCase(TestCaseWithFactory):
 
     @staticmethod
-    def commitFile(branch, path, contents):
+    def commitFile(branch, path, contents, merge_parents=None):
         """Create a commit that updates a file to specified contents.
 
         This will create or modify the file, as needed.
         """
         committer = DirectBranchCommit(
-            removeSecurityProxy(branch), no_race_check=True)
+            removeSecurityProxy(branch), no_race_check=True,
+            merge_parents=merge_parents)
         committer.writeFile(path, contents)
         try:
             return committer.commit('committing')
@@ -104,7 +121,6 @@ class DiffTestCase(TestCaseWithFactory):
             'target text\nprerequisite text\nsource text\n')
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
                 prerequisite)
-
 
 
 class TestDiff(DiffTestCase):
@@ -170,19 +186,19 @@ class TestDiffInScripts(DiffTestCase):
         self.checkExampleMerge(diff.text)
 
     diff_bytes = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,4 @@\n"
         " a\n"
         "-b\n"
@@ -191,19 +207,19 @@ class TestDiffInScripts(DiffTestCase):
         "+e\n")
 
     diff_bytes_2 = (
-        "--- bar	2009-08-26 15:53:34.000000000 -0400\n"
-        "+++ bar	1969-12-31 19:00:00.000000000 -0500\n"
+        "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
+        "+++ bar\t1969-12-31 19:00:00.000000000 -0500\n"
         "@@ -1,3 +0,0 @@\n"
         "-a\n"
         "-b\n"
         "-c\n"
-        "--- baz	1969-12-31 19:00:00.000000000 -0500\n"
-        "+++ baz	2009-08-26 15:53:57.000000000 -0400\n"
+        "--- baz\t1969-12-31 19:00:00.000000000 -0500\n"
+        "+++ baz\t2009-08-26 15:53:57.000000000 -0400\n"
         "@@ -0,0 +1,2 @@\n"
         "+a\n"
         "+b\n"
-        "--- foo	2009-08-26 15:53:23.000000000 -0400\n"
-        "+++ foo	2009-08-26 15:56:43.000000000 -0400\n"
+        "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
+        "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
         "@@ -1,3 +1,5 @@\n"
         " a\n"
         "-b\n"
@@ -285,7 +301,10 @@ class TestStaticDiff(TestCaseWithFactory):
         """Ensure that acquire returns the existing StaticDiff."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit', rev_id='rev1')
         diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         diff2 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         self.assertIs(diff1, diff2)
@@ -294,7 +313,10 @@ class TestStaticDiff(TestCaseWithFactory):
         """The existing object is used even if the repository is different."""
         self.useBzrBranches(direct_database=True)
         branch1, tree1 = self.create_branch_and_tree('tree1')
-        tree1.commit('First commit', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree1.commit('First commit', rev_id='rev1')
         branch2, tree2 = self.create_branch_and_tree('tree2')
         tree2.pull(tree1.branch)
         diff1 = StaticDiff.acquire('null:', 'rev1', tree1.branch.repository)
@@ -305,8 +327,11 @@ class TestStaticDiff(TestCaseWithFactory):
         """A new object is created if there is no existant matching object."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
-        tree.commit('Next commit', rev_id='rev2')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit', rev_id='rev1')
+            tree.commit('Next commit', rev_id='rev2')
         diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
         diff2 = StaticDiff.acquire('rev1', 'rev2', tree.branch.repository)
         self.assertIsNot(diff1, diff2)
@@ -441,7 +466,6 @@ class TestPreviewDiff(DiffTestCase):
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
-
 
     def test_fromBranchMergeProposal(self):
         # Correctly generates a PreviewDiff from a BranchMergeProposal.

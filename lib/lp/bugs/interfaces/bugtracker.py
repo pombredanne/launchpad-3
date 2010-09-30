@@ -17,26 +17,52 @@ __all__ = [
     'SINGLE_PRODUCT_BUGTRACKERTYPES',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bool, Choice, Int, List, Object, Text, TextLine)
-from zope.schema.interfaces import IObject
-from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
-
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
-from lazr.restful.fields import CollectionField, Reference
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.schema.interfaces import IObject
+
+from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
+from lp.services.fields import (
+    ContentNameField,
+    StrippedTextLine,
+    URIField,
+    )
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -68,7 +94,8 @@ class BugTrackerURL(URIField):
         bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
         if bugtracker is not None and bugtracker != self.context:
             raise LaunchpadValidationError(
-                "%s is already registered in Launchpad." % input)
+                '%s is already registered in Launchpad as "%s" (%s).'
+                % (input, bugtracker.title, bugtracker.name))
 
 
 class BugTrackerType(DBEnumeratedType):
@@ -183,7 +210,7 @@ class IBugTracker(Interface):
         BugTrackerNameField(
             title=_('Name'),
             constraint=name_validator,
-            description=_('An URL-friendly name for the bug tracker, '
+            description=_('A URL-friendly name for the bug tracker, '
                           'such as "mozilla-bugs".')))
     title = exported(
         TextLine(
@@ -317,12 +344,13 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
-    def resetWatches(now=None):
+    def resetWatches(new_next_check=None):
         """Reset the next_check times of this BugTracker's `BugWatch`es.
 
-        :param now: If specified, contains the datetime to which to set
-                    the BugWatches' next_check times. Defaults to
-                    datetime.now().
+        :param new_next_check: If specified, contains the datetime to
+            which to set the BugWatches' next_check times.  If not
+            specified, the watches' next_check times will be set to a
+            point between now and 24 hours hence.
         """
 
 
@@ -403,6 +431,14 @@ class IBugTrackerSet(Interface):
 
     def getPillarsForBugtrackers(bug_trackers):
         """Return dict mapping bugtrackers to lists of pillars."""
+
+    def trackers(active=None):
+        """Return a ResultSet of bugtrackers.
+
+        :param active: If True, only active trackers are returned, if False
+            only inactive trackers are returned. All trackers are returned
+            by default.
+        """
 
 
 class IBugTrackerAlias(Interface):

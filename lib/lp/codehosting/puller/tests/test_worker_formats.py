@@ -8,10 +8,16 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
+from bzrlib.bzrdir import (
+    BzrDirFormat6,
+    BzrDirMetaFormat1,
+    )
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
-from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
 from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin

@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
-
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_initialized_view
 from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestProductBugConfigurationView(TestCaseWithFactory):
@@ -58,7 +60,9 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.owner, self.product.bug_supervisor)
         self.assertEqual(self.owner, self.product.security_contact)
-        self.assertTrue(self.product.official_malone)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            self.product.bug_tracking_usage)
         self.assertTrue(self.product.enable_bug_expiration)
         self.assertEqual('sf-boing', self.product.remote_product)
         self.assertEqual('guidelines', self.product.bug_reporting_guidelines)
@@ -122,6 +126,27 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertFalse(self.product.enable_bug_expiration)
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_bug_role_non_admin_can_edit(self):
+        # Verify that a member of an owning team who is not an admin of
+        # the bug supervisor team or security_contact team can change bug
+        # reporting guidelines.
+        owning_team = self.factory.makeTeam(owner=self.owner)
+        bug_team = self.factory.makeTeam(owner=self.owner)
+        weak_owner = self.factory.makePerson()
+        login_person(self.owner)
+        owning_team.addMember(weak_owner, self.owner)
+        bug_team.addMember(weak_owner, self.owner)
+        self.product.owner = owning_team
+        self.product.setBugSupervisor(bug_team, self.owner)
+        self.product.security_contact = bug_team
+        login_person(weak_owner)
+        form = self._makeForm()
+        # Only the bug_reporting_guidelines are different.
+        form['field.bug_supervisor'] = bug_team.name
+        form['field.security_contact'] = bug_team.name
+        form['field.bug_reporting_guidelines'] = 'new guidelines'
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'new guidelines', self.product.bug_reporting_guidelines)

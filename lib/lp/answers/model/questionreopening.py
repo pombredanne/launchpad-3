@@ -10,19 +10,18 @@ __metaclass__ = type
 __all__ = ['QuestionReopening',
            'create_questionreopening']
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from sqlobject import ForeignKey
 from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-
-from sqlobject import ForeignKey
-
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
+from canonical.database.sqlbase import SQLBase
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.questionreopening import IQuestionReopening
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -45,15 +44,17 @@ class QuestionReopening(SQLBase):
     date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
-# XXX flacoste 2006-10-25 The QuestionReopening is probably not that useful
-# anymore since the question history is nearly completely tracked in the
-# question message trails. (Only missing information is the previous recorded
-# answer.) If we decide to still keep that class, this subscriber should
-# probably be moved outside of database code.
+
 def create_questionreopening(question, event):
-    """Event subscriber that creates a QuestionReopening whenever a question
-    with an answer changes back to the OPEN state.
+    """Event subscriber that creates a QuestionReopening event.
+
+    A QuestionReopening is created question with an answer changes back to the
+    OPEN state.
     """
+    # XXX flacoste 2006-10-25 The QuestionReopening is probably not that
+    # useful anymore since the question history is nearly complete.
+    # If we decide to still keep that class, this subscriber should
+    # probably be moved outside of database code.
     if question.status != QuestionStatus.OPEN:
         return
 
@@ -82,4 +83,3 @@ def create_questionreopening(question, event):
 
     reopening = ProxyFactory(reopening)
     notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))
-

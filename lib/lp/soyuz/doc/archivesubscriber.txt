@@ -21,6 +21,7 @@ First, create a person 'joesmith' and a team 'team_cprov':
     ...                               email="john@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
     >>> logout()
@@ -203,8 +204,9 @@ subscriber and archive.  To access subscriptions you need launchpad.View
 privilege which applies to the person in the subscriptions and launchpad
 admins.
 
+    >>> from lp.soyuz.enums import ArchiveSubscriberStatus
     >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
+    ...     IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -309,7 +311,7 @@ Now print out all subscriptions with their tokens for joesmith:
 There's a also related method on IPerson that will return the archive URLs
 for the activated tokens.
 
-    >>> for url in joesmith.getArchiveSubscriptionURLs():
+    >>> for url in joesmith.getArchiveSubscriptionURLs(joesmith):
     ...     print url
     http://joesmith:test_token@private-ppa.launchpad.dev/cprov/p3a/ubuntu
 
@@ -317,10 +319,10 @@ This method can only be used by someone with launchpad.Edit on the context
 IPerson:
 
     >>> login("no-priv@canonical.com")
-    >>> urls = joesmith.getArchiveSubscriptionURLs()
+    >>> urls = joesmith.getArchiveSubscriptionURLs(no_priv)
     Traceback (most recent call last):
     ...
-    Unauthorized: ... 'getArchiveSubscriptionURLs', 'launchpad.Edit')
+    Unauthorized
 
 Deactivated tokens are not included with the returned token for a
 subscription:
@@ -359,8 +361,6 @@ We can also do this as an admin.
 
     >>> login("admin@canonical.com")
     >>> new_sub.description = u"changed by admin"
-    >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus)
     >>> new_sub.status = ArchiveSubscriberStatus.EXPIRED
 
 The subscriber and registrant properties are not editable.

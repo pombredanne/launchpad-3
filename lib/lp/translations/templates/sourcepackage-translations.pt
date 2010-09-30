@@ -42,7 +42,7 @@
             <p tal:condition="context/required:launchpad.Admin"
                id="custom-language-codes">
               If necessary, you may
-              <a tal:attributes="href context/distribution_sourcepackage/fmt:url/+custom-language-codes"
+              <a tal:attributes="href context/distribution_sourcepackage/fmt:url:translations/+custom-language-codes"
                  class="edit sprite">
                 define custom language codes
               </a>

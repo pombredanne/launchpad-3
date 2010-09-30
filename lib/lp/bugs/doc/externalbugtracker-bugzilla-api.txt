@@ -246,6 +246,15 @@ bug as a string. If the bug has a resolution, that will be returned too.
     >>> print bugzilla.getRemoteStatus(2)
     NEW
 
+Similarly, BugzillaAPI.getRemoteStatus() returns the remote priority and
+severity as a string.
+
+    >>> print bugzilla.getRemoteImportance(1)
+    P1 normal
+
+    >>> print bugzilla.getRemoteImportance(2)
+    P1 high
+
 If a bug can't be found a BugNotFound error will be raised.
 
     >>> bugzilla.getRemoteStatus('no-such-bug')
@@ -261,7 +270,7 @@ error will be raised. We can add a sample bug to demonstrate this.
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
-    UnparseableBugData
+    UnparseableBugData: No status or resolution defined for bug 999
 
     >>> del bugzilla._bugs[999]
 

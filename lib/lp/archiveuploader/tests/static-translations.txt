@@ -25,8 +25,9 @@ publishing behaviour using a mock PackageUploadCustom object:
     >>> from lp.archiveuploader.tests import mock_logger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> from lp.soyuz.interfaces.queue import (
-    ...     IPackageUpload, IPackageUploadCustom, PackageUploadCustomFormat)
+    ...     IPackageUpload, IPackageUploadCustom)
     >>> from lp.soyuz.model.queue import PackageUploadCustom
     >>> class MockPackageUploadCustom(PackageUploadCustom):
     ...     implements(IPackageUploadCustom)

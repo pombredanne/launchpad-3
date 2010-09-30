@@ -14,14 +14,21 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import (
-     Datetime,  Int, Object, Text, TextLine)
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Title
-from lp.registry.interfaces.role import IHasOwner
-
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    PublicPersonChoice,
+    Title,
+    )
 
 
 class IFAQ(IHasOwner):

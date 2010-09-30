@@ -10,7 +10,8 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.browser_helpers import text_to_html
 from lp.translations.browser.translatablemessage import (
-    TranslatableMessageView)
+    TranslatableMessageView,
+    )
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 

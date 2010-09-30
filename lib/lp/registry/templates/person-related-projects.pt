@@ -28,9 +28,9 @@
     <tal:maintained-packages
       define="projects view/batch">
 
-    <table tal:condition="projects"
-           class="listing"
-           id="related-projects">
+    <table id="related-projects" class="listing"
+      tal:condition="projects"
+      tal:content="cache:public, 60 minute">
       <thead>
         <tr>
           <th>Name</th>

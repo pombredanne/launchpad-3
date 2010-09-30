@@ -5,30 +5,35 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-import unittest
-
 import transaction
-
 from zope.component import getUtility
-from zope.security.proxy import isinstance as zope_isinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.potmsgset import (
-    POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translationmessage import TranslationConflict
-from lp.translations.model.translationmessage import (
-    DummyTranslationMessage)
-
 from lp.testing import TestCaseWithFactory
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.interfaces.potmsgset import (
+    POTMsgSetInIncompatibleTemplatesError,
+    TranslationCreditsType,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.model.translationmessage import DummyTranslationMessage
 
 
 class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
@@ -41,12 +46,12 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOTMsgSets, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -103,7 +108,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertRaises(POTMsgSetInIncompatibleTemplatesError,
                           naked_potmsgset.__getattribute__, "singular_text")
-
 
     def test_POTMsgSetUsesEnglishMsgids(self):
         """Test that `uses_english_msgids` property works correctly."""
@@ -321,7 +325,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
@@ -380,7 +385,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
@@ -735,10 +741,10 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetSuggestions, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
@@ -782,8 +788,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         # There is no local suggestion.
         self.assertContentEqual([],
             self.potmsgset.getLocalTranslationMessages(
-                self.potemplate, self.pofile.language)
-            )
+                self.potemplate, self.pofile.language))
         # Dismiss suggestions.
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
@@ -822,7 +827,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
                 self.potemplate, self.pofile.language))
         # Dismiss suggestions using an older timestamp fails if there is
         # a newer curent translation.
-        self.assertRaises(TranslationConflict, 
+        self.assertRaises(TranslationConflict,
             self.potmsgset.dismissAllSuggestions,
             self.pofile, self.factory.makePerson(), old_now)
         # Still only the 2nd suggestion is visible.
@@ -924,10 +929,10 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetResetTranslation, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
@@ -954,8 +959,9 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         self.assertTrue(translation.potemplate is None)
 
     def test_resetCurrentTranslation_diverged_not_imported(self):
-        # Resettting a diverged current translation that was not imported, will
-        # change is_current to False and will make it shared.
+        # Resetting a diverged current translation that was not
+        # imported, will change is_current to False and will make it
+        # shared.
 
         translation = self.factory.makeTranslationMessage(
             self.pofile, self.potmsgset, translations=[u'Diverged text'],
@@ -1113,7 +1119,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
         self.assertTrue(tm1.potemplate is None)
         self.assertEquals(tm2.potemplate, self.potemplate)
 
-
     def test_updateTranslation_DivergedImportedToSharedImported(self):
         # Corner case for bug #381645:
         # Adding a shared imported translation "tm1",
@@ -1205,7 +1210,6 @@ class TestPOTMsgSetCornerCases(TestCaseWithFactory):
 
         self.assertFalse(tm1.is_imported)
         self.assertTrue(tm2.is_imported)
-
 
     def test_updateTranslation_DivergedCurrentToDivergedImported(self):
         # Corner case that came up when fixing bug #394224:
@@ -1301,7 +1305,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
     def test_creation_pofile(self):
         # When a new pofile is created, dummy translations are created for
         # all translation credits messages.
-        
+
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
@@ -1350,7 +1354,3 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
                 sequence=sequence)
             self.assertTrue(credits.is_translation_credit)
             self.assertEqual(credits_type, credits.translation_credits_type)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

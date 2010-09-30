@@ -13,10 +13,7 @@ team.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
-    >>> registry_expert = factory.makePerson()
-    >>> login_person(registry_experts.teamowner)
-    >>> ignored = registry_experts.addMember(
-    ...     registry_expert, registry_experts.teamowner)
+    >>> registry_expert= factory.makeRegistryExpert()
     >>> login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).
@@ -251,9 +248,8 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts can delete a team with a new email address (from
-an import), which will be invisible, since only preferred email addresses are
-shown for teams.
+The registry experts can delete a team with an email address. The email
+address is deleted instead of being transferred to the registry experts team.
 
     >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     IEmailAddressSet, EmailAddressStatus)
@@ -275,6 +271,9 @@ shown for teams.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Team deleted.
+    >>> emails = getUtility(IEmailAddressSet).getByPerson(registry_experts)
+    >>> emails.count()
+    0
 
 Private teams can be deleted by admins.
 
@@ -286,21 +285,6 @@ Private teams can be deleted by admins.
     >>> login('admin@canonical.com')
     >>> form = {'field.actions.delete': 'Delete'}
     >>> view = create_initialized_view(private_team, '+delete', form=form)
-    >>> view.errors
-    []
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    Team deleted.
-
-Private membership teams can be deleted by admins, and when they are all
-deleted, we can remove this visibility type.
-
-    >>> login('commercial-member@canonical.com')
-    >>> pm_team = factory.makeTeam(
-    ...     name='sekret', visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> login('admin@canonical.com')
-    >>> form = {'field.actions.delete': 'Delete'}
-    >>> view = create_initialized_view(pm_team, '+delete', form=form)
     >>> view.errors
     []
     >>> for notification in view.request.response.notifications:

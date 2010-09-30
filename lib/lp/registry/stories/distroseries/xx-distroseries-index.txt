@@ -100,4 +100,5 @@ upstream packaging.
     evolution linked...
     mozilla-firefox linked...
     netapplet linked 2005-07-05
-    Needs upstream links  All upstream links
+    Needs upstream links
+    All upstream links

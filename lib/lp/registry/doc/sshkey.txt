@@ -20,13 +20,13 @@ You can fetch SSH keys by ID:
 Adding new keys is pretty easy:
 
     >>> foobar = personset.getByName('name16')
-    >>> key = sshkeyset.new(foobar, SSHKeyType.RSA, "zzzNOT-REALLY",
-    ...     "This is just a test key.")
+    >>> key = sshkeyset.new(
+    ...     foobar, "ssh-rsa zzzNOT-REALLY This is just a test key")
     >>> key, key.keytext
     (<SSHKey at ...>, u'zzzNOT-REALLY')
 
-    >>> key = sshkeyset.new(name12, SSHKeyType.RSA, "zzzNOT-EITHER",
-    ...     "This is just a test key.")
+    >>> key = sshkeyset.new(
+    ...     name12, "ssh-rsa zzzNOT-EITHER This is just a test key.")
     >>> key, key.keytext
     (<SSHKey at ...>, u'zzzNOT-EITHER')
 

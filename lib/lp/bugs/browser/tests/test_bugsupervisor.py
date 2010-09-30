@@ -5,18 +5,17 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.form.interfaces import ConversionError
 
-import transaction
-
+from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
 from lp.registry.interfaces.person import PersonVisibility
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
-from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.fields import PrivateMembershipTeamNotAllowed
 
 
 class TestBugSupervisorEditView(TestCaseWithFactory):
@@ -106,23 +105,6 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
 
-    def test_owner_cannot_appoint_his_private_membership_team(self):
-        private_membership_team = self.factory.makeTeam(
-            owner=self.owner,
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-        # Commit the transaction so the team will exist after the failed view
-        # initialization calls abort.
-        transaction.commit()
-        login('admin@canonical.com')
-        form = self._makeForm(private_membership_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertTrue(
-            type(view.errors[0].errors) is PrivateMembershipTeamNotAllowed)
-        self.assertEqual("You must choose a valid person or team to be the "
-                         "bug supervisor for &lt;boing /&gt;.",
-                         view.errors[1])
-
     def test_owner_cannot_appoint_another_team(self):
         team = self.factory.makeTeam(name='smack', displayname='<smack />')
         form = self._makeForm(team)
@@ -193,23 +175,3 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(private_team, self.product.bug_supervisor)
-
-    def test_admin_cannot_appoint_private_membership_team(self):
-        private_membership_team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-        # Commit the transaction so the team will exist after the failed view
-        # initialization calls abort.
-        transaction.commit()
-        login('admin@canonical.com')
-        form = self._makeForm(private_membership_team)
-        view = create_initialized_view(
-            self.product, name='+bugsupervisor', form=form)
-        self.assertTrue(
-            type(view.errors[0].errors) is PrivateMembershipTeamNotAllowed)
-        self.assertEqual("You must choose a valid person or team to be the "
-                         "bug supervisor for &lt;boing /&gt;.",
-                         view.errors[1])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

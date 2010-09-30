@@ -10,15 +10,18 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
+from lazr.delegates import delegates
 from simplejson import dumps
 
-from lazr.delegates import delegates
-
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
-from canonical.launchpad.webapp.authorization import check_permission
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -92,7 +95,10 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
         """Get the list of subscriptions to duplicates of this bug."""
         return [
             SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getSubscriptionsFromDuplicates()]
+            for subscription in sorted(
+                self.context.getSubscriptionsFromDuplicates(),
+                key=(lambda subscription: subscription.person.displayname))
+            ]
 
 
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):

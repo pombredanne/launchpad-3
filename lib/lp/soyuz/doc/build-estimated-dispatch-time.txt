@@ -44,7 +44,7 @@ Create new Build and BuildQueue instances (in ubuntu/hoary/i386) for
 the pending job.
 
     >>> from datetime import timedelta
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> alsa_build = alsa_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)

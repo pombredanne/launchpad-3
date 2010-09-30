@@ -5,8 +5,12 @@
 
 __metaclass__ = type
 
-from zope.testing.doctest import DocTestSuite
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    REPORT_NDIFF,
+    )
 
 
 def test_open_and_resolved_statuses(self):

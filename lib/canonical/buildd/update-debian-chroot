@@ -15,6 +15,7 @@ SUDO=/usr/bin/sudo
 CHROOT=/usr/sbin/chroot
 APTGET=/usr/bin/apt-get
 BUILDID="$1"
+ARCHITECTURETAG="$2"
 ROOT=$HOME/build-$BUILDID/chroot-autobuild
 OPTIONS="-o DPkg::Options::=--force-confold"
 
@@ -25,18 +26,13 @@ exec 2>&1
 echo "Updating debian chroot for build $BUILDID"
 
 hostarch=$(dpkg --print-architecture)
-architecturetag=$hostarch
-
-if [ -f /etc/launchpad-buildd/default ]; then
-  eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
-fi
 
 case $hostarch in
   hppa|powerpc|sparc)
     CHROOT="linux32 $CHROOT"
     ;;
   amd64)
-    if [ "$hostarch" != "$architecturetag" ]; then
+    if [ "$hostarch" != "$ARCHITECTURETAG" ]; then
       CHROOT="linux32 $CHROOT"
     fi
     ;;

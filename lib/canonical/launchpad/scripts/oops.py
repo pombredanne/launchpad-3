@@ -12,16 +12,21 @@ __all__ = [
     'prune_empty_oops_directories',
     ]
 
-from datetime import date, timedelta, datetime
-import re
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 import os
+import re
 
 from pytz import utc
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.services.log import uniquefileallocator
+
 
 def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the
@@ -63,10 +68,6 @@ def referenced_oops():
                 if match.group('oops') is not None:
                     code_string = match.group('oopscode')
                     referenced_codes.add(code_string.upper())
-                    found = True
-            assert found, \
-                'PostgreSQL regexp matched content that Python regexp ' \
-                'did not (%r)' % (content,)
 
     return referenced_codes
 
@@ -77,7 +78,9 @@ def path_to_oopsid(path):
     match = re.search('^(\d\d\d\d)-(\d\d+)-(\d\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
     oops_id = os.path.basename(path).split('.')[1]
-    day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
+    # Should be making API calls not directly calculating.
+    day = (datetime(year, month, day, tzinfo=utc) - \
+        uniquefileallocator.epoch).days + 1
     return '%d%s' % (day, oops_id)
 
 

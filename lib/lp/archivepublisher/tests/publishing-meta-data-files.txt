@@ -14,7 +14,7 @@ PackageUploadCustom object for a meta-data upload:
     >>> from lp.archiveuploader.tests import mock_logger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> from lp.soyuz.model.queue import PackageUploadCustom
     >>> from cStringIO import StringIO
 

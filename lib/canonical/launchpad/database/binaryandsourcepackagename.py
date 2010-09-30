@@ -9,21 +9,19 @@ __all__ = [
     'BinaryAndSourcePackageNameVocabulary',
 ]
 
+from sqlobject import StringCol
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import SQLBase
-from sqlobject import StringCol
-
+from canonical.launchpad.interfaces import IBinaryAndSourcePackageName
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, BatchedCountableIterator)
+    BatchedCountableIterator,
+    NamedSQLObjectHugeVocabulary,
+    )
+from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
+from lp.soyuz.model.binarypackagename import getBinaryPackageDescriptions
 
-from canonical.launchpad.interfaces import (
-    IBinaryAndSourcePackageName)
-from lp.registry.model.sourcepackagename import (
-    getSourcePackageDescriptions)
-from lp.soyuz.model.binarypackagename import (
-    getBinaryPackageDescriptions)
 
 class BinaryAndSourcePackageName(SQLBase):
     """See IBinaryAndSourcePackageName"""

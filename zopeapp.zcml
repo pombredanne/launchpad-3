@@ -25,6 +25,8 @@
   <include package="zope.app.interface" />
   <include package="zope.app.security" />
 
+  <include package="zope.login" />
+
   <!--
   <include package="zope.app.observable" />
   <include package="zope.app.annotation" />

@@ -20,7 +20,7 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
 
     <script type="text/javascript">
-      LPS.use('node', 'lp.calendar', function(Y) {
+      LPS.use('node', 'lp.app.calendar', function(Y) {
           // Ensure that when the picker is used the radio button switches
           // from 'Never' to 'On' and the expiry field is enabled.
           Y.on("available", function(e) {

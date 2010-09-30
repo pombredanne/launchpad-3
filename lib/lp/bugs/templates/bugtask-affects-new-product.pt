@@ -64,6 +64,12 @@
           <tal:product-summary define="widget nocall:widgets/summary">
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tal:product-summary>
+
+          <tal:can_link_package condition="view/can_link_package">
+            <tal:add-packaging define="widget nocall:widgets/add_packaging">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:add-packaging>
+          </tal:can_link_package>
         </table>
 
         <div class="actions">
@@ -76,14 +82,6 @@
     </div>
 
   </div>
-
-  <div metal:fill-slot="help">
-    <p>This bug seems to affect a project which is not yet registered in
-    Launchpad.  Here you can register the project and link this bug to the
-    relevant bug in the project's bug tracker.
-    </p>
-  </div>
-
 </body>
 </html>
 

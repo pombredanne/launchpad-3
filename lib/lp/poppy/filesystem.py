@@ -9,9 +9,10 @@ __all__ = [
 import datetime
 import os
 import stat
+
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.server.interfaces.ftp import IFileSystem
-from zope.interface import implements
 
 
 class UploadFileSystem:

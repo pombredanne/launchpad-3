@@ -16,18 +16,26 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtask import IBugTask
+from canonical.launchpad.webapp import (
+    action,
+    ApplicationMenu,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.mentoringoffer import (
-    IMentoringOffer, IMentoringOfferSet)
+    IMentoringOffer,
+    IMentoringOfferSet,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadFormView, LaunchpadView, Link,
-    StandardLaunchpadFacets, action, canonical_url)
-from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class MentoringOfferSetFacets(StandardLaunchpadFacets):

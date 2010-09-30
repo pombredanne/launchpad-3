@@ -428,16 +428,6 @@ changed as well.
     >>> test_project['owner_link']
     u'http://.../~mark'
 
-    >>> test_series = webservice.get('/test-project/test-series').jsonBody()
-    >>> test_series['owner_link']
-    u'http://.../~mark'
-
-    >>> release_path = '/test-project/test-series/test-milestone'
-    >>> test_project_release = webservice.get(release_path).jsonBody()
-    >>> test_project_release['owner_link']
-    u'http://.../~mark'
-
-
 Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
@@ -568,7 +558,9 @@ It's possible to search the list and get a subset of the project groups.
 
     >>> project_collection = webservice.named_get(
     ...     "/projects", "search", text="Apache").jsonBody()
-    >>> projects = [project['display_name'] for project in project_collection['entries']]
+    >>> projects = [
+    ...     project['display_name']
+    ...     for project in project_collection['entries']]
     >>> for project_name in sorted(projects):
     ...     print project_name
     Derby
@@ -615,11 +607,8 @@ licensing.  We can find all projects with unreviewed licenses.
     ...    unreviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 Or those that are reviewed.
 
@@ -647,11 +636,8 @@ We can also find all projects with no licensing information.
     ...    no_licenses['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 We can find projects based on creation date.
 
@@ -664,10 +650,7 @@ We can find projects based on creation date.
     >>> for project in entries:
     ...     print project['display_name']
     Arch mirrors
-    Bazaar
-    Evolution
-    GNOME Terminal
-    Gnome Applets
+    ...
 
 Similarly we can find new projects.
 
@@ -680,10 +663,7 @@ Similarly we can find new projects.
     >>> for project in entries:
     ...     print project['display_name']
     APTonCD
-    Bazaar
-    Derby
-    Jokosher
-    Launchpad
+    ...
 
 All of the projects of a given license can be found.
 
@@ -847,15 +827,17 @@ Project series entry
 The entry for a project series is available at its canonical URL on the
 virtual host.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('test@canonical.com')
     >>> babadoo_owner = factory.makePerson(name='babadoo-owner')
     >>> babadoo = factory.makeProduct(name='babadoo', owner=babadoo_owner)
     >>> foobadoo = factory.makeProductSeries(
     ...     product=babadoo, name='foobadoo', owner=babadoo_owner)
-    >>> foobadoo.summary = u'Foobadoo support for Babadoo'
+    >>> removeSecurityProxy(foobadoo).summary = (
+    ...     u'Foobadoo support for Babadoo')
     >>> fooey = factory.makeAnyBranch(
     ...     product=babadoo, name='fooey', owner=babadoo_owner)
-    >>> foobadoo.branch = fooey
+    >>> removeSecurityProxy(foobadoo).branch = fooey
     >>> logout()
 
     >>> babadoo_foobadoo = webservice.get('/babadoo/foobadoo').jsonBody()
@@ -1014,9 +996,9 @@ Only one product release can be created per milestone.
     ...     date_released='2000-01-01T01:01:01+00:00Z',
     ...     changelog='Added 5,000 features.')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 400 Bad Request
     ...
-    AssertionError: A milestone can only have one ProductRelease.
+    MultipleProductReleases: A milestone can only have one ProductRelease.
 
 
 Project release entries
@@ -1226,6 +1208,13 @@ can delete files.
     >>> print_self_link_of_entries(ff_100_files)
     http://.../firefox/1.0/1.0.0/+file/filename2.txt
 
+Anonymous users can access project release files.
+
+    >>> release_files = anon_webservice.get(
+    ...     '/firefox/1.0/1.0.0/files').jsonBody()
+    >>> print_self_link_of_entries(release_files)
+    http://.../firefox/1.0/1.0.0/+file/filename2.txt
+
 
 Commercial subscriptions
 ------------------------
@@ -1250,7 +1239,6 @@ through the API.
 
     >>> logout()
 
-    >>> from lazr.restful.interfaces import IRepresentationCache
     >>> ws_uncache(mmm)
     >>> mmm = webservice.get("/mega-money-maker").jsonBody()
     >>> print mmm['display_name']

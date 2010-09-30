@@ -4,13 +4,14 @@
 """
 Tests to make sure that initZopeless works as expected.
 """
+
+from doctest import DocTestSuite
 from threading import Thread
 import unittest
 import warnings
 
 import psycopg2
 from sqlobject import StringCol, IntCol
-from zope.testing.doctest import DocTestSuite
 
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
 from canonical.ftests.pgsql import PgTestSetup

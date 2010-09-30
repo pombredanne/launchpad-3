@@ -1,8 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import pytz
 import re
 import shutil
 import subprocess
@@ -10,6 +9,7 @@ import sys
 import tempfile
 import unittest
 
+import pytz
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -17,27 +17,40 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import BugNotification
+from lp.bugs.model.bugnotification import BugNotification
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-
+from canonical.testing import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.scripts import bugimport
 from lp.bugs.scripts.bugimport import ET
-from lp.bugs.scripts.checkwatches import CheckwatchesMaster, core
+from lp.bugs.scripts.checkwatches import (
+    CheckwatchesMaster,
+    core,
+    )
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.person import generate_nick
 from lp.testing import TestCaseWithFactory
-
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.ftests import login, logout
 
 
 class UtilsTestCase(unittest.TestCase):

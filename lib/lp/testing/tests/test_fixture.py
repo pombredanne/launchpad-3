@@ -9,9 +9,14 @@ import unittest
 
 from zope.interface import implements
 
-from lp.testing.fixture import (
-    Fixtures, FixtureWithCleanup, IFixture, run_with_fixture, with_fixture)
 from lp.testing import TestCase
+from lp.testing.fixture import (
+    Fixtures,
+    FixtureWithCleanup,
+    IFixture,
+    run_with_fixture,
+    with_fixture,
+    )
 
 
 class LoggingFixture:

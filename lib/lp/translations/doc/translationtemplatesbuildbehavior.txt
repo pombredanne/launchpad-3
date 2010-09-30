@@ -40,9 +40,6 @@ release.
     >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
 
-    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
-    >>> getUtility(IBuilderSet).checkBuilders(logger, transaction)
-
     >>> processor = archdistroseries.processorfamily.processors[0]
 
 Make a builder to process our build request.

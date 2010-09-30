@@ -10,24 +10,33 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.branchtarget import (
-    check_default_stacked_on,
-    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
-from lp.code.enums import BranchType, RevisionControlSystems
-from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.code.enums import (
+    BranchType,
+    RevisionControlSystems,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import ICodeImport
+from lp.code.model.branchtarget import (
+    check_default_stacked_on,
+    PackageBranchTarget,
+    PersonBranchTarget,
+    ProductBranchTarget,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class BaseBranchTargetTests:
 
-    def test_provides_IPrimaryContext(self):
-        self.assertProvides(self.target, IPrimaryContext)
+    def test_provides_IBranchTarget(self):
+        self.assertProvides(self.target, IBranchTarget)
 
     def test_context(self):
         # IBranchTarget.context is the original object.
@@ -93,6 +102,21 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, PackageBranchTarget)
 
+    def test_distrosourcepackage_adapter(self):
+        # Adapting a distrosourcepackage will make a branch target with the
+        # current series of the distro as the distroseries.
+        distro = self.original.distribution
+        distro_sourcepackage = distro.getSourcePackage(
+            self.original.sourcepackagename)
+        target = IBranchTarget(distro_sourcepackage)
+        self.assertIsInstance(target, PackageBranchTarget)
+        self.assertEqual(
+            [distro, distro.currentseries],
+            target.components[:2])
+        self.assertEqual(
+            self.original.sourcepackagename,
+            target.components[2].sourcepackagename)
+
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual(
@@ -107,7 +131,6 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         development_package = self.original.development_version
         default_branch = self.factory.makePackageBranch(
             sourcepackage=development_package)
-        default_branch.startMirroring()
         removeSecurityProxy(default_branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
@@ -321,6 +344,14 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductBranchTarget)
 
+    def test_productseries_adapter(self):
+        # Adapting a product series will make a product branch target.
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product)
+        target = IBranchTarget(series)
+        self.assertIsInstance(target, ProductBranchTarget)
+        self.assertEqual([product], target.components)
+
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
@@ -347,7 +378,6 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         # default stacked-on branch.
         branch = self.factory.makeProductBranch(product=self.original)
         self._setDevelopmentFocus(self.original, branch)
-        branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', 'rev1', None, None, None)
         target = IBranchTarget(self.original)
@@ -468,17 +498,13 @@ class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
         # the current user, even if those branches have already been mirrored.
         branch = self.factory.makeAnyBranch(private=True)
         naked_branch = removeSecurityProxy(branch)
-        naked_branch.startMirroring()
         naked_branch.branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         self.assertIs(None, check_default_stacked_on(branch))
 
     def test_been_mirrored(self):
-        # `check_default_stacked_on` returns None if passed a remote branch.
-        # We have no Bazaar data for remote branches, so stacking on one is
-        # futile.
+        # `check_default_stacked_on` returns the branch if it has revisions.
         branch = self.factory.makeAnyBranch()
-        branch.startMirroring()
         removeSecurityProxy(branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
         self.assertEqual(branch, check_default_stacked_on(branch))

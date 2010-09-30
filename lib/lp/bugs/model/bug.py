@@ -19,71 +19,136 @@ __all__ = [
     ]
 
 
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from email.Utils import make_msgid
 import operator
 import re
-from cStringIO import StringIO
-from datetime import datetime, timedelta
-from email.Utils import make_msgid
-from pytz import timezone
-
-from zope.contenttype import guess_content_type
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-
-from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
-from sqlobject import SQLMultipleJoin, SQLRelatedJoin
-from sqlobject import SQLObjectNotFound
-from storm.expr import (
-    And, Count, Func, In, LeftJoin, Max, Not, Or, Select, SQL, SQLRaw, Union)
-from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
-    ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    ObjectModifiedEvent,
+    )
 from lazr.lifecycle.snapshot import Snapshot
+from pytz import timezone
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Func,
+    In,
+    LeftJoin,
+    Max,
+    Min,
+    Not,
+    Or,
+    Select,
+    SQL,
+    SQLRaw,
+    Union,
+    )
+from storm.info import ClassAlias
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
+from zope.component import getUtility
+from zope.contenttype import guess_content_type
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.message import (
-    Message, MessageChunk, MessageSet)
-from canonical.launchpad.fields import DuplicateBug
+    Message,
+    MessageChunk,
+    MessageSet,
+    )
 from canonical.launchpad.helpers import shortlist
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
-    IMessage, IndexedMessage)
-from lp.registry.interfaces.structuralsubscription import (
-    BugNotificationLevel, IStructuralSubscriptionTarget)
-from canonical.launchpad.mailnotification import BugNotificationRecipients
+    IMessage,
+    IndexedMessage,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, NotFoundError)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.enums import ServiceUsage
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
 from lp.bugs.adapters.bugchange import (
-    BranchLinkedToBug, BranchUnlinkedFromBug, BugConvertedToQuestion,
-    BugWatchAdded, BugWatchRemoved, SeriesNominated, UnsubscribedFromBug)
+    BranchLinkedToBug,
+    BranchUnlinkedFromBug,
+    BugConvertedToQuestion,
+    BugWatchAdded,
+    BugWatchRemoved,
+    SeriesNominated,
+    UnsubscribedFromBug,
+    )
 from lp.bugs.interfaces.bug import (
-    IBug, IBugBecameQuestionEvent, IBugSet, IFileBugData,
-    InvalidDuplicateValue)
+    IBug,
+    IBugBecameQuestionEvent,
+    IBugSet,
+    IFileBugData,
+    InvalidDuplicateValue,
+    )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentSet)
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
-    NominationError, NominationSeriesObsoleteError)
+    NominationError,
+    NominationSeriesObsoleteError,
+    )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.scripts.bugheat import BugHeatConstants
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugcve import BugCve
@@ -92,22 +157,45 @@ from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtask import (
-    BugTask, BugTaskSet, NullBugTask, bugtask_sort_key,
-    get_bug_privacy_filter)
+    BugTask,
+    bugtask_sort_key,
+    BugTaskSet,
+    get_bug_privacy_filter,
+    NullBugTask,
+    )
+from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugwatch import BugWatch
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.series import SeriesStatus
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
+from lp.registry.model.person import (
+    Person,
+    ValidPersonCache,
+    )
 from lp.registry.model.pillar import pillar_sort_key
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.fields import DuplicateBug
+from lp.services.propertycache import (
+    cachedproperty,
+    IPropertyCache,
+    IPropertyCacheManager,
+    )
 
 
 _bug_tag_query_template = """
@@ -241,10 +329,6 @@ class Bug(SQLBase):
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
-    # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
-    subscriptions = SQLMultipleJoin(
-            'BugSubscription', joinColumn='bug', orderBy='id',
-            prejoins=["person"])
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -263,6 +347,21 @@ class Bug(SQLBase):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    @cachedproperty
+    def _subscriber_cache(self):
+        """Caches known subscribers."""
+        return set()
+
+    @cachedproperty
+    def _subscriber_dups_cache(self):
+        """Caches known subscribers to dupes."""
+        return set()
+
+    @cachedproperty
+    def _unsubscribed_cache(self):
+        """Cache known non-subscribers."""
+        return set()
 
     @property
     def latest_patch(self):
@@ -343,21 +442,101 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        return self._indexed_messages(include_content=True)
+
+    def _indexed_messages(self, include_content=False, include_parents=True):
+        """Get the bugs messages, indexed.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent messages
+            too. If False the parent attribute will be *forced* to None to
+            reduce database lookups.
+        """
+        # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
-        messages = list(self.messages)
-        message_set = set(messages)
-
-        indexed_messages = []
-        for index, message in enumerate(messages):
-            if message.parent not in message_set:
-                parent = None
+        store = Store.of(self)
+        message_by_id = {}
+        if include_parents:
+            def to_messages(rows):
+                return [row[0] for row in rows]
+        else:
+            def to_messages(rows):
+                return rows
+        def eager_load_owners(messages):
+            # Because we may have multiple owners, we spend less time in storm
+            # with very large bugs by not joining and instead querying a second
+            # time. If this starts to show high db time, we can left outer join
+            # instead.
+            owner_ids = set(message.ownerID for message in messages)
+            owner_ids.discard(None)
+            if not owner_ids:
+                return
+            list(store.find(Person, Person.id.is_in(owner_ids)))
+        def eager_load_content(messages):
+            # To avoid the complexity of having multiple rows per
+            # message, or joining in the database (though perhaps in
+            # future we should do that), we do a single separate query
+            # for the message content.
+            message_ids = set(message.id for message in messages)
+            chunks = store.find(
+                MessageChunk, MessageChunk.messageID.is_in(message_ids))
+            chunks.order_by(MessageChunk.id)
+            chunk_map = {}
+            for chunk in chunks:
+                message_chunks = chunk_map.setdefault(chunk.messageID, [])
+                message_chunks.append(chunk)
+            for message in messages:
+                if message.id not in chunk_map:
+                    continue
+                cache = IPropertyCache(message)
+                cache.text_contents = Message.chunks_text(
+                    chunk_map[message.id])
+        def eager_load(rows, slice_info):
+            messages = to_messages(rows)
+            eager_load_owners(messages)
+            if include_content:
+                eager_load_content(messages)
+        def index_message(row, index):
+            # convert row to an IndexedMessage
+            if include_parents:
+                message, parent = row
+                if parent is not None:
+                    # If there is an IndexedMessage available as parent, use
+                    # that to reduce on-demand parent lookups.
+                    parent = message_by_id.get(parent.id, parent)
             else:
-                parent = message.parent
-
-            indexed_message = IndexedMessage(message, inside, index, parent)
-            indexed_messages.append(indexed_message)
-
-        return indexed_messages
+                message = row
+                parent = None # parent attribute is not going to be accessed.
+            result = IndexedMessage(message, inside, index, parent)
+            # This message may be the parent for another: stash it to permit
+            # use.
+            message_by_id[message.id] = result
+            return result
+        # There is possibly some nicer way to do this in storm, but
+        # this is a lot easier to figure out.
+        if include_parents:
+            ParentMessage = ClassAlias(Message, name="parent_message")
+            tables = SQL("""
+Message left outer join
+message as parent_message on (
+    message.parent=parent_message.id and
+    parent_message.id in (
+        select bugmessage.message from bugmessage where bugmessage.bug=%s)),
+BugMessage""" % sqlvalues(self.id))
+            results = store.using(tables).find(
+                (Message, ParentMessage),
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        else:
+            results = store.find(Message,
+                BugMessage.bugID == self.id,
+                BugMessage.messageID == Message.id,
+                )
+        results.order_by(Message.datecreated, Message.id)
+        return DecoratedResultSet(results, index_message,
+            pre_iter_hook=eager_load, slice_info=True)
 
     @property
     def displayname(self):
@@ -367,7 +546,7 @@ class Bug(SQLBase):
             dn += ' ('+self.name+')'
         return dn
 
-    @property
+    @cachedproperty
     def bugtasks(self):
         """See `IBug`."""
         result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
@@ -377,7 +556,8 @@ class Bug(SQLBase):
         # Do not use the default orderBy as the prejoins cause ambiguities
         # across the tables.
         result = result.orderBy("id")
-        return sorted(result, key=bugtask_sort_key)
+        result = sorted(result, key=bugtask_sort_key)
+        return result
 
     @property
     def default_bugtask(self):
@@ -437,7 +617,7 @@ class Bug(SQLBase):
         enabled_bug_expiration set to True can be expired. To qualify for
         expiration, the bug and its bugtasks meet the follow conditions:
 
-        1. The bug is inactive; the last update of the is older than
+        1. The bug is inactive; the last update of the bug is older than
             Launchpad expiration age.
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
@@ -455,6 +635,7 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
+        days_old = config.malone.days_before_expiration
         # Do the search as the Janitor, to ensure that this bug can be
         # found, even if it's private. We don't have access to the user
         # calling this property. If the user has access to view this
@@ -462,14 +643,70 @@ class Bug(SQLBase):
         # exposing something we shouldn't. The Janitor has access to
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
-            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
+        return bugtasks.count() > 0
+
+    def isExpirable(self, days_old=None):
+        """See `IBug`."""
+
+        # If days_old is None read it from the Launchpad configuration
+        # and use that value
+        if days_old is None:
+            days_old = config.malone.days_before_expiration
+
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
+            return False
+
+        # Do the search as the Janitor, to ensure that this bug can be
+        # found, even if it's private. We don't have access to the user
+        # calling this property. If the user has access to view this
+        # property, he has permission to see the bug, so we're not
+        # exposing something we shouldn't. The Janitor has access to
+        # view all bugs.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
     @property
     def initial_message(self):
         """See `IBug`."""
-        messages = sorted(self.messages, key=lambda ob: ob.id)
-        return messages[0]
+        store = Store.of(self)
+        messages = store.find(
+            Message,
+            BugMessage.bug == self,
+            BugMessage.message == Message.id).order_by('id')
+        return messages.first()
+
+    @cachedproperty
+    def official_tags(self):
+        """See `IBug`."""
+        # Da circle of imports forces the locals.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.product import Product
+        table = OfficialBugTag
+        table = LeftJoin(
+            table,
+            Distribution,
+            OfficialBugTag.distribution_id==Distribution.id)
+        table = LeftJoin(
+            table,
+            Product,
+            OfficialBugTag.product_id==Product.id)
+        # When this method is typically called it already has the necessary
+        # info in memory, so rather than rejoin with Product etc, we do this
+        # bit in Python. If reviewing performance here feel free to change.
+        clauses = []
+        for task in self.bugtasks:
+            clauses.append(
+                # Storm cannot compile proxied objects.
+                removeSecurityProxy(task.target._getOfficialTagClause()))
+        clause = Or(*clauses)
+        return list(Store.of(self).using(table).find(OfficialBugTag.tag,
+            clause).order_by(OfficialBugTag.tag).config(distinct=True))
 
     def followup_subject(self):
         """See `IBug`."""
@@ -504,6 +741,8 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        # Drop cached subscription info.
+        IPropertyCacheManager(self).clear()
         if person is None:
             person = unsubscribed_by
 
@@ -525,6 +764,7 @@ class Bug(SQLBase):
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
+                del IPropertyCache(self)._known_viewers
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -542,21 +782,21 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See `IBug`."""
-        if person is None:
-            return False
-
-        bs = BugSubscription.selectBy(bug=self, person=person)
-        return bool(bs)
+        return self.personIsDirectSubscriber(person)
 
     def isSubscribedToDupes(self, person):
         """See `IBug`."""
-        if person is None:
-            return False
+        return self.personIsSubscribedToDuplicate(person)
 
-        return bool(
-            BugSubscription.select("""
-                bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
-                person = %d""" % (self.id, person.id)))
+    @property
+    def subscriptions(self):
+        """The set of `BugSubscriptions` for this bug."""
+        # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
+        return DecoratedResultSet(results, operator.itemgetter(1))
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
@@ -568,14 +808,14 @@ class Bug(SQLBase):
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
-            ValidPersonCache.id == BugSubscription.personID,
+            ValidPersonCache.id == BugSubscription.person_id,
             BugSubscription.bug == self)
         # Suck in all the records so that they're actually cached.
         list(valid_persons)
         # Do the main query.
         return Store.of(self).find(
             BugSubscription,
-            BugSubscription.personID == Person.id,
+            BugSubscription.person_id == Person.id,
             BugSubscription.bug == self).order_by(
             Func('person_sort_key', Person.displayname, Person.name))
 
@@ -609,34 +849,31 @@ class Bug(SQLBase):
             self.getAlsoNotifiedSubscribers(recipients, level) +
             self.getSubscribersFromDuplicates(recipients, level))
 
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
-            indirect_subscribers, key=operator.attrgetter("displayname"))
+            indirect_subscribers,
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getSubscriptionsFromDuplicates(self, recipients=None):
         """See `IBug`."""
         if self.private:
             return []
-
-        duplicate_subscriptions = set(
-            BugSubscription.select("""
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                prejoins=["person"], clauseTables=["Bug"]))
-
-        # Only add a subscriber once to the list.
-        duplicate_subscribers = set(
-            sub.person for sub in duplicate_subscriptions)
-        subscriptions = []
-        for duplicate_subscriber in duplicate_subscribers:
-            for duplicate_subscription in duplicate_subscriptions:
-                if duplicate_subscription.person == duplicate_subscriber:
-                    subscriptions.append(duplicate_subscription)
-                    break
-
-        def get_person_displayname(subscription):
-            return subscription.person.displayname
-
-        return sorted(subscriptions, key=get_person_displayname)
+        # For each subscription to each duplicate of this bug, find the
+        # earliest subscription for each subscriber. Eager load the
+        # subscribers.
+        return DecoratedResultSet(
+            IStore(BugSubscription).find(
+                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
+                # hack; it does not seem to be possible to express DISTINCT ON
+                # with Storm.
+                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
+                 Person, BugSubscription),
+                Bug.duplicateof == self,
+                BugSubscription.bug_id == Bug.id,
+                BugSubscription.person_id == Person.id).order_by(
+                BugSubscription.person_id),
+            operator.itemgetter(2))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -647,12 +884,14 @@ class Bug(SQLBase):
         if self.private:
             return []
 
-        dupe_subscribers = set(
-            Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = Bug.id AND
-                Bug.duplicateof = %d""" % self.id,
-                clauseTables=["Bug", "BugSubscription"]))
+        dupe_details = dict(
+            Store.of(self).find(
+                (Person, Bug),
+                BugSubscription.person == Person.id,
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self.id))
+
+        dupe_subscribers = set(dupe_details)
 
         # Direct and "also notified" subscribers take precedence over
         # subscribers from dupes. Note that we don't supply recipients
@@ -662,10 +901,53 @@ class Bug(SQLBase):
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
-                recipients.addDupeSubscriber(subscriber)
+                recipients.addDupeSubscriber(
+                    subscriber, dupe_details[subscriber])
 
         return sorted(
             dupe_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscribersForPerson(self, person):
+        """See `IBug."""
+        assert person is not None
+        def cache_unsubscribed(rows):
+            if not rows:
+                self._unsubscribed_cache.add(person)
+        def cache_subscriber(row):
+            _, subscriber, subscription = row
+            if subscription.bug_id == self.id:
+                self._subscriber_cache.add(subscriber)
+            else:
+                self._subscriber_dups_cache.add(subscriber)
+            return subscriber
+        return DecoratedResultSet(Store.of(self).find(
+            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
+            # hack; it does not seem to be possible to express DISTINCT ON
+            # with Storm.
+            (SQL("DISTINCT ON (Person.name, BugSubscription.person) 0 AS ignore"),
+             # return people and subscribptions
+             Person, BugSubscription),
+            # For this bug or its duplicates
+            Or(
+                Bug.id == self.id,
+                Bug.duplicateof == self.id),
+            # Get subscriptions for these bugs
+            BugSubscription.bug_id == Bug.id,
+            # Filter by subscriptions to any team person is in.
+            # Note that teamparticipation includes self-participation entries
+            # (person X is in the team X)
+            TeamParticipation.person == person.id,
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""TeamParticipation.team = BugSubscription.person"""),
+            # Join in the Person rows we want
+            # XXX: Storm fails to compile this, so manually done.
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # RBC 20100831
+            SQL("""Person.id = TeamParticipation.team"""),
+            ).order_by(Person.name),
+            cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -721,9 +1003,11 @@ class Bug(SQLBase):
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        # Remove security proxy for the sort key, but return
+        # the regular proxied object.
         return sorted(
             (also_notified_subscribers - direct_subscribers),
-            key=operator.attrgetter('displayname'))
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -888,7 +1172,7 @@ class Bug(SQLBase):
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
-        target.recalculateMaxBugHeat()
+        target.recalculateBugHeatCache()
 
         return new_task
 
@@ -927,13 +1211,21 @@ class Bug(SQLBase):
 
         filealias = getUtility(ILibraryFileAliasSet).create(
             name=filename, size=len(filecontent),
-            file=StringIO(filecontent), contentType=content_type)
+            file=StringIO(filecontent), contentType=content_type,
+            restricted=self.private)
 
         return self.linkAttachment(
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
                        description=None):
+        """See `IBug`.
+
+        This method should only be called by addAttachment() and
+        FileBugViewBase.submit_bug_action, otherwise
+        we may get inconsistent settings of bug.private and
+        file_alias.restricted.
+        """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
         else:
@@ -982,6 +1274,11 @@ class Bug(SQLBase):
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
+
+    @cachedproperty
+    def has_cves(self):
+        """See `IBug`."""
+        return bool(self.cves)
 
     def linkCVE(self, cve, user):
         """See `IBug`."""
@@ -1048,7 +1345,7 @@ class Bug(SQLBase):
         if len(non_invalid_bugtasks) != 1:
             return None
         [valid_bugtask] = non_invalid_bugtasks
-        if valid_bugtask.pillar.official_malone:
+        if valid_bugtask.pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             return valid_bugtask
         else:
             return None
@@ -1081,17 +1378,22 @@ class Bug(SQLBase):
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
+        IPropertyCache(self)._question_from_bug = question
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
 
-    def getQuestionCreatedFromBug(self):
-        """See `IBug`."""
+    @cachedproperty
+    def _question_from_bug(self):
         for question in self.questions:
-            if (question.owner == self.owner
+            if (question.ownerID == self.ownerID
                 and question.datecreated == self.datecreated):
                 return question
         return None
+
+    def getQuestionCreatedFromBug(self):
+        """See `IBug`."""
+        return self._question_from_bug
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""
@@ -1356,6 +1658,11 @@ class Bug(SQLBase):
                 self.who_made_private = None
                 self.date_made_private = None
 
+            # XXX: This should be a bulk update. RBC 20100827
+            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
+            for attachment in self.attachments_unpopulated:
+                attachment.libraryfile.restricted = private
+
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
@@ -1386,10 +1693,13 @@ class Bug(SQLBase):
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
-        tags = [
-            bugtag.tag
-            for bugtag in BugTag.selectBy(bug=self, orderBy='tag')]
-        return tags
+        return self._cached_tags
+
+    @cachedproperty
+    def _cached_tags(self):
+        return list(Store.of(self).find(
+            BugTag.tag,
+            BugTag.bugID==self.id).order_by(BugTag.tag))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
@@ -1397,6 +1707,7 @@ class Bug(SQLBase):
         # and insert the new ones.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
+        del IPropertyCache(self)._cached_tags
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
@@ -1461,11 +1772,6 @@ class Bug(SQLBase):
 
         self.updateHeat()
 
-    @property
-    def readonly_duplicateof(self):
-        """See `IBug`."""
-        return self.duplicateof
-
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
         field = DuplicateBug()
@@ -1474,6 +1780,16 @@ class Bug(SQLBase):
         try:
             if duplicate_of is not None:
                 field._validate(duplicate_of)
+            if self.duplicates:
+                for duplicate in self.duplicates:
+                    # Fire a notify event in model code since moving
+                    # duplicates of a duplicate does not normally fire an
+                    # event.
+                    dupe_before = Snapshot(
+                        duplicate, providing=providedBy(duplicate))
+                    duplicate.markAsDuplicate(duplicate_of)
+                    notify(ObjectModifiedEvent(
+                            duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -1498,21 +1814,31 @@ class Bug(SQLBase):
             self, self.messages[comment_number])
         bug_message.visible = visible
 
+    @cachedproperty
+    def _known_viewers(self):
+        """A dict of of known persons able to view this bug."""
+        return set()
+
     def userCanView(self, user):
-        """See `IBug`."""
-        admins = getUtility(ILaunchpadCelebrities).admin
+        """See `IBug`.
+
+        Note that Editing is also controlled by this check,
+        because we permit editing of any bug one can see.
+        """
+        if user.id in self._known_viewers:
+            return True
         if not self.private:
             # This is a public bug.
             return True
-        elif user.inTeam(admins):
+        elif IPersonRoles(user).in_admin:
             # Admins can view all bugs.
             return True
         else:
             # This is a private bug. Only explicit subscribers may view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
                     return True
-
         return False
 
     def linkHWSubmission(self, submission):
@@ -1529,12 +1855,17 @@ class Bug(SQLBase):
 
     def personIsDirectSubscriber(self, person):
         """See `IBug`."""
+        if person in self._subscriber_cache:
+            return True
+        if person in self._unsubscribed_cache:
+            return False
+        if person is None:
+            return False
         store = Store.of(self)
         subscriptions = store.find(
             BugSubscription,
             BugSubscription.bug == self,
             BugSubscription.person == person)
-
         return not subscriptions.is_empty()
 
     def personIsAlsoNotifiedSubscriber(self, person):
@@ -1550,11 +1881,17 @@ class Bug(SQLBase):
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
+        if person in self._subscriber_dups_cache:
+            return True
+        if person in self._unsubscribed_cache:
+            return False
+        if person is None:
+            return False
         store = Store.of(self)
         subscriptions_from_dupes = store.find(
             BugSubscription,
             Bug.duplicateof == self,
-            BugSubscription.bugID == Bug.id,
+            BugSubscription.bug_id == Bug.id,
             BugSubscription.person == person)
 
         return not subscriptions_from_dupes.is_empty()
@@ -1570,7 +1907,7 @@ class Bug(SQLBase):
         self.heat = heat
         self.heat_last_updated = timestamp
         for task in self.bugtasks:
-            task.target.recalculateMaxBugHeat()
+            task.target.recalculateBugHeatCache()
 
     def updateHeat(self):
         """See `IBug`."""
@@ -1586,19 +1923,59 @@ class Bug(SQLBase):
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
+        for task in self.bugtasks:
+            task.target.recalculateBugHeatCache()
+        store.flush()
+
+    def _attachments_query(self):
+        """Helper for the attachments* properties."""
+        # bug attachments with no LibraryFileContent have been deleted - the
+        # garbo_daily run will remove the LibraryFileAlias asynchronously.
+        # See bug 542274 for more details.
+        store = Store.of(self)
+        return store.find(
+            (BugAttachment, LibraryFileAlias),
+            BugAttachment.bug == self,
+            BugAttachment.libraryfile == LibraryFileAlias.id,
+            LibraryFileAlias.content != None).order_by(BugAttachment.id)
 
     @property
     def attachments(self):
-        """See `IBug`."""
-        # We omit those bug attachments that do not have a
-        # LibraryFileContent record in order to avoid OOPSes as
-        # mentioned in bug 542274. These bug attachments will be
-        # deleted anyway during the next garbo_daily run.
-        store = Store.of(self)
-        return store.find(
-            BugAttachment, BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+        """See `IBug`.
+
+        This property does eager loading of the index_messages so that the API
+        which wants the message_link for the attachment can answer that without
+        O(N^2) overhead. As such it is moderately expensive to call (it
+        currently retrieves all messages before any attachments, and does this
+        when attachments is evaluated, not when the resultset is processed).
+        """
+        message_to_indexed = {}
+        for message in self._indexed_messages(include_parents=False):
+            message_to_indexed[message.id] = message
+        def set_indexed_message(row):
+            attachment = row[0]
+            # row[1] - the LibraryFileAlias is now in the storm cache and
+            # will be found without a query when dereferenced.
+            indexed_message = message_to_indexed.get(attachment._messageID)
+            if indexed_message is not None:
+                IPropertyCache(attachment).message = indexed_message
+            return attachment
+        rawresults = self._attachments_query()
+        return DecoratedResultSet(rawresults, set_indexed_message)
+
+    @property
+    def attachments_unpopulated(self):
+        """See `IBug`.
+
+        This version does not pre-lookup messages and LibraryFileAliases.
+
+        The regular 'attachments' property does prepopulation because it is
+        exposed in the API.
+        """
+        # Grab the attachment only; the LibraryFileAlias will be eager loaded.
+        return DecoratedResultSet(
+            self._attachments_query(),
+            operator.itemgetter(0))
 
 
 class BugSet:
@@ -1719,13 +2096,13 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if params.product:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, product=params.product, owner=params.owner,
                 status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
-            BugTaskSet().createTask(
+            getUtility(IBugTaskSet).createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
@@ -1822,6 +2199,10 @@ class BugSet:
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
+        # ---: Robert Collins 20100818: if bug_tasks implements IResultSset
+        #      then it should be very possible to improve on it, though
+        #      DecoratedResultSets would need careful handling (e.g. type
+        #      driven callbacks on columns)
         # We select more than :limit: since if a bug affects more than
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
@@ -1909,4 +2290,3 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
-

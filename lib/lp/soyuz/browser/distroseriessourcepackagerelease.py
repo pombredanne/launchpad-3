@@ -8,11 +8,15 @@ __all__ = [
     'DistroSeriesSourcePackageReleaseView',
     ]
 
-from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, Navigation, stepthrough)
+    ApplicationMenu,
+    Navigation,
+    stepthrough,
+    )
 from canonical.lazr.utils import smartquote
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease,
+    )
 
 
 class DistroSeriesSourcePackageReleaseOverviewMenu(ApplicationMenu):

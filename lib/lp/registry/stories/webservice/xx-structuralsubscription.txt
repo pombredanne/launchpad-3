@@ -22,7 +22,7 @@ getSubscriptions named operation. There are none just yet.
     >>> subscriptions = webservice.named_get(
     ...     '/fooix', 'getSubscriptions').jsonBody()
     >>> pprint_collection(subscriptions)
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -146,6 +146,6 @@ Michael can, though.
     >>> subscriptions = webservice.named_get(
     ...     '/fooix', 'getSubscriptions').jsonBody()
     >>> pprint_collection(subscriptions)
-    start: None
+    start: 0
     total_size: 0
     ---

@@ -9,7 +9,6 @@ __all__ = []
 import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
-
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 

@@ -19,26 +19,37 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
-    FileNavigationMixin, ProxiedLibraryFileAlias)
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, ContextMenu,
-    GetitemNavigation, Link, LaunchpadFormView, LaunchpadView,
-    StandardLaunchpadFacets)
+    action,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.app.errors import UnexpectedFormData
+from lp.buildmaster.enums import BuildStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.binarypackagebuild import (
-    IBinaryPackageBuild, IBuildRescoreForm, IBinaryPackageBuildSet)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.launchpad import UnexpectedFormData
-from lp.soyuz.interfaces.queue import PackageUploadStatus
+    IBinaryPackageBuild,
+    IBinaryPackageBuildSet,
+    IBuildRescoreForm,
+    )
 
 
 class BuildUrl:
@@ -143,7 +154,6 @@ class BuildBreadcrumb(Breadcrumb):
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBinaryPackageBuild"""
-    __used_for__ = IBinaryPackageBuild
 
     @property
     def label(self):
@@ -234,8 +244,6 @@ class BuildView(LaunchpadView):
 class BuildRetryView(BuildView):
     """View class for retrying `IBinaryPackageBuild`s"""
 
-    __used_for__ = IBinaryPackageBuild
-
     @property
     def label(self):
         return 'Retry %s' % self.context.title
@@ -316,12 +324,15 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = list(batch)
+    builds = [build.getSpecificJob() for build in batch]
     if not builds:
         return []
 
+    # This pre-population of queue entries is only implemented for
+    # IBinaryPackageBuilds.
     prefetched_data = dict()
-    build_ids = [build.id for build in builds]
+    build_ids = [
+        build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
     results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
         build_ids)
     for (buildqueue, _builder, build_job) in results:
@@ -331,9 +342,11 @@ def setupCompleteBuilds(batch):
 
     complete_builds = []
     for build in builds:
-        buildqueue = prefetched_data.get(build.id)
-        complete_builds.append(CompleteBuild(build, buildqueue))
-
+        if IBinaryPackageBuild.providedBy(build):
+            buildqueue = prefetched_data.get(build.id)
+            complete_builds.append(CompleteBuild(build, buildqueue))
+        else:
+            complete_builds.append(build)
     return complete_builds
 
 
@@ -345,9 +358,12 @@ class BuildRecordsView(LaunchpadView):
     template/builds-list.pt and callsite details in Builder, Distribution,
     DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
-    __used_for__ = IHasBuildRecords
 
     page_title = 'Builds'
+
+    # Currenly most build records views are interested in binaries
+    # only, but subclasses can set this if desired.
+    binary_only = True
 
     @property
     def label(self):
@@ -369,10 +385,16 @@ class BuildRecordsView(LaunchpadView):
         # build self.state & self.available_states structures
         self._setupMappedStates(state_tag)
 
+        # By default, we use the binary_only class attribute, but we
+        # ensure it is true if we are passed an arch tag or a name.
+        binary_only = self.binary_only
+        if self.text is not None or self.arch_tag is not None:
+            binary_only = True
+
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
             build_state=self.state, name=self.text, arch_tag=self.arch_tag,
-            user=self.user)
+            user=self.user, binary_only=binary_only)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)

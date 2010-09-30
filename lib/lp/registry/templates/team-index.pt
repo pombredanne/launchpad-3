@@ -25,7 +25,7 @@
 <div metal:fill-slot="side"
      tal:define="overview_menu context/menu:overview">
 
-  <div id="privacy" class="portlet private"
+  <div id="privacy"
        tal:attributes="class view/visibility_portlet_class">
     <span tal:content="view/visibility_info">Private team</span>
   </div>
@@ -41,12 +41,6 @@
 
 <div metal:fill-slot="main"
      tal:define="overview_menu context/menu:overview">
-
-  <div tal:attributes="class view/public_private_css">
-    <tal:comment condition="nothing">
-      Display striped image.
-    </tal:comment>
-  </div>
 
   <div
     class="description"
@@ -94,9 +88,6 @@
       <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
   </div>
-
-  <div tal:content="structure context/@@+portlet-map" />
-
 </div>
 </body>
 </html>

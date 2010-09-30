@@ -15,7 +15,10 @@ __all__ = [
 from zope.interface import Interface
 
 from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class TopLevelMenuMixin:

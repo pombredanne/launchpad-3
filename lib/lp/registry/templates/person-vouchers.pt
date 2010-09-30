@@ -21,11 +21,11 @@
           vouchers for a project.
         </tal:not_commercial>
         <tal:commercial condition="commercial_projects">
-          <tal:define_vouchers define="vouchers view/unredeemed_vouchers" >
+          <tal:define_vouchers define="vouchers view/redeemable_vouchers" >
             <tal:no_vouchers condition="not: vouchers">
               <p>
               <tal:name replace="context/fmt:displayname" />
-              does not have any unredeemed vouchers available.</p>
+              does not have any redeemable vouchers available.</p>
 
               <tal:voucher-instructions
                  replace="structure context/@@+voucher-purchase-instructions"

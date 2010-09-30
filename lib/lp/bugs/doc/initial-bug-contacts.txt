@@ -403,7 +403,7 @@ Sample Person is a member of four teams:
 
     >>> sample_person = view.user
     >>> ["%s: %s" % (membership.team.displayname, membership.status.name)
-    ...  for membership in sample_person.myactivememberships]
+    ...  for membership in sample_person.team_memberships]
     [u'HWDB Team: APPROVED',
      u'Landscape Developers: ADMIN',
      u'Launchpad Users: ADMIN',

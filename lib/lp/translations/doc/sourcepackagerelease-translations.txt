@@ -132,10 +132,37 @@ Files in source/ have that directory stripped off.
     >>> print _filter_ubuntu_translation_file('source/bar.po')
     bar.po
 
-Files in source/debian/po/* are ignored.  They are generally debconf
-translations, unused in Ubuntu.
+Files in source/debian/po/* and a few other paths are ignored.
+
+Ones in debian/po are generally debconf translations, unused in Ubuntu.
 
     >>> print _filter_ubuntu_translation_file('source/debian/po/bar.po')
     None
 
+Ones in d-i are Debian Installer translations.  Ubuntu builds those
+translations very differently from how Debian does it, so we don't need
+these uploads.
 
+    >>> print _filter_ubuntu_translation_file('source/d-i/foo.po')
+    None
+
+Then there are some documentation directories whose contents we can't
+translate in Launchpad.
+
+    >>> print _filter_ubuntu_translation_file('source/help/xx.pot')
+    None
+    >>> print _filter_ubuntu_translation_file('source/man/po/yy.po')
+    None
+    >>> print _filter_ubuntu_translation_file('source/man/po4a/zz.pot')
+    None
+
+The match is on a path component boundary, so we don't filter other
+uploads whose paths happen to begin with the same words as a directory
+we filter.
+
+    >>> print _filter_ubuntu_translation_file('source/debian/pool.pot')
+    debian/pool.pot
+    >>> print _filter_ubuntu_translation_file('source/d-input.pot')
+    d-input.pot
+    >>> print _filter_ubuntu_translation_file('source/man/positive/nl.po')
+    man/positive/nl.po

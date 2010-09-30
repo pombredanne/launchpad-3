@@ -10,6 +10,7 @@ __all__ = [
     'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
+    'ProductSeriesDetailedDisplayView',
     'ProductSeriesEditView',
     'ProductSeriesFacets',
     'ProductSeriesFileBugRedirect',
@@ -32,72 +33,119 @@ import cgi
 from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
-
-from zope.component import getUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.formlib import form
-from zope.interface import implements, Interface
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
+from lazr.enum import DBItem
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.component import getUtility
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet, SpecificationImplementationStatus)
-from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.helpers import browserLanguages
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    )
+from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.tales import MenuAPI
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.enums import ServiceUsage
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet,
+    SpecificationImplementationStatus,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import BranchType, RevisionControlSystems
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
+from lp.code.enums import (
+    BranchType,
+    RevisionControlSystems,
+    )
+from lp.code.errors import (
+    BranchCreationForbidden,
+    BranchExists,
+    )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
-    ICodeImport, ICodeImportSet)
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.browser import StatusCount
+    ICodeImport,
+    ICodeImportSet,
+    )
+from lp.registry.browser import (
+    BaseRdfView,
+    MilestoneOverlayMixin,
+    RegistryDeleteViewMixin,
+    StatusCount,
+    )
+from lp.registry.browser.pillar import (
+    InvolvedMenu,
+    PillarView,
+    )
 from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin)
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.interfaces.packaging import (
-    IPackaging, IPackagingUtil)
+    IPackaging,
+    IPackagingUtil,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguageSet)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
-    Link, Navigation, NavigationMenu, StandardLaunchpadFacets, stepthrough,
-    stepto)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadEditFormView, LaunchpadFormView,
-    ReturnToReferrerMixin)
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import MenuAPI
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
-
-from lp.registry.browser import (
-    MilestoneOverlayMixin, RegistryDeleteViewMixin)
-from lp.registry.browser.pillar import InvolvedMenu, PillarView
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.productseries import IProductSeries
-
-from lazr.enum import DBItem
-from lazr.restful.interface import copy_field, use_template
+    IProductSeriesLanguageSet,
+    )
 
 
 def quote(text):
@@ -193,7 +241,7 @@ class ProductSeriesInvolvedMenu(InvolvedMenu):
     def submit_code(self):
         target = canonical_url(
             self.pillar, view_name='+addbranch', rootsite='code')
-        enabled = self.view.official_codehosting
+        enabled = self.view.codehosting_usage == ServiceUsage.LAUNCHPAD
         return Link(
             target, 'Submit code', icon='code', enabled=enabled)
 
@@ -207,8 +255,11 @@ class ProductSeriesInvolvementView(PillarView):
 
     def __init__(self, context, request):
         super(ProductSeriesInvolvementView, self).__init__(context, request)
-        self.official_codehosting = self.context.branch is not None
-        self.official_answers = False
+        self.answers_usage = ServiceUsage.NOT_APPLICABLE
+        if self.context.branch is not None:
+            self.codehosting_usage = ServiceUsage.LAUNCHPAD
+        else:
+            self.codehosting_usage = ServiceUsage.UNKNOWN
 
     @property
     def configuration_links(self):
@@ -216,7 +267,12 @@ class ProductSeriesInvolvementView(PillarView):
         series_menu = MenuAPI(self.context).overview
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure series branch'
-        return [set_branch]
+        if self.codehosting_usage == ServiceUsage.LAUNCHPAD:
+            configured = True
+        else:
+            configured = False
+        return [dict(link=set_branch,
+                     configured=configured)]
 
 
 class ProductSeriesOverviewMenu(
@@ -225,10 +281,27 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
-        'create_milestone', 'create_release', 'rdf', 'subscribe',
+        'configure_bugtracker',
+        'create_milestone',
+        'create_release',
+        'delete',
+        'driver',
+        'edit',
+        'link_branch',
+        'rdf',
         'set_branch',
+        'subscribe',
+        'ubuntupkg',
         ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_bugtracker(self):
+        text = 'Configure bug tracker'
+        summary = 'Specify where bugs are tracked for this project'
+        return Link(
+            canonical_url(self.context.product,
+                          view_name='+configure-bugtracker'),
+            text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -383,7 +456,8 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     @property
     def request_import_link(self):
         """A link to the page for requesting a new code import."""
-        return canonical_url(self.context.product, view_name='+new-import')
+        return canonical_url(
+            self.context.product, view_name='+new-import', rootsite='code')
 
     @property
     def user_branch_visible(self):
@@ -428,12 +502,29 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
                 for status in sorted(status_counts,
                                      key=attrgetter('sortkey'))]
 
-    @property
+    @cachedproperty
     def latest_release_with_download_files(self):
         for release in self.context.releases:
             if len(list(release.files)) > 0:
                 return release
         return None
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
+
+
+class ProductSeriesDetailedDisplayView(ProductSeriesView):
+
+    @cachedproperty
+    def latest_milestones(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.milestones[:12])
+
+    @cachedproperty
+    def latest_releases(self):
+        # Convert to list to avoid the query being run multiple times.
+        return list(self.context.releases[:12])
 
 
 class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
@@ -511,33 +602,25 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
         sourcepackagename = data.get('sourcepackagename', None)
         distroseries = self._getSubmittedSeries(data)
 
-        if sourcepackagename == self.default_sourcepackagename:
-            # The data has not changed, so nothing else needs to be done.
-            return
-
-        if sourcepackagename is None:
-            message = "You must choose the source package name."
-            self.setFieldError('sourcepackagename', message)
-        # Do not allow users to create links to unpublished Ubuntu packages.
-        elif distroseries.distribution.full_functionality:
-            source_package = distroseries.getSourcePackage(sourcepackagename)
-            if source_package.currentrelease is None:
-                message = ("The source package is not published in %s." %
-                    distroseries.displayname)
-                self.setFieldError('sourcepackagename', message)
-        else:
-            pass
         packaging_util = getUtility(IPackagingUtil)
         if packaging_util.packagingEntryExists(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
-            # The series packaging conflicts with itself.
-            message = _(
-                "This series is already packaged in %s." %
-                distroseries.displayname)
-            self.setFieldError('sourcepackagename', message)
-        elif packaging_util.packagingEntryExists(
+            # The package already exists. Don't display an error. The
+            # action method will let this go by.
+            return
+
+        # Do not allow users to create links to unpublished Ubuntu packages.
+        if (sourcepackagename is not None
+            and distroseries.distribution.full_functionality):
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+
+        if packaging_util.packagingEntryExists(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries):
             # The series package conflicts with another series.
@@ -550,10 +633,6 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
                  sourcepackagename.name,
                  distroseries.displayname))
             self.setFieldError('sourcepackagename', message)
-        else:
-            # The distroseries and sourcepackagename are not already linked
-            # to this series, or any other series.
-            pass
 
     @action('Update', name='continue')
     def continue_action(self, action, data):
@@ -1181,32 +1260,15 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
         self.next_url = canonical_url(self.context)
 
 
-class ProductSeriesRdfView(object):
+class ProductSeriesRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
         '../templates/productseries-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-%s.rdf' % (
-                                            self.context.product.name,
-                                            self.context.name))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s' % (self.context.product.name, self.context.name)
 
 
 class ProductSeriesFileBugRedirect(LaunchpadView):

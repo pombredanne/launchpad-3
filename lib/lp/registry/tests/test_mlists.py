@@ -6,15 +6,17 @@
 __metaclass__ = type
 
 
-import os
-import sys
 import errno
-import tempfile
-import unittest
-
+import os
 # Don't use cStringIO in case Unicode leaks through.
 from StringIO import StringIO
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+import tempfile
+import unittest
 
 import transaction
 
@@ -22,14 +24,20 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
-from lp.registry.interfaces.person import (
-    PersonVisibility, TeamSubscriptionPolicy)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, LayerProcessController)
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    LayerProcessController,
+    )
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 factory = LaunchpadObjectFactory()
+
 
 class CapturingLogger(FakeLogger):
     def __init__(self):
@@ -130,7 +138,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'dperson@example.org',
             'elly.person@example.com (Elly Q. Person)',
             ))
-        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly',)
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
             u'anne.person@example.com', u'bperson@example.org',
             u'cris.person@example.com', u'dperson@example.org',
@@ -476,12 +484,12 @@ class TestImportToRestrictedList(BaseMailingListImportTest):
     def _makeList(self, name, owner):
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
             name, owner,
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP,
+            visibility=PersonVisibility.PRIVATE,
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership to a restricted, private
-        # membership team.
+        # team.
         importer = Importer('aardvarks')
         importer.importAddresses((
             'anne.person@example.com',

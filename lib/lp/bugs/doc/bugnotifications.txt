@@ -17,7 +17,7 @@ be sent. To start with, let's login:
 
     >>> login("test@canonical.com")
 
-Here are the things that cause bug notifications to be add, and what
+Here are the things that cause bug notifications to be added and what
 those notifications look like.
 
 
@@ -38,7 +38,7 @@ those notifications look like.
     ...     comment="this is a comment", owner=bug_submitter)
     >>> firefox_crashes = firefox.createBug(params)
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     Sample Person
@@ -263,7 +263,7 @@ this document:
     >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
     ...     description="a brief CVE description", status=CveStatus.ENTRY)
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> bug = Bug.get(1)
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 

@@ -75,7 +75,7 @@ are similar to the query:
 
     >>> from zope.security import proxy
     >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
-    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
+    >>> terms = vocabulary.searchForTerms('extensions')
     >>> proxy.isinstance(terms, CountableIterator)
     True
     >>> terms.count()
@@ -83,6 +83,6 @@ are similar to the query:
     >>> for term in terms:
     ...     print term.title
     How do I troubleshoot problems with extensions/themes?
-    How do I install Java?
+    How do I install Extensions?
 
 

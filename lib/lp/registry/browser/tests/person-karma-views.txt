@@ -18,4 +18,4 @@ The view's label shows the person who's karma we're looking at...
     >>> neil = factory.makePerson(name='neil', displayname='Neil Peart')
     >>> view = create_initialized_view(neil, '+karma')
     >>> print view.label
-    Launchpad Karma for Neil Peart
+    Launchpad Karma

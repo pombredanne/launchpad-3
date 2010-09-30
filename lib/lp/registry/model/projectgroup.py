@@ -11,69 +11,108 @@ __all__ = [
     'ProjectGroupSet',
     ]
 
+from sqlobject import (
+    AND,
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    In,
+    SQL,
+    )
+from storm.locals import Int
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
-from storm.expr import And, In, SQL
-from storm.locals import Int
-from storm.store import Store
-
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
-from lp.blueprints.interfaces.sprintspecification import (
-    SprintSpecificationStatus)
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries, IProjectGroupSet)
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.code.model.branchvisibilitypolicy import (
-    BranchVisibilityPolicyMixin)
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+    ISearchableByQuestionOwner,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.model.faq import (
+    FAQ,
+    FAQSearch,
+    )
+from lp.answers.model.question import QuestionTargetSearch
+from lp.app.errors import NotFoundError
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprintspecification import (
+    SprintSpecificationStatus,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.answers.model.faq import FAQ, FAQSearch
+from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    IProjectGroupSet,
+    )
+from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
-from lp.services.worlddata.model.language import Language
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
-    Milestone, ProjectMilestone, milestone_sort_key)
-from lp.registry.model.announcement import MakesAnnouncements
+    HasMilestonesMixin,
+    Milestone,
+    ProjectMilestone,
+    )
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.blueprints.model.sprint import HasSprintsMixin
-from lp.answers.model.question import QuestionTargetSearch
 from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.person import validate_public_person
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translationgroup import TranslationPermission
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
+                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasMilestonesMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -126,8 +165,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
 
-    # convenient joins
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
@@ -167,6 +204,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -236,7 +276,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -270,6 +310,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
+
+    def _getOfficialTagClause(self):
+        """See `OfficialBugTagTargetMixin`."""
+        And(ProjectGroup.id == Product.projectID,
+            Product.id == OfficialBugTag.productID)
 
     @property
     def official_bug_tags(self):
@@ -358,6 +403,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return And(Milestone.productID == Product.id,
+                   Product.projectID == self.id)
+
     def _getMilestones(self, only_active):
         """Return a list of milestones for this project group.
 
@@ -381,15 +431,37 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result.group_by(Milestone.name)
         if only_active:
             result.having('BOOL_OR(Milestone.active) = TRUE')
-        milestones = shortlist(
+        # MIN(Milestone.dateexpected) has to be used to match the
+        # aggregate function in the `columns` variable.
+        result.order_by(
+            'milestone_sort_key(MIN(Milestone.dateexpected), Milestone.name) '
+            'DESC')
+        return shortlist(
             [ProjectMilestone(self, name, dateexpected, active)
              for name, dateexpected, active in result])
-        return sorted(milestones, key=milestone_sort_key, reverse=True)
+
+    @property
+    def has_milestones(self):
+        """See `IHasMilestones`."""
+        store = Store.of(self)
+        result = store.find(
+            Milestone.id,
+            And(Milestone.product == Product.id,
+                Product.project == self,
+                Product.active == True))
+        return result.any() is not None
 
     @property
     def milestones(self):
         """See `IProjectGroup`."""
         return self._getMilestones(True)
+
+    @property
+    def product_milestones(self):
+        """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
+        # XXX: bug=644977 Robert Collins - this is a workaround for
+        # insconsistency in project group milestone use.
+        return self._get_milestones()
 
     @property
     def all_milestones(self):

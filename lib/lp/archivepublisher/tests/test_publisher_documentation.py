@@ -11,7 +11,10 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing import LaunchpadZopelessLayer
 
 

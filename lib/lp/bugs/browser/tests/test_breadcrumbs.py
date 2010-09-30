@@ -1,14 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
@@ -31,7 +28,8 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEquals("Bug #%d" % self.bug.id, last_crumb.text)
 
     def test_bugtask_child(self):
-        crumbs = self.getBreadcrumbsForObject(self.bugtask, view_name='+activity')
+        crumbs = self.getBreadcrumbsForObject(
+            self.bugtask, view_name='+activity')
         self.assertEquals(crumbs[-1].url, "%s/+activity" % self.bugtask_url)
         self.assertEquals(crumbs[-2].url, self.bugtask_url)
         self.assertEquals(crumbs[-2].text, "Bug #%d" % self.bug.id)
@@ -47,7 +45,8 @@ class TestBugTaskBreadcrumb(BaseBreadcrumbTestCase):
             ('Bug #%s' % self.bug.id,
              'http://bugs.launchpad.dev/crumb-tester/+bug/%s' % self.bug.id),
             ('Comment #1',
-             'http://bugs.launchpad.dev/crumb-tester/+bug/%s/comments/1' % self.bug.id),
+             'http://bugs.launchpad.dev/crumb-tester/+bug/%s/comments/1' % (
+                self.bug.id)),
             ]
         self.assertBreadcrumbs(expected_breadcrumbs, comment)
 
@@ -78,7 +77,3 @@ class TestBugTrackerBreadcrumbs(BaseBreadcrumbTestCase):
             (self.bug_tracker.title, self.bug_tracker_url),
             ]
         self.assertBreadcrumbs(expected_breadcrumbs, self.bug_tracker)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -39,7 +39,7 @@
         <tbody>
           <tr tal:repeat="entry context/custom_language_codes">
             <td align="center">
-              <a tal:attributes="href entry/fmt:url"
+              <a tal:attributes="href entry/fmt:url:translations"
                  tal:content="entry/language_code">pt-PT</a>
             </td>
             <td>
@@ -52,7 +52,7 @@
               </tal:nolanguage>
             </td>
             <td tal:condition="context/required:launchpad.Admin">
-              <a tal:attributes="href entry/fmt:url/+remove"
+              <a tal:attributes="href entry/fmt:url:translations/+remove"
                  alt="Remove"
                  title="Remove"
                  class="remove sprite"></a>
@@ -69,7 +69,7 @@
     </p>
 
     <div>
-      <a tal:attributes="href context/fmt:url/+add-custom-language-code"
+      <a tal:attributes="href context/fmt:url:translations/+add-custom-language-code"
          tal:condition="context/required:launchpad.Admin"
          class="add sprite">
         Add a custom language code

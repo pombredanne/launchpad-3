@@ -12,21 +12,30 @@ import socket
 import StringIO
 import tempfile
 import time
-import transaction
 import unittest
 
 from bzrlib.tests import (
-    condition_id_re, exclude_tests_by_condition, multiply_tests)
+    condition_id_re,
+    exclude_tests_by_condition,
+    multiply_tests,
+    )
 from bzrlib.transport import get_transport
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.testing.layers import (
-    ZopelessAppServerLayer, ZopelessDatabaseLayer)
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
+    ZopelessAppServerLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.poppy.tests.helpers import PoppyTestSetup
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSHKeyType,
+    )
 from lp.testing import TestCaseWithFactory
+
 
 class FTPServer:
     """This is an abstraction of connecting to an FTP server."""
@@ -92,11 +101,8 @@ class SFTPServer:
             public_key = f.read()
         finally:
             f.close()
-        kind, key_text, comment = public_key.split(' ', 2)
         sshkeyset = getUtility(ISSHKeySet)
-        # Assume it's an RSA key for now, ignoring the actual value in the
-        # file.
-        key = sshkeyset.new(person, SSHKeyType.RSA, key_text, comment)
+        key = sshkeyset.new(person, public_key)
         transaction.commit()
         return key
 

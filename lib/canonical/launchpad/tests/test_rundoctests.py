@@ -3,7 +3,8 @@
 
 __metaclass__ = type
 
-from zope.testing.doctestunit import DocTestSuite
+from doctest import DocTestSuite
+
 
 def test_suite():
     return DocTestSuite('canonical.launchpad.helpers')

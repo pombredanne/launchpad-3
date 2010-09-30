@@ -57,8 +57,8 @@ Create a series of 'biscuit' sources in ubuntu primary archive.
 
 Activate Foo Bar's PPA and upload another 'biscuit' source version.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
@@ -99,8 +99,7 @@ later.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.interfaces.packagediff import (
-    ...     PackageDiffStatus)
+    >>> from lp.soyuz.enums import PackageDiffStatus
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
     >>> def perform_fake_diff(diff, filename):

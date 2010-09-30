@@ -8,6 +8,7 @@ from __future__ import with_statement
 
 from contextlib import contextmanager
 
+
 __metaclass__ = type
 __all__ = [
     'is_intltool_structure',

@@ -1,20 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
-from pytz import timezone
-import unittest
 
+from pytz import timezone
 from zope.component import getUtility
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import TestCaseWithFactory
 
 
-class TestTranslationEmptyMessages(unittest.TestCase):
+class TestTranslationEmptyMessages(TestCaseWithFactory):
     """Test behaviour of empty translation messages."""
 
     layer = LaunchpadZopelessLayer
@@ -23,13 +23,15 @@ class TestTranslationEmptyMessages(unittest.TestCase):
         """Set up context to test in."""
         # Pretend we have a product being translated to Serbian.
         # This is where we are going to be importing translations to.
-        factory = LaunchpadObjectFactory()
-        self.factory = factory
-        self.productseries = factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
-        self.potemplate = factory.makePOTemplate(self.productseries)
+        super(TestTranslationEmptyMessages, self).setUp()
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(product=product)
+        self.potemplate = self.factory.makePOTemplate(self.productseries)
         self.serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        self.pofile_sr = factory.makePOFile('sr', potemplate=self.potemplate)
+        self.pofile_sr = self.factory.makePOFile(
+            'sr',
+            potemplate=self.potemplate)
         self.now = datetime.now(timezone('UTC'))
 
     def test_NoEmptyImporedTranslation(self):
@@ -107,7 +109,3 @@ class TestTranslationEmptyMessages(unittest.TestCase):
         self.assertEquals(launchpad_message, current_message)
         # Existing is_imported message should be unset.
         self.assertEquals(new_imported_message, None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

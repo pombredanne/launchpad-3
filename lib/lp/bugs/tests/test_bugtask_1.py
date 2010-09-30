@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugtask related tests that are too complex to be readable as doctests."""
@@ -10,18 +10,29 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.bugs.tests.bug import create_old_bug, sync_bugtasks
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, IUpstreamBugTask)
+    BugTaskStatus,
+    IBugTaskSet,
+    IUpstreamBugTask,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.tests.bug import (
+    create_old_bug,
+    sync_bugtasks,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -63,7 +74,9 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Mark an upstream task on bug #1 "Fix Released"
         bug_one = bugset.get(1)
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
-        self.assert_(firefox_upstream.product.official_malone)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            firefox_upstream.product.bug_tracking_usage)
         self.old_firefox_status = firefox_upstream.status
         firefox_upstream.transitionToStatus(
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
@@ -117,12 +130,10 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         """
         non_malone_using_bugtasks = [
             related_task for related_task in bugtask.related_tasks
-            if not related_task.target_uses_malone
-            ]
+            if not related_task.target_uses_malone]
         pending_bugwatch_bugtasks = [
             related_bugtask for related_bugtask in non_malone_using_bugtasks
-            if related_bugtask.bugwatch is None
-            ]
+            if related_bugtask.bugwatch is None]
         self.assert_(
             len(pending_bugwatch_bugtasks) > 0,
             'Bugtask %s on %s has no related bug watches elsewhere.' % (
@@ -156,15 +167,13 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         resolved_related_tasks = [
             related_task for related_task in bugtask.related_tasks
             if (_is_resolved_upstream_task(related_task) or
-                _is_resolved_bugwatch_task(related_task))
-            ]
+                _is_resolved_bugwatch_task(related_task))]
 
         self.assert_(len(resolved_related_tasks) > 0)
         self.assert_(
             len(resolved_related_tasks) > 0,
             'Bugtask %s on %s has no resolved related tasks.' % (
                 bugtask.id, bugtask.target.displayname))
-
 
     def assertBugTaskIsOpenUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is open.
@@ -194,8 +203,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         open_related_tasks = [
             related_task for related_task in bugtask.related_tasks
             if (_is_open_upstream_task(related_task) or
-                _is_open_bugwatch_task(related_task))
-            ]
+                _is_open_bugwatch_task(related_task))]
 
         self.assert_(
             len(open_related_tasks) > 0,
@@ -333,8 +341,3 @@ class BugTaskSetTest(unittest.TestCase):
         # empty dictionary.
         bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
         self.failUnlessEqual(bugs_and_tasks, {})
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

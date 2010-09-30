@@ -14,30 +14,57 @@ __all__ = [
     'OfficialBugTagTargetMixin',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.bugs.model.bugtask import (
-    BugTaskSet, get_bug_privacy_filter)
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IMasterStore,
+    )
+from canonical.launchpad.searchbuilder import (
+    any,
+    not_equals,
+    NULL,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugtask import (
+    BugTagsSearchCombinator,
+    BugTaskImportance,
+    BugTaskSearchParams,
+    BugTaskStatus,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.model.bugtask import (
+    BugTaskSet,
+    get_bug_privacy_filter,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -65,7 +92,8 @@ class HasBugsBase:
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False, linked_branches=None):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    modified_since=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -179,13 +207,7 @@ class HasBugsBase:
     @property
     def has_bugtasks(self):
         """See `IHasBugs`."""
-        # Check efficiently if any bugtasks exist. We should avoid
-        # expensive calls like all_bugtasks.count(). all_bugtasks
-        # returns a storm.SQLObjectResultSet instance, and this
-        # class does not provide methods like is_empty(). But we can
-        # indirectly call SQLObjectResultSet._result_set.is_empty()
-        # by converting all_bugtasks into a boolean object.
-        return bool(self.all_bugtasks)
+        return not self.all_bugtasks.is_empty()
 
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
@@ -235,17 +257,24 @@ class HasBugHeatMixin:
         else:
             raise NotImplementedError
 
-    def recalculateMaxBugHeat(self):
-        """See `IHasBugHeat`."""
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`.
+
+        DistributionSourcePackage overrides this method.
+        """
         if IProductSeries.providedBy(self):
-            return self.product.recalculateMaxBugHeat()
+            return self.product.recalculateBugHeatCache()
         if IDistroSeries.providedBy(self):
-            return self.distribution.recalculateMaxBugHeat()
+            return self.distribution.recalculateBugHeatCache()
         if ISourcePackage.providedBy(self):
             # Should only happen for nominations, so we can safely skip
             # recalculating max_heat.
             return
 
+        # XXX: deryck The queries here are a source of pain and have
+        # been changed a couple times looking for the best
+        # performaning version.  Use caution and have EXPLAIN ANALYZE
+        # data ready when changing these.
         if IDistribution.providedBy(self):
             sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask
@@ -256,6 +285,7 @@ class HasBugHeatMixin:
                       FROM Bug, Bugtask, DistroSeries
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.distroseries = DistroSeries.id
+                      AND Bugtask.distroseries IS NOT NULL
                       AND DistroSeries.distribution = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProduct.providedBy(self):
@@ -267,22 +297,18 @@ class HasBugHeatMixin:
                    """SELECT Bug.heat
                       FROM Bug, Bugtask, ProductSeries
                       WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.productseries IS NOT NULL
                       AND Bugtask.productseries = ProductSeries.id
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT MAX(heat)
+            sql = ["""SELECT heat
                       FROM Bug, Bugtask, Product
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.product = Product.id AND
-                      Product.project =  %s""" % sqlvalues(self)]
-        elif IDistributionSourcePackage.providedBy(self):
-            sql = ["""SELECT MAX(heat)
-                      FROM Bug, Bugtask
-                      WHERE Bugtask.bug = Bug.id AND
-                      Bugtask.distribution = %s AND
-                      Bugtask.sourcepackagename = %s""" % sqlvalues(
-                 self.distribution, self.sourcepackagename)]
+                      WHERE Bugtask.bug = Bug.id
+                      AND Bugtask.product = Product.id
+                      AND Product.project IS NOT NULL
+                      AND Product.project =  %s
+                      ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         else:
             raise NotImplementedError
 
@@ -299,7 +325,7 @@ class HasBugHeatMixin:
         # If the product is part of a project group we calculate the maximum
         # heat for the project group too.
         if IProduct.providedBy(self) and self.project is not None:
-            self.project.recalculateMaxBugHeat()
+            self.project.recalculateBugHeatCache()
 
 
 
@@ -312,22 +338,26 @@ class OfficialBugTagTargetMixin:
 
     Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
+
+    See also `Bug.official_bug_tags` which calculates this efficiently for
+    a single bug.
     """
+
+    def _getOfficialTagClause(self):
+        if IDistribution.providedBy(self):
+            return (OfficialBugTag.distribution == self)
+        elif IProduct.providedBy(self):
+            return (OfficialBugTag.product == self)
+        else:
+            raise AssertionError(
+                '%s is not a valid official bug target' % self)
 
     def _getOfficialTags(self):
         """Get the official bug tags as a sorted list of strings."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        elif IProduct.providedBy(self):
-            target_clause = (OfficialBugTag.product == self)
-        else:
-            raise AssertionError(
-                '%s is not a valid official bug target' % self)
-        tags = [
-            obt.tag for obt
-            in store.find(OfficialBugTag, target_clause).order_by('tag')]
-        return tags
+        target_clause = self._getOfficialTagClause()
+        return list(store.find(
+            OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
         """Set the official bug tags from a list of strings."""
@@ -348,10 +378,7 @@ class OfficialBugTagTargetMixin:
         If the tag is not defined for this target, None is returned.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        else:
-            target_clause = (OfficialBugTag.product == self)
+        target_clause = self._getOfficialTagClause()
         return store.find(
             OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
 

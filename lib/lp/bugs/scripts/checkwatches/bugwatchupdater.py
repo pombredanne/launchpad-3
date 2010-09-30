@@ -12,23 +12,24 @@ __all__ = [
 
 import sys
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
-
-from lazr.lifecycle.event import ObjectCreatedEvent
-
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase, commit_before)
+    commit_before,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.utilities import (
-    get_remote_system_oops_properties)
+    get_remote_system_oops_properties,
+    )
 from lp.registry.interfaces.person import PersonCreationRationale
 
 

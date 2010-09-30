@@ -8,6 +8,7 @@ __metaclass__ = type
 # XXX flacoste 2009/03/18 We should use specific imports instead of
 # importing from this module.
 
+# SKIP this file when formatting imports.
 from canonical.launchpad.interfaces.launchpad import *
 from lp.bugs.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
@@ -70,7 +71,6 @@ from lp.registry.interfaces.entitlement import *
 from lp.bugs.interfaces.externalbugtracker import *
 from lp.registry.interfaces.featuredproject import *
 from lp.soyuz.interfaces.files import *
-from canonical.launchpad.interfaces.geoip import *
 from lp.registry.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
 from lp.hardwaredb.interfaces.hwdb import *
@@ -96,16 +96,15 @@ from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
+from lp.registry.errors import TeamMembershipTransitionError
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
 from lp.registry.interfaces.projectgroup import *
-from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
-from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from lp.services.scripts.interfaces.scriptactivity import *
 from lp.soyuz.interfaces.section import *
@@ -145,4 +144,3 @@ from lp.answers.interfaces.questionsubscription import *
 from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
-

@@ -5,11 +5,12 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.ftests import login, login_person
+from canonical.launchpad.ftests import (
+    login,
+    login_person,
+    )
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.testing import TestCaseWithFactory
@@ -117,7 +118,3 @@ class TestWebBugTrackerVocabulary(TestCaseWithFactory):
         self.assertEqual([], bug_trackers)
         self.assertRaises(
             LookupError, self.vocab.getTermByToken, 'marten')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

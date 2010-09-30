@@ -213,19 +213,3 @@ then there is no error shown.
     None
     >>> print find_tag_by_id(browser.contents, 'mirror-of-ssh')
     None
-
-
-== Hosted branch mirror failure messages ==
-
-A hosted branch with an error message does show a mirror-failure.
-
-    >>> login(ANONYMOUS)
-    >>> hosted_branch = factory.makeAnyBranch()
-    >>> hosted_branch.mirrorFailed('Some weird internal failure.')
-    >>> branch_location = canonical_url(hosted_branch)
-    >>> logout()
-
-    >>> browser = setupBrowser()
-    >>> browser.open(branch_location)
-    >>> print_browser_tag(browser, 'mirror-failure')
-    Some weird internal failure.

@@ -269,7 +269,8 @@ However, in order to prevent this address from being used to forge spam onto
 the lists, the archive address is hard-coded to not be registered in
 Launchpad.
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 This is true even if by dumb luck the address actually gets registered in
@@ -281,7 +282,8 @@ Launchpad.
     ...     EmailAddressStatus.VALIDATED, account=fred.account)
     >>> transaction.commit()
 
-    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    >>> mailinglist_api.isRegisteredInLaunchpad(
+    ...     config.mailman.archive_address)
     False
 
 The Mail Archive is only used for public team mailing lists.  If the team
@@ -298,7 +300,7 @@ archiver email address.
 Teams with mailing lists cannot change visibility, so the team must be made
 private before its mailing list is created.
 
-    >>> team_three.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> team_three.visibility = PersonVisibility.PRIVATE
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(team_three)
     >>> queryAdapter(team_three, IObjectPrivacy).is_private

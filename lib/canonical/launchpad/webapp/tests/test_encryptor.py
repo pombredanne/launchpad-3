@@ -8,12 +8,12 @@ import binascii
 import hashlib
 import unittest
 
-from zope.component import getUtility
 from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
+from zope.component import getUtility
 
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 
 class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):

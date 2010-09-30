@@ -638,6 +638,36 @@ all the URLs to the private archives that the person can access.
 
 IPerson supports a bunch of operations.
 
+Teams can subscribe to source packages:
+
+    >>> login('admin@canonical.com')
+    >>> pythons_db = factory.makeTeam(name='pythons')
+    >>> package_db = factory.makeDistributionSourcePackage(
+    ...     sourcepackagename="fooix")
+    >>> ignored = package_db.addSubscription(None, pythons_db)
+    >>> logout()
+
+Subscribed packages can be listed with getBugSubscriberPackages:
+
+    >>> from lazr.restful.testing.webservice import pprint_collection
+    >>> subscriptions = webservice.named_get("/~pythons",
+    ...     "getBugSubscriberPackages").jsonBody()
+    >>> pprint_collection(subscriptions)
+    start: 0
+    total_size: 1
+    ---
+    bug_reported_acknowledgement: None
+    bug_reporting_guidelines: None
+    display_name: u'...'
+    distribution_link: u'...'
+    name: u'fooix'
+    official_bug_tags: []
+    resource_type_link: u'...'
+    self_link: u'...'
+    title: u'...'
+    upstream_product_link: None
+    ---
+
 
 === Team membership operations ===
 

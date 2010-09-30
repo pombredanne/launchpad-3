@@ -5,10 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'DoNothingSession',
     'PatchedSSHSession',
     ]
 
-from twisted.conch.ssh import channel, session
+from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import (
+    channel,
+    connection,
+    session,
+    )
+from zope.interface import implements
 
 
 class PatchedSSHSession(session.SSHSession, object):
@@ -77,3 +84,41 @@ class PatchedSSHSession(session.SSHSession, object):
             resumeProducing = getattr(transport, 'resumeProducing', None)
             if resumeProducing is not None:
                 resumeProducing()
+
+
+class DoNothingSession:
+    """A Conch user session that allows nothing."""
+
+    implements(ISession)
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+
+    def closed(self):
+        """See ISession."""
+
+    def eofReceived(self):
+        """See ISession."""
+
+    def errorWithMessage(self, protocol, msg):
+        protocol.session.writeExtended(
+            connection.EXTENDED_DATA_STDERR, msg)
+        protocol.loseConnection()
+
+    def execCommand(self, protocol, command):
+        """See ISession."""
+        self.errorWithMessage(
+            protocol, "Not allowed to execute commands on this server.\r\n")
+
+    def getPty(self, term, windowSize, modes):
+        """See ISession."""
+        # Do nothing, as we don't provide shell access. openShell will get
+        # called and handle this error message and disconnect.
+
+    def openShell(self, protocol):
+        """See ISession."""
+        self.errorWithMessage(protocol, "No shells on this server.\r\n")
+
+    def windowChanged(self, newWindowSize):
+        """See ISession."""
+        raise NotImplementedError(self.windowChanged)

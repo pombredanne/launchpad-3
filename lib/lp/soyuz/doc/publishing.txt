@@ -139,7 +139,7 @@ the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
@@ -172,7 +172,7 @@ Note: if the related archive for this source package publishing is
 a rebuild archive then the status summary will always display
 FULLY_BUILT.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> spph.archive.purpose = ArchivePurpose.COPY
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
@@ -185,7 +185,7 @@ FULLY_BUILT.
 
 If one of the builds becomes published, it will not appear in the summary:
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
@@ -543,11 +543,8 @@ When we supersede one of the original binary publications, it gets
 excluded from the getPublishedBinaries() results, but not from the
 getBuiltBinaries() result.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> a_binary = source.getPublishedBinaries()[0]
-    >>> superseded = a_binary.supersede()
-    >>> syncUpdate(superseded)
+    >>> a_binary.supersede()
 
     >>> len(source.getPublishedBinaries())
     1
@@ -561,7 +558,6 @@ published in the original location.
     >>> deletable = source.getPublishedBinaries()[0]
     >>> deletable.requestDeletion(mark, "go")
     >>> deleted = deletable
-    >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
     0
@@ -577,7 +573,6 @@ verify that the getPublishedBinaries() result is also empty after that.
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
-    ...     syncUpdate(obsoleted)
 
     >>> len(copied_source.getPublishedBinaries())
     0
@@ -596,7 +591,6 @@ getPublishedBinaries().
     >>> for pub in copied_source.getBuiltBinaries():
     ...     pub.status = PackagePublishingStatus.PUBLISHED
     ...     pub.scheduleddeletiondate = None
-    ...     syncUpdate(pub)
 
 Now we override the first binary publication, the hppa one, to
 component 'universe'.
@@ -631,10 +625,8 @@ publications and the hppa one is the overridden one.
 We have to re-publish the superseded and the deleted publications above
 because it's used below.
 
-    >>> superseded.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(superseded)
+    >>> a_binary.status = PackagePublishingStatus.PUBLISHED
     >>> deleted.status = PackagePublishingStatus.PUBLISHED
-    >>> syncUpdate(deleted)
 
 
 Copying and inspecting architecture independent binaries
