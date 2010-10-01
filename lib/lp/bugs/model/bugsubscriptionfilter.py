@@ -120,31 +120,32 @@ class BugSubscriptionFilter(Storm):
             BugSubscriptionFilterTag,
             BugSubscriptionFilterTag.filter == self)
         return frozenset(
-            tag_filter.tag if tag_filter.include else u"-%s" % tag_filter.tag
-            for tag_filter in tag_filters)
+            tag_filter.qualified_tag for tag_filter in tag_filters)
 
     def _set_tags(self, tags):
         """Update the tags to filter on.
 
-        The tags must be from the `BugTaskTag` enum, but can be
-        bundled in any iterable.
+        The tags can be qualified with a leading hyphen, and can be bundled in
+        any iterable.
         """
-        tags = frozenset(tags)
-        current_tags = self.tags
         store = IStore(BugSubscriptionFilterTag)
+        tags = frozenset(tags)
+        current_tag_filters = dict(
+            (tag_filter.qualified_tag, tag_filter)
+            for tag_filter in store.find(
+                BugSubscriptionFilterTag,
+                BugSubscriptionFilterTag.filter == self))
+        # Remove unused tags.
+        for tag in set(current_tag_filters).difference(tags):
+            tag_filter = current_tag_filters.pop(tag)
+            store.remove(tag_filter)
         # Add additional tags.
-        for tag in tags.difference(current_tags):
+        for tag in tags.difference(current_tag_filters):
             tag_filter = BugSubscriptionFilterTag()
             tag_filter.filter = self
             tag_filter.include = not tag.startswith("-")
             tag_filter.tag = tag.lstrip("-")
             store.add(tag_filter)
-        # Delete unused ones.
-        store.find(
-            BugSubscriptionFilterTag,
-            BugSubscriptionFilterTag.filter == self,
-            BugSubscriptionFilterTag.tag.is_in(
-                current_tags.difference(tags))).remove()
 
     tags = property(
         _get_tags, _set_tags, doc=(
