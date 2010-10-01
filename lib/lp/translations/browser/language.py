@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Language table."""
@@ -36,7 +36,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.tales import LanguageFormatterAPI
+from lp.app.browser.tales import LanguageFormatterAPI
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (
@@ -152,9 +152,6 @@ class LanguageSetView(LaunchpadFormView):
         return ", ".join(map(_format_language, languages))
 
 
-# There is no easy way to remove an ILanguage from the database due all the
-# dependencies that ILanguage would have. That's the reason why we don't have
-# such functionality here.
 class LanguageAddView(LaunchpadFormView):
     """View to handle ILanguage creation form."""
 

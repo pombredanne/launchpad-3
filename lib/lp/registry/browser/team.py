@@ -61,7 +61,7 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
