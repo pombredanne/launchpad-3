@@ -33,19 +33,3 @@ class SmokeTestWadlAndDocGeneration(TestCase):
         for version in config.active_versions:
             wadl = generate_wadl(version)
             self.assertThat(wadl[:40], StartsWith('<?xml '))
-
-
-    def test_html(self):
-        config = getUtility(IWebServiceConfiguration)
-        stylesheet = pkg_resources.resource_filename(
-            'launchpadlib', 'wadl-to-refhtml.xsl')
-        for version in config.active_versions:
-            wadl_filename = WebServiceApplication.cachedWADLPath(
-                'development', version)
-            html = generate_html(wadl_filename)
-            self.assertThat(html[:999], Contains('<html '))
-
-    def test_subprocess_error(self):
-        # If the execution of xsltproc fails, an exception is raised.
-        self.assertRaises(
-            subprocess.CalledProcessError, generate_html, 'does-not-exist')
