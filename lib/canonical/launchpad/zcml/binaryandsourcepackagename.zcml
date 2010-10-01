@@ -11,7 +11,7 @@
   <facet facet="overview">
 
     <!-- BinaryAndSourcePackagename -->
-    <class class="canonical.launchpad.database.BinaryAndSourcePackageName">
+    <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageName">
         <allow interface="lp.soyuz.interfaces.binarypackagename.IBinaryAndSourcePackageName" />
     </class>
 
