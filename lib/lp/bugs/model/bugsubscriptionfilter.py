@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionFilter']
 
+from itertools import chain
+
 from storm.base import Storm
 from storm.locals import (
     Bool,
@@ -14,6 +16,7 @@ from storm.locals import (
     Unicode,
     )
 
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
@@ -22,9 +25,6 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
-
-from itertools import chain
-from canonical.launchpad import searchbuilder
 
 
 class BugSubscriptionFilter(Storm):

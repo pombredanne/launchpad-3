@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import (
@@ -16,7 +17,6 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from canonical.launchpad import searchbuilder
 
 
 class TestBugSubscriptionFilter(TestCaseWithFactory):
