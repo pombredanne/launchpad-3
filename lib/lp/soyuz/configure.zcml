@@ -878,4 +878,24 @@
       callable="lp.archiveuploader.tests.register_archive_upload_policy_adapters"
       />
 
+    <!-- BinaryAndSourcePackagename -->
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageName">
+        <allow interface="lp.soyuz.interfaces.binarypackagename.IBinaryAndSourcePackageName" />
+    </class>
+
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
+        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <securedutility
+      name="BinaryAndSourcePackageName"
+      component="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+      >
+      <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
+      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    </class>
 </configure>
