@@ -28,7 +28,7 @@ from lp.registry.interfaces.product import (
     License,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product
+from lp.registry.model.product import Product, UnDeactivateable
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import TestCaseWithFactory
 
@@ -48,7 +48,7 @@ class TestProduct(TestCaseWithFactory):
         source_package.setPackaging(
             product.development_focus, self.factory.makePerson())
         self.assertRaises(
-            AssertionError,
+            UnDeactivateable,
             setattr, product, 'active', False)
 
     def test_deactivation_success(self):

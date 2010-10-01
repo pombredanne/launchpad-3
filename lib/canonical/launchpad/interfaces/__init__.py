@@ -71,7 +71,6 @@ from lp.registry.interfaces.entitlement import *
 from lp.bugs.interfaces.externalbugtracker import *
 from lp.registry.interfaces.featuredproject import *
 from lp.soyuz.interfaces.files import *
-from canonical.launchpad.interfaces.geoip import *
 from lp.registry.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
 from lp.hardwaredb.interfaces.hwdb import *
@@ -97,6 +96,7 @@ from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
+from lp.registry.errors import TeamMembershipTransitionError
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *

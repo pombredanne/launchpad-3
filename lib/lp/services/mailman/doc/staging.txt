@@ -30,10 +30,8 @@ informing them of their new list.  We can ignore these.
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import setupBrowser
-    >>> from lp.services.propertycache import IPropertyCache
     >>> browser = setupBrowser('Basic %s:%s' %
-    ...     (IPropertyCache(owner).preferredemail.email,
-    ...      owner._password_cleartext_cached))
+    ...     (owner.preferredemail.email, owner._password_cleartext_cached))
 
     >>> from lp.services.mailman.testing import helpers
     >>> helpers.apply_for_list(browser, 'staging-one')
@@ -140,7 +138,7 @@ sync script has to deal with.
 Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
-    >>> from canonical.launchpad.mailman import runmailman
+    >>> from lp.services.mailman import runmailman
     >>> from canonical.testing.layers import LayerProcessController
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=LayerProcessController.appserver_config)
@@ -194,7 +192,7 @@ launchpad.conf file.
 
     >>> import os
     >>> import sys
-    >>> from subprocess import *
+    >>> from subprocess import Popen, PIPE
     >>> proc = Popen(
     ...     ('scripts/mlist-sync.py', '--hostname',
     ...      'lists.prod.launchpad.dev', sync_details.source_dir),

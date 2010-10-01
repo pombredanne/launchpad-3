@@ -115,7 +115,7 @@ class IEmailAddress(IHasOwner):
 
     def destroySelf():
         """Destroy this email address and any associated subscriptions.
-        
+
         :raises UndeletableEmailAddress: When the email address is a person's
             preferred one or a hosted mailing list's address.
         """
@@ -153,4 +153,3 @@ class IEmailAddressSet(Interface):
 
         Return None if there is no such email address.
         """
-

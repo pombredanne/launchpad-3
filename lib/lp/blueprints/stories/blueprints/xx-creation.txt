@@ -1,7 +1,26 @@
-= Creating Blueprints =
+Creating Blueprints
+===================
 
+Set Up
+------
+A number of tests in this need a product with blueprints enabled, so we'll
+enable them on bazaar, firefox, and jokosher.
 
-== Introduction ==
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> bazaar = getUtility(IProductSet).getByName('bzr')
+    >>> bazaar.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> jokosher = getUtility(IProductSet).getByName('jokosher')
+    >>> jokosher.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
+Introduction
+------------
 
 Users can register blueprints from many locations in Launchpad. To start with,
 it's possible to register a blueprint from the Blueprints home page. However,
@@ -15,7 +34,9 @@ users can also register blueprints from any of the following locations:
  * a sprint
 
 
-== The blueprint registration form ==
+The blueprint registration form
+-------------------------------
+
 
 Launchpad provides a dedicated form page for users to register blueprints.
 Generally speaking, users can navigate to this form from each of the supported
@@ -28,13 +49,15 @@ Since these two types of links always share a common textual representation,
 we'll use extra care when its necessary to demonstrate that they both exist.
 
 
-== Navigating to the blueprint registration form ==
+Navigating to the blueprint registration form
+---------------------------------------------
 
 We'll start by demonstrating that users can navigate to the blueprint
 registration form from each of the supported locations.
 
 
-=== From the Blueprints home page ===
+From the Blueprints home page
+.............................
 
 Starting from the Blueprints home page:
 
@@ -46,7 +69,8 @@ Users can press the graphical "Register a blueprint" button:
     <a href="+new" id="addspec"> <img alt="Register a blueprint"...
 
 
-=== From a distribution ===
+From a distribution
+...................
 
 Starting from the Ubuntu distribution page:
 
@@ -68,7 +92,8 @@ Users can also follow the textual "Register a blueprint" link:
        class="menu-link-new...>Register a blueprint</a>
 
 
-=== From a distribution series ===
+From a distribution series
+..........................
 
 Starting from the Ubuntu Hoary distribution series page:
 
@@ -83,7 +108,8 @@ Users can also follow the textual "Register a blueprint" link:
        class="menu-link-new...>Register a blueprint</a>
 
 
-=== From a product ===
+From a product
+..............
 
 Starting from the Bazaar product page:
 
@@ -109,7 +135,8 @@ it here as a blueprint" link:
     >>> print extract_text(find_main_content(user_browser.contents))
     Register a new blueprint...
 
-=== From a product series ===
+From a product series
+.....................
 
 Starting from the Mozilla Firefox product series page:
 
@@ -125,7 +152,8 @@ Users can also follow the textual "Register a blueprint" link:
        class="menu-link-new...>Register a blueprint</a>
 
 
-=== From a project ===
+From a project
+..............
 
 Starting from the Mozilla project page:
 
@@ -140,7 +168,8 @@ Users can follow the textual "Register a blueprint" link:
        class="menu-link-new...>Register a blueprint</a>
 
 
-=== From a sprint ===
+From a sprint
+.............
 
 Starting from the Future Mega Meeting sprint page:
 
@@ -155,14 +184,16 @@ Users can also follow the textual "Register a blueprint" link:
        class="menu-link-new...>Register a blueprint</a>
 
 
-== Registering a blueprint ==
+Registering a blueprint
+-----------------------
 
 The blueprint registration form allows users to register a blueprint. The
 appearance and behaviour of the form depends on where the user has navigated
 from.
 
 
-=== Registering a blueprint from the Blueprints home page ===
+Registering a blueprint from the Blueprints home page
+.....................................................
 
 We'll start from the default blueprint registration form:
 
@@ -216,7 +247,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     Network Magic: Auto Network Detection...
 
 
-=== Registering a blueprint from a distribution ===
+Registering a blueprint from a distribution
+...........................................
 
 When a blueprint is registered from a distribution, the new blueprint is
 automatically targeted to the distribution.
@@ -239,7 +271,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     Network Magic: Auto Network Detection...
 
 
-=== Registering a blueprint from a distribution series ===
+Registering a blueprint from a distribution series
+..................................................
 
 When a blueprint is registered from a distribution series, the new blueprint
 is automatically targeted to the parent distribution. In addition, Launchpad
@@ -326,7 +359,8 @@ for the series, the new blueprint is automatically accepted as a series goal:
     Series goal: Accepted for hoary
 
 
-=== Registering a blueprint from a product ===
+Registering a blueprint from a product
+......................................
 
 When a blueprint is registered from a product, the new blueprint is
 automatically targeted to the product.
@@ -355,7 +389,8 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     SVG Support...
 
 
-=== Registering a blueprint from a product series ===
+Registering a blueprint from a product series
+.............................................
 
 When a blueprint is registered from a product series, the new blueprint is
 automatically targeted to the parent product. In addition, Launchpad allows
@@ -437,7 +472,8 @@ for the series, the new blueprint is automatically accepted as a series goal:
     Series goal: Accepted for 1.0
 
 
-=== Registering a blueprint from a project ===
+Registering a blueprint from a project
+......................................
 
 Let's register a blueprint from the Mozilla project:
 
@@ -470,7 +506,8 @@ Mozilla Firefox project, then redirects the user to the new blueprint's page:
     SVG Support...
 
 
-=== Registering a blueprint from a sprint ===
+Registering a blueprint from a sprint
+.....................................
 
 When a blueprint is registered from a sprint, the new blueprint is
 automatically proposed as a topic for discussion at the sprint.
@@ -532,7 +569,8 @@ a sprint topic:
     <...darcs-imports-2...
 
 
-=== Proposing any blueprint as a sprint topic during registration ===
+Proposing any blueprint as a sprint topic during registration
+.............................................................
 
 While blueprints can be registered from sprints directly, it's also possible
 to propose any blueprint for discussion at a sprint during registration.
@@ -559,10 +597,11 @@ permission, the blueprint will be automatically added to the sprint agenda:
     <...spec-for-sprint...>
 
 
-== Restrictions when registering blueprints ==
+Restrictions when registering blueprints
+----------------------------------------
 
-
-=== Names must be unique ===
+Names must be unique
+....................
 
 It's not possible to register a blueprint with the same name as an existing
 blueprint.
@@ -602,7 +641,8 @@ the same error:
     There is 1 error...already in use by another blueprint...
 
 
-=== Names must be valid ===
+Names must be valid
+...................
 
 Blueprint names must conform to a set pattern:
 
@@ -635,7 +675,8 @@ automatically for the user:
     Network Magic: Automatic Network Detection...
 
 
-=== URLs must be unique ===
+URLs must be unique
+...................
 
 It's not possible to register a blueprint with the same URL as an existing
 blueprint:
@@ -653,7 +694,8 @@ blueprint:
     There is 1 error...already registered by another blueprint...
 
 
-=== Registering blueprints from other locations ===
+Registering blueprints from other locations
+...........................................
 
 There are some locations in Launchpad from which it's not possible to register
 a blueprint. To start with, it's not possible to register a blueprint from an

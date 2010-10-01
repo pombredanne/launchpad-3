@@ -37,8 +37,10 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.enums import service_uses_launchpad
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.propertycache import cachedproperty
@@ -250,7 +252,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -277,7 +280,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'your upload\'s status in the '
                     '<a href="%s/+imports">Translation Import Queue</a>' %(
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context, rootsite='translations'))))
+                        canonical_url(self.context,
+                        rootsite='translations'))))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -324,6 +328,10 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
             self.request.response.addWarningNotification(
                 "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
 
 
 class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
@@ -408,6 +416,20 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
 
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
     """Remove the confusing hint under the widget."""
@@ -491,6 +513,10 @@ class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     def initialize(self):
         super(ProductSeriesTemplatesView, self).initialize(
             series=self.context, is_distroseries=False)
+
+    def constructTemplateURL(self, template):
+        """See `BaseSeriesTemplatesView`."""
+        return '+pots/%s' % template.name
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

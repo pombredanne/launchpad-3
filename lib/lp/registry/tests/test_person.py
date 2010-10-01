@@ -17,7 +17,6 @@ from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import Bug
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
@@ -42,6 +41,7 @@ from canonical.testing.layers import (
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -209,8 +209,12 @@ class TestPersonTeams(TestCaseWithFactory):
         # was not made to learn this.
         other_user = self.factory.makePerson()
         Store.of(self.user).invalidate()
+        # Load the two person objects only by reading a non-id attribute
+        # unrelated to team/person or teamparticipation.
+        other_user.name
+        self.user.name
         self.assertFalse(
-            self.assertStatementCount(1, self.user.inTeam, other_user))
+            self.assertStatementCount(0, self.user.inTeam, other_user))
         self.assertEqual(
             {},
             removeSecurityProxy(self.user)._inTeam_cache)

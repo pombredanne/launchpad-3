@@ -75,6 +75,7 @@ from lp.services.osutils import override_environ
 from lp.testing import (
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -1254,6 +1255,7 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(
             self.merge_proposal, self.merge_proposal.target_branch.owner)
+        self.jrandom = self.factory.makePerson()
         transaction.commit()
         self.layer.switchDbUser(config.processmail.dbuser)
 
@@ -1339,11 +1341,24 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
             str(error))
 
     def test_not_a_reviewer(self):
-        # If the user is not a reviewer, they can not update the status.
+        # If the user is not a reviewer, they cannot update the status.
+        self.context.user = self.jrandom
+        command = UpdateStatusEmailCommand('status', ['approve'])
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
+        target = self.merge_proposal.target_branch.bzr_identity
+        self.assertEqual(
+            "You are not a reviewer for the branch %s.\n" % target,
+            str(error))
+
+    def test_registrant_not_a_reviewer(self):
+        # If the registrant is not a reviewer, they cannot update the status.
         self.context.user = self.context.merge_proposal.registrant
         command = UpdateStatusEmailCommand('status', ['approve'])
-        error = self.assertRaises(
-            EmailProcessingError, command.execute, self.context)
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
         target = self.merge_proposal.target_branch.bzr_identity
         self.assertEqual(
             "You are not a reviewer for the branch %s.\n" % target,
