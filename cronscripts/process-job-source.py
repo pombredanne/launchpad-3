@@ -24,12 +24,8 @@ class ProcessJobSource(JobCronScript):
         "For more help, run:\n"
         "    cronscripts/process-job-source-groups.py --help")
 
-    def configure(self):
-        """Override configs main() is called by run().
-
-        It is done here instead of __init__(), so that we get to use its
-        option parser.
-        """
+    def __init__(self):
+        super(ProcessJobSource, self).__init__()
         if len(self.args) != 1:
             self.parser.print_help()
             sys.exit(1)
@@ -54,5 +50,4 @@ class ProcessJobSource(JobCronScript):
 
 if __name__ == '__main__':
     script = ProcessJobSource()
-    script.configure()
     script.lock_and_run()
