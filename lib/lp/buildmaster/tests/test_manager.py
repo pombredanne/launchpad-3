@@ -190,32 +190,6 @@ class TestSlaveScanner(TrialTestCase):
         self.assertIn('reset failure', repr(result))
         self.assertEqual(result.info, "stdout\nstderr")
 
-    def test_failed_to_resume_slave_ready_for_reset(self):
-        # When a slave fails to resume, the manager has a Deferred in its
-        # Deferred list that is ready to fire with a ResetDispatchResult.
-
-        # Make a failing slave that is requesting a resume.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.resume_requested = True
-        slave.resumeSlave = lambda: defer.fail(Failure(('out', 'err', 1)))
-
-        # We only care about this one slave. Reset the list of manager
-        # deferreds in case setUp did something unexpected.
-        self.manager._deferred_list = []
-        # Restore the slaveConversationEnded method. It's very relevant to
-        # this test.
-        self.manager.slaveConversationEnded = self._realslaveConversationEnded
-        self.manager.resumeAndDispatch(slave)
-        [d] = self.manager._deferred_list
-
-        # The Deferred for our failing slave should be ready to fire
-        # successfully with a ResetDispatchResult.
-        def check_result(result):
-            self.assertIsInstance(result, ResetDispatchResult)
-            self.assertEqual(slave, result.slave)
-            self.assertFalse(result.processed)
-        return d.addCallback(check_result)
-
     def _setUpSlaveAndBuilder(self, builder_failure_count=None,
                               job_failure_count=None):
         # Helper function to set up a builder and its recording slave.
