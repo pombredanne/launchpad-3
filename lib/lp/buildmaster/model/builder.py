@@ -68,9 +68,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import (
@@ -765,20 +762,8 @@ class Builder(SQLBase):
         """
         logger = self._getSlaveScannerLogger()
         # Using maybeDeferred ensures that any exceptions are also
-        # wrapped up and caught below.
+        # wrapped up and caught later.
         d = defer.maybeDeferred(self.startBuild, candidate, logger)
-
-        def warn_on_error(failure):
-            # Reverse the effects of markAsBuilding() called from
-            # acquireBuildCandidate.
-            candidate.reset()
-            failure.trap(
-                BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch)
-            err = failure.value
-            logger.warn('Could not build: %s' % err)
-        # XXX: let the failures bubble up to the manager. It will also
-        # reset the job.
-        #return d.addErrback(warn_on_error)
         return d
 
     def handleTimeout(self, logger, error_message):
@@ -789,23 +774,13 @@ class Builder(SQLBase):
                 "Disabling builder: %s -- %s" % (self.url, error_message))
             self.failBuilder(error_message)
 
-        def got_resume_failed(failure):
-            # XXX: This should really let the failure bubble up to the
-            # scan() method that does the failure counting.
-            failure.trap(CannotResumeHost)
-            logger.warn(
-                "Failed to reset builder: %s -- %s" % (
-                    self.url, str(failure.value)),
-                    exc_info=True)
-            fail_builder()
-
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset.
             logger.warn(
                 "Resetting builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
             d = self.resumeSlaveHost()
-            return d.addErrback(got_resume_failed)
+            return d
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.

@@ -33,6 +33,15 @@ from canonical.config import config
 from canonical.launchpad.webapp import urlappend
 from lp.services.database import write_transaction
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch,
+    )
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError,
+    BuildSlaveFailure,
+    CannotBuild,
+    CannotResumeHost,
+    )
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
@@ -142,12 +151,18 @@ class SlaveScanner:
         # is so tests can initiate a single scan.
         d = self.scan()
 
-        def disaster(error):
-            # XXX: We should trap known exceptions before printing a
-            # stack trace here.  The strategy is to not catch them in
-            # the builder code any more and let them all come here.
-            self.logger.info("Scanning failed with: %s\n%s" %
-                (error.getErrorMessage(), error.getTraceback()))
+        def disaster(failure):
+            # Trap known exceptions and print a a message without a
+            # stack trace in that case, or if we don't know about it,
+            # include the trace.
+            error_message = failure.getErrorMessage()
+            if failure.check(
+                BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
+                CannotResumeHost, BuildDaemonError):
+                self.logger.info("Scanning failed with: %s" % error_message)
+            else:
+                self.logger.info("Scanning failed with: %s\n%s" %
+                    (failure.getErrorMessage(), failure.getTraceback()))
 
             builder = get_builder(self.builder_name)
 
@@ -158,7 +173,7 @@ class SlaveScanner:
                 "builder failure count: %s, job failure count: %s" % (
                     builder.failure_count,
                     builder.getCurrentBuildFarmJob().failure_count))
-            assessFailureCounts(builder, error.getErrorMessage())
+            assessFailureCounts(builder, failure.getErrorMessage())
             transaction.commit()
 
         d.addErrback(disaster)
