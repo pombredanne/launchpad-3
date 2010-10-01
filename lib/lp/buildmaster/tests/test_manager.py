@@ -243,74 +243,6 @@ class TestSlaveScanner(TrialTestCase):
         self.assertEqual(
             None, result, 'Successful dispatch checks should return None')
 
-    def test_checkDispatch_first_fail(self):
-        # Failed legitimate response, results in FailDispatchResult and
-        # failure_count on the job and the builder are both incremented.
-        slave, bob_builder = self._setUpSlaveAndBuilder(
-            builder_failure_count=0, job_failure_count=0)
-
-        failed_response = [False, 'uncool builder']
-        result = self.manager.checkDispatch(
-            failed_response, 'ensurepresent', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            repr(result),
-            '<bob:%s> failure (uncool builder)' % self.fake_builder_url)
-        self.assertEqual(1, bob_builder.failure_count)
-        self.assertEqual(
-            1, bob_builder.getCurrentBuildFarmJob().failure_count)
-
-    def test_checkDispatch_second_reset_fail_by_builder(self):
-        # Twisted Failure response, results in a `FailDispatchResult`.
-        slave, bob_builder = self._setUpSlaveAndBuilder(
-            builder_failure_count=1, job_failure_count=0)
-
-        twisted_failure = Failure(ConnectionClosed('Boom!'))
-        result = self.manager.checkDispatch(
-            twisted_failure, 'ensurepresent', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<bob:%s> failure (None)' % self.fake_builder_url, repr(result))
-        self.assertEqual(2, bob_builder.failure_count)
-        self.assertEqual(
-            1, bob_builder.getCurrentBuildFarmJob().failure_count)
-
-    def test_checkDispatch_second_comms_fail_by_builder(self):
-        # Unexpected response, results in a `FailDispatchResult`.
-        slave, bob_builder = self._setUpSlaveAndBuilder(
-            builder_failure_count=1, job_failure_count=0)
-
-        unexpected_response = [1, 2, 3]
-        result = self.manager.checkDispatch(
-            unexpected_response, 'build', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<bob:%s> failure '
-            '(Unexpected response: [1, 2, 3])' % self.fake_builder_url,
-            repr(result))
-        self.assertEqual(2, bob_builder.failure_count)
-        self.assertEqual(
-            1, bob_builder.getCurrentBuildFarmJob().failure_count)
-
-    def test_checkDispatch_second_comms_fail_by_job(self):
-        # Unknown method was given, results in a `FailDispatchResult`.
-        # This could be caused by a faulty job which would fail the job.
-        slave, bob_builder = self._setUpSlaveAndBuilder(
-            builder_failure_count=0, job_failure_count=1)
-
-        successful_response = [
-            buildd_success_result_map.get('ensurepresent'), 'cool builder']
-        result = self.manager.checkDispatch(
-            successful_response, 'unknown-method', slave)
-        self.assertIsDispatchFail(result)
-        self.assertEqual(
-            '<bob:%s> failure '
-            '(Unknown slave method: unknown-method)' % self.fake_builder_url,
-            repr(result))
-        self.assertEqual(1, bob_builder.failure_count)
-        self.assertEqual(
-            2, bob_builder.getCurrentBuildFarmJob().failure_count)
-
     def test_initiateDispatch(self):
         """Check `dispatchBuild` in various scenarios.
 
@@ -609,9 +541,12 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
-    def test_scan_assesses_failure_exceptions(self):
+    def _assertFailureCounting(self, builder_count, job_count,
+                               expected_builder_count, expected_job_count):
         # If scan() fails with an exception, failure_counts should be
-        # incremented and tested.
+        # incremented.  What we do with the results of the failure
+        # counts is tested below separately, this test just makes sure that
+        # scan() is setting the counts.
         def failing_scan():
             return defer.fail(Exception("fake exception"))
         manager = self._getManager()
@@ -621,26 +556,45 @@ class TestSlaveScannerScan(TrialTestCase):
         self.patch(manager_module, 'assessFailureCounts', FakeMethod())
         builder = getUtility(IBuilderSet)[manager.builder_name]
 
-        # Failure counts start at zero.
-        self.assertEqual(0, builder.failure_count)
-        self.assertEqual(
-            0, builder.currentjob.specific_job.build.failure_count)
+        builder.failure_count = builder_count
+        builder.currentjob.specific_job.build.failure_count = job_count
 
         # startCycle() calls scan() which is our fake one that throws an
         # exception.
-        d = manager.startCycle()
+        d = manager._startCycle()
 
         # Failure counts should be updated, and the assessment method
         # should have been called.
         def got_scan(ignored):
-            self.assertEqual(1, builder.failure_count)
+            self.assertEqual(expected_builder_count, builder.failure_count)
             self.assertEqual(
-                1, builder.currentjob.specific_job.build.failure_count)
-
+                expected_job_count,
+                builder.currentjob.specific_job.build.failure_count)
             self.assertEqual(
                 1, manager_module.assessFailureCounts.call_count)
 
         return d.addCallback(got_scan)
+
+    def test_scan_first_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=0, job_count=0, expected_builder_count=1,
+            expected_job_count=1)
+
+    def test_scan_second_builder_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=1, job_count=0, expected_builder_count=2,
+            expected_job_count=1)
+
+    def test_scan_second_job_fail(self):
+        # The first failure of a job should result in the failure_count
+        # on the job and the builder both being incremented.
+        self._assertFailureCounting(
+            builder_count=0, job_count=1, expected_builder_count=1,
+            expected_job_count=2)
 
     def test_fail_to_resume_slave_resets_job(self):
         # If an attempt to resume and dispatch a slave fails, it should
