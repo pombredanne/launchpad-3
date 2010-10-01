@@ -110,3 +110,22 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.importances = []
         self.assertEqual(frozenset(), bug_subscription_filter.importances)
+
+    def test_tags(self):
+        # The tags property is a frozenset of the tags that are filtered upon.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(frozenset(), bug_subscription_filter.tags)
+
+    def test_tags_set(self):
+        # Assigning any iterable to tags updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.tags = [u"foo", u"-bar"]
+        self.assertEqual(
+            frozenset((u"foo", u"-bar")),
+            bug_subscription_filter.tags)
+
+    def test_tags_set_empty(self):
+        # Assigning an empty iterable to tags updates the database.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.tags = []
+        self.assertEqual(frozenset(), bug_subscription_filter.tags)

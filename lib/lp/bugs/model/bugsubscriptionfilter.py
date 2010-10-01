@@ -21,6 +21,9 @@ from lp.bugs.model.bugsubscriptionfilterimportance import (
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
+from lp.bugs.model.bugsubscriptionfiltertag import (
+    BugSubscriptionFilterTag,
+    )
 
 
 class BugSubscriptionFilter(Storm):
@@ -110,3 +113,39 @@ class BugSubscriptionFilter(Storm):
     importances = property(
         _get_importances, _set_importances, doc=(
             "A frozenset of importances filtered on."))
+
+    def _get_tags(self):
+        """Return a frozenset of tags to filter on."""
+        tag_filters = IStore(BugSubscriptionFilterTag).find(
+            BugSubscriptionFilterTag,
+            BugSubscriptionFilterTag.filter == self)
+        return frozenset(
+            tag_filter.tag if tag_filter.include else u"-%s" % tag_filter.tag
+            for tag_filter in tag_filters)
+
+    def _set_tags(self, tags):
+        """Update the tags to filter on.
+
+        The tags must be from the `BugTaskTag` enum, but can be
+        bundled in any iterable.
+        """
+        tags = frozenset(tags)
+        current_tags = self.tags
+        store = IStore(BugSubscriptionFilterTag)
+        # Add additional tags.
+        for tag in tags.difference(current_tags):
+            tag_filter = BugSubscriptionFilterTag()
+            tag_filter.filter = self
+            tag_filter.include = not tag.startswith("-")
+            tag_filter.tag = tag.lstrip("-")
+            store.add(tag_filter)
+        # Delete unused ones.
+        store.find(
+            BugSubscriptionFilterTag,
+            BugSubscriptionFilterTag.filter == self,
+            BugSubscriptionFilterTag.tag.is_in(
+                current_tags.difference(tags))).remove()
+
+    tags = property(
+        _get_tags, _set_tags, doc=(
+            "A frozenset of tags filtered on."))
