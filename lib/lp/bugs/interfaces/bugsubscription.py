@@ -47,6 +47,7 @@ class IBugSubscription(Interface):
         "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
+    bugID = Int(title=u"The bug id.", readonly=True)
     bug_notification_level = Choice(
         title=_("Bug notification level"), required=True,
         vocabulary=BugNotificationLevel,
@@ -63,6 +64,9 @@ class IBugSubscription(Interface):
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
+
+    display_duplicate_subscribed_by = Attribute(
+        "duplicate bug `subscribed_by` formatted for display.")
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()

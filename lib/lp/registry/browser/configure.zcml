@@ -8,6 +8,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <!-- RDF downloadable documents -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="lp.registry.browser.RDFIndexView"
+        name="rdf"
+        template="../templates/rdf-index.pt"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="rdf-spec"
+        class="lp.registry.browser.RDFFolder"
+        attribute="__call__"
+        permission="zope.Public"
+        />
+
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         name="+voucher-purchase-instructions"
@@ -142,6 +159,12 @@
         name="+ask-a-question-button"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="canonical.launchpad.browser.AskAQuestionButtonView"
+        permission="zope.Public"/>
+    <browser:page
+        name="+localpackagediffs"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:menus
         classes="
@@ -474,6 +497,12 @@
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.registry.browser.sourcepackage.SourcePackageFormatterAPI"
         name="fmt"
         />
     <browser:url
@@ -812,7 +841,7 @@
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditLocationView"
             permission="launchpad.Edit"
-            template="../templates/person-editlocation.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             name="+contactuser"
             for="lp.registry.interfaces.person.IPerson"
@@ -1060,11 +1089,6 @@
             class="lp.registry.browser.team.TeamMapLtdData"
             template="../templates/team-map-data.pt"
             name="+mapdataltd"/>
-        <browser:page
-            for="lp.registry.interfaces.person.ITeam"
-            permission="zope.Public"
-            class="lp.registry.browser.person.TeamEditLocationView"
-            name="+editlocation"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"

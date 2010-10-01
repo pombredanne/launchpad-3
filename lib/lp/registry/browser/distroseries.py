@@ -11,6 +11,7 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesLocalDifferences',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
@@ -70,7 +71,10 @@ from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.flags import FeatureController
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -525,3 +529,36 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         navigator = BatchNavigator(packages, self.request, size=20)
         navigator.setHeadings('package', 'packages')
         return navigator
+
+
+class DistroSeriesLocalDifferences(LaunchpadView):
+    """Present differences between a derived series and its parent."""
+
+    page_title = 'Local package differences'
+
+    def initialize(self):
+        """Redirect to the derived series if the feature is not enabled."""
+        def in_scope(value):
+            return True
+
+        feature_controller = FeatureController(in_scope)
+        if feature_controller.getFlag('soyuz.derived-series-ui.enabled') != 'on':
+            self.request.response.redirect(canonical_url(self.context))
+            return
+        super(DistroSeriesLocalDifferences, self).initialize()
+
+    @property
+    def label(self):
+        return (
+            "Source package differences between '%s' and "
+            "parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of potentially filtered results."""
+        differences = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+            self.context)
+        return BatchNavigator(differences, self.request)

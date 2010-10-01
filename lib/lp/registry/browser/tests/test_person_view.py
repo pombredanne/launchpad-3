@@ -5,13 +5,16 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -29,7 +32,10 @@ from lp.registry.browser.person import (
     )
 
 from lp.registry.interfaces.karma import IKarmaCacheManager
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    IPersonSet,
+    )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -207,7 +213,8 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.person = self.factory.makePerson()
+        self.valid_email_address = self.factory.getUniqueEmailAddress()
+        self.person = self.factory.makePerson(email=self.valid_email_address)
         login_person(self.person)
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = PersonEditView(
@@ -255,6 +262,94 @@ class TestPersonEditView(TestCaseWithFactory):
         self.ppa.status = ArchiveStatus.DELETED
         self.view.initialize()
         self.assertFalse(self.view.form_fields['name'].for_display)
+
+    def test_add_email_good_data(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+
+        # If everything worked, there should now be a login token to validate
+        # this email address for this user.
+        token = getUtility(ILoginTokenSet).searchByEmailRequesterAndType(
+            email_address,
+            self.person,
+            LoginTokenType.VALIDATEEMAIL)
+        self.assertTrue(token is not None)
+
+    def test_add_email_address_taken(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        account = self.factory.makeAccount(
+            displayname='deadaccount',
+            email=email_address,
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.VALIDATED_SELECTED': self.valid_email_address,
+            'field.VALIDATED_SELECTED-empty-marker': 1,
+            'field.actions.add_email': 'Add',
+            'field.newemail': email_address,
+            }
+        view = create_initialized_view(self.person, "+editemails", form=form)
+        error_msg = view.errors[0]
+        expected_msg = ("The email address '%s' is already registered to an "
+                        "account, deadaccount." % email_address)
+        self.assertEqual(expected_msg, error_msg)
+
+
+class TestTeamCreationView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamCreationView, self).setUp()
+        person = self.factory.makePerson()
+        login_person(person)
+
+    def test_team_creation_good_data(self):
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.contactemail': 'contactemail@example.com',
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(
+            person_set, '+newteam', form=form)
+        team = person_set.getByName('libertyland')
+        self.assertTrue(team is not None)
+        self.assertEqual('libertyland', team.name)
+
+    def test_validate_email_catches_taken_emails(self):
+        email_address = self.factory.getUniqueEmailAddress()
+        account = self.factory.makeAccount(
+            displayname='libertylandaccount',
+            email=email_address,
+            status=AccountStatus.NOACCOUNT)
+        form = {
+            'field.actions.create': 'Create Team',
+            'field.contactemail': email_address,
+            'field.displayname': 'liberty-land',
+            'field.name': 'libertyland',
+            'field.renewal_policy': 'NONE',
+            'field.renewal_policy-empty-marker': 1,
+            'field.subscriptionpolicy': 'RESTRICTED',
+            'field.subscriptionpolicy-empty-marker': 1,
+            }
+        person_set = getUtility(IPersonSet)
+        view = create_initialized_view(person_set, '+newteam', form=form)
+        expected_msg = ('%s is already registered in Launchpad and is '
+                        'associated with the libertylandaccount '
+                        'account.' % email_address)
+        error_msg = view.errors[0].errors[0]
+        self.assertEqual(expected_msg, error_msg)
 
 
 class TestPersonParticipationView(TestCaseWithFactory):
@@ -601,6 +696,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This account is already deactivated.', view.errors[0])
+
 
 class TestTeamInvitationView(TestCaseWithFactory):
     """Tests for TeamInvitationView."""

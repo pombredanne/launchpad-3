@@ -55,9 +55,10 @@ class TestTimedAction(testtools.TestCase):
         action = TimedAction("foo", "bar", timeline)
         # Set variable for deterministic results
         action.start = timeline.baseline + datetime.timedelta(0, 0, 0, 2)
+        action._interval_to_now = lambda: datetime.timedelta(0, 0, 0, 3)
         log_tuple = action.logTuple()
         self.assertEqual(4, len(log_tuple), "!= 4 elements %s" % (log_tuple,))
         self.assertAlmostEqual(2, log_tuple[0])
-        self.assertAlmostEqual(1000001, log_tuple[1])
+        self.assertAlmostEqual(5, log_tuple[1])
         self.assertEqual("foo", log_tuple[2])
         self.assertEqual("bar", log_tuple[3])

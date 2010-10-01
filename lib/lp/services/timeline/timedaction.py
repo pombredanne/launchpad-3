@@ -43,18 +43,21 @@ class TimedAction:
         self.detail = detail
         self.timeline = timeline
 
+    def __repr__(self):
+        return "<TimedAction %s[%s]>" % (self.category, self.detail[:20])
+
     def logTuple(self):
         """Return a 4-tuple suitable for errorlog's use."""
         offset = self._td_to_ms(self.start - self.timeline.baseline)
         if self.duration is None:
-            # This action wasn't finished: give it a duration that will stand
-            # out. This is pretty normal when action ends are recorded by
-            # callbacks rather than stack-like structures. E.g. storm 
-            # tracers in launchpad:
+            # This action wasn't finished: pretend it has finished now
+            # (even though it hasn't). This is pretty normal when action ends
+            # are recorded by callbacks rather than stack-like structures. E.g.
+            # storm tracers in launchpad:
             # log-trace START : starts action
             # timeout-trace START : raises 
             # log-trace FINISH is never called.
-            length = 999999
+            length = self._td_to_ms(self._interval_to_now())
         else:
             length = self._td_to_ms(self.duration)
         return (offset, offset + length, self.category, self.detail)
@@ -66,4 +69,7 @@ class TimedAction:
 
     def finish(self):
         """Mark the TimedAction as finished."""
-        self.duration = datetime.datetime.now(UTC) - self.start
+        self.duration = self._interval_to_now()
+
+    def _interval_to_now(self):
+        return datetime.datetime.now(UTC) - self.start

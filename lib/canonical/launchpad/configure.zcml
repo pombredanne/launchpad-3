@@ -31,8 +31,6 @@
   <include package="lp.translations" />
   <include package="lp.testopenid" />
   <include package="lp.blueprints" />
-  <include package="lp.services.comments" />
-  <include package="lp.services.fields" />
   <include package="lp.vostok" />
 
   <browser:url
@@ -76,19 +74,6 @@
     path_expression="string:token"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
-
-  <!-- RDF downloadable documents -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    class="canonical.launchpad.browser.launchpad.RDFIndexView"
-    name="rdf"
-    template="templates/rdf-index.pt"
-    permission="zope.Public"
-    />
-
-  <browser:resourceDirectory
-    name="rdf"
-    directory="rdfspec" />
 
   <i18n:registerTranslations directory="locales" />
 

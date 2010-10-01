@@ -93,6 +93,7 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
+    HasMilestonesMixin,
     Milestone,
     ProjectMilestone,
     )
@@ -110,7 +111,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
+                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasMilestonesMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -202,6 +204,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated to
+        # check for the translations_usage, not official_rosetta.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -271,7 +276,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -305,6 +310,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
+
+    def _getOfficialTagClause(self):
+        """See `OfficialBugTagTargetMixin`."""
+        And(ProjectGroup.id == Product.projectID,
+            Product.id == OfficialBugTag.productID)
 
     @property
     def official_bug_tags(self):
@@ -393,6 +403,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return And(Milestone.productID == Product.id,
+                   Product.projectID == self.id)
+
     def _getMilestones(self, only_active):
         """Return a list of milestones for this project group.
 
@@ -440,6 +455,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def milestones(self):
         """See `IProjectGroup`."""
         return self._getMilestones(True)
+
+    @property
+    def product_milestones(self):
+        """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
+        # XXX: bug=644977 Robert Collins - this is a workaround for
+        # insconsistency in project group milestone use.
+        return self._get_milestones()
 
     @property
     def all_milestones(self):

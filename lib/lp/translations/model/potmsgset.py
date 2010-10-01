@@ -361,6 +361,9 @@ class POTMsgSet(SQLBase):
             query = ["(NOT %s)" % in_use_clause]
         query.append('TranslationMessage.language = %s' % sqlvalues(language))
 
+        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # happened for the usage enums, this sql needs to be updated
+        # to check for the translations_usage, not official_rosetta.
         query.append('''
             potmsgset IN (
                 SELECT POTMsgSet.id
@@ -381,7 +384,8 @@ class POTMsgSet(SQLBase):
                     POTMsgSet.id <> %s AND
                     msgid_singular = %s AND
                     POTemplate.iscurrent AND
-                    (Product.official_rosetta OR Distribution.official_rosetta)
+                    (Product.official_rosetta OR
+                        Distribution.official_rosetta)
             )''' % sqlvalues(self, self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
@@ -396,8 +400,8 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query)
-        }
+            'where': ' AND '.join(query),
+            }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
@@ -565,8 +569,7 @@ class POTMsgSet(SQLBase):
         # plural forms.
         order.extend([
             'msgstr%s NULLS FIRST' % quote(form)
-            for form in remaining_plural_forms
-            ])
+            for form in remaining_plural_forms])
         matches = list(
             TranslationMessage.select(' AND '.join(clauses), orderBy=order))
 
@@ -721,7 +724,6 @@ class POTMsgSet(SQLBase):
                 new_message.potemplate = None
         if is_imported or new_message == imported_message:
             new_message.is_imported = True
-
 
     def _isTranslationMessageASuggestion(self, force_suggestion,
                                          pofile, submitter,
@@ -1178,4 +1180,3 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return TranslationTemplateItem.selectBy(
             potmsgset=self, orderBy=['id'])
-

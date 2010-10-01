@@ -29,7 +29,7 @@ if __name__ == '__main__':
     print >> sys.stderr, 'Script Output'
     try:
         raise RuntimeError('Aargh')
-    except:
+    except RuntimeError:
         log.exception('Oops')
         root_log.exception('Root oops')
 

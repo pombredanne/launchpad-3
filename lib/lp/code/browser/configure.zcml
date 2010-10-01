@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -961,6 +961,18 @@
         permission="zope.Public"
         name="+code-index"
         template="../templates/product-branches.pt"/>
+   <browser:page
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
+      permission="zope.Public"
+      name="+portlet-product-codestatistics"
+      template="../templates/product-portlet-codestatistics.pt"/>
+   <browser:page
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
+      permission="zope.Public"
+      name="+portlet-product-codestatistics-content"
+      template="../templates/product-portlet-codestatistics-content.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.code.publisher.CodeLayer"
@@ -1208,7 +1220,7 @@
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
-            permission="launchpad.View"/>
+            permission="launchpad.AnyPerson"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
@@ -1306,19 +1318,5 @@
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
     </facet>
-  <securedutility
-    name="BuildableDistroSeries"
-    component="lp.code.vocabularies.sourcepackagerecipe.buildable_distroseries_vocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
-  <securedutility
-    name="TargetPPAs"
-    component="lp.code.vocabularies.sourcepackagerecipe.target_ppas_vocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    >
-    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
-  </securedutility>
 
 </configure>

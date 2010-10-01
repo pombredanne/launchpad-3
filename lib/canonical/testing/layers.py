@@ -96,7 +96,11 @@ from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
-from canonical.database.sqlbase import cursor, ZopelessTransactionManager
+from canonical.database.sqlbase import (
+    cursor,
+    session_store,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
@@ -193,9 +197,7 @@ def reconnect_stores(database_config_section='launchpad'):
     # as soon as SQLBase._connection is accessed
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
-
-    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
-    assert session_store is not None, 'Failed to reconnect'
+    assert session_store() is not None, 'Failed to reconnect'
 
 
 def wait_children(seconds=120):
@@ -319,25 +321,39 @@ class BaseLayer:
         BaseLayer.test_name = None
         BaseLayer.check()
 
-        # Check for tests that leave live threads around early.
-        # A live thread may be the cause of other failures, such as
-        # uncollectable garbage.
-        new_threads = [
-            thread for thread in threading.enumerate()
-            if thread not in BaseLayer._threads and thread.isAlive()
-            ]
+        def new_live_threads():
+            return [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+
+        if BaseLayer.disable_thread_check:
+            new_threads = new_live_threads()
+        else:
+            for loop in range(0,100):
+                # Check for tests that leave live threads around early.
+                # A live thread may be the cause of other failures, such as
+                # uncollectable garbage.
+                new_threads = new_live_threads()
+                has_live_threads = False
+                for new_thread in new_threads:
+                    new_thread.join(0.1)
+                    if new_thread.isAlive():
+                        has_live_threads = True
+                if has_live_threads:
+                    # Trigger full garbage collection that might be
+                    # blocking threads from exiting.
+                    gc.collect()
+                else:
+                    break
 
         if new_threads:
-            # XXX gary 2008-12-03 bug=304913
-            # The codehosting acceptance tests are intermittently leaving
-            # threads around, apparently because of bzr. disable_thread_check
-            # is a mechanism to turn off the BaseLayer behavior of causing a
-            # test to fail if it leaves a thread behind. This comment is found
-            # in both lp.codehosting.tests.test_acceptance and
-            # canonical.testing.layers
+            # BaseLayer.disable_thread_check is a mechanism to stop
+            # tests that leave threads behind from failing. Its use
+            # should only ever be temporary.
             if BaseLayer.disable_thread_check:
-                print ("ERROR DISABLED: "
-                       "Test left new live threads: %s") % repr(new_threads)
+                print (
+                    "ERROR DISABLED: "
+                    "Test left new live threads: %s") % repr(new_threads)
             else:
                 BaseLayer.flagTestIsolationFailure(
                     "Test left new live threads: %s" % repr(new_threads))
@@ -411,11 +427,10 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
-            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)
-            except:
+            except LayerIsolationError:
                 test_result.addError(test_case, sys.exc_info())
 
     @classmethod
