@@ -424,8 +424,10 @@
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/Feedback"
-        >Contact Launchpad Support</a>
+      <a tal:condition="not: view/user|nothing"
+        href="/feedback">Contact Launchpad Support</a>
+      <a tal:condition="view/user|nothing"
+        href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>

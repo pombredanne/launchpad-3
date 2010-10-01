@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -17,7 +17,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'NavigationMenuTabs',
-    'RDFIndexView',
     'SoftTimeoutView',
     'get_launchpad_views',
     ]
@@ -98,7 +97,7 @@ from canonical.launchpad.webapp.publisher import RedirectionView
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DurationFormatterAPI,
     MenuAPI,
     PageTemplateContextsAPI,
@@ -487,10 +486,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('support')
     def redirect_support(self):
-        """Redirect /support to Answers root site."""
+        """Redirect /support to launchpad Answers site."""
         target_url = canonical_url(
-            getUtility(ILaunchpadRoot), rootsite='answers')
-        return self.redirectSubTree(target_url + 'questions', status=301)
+            getUtility(ILaunchpadCelebrities).launchpad, rootsite='answers')
+        return self.redirectSubTree(target_url, status=301)
 
     @stepto('legal')
     def redirect_legal(self):
@@ -931,8 +930,3 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
-
-
-class RDFIndexView(LaunchpadView):
-    """View for /rdf page."""
-    page_title = label = "Launchpad RDF"

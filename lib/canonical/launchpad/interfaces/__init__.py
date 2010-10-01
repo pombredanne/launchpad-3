@@ -96,6 +96,7 @@ from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
+from lp.registry.errors import TeamMembershipTransitionError
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
 from lp.registry.interfaces.productlicense import *
