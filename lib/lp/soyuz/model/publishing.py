@@ -577,6 +577,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         builds = []
         for arch in build_architectures:
+            print arch.architecturetag
             build_candidate = self._createMissingBuildForArchitecture(
                 arch, logger=logger)
             if build_candidate is not None:

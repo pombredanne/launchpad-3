@@ -84,7 +84,7 @@ class PackageCloner:
         if distroarchseries_list is not None:
             for (origin_das, destination_das) in distroarchseries_list:
                 self._clone_binary_packages(
-                    origin, destination, origin_das, destination_das)
+                    origin, destination, origin_das, destination_das, spns)
 
         if proc_families is None:
             proc_families = []
@@ -126,6 +126,7 @@ class PackageCloner:
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
+            print pubrec.sourcepackagerelease.name
             pubrec.createMissingBuilds(architectures_available=architectures)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
@@ -171,7 +172,16 @@ class PackageCloner:
                 origin.pocket, origin.archive)
 
         if spns and len(spns) > 0:
-            pass
+            query += '''AND bpph.binarypackagerelease IN (
+                            SELECT bpr.id
+                            FROM BinaryPackageRelease AS bpr,
+                            BinaryPackageBuild as bpb,
+                            SourcePackageRelease as spr,
+                            SourcePackageName as spn
+                            WHERE bpb.id = bpr.build AND
+                            bpb.source_package_release = spr.id
+                            AND spr.sourcepackagename = spn.id
+                            AND spn.name IN %s)''' % sqlvalues(spns)
 
         store.execute(query)
 
@@ -398,8 +408,12 @@ class PackageCloner:
                 origin.pocket, origin.archive)
 
         if spns and len(spns) > 0:
-            query += '''AND spph.sourcepackagename IN (%s)''' % sqlvalues(
-                spns)
+            query += '''AND spph.sourcepackagerelease IN (
+                            (SELECT spr.id
+                            FROM SourcePackageRelease AS spr,
+                            SourcePackageName AS spn
+                        WHERE spr.sourcepackagename = spn.id
+                        AND spn.name IN %s))''' % sqlvalues(spns)
 
         if origin.packagesets:
             query += '''AND spph.sourcepackagerelease IN

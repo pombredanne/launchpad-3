@@ -264,6 +264,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(foobuntu_srcs, hoary_srcs)
         foobuntu.updatePackageCount()
         self.assertEqual(foobuntu.sourcecount, 3)
+        self.assertEqual(foobuntu.binarycount, 1) # Only pmount is published
 
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True
@@ -271,10 +272,34 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         foobuntu.updatePackageCount()
         builds = foobuntu.getBuildRecords(
             build_state=BuildStatus.NEEDSBUILD,
-            pocket=PackagePublishingPocket.RELEASE, arch_tag='i386')
+            pocket=PackagePublishingPocket.RELEASE)
         self.assertEqual(foobuntu.sourcecount, 7)
         self.assertEqual(foobuntu.binarycount, 0)
         self.assertEqual(builds.count(), 5)
+
+
+    def test_limit_packagesets_and_rebuild(self):
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.hoary.owner,
+            distroseries=self.hoary)
+        test1.addSources('pmount')
+        test1.addSources('linux-source-2.6.15')
+        test1.addSources('libstdc++')
+        #import pdb; pdb.set_trace()
+        foobuntu = self._full_initialise(
+            packagesets=('test1',), rebuild=True)
+        foobuntu.updatePackageCount()
+        builds = foobuntu.getBuildRecords(
+            build_state=BuildStatus.NEEDSBUILD,
+            pocket=PackagePublishingPocket.RELEASE)
+        self.assertEqual(foobuntu.sourcecount, 3)
+        self.assertEqual(foobuntu.binarycount, 0)
+        for build in builds:
+            print build.title
+        self.assertEqual(builds.count(), 3)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
