@@ -194,8 +194,6 @@ class ForkingSessionService(Service):
 
     @property
     def should_launch(self):
-        # We tie this directly into the SFTP service. If one should launch,
-        # then both of them should
         return (config.codehosting.launch and
                 config.codehosting.use_forking_daemon)
 

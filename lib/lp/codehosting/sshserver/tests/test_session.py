@@ -114,9 +114,10 @@ class Test_WaitForExit(AvatarTestCase):
         self.assertEqual([('processEnded', 256)], self.proc.log)
 
     def test_dataReceived_bad_data(self):
-        # XXX: The dataReceived code calls 'log.err' which ends up getting
+        # Note: The dataReceived code calls 'log.err' which ends up getting
         #      printed during the test run. How do I suppress that or even
         #      better, check that it does so?
+        #      self.flushLoggedErrors() doesn't seem to do anything.
         self.exiter.dataReceived('bogus\n')
         self.assertEqual([('processEnded', (255 << 8))], self.proc.log)
 

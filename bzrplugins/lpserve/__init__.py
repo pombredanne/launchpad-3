@@ -215,7 +215,8 @@ class LPForkingService(object):
     #              the message back.
     # [Decision #4]
     #   Exit information
-    #       How do we inform the client process that the child has exited?
+    #       Inform the client that the child has exited on the socket they used
+    #       to request the fork.
     #       1) Arguably they could see that stdout and stderr have been closed,
     #          and thus stop reading. In testing, I wrote a client which uses
     #          select.poll() over stdin/stdout/stderr and used that to ferry
@@ -228,16 +229,16 @@ class LPForkingService(object):
     #          the correct indicator.  As such, we decided to inform the client
     #          on the socket that they originally made the fork request, rather
     #          than just closing the socket immediately.
-    #       2) Going further, we could have had the forking server close the
-    #          socket, and only the child hold the socket open. When the child
-    #          exits, then the OS naturally closes the socket. However, if we
-    #          want the returncode, then we should put that as bytes on the
-    #          socket before we exit. Having the client do the work means that
-    #          in error conditions, it could easily die before being able to
-    #          write anything (think SEGFAULT, etc). We already want the
-    #          forking server to be 'wait'() ing on its children. Both so that
-    #          we don't get zombies, and with wait3() we can get the rusage
-    #          (user time, memory consumption, etc.)
+    #       2) We could have had the forking server close the socket, and only
+    #          the child hold the socket open. When the child exits, then the
+    #          OS naturally closes the socket.
+    #          If we want the returncode, then we should put that as bytes on
+    #          the socket before we exit. Having the child do the work means
+    #          that in error conditions, it could easily die before being able to
+    #          write anything (think SEGFAULT, etc). The forking server is
+    #          already 'wait'() ing on its children. So that we don't get
+    #          zombies, and with wait3() we can get the rusage (user time,
+    #          memory consumption, etc.)
     #          As such, it seems reasonable that the server can then also
     #          report back when a child is seen as exiting.
     # [Decision #5]
@@ -256,21 +257,23 @@ class LPForkingService(object):
     #       up the stack and runs exit functions (and finally statements). When
     #       I tried using it originally, I would see the current child bubble
     #       all the way up the stack (through the server code that it fork()
-    #       through), and then get to main() returning code 0. However, the
-    #       process would exit nonzero. My guess is that something in the
-    #       atexit functions was failing, but that it was happening after
-    #       logging, etc had been shut down.
-    #       Note that whatever global state has been set up by the client,
-    #       should have been flushed before run_bzr_* has exited (which we *do*
-    #       wait for), and any other global state is probably a remnant from
-    #       the service process. Which will be cleaned up by the service
-    #       itself, rather than the child.
-    #       There is some possibility that files won't get flushed, etc. So we
-    #       may want to be calling sys.exitfunc() first. Note that bzr itself
-    #       uses sys.exitfunc(); os._exit() in the 'bzr' main script, as the
-    #       teardown time of all the python state was quite noticeable in
-    #       real-world runtime. As such, bzrlib should be pretty safe, or it
-    #       would have been failing for people already.
+    #       through), and then get to main() returning code 0. The process
+    #       would still exit nonzero. My guess is that something in the atexit
+    #       functions was failing, but that it was happening after logging, etc
+    #       had been shut down.
+    #       Any global state from the child process should be flushed before
+    #       run_bzr_* has exited (which we *do* wait for), and any other global
+    #       state is probably a remnant from the service process. Which will be
+    #       cleaned up by the service itself, rather than the child.
+    #       There is some concern that log files may not get flushed, so we
+    #       currently call sys.exitfunc() first. The main problem is that I
+    #       don't know any way to *remove* a function registered via 'atexit()'
+    #       so if the forking service has some state, we my try to clean it up
+    #       incorrectly.
+    #       Note that the bzr script itself uses sys.exitfunc(); os._exit() in
+    #       the 'bzr' main script, as the teardown time of all the python state
+    #       was quite noticeable in real-world runtime. As such, bzrlib should
+    #       be pretty safe, or it would have been failing for people already.
     # [Decision #7]
     #   prefork vs max children vs ?
     #       For simplicity it seemed easiest to just fork when requested. Over
@@ -285,20 +288,13 @@ class LPForkingService(object):
     #       already limitations at play. (If Conch limits connections, then it
     #       will already be doing all the work, etc.)
     # [Decision #8]
-    #   env vars
-    #       We could go with a much more structured definition for this data.
-    #       Or we could use bencode, or rio, or ...
-    #       I wanted something that would be easy enough to parse, sufficient
-    #       in complexity for what we want to convey, and gives us a good
-    #       way to know if we need to read more content from the socket.
-    #       Also, if we go for structured data, then we should structure all of
-    #       the requests.
-    # [Decision #9]
-    #   nicer errors to clients
+    #   nicer errors on the request socket
     #       This service is meant to be run only on the local system. As such,
     #       we don't try to be extra defensive about leaking information to
-    #       clients. Instead we try to be helpful, and tell them as much as we
-    #       know about what went wrong.
+    #       the one connecting to the socket. (We should still watch out what
+    #       we send across the per-child fifos, since those are connected to
+    #       remote clients.) Instead we try to be helpful, and tell them as
+    #       much as we know about what went wrong.
 
     DEFAULT_PATH = '/var/run/launchpad_forking_service.sock'
     DEFAULT_PERMISSIONS = 00660 # Permissions on the master socket (rw-rw----)
@@ -397,11 +393,11 @@ class LPForkingService(object):
         stdin_fid = os.open(stdin_path, os.O_RDONLY)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stderr_path, os.O_WRONLY)
-        # XXX: Cheap hack. by this point bzrlib has opened stderr for logging
-        #      (as part of starting the service process in the first place). As
-        #      such, it has a stream handler that writes to stderr. logging
-        #      tries to flush and close that, but the file is already closed.
-        #      This just supresses that exception
+        # Note: by this point bzrlib has opened stderr for logging
+        #       (as part of starting the service process in the first place). As
+        #       such, it has a stream handler that writes to stderr. logging
+        #       tries to flush and close that, but the file is already closed.
+        #       This just supresses that exception
         logging.raiseExceptions = False
         sys.stdin.close()
         sys.stdout.close()
@@ -466,7 +462,7 @@ class LPForkingService(object):
         # TODO: Should we call sys.exitfunc() here? it allows atexit functions
         #       to fire, however, some of those may be still around from the
         #       parent process, which we don't really want.
-        ## sys.exitfunc()
+        sys.exitfunc()
         # See [Decision #6]
         os._exit(retcode)
 
@@ -485,7 +481,6 @@ class LPForkingService(object):
             The string must end with "end\n".
         :return: A dict of environment variables
         """
-        # See [Decision #8]
         env = {}
         if not env_str.endswith('end\n'):
             raise ValueError('Invalid env-str: %r' % (env_str,))
@@ -618,7 +613,6 @@ class LPForkingService(object):
 
         One interesting hook here would be to track memory consumption, etc.
         """
-        to_remove = []
         while self._child_processes:
             try:
                 c_id, exit_code, rusage = os.wait3(os.WNOHANG)
@@ -651,7 +645,7 @@ class LPForkingService(object):
                 # The child failed to cleanup after itself, do the work here
                 trace.warning('Had to clean up after child %d: %s\n'
                               % (c_id, c_path))
-                shutil.rmtree(c_path)
+                shutil.rmtree(c_path, ignore_errors=True)
 
     def _wait_for_children(self, secs):
         start = time.time()
@@ -741,7 +735,7 @@ class LPForkingService(object):
                 return
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
-            # See [Decision #9]
+            # See [Decision #8]
             conn.sendall('FAILURE\nunknown request: %r\n' % (request,))
         conn.close()
 
@@ -823,6 +817,11 @@ class cmd_launchpad_replay(Command):
 
 register_command(cmd_launchpad_replay)
 
+# This list was generated by run lsprofing a spawned child, and looking for
+# <module ...> times, which indicate an import occured. Other possibilities are
+# to just run "bzr lp-serve --profile-imports" manually, and observe what was
+# expensive to import. It doesn't seem very easy to get this right
+# automatically.
 libraries_to_preload = [
     'bzrlib.errors',
     'bzrlib.repofmt.groupcompress_repo',

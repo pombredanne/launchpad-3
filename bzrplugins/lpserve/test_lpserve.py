@@ -500,6 +500,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         paths = []
         for idx in range(4):
             paths.append(self.send_fork_request('launchpad-replay'))
+        # Do them out of order, as order shouldn't matter.
         for idx in [3, 2, 0, 1]:
             p, pid, sock = paths[idx]
             stdout_msg = 'hello %d\n' % (idx,)
