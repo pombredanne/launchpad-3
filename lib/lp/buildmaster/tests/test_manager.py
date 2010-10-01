@@ -29,7 +29,10 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.scripts.logger import BufferLogger
+from canonical.launchpad.scripts.logger import (
+    BufferLogger,
+    QuietFakeLogger,
+    )
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
@@ -186,49 +189,6 @@ class TestSlaveScanner(TrialTestCase):
         self.assertIsDispatchReset(result)
         self.assertIn('reset failure', repr(result))
         self.assertEqual(result.info, "stdout\nstderr")
-
-    def test_fail_to_resume_slave_resets_slave(self):
-        # If an attempt to resume and dispatch a slave fails, we reset the
-        # slave by calling self.reset_result(slave)().
-
-        reset_result_calls = []
-
-        class LoggingResetResult(BaseDispatchResult):
-            """A DispatchResult that logs calls to itself.
-
-            This *must* subclass BaseDispatchResult, otherwise finishCycle()
-            won't treat it like a dispatch result.
-            """
-
-            def __init__(self, slave, info=None):
-                self.slave = slave
-
-            def __call__(self):
-                reset_result_calls.append(self.slave)
-
-        # Make a failing slave that is requesting a resume.
-        slave = RecordingSlave('foo', 'http://foo.buildd:8221/', 'foo.host')
-        slave.resume_requested = True
-        slave.resumeSlave = lambda: deferLater(
-            reactor, 0, defer.fail, Failure(('out', 'err', 1)))
-
-        # Make the manager log the reset result calls.
-        self.manager.reset_result = LoggingResetResult
-
-        # We only care about this one slave. Reset the list of manager
-        # deferreds in case setUp did something unexpected.
-        self.manager._deferred_list = []
-
-        # Here, we're patching the slaveConversationEnded method so we can
-        # get an extra callback at the end of it, so we can
-        # verify that the reset_result was really called.
-        def _slaveConversationEnded():
-            d = self._realslaveConversationEnded()
-            return d.addCallback(
-                lambda ignored: self.assertEqual([slave], reset_result_calls))
-        self.manager.slaveConversationEnded = _slaveConversationEnded
-
-        self.manager.resumeAndDispatch(slave)
 
     def test_failed_to_resume_slave_ready_for_reset(self):
         # When a slave fails to resume, the manager has a Deferred in its
@@ -487,13 +447,11 @@ class TestSlaveScannerScan(TrialTestCase):
         BuilddSlaveTestSetup().setUp()
 
         # Creating the required chroots needed for dispatching.
-        login('foo.bar@canonical.com')
         test_publisher = SoyuzTestPublisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
-        login(ANONYMOUS)
 
     def tearDown(self):
         BuilddSlaveTestSetup().tearDown()
@@ -501,8 +459,7 @@ class TestSlaveScannerScan(TrialTestCase):
         TwistedLayer.testTearDown()
 
     def _resetBuilder(self, builder):
-        """Reset the given builder and it's job."""
-        login('foo.bar@canonical.com')
+        """Reset the given builder and its job."""
 
         builder.builderok = True
         job = builder.currentjob
@@ -510,7 +467,6 @@ class TestSlaveScannerScan(TrialTestCase):
             job.reset()
 
         transaction.commit()
-        login(ANONYMOUS)
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
@@ -531,7 +487,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         Replace its default logging handler by a testing version.
         """
-        manager = SlaveScanner(BOB_THE_BUILDER_NAME, BufferLogger())
+        manager = SlaveScanner(BOB_THE_BUILDER_NAME, QuietFakeLogger())
         manager.logger.name = 'slave-scanner'
 
         return manager
@@ -598,7 +554,7 @@ class TestSlaveScannerScan(TrialTestCase):
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
         manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        d = defer.maybeDeferred(manager._startCycle)
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
@@ -711,6 +667,45 @@ class TestSlaveScannerScan(TrialTestCase):
                 1, manager_module.assessFailureCounts.call_count)
 
         return d.addCallback(got_scan)
+
+    def test_fail_to_resume_slave_resets_job(self):
+        # If an attempt to resume and dispatch a slave fails, it should
+        # reset the job via job.reset()
+
+        # Make a slave with a failing resume() method.
+        slave = OkSlave()
+        slave.resume = lambda: deferLater(
+            reactor, 0, defer.fail, Failure(('out', 'err', 1)))
+
+        # Reset sampledata builder.
+        builder = removeSecurityProxy(
+            getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME])
+        self._resetBuilder(builder)
+        self.assertEqual(0, builder.failure_count)
+        builder.setSlaveForTesting(slave)
+        builder.vm_host = "fake_vm_host"
+
+        # Prevent further scans after calling startCycle().
+        manager = self._getManager()
+        manager.scheduleNextScanCycle = FakeMethod()
+
+        # Get the next job that will be dispatched.
+        job = removeSecurityProxy(builder._findBuildCandidate())
+        job.virtualized = True
+        builder.virtualized = True
+        d = manager.startCycle()
+
+        def check(ignored):
+            # The failure_count will have been incremented on the
+            # builder, we can check that to see that a dispatch attempt
+            # did indeed occur.
+            self.assertEqual(1, builder.failure_count)
+            # There should also be no builder set on the job.
+            self.assertTrue(job.builder is None)
+            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+            self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+
+        return d.addCallback(check)
 
 
 class TestDispatchResult(LaunchpadTestCase):

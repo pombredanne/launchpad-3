@@ -776,7 +776,10 @@ class Builder(SQLBase):
                 BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch)
             err = failure.value
             logger.warn('Could not build: %s' % err)
-        return d.addErrback(warn_on_error)
+        # XXX: let the failures bubble up to the manager. It will also
+        # reset the job.
+        #return d.addErrback(warn_on_error)
+        return d
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
@@ -787,6 +790,8 @@ class Builder(SQLBase):
             self.failBuilder(error_message)
 
         def got_resume_failed(failure):
+            # XXX: This should really let the failure bubble up to the
+            # scan() method that does the failure counting.
             failure.trap(CannotResumeHost)
             logger.warn(
                 "Failed to reset builder: %s -- %s" % (
@@ -802,6 +807,8 @@ class Builder(SQLBase):
             d = self.resumeSlaveHost()
             return d.addErrback(got_resume_failed)
         else:
+            # XXX: This should really let the failure bubble up to the
+            # scan() method that does the failure counting.
             return defer.succeed(fail_builder())
 
     def findAndStartJob(self, buildd_slave=None):
