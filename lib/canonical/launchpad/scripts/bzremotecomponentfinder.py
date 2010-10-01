@@ -18,6 +18,11 @@ from urllib2 import (
         )
 from BeautifulSoup import BeautifulSoup
 from canonical.launchpad.scripts.logger import log as default_log
+from zope.component import getUtility
+from lp.bugs.interfaces.bugtracker import (
+        BugTrackerType,
+        IBugTrackerSet,
+        )
 
 
 class BugzillaRemoteComponentScraper:
@@ -26,22 +31,9 @@ class BugzillaRemoteComponentScraper:
     re_cpts = re.compile(r'cpts\[(\d+)\] = \[(.*)\]')
     re_vers = re.compile(r'vers\[(\d+)\] = \[(.*)\]')
 
-    def __init__(self, bzurl):
+    def __init__(self, base_url=None):
+        self.base_url = base_url
         self.products = {}
-
-        # TODO:  Hack!!  This should be fixed in sampledata
-        if (bzurl == "http://bugzilla.gnome.org/bugs" or
-            bzurl == "http://bugzilla.gnome.org/"):
-            bzurl = "http://bugzilla.gnome.org"
-        elif (bzurl == "https://bugzilla.mozilla.org/"):
-            bzurl = " https://bugzilla.mozilla.org"
-
-        #TODO: All the sampledata urls are failing, just force it to fdo for now
-        bzurl = "https://bugzilla.freedesktop.org"
-        self.url = "%s/query.cgi?format=advanced" %(bzurl)
-
-    def _getPage(self, url):
-        return urlopen(url).read()
 
     def dictFromCSV(self, line):
         items_dict = {}
@@ -54,12 +46,13 @@ class BugzillaRemoteComponentScraper:
                 }
         return items_dict
 
-    def parsePage(self, page):
-        try:
-            body = self._getPage(self.url)
-            soup = BeautifulSoup(body)
-        except HTTPError, error:
-            #self.logger.error("Error fetching %s: %s" % (url, error))
+    def getPage(self):
+        url = "%s/query.cgi?format=advanced" %(self.base_url)
+        return urlopen(url).read()
+
+    def parsePage(self, page_text):
+        soup = BeautifulSoup(page_text)
+        if soup is None:
             return None
 
         # Load products into a list since Bugzilla references them by index number
@@ -71,7 +64,7 @@ class BugzillaRemoteComponentScraper:
                 products.append({
                     'name': product.string,
                     'components': {},
-                    'versions': None
+                    'versions': None,
                     })
 
         for script_text in soup.findAll(name="script"):
@@ -93,8 +86,17 @@ class BugzillaRemoteComponentScraper:
             product_name = product['name']
             self.products[product_name] = product
 
+        return True
+
+
 class BugzillaRemoteComponentFinder:
     """Updates remote components for all Bugzillas registered in Launchpad"""
+
+    # Names of bug trackers we should not pull data from
+    _BLACKLIST = [
+        u"ubuntu-bugzilla",
+        u"mozilla.org",
+        ]
 
     def __init__(self, txn, logger=None):
         self.txn = txn
@@ -102,4 +104,74 @@ class BugzillaRemoteComponentFinder:
         if logger is None:
             self.logger = default_log
 
-    
+    def getRemoteProductsAndComponents(self):
+        lp_bugtrackers = getUtility(IBugTrackerSet)
+        for lp_bugtracker in lp_bugtrackers:
+            if lp_bugtracker.bugtrackertype != BugTrackerType.BUGZILLA:
+                continue
+            if lp_bugtracker.name in self._BLACKLIST:
+                continue
+
+            self.logger.info("%s:" %(lp_bugtracker.name))
+            bz_bugtracker = BugzillaRemoteComponentScraper(
+                base_url = "https://bugzilla.freedesktop.org")
+
+#        # TODO:  This should be fixed in sampledata
+#        if (bzurl == "http://bugzilla.gnome.org/bugs" or
+#            bzurl == "http://bugzilla.gnome.org/"):
+#            bzurl = "http://bugzilla.gnome.org"
+#        elif (bzurl == "https://bugzilla.mozilla.org/"):
+#            bzurl = " https://bugzilla.mozilla.org"
+
+            try:
+                self.logger.info("...Fetching page")
+                page_text = bz_bugtracker.getPage()
+            except HTTPError, error:
+                self.logger.error("Error fetching %s: %s" % (url, error))
+                continue
+
+            self.logger.info("...Parsing html")
+            bz_bugtracker.parsePage(page_text)
+
+            self.logger.info("...Storing new data to Launchpad")
+            self.storeRemoteProductsAndComponents(bz_bugtracker, lp_bugtracker)
+
+    def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
+        components_to_add = []
+        for product in self.products.itervalues():
+            # TODO: Munge product name so Launchpad accepts it
+            product_display_name = product['name']
+
+            # Look up the component group id from Launchpad for the product
+            # if it already exists.  Otherwise, add it.
+            lp_component_group = lp_bugtracker.getRemoteComponentGroup(
+                product_display_name)
+            if lp_component_group is None:
+                lp_component_group = lp_bugtracker.addRemoteComponentGroup(
+                    product_display_name)
+                # TODO: Error handling here
+            else:
+                for component in lp_component_group.components:
+                    if (component.name in product['components'] or
+                        component.is_visible == False or
+                        component.is_custom == True:
+                        # We already know something about this component,
+                        # or a user has configured it, so ignore it
+                        del product['components'][component.name]
+                    else:
+                        # Component is now missing from Bugzilla, so drop it here too
+                        component.remove()
+
+            # Remaining components in the collection need added to launchpad
+            for component in product['components'].values():
+                components_to_add.append(
+                    "('%s', %d, 'True', 'False')" %(
+                        component, lp_component_group.id))
+
+
+        if len(components_to_add)>0:
+            return """
+            INSERT INTO BugTrackerComponent
+            (name, component_group, is_visible, is_custom)
+            VALUES %s;""" % ",\n ".join(components_to_add)
+
