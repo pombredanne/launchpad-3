@@ -1853,14 +1853,14 @@
     <!-- PersonNotification -->
 
     <class
-        class="canonical.launchpad.database.PersonNotification">
+        class="lp.registry.model.personnotification.PersonNotification">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotification"/>
     </class>
 
     <securedutility
         provides="lp.registry.interfaces.personnotification.IPersonNotificationSet"
-        class="canonical.launchpad.database.PersonNotificationSet">
+        class="lp.registry.model.personnotification.PersonNotificationSet">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotificationSet"/>
     </securedutility>

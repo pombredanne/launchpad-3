@@ -9,7 +9,7 @@
   i18n_domain="launchpad">
 
   <!-- TemporaryBlobStorage -->
-  <class class="canonical.launchpad.database.TemporaryBlobStorage">
+  <class class="canonical.launchpad.database.temporaryblobstorage.TemporaryBlobStorage">
     <allow
       interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryBlobStorage" />
   </class>
@@ -24,13 +24,13 @@
   </browser:page>
 
   <!-- TemporaryStorageManager -->
-  <class class="canonical.launchpad.database.TemporaryStorageManager">
+  <class class="canonical.launchpad.database.temporaryblobstorage.TemporaryStorageManager">
     <allow
       interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
   </class>
 
   <securedutility
-      class="canonical.launchpad.database.TemporaryStorageManager"
+      class="canonical.launchpad.database.temporaryblobstorage.TemporaryStorageManager"
       provides="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager">
       <allow
         interface="canonical.launchpad.interfaces.temporaryblobstorage.ITemporaryStorageManager" />
