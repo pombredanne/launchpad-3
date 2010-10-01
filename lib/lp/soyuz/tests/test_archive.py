@@ -355,8 +355,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         # disable the archive, as it is currently enabled
         removeSecurityProxy(archive).disable()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
@@ -373,8 +374,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
         archive = self.factory.makeArchive(enabled=True)
-        self.factory.makeBinaryPackageBuild(
+        build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
         self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
         removeSecurityProxy(archive).disable()
         self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
@@ -617,6 +619,20 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertCannotUpload(
             NoRightsForArchive, archive, person, sourcepackagename,
             distroseries=distroseries)
+
+    def test_checkUploadToPocket_for_released_distroseries_copy_archive(self):
+        # Uploading to the release pocket in a released COPY archive
+        # should be allowed.  This is mainly so that rebuilds that are
+        # running during the release process don't suddenly cause
+        # exceptions in the buildd-manager.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.CURRENT)
+        self.assertIs(
+            None,
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE))
 
     def test_checkUpload_package_permission(self):
         archive, distroseries = self.makeArchiveAndActiveDistroSeries(

@@ -216,10 +216,8 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Failed to notify users about a failure.")
                 info = sys.exc_info()
-                self.error_utility.raising(info)
-                oops = self.error_utility.getLastOopsReport()
                 # Returning the oops says something went wrong.
-                return oops
+                return self.error_utility.raising(info)
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -228,8 +226,7 @@ class BaseJobRunner(object):
         :param info: The standard sys.exc_info() value.
         :return: the Oops that was reported.
         """
-        self.error_utility.raising(info)
-        oops = self.error_utility.getLastOopsReport()
+        oops = self.error_utility.raising(info)
         job.notifyOops(oops)
         return oops
 
@@ -446,16 +443,15 @@ class JobCronScript(LaunchpadCronScript):
 
     config_name = None
 
-    def __init__(self, runner_class=JobRunner, test_args=None,
-                 script_name=None):
-        if script_name is None:
-            script_name = self.config_name
-        # The dbuser is set in run(), since the config_name might not
-        # be set until the command-line arguments can be processed using
-        # the OptionParser set up by LaunchpadScript.__init__().
+    def __init__(self, runner_class=JobRunner, test_args=None, name=None):
         super(JobCronScript, self).__init__(
-            script_name, None, test_args)
-        self.runner_class = runner_class
+            name=name, dbuser=None, test_args=test_args)
+        self._runner_class = runner_class
+
+    @property
+    def runner_class(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._runner_class
 
     def job_counts(self, jobs):
         """Return a list of tuples containing the job name and counts."""
@@ -464,14 +460,12 @@ class JobCronScript(LaunchpadCronScript):
             counts[job.__class__.__name__] += 1
         return sorted(counts.items())
 
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
-        self.dbuser = getattr(config, self.config_name).dbuser
-        super(JobCronScript, self).run(
-            use_web_security, implicit_begin, isolation)
+    @property
+    def config_section(self):
+        return getattr(config, self.config_name)
 
     def main(self):
-        section = config[self.config_name]
+        section = self.config_section
         if (getattr(section, 'error_dir', None) is not None
             and getattr(section, 'oops_prefix', None) is not None
             and getattr(section, 'copy_to_zlog', None) is not None):

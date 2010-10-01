@@ -26,21 +26,37 @@ class ProcessJobSource(JobCronScript):
 
     def __init__(self):
         super(ProcessJobSource, self).__init__()
+        self.config_name = self.job_source_name
+        # The fromlist argument is necessary so that __import__()
+        # returns the bottom submodule instead of the top one.
+        module = __import__(self.config_section.module,
+                            fromlist=[self.job_source_name])
+        self.source_interface = getattr(module, self.job_source_name)
+
+    @property
+    def config_name(self):
+        return self.job_source_name
+
+    @property
+    def name(self, name):
+        return 'process-job-source-%s' % self.job_source_name
+
+    @property
+    def dbuser(self, dbuser):
+        self.dbuser = self.config_section.dbuser
+
+    @property
+    def runner_class(self, runner_class):
+        runner_class_name = getattr(
+            self.config_section, 'runner_class', 'JobRunner')
+        # Override attributes that are normally set in __init__().
+        self.runner_class = getattr(runner, runner_class_name)
+
+    def handle_options(self):
         if len(self.args) != 1:
             self.parser.print_help()
             sys.exit(1)
-        job_source = self.args[0]
-        # The dbuser is grabbed from the section matching config_name.
-        section = getattr(config, job_source)
-        # The fromlist argument is necessary so that __import__()
-        # returns the bottom submodule instead of the top one.
-        module = __import__(section.module, fromlist=[job_source])
-        self.source_interface = getattr(module, job_source)
-        runner_class_name = getattr(section, 'runner_class', 'JobRunner')
-        # Override attributes that are normally set in __init__().
-        self.name = 'process-job-source-%s' % job_source
-        self.config_name = job_source
-        self.runner_class = getattr(runner, runner_class_name)
+        self.job_source_name = self.args[0]
 
     def main(self):
         if self.options.verbose:

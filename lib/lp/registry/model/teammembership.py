@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -45,7 +45,8 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.registry.errors import TeamMembershipTransitionError
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
@@ -334,11 +335,14 @@ class TeamMembership(SQLBase):
             declined: [proposed, approved, admin],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
-        assert self.status in state_transition, (
-            "Unknown status: %s" % self.status.name)
-        assert status in state_transition[self.status], (
-            "Bad state transition from %s to %s"
-            % (self.status.name, status.name))
+
+        if self.status not in state_transition:
+            raise TeamMembershipTransitionError(
+                "Unknown status: %s" % self.status.name)
+        if status not in state_transition[self.status]:
+            raise TeamMembershipTransitionError(
+                "Bad state transition from %s to %s"
+                % (self.status.name, status.name))
 
         if status in ACTIVE_STATES and self.team in self.person.allmembers:
             raise CyclicalTeamMembershipError(
@@ -507,7 +511,8 @@ def _cleanTeamParticipation(person, team):
             SELECT 1 FROM TeamParticipation
             WHERE person = %(person_id)s AND team IN (
                     SELECT person
-                    FROM TeamParticipation JOIN Person ON (person = Person.id)
+                    FROM TeamParticipation JOIN Person ON
+                        (person = Person.id)
                     WHERE team = %(team_id)s
                         AND person NOT IN (%(team_id)s, %(person_id)s)
                         AND teamowner IS NOT NULL

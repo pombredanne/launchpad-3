@@ -49,9 +49,14 @@ translation, or link the product to a translatable package.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         registrant.contents, 'not-translated-in-launchpad'))
-    This project is not using Launchpad for translations.
-    Configure translations
+    Launchpad does not know where gnomebaker translates its messages.
+    
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         registrant.contents, 'translations-explanation'))
+    Launchpad allows communities to translate projects using imports or a branch. 
     Getting started with translating your project in Launchpad
+    Configure translations
 
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
@@ -69,17 +74,18 @@ Launchpad for translations if desired.
 (The template upload process is tested in xx-translation-import-queue.txt.)
 
 
-If you're logged in as someone else, the Translations page suggests that you
-contact the product's registrant.
+If you're logged in as someone else, it only tells you that the translations
+are not being used, and provides access to help.
 
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
     Translation overview
     gnomebaker
-    ...
-    This project is not using Launchpad for translations.
-    ...
+    Translations
+    Help for translations
+    Launchpad does not know where
+    gnomebaker translates its messages.
 
 It omits the registrant-only links ...
 
@@ -102,16 +108,17 @@ It omits the registrant-only links ...
     Unauthorized:...
 
 
-Meanwhile, if you're not logged in at all, you might or might not be the
-registrant, so the text reflects both possibilities.
+If you're not logged in at all, you aren't shown the registrant
+options, either.
 
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Translation overview
     gnomebaker
-    ...
-    This project is not using Launchpad for translations.
-    ...
+    Translations
+    Help for translations
+    Launchpad does not know where
+    gnomebaker translates its messages.
 
 Finally, if a product states that is not officially using Launchpad
 Translations...

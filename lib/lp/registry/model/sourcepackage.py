@@ -481,6 +481,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
 
+    def _getOfficialTagClause(self):
+        return self.distroseries._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -597,11 +600,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            ]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(

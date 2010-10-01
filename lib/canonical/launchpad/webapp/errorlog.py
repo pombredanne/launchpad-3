@@ -31,7 +31,6 @@ from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
-    get_request_start_time,
     soft_timeout_expired,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -329,7 +328,7 @@ class ErrorReportingUtility:
         # Check today
         oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            # Check yesterday
+            # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
             oopsid, filename = self.log_namer._findHighestSerialFilename(
                 time=yesterday)
@@ -462,7 +461,7 @@ class ErrorReportingUtility:
         duration = get_request_duration()
         # In principle the timeline is per-request, but see bug=623199 -
         # at this point the request is optional, but get_request_timeline
-        # does not care; when it starts caring, we will always have a 
+        # does not care; when it starts caring, we will always have a
         # request object (or some annotations containing object).
         # RBC 20100901
         timeline = get_request_timeline(request)
@@ -489,6 +488,7 @@ class ErrorReportingUtility:
             info.
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
+        :return: The ErrorReport created.
         """
         return self._raising(
             info, request=request, now=now, informational=True)
@@ -521,8 +521,10 @@ class ErrorReportingUtility:
         """Add an oops message to be included in oopses from this context."""
         key = self._oops_message_key_iter.next()
         self._oops_messages[key] = message
-        yield
-        del self._oops_messages[key]
+        try:
+            yield
+        finally:
+            del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

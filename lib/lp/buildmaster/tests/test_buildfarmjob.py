@@ -22,6 +22,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -317,3 +318,17 @@ class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
 
         self.assertEqual([build_1, build_2], list(result))
+
+    def test_getByID(self):
+        # getByID returns a job by id.
+        build_1 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 10, 10, tzinfo=pytz.UTC))
+        flush_database_updates()
+        self.assertEquals(
+            build_1, self.build_farm_job_set.getByID(build_1.id))
+
+    def test_getByID_nonexistant(self):
+        # getByID raises NotFoundError for unknown job ids.
+        self.assertRaises(NotFoundError,
+            self.build_farm_job_set.getByID, 423432432432)
