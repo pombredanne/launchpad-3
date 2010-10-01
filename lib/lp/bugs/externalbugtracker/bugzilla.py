@@ -240,12 +240,13 @@ class Bugzilla(ExternalBugTracker):
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`."""
+        words = remote_importance.lower().split()
         try:
-            words = remote_importance.lower().split()
             return self._importance_lookup[words.pop()]
-
         except KeyError:
             raise UnknownRemoteImportanceError(remote_importance)
+        except IndexError:
+            return BugTaskImportance.UNKNOWN
 
         return BugTaskImportance.UNKNOWN
 

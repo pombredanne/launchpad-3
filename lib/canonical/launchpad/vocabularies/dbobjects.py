@@ -23,16 +23,12 @@ __all__ = [
     'FilteredDistroArchSeriesVocabulary',
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
-    'FutureSprintVocabulary',
     'LanguageVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
     'project_products_using_malone_vocabulary_factory',
-    'SpecificationDependenciesVocabulary',
-    'SpecificationVocabulary',
-    'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
@@ -68,10 +64,6 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.database import (
-    Archive,
-    BugWatch,
-    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -83,12 +75,11 @@ from canonical.launchpad.webapp.vocabulary import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.sprint import Sprint
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -101,6 +92,7 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.processor import (
@@ -341,73 +333,6 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
             for distroarchseries in results:
                 yield self.toTerm(distroarchseries)
-
-
-class FutureSprintVocabulary(NamedSQLObjectVocabulary):
-    """A vocab of all sprints that have not yet finished."""
-
-    _table = Sprint
-
-    def __iter__(self):
-        future_sprints = Sprint.select("time_ends > 'NOW'")
-        for sprint in future_sprints:
-            yield(self.toTerm(sprint))
-
-
-class SpecificationVocabulary(NamedSQLObjectVocabulary):
-    """List specifications for the current product or distribution in
-    ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
-    """
-
-    _table = Specification
-    _orderBy = 'title'
-
-    def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        target = None
-        product = launchbag.product
-        if product is not None:
-            target = product
-
-        distribution = launchbag.distribution
-        if distribution is not None:
-            target = distribution
-
-        if target is not None:
-            for spec in sorted(
-                target.specifications(), key=attrgetter('title')):
-                # we will not show the current specification in the
-                # launchbag
-                if spec == launchbag.specification:
-                    continue
-                # we will not show a specification that is blocked on the
-                # current specification in the launchbag. this is because
-                # the widget is currently used to select new dependencies,
-                # and we do not want to introduce circular dependencies.
-                if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
-                        continue
-                yield SimpleTerm(spec, spec.name, spec.title)
-
-
-class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
-    """List specifications on which the current specification depends."""
-
-    _table = Specification
-    _orderBy = 'title'
-
-    def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        curr_spec = launchbag.specification
-
-        if curr_spec is not None:
-            for spec in sorted(
-                curr_spec.dependencies, key=attrgetter('title')):
-                yield SimpleTerm(spec, spec.name, spec.title)
-
-
-class SprintVocabulary(NamedSQLObjectVocabulary):
-    _table = Sprint
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

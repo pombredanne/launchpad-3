@@ -12,7 +12,10 @@ from twisted.internet.threads import deferToThread
 
 from canonical.config import config
 from canonical.librarian.client import url_path_quote
-from canonical.librarian.db import read_transaction, write_transaction
+from lp.services.database import (
+    read_transaction,
+    write_transaction,
+    )
 from canonical.librarian.utils import guess_librarian_encoding
 
 
