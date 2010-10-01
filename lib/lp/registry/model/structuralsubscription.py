@@ -26,6 +26,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
@@ -132,6 +133,13 @@ class StructuralSubscription(SQLBase):
             return self.distroseries
         else:
             raise AssertionError('StructuralSubscription has no target.')
+
+    @property
+    def bug_filters(self):
+        """See `IStructuralSubscription`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.structural_subscription == self)
 
 
 class DistroSeriesTargetHelper:

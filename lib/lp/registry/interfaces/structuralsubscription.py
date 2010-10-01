@@ -35,7 +35,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     webservice_error,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -128,6 +131,11 @@ class IStructuralSubscription(Interface):
         schema=Interface, # IStructuralSubscriptionTarget
         required=True, readonly=True,
         title=_("The structure to which this subscription belongs.")))
+
+    bug_filters = CollectionField(
+        title=_('List of bug filters that narrow this subscription.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
 
 
 class IStructuralSubscriptionTargetRead(Interface):
