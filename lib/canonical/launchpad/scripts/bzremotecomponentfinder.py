@@ -97,14 +97,21 @@ class BugzillaRemoteComponentFinder:
         u"mozilla.org",
         ]
 
-    def __init__(self, txn, logger=None):
+    def __init__(self, txn, logger=None, static_bugzilla_text=None):
         self.txn = txn
         self.logger = logger
         if logger is None:
             self.logger = default_log
+        self.static_bugzilla_text = static_bugzilla_text
 
-    def getRemoteProductsAndComponents(self):
+    def getRemoteProductsAndComponents(self, bugtracker_name=None):
         lp_bugtrackers = getUtility(IBugTrackerSet)
+        if bugtracker_name is not None:
+            lp_bugtrackers = lp_bugtrackers.getByName(bugtracker_name)
+            if not lp_bugtrackers:
+                self.logger.warning(
+                    "Could not find specified bug tracker %s",
+                    bugtracker_name)
         for lp_bugtracker in lp_bugtrackers:
             if lp_bugtracker.bugtrackertype != BugTrackerType.BUGZILLA:
                 continue
@@ -115,12 +122,17 @@ class BugzillaRemoteComponentFinder:
             bz_bugtracker = BugzillaRemoteComponentScraper(
                 base_url = "https://bugzilla.freedesktop.org")
 
-            try:
-                self.logger.info("...Fetching page")
-                page_text = bz_bugtracker.getPage()
-            except HTTPError, error:
-                self.logger.error("Error fetching %s: %s" % (url, error))
-                continue
+            if self.static_bugzilla_text is not None:
+                self.logger.info("Using static bugzilla text")
+                page_text = self.static_bugzilla_text
+
+            else:
+                try:
+                    self.logger.info("...Fetching page")
+                    page_text = bz_bugtracker.getPage()
+                except HTTPError, error:
+                    self.logger.error("Error fetching %s: %s" % (url, error))
+                    continue
 
             self.logger.info("...Parsing html")
             bz_bugtracker.parsePage(page_text)
@@ -141,7 +153,9 @@ class BugzillaRemoteComponentFinder:
             if lp_component_group is None:
                 lp_component_group = lp_bugtracker.addRemoteComponentGroup(
                     product_display_name)
-                # TODO: Error handling here
+                if lp_component_group is None:
+                    self.logger.warning("Failed to add new component group")
+                    continue
             else:
                 for component in lp_component_group.components:
                     if (component.name in product['components'] or
@@ -160,10 +174,10 @@ class BugzillaRemoteComponentFinder:
                     "('%s', %d, 'True', 'False')" %(
                         component, lp_component_group.id))
 
-
         if len(components_to_add)>0:
-            return """
+            sqltext = """
             INSERT INTO BugTrackerComponent
             (name, component_group, is_visible, is_custom)
             VALUES %s;""" % ",\n ".join(components_to_add)
+            print sqltext
 
