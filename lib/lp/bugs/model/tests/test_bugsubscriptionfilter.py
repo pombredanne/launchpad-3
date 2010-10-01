@@ -16,6 +16,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from canonical.launchpad import searchbuilder
 
 
 class TestBugSubscriptionFilter(TestCaseWithFactory):
@@ -174,3 +175,24 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(frozenset(), bug_subscription_filter.tags)
         self.assertFalse(bug_subscription_filter.include_any_tags)
         self.assertFalse(bug_subscription_filter.exclude_any_tags)
+
+    def test_tags_with_any_and_all(self):
+        # If the tags are bundled in a c.l.searchbuilder.any or .all, the
+        # find_any_tags attribute will also be updated.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(frozenset(), bug_subscription_filter.tags)
+        self.assertFalse(bug_subscription_filter.find_all_tags)
+
+        bug_subscription_filter.tags = searchbuilder.all(u"foo")
+        self.assertEqual(frozenset((u"foo",)), bug_subscription_filter.tags)
+        self.assertTrue(bug_subscription_filter.find_all_tags)
+
+        # Not using `searchbuilder.any` or `.all` leaves find_all_tags
+        # unchanged.
+        bug_subscription_filter.tags = [u"-bar"]
+        self.assertEqual(frozenset((u"-bar",)), bug_subscription_filter.tags)
+        self.assertTrue(bug_subscription_filter.find_all_tags)
+
+        bug_subscription_filter.tags = searchbuilder.any(u"baz")
+        self.assertEqual(frozenset((u"baz",)), bug_subscription_filter.tags)
+        self.assertFalse(bug_subscription_filter.find_all_tags)

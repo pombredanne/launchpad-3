@@ -24,6 +24,7 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 
 from itertools import chain
+from canonical.launchpad import searchbuilder
 
 
 class BugSubscriptionFilter(Storm):
@@ -132,10 +133,24 @@ class BugSubscriptionFilter(Storm):
         """Update the tags to filter on.
 
         The tags can be qualified with a leading hyphen, and can be bundled in
-        any iterable. Wildcard tags - `*` and `-*` - can be given too, and
-        will update `include_any_tags` and `exclude_any_tags`.
+        any iterable.
+
+        If they are passed within a `searchbuilder.any` or `searchbuilder.all`
+        object, the `find_all_tags` attribute will be updated to match.
+
+        Wildcard tags - `*` and `-*` - can be given too, and will update
+        `include_any_tags` and `exclude_any_tags`.
         """
-        tags = frozenset(tags)
+        # Deal with searchbuilder terms.
+        if isinstance(tags, searchbuilder.all):
+            self.find_all_tags = True
+            tags = frozenset(tags.query_values)
+        elif isinstance(tags, searchbuilder.any):
+            self.find_all_tags = False
+            tags = frozenset(tags.query_values)
+        else:
+            # Leave find_all_tags unchanged.
+            tags = frozenset(tags)
         wildcards = frozenset((u"*", u"-*")).intersection(tags)
         # Set wildcards.
         self.include_any_tags = "*" in wildcards
