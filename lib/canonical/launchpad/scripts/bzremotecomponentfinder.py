@@ -24,6 +24,16 @@ from lp.bugs.interfaces.bugtracker import (
         IBugTrackerSet,
         )
 
+def dictFromCSV(line):
+    items_dict = {}
+    for item in line.split(","):
+        item = item.strip()
+        item = item.replace("'", "")
+        item = item.replace("\\", "")
+        items_dict[item] = {
+            'name': item,
+            }
+    return items_dict
 
 class BugzillaRemoteComponentScraper:
     """Scrapes Bugzilla query.cgi page for lists of products and components"""
@@ -32,23 +42,12 @@ class BugzillaRemoteComponentScraper:
     re_vers = re.compile(r'vers\[(\d+)\] = \[(.*)\]')
 
     def __init__(self, base_url=None):
-        self.base_url = base_url
+        self.base_url = re.sub(r'/$', '', base_url)
+        self.url = "%s/query.cgi?format=advanced" %(self.base_url)
         self.products = {}
 
-    def dictFromCSV(self, line):
-        items_dict = {}
-        for item in line.split(","):
-            item = item.strip()
-            item = item.replace("'", "")
-            item = item.replace("\\", "")
-            items_dict[item] = {
-                'name': item,
-                }
-        return items_dict
-
     def getPage(self):
-        url = "%s/query.cgi?format=advanced" %(self.base_url)
-        return urlopen(url).read()
+        return urlopen(self.url).read()
 
     def parsePage(self, page_text):
         soup = BeautifulSoup(page_text)
@@ -74,12 +73,12 @@ class BugzillaRemoteComponentScraper:
                 m = self.re_cpts.search(line)
                 if m:
                     num = int(m.group(1))
-                    products[num]['components'] = self.dictFromCSV(m.group(2))
+                    products[num]['components'] = dictFromCSV(m.group(2))
 
                 m = self.re_vers.search(line)
                 if m:
                     num = int(m.group(1))
-                    products[num]['versions'] = self.dictFromCSV(m.group(2))
+                    products[num]['versions'] = dictFromCSV(m.group(2))
 
         # Re-map list into dict for easier lookups
         for product in products:
@@ -115,13 +114,6 @@ class BugzillaRemoteComponentFinder:
             self.logger.info("%s:" %(lp_bugtracker.name))
             bz_bugtracker = BugzillaRemoteComponentScraper(
                 base_url = "https://bugzilla.freedesktop.org")
-
-#        # TODO:  This should be fixed in sampledata
-#        if (bzurl == "http://bugzilla.gnome.org/bugs" or
-#            bzurl == "http://bugzilla.gnome.org/"):
-#            bzurl = "http://bugzilla.gnome.org"
-#        elif (bzurl == "https://bugzilla.mozilla.org/"):
-#            bzurl = " https://bugzilla.mozilla.org"
 
             try:
                 self.logger.info("...Fetching page")
