@@ -21,9 +21,7 @@ from lp.bugs.model.bugsubscriptionfilterimportance import (
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
-from lp.bugs.model.bugsubscriptionfiltertag import (
-    BugSubscriptionFilterTag,
-    )
+from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 
 
 class BugSubscriptionFilter(Storm):
