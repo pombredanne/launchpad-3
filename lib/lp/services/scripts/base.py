@@ -89,6 +89,7 @@ def log_unhandled_exception_and_exit(func):
             self._log_unhandled_exceptions_level += 1
             return func(self, *args, **kw)
         except Exception:
+            raise
             if self._log_unhandled_exceptions_level == 1:
                 # self.logger is setup in LaunchpadScript.__init__() so
                 # we can use it.
@@ -155,6 +156,8 @@ class LaunchpadScript:
             self._name = self.__class__.__name__.lower()
         else:
             self._name = name
+
+        self._dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
