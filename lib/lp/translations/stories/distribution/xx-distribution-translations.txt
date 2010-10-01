@@ -79,8 +79,19 @@ we should not have a link to it.
     LinkNotFoundError
 
 Let's try now a distribution that lacks a translation focus. Debian is
-a good example. We should get latest release as the translation focus.
+a good example, if enable translations for it.
 
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
+We should get latest release as the translation focus.
+   
     >>> browser.open('http://translations.launchpad.dev/debian')
     >>> browser.url
     'http://translations.launchpad.dev/debian'

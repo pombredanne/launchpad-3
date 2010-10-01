@@ -81,7 +81,7 @@ from canonical.launchpad.webapp.launchpadform import (
     ReturnToReferrerMixin,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.enums import ServiceUsage
