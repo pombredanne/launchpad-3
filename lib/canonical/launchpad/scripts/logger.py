@@ -39,6 +39,7 @@ from logging.handlers import WatchedFileHandler
 from optparse import OptionParser
 import os.path
 import re
+import string
 import sys
 import time
 import traceback
@@ -87,6 +88,7 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
+        msg = string.replace(msg, "%", "%%")
         print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
