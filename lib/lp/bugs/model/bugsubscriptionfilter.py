@@ -23,6 +23,8 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 
+from itertools import chain
+
 
 class BugSubscriptionFilter(Storm):
     """A filter to specialize a *structural* subscription."""
@@ -114,20 +116,33 @@ class BugSubscriptionFilter(Storm):
 
     def _get_tags(self):
         """Return a frozenset of tags to filter on."""
-        tag_filters = IStore(BugSubscriptionFilterTag).find(
-            BugSubscriptionFilterTag,
-            BugSubscriptionFilterTag.filter == self)
-        return frozenset(
-            tag_filter.qualified_tag for tag_filter in tag_filters)
+        wildcards = []
+        if self.include_any_tags:
+            wildcards.append(u"*")
+        if self.exclude_any_tags:
+            wildcards.append(u"-*")
+        tags = (
+            tag_filter.qualified_tag
+            for tag_filter in IStore(BugSubscriptionFilterTag).find(
+                BugSubscriptionFilterTag,
+                BugSubscriptionFilterTag.filter == self))
+        return frozenset(chain(wildcards, tags))
 
     def _set_tags(self, tags):
         """Update the tags to filter on.
 
         The tags can be qualified with a leading hyphen, and can be bundled in
-        any iterable.
+        any iterable. Wildcard tags - `*` and `-*` - can be given too, and
+        will update `include_any_tags` and `exclude_any_tags`.
         """
-        store = IStore(BugSubscriptionFilterTag)
         tags = frozenset(tags)
+        wildcards = frozenset((u"*", u"-*")).intersection(tags)
+        # Set wildcards.
+        self.include_any_tags = "*" in wildcards
+        self.exclude_any_tags = "-*" in wildcards
+        # Deal with other tags.
+        tags = tags - wildcards
+        store = IStore(BugSubscriptionFilterTag)
         current_tag_filters = dict(
             (tag_filter.qualified_tag, tag_filter)
             for tag_filter in store.find(

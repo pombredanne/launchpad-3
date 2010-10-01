@@ -145,3 +145,32 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.tags = []
         self.assertEqual(frozenset(), bug_subscription_filter.tags)
+
+    def test_tags_set_wildcard(self):
+        # Setting one or more wildcard tags may update include_any_tags or
+        # exclude_any_tags.
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertEqual(frozenset(), bug_subscription_filter.tags)
+        self.assertFalse(bug_subscription_filter.include_any_tags)
+        self.assertFalse(bug_subscription_filter.exclude_any_tags)
+
+        bug_subscription_filter.tags = [u"*"]
+        self.assertEqual(frozenset((u"*",)), bug_subscription_filter.tags)
+        self.assertTrue(bug_subscription_filter.include_any_tags)
+        self.assertFalse(bug_subscription_filter.exclude_any_tags)
+
+        bug_subscription_filter.tags = [u"-*"]
+        self.assertEqual(frozenset((u"-*",)), bug_subscription_filter.tags)
+        self.assertFalse(bug_subscription_filter.include_any_tags)
+        self.assertTrue(bug_subscription_filter.exclude_any_tags)
+
+        bug_subscription_filter.tags = [u"*", u"-*"]
+        self.assertEqual(
+            frozenset((u"*", u"-*")), bug_subscription_filter.tags)
+        self.assertTrue(bug_subscription_filter.include_any_tags)
+        self.assertTrue(bug_subscription_filter.exclude_any_tags)
+
+        bug_subscription_filter.tags = []
+        self.assertEqual(frozenset(), bug_subscription_filter.tags)
+        self.assertFalse(bug_subscription_filter.include_any_tags)
+        self.assertFalse(bug_subscription_filter.exclude_any_tags)
