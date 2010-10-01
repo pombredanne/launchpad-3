@@ -46,8 +46,15 @@
                             source_pub difference/source_pub;
                             signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;"
                 tal:attributes="class parent_source_pub/source_package_name">
-              <td><a tal:attributes="href difference/fmt:url" class="toggle-extra"
-                     tal:content="parent_source_pub/source_package_name">Foo</a>
+              <td>
+                <input tal:condition="context/required:launchpad.Edit"
+                  name="field.selected_diffs" type="checkbox"
+                  tal:attributes="
+                    value difference/id;
+                    id string:field.selected_diffs.${difference/id}"/>
+
+                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
+                   tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
               <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
                     <tal:replace
@@ -80,6 +87,10 @@
             </tal:difference>
           </tbody>
         </table>
+        <p>
+          <input
+            tal:replace="structure view/actions/byname/field.actions.sync/render" />
+        </p>
       </div>
 <script type="text/javascript">
 LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {

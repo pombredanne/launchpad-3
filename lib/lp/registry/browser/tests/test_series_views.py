@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
@@ -28,7 +30,10 @@ from lp.services.features import (
     getFeatureFlag,
     per_thread,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    person_logged_in
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -208,6 +213,46 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         links = row.findAll('a', href=href)
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
+
+    def test_sync_option_for_non_editor(self):
+        # Non-editors cannot perform syncs.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        #with person_logged_in(self.factory.makePerson()):
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        soup = BeautifulSoup(view())
+
+        checkbox = soup.find(
+            'input', id='field.selected_diffs.%d' % difference.id)
+        self.assertIs(None, checkbox)
+        button = soup.find('input', id='field.actions.sync')
+        self.assertIs(None, button)
+
+    def test_sync_option_for_editor(self):
+        # Non-editors cannot perform syncs.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        #with person_logged_in(derived_series.owner):
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        soup = BeautifulSoup(view())
+
+        checkbox = soup.find(
+            'input', id='field.selected_diffs.%d' % difference.id)
+        self.assertIsNot(None, checkbox)
+        button = soup.find('input', id='field.actions.sync')
+        self.assertEqual(
+            "Sync selected Lucid versions into Derilucid",
+            button['value'])
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):

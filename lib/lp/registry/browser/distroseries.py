@@ -536,8 +536,14 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         return navigator
 
 
-class DistroSeriesLocalDifferences(LaunchpadView):
+from zope.interface import Interface
+class IDifferencesFormSchema(Interface):
+    selected_diffs = Choice(vocabulary=SimpleVocabulary([]))
+
+
+class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
+    schema = Interface
 
     page_title = 'Local package differences'
 
@@ -546,6 +552,13 @@ class DistroSeriesLocalDifferences(LaunchpadView):
         if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
+
+        # Update the label for sync action.
+        self.__class__.actions.byname['actions.sync'].label = (
+            "Sync selected %s versions into %s" % (
+                self.context.parent_series.displayname,
+                self.context.displayname,
+                ))
         super(DistroSeriesLocalDifferences, self).initialize()
 
     @property
@@ -563,3 +576,7 @@ class DistroSeriesLocalDifferences(LaunchpadView):
         utility = getUtility(IDistroSeriesDifferenceSource)
         differences = utility.getForDistroSeries(self.context)
         return BatchNavigator(differences, self.request)
+
+    @action(_("Sync selected sources"), name="sync")
+    def sync_sources(self, action, data):
+        pass
