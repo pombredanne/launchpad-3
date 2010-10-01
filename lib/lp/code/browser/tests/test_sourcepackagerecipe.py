@@ -40,13 +40,13 @@ from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
-    logout,
     person_logged_in,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
@@ -103,17 +103,12 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         return branch
 
     def test_create_new_recipe_not_logged_in(self):
-        from canonical.launchpad.testing.pages import setupBrowser
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-        branch_url = canonical_url(branch)
-        logout()
 
-        browser = setupBrowser()
-        browser.open(branch_url)
-
+        browser = self.getViewBrowser(branch, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Create packaging recipe').click)
 
@@ -310,6 +305,24 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEqual(
             get_message_text(browser, 2), 'foo is not a branch on Launchpad.')
 
+    def test_create_recipe_format_too_new(self):
+        # If the recipe's format version is too new, we should notify the
+        # user.
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+
+        with recipe_parser_newest_version(145.115):
+            recipe = dedent(u'''\
+                # bzr-builder format 145.115 deb-version 0+{revno}
+                %s
+                ''') % branch.bzr_identity
+            browser = self.createRecipe(recipe, branch)
+            self.assertEqual(
+                get_message_text(browser, 2),
+                'The recipe format version specified is not available.')
+
     def test_create_dupe_recipe(self):
         # You shouldn't be able to create a duplicate recipe owned by the same
         # person with the same name.
@@ -431,6 +444,36 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The bzr-builder instruction "run" is not permitted here.')
+
+    def test_edit_recipe_format_too_new(self):
+        # If the recipe's format version is too new, we should notify the
+        # user.
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        new_recipe_text = dedent(u'''\
+            # bzr-builder format 145.115 deb-version 0+{revno}
+            %s
+            ''') % recipe.base_branch.bzr_identity
+
+        with recipe_parser_newest_version(145.115):
+            browser = self.getViewBrowser(recipe)
+            browser.getLink('Edit recipe').click()
+            browser.getControl('Recipe text').value = new_recipe_text
+            browser.getControl('Update Recipe').click()
+
+            self.assertEqual(
+                get_message_text(browser, 1),
+                'The recipe format version specified is not available.')
 
     def test_edit_recipe_already_exists(self):
         self.factory.makeDistroSeries(
@@ -688,6 +731,21 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([2605]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_builds_action_not_logged_in(self):
+        """Requesting a build creates pending builds."""
+        woody = self.factory.makeDistroSeries(
+            name='woody', displayname='Woody',
+            distribution=self.ppa.distribution)
+        naked_woody = removeSecurityProxy(woody)
+        naked_woody.nominatedarchindep = woody.newArch(
+            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
+            supports_virtualized=True)
+        recipe = self.makeRecipe()
+
+        browser = self.getViewBrowser(recipe, no_login=True)
+        self.assertRaises(
+            Unauthorized, browser.getLink('Request build(s)').click)
 
     def test_request_builds_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
