@@ -320,26 +320,6 @@ class SlaveScanner:
         d.addCallback(got_update_build)
         return d
 
-    def resumeAndDispatch(self, slave):
-        """Chain the resume and dispatching Deferreds."""
-        # XXX: resumeAndDispatch makes Deferreds without returning them.
-        if slave.resume_requested:
-            # The slave needs to be reset before we can dispatch to
-            # it (e.g. a virtual slave)
-
-            # XXX: Two problems here. The first is that 'resumeSlave' only
-            # exists on RecordingSlave (BuilderSlave calls it 'resume').
-            d = slave.resumeSlave()
-            d.addBoth(self.checkResume, slave)
-        else:
-            # No resume required, build dispatching can commence.
-            d = defer.succeed(None)
-
-        # Dispatch the build to the slave after the resume finishes.
-        d.addCallback(self.initiateDispatch, slave)
-
-        return d
-
     def initiateDispatch(self, resume_result, slave):
         """Start dispatching a build to a slave.
 
