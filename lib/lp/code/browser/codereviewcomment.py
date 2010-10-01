@@ -244,7 +244,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
             comment = ''
         return {'comment': comment}
 
-
     @property
     def is_reply(self):
         """True if this comment is a reply to another comment, else False."""

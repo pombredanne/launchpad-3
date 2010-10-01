@@ -1,4 +1,5 @@
-= The BranchPuller application =
+The BranchPuller application
+============================
 
 The codehosting application is an XMLRPC service that allows the
 codehosting service and puller to find and update the status of

@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from difflib import unified_diff
 from textwrap import dedent
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.urlutils import join as urljoin
@@ -194,7 +193,7 @@ class TestCodeHandler(TestCaseWithFactory):
             target_branch=target_branch)
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
-        self.code_handler.process( mail, email_addr, None)
+        self.code_handler.process(mail, email_addr, None)
         self.assertIn(
             '<my-id>', [comment.message.rfc822msgid
                         for comment in bmp.all_comments])
@@ -766,8 +765,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification.get_payload(),
             'Your email did not contain a merge directive. Please resend '
-            'your email with\nthe merge directive attached.\n'
-            )
+            'your email with\nthe merge directive attached.\n')
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -855,8 +853,7 @@ class TestCodeHandler(TestCaseWithFactory):
             'The target branch at %s is not known to Launchpad.  It\'s\n'
             'possible that your submit branch is not set correctly, or that '
             'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
-            % ('http://www.example.com')
-            )
+            % ('http://www.example.com'))
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -878,8 +875,7 @@ class TestCodeHandler(TestCaseWithFactory):
             notification.get_payload(decode=True),
             'Your message did not contain a subject.  Launchpad code '
             'reviews require all\nemails to contain subject lines.  '
-            'Please re-send your email including the\nsubject line.\n\n'
-            )
+            'Please re-send your email including the\nsubject line.\n\n')
         self.assertEqual(notification['to'],
             mail['from'])
         self.assertEqual(0, bmp.all_comments.count())
@@ -1427,8 +1423,3 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
             "There's no such person with the specified name or email: "
             "unknown@example.com\n",
             str(error))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -219,9 +219,9 @@ class CodeImport(SQLBase):
     def requestImport(self, requester, error_if_already_requested=False):
         """See `ICodeImport`."""
         if self.import_job is None: # not in automatic mode
-           raise CodeImportNotInReviewedState("This code import is %s, and "
-                   "must be Reviewed for you to call requestImport."
-                   % self.review_status.name)
+            raise CodeImportNotInReviewedState("This code import is %s, and "
+                "must be Reviewed for you to call requestImport."
+                % self.review_status.name)
         if (self.import_job.state != CodeImportJobState.PENDING):
             assert (self.import_job.state == CodeImportJobState.RUNNING)
             # Already running

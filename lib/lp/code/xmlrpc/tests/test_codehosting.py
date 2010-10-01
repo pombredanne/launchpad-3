@@ -223,7 +223,8 @@ class CodehostingTest(TestCaseWithFactory):
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
-            'test-recordsuccess', 'server-name', started_tuple, completed_tuple)
+            'test-recordsuccess', 'server-name',
+            started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
         activity = self.getLastActivity('test-recordsuccess')
@@ -395,7 +396,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
             owner.name, distroseries.name, sourcepackagename.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -423,7 +425,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -1182,7 +1185,6 @@ class LaunchpadDatabaseFrontend:
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
-
 
 
 def test_suite():
