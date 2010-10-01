@@ -13,7 +13,7 @@ from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.scripts importFakeLogger
+from canonical.launchpad.scripts import FakeLogger
 
 def read_test_file(name):
     """Return the contents of the test file named :name:
@@ -103,6 +103,20 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
         # TODO: Validate that database now contains data we expect
         self.assertEqual(len(finder.products), 42)
+
+    def test_cronjob(self):
+        """Runs the cron job to verify it executes without error"""
+
+        import subprocess
+        process = subprocess.Popen(
+            ['cronscripts/update-sourceforge-remote-products.py', '-v'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        (out, err) = process.communicate()
+
+        self.assertEqual(out, '')
+        self.assertEqual(process.returncode, 0)
+        self.assertEqual(err, 'DEBUG...TODO')
 
 def test_suite():
     suite = unittest.TestSuite()
