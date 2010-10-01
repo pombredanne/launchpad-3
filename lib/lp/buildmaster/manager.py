@@ -320,28 +320,6 @@ class SlaveScanner:
         d.addCallback(got_update_build)
         return d
 
-    def initiateDispatch(self, resume_result, slave):
-        """Start dispatching a build to a slave.
-
-        If the previous task in chain (slave resuming) has failed it will
-        receive a `ResetBuilderRequest` instance as 'resume_result' and
-        will immediately return that so the subsequent callback can collect
-        it.
-
-        If the slave resuming succeeded, it starts the XMLRPC dialogue.  The
-        dialogue may consist of many calls to the slave before the build
-        starts.  Each call is done via a Deferred event, where slave calls
-        are sent in callSlave(), and checked in checkDispatch() which will
-        keep firing events via callSlave() until all the events are done or
-        an error occurs.
-        """
-        if resume_result is not None:
-            self.slaveConversationEnded()
-            return resume_result
-
-        self.logger.info('Dispatching: %s' % slave)
-        self.callSlave(slave)
-
     def _getProxyForSlave(self, slave):
         """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
 
