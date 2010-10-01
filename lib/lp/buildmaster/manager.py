@@ -107,83 +107,10 @@ def assessFailureCounts(builder, fail_notes):
         # next buildd scan.
 
 
-class BaseDispatchResult:
-    """Base class for *DispatchResult variations.
-
-    It will be extended to represent dispatching results and allow
-    homogeneous processing.
-    """
-
-    def __init__(self, slave, info=None):
-        self.slave = slave
-        self.info = info
-
-    def _cleanJob(self, job):
-        """Clean up in case of builder reset or dispatch failure."""
-        if job is not None:
-            job.reset()
-
-    def assessFailureCounts(self):
-        """View builder/job failure_count and work out which needs to die.
-
-        :return: True if we disabled something, False if we did not.
-        """
-        builder = get_builder(self.slave.name)
-        assessFailureCounts(builder, self.info)
-
-    def ___call__(self):
-        raise NotImplementedError(
-            "Call sites must define an evaluation method.")
-
-
-class FailDispatchResult(BaseDispatchResult):
-    """Represents a communication failure while dispatching a build job..
-
-    When evaluated this object mark the corresponding `IBuilder` as
-    'NOK' with the given text as 'failnotes'. It also cleans up the running
-    job (`IBuildQueue`).
-    """
-
-    def __repr__(self):
-        return  '%r failure (%s)' % (self.slave, self.info)
-
-    @write_transaction
-    def __call__(self):
-        self.assessFailureCounts()
-
-
-class ResetDispatchResult(BaseDispatchResult):
-    """Represents a failure to reset a builder.
-
-    When evaluated this object simply cleans up the running job
-    (`IBuildQueue`) and marks the builder down.
-    """
-
-    def __repr__(self):
-        return  '%r reset failure' % self.slave
-
-    @write_transaction
-    def __call__(self):
-        builder = get_builder(self.slave.name)
-        # Builders that fail to reset should be disabled as per bug
-        # 563353.
-        # XXX Julian bug=586362
-        # This is disabled until this code is not also used for dispatch
-        # failures where we *don't* want to disable the builder.
-        # builder.failBuilder(self.info)
-        self._cleanJob(builder.currentjob)
-
-
 class SlaveScanner:
     """A manager for a single builder."""
 
     SCAN_INTERVAL = 5
-
-    # These are for the benefit of tests; see `TestingSlaveScanner`.
-    # It pokes fake versions in here so that it can verify methods were
-    # called.  The tests should really be using FakeMethod() though.
-    reset_result = ResetDispatchResult
-    fail_result = FailDispatchResult
 
     def __init__(self, builder_name, logger):
         self.builder_name = builder_name
@@ -205,6 +132,8 @@ class SlaveScanner:
         # deferred_list before, that is now all done!  So, we need
         # to review all the error handling that it was doing and
         # make sure we're still doing it.
+
+        transaction.commit()
         d.addCallback(self.scheduleNextScanCycle)
         return d
 
@@ -319,113 +248,6 @@ class SlaveScanner:
         d.addCallback(got_update_status)
         d.addCallback(got_update_build)
         return d
-
-    def _getProxyForSlave(self, slave):
-        """Return a twisted.web.xmlrpc.Proxy for the buildd slave.
-
-        Uses a protocol with timeout support, See QueryFactoryWithTimeout.
-        """
-        proxy = xmlrpc.Proxy(str(urlappend(slave.url, 'rpc')))
-        proxy.queryFactory = QueryFactoryWithTimeout
-        return proxy
-
-    def callSlave(self, slave):
-        """Dispatch the next XMLRPC for the given slave."""
-        if len(slave.calls) == 0:
-            # That's the end of the dialogue with the slave.
-            self.slaveConversationEnded()
-            return
-
-        # Get an XMLRPC proxy for the buildd slave.
-        proxy = self._getProxyForSlave(slave)
-        method, args = slave.calls.pop(0)
-        d = proxy.callRemote(method, *args)
-        d.addBoth(self.checkDispatch, method, slave)
-        self._deferred_list.append(d)
-        self.logger.debug('%s -> %s(%s)' % (slave, method, args))
-
-    def slaveConversationEnded(self):
-        """After all the Deferreds are set up, chain a callback on them."""
-        dl = defer.DeferredList(self._deferred_list, consumeErrors=True)
-        dl.addBoth(self.evaluateDispatchResult)
-        return dl
-
-    def evaluateDispatchResult(self, deferred_list_results):
-        """Process the DispatchResult for this dispatch chain.
-
-        After waiting for the Deferred chain to finish, we'll have a
-        DispatchResult to evaluate, which deals with the result of
-        dispatching.
-        """
-        # The `deferred_list_results` is what we get when waiting on a
-        # DeferredList.  It's a list of tuples of (status, result) where
-        # result is what the last callback in that chain returned.
-
-        # If the result is an instance of BaseDispatchResult we need to
-        # evaluate it, as there's further action required at the end of
-        # the dispatch chain.  None, resulting from successful chains,
-        # are discarded.
-
-        dispatch_results = [
-            result for status, result in deferred_list_results
-            if isinstance(result, BaseDispatchResult)]
-
-        for result in dispatch_results:
-            self.logger.info("%r" % result)
-            result()
-
-        # At this point, we're done dispatching, so we can schedule the
-        # next scan cycle.
-        self.scheduleNextScanCycle()
-
-        # For the test suite so that it can chain callback results.
-        return deferred_list_results
-
-    def _incrementFailureCounts(self, builder):
-        builder.gotFailure()
-        builder.getCurrentBuildFarmJob().gotFailure()
-
-    def checkDispatch(self, response, method, slave):
-        """Verify the results of a slave xmlrpc call.
-
-        If it failed and it compromises the slave then return a corresponding
-        `FailDispatchResult`, if it was a communication failure, simply
-        reset the slave by returning a `ResetDispatchResult`.
-        """
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder = getUtility(IBuilderSet)[slave.name]
-
-        # XXX these DispatchResult classes are badly named and do the
-        # same thing.  We need to fix that.
-        self.logger.debug(
-            '%s response for "%s": %s' % (slave, method, response))
-
-        if isinstance(response, Failure):
-            self.logger.warn(
-                '%s communication failed (%s)' %
-                (slave, response.getErrorMessage()))
-            self.slaveConversationEnded()
-            self._incrementFailureCounts(builder)
-            return self.fail_result(slave)
-
-        if isinstance(response, list) and len(response) == 2:
-            if method in buildd_success_result_map:
-                expected_status = buildd_success_result_map.get(method)
-                status, info = response
-                if status == expected_status:
-                    self.callSlave(slave)
-                    return None
-            else:
-                info = 'Unknown slave method: %s' % method
-        else:
-            info = 'Unexpected response: %s' % repr(response)
-
-        self.logger.error(
-            '%s failed to dispatch (%s)' % (slave, info))
-
-        self.slaveConversationEnded()
-        self._incrementFailureCounts(builder)
-        return self.fail_result(slave, info)
 
 
 class NewBuildersScanner:
