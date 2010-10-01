@@ -582,7 +582,6 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     UPSTREAM = 0
     UBUNTU = 1
-    LANGCODE = 'eo'
 
     POFILE = dedent("""\
         msgid ""
@@ -593,13 +592,14 @@ class FileImporterSharingTest(TestCaseWithFactory):
         "X-Launchpad-Export-Date: 2009-05-14 08:54+0000\\n"
 
         msgid "Thank You"
-        msgstr "Dankon"
+        msgstr "Translation"
         """)
 
     def setUp(self):
         super(FileImporterSharingTest, self).setUp()
         # Create the upstream series and template with a translator.
-        self.translator = self.factory.makeTranslator(self.LANGCODE)
+        self.language = self.factory.makeLanguage()
+        self.translator = self.factory.makeTranslator(self.language.code)
         self.upstream_productseries = self.factory.makeProductSeries()
         self.upstream_productseries.product.translationgroup = (
             self.translator.translationgroup)
@@ -608,12 +608,12 @@ class FileImporterSharingTest(TestCaseWithFactory):
         self.upstream_template = self.factory.makePOTemplate(
                 productseries=self.upstream_productseries)
 
-    def _makeEntry(self, side, from_upstream=False, uploader=None):
+    def _makeImportEntry(self, side, from_upstream=False, uploader=None,
+                         no_upstream=False):
         if side == self.UPSTREAM:
             potemplate = self.upstream_template
         else:
-            # Create a template in a source package and link the source
-            # package to the upstream series to enable sharing.
+            # Create a template in a source package. 
             ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
             ubuntu.translation_focus = distroseries
@@ -622,19 +622,24 @@ class FileImporterSharingTest(TestCaseWithFactory):
                 distroseries=distroseries,
                 sourcepackagename=sourcepackagename,
                 name=self.upstream_template.name)
-            self.factory.makeSourcePackagePublishingHistory(
-                sourcepackagename=sourcepackagename,
-                distroseries=distroseries)
-            sourcepackage = distroseries.getSourcePackage(sourcepackagename)
-            sourcepackage.setPackaging(
-                self.upstream_productseries, self.factory.makePerson())
+            if not no_upstream:
+                # Link the source package to the upstream series to
+                # enable sharing.
+                self.factory.makeSourcePackagePublishingHistory(
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
+                sourcepackage = distroseries.getSourcePackage(
+                    sourcepackagename)
+                sourcepackage.setPackaging(
+                    self.upstream_productseries, self.factory.makePerson())
         pofile = self.factory.makePOFile(
-            self.LANGCODE, potemplate=potemplate, create_sharing=True)
+            self.language.code, potemplate=potemplate, create_sharing=True)
         entry = self.factory.makeTranslationImportQueueEntry(
             potemplate=potemplate, from_upstream=from_upstream,
             uploader=uploader, content=self.POFILE)
         entry.potemplate = potemplate
         entry.pofile = pofile
+        # The uploaded file is only created in the librarian by a commit. 
         transaction.commit()
         return entry
 
@@ -642,7 +647,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         # Sanity check that the translator has the right permissions but
         # others don't.
         pofile = self.factory.makePOFile(
-            self.LANGCODE, potemplate=self.upstream_template)
+            self.language.code, potemplate=self.upstream_template)
         self.assertFalse(
             pofile.canEditTranslations(self.factory.makePerson()))
         self.assertTrue(
@@ -650,7 +655,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_templates_are_sharing(self):
         # Sharing between upstream and Ubuntu was set up correctly.
-        entry = self._makeEntry(self.UBUNTU)
+        entry = self._makeImportEntry(self.UBUNTU)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
                 distribution=entry.distroseries.distribution,
                 sourcepackagename=entry.sourcepackagename)
@@ -660,7 +665,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_share_with_other_side_upstream(self):
         # An upstream queue entry will be shared with ubuntu.
-        entry = self._makeEntry(self.UPSTREAM)
+        entry = self._makeImportEntry(self.UPSTREAM)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
@@ -669,7 +674,16 @@ class FileImporterSharingTest(TestCaseWithFactory):
 
     def test_share_with_other_side_ubuntu(self):
         # An ubuntu queue entry will not be shared with upstream.
-        entry = self._makeEntry(self.UBUNTU)
+        entry = self._makeImportEntry(self.UBUNTU)
+        importer = POFileImporter(
+            entry, importers[TranslationFileFormat.PO], None)
+        self.assertFalse(
+            importer.share_with_other_side,
+            "Ubuntu import should not share with upstream.")
+
+    def test_share_with_other_side_ubuntu_no_upstream(self):
+        # An ubuntu queue entry cannot share with a non-existent upstream.
+        entry = self._makeImportEntry(self.UBUNTU, no_upstream=True)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertFalse(
@@ -679,7 +693,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
     def test_share_with_other_side_ubuntu_from_package(self):
         # An ubuntu queue entry that is imported from an upstream package
         # will be shared with upstream.
-        entry = self._makeEntry(self.UBUNTU, from_upstream=True)
+        entry = self._makeImportEntry(self.UBUNTU, from_upstream=True)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(
@@ -689,7 +703,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
     def test_share_with_other_side_ubuntu_uploader_upstream_translator(self):
         # If the uploader in ubuntu has rights on upstream as well, the
         # translations are shared.
-        entry = self._makeEntry(
+        entry = self._makeImportEntry(
             self.UBUNTU, uploader=self.translator.translator)
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)

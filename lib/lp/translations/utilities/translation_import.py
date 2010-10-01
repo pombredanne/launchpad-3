@@ -490,7 +490,11 @@ class FileImporter(object):
 
     @cachedproperty
     def translations_are_msgids(self):
-        """Are symbolic msgids being used and these are the real ones?"""
+        """Are these English strings instead of translations?
+
+        If this template uses symbolic message ids, the English POFile
+        will contain the English original texts that correspond to the 
+        symbols."""
         return (
             self.importer.uses_source_string_msgids and
             self.pofile.language.code == 'en')
@@ -559,7 +563,6 @@ class FileImporter(object):
             return None
 
         no_translations = (
-            message_data.translations == [] or
             message_data.translations is None or
             not any(message_data.translations))
         if no_translations:
