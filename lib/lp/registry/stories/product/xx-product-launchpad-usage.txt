@@ -84,14 +84,14 @@ Answers can be disabled.
 On the product page, we can see that Codehosting, Bugtracking, and Answers
 are all disabled.
 
-    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled')
     >>> for item in disabled:
     ...     print extract_text(item)
     ...
     Report a bug
     Ask a question
     Submit code
-     
+
 
 Blueprints can be enabled too, though it isn't easy.
 
@@ -116,7 +116,7 @@ disabled. Blueprints isn't shown in the involvment menu, so we don't
 see anything about it, disabled or not.
 
     >>> registrant_browser.open('http://launchpad.dev/firefox')
-    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled')
     >>> for item in disabled:
     ...     print extract_text(item)
     ...
@@ -132,7 +132,7 @@ Translations to external.
     >>> registrant_browser.getControl('External').click()
     >>> registrant_browser.getControl('Change').click()
 
-    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled')
     >>> for item in disabled:
     ...     print extract_text(item)
     ...
@@ -218,7 +218,7 @@ support JavaScript so this behaviour is easy to simulate.)
 The Status of Launchpad uses shows the bug tracker was changed, and marked as
 disabled in the involvement menu.
 
-    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled') 
+    >>> disabled = find_tags_by_class(registrant_browser.contents, 'disabled')
     >>> for item in disabled:
     ...     print extract_text(item)
     ...

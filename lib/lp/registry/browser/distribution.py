@@ -69,13 +69,11 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets.image import ImageChangeWidget
-from lp.app.enums import service_uses_launchpad
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -102,7 +100,6 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
