@@ -34,8 +34,7 @@
                     <metal:block use-macro="context/@@launchpad_form/widget_row" />
                   </tal:widget>
 
-                  <tal:widget define="widget nocall:view/widgets/review_type"
-                          attributes="disabled python: 1 &lt; 2">
+                  <tal:widget define="widget nocall:view/widgets/review_type">
                     <metal:block use-macro="context/@@launchpad_form/widget_row" />
                   </tal:widget>
 

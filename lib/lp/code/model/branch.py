@@ -419,11 +419,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_requests is None:
             review_requests = []
 
-        # If there is a default reviewer specified for the target branch,
-        # and the review requests list is empty, use that default reviewer.
-        default_reviewer = target_branch.code_reviewer
-        if default_reviewer is not None and len(review_requests) == 0:
-            review_requests.append((default_reviewer, None))
+        # If no reviewer is specified, use the default for the branch.
+        if len(review_requests) == 0:
+            review_requests.append((target_branch.code_reviewer, None))
 
         bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
