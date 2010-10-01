@@ -381,29 +381,6 @@ class SlaveScanner:
         # For the test suite so that it can chain callback results.
         return deferred_list_results
 
-    def checkResume(self, response, slave):
-        """Check the result of resuming a slave.
-
-        If there's a problem resuming, we return a ResetDispatchResult which
-        will get evaluated at the end of the scan, or None if the resume
-        was OK.
-
-        :param response: the tuple that's constructed in
-            ProcessWithTimeout.processEnded(), or a Failure that
-            contains the tuple.
-        :param slave: the slave object we're talking to
-        """
-        if isinstance(response, Failure):
-            out, err, code = response.value
-        else:
-            out, err, code = response
-            if code == os.EX_OK:
-                return None
-
-        error_text = '%s\n%s' % (out, err)
-        self.logger.error('%s resume failure: %s' % (slave, error_text))
-        return self.reset_result(slave, error_text)
-
     def _incrementFailureCounts(self, builder):
         builder.gotFailure()
         builder.getCurrentBuildFarmJob().gotFailure()
