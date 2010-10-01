@@ -59,10 +59,6 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
         # TODO: Make sure options are getting captured into current object
         # TODO: Implement support for these options
         self.parser.add_option(
-            "-c", "--clean", dest="opt_clean",
-            default="false",
-            help="Cleanup all custom added components that have been hidden")
-        self.parser.add_option(
             "-b", "--bugtracker", dest="opt_bugtracker",
             help="Update only the bug tracker with this name in launchpad")
         self.parser.add_option(
