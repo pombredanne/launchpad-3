@@ -68,15 +68,12 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
         self.parser.add_option(
             "-g", "--component-group", dest="opt_component_group",
             help="Only update components in the specified component group")
-        self.parser.add_option(
-            "-P", "--purge-first", dest="opt_purge_first",
-            default="false",
-            help="Purge all data including local customizations before "
-                 "importing data from Bugzillas")
 
     def main(self):
         start_time = time.time()
-        finder = BugzillaRemoteComponentFinder(self.txn, self.logger)
+        finder = BugzillaRemoteComponentFinder(
+            self.txn,
+            self.logger)
         finder.getRemoteProductsAndComponents()
 
         run_time = time.time() - start_time
