@@ -59,18 +59,16 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
         # TODO: Make sure options are getting captured into current object
         # TODO: Implement support for these options
         self.parser.add_option(
-            "-b", "--bugtracker", dest="opt_bugtracker",
+            "-b", "--bugtracker", dest="bugtracker",
             help="Update only the bug tracker with this name in launchpad")
-        self.parser.add_option(
-            "-g", "--component-group", dest="opt_component_group",
-            help="Only update components in the specified component group")
 
     def main(self):
         start_time = time.time()
         finder = BugzillaRemoteComponentFinder(
             self.txn,
             self.logger)
-        finder.getRemoteProductsAndComponents()
+        finder.getRemoteProductsAndComponents(
+            bugtracker_name=self.options.bugtracker)
 
         run_time = time.time() - start_time
         print("Time for this run: %.3f seconds." % run_time)
