@@ -94,8 +94,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
-        if self.request.getHeader('referer'):
-            next_url = self.request.getHeader('referer')
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            next_url = referer
         else:
             next_url = canonical_url(self.context)
         return next_url
@@ -103,8 +107,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     @property
     def cancel_url(self):
         """Provided so returning to the page they came from works."""
-        if self.request.getHeader('referer'):
-            cancel_url = self.request.getHeader('referer')
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            cancel_url = referer
         else:
             cancel_url = canonical_url(self.context)
         return cancel_url
@@ -215,7 +223,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
-        self.notices.append("You have been subscribed to this bug.")
+        self.request.response.addNotification(
+            "You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
         """Handle an unsubscribe request."""
@@ -327,7 +336,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 'num_dupes': num_dupes,
                 'plural_suffix': plural_suffix,
                 'dupe_links_string': dupe_links_string})
-
 
 
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):

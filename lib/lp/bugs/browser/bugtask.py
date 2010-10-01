@@ -622,7 +622,7 @@ class BugTaskTextView(LaunchpadView):
 
 
 class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
-                  FeedsMixin, ReturnToReferrerMixin):
+                  FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
