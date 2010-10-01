@@ -15,9 +15,11 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+from zope.interface import implements
 
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
     )
@@ -29,6 +31,8 @@ from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 
 class BugSubscriptionFilter(Storm):
     """A filter to specialize a *structural* subscription."""
+
+    implements(IBugSubscriptionFilter)
 
     __storm_table__ = "BugSubscriptionFilter"
 
