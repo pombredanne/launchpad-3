@@ -83,6 +83,11 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(
             frozenset((BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE)),
             bug_subscription_filter.statuses)
+        # Assigning a subset causes the other status filters to be removed.
+        bug_subscription_filter.statuses = [BugTaskStatus.NEW]
+        self.assertEqual(
+            frozenset((BugTaskStatus.NEW,)),
+            bug_subscription_filter.statuses)
 
     def test_statuses_set_empty(self):
         # Assigning an empty iterable to statuses updates the database.
@@ -104,6 +109,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(
             frozenset((BugTaskImportance.HIGH, BugTaskImportance.LOW)),
             bug_subscription_filter.importances)
+        # Assigning a subset causes the other importance filters to be
+        # removed.
+        bug_subscription_filter.importances = [BugTaskImportance.HIGH]
+        self.assertEqual(
+            frozenset((BugTaskImportance.HIGH,)),
+            bug_subscription_filter.importances)
 
     def test_importances_set_empty(self):
         # Assigning an empty iterable to importances updates the database.
@@ -122,6 +133,11 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.tags = [u"foo", u"-bar"]
         self.assertEqual(
             frozenset((u"foo", u"-bar")),
+            bug_subscription_filter.tags)
+        # Assigning a subset causes the other tag filters to be removed.
+        bug_subscription_filter.tags = [u"foo"]
+        self.assertEqual(
+            frozenset((u"foo",)),
             bug_subscription_filter.tags)
 
     def test_tags_set_empty(self):
