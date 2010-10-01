@@ -161,7 +161,7 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('request_builds', )
+    links = ('request_builds',)
 
     def request_builds(self):
         """Provide a link for requesting builds of a recipe."""
