@@ -61,7 +61,7 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      proc_families=None):
+                      proc_families=None, always_create=False):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -76,6 +76,9 @@ class PackageCloner:
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
         @param the processor families to create builds for.
+        @param always_create: if we should create builds for every source
+            package copied, useful if no binaries are to be copied.
+        @type always_create: Boolean
         """
         # First clone the source packages.
         self._clone_source_packages(origin, destination)
@@ -92,11 +95,11 @@ class PackageCloner:
 
         self._create_missing_builds(
             destination.distroseries, destination.archive,
-            distroarchseries_list, proc_families)
+            distroarchseries_list, proc_families, always_create)
 
     def _create_missing_builds(
         self, distroseries, archive, distroarchseries_list,
-        proc_families):
+        proc_families, always_create):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
@@ -132,10 +135,9 @@ class PackageCloner:
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures)
-            # If a distroarchseries_list wasn't passed in, we don't copy any
-            # binary packages at all -- if the last build was sucessful, we
-            # should create a new build, since createMissingBuilds() won't.
-            if not distroarchseries_list and not builds:
+            # If the last build was sucessful, we should create a new
+            # build, since createMissingBuilds() won't.
+            if not builds and always_create:
                 for arch in architectures:
                     build = pubrec.sourcepackagerelease.createBuild(
                         distro_arch_series=arch, archive=archive,
@@ -230,7 +232,8 @@ class PackageCloner:
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
         self._create_missing_builds(
-            destination.distroseries, destination.archive, proc_families)
+            destination.distroseries, destination.archive, (),
+            proc_families, False)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
