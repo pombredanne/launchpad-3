@@ -180,11 +180,7 @@ def set_request_started(
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
-    # Calculate the hard timeout: needed because featureflags can be used
-    # to control the hard timeout, and they trigger DB access, but our
-    # DB tracers are not safe for reentrant use, so we nmust do this outside
-    # of the SQL stack.
-    _get_request_timeout()
+    set_permit_timeout_from_features(False)
 
 
 def clear_request_started():
@@ -261,6 +257,22 @@ def get_request_duration(now=None):
     return now - starttime
 
 
+def set_permit_timeout_from_features(enabled):
+    """Control request timeouts being obtained from the 'hard_timeout' flag.
+
+    Until we've fully setup a page to render - routed the request to the right
+    object, setup a participation etc, feature flags cannot be completely used;
+    and because doing feature flag lookups will trigger DB access, attempting
+    to do a DB lookup will cause a nested DB lookup (the one being done, and
+    the flags lookup). To resolve all of this, timeouts start as a config file
+    only setting, and are then overridden once the request is ready to execute.
+
+    :param enabled: If True permit looking up request timeouts in feature
+        flags.
+    """
+    _local._permit_feature_timeout = enabled
+
+
 def _get_request_timeout(timeout=None):
     """Get the timeout value in ms for the current request.
     
@@ -271,12 +283,12 @@ def _get_request_timeout(timeout=None):
         return None
     if timeout is None:
         timeout = config.database.db_statement_timeout
-        if not getattr(_local, '_getting_timeout_flag', False):
-            _local._getting_timeout_flag = True
+        if getattr(_local, '_permit_feature_timeout', False):
+            set_permit_timeout_from_features(False)
             try:
                 timeout_str = features.getFeatureFlag('hard_timeout')
             finally:
-                _local._getting_timeout_flag = False
+                set_permit_timeout_from_features(True)
             if timeout_str:
                 try:
                     timeout = float(timeout_str)

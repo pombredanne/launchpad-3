@@ -83,6 +83,8 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
+from lp.services import features
+from lp.services.features.flags import NullFeatureController
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -453,6 +455,21 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment('launchpad.pageid', pageid)
         # And spit the pageid out to our tracelog.
         tracelog(request, 'p', pageid)
+
+        # For opstats, where we really don't want to have any DB access at all,
+        # ensure that all flag lookups will stop early.
+        if pageid in ('RootObject:OpStats', 'RootObject:+opstats'):
+            request.features = NullFeatureController()
+            features.per_thread.features = request.features
+
+        # Calculate the hard timeout: needed because featureflags can be used
+        # to control the hard timeout, and they trigger DB access, but our
+        # DB tracers are not safe for reentrant use, so we nmust do this
+        # outside of the SQL stack. We must also do it after traversal so that
+        # the view is known and can be used in scope resolution. As we actually
+        # stash the pageid after afterTraversal, we need to do this even later.
+        da.set_permit_timeout_from_features(True)
+        da._get_request_timeout()
 
         if isinstance(removeSecurityProxy(ob), METHOD_WRAPPER_TYPE):
             # this is a direct call on a C-defined method such as __repr__ or
