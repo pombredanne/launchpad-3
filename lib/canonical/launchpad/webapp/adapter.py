@@ -188,7 +188,8 @@ def clear_request_started():
     the request completes.
     """
     if getattr(_local, 'request_start_time', None) is None:
-        warnings.warn('clear_request_started() called outside of a request')
+        warnings.warn('clear_request_started() called outside of a request',
+            stacklevel=2)
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())

@@ -22,6 +22,7 @@ class TestTimeout(TestCase):
 
     def test_set_request_started_disables_flag_timeout(self):
         adapter.set_request_started()
+        self.addCleanup(adapter.clear_request_started)
         self.assertFalse(adapter._local._permit_feature_timeout)
 
 
