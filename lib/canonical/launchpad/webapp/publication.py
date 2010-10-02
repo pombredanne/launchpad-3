@@ -464,7 +464,7 @@ class LaunchpadBrowserPublication(
 
         # Calculate the hard timeout: needed because featureflags can be used
         # to control the hard timeout, and they trigger DB access, but our
-        # DB tracers are not safe for reentrant use, so we nmust do this
+        # DB tracers are not safe for reentrant use, so we must do this
         # outside of the SQL stack. We must also do it after traversal so that
         # the view is known and can be used in scope resolution. As we actually
         # stash the pageid after afterTraversal, we need to do this even later.
