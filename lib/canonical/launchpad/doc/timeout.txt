@@ -109,6 +109,7 @@ Now the request can take 20 seconds to complete.
 
     >>> clear_request_started()
     >>> adapter.set_request_started(time.time())
+    >>> adapter.set_permit_timeout_from_features(True)
     >>> abs(adapter._get_request_timeout()-20000) < 0.001
     True
 
