@@ -94,7 +94,7 @@ periods. For more information on feature flags see lp.services.features.
 
 Install the feature flag to increase the timeout value.
 
-    >>> config.push('timeout', dedent('''\
+    >>> config.push('flagstimeout', dedent('''\
     ... [database]
     ... db_statement_timeout = 10000'''))
 
