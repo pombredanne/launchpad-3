@@ -468,6 +468,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
+        set_branch.summary = "Specify the location of this projects code."
         set_branch.configured = (
             )
         config_list.append(
@@ -547,7 +548,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     @enabled_with_permission('launchpad.Edit')
     def configure_blueprints(self):
         text = 'Configure blueprints'
-        summary = 'Enable tracking of specifications and meetings'
+        summary = 'Enable tracking of feature planning.'
         return Link('+configure-blueprints', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
