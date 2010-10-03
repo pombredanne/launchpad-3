@@ -837,6 +837,24 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
+    
+    @classmethod
+    def tearDownHelper(cls):
+        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
+
+        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
+        why atexit is used, but because test runners delegate rather than
+        returning, the librarian and other servers are only killed *at the end
+        of the whole test run*, which leads to multiple instances running, so
+        we manually run the teardown for these layers.
+        """
+        try:
+            MemcachedLayer.tearDown()
+        finally:
+            try:
+                LibrarianLayer.tearDown()
+            finally:
+                DatabaseLayer.tearDown()
 
     @classmethod
     @profiled
@@ -1198,18 +1216,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        # FunctionalLayer causes other layer tearDown to not occur, which is
-        # why atexit is used, but because test runners delegate rather than
-        # returning, the librarian and other servers are only killed *at the
-        # end of the whole test run*, which leads to multiple instances
-        # running, so we manually run the teardown for these layers.
-        try:
-            MemcachedLayer.tearDown()
-        finally:
-            try:
-                LibrarianLayer.tearDown()
-            finally:
-                DatabaseLayer.tearDown()
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1319,6 +1326,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def tearDown(cls):
         if not globalregistry.base.unregisterUtility(cls._mailbox):
             raise NotImplementedError('failed to unregister mailbox')
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
