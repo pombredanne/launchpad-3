@@ -531,6 +531,11 @@
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>
+        <browser:url
+            for="lp.bugs.interfaces.bugactivity.IBugActivity"
+            path_expression="string:activity"
+            attribute_to_parent="bug"
+            rootsite="bugs"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"

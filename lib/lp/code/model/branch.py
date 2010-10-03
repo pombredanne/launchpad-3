@@ -990,8 +990,8 @@ class Branch(SQLBase, BzrIdentityMixin):
             increment = getUtility(IBranchPuller).MIRROR_TIME_INCREMENT
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
-        if self.last_mirrored_id != last_revision_id:
-            self.last_mirrored_id = last_revision_id
+        self.last_mirrored_id = last_revision_id
+        if self.last_scanned_id != last_revision_id:
             from lp.code.model.branchjob import BranchScanJob
             BranchScanJob.create(self)
         self.control_format = control_format

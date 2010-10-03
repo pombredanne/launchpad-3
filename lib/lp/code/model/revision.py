@@ -18,6 +18,7 @@ from datetime import (
     )
 import email
 
+from bzrlib.revision import NULL_REVISION
 import pytz
 from sqlobject import (
     BoolCol,
@@ -39,7 +40,6 @@ from storm.expr import (
     )
 from storm.locals import (
     Bool,
-    DateTime,
     Int,
     Min,
     Reference,
@@ -117,6 +117,13 @@ class Revision(SQLBase):
         present in the database, using the RevisionSet Zope utility.
         """
         return [parent.parent_id for parent in self.parents]
+
+    def getLefthandParent(self):
+        if len(self.parent_ids) == 0:
+            parent_id = NULL_REVISION
+        else:
+            parent_id = self.parent_ids[0]
+        return RevisionSet().getByRevisionId(parent_id)
 
     def getProperties(self):
         """See `IRevision`."""
