@@ -85,6 +85,7 @@ import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
+from zope.component import globalregistry
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -1310,13 +1311,14 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        provideUtility(TestMailBox(), IMailBox)
+        cls._mailbox = TestMailBox()
+        provideUtility(cls._mailbox, IMailBox)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        # Signal Layer cannot be torn down fully
-        raise NotImplementedError
+        if not globalregistry.base.unregisterUtility(cls._mailbox):
+            raise NotImplementedError('failed to unregister mailbox')
 
     @classmethod
     @profiled
