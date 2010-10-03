@@ -260,7 +260,8 @@ the Librarian as a Utility.
 >>> from StringIO import StringIO
 
 >>> LaunchpadFunctionalTestSetup().setUp()
->>> LibrarianTestSetup().setUp()
+>>> librarian = LibrarianTestSetup()
+>>> librarian.setUp()
 >>> login(ANONYMOUS)
 
 >>> some_content = StringIO()
@@ -283,7 +284,7 @@ the same transaction it was added
 >>> data == some_content.getvalue()
 True
 
->>> LibrarianTestSetup().tearDown()
+>>> librarian.tearDown()
 >>> LaunchpadFunctionalTestSetup().tearDown()
 
 >>> from canonical.testing import reset_logging
