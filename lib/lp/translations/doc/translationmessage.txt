@@ -4,8 +4,8 @@ Let's do some imports we will need to test this class.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationmessage import (
     ...     ITranslationMessage)
     >>> from lp.translations.interfaces.translator import ITranslatorSet

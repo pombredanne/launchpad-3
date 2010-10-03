@@ -26,6 +26,7 @@ from bzrlib.errors import (
 import transaction
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.config import config
 from canonical.launchpad.interfaces import ILaunchpadCelebrities, IMasterStore
 from lp.code.enums import BranchLifecycleStatus, BranchType

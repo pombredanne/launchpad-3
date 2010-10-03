@@ -15,12 +15,10 @@ from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IBugBranchSet,
-    IBugSet,
-    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranchSet
 from lp.code.interfaces.revision import IRevisionSet
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
@@ -129,8 +127,8 @@ class TestBugLinking(BzrSyncTestCase):
         self.bug1.addTask(self.bug1.owner, distro)
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(distro).max_bug_heat = 0;
-        removeSecurityProxy(dsp).max_bug_heat = 0;
+        removeSecurityProxy(distro).max_bug_heat = 0
+        removeSecurityProxy(dsp).max_bug_heat = 0
         self.layer.txn.commit()
 
     def getBugURL(self, bug):

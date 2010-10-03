@@ -25,12 +25,11 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.interfaces import (
+from lp.registry.interfaces.person import (
     IPersonSet,
-    ISSHKeySet,
-    SSHKeyType,
     TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.ssh import ISSHKeySet
 
 
 def set_up_test_user(test_user, test_team):

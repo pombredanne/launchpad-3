@@ -9,8 +9,11 @@ Rosetta.
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
