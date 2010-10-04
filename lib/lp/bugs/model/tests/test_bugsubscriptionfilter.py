@@ -94,73 +94,6 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         IStore(bug_subscription_filter).flush()
         self.assertIs(None, Store.of(bug_subscription_filter))
 
-    def test_read_to_all(self):
-        """`BugSubscriptionFilter`s can be read by anyone."""
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter.structural_subscription = self.subscription
-        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
-        with person_logged_in(self.subscriber):
-            bug_subscription_filter.find_all_tags
-        with person_logged_in(self.factory.makePerson()):
-            bug_subscription_filter.find_all_tags
-        with anonymous_logged_in():
-            bug_subscription_filter.find_all_tags
-
-    def test_write_to_subscribers(self):
-        """`BugSubscriptionFilter`s can only be modifed by subscribers."""
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter.structural_subscription = self.subscription
-        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
-        # The subscriber can edit the filter.
-        with person_logged_in(self.subscriber):
-            bug_subscription_filter.find_all_tags = True
-        # Any other person is denied rights to edit the filter.
-        with person_logged_in(self.factory.makePerson()):
-            self.assertRaises(
-                Unauthorized, setattr, bug_subscription_filter,
-                "find_all_tags", True)
-        # Anonymous users are also denied.
-        with anonymous_logged_in():
-            self.assertRaises(
-                Unauthorized, setattr, bug_subscription_filter,
-                "find_all_tags", True)
-
-    def test_delete_by_subscribers(self):
-        """`BugSubscriptionFilter`s can only be deleted by subscribers."""
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter.structural_subscription = self.subscription
-        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
-        # Anonymous users are denied rights to delete the filter.
-        with anonymous_logged_in():
-            self.assertRaises(
-                Unauthorized, getattr, bug_subscription_filter, "delete")
-        # Any other person is also denied.
-        with person_logged_in(self.factory.makePerson()):
-            self.assertRaises(
-                Unauthorized, getattr, bug_subscription_filter, "delete")
-        # The subscriber can delete the filter.
-        with person_logged_in(self.subscriber):
-            bug_subscription_filter.delete()
-
-    def test_write_to_any_user_when_no_subscription(self):
-        """
-        `BugSubscriptionFilter`s can be modifed by any logged-in user when
-        there is no related subscription.
-        """
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
-        # The subscriber can edit the filter.
-        with person_logged_in(self.subscriber):
-            bug_subscription_filter.find_all_tags = True
-        # Any other person can edit the filter.
-        with person_logged_in(self.factory.makePerson()):
-            bug_subscription_filter.find_all_tags = True
-        # Anonymous users are denied rights to edit the filter.
-        with anonymous_logged_in():
-            self.assertRaises(
-                Unauthorized, setattr, bug_subscription_filter,
-                "find_all_tags", True)
-
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are
         # filtered upon.
@@ -287,3 +220,83 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.tags = searchbuilder.any(u"baz")
         self.assertEqual(frozenset((u"baz",)), bug_subscription_filter.tags)
         self.assertFalse(bug_subscription_filter.find_all_tags)
+
+
+class TestBugSubscriptionFilterPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterPermissions, self).setUp()
+        self.target = self.factory.makeProduct()
+        self.subscriber = self.target.owner
+        with person_logged_in(self.subscriber):
+            self.subscription = self.target.addBugSubscription(
+                self.subscriber, self.subscriber)
+
+    def test_read_to_all(self):
+        """`BugSubscriptionFilter`s can be read by anyone."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags
+        with person_logged_in(self.factory.makePerson()):
+            bug_subscription_filter.find_all_tags
+        with anonymous_logged_in():
+            bug_subscription_filter.find_all_tags
+
+    def test_write_to_subscribers(self):
+        """`BugSubscriptionFilter`s can only be modifed by subscribers."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # The subscriber can edit the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags = True
+        # Any other person is denied rights to edit the filter.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
+        # Anonymous users are also denied.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
+
+    def test_delete_by_subscribers(self):
+        """`BugSubscriptionFilter`s can only be deleted by subscribers."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # Anonymous users are denied rights to delete the filter.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, getattr, bug_subscription_filter, "delete")
+        # Any other person is also denied.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                Unauthorized, getattr, bug_subscription_filter, "delete")
+        # The subscriber can delete the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.delete()
+
+    def test_write_to_any_user_when_no_subscription(self):
+        """
+        `BugSubscriptionFilter`s can be modifed by any logged-in user when
+        there is no related subscription.
+        """
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # The subscriber can edit the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags = True
+        # Any other person can edit the filter.
+        with person_logged_in(self.factory.makePerson()):
+            bug_subscription_filter.find_all_tags = True
+        # Anonymous users are denied rights to edit the filter.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
