@@ -617,10 +617,8 @@
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
       <require
           permission="launchpad.Edit"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
-      <require
-          permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods" />
     </class>
 
     <facet
