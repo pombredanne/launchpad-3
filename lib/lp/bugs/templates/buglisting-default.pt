@@ -9,7 +9,8 @@
   <body>
 
   <div metal:fill-slot="main">
-    <div class="top-portlet">
+    <div tal:condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+         class="top-portlet">
       <tal:block condition="view/_projectContext">
         <tal:block condition="view/required:launchpad.Edit">
           <p tal:condition="not: context/products" class="warning message">
@@ -32,18 +33,29 @@
       <div tal:define="batch_navigator view/search">
 
         <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
-        <tal:buglisting content="structure batch_navigator/@@+table-view" />
-      </div>
-      </tal:do_not_show_advanced_form>
+          <tal:buglisting content="structure batch_navigator/@@+table-view" />
+        </div>
+        </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
-        <metal:advanced_form
-          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced_form>
+        <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+          <metal:advanced_form
+            use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+        </tal:show_advanced_form>
+      </div>
     </div>
-  </div>
+    <div tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+         class="top-portlet">
+      <tal:displayname replace="context/displayname" />
+      does not use Launchpad for bug tracking.
+      <div>
+        <a class="sprite maybe"
+          href="https://help.launchpad.net/Bugs">Getting started
+        with bug tracking in Launchpad</a>.
+      </div>
+    </div>
   <tal:side metal:fill-slot="side">
-    <div id="involvement" class="portlet involvement">
+    <div id="involvement" class="portlet involvement"
+      tal:condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <ul>
         <li style="border: 0">
           <a href="+filebug" class="menu-link-filebug sprite bugs">
