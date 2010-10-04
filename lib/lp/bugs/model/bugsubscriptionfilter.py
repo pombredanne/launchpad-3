@@ -186,4 +186,5 @@ class BugSubscriptionFilter(Storm):
 
     def delete(self):
         """See `IBugSubscriptionFilter`."""
+        self.importances = self.statuses = self.tags = ()
         Store.of(self).remove(self)

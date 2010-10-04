@@ -77,9 +77,16 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(None, bug_subscription_filter.description)
 
     def test_delete(self):
-        """`BugSubscriptionFilter` objects can be deleted."""
+        """`BugSubscriptionFilter` objects can be deleted.
+
+        Child objects - like `BugSubscriptionFilterTags` - will also be
+        deleted.
+        """
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter.importances = [BugTaskImportance.LOW]
+        bug_subscription_filter.statuses = [BugTaskStatus.NEW]
+        bug_subscription_filter.tags = [u"foo"]
         IStore(bug_subscription_filter).flush()
         self.assertIsNot(None, Store.of(bug_subscription_filter))
         # Delete.
