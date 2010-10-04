@@ -22,7 +22,7 @@ from bzrlib.transform import (
     )
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IMasterObject
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from lp.codehosting.bzrutils import get_stacked_on_url
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.osutils import override_environ

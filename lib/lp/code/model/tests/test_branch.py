@@ -1399,7 +1399,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSeriesRequirements(self):
         """Deletion requirements for a series' branch are right."""
-        series = self.factory.makeSeries(branch=self.branch)
+        series = self.factory.makeProductSeries(branch=self.branch)
         self.assertEqual(
             {series: ('alter',
             _('This series is linked to this branch.'))},
@@ -1407,8 +1407,8 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSeriesDeletion(self):
         """break_links allows deleting a series' branch."""
-        series1 = self.factory.makeSeries(branch=self.branch)
-        series2 = self.factory.makeSeries(branch=self.branch)
+        series1 = self.factory.makeProductSeries(branch=self.branch)
+        series2 = self.factory.makeProductSeries(branch=self.branch)
         self.branch.destroySelf(break_references=True)
         self.assertEqual(None, series1.branch)
         self.assertEqual(None, series2.branch)
@@ -1503,7 +1503,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_ClearSeriesBranch(self):
         """ClearSeriesBranch.__call__ must clear the user branch."""
-        series = removeSecurityProxy(self.factory.makeSeries(
+        series = removeSecurityProxy(self.factory.makeProductSeries(
             branch=self.branch))
         ClearSeriesBranch(series, self.branch)()
         self.assertEqual(None, series.branch)

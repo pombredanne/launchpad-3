@@ -109,7 +109,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
@@ -219,8 +219,6 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-# XXX kiko 2007-01-18: any reason why this can't be an
-# NamedSQLObjectHugeVocabulary?
 class ProductVocabulary(SQLObjectVocabularyBase):
     """All `IProduct` objects vocabulary."""
     implements(IHugeVocabulary)
@@ -269,8 +267,6 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
-# XXX kiko 2007-01-18: any reason why this can't be an
-# NamedSQLObjectHugeVocabulary?
 class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     """All `IProjectGroup` objects vocabulary."""
     implements(IHugeVocabulary)
@@ -662,6 +658,7 @@ class ValidPersonOrTeamVocabulary(
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
+
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
@@ -1521,6 +1518,7 @@ class SourcePackageNameIterator(BatchedCountableIterator):
     we actually are attempting to list, taking advantage of the
     resultset slicing that BatchNavigator does.
     """
+
     def getTermsWithDescriptions(self, results):
         return [SimpleTerm(obj, obj.name, obj.name) for obj in results]
 

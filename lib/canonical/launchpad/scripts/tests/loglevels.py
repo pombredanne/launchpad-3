@@ -20,7 +20,7 @@ time.gmtime = fake_gmtime
 
 from optparse import OptionParser
 
-from canonical.launchpad.scripts.logger import *
+from canonical.launchpad.scripts.logger import logger, logger_options
 
 parser = OptionParser()
 logger_options(parser)
@@ -36,12 +36,11 @@ log.error("This is an error")
 log.warn("This is a warning")
 log.info("This is info")
 log.debug("This is debug")
-log.log(DEBUG2, "This is debug2")
-log.log(DEBUG3, "This is debug3")
-log.log(DEBUG4, "This is debug4")
-log.log(DEBUG5, "This is debug5")
-log.log(DEBUG6, "This is debug6")
-log.log(DEBUG7, "This is debug7")
-log.log(DEBUG8, "This is debug8")
-log.log(DEBUG9, "This is debug9")
-
+log.debug2("This is debug2")
+log.debug3("This is debug3")
+log.debug4("This is debug4")
+log.debug5("This is debug5")
+log.debug6("This is debug6")
+log.debug7("This is debug7")
+log.debug8("This is debug8")
+log.debug9("This is debug9")

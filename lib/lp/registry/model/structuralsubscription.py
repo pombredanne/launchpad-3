@@ -266,47 +266,36 @@ class StructuralSubscriptionTargetMixin:
                          min_blueprint_notification_level=
                          BlueprintNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
-        target_clause_parts = []
-        for key, value in self._target_args.items():
+        clauses = [
+            "StructuralSubscription.subscriber = Person.id",
+            "StructuralSubscription.bug_notification_level "
+            ">= %s" % quote(min_bug_notification_level),
+            "StructuralSubscription.blueprint_notification_level "
+            ">= %s" % quote(min_blueprint_notification_level),
+            ]
+        for key, value in self._target_args.iteritems():
             if value is None:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s IS NULL " % (key, ))
+                clauses.append(
+                    "StructuralSubscription.%s IS NULL" % (key,))
             else:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s = %s " % (key, quote(value)))
-        target_clause = " AND ".join(target_clause_parts)
-        query = target_clause + """
-            AND StructuralSubscription.subscriber = Person.id
-            """
-        all_subscriptions = StructuralSubscription.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        subscriptions = [sub for sub
-                         in all_subscriptions
-                         if ((sub.bug_notification_level >=
-                             min_bug_notification_level) and
-                             (sub.blueprint_notification_level >=
-                              min_blueprint_notification_level))]
-        return subscriptions
+                clauses.append(
+                    "StructuralSubscription.%s = %s" % (key, quote(value)))
+        query = " AND ".join(clauses)
+        return StructuralSubscription.select(
+            query, orderBy='Person.displayname', clauseTables=['Person'])
 
     def getBugNotificationsRecipients(self, recipients=None, level=None):
         """See `IStructuralSubscriptionTarget`."""
-        subscribers = set()
         if level is None:
             subscriptions = self.bug_subscriptions
         else:
             subscriptions = self.getSubscriptions(
                 min_bug_notification_level=level)
-        for subscription in subscriptions:
-            if (level is not None and
-                subscription.bug_notification_level < level):
-                continue
-            subscriber = subscription.subscriber
-            subscribers.add(subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscriber, self)
+        subscribers = set(
+            subscription.subscriber for subscription in subscriptions)
+        if recipients is not None:
+            for subscriber in subscribers:
+                recipients.addStructuralSubscriber(subscriber, self)
         parent = self.parent_subscription_target
         if parent is not None:
             subscribers.update(

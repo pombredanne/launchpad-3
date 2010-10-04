@@ -112,7 +112,10 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
+from canonical.launchpad.webapp.servers import (
+    LaunchpadTestRequest,
+    WebServiceTestRequest,
+    )
 from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import (
     branch_id_to_path,
@@ -120,6 +123,10 @@ from lp.codehosting.vfs import (
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.services.osutils import override_environ
+from lp.services import features
+from lp.services.features.flags import FeatureController
+from lp.services.features.model import getFeatureStore, FeatureFlag
+from lp.services.features.webapp import ScopesFromRequest
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -222,9 +229,10 @@ class FakeTime:
 
 class StormStatementRecorder:
     """A storm tracer to count queries.
-    
-    This exposes the count and queries as lp.testing._webservice.QueryCollector
-    does permitting its use with the HasQueryCount matcher.
+
+    This exposes the count and queries as
+    lp.testing._webservice.QueryCollector does permitting its use with the
+    HasQueryCount matcher.
 
     It also meets the context manager protocol, so you can gather queries
     easily:
@@ -875,6 +883,19 @@ def capture_events(callable_obj, *args, **kwargs):
         zope.event.subscribers[:] = old_subscribers
 
 
+@contextmanager
+def feature_flags():
+    """Provide a context in which feature flags work."""
+    empty_request = LaunchpadTestRequest()
+    old_features = getattr(features.per_thread, 'features', None)
+    features.per_thread.features = FeatureController(
+        ScopesFromRequest(empty_request).lookup)
+    try:
+        yield
+    finally:
+        features.per_thread.features = old_features
+
+
 # XXX: This doesn't seem like a generically-useful testing function. Perhaps
 # it should go in a sub-module or something? -- jml
 def get_lsb_information():
@@ -975,6 +996,21 @@ def map_branch_contents(branch):
         tree.unlock()
 
     return contents
+
+
+def set_feature_flag(name, value, scope=u'default', priority=1):
+    """Set a feature flag to the specified value.
+
+    In order to access the flag, use the feature_flags context manager or
+    populate features.per_thread.features some other way.
+    :param name: The name of the flag.
+    :param value: The value of the flag.
+    :param scope: The scope in which the specified value applies.
+    """
+    assert getattr(features.per_thread, 'features', None) is not None
+    flag = FeatureFlag(
+        scope=scope, flag=name, value=value, priority=priority)
+    getFeatureStore().add(flag)
 
 
 def validate_mock_class(mock_class):

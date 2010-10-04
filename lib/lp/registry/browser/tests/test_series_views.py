@@ -73,15 +73,6 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             name=derived_name, parent_series=parent)
         return derived_series
 
-    def makeControllerInScopes(self, scopes):
-        """Make a controller that will report it's in the given scopes."""
-        call_log = []
-
-        def scope_cb(scope):
-            call_log.append(scope)
-            return scope in scopes
-        return FeatureController(scope_cb), call_log
-
     def setDerivedSeriesUIFeatureFlag(self):
         # Helper to set the feature flag enabling the derived series ui.
         ignore = getFeatureStore().add(FeatureFlag(
