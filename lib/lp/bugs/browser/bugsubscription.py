@@ -45,6 +45,7 @@ from zope.schema.vocabulary import (
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
+    custom_widget,
     LaunchpadFormView,
     LaunchpadView,
     )
@@ -53,6 +54,7 @@ from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.enum import BugNotificationLevel
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -98,6 +100,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     schema = IBugSubscription
 
     field_names = ['bug_notification_level']
+    custom_widget('bug_notification_level', RadioWidget)
 
     @property
     def next_url(self):
@@ -149,13 +152,24 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        person_field = Choice(
-            __name__='subscription',
+        subscription_field = Choice(
+            __name__='subscription', title=self.schema['person'].title,
             vocabulary=subscription_vocabulary, required=True)
-        # Add the custom field
-        self.form_fields += formlib.form.Fields(person_field)
-        self.form_fields['subscription'].custom_widget = (
-            CustomWidgetFactory(RadioWidget))
+        notification_level_terms = [
+            (item.description, item) for item in BugNotificationLevel.items]
+        bug_notification_level_field = Choice(
+            __name__='bug_notification_level',
+            title=self.schema['bug_notification_level'].title,
+            vocabulary=SimpleVocabulary.fromItems(notification_level_terms))
+        self.form_fields += formlib.form.Fields(subscription_field)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
+        # We hide the subscription widget since we know who the
+        # subscriber is and we don't need to present them with a single
+        # radio button.
+        self.widgets['subscription'].visible = False
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
@@ -192,13 +206,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         else:
             return LaunchpadView.render(self)
 
-    def handleSubscriptionRequest(self):
-        """Subscribe or unsubscribe the user from the bug, if requested."""
-        if not self._isSubscriptionRequest():
-            return
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        import pdb; pdb.set_trace()
 
-        subscription_person = self.subscription_widget.getInputValue()
-
+    @action('Continue', name='continue')
+    def subscribe_action(self, action, data):
+        """Handle subscription requests."""
+        subscription_person = self.widgets['subscription'].getInputValue()
         # 'subscribe' appears in the request whether the request is to
         # subscribe or unsubscribe. Since "subscribe someone else" is
         # handled by a different view we can assume that 'subscribe' +
@@ -217,7 +232,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             self.user and
             self.request.method == 'POST' and
             'cancel' not in self.request.form and
-            self.subscription_widget.hasValidInput())
+            self.widgets['subscription'].hasValidInput())
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
