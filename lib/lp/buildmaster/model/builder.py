@@ -768,12 +768,6 @@ class Builder(SQLBase):
 
     def handleTimeout(self, logger, error_message):
         """See IBuilder."""
-        def fail_builder():
-            # Mark builder as 'failed'.
-            logger.warn(
-                "Disabling builder: %s -- %s" % (self.url, error_message))
-            self.failBuilder(error_message)
-
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset.
             logger.warn(
@@ -784,7 +778,11 @@ class Builder(SQLBase):
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
-            return defer.succeed(fail_builder())
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (self.url, error_message))
+            self.failBuilder(error_message)
+            return defer.succeed(None)
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
