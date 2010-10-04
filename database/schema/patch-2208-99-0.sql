@@ -2,12 +2,6 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
-ALTER TABLE Branch DROP COLUMN merge_robot CASCADE;
-ALTER TABLE Branch DROP COLUMN merge_control_status;
-ALTER TABLE Branch ADD COLUMN merge_queue_config TEXT;
-
-ALTER TABLE BranchMergeRobot RENAME TO todrop_BranchMergeRobot;
-
 CREATE TABLE BranchMergeQueue (
     id serial NOT NULL PRIMARY KEY,
     registrant integer NOT NULL REFERENCES Person,
@@ -20,11 +14,11 @@ CREATE TABLE BranchMergeQueue (
     CONSTRAINT owner_name UNIQUE (owner, name)
 );
 
-CREATE TABLE BranchQueue (
-    branch integer NOT NULL REFERENCES Branch,
-    queue integer NOT NULL REFERENCES BranchMergeQueue,
-    CONSTRAINT branch_unique UNIQUE (branch),
-    PRIMARY KEY (queue, branch)
-);
+ALTER TABLE Branch DROP COLUMN merge_robot CASCADE;
+ALTER TABLE Branch DROP COLUMN merge_control_status;
+ALTER TABLE Branch ADD COLUMN merge_queue integer REFERENCES BranchMergeQueue;
+ALTER TABLE Branch ADD COLUMN merge_queue_config TEXT;
+
+ALTER TABLE BranchMergeRobot RENAME TO todrop_BranchMergeRobot;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
