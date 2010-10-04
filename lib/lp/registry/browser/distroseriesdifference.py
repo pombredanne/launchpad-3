@@ -5,11 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'CommentXHTMLRepresentation',
     'DistroSeriesDifferenceView',
     ]
 
+from lazr.restful.interfaces import IWebServiceClientRequest
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.component import getUtility
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -22,6 +28,7 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView,
+    LaunchpadView,
     Navigation,
     stepthrough,
     )
@@ -32,7 +39,11 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
+    )
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment,
     )
 from lp.services.comments.interfaces.conversation import (
     IComment,
@@ -107,9 +118,11 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     @property
     def comments(self):
         """See `IConversation`."""
+        comments = self.context.getComments().order_by(
+            DistroSeriesDifferenceComment.id)
         return [
             DistroSeriesDifferenceDisplayComment(comment) for
-                comment in self.context.getComments()]
+                comment in comments]
 
     @property
     def show_edit_options(self):
@@ -132,3 +145,16 @@ class DistroSeriesDifferenceDisplayComment:
         self.comment_author = comment.comment_author
         self.comment_date = comment.comment_date
         self.body_text = comment.body_text
+
+
+class CommentXHTMLRepresentation(LaunchpadView):
+    """Render individual comments when requested via the API."""
+    adapts(IDistroSeriesDifferenceComment, IWebServiceClientRequest)
+    implements(Interface)
+
+    template = ViewPageTemplateFile(
+        '../templates/distroseriesdifferencecomment-fragment.pt')
+
+    @property
+    def comment(self):
+        return DistroSeriesDifferenceDisplayComment(self.context)

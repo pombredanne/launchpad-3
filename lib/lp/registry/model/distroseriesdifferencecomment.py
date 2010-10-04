@@ -77,7 +77,9 @@ class DistroSeriesDifferenceComment(Storm):
         dsd_comment.distro_series_difference = distro_series_difference
         dsd_comment.message = message
 
-        return store.add(dsd_comment)
+        comment = store.add(dsd_comment)
+        store.flush()
+        return comment
 
     @staticmethod
     def getForDifference(distro_series_difference, id):
