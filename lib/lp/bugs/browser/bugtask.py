@@ -168,6 +168,7 @@ from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
+from lp.app.enums import service_uses_launchpad
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
 from canonical.widgets.bug import BugTagsWidget
@@ -2987,8 +2988,17 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return False
 
     @property
+    def should_show_bug_information(self):
+        """Return False if a project group that does not use Launchpad."""
+        if not self._projectContext():
+            return True
+        involvement = getMultiAdapter((self.context, self.request),
+                                      name="+get-involved")
+        return involvement.official_malone
+
+    @property
     def form_has_errors(self):
-        """Return True of the form has errors, otherwise False."""
+        """Return True if the form has errors, otherwise False."""
         return len(self.errors) > 0
 
     def validateVocabulariesAdvancedForm(self):

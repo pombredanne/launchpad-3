@@ -21,51 +21,62 @@
             associate an existing project with it.
           </p>
         </tal:block>
+        <tal:has_products condition="context/products">
+          <p condition="not:view/should_show_bug_information">
+            <tal:project replace="context/displayname" /> does not have any
+            projects that use Launchpad for bug tracking so you may not file a
+            bug against this project group.
+          </p>
+        </tal:has_products>
       </tal:block>
-      <h1
-        tal:condition="view/shouldShowAdvancedForm"
-        tal:content="view/getAdvancedSearchPageHeading"
-      >Bugs in Fooix: Advanced search</h1>
+      <tal:show_bug_info condition="view/should_show_bug_information">
+        <h1
+          tal:condition="view/shouldShowAdvancedForm"
+          tal:content="view/getAdvancedSearchPageHeading"
+        >Bugs in Fooix: Advanced search</h1>
 
-      <tal:do_not_show_advanced_form
-        condition="not: view/shouldShowAdvancedForm">
-      <div tal:define="batch_navigator view/search">
+        <tal:do_not_show_advanced_form
+          condition="not: view/shouldShowAdvancedForm">
+        <div tal:define="batch_navigator view/search">
 
-        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
-        <tal:buglisting content="structure batch_navigator/@@+table-view" />
-      </div>
-      </tal:do_not_show_advanced_form>
+          <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
+          <tal:buglisting content="structure batch_navigator/@@+table-view" />
+        </div>
+        </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
-        <metal:advanced_form
-          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced_form>
+        <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+          <metal:advanced_form
+            use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+        </tal:show_advanced_form>
+      </tal:show_bug_info>
     </div>
   </div>
   <tal:side metal:fill-slot="side">
-    <div id="involvement" class="portlet involvement">
-      <ul>
-        <li style="border: 0">
-          <a href="+filebug" class="menu-link-filebug sprite bugs">
-            Report a bug
-          </a>
-        </li>
-      </ul>
-    </div>
-    <tal:menu replace="structure view/@@+related-pages" />
-    <tal:do_not_show_portlets_advanced_form
-      condition="not: view/shouldShowAdvancedForm">
-      <tal:block content="structure context/@@+portlet-bugfilters" />
-      <tal:block
-          content="structure context/@@+portlet-publishing-details | nothing"/>
-      <tal:block content="structure context/@@+portlet-bugtags" />
-      <tal:releasecriticalbugs
+    <div id="bug-portlets" tal:condition="view/should_show_bug_information">
+      <div id="involvement" class="portlet involvement">
+        <ul>
+          <li style="border: 0">
+            <a href="+filebug" class="menu-link-filebug sprite bugs">
+              Report a bug
+            </a>
+          </li>
+        </ul>
+      </div>
+      <tal:menu replace="structure view/@@+related-pages" />
+      <tal:do_not_show_portlets_advanced_form
+        condition="not: view/shouldShowAdvancedForm">
+        <tal:block content="structure context/@@+portlet-bugfilters" />
+        <tal:block
+            content="structure context/@@+portlet-publishing-details | nothing"/>
+        <tal:block content="structure context/@@+portlet-bugtags"/>
+        <tal:releasecriticalbugs
+            tal:condition="view/shouldShowReleaseCriticalPortlet"
+            tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+        <tal:milestonecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
-          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
-      <tal:milestonecriticalbugs
-        tal:condition="view/shouldShowReleaseCriticalPortlet"
-        tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
-     </tal:do_not_show_portlets_advanced_form>
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
+       </tal:do_not_show_portlets_advanced_form>
+    </div>
   </tal:side>
 </body>
 

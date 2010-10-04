@@ -19,6 +19,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -33,13 +34,20 @@ from lp.bugs.browser.bugtask import (
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
+    )
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
     )
 
 
@@ -416,6 +424,89 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         self.assertEqual(
             'ValidAssignee',
             view.form_fields['assignee'].field.vocabularyName)
+
+
+class TestProjectGroupBugs(TestCaseWithFactory):
+    """Test the bugs overview page for Project Groups."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupBugs, self).setUp()
+        self.owner = self.factory.makePerson(name='bob')
+        self.projectgroup = self.factory.makeProject(name='container',
+                                                     owner=self.owner)
+
+    def makeSubordinateProduct(self, tracks_bugs_in_lp):
+        """Create a new product and add it to the project group."""
+        product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
+        with person_logged_in(product.owner):
+            product.project = self.projectgroup
+        expected = {True: 'LAUNCHPAD',
+                    False: 'UNKNOWN',
+                    }
+        self.assertEqual(
+            expected[tracks_bugs_in_lp], product.bug_tracking_usage.name)
+
+    def test_empty_project_group(self):
+        # An empty project group does not use Launchpad for bugs.
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.projectgroup.hasProducts())
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_not_using_launchpad(self):
+        # A project group with all subordinates not using Launchpad
+        # will itself be marked as not using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_using_launchpad(self):
+        # A project group with one subordinate using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+
+    def test_project_group_with_mixed_subordinates(self):
+        # A project group with one or more subordinates using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+    def test_project_group_has_no_portlets_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will not have a
+        # 'Report a bug' link.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertFalse(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIs(None, report_a_bug)
+
+    def test_project_group_has_portlets_link_if_using_LP(self):
+        # A project group that has no projects using Launchpad will not have a
+        # 'Report a bug' link.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertTrue(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIsNot(None, report_a_bug)
 
 
 def test_suite():
