@@ -66,19 +66,20 @@ class IOAuthConsumer(Interface):
 
     is_integrated_desktop = Attribute(
         """This attribute is true if the consumer corresponds to a
-        user account on a personal computer.""")
+        user account on a personal computer or similar device.""")
 
     integrated_desktop_name = Attribute(
         """If the consumer corresponds to a user account on a personal
-        computer, this is the self-reported name of that computer. If
-        the consumer is a specific web or desktop application, this is
-        None.""")
+        computer or similar device, this is the self-reported name of
+        the computer. If the consumer is a specific web or desktop
+        application, this is None.""")
 
     integrated_desktop_type = Attribute(
         """If the consumer corresponds to a user account on a personal
-        computer, this is the self-reported type of that computer
-        (usually the operating system). If the consumer is a specific
-        web or desktop application, this is None.""")
+        computer or similar device, this is the self-reported type of
+        that computer (usually the operating system plus the word
+        "desktop"). If the consumer is a specific web or desktop
+        application, this is None.""")
 
     def newRequestToken():
         """Return a new `IOAuthRequestToken` with a random key and secret.

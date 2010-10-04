@@ -212,11 +212,11 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             actions.append(allow_action)
 
             # We'll customize the "deny" message as well.
-            label = "No, thanks, I don't trust %s."
+            label = "No, thanks, I don't trust &quot;%s&quot;."
             deny_action = [
                 action for action in self.actions
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]
-            deny_action.label = lable & desktop_name
+            deny_action.label = label % desktop_name
             actions.append(deny_action)
 
         else:

@@ -276,7 +276,7 @@ that a user can identify with their computer (eg. the hostname). Here,
 we'll create such a token.
 
     >>> login('salgado@ubuntu.com')
-    >>> desktop_key = "Ubuntu desktop (mycomputer)"
+    >>> desktop_key = "System-wide: Ubuntu desktop (mycomputer)"
     >>> consumer = getUtility(IOAuthConsumerSet).new(desktop_key)
     >>> token = consumer.newRequestToken()
     >>> logout()
@@ -289,16 +289,19 @@ desktop.
     >>> print extract_text(
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
-    The Ubuntu computer called mycomputer wants access to your
+    The Ubuntu desktop called mycomputer wants access to your
     Launchpad account. If you allow the integration, all applications
     running on mycomputer will have read-write access to your
     Launchpad account, including to your private data.
-    If mycomputer is not the computer you're using right now, or if
-    you don't trust this computer, you should click "No, thanks, I
-    don't trust this computer", or close this window now.
-    Even if you decide to allow the integration, you can
-    change your mind later.
+    If you're using a public computer, if mycomputer is not the
+    computer you're using right now, or if something just doesn't feel
+    right about this situation, you should click "No, thanks, I don't
+    trust 'mycomputer'", or close this window now. You can always try
+    again later.
+    Even if you decide to allow the integration, you can change your
+    mind later.
     See all applications authorized to access Launchpad on your behalf.
+
 
 The only time the 'Desktop Integration' permission shows up in the
 list of permissions is if the client specifically requests it, and no
@@ -307,12 +310,12 @@ up anyway.)
 
     >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
     Give all programs running on "mycomputer" access to my Launchpad account.
-    No, thanks, I don't trust this computer.
+    No, thanks, I don't trust "mycomputer".
 
     >>> print_access_levels(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
     Give all programs running on "mycomputer" access to my Launchpad account.
-    No, thanks, I don't trust this computer.
+    No, thanks, I don't trust "mycomputer".
 
 A desktop may not request a level of access other than
 DESKTOP_INTEGRATION, since the whole point is to have a permission

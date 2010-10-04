@@ -42,29 +42,31 @@ Desktop consumers
 =================
 
 In a web context, each application is represented by a unique consumer
-key. But a typical user sitting at a typical desktop, using multiple
-desktop applications that integrate with Launchpad, is represented by
-a single consumer key. The user's session as a whole is a single
-"consumer", and the consumer key is expected to contain structured
-information: the type of desktop (usually the operating system) and a
-string that the end-user would recognize as identifying their
-computer.
+key. But a typical user sitting at a typical desktop (or other
+personal computer), using multiple desktop applications that integrate
+with Launchpad, is represented by a single consumer key. The user's
+session as a whole is a single "consumer", and the consumer key is
+expected to contain structured information: the type of system
+(usually the operating system plus the word "desktop") and a string
+that the end-user would recognize as identifying their computer.
 
-    >>> desktop_key = consumer_set.new("Ubuntu desktop (hostname)")
+    >>> desktop_key = consumer_set.new(
+    ...     "System-wide: Ubuntu desktop (hostname)")
     >>> desktop_key.is_integrated_desktop
     True
     >>> print desktop_key.integrated_desktop_type
-    Ubuntu
+    Ubuntu desktop
     >>> print desktop_key.integrated_desktop_name
     hostname
 
-    >>> desktop_key = consumer_set.new("Windows desktop (My Computer)")
+    >>> desktop_key = consumer_set.new(
+    ...     "System-wide: Android phone (My Phone)")
     >>> desktop_key.is_integrated_desktop
     True
     >>> print desktop_key.integrated_desktop_type
-    Windows
+    Android phone
     >>> print desktop_key.integrated_desktop_name
-    My Computer
+    My Phone
 
 A normal OAuth consumer does not have this information.
 

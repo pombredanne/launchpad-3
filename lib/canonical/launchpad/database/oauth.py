@@ -104,18 +104,19 @@ class OAuthConsumer(OAuthBase):
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
 
-    # This regular expression singles out a consumer key that represents
-    # any and all apps running on a specific computer. For instance:
+    # This regular expression singles out a consumer key that
+    # represents any and all apps running on a specific computer
+    # (usually a desktop). For instance:
     #
-    # Ubuntu desktop (hostname1)
+    # System-wide: Ubuntu desktop (hostname1)
     #  - An Ubuntu desktop called "hostname1"
-    # Windows desktop (Computer Name)
+    # System-wide: Windows desktop (Computer Name)
     #  - A Windows desktop called "Computer Name"
-    # Mac OS desktop (hostname2)
+    # System-wide: Mac OS desktop (hostname2)
     #  - A Macintosh desktop called "hostname2"
-    # Android desktop (Bob's Phone)
+    # System-wide Android phone (Bob's Phone)
     #  - An Android phone called "Bob's Phone"
-    integrated_desktop_re = re.compile("^(.*) desktop \(([^)]*)\)$")
+    integrated_desktop_re = re.compile("^System-wide: (.*) \(([^)]*)\)$")
 
     def _integrated_desktop_match_group(self, position):
         """Return information about a desktop integration token.

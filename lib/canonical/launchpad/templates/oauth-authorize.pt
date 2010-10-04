@@ -26,7 +26,7 @@
              <p>The
                <tal:desktop replace="structure
                token/consumer/integrated_desktop_type" />
-             computer called
+             called
              <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
              wants access to your Launchpad account. If you allow the
              integration, all applications running
@@ -39,8 +39,8 @@
              is not the computer you're using right now, or if
              something just doesn't feel right about this situation,
              you should click "No, thanks, I don't trust
-             <tal:hostname replace="structure
-              token/consumer/integrated_desktop_name" />",
+             '<tal:hostname replace="structure
+              token/consumer/integrated_desktop_name" />'",
              or close this window now. You can always try
              again later.</p>
 
