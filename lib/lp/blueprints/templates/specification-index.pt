@@ -50,8 +50,8 @@
       </ul>
     </div>
 
-    <div class="yui-g">
-      <div class="yui-u first">
+    <div class="yui3-g">
+      <div class="yui3-u first">
         <div class="portlet">
           <h2>Blueprint information</h2>
 
@@ -199,7 +199,7 @@
         </div>
       </div>
 
-      <div class="yui-u">
+      <div class="yui3-u">
         <div class="portlet">
           <div id="linked_branches">
             <h2>Related branches</h2>

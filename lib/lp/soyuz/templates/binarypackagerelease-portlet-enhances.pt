@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="relationships view/enhances"
   tal:condition="relationships/has_items"
-  class="first yui-u" id="portlet-enhances">
+  class="first yui3-u" id="portlet-enhances">
 
   <dl id="enhances">
     <dt>Enhances:</dt>

@@ -80,7 +80,7 @@
 
 <div metal:fill-slot="main">
 
-  <div class="yui-g first">
+  <div class="yui3-g first">
     <tal:branch-errors tal:replace="structure context/@@+messages" />
   </div>
 
@@ -94,14 +94,14 @@
     link.
   </div>
 
-  <div class="yui-g first">
+  <div class="yui3-g first">
     <div id="branch-management" class="portlet">
       <tal:branch-management
           replace="structure context/@@++branch-management" />
     </div>
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
 
     <div class="portlet" id="branch-relations">
       <tal:branch-pending-merges
@@ -116,7 +116,7 @@
 
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
     <div id="branch-info" class="portlet">
       <h2>Branch information</h2>
       <tal:branch-info replace="structure context/@@++branch-information" />
@@ -124,7 +124,7 @@
   </div>
 
   <div id="branch-import-details"
-       class="yui-g"
+       class="yui3-g"
        tal:condition="context/branch_type/enumvalue:IMPORTED">
     <div class="portlet">
       <h2>Import details</h2>
@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <div id="whiteboard" class="yui-g" tal:condition="view/show_whiteboard">
+  <div id="whiteboard" class="yui3-g" tal:condition="view/show_whiteboard">
     <div class="portlet">
       <h2>Whiteboard</h2>
       <div id="branch-whiteboard-value"
@@ -145,7 +145,7 @@
 
   </div>
 
-  <div class="yui-g" tal:condition="view/pending_writes">
+  <div class="yui3-g" tal:condition="view/pending_writes">
     <div class="portlet">
       <div id="branch-pending-writes" class="pending-update">
         <h3>Updating branch...</h3>
@@ -157,14 +157,14 @@
     </div>
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
     <div class="portlet" id="recent-revisions">
       <h2>Recent revisions</h2>
       <tal:branch-revisions replace="structure context/@@++branch-revisions" />
     </div>
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
     <div class="portlet" tal:condition="view/has_metadata">
       <h2>Branch metadata</h2>
       <tal:branch-metadata replace="structure context/@@++branch-metadata" />

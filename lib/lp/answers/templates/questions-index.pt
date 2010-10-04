@@ -6,7 +6,7 @@
   <body>
     <div metal:fill-slot="main">
 
-      <div class="yui-g">
+      <div class="yui3-g">
         <p id="application-summary">
           Launchpad Answers helps you build a
           community support network and knowledge base for
@@ -27,7 +27,7 @@
         </ul>
       </div>
 
-      <div class="yui-g">
+      <div class="yui3-g">
         <form class="central" action="" method="get"
               tal:attributes="action request/URL">
           <table>

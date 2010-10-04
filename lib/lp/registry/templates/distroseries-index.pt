@@ -7,7 +7,7 @@
   i18n:domain="launchpad">
   <body>
     <metal:block fill-slot="head_epilogue">
-      <metal:yui-dependencies
+      <metal:yui3-dependencies
         use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
       <script id="milestone-script" type="text/javascript"
         tal:condition="context/menu:overview/create_milestone/enabled"
@@ -46,13 +46,13 @@
         </p>
       </div>
 
-      <div class="yui-g">
-        <div class="yui-u first">
+      <div class="yui3-g">
+        <div class="yui3-u first">
           <div
             tal:replace="structure context/@@+portlet-details"/>
         </div>
 
-        <div class="yui-u">
+        <div class="yui3-u">
           <div tal:replace="structure context/@@+portlet-package-summary" />
         </div>
       </div>
@@ -69,8 +69,8 @@
         </ul>
       </div>
 
-      <div class="yui-g">
-        <div class="yui-u first">
+      <div class="yui3-g">
+        <div class="yui3-u first">
           <div
             tal:replace="structure context/@@+portlet-architectures" />
           <div
@@ -78,7 +78,7 @@
             tal:condition="context/@@+get-involved/official_malone" />
         </div>
 
-        <div class="yui-u">
+        <div class="yui3-u">
           <div tal:replace="structure context/@@+portlet-latestuploads" />
 
           <div

@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="relationships view/breaks"
   tal:condition="relationships/has_items"
-  class="first yui-u" id="portlet-breaks">
+  class="first yui3-u" id="portlet-breaks">
 
   <dl id="breaks">
     <dt>Breaks:</dt>

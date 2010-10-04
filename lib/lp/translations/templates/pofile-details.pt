@@ -9,8 +9,8 @@
   <body>
     <div metal:fill-slot="main">
 
-    <div class="yui-g">
-      <div class="yui-u first">
+    <div class="yui3-g">
+      <div class="yui3-u first">
         <div tal:replace="structure context/@@+portlet-details" />
         <div class="portlet">
         <h2>Related pages</h2>
@@ -30,7 +30,7 @@
         </ul>
         </div>
       </div>
-      <div class="yui-u">
+      <div class="yui3-u">
         <div tal:replace="structure context/@@+portlet-stats" />
         <div class="portlet">
         <h2>Contributors to this translation</h2>

@@ -39,9 +39,9 @@
        </p>
      </div>
 
-      <div class="yui-gc">
+      <div class="yui3-gc">
 
-       <div class="first yui-u">
+       <div class="first yui3-u">
          <div id="builders-list" class="portlet">
            <h2>Builders</h2>
            <table class="listing sortable" id="builders-table">
@@ -86,26 +86,26 @@
               <span tal:replace="structure view/user/fmt:local-time"/>
            </p>
          </div><!-- portlet -->
-       </div><!-- yui-u -->
+       </div><!-- yui3-u -->
 
-       <div class="yui-u">
+       <div class="yui3-u">
          <div id="official-queue-status" class="portlet">
            <div tal:define="category view/other_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
-       </div><!-- yui-u -->
+       </div><!-- yui3-u -->
 
-       <div class="yui-u">
+       <div class="yui3-u">
          <div id="ppa-queue-status" class="portlet">
            <div tal:define="category view/ppa_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
-       </div><!-- yui-u -->
+       </div><!-- yui3-u -->
 
 
-     </div><!-- yui-ge -->
+     </div><!-- yui3-ge -->
     </div> <!-- main -->
 
 <metal:macros fill-slot="bogus">

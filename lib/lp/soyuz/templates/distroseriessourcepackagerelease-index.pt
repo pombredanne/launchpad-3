@@ -26,9 +26,9 @@
     </div>
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
 
-    <div class="first yui-u">
+    <div class="first yui3-u">
       <div tal:replace="structure context/sourcepackagerelease/@@+portlet-distroseries" />
       <div class="portlet">
         <h2>Download</h2>
@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <div class="yui-u" tal:content="structure context/@@+portlet-builds" />
+    <div class="yui3-u" tal:content="structure context/@@+portlet-builds" />
 
   </div>
 

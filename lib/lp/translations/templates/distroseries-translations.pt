@@ -51,8 +51,8 @@
       </div>
       </div>
 
-      <div tal:condition="view/show_page_content" class="yui-g">
-        <div class="yui-u first">
+      <div tal:condition="view/show_page_content" class="yui3-g">
+        <div class="yui3-u first">
           <div class="portlet">
             <h3>Permissions</h3>
             <p>
@@ -62,7 +62,7 @@
             </p>
           </div>
         </div>
-        <div class="yui-u">
+        <div class="yui3-u">
           <div class="portlet">
             <h3>Administration</h3>
             <p>Translation files that are waiting to be imported are shown in
@@ -102,7 +102,7 @@
           </div>
         </div>
 
-        <div class="yui-u first">
+        <div class="yui3-u first">
           <div class="portlet">
             <h3>Language packs</h3>
 
@@ -144,7 +144,7 @@
       </div>
       <tal:show-page-content condition="view/show_page_content">
       <tal:stats condition="view/distroserieslanguages">
-        <div class="yui-b top-portlet">
+        <div class="yui3-b top-portlet">
           <h2>Translation statistics</h2>
           <div tal:replace="structure context/@@+langchart" />
           <div class="translations-legend">

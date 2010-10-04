@@ -14,8 +14,8 @@
 
 
   <tal:main metal:fill-slot="main">
-    <div class="yui-g">
-      <div class="yui-u first">
+    <div class="yui3-g">
+      <div class="yui3-u first">
         <div class="portlet">
           <h2>Plural forms</h2>
           <tal:has_pluralforms condition="context/pluralexpression">
@@ -52,13 +52,13 @@
         </div>
       </div>
 
-      <div class="yui-u">
+      <div class="yui3-u">
         <div tal:content="structure context/@@+portlet-top-contributors" />  
       </div>
     </div>
 
-    <div class="yui-g">
-      <div class="first yui-u">
+    <div class="yui3-g">
+      <div class="first yui3-u">
         <div class="portlet">
           <h2>Translation teams</h2>
           <p tal:condition="view/translation_teams">
@@ -85,7 +85,7 @@
           </p>
         </div>
       </div>
-      <div class="yui-u">
+      <div class="yui3-u">
         <div class="portlet">
           <h2>Countries</h2>
           <tal:has_countries condition="context/countries">

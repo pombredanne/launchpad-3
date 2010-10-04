@@ -40,12 +40,12 @@
       <div class="report"
         tal:content="structure description"/>
 
-      <div class="yui-g">
-        <div class="yui-u first">
+      <div class="yui3-g">
+        <div class="yui3-u first">
            <tal:distro-information content="structure context/@@+portlet-details" />
         </div>
 
-        <div class="yui-u">
+        <div class="yui3-u">
           <div class="portlet">
             <div tal:replace="structure context/@@+portlet-bugs" />
 
@@ -107,7 +107,7 @@
             for more information if necessary.
           </p>
         </div>
-        <div class="yui-g">
+        <div class="yui3-g">
           <ul class="horizontal" id="horizontal-menu">
             <li tal:define="link context/menu:answers/history"
                 tal:condition="link/enabled"

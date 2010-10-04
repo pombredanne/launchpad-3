@@ -63,14 +63,14 @@
         <div></div><!-- to clear-up all floats -->
       </div>
 
-      <div class="yui-b top-portlet">
+      <div class="yui3-b top-portlet">
         <p>
           This is a listing of all the translatable templates
           in <a tal:replace="structure context/fmt:link">here</a>.
         </p>
       </div>
 
-      <div class="yui-b">
+      <div class="yui3-b">
       <table class="sortable listing" id="templates_table">
         <thead>
           <tr tal:content="structure view/renderTemplatesHeader">

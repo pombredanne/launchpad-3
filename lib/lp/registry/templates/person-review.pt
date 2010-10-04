@@ -9,7 +9,7 @@
   <head>
     <metal:css fill-slot="head_epilogue">
     <style type="text/css">
-      .yui-main {
+      .yui3-main {
         clear: both;
       }
     </style>

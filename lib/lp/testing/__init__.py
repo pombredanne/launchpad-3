@@ -752,10 +752,10 @@ class YUIUnitTestCase(WindmillTestCase):
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string

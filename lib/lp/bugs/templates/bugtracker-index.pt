@@ -31,15 +31,15 @@
         </strong>
       </p>
     </div>
-    <div class="yui-g">
-      <div class="first yui-u">
+    <div class="yui3-g">
+      <div class="first yui3-u">
         <div tal:replace="structure context/@@+portlet-details" />
       </div>
-      <div class="yui-u">
+      <div class="yui3-u">
         <div tal:replace="structure context/@@+portlet-projects" />
       </div>
     </div>
-    <div class="yui-u" tal:condition="context/watches">
+    <div class="yui3-u" tal:condition="context/watches">
       <div tal:replace="structure context/@@+portlet-watches" />
     </div>
   </div>

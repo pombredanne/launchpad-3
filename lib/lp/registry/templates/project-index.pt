@@ -67,8 +67,8 @@
       </ul>
     </div>
 
-    <div class="yui-g">
-      <div class="yui-u first">
+    <div class="yui3-g">
+      <div class="yui3-u first">
         <tal:details replace="structure context/@@+details" />
 
         <tal:faqs content="structure context/@@+portlet-listfaqs"
@@ -94,7 +94,7 @@
         </tal:has-many-project>
       </div>
 
-      <div class="yui-u" id="products">
+      <div class="yui3-u" id="products">
         <div class="portlet">
           <h2>Projects</h2>
           <p tal:condition="not: context/products">

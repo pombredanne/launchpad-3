@@ -80,7 +80,7 @@ class TestOfficialBugTags(WindmillTestCase):
 
     # The tag is invalid, so we get an error message in an overlay.
 
-        client.asserts.assertNode(id=u'yui-pretty-overlay-modal')
+        client.asserts.assertNode(id=u'yui3-pretty-overlay-modal')
 
     # We click the close button to dismiss the error message, type a correct
     # tag and try again.

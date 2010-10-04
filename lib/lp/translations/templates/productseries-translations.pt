@@ -28,7 +28,7 @@
       </div>
 
       <tal:no-languages condition="not:view/productserieslanguages">
-        <div class="yui-b top-portlet">
+        <div class="yui3-b top-portlet">
 
           <tal:not-using-launchpad
             condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
@@ -59,8 +59,8 @@
         </div>
       </tal:no-languages>
 
-      <div tal:condition="view/show_page_content" class="yui-g">
-        <div class="yui-u first">
+      <div tal:condition="view/show_page_content" class="yui3-g">
+        <div class="yui3-u first">
           <div class="portlet">
             <h3>Permissions</h3>
             <p>
@@ -78,7 +78,7 @@
           </div>
         </div>
 
-        <div class="yui-u">
+        <div class="yui3-u">
           <div class="portlet">
             <h3>Administration</h3>
             <p>Translation files that are waiting to be imported are shown in
@@ -96,8 +96,8 @@
           </div>
         </div>
       </div>
-      <div class="yui-g">
-        <div class="yui-u first">
+      <div class="yui3-g">
+        <div class="yui3-u first">
           <div class="portlet">
             <h3>Automatic synchronization</h3>
             <tal:uses-bzr-sync condition="view/uses_bzr_sync">
@@ -161,7 +161,7 @@
             </tal:no-bzr-sync>
           </div>
         </div>
-        <div class="yui-u"
+        <div class="yui3-u"
              tal:condition="context/required:launchpad.AnyPerson">
           <div class="portlet">
             <h3>Manual synchronization</h3>

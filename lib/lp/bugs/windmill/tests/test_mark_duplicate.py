@@ -18,9 +18,9 @@ from lp.testing import WindmillTestCase
 
 MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/div'
 FORM_NOT_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") == -1')
 CHANGE_BUTTON = (
     u'//div[@id="duplicate-form-container"]'
     '//button[@name="field.actions.change"]')
@@ -89,7 +89,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(xpath=CHANGE_BUTTON)
         error_xpath = (
             MAIN_FORM_ELEMENT +
-            "//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
+            "//div[contains(@class, 'yui3-lazr-formoverlay-errors')]/ul/li")
         client.waits.forElement(xpath=error_xpath)
 
         # Clicking change again brings back the error dialog again

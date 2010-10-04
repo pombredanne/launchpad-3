@@ -18,9 +18,9 @@
       >Changelog...</tal:changelog>
   </div>
 
-  <div class="yui-g">
+  <div class="yui3-g">
 
-   <div class="yui-u first">
+   <div class="yui3-u first">
     <div id="upload-details" class="portlet">
       <h2>Upload details</h2>
       <div class="two-column-list">
@@ -72,9 +72,9 @@
         </dl>
       </div>
     </div> <!-- upload-details-->
-   </div> <!-- yui-u -->
+   </div> <!-- yui3-u -->
 
-   <div class="yui-u">
+   <div class="yui3-u">
     <div id="source-publishing" class="portlet">
       <h2>
         <span class="see-all">
@@ -111,9 +111,9 @@
        </tbody>
       </table>
     </div> <!-- source-publishing -->
-   </div> <!-- yui-u -->
+   </div> <!-- yui3-u -->
 
-   <div class="yui-u">
+   <div class="yui3-u">
     <div id="source-builds" class="portlet">
       <h2>Builds</h2>
       <tal:series tal:repeat="series_builds view/grouped_builds">
@@ -134,9 +134,9 @@
         </p>
       </tal:series>
     </div> <!-- source-builds -->
-   </div> <!-- yui-u -->
+   </div> <!-- yui3-u -->
 
-  </div> <!-- yui-g -->
+  </div> <!-- yui3-g -->
 
   <div id="source-files" class="portlet">
    <h2>Downloads</h2>

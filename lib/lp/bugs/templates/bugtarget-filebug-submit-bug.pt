@@ -31,7 +31,7 @@
   </div>
 
   <div metal:fill-slot="main">
-    <div class="yui-g">
+    <div class="yui3-g">
       <tal:does-not-use-malone condition="not: view/contextUsesMalone">
         <div class="top-portlet">
           <metal:not_uses_malone
