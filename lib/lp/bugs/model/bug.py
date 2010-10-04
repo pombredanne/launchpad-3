@@ -1218,13 +1218,18 @@ BugMessage""" % sqlvalues(self.id))
             owner, filealias, comment, is_patch, description)
 
     def linkAttachment(self, owner, file_alias, comment, is_patch=False,
-                       description=None):
+                       description=None, send_notifications=True):
         """See `IBug`.
 
         This method should only be called by addAttachment() and
         FileBugViewBase.submit_bug_action, otherwise
         we may get inconsistent settings of bug.private and
         file_alias.restricted.
+
+        :param send_notifications: Control sending of notifications for this
+            attachment. This is disabled when adding attachments from 'extra
+            data' in the filebug form, because that triggered hundreds of DB
+            inserts and thus timeouts. Defaults to sending notifications.
         """
         if is_patch:
             attach_type = BugAttachmentType.PATCH
@@ -1244,7 +1249,8 @@ BugMessage""" % sqlvalues(self.id))
 
         return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=file_alias, attach_type=attach_type,
-            title=title, message=message, send_notifications=True)
+            title=title, message=message,
+            send_notifications=send_notifications)
 
     def hasBranch(self, branch):
         """See `IBug`."""
