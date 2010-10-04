@@ -179,7 +179,7 @@ notify() will also work without passing the changes_file_object parameter
 provided that everything is already committed to the database (which is not
 the case when nascent upload runs).  This example demonstrates this usage:
 
-  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> from canonical.librarian.testing.server import fillLibrarianFile
   >>> changes_file = open(changes_file_path,"r")
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
@@ -259,5 +259,5 @@ Only one email is generated:
 
 Clean up, otherwise stuff is left lying around in /var/tmp.
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
