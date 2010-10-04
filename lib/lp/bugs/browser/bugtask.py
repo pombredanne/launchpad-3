@@ -168,7 +168,7 @@ from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
     )
-from lp.app.enums import service_uses_launchpad
+
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
 from canonical.widgets.bug import BugTagsWidget

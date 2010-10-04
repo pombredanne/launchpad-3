@@ -45,10 +45,7 @@ from lp.testing.sampledata import (
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
-from lp.testing.views import (
-    create_initialized_view,
-    create_view,
-    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -77,7 +74,8 @@ class TestBugTaskView(TestCaseWithFactory):
         self.addCleanup(recorder.unregister)
         self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
-        # This may seem large: it is; there is easily another 30% fat in there.
+        # This may seem large: it is; there is easily another 30% fat in
+        # there.
         self.assertThat(recorder, HasQueryCount(LessThan(62)))
         count_with_no_teams = recorder.count
         # count with many teams
@@ -472,7 +470,6 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         view = create_initialized_view(
             self.projectgroup, name=u'+bugs', rootsite='bugs')
         self.assertTrue(view.should_show_bug_information)
-
 
     def test_project_group_with_mixed_subordinates(self):
         # A project group with one or more subordinates using Launchpad
