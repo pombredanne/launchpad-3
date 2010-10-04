@@ -610,7 +610,8 @@ class TestSlaveScannerScan(TrialTestCase):
         """
         TwistedLayer.testSetUp()
         TrialTestCase.setUp(self)
-        BuilddSlaveTestSetup().setUp()
+        self.slave = BuilddSlaveTestSetup()
+        self.slave.setUp()
 
         # Creating the required chroots needed for dispatching.
         login('foo.bar@canonical.com')
@@ -622,7 +623,7 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
     def tearDown(self):
-        BuilddSlaveTestSetup().tearDown()
+        self.slave.tearDown()
         TrialTestCase.tearDown(self)
         TwistedLayer.testTearDown()
 
@@ -1152,8 +1153,9 @@ class TestBuilddManagerScript(LaunchpadTestCase):
 
     def testBuilddManagerRuns(self):
         # The `buildd-manager.tac` starts and stops correctly.
-        BuilddManagerTestSetup().setUp()
-        BuilddManagerTestSetup().tearDown()
+        fixture = BuilddManagerTestSetup()
+        fixture.setUp()
+        fixture.tearDown()
 
     # XXX Julian 2010-08-06 bug=614275
     # These next 2 tests are in the wrong place, they should be near the
@@ -1164,10 +1166,8 @@ class TestBuilddManagerScript(LaunchpadTestCase):
 
     def disabled_testBuilddManagerLogging(self):
         # The twistd process logs as execpected.
-        test_setup = BuilddManagerTestSetup()
+        test_setup = self.useFixture(BuilddManagerTestSetup())
         logfilepath = test_setup.logfile
-        test_setup.setUp()
-        self.addCleanup(test_setup.tearDown)
         # The process logs to its logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # After rotating the log, the process keeps using the old file, no
@@ -1192,8 +1192,7 @@ class TestBuilddManagerScript(LaunchpadTestCase):
         # Prefill the log file to just under 1000000 bytes.
         test_setup.precreateLogfile(
             "2010-07-27 12:36:54+0200 [-] Starting scanning cycle.\n", 18518)
-        test_setup.setUp()
-        self.addCleanup(test_setup.tearDown)
+        self.useFixture(test_setup)
         # The process logs to the logfile.
         self.assertTrue(is_file_growing(logfilepath))
         # No rotation occured.

@@ -495,12 +495,12 @@ class TestSlave(TestCase):
         """
         tachandler = BuilddSlaveTestSetup()
         tachandler.setUp()
+        self.addCleanup(tachandler.tearDown)
         def addLogFile(exc_info):
             self.addDetail(
                 'xmlrpc-log-file',
                 Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
         self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
         return tachandler
 
     def getClientSlave(self):

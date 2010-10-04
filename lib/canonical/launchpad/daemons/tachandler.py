@@ -26,12 +26,25 @@ from signal import (
 import subprocess
 import sys
 import time
+import warnings
 
+from fixtures import Fixture
 from twisted.application import service
 from twisted.python import log
 
 # This file is used by launchpad-buildd, so it cannot import any
 # Launchpad code!
+
+def _kill_may_race(pid, signal_number):
+    """Kill a pid accepting that it may not exist."""
+    try:
+        os.kill(pid, signal_number)
+    except OSError, e:
+        if e.errno in (errno.ESRCH, errno.ECHILD):
+            # Process has already been killed.
+            return
+        # Some other issue (e.g. different user owns it)
+        raise
 
 def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
@@ -42,12 +55,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     :param num_polls: The number of polls to do before doing a SIGKILL.
     """
     # Kill the process.
-    try:
-        os.kill(pid, SIGTERM)
-    except OSError, e:
-        if e.errno in (errno.ESRCH, errno.ECHILD):
-            # Process has already been killed.
-            return
+    _kill_may_race(pid, SIGTERM)
 
     # Poll until the process has ended.
     for i in range(num_polls):
@@ -65,11 +73,7 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
                 return
 
     # The process is still around, so terminate it violently.
-    try:
-        os.kill(pid, SIGKILL)
-    except OSError:
-        # Already terminated
-        pass
+    _kill_may_race(pid, SIGKILL)
 
 
 def get_pid_from_file(pidfile_path):
@@ -120,17 +124,27 @@ class TacException(Exception):
     """Error raised by TacTestSetup."""
 
 
-class TacTestSetup:
+class TacTestSetup(Fixture):
     """Setup an TAC file as daemon for use by functional tests.
 
-    You can override setUpRoot to set up a root directory for the daemon.
+    You must override setUpRoot to set up a root directory for the daemon.
     """
 
     def setUp(self, spew=False, umask=None):
-        # Before we run, we want to make sure that we have cleaned up any
-        # previous runs. Although tearDown() should have been called already,
-        # we can't guarantee it.
-        self.tearDown()
+        Fixture.setUp(self)
+        if get_pid_from_file(self.pidfile):
+            # An attempt to run while there was an existing live helper
+            # was made. Note that this races with helpers which use unique
+            # roots, so when moving/eliminating this code check subclasses
+            # for workarounds and remove those too.
+            pid = get_pid_from_file(self.pidfile)
+            warnings.warn("Attempt to start Tachandler with an existing "
+                "instance (%d) running in %s." % (pid, self.pidfile),
+                DeprecationWarning, stacklevel=2)
+            two_stage_kill(pid)
+            if get_pid_from_file(self.pidfile):
+                raise TacException(
+                    "Could not kill stale process %s." % (self.pidfile,))
 
         # setUp() watches the logfile to determine when the daemon has fully
         # started. If it sees an old logfile, then it will find the LOG_MAGIC
@@ -156,6 +170,7 @@ class TacTestSetup:
         # stdout/stderr are written to.
         proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
+        self.addCleanup(self.killTac)
         # XXX: JonathanLange 2008-03-19: This can raise EINTR. We should
         # really catch it and try again if that happens.
         stdout = proc.stdout.read()
@@ -201,7 +216,8 @@ class TacTestSetup:
                 self.tacfile, self.logfile, open(self.logfile).read()))
 
     def tearDown(self):
-        self.killTac()
+        # For compatibility - migrate to cleanUp.
+        self.cleanUp()
 
     def killTac(self):
         """Kill the TAC file if it is running."""

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugWatch',
     'BugWatchActivity',
+    'BugWatchDeletionError',
     'BugWatchSet',
     ]
 
@@ -112,6 +113,10 @@ def get_bug_watch_ids(references):
         else:
             raise AssertionError(
                 '%r is not a bug watch or an ID.' % (reference,))
+
+
+class BugWatchDeletionError(Exception):
+    """Raised when someone attempts to delete a linked watch."""
 
 
 class BugWatch(SQLBase):
@@ -223,8 +228,16 @@ class BugWatch(SQLBase):
 
     def destroySelf(self):
         """See `IBugWatch`."""
-        assert len(self.bugtasks) == 0, "Can't delete linked bug watches"
+        if (len(self.bugtasks) > 0 or
+            not self.getImportedBugMessages().is_empty()):
+            raise BugWatchDeletionError(
+                "Can't delete bug watches linked to tasks or comments.")
+        # XXX 2010-09-29 gmb bug=647103
+        #     We flush the store to make sure that errors bubble up and
+        #     are caught by the OOPS machinery.
         SQLBase.destroySelf(self)
+        store = Store.of(self)
+        store.flush()
 
     @property
     def unpushed_comments(self):
