@@ -667,6 +667,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
             bug, 'title', canonical_url(self.context, view_name='+edit'),
             id="bug-title", title="Edit this summary")
 
+        # XXX 2010-10-04 gmb
+        #     This has to go, *surely*.
         # HAHAAHAHAHA.
         for person in bug.getSubscribersForPerson(self.user):
             continue

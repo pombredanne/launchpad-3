@@ -49,6 +49,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
+from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 
@@ -89,7 +90,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
-class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
+class BugSubscriptionSubscribeSelfView(LaunchpadView,
                                        ReturnToReferrerMixin):
     """A view to handle the +subscribe page for a bug."""
 
@@ -106,18 +107,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             next_url = canonical_url(self.context)
         return next_url
 
-    @property
-    def cancel_url(self):
-        """Provided so returning to the page they came from works."""
-        referer = self.request.getHeader('referer')
-
-        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
-        # browser setting referer to localhost.
-        if referer and referer != 'localhost':
-            cancel_url = referer
-        else:
-            cancel_url = canonical_url(self.context)
-        return cancel_url
+    cancel_url = next_url
 
     def initialize(self):
         """Set up the needed widgets."""
