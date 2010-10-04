@@ -325,6 +325,8 @@ class LaunchpadCronScript(LaunchpadScript):
 def cronscript_enabled(control_url, name, log):
     """Return True if the cronscript is enabled."""
     try:
+        # XXX bug=654639 StuartBishop: Remove the 2.5 compatibility
+        # code when we are running 2.6 everywhere.
         if sys.version_info[:2] >= (2, 6):
             # Timeout of 5 seconds should be fine on the LAN. We don't want
             # the default as it is too long for scripts being run every 60
@@ -334,6 +336,14 @@ def cronscript_enabled(control_url, name, log):
             control_fp = urlopen(control_url)
     except HTTPError, error:
         if error.code == 404:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    # XXX bug=654639 StuartBishop: Python 2.5 can return OSError. Under
+    # 2.6, this is wrapped into a URLError.
+    except OSError, error:
+        if error.errno == 2:
             log.debug("Cronscript control file not found at %s", control_url)
             return True
         log.exception("Error loading %s" % control_url)
