@@ -338,6 +338,14 @@ def cronscript_enabled(control_url, name, log):
             return True
         log.exception("Error loading %s" % control_url)
         return True
+    # Python 2.5 can return OSError. Under 2.6, this is wrapped into a
+    # URLError.
+    except OSError, error:
+        if error.errno == 2:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
     except URLError, error:
         if getattr(error.reason, 'errno', None) == 2:
             log.debug("Cronscript control file not found at %s", control_url)
