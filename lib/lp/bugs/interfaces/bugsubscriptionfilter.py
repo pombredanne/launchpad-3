@@ -64,5 +64,4 @@ class IBugSubscriptionFilter(Interface):
     tags = FrozenSet(
         title=_("The tags to filter on."),
         required=True, default=frozenset(),
-        value_type=Choice(
-            title=_('Tags'), vocabulary=SearchTag()))
+        value_type=SearchTag())
