@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.store import Store
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import ProxyFactory
 
@@ -62,6 +63,17 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(True, bug_subscription_filter.exclude_any_tags)
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
+
+    def test_delete(self):
+        """`BugSubscriptionFilter` objects can be deleted."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        IStore(bug_subscription_filter).flush()
+        self.assertIsNot(None, Store.of(bug_subscription_filter))
+        # Delete.
+        bug_subscription_filter.delete()
+        IStore(bug_subscription_filter).flush()
+        self.assertIs(None, Store.of(bug_subscription_filter))
 
     def test_read_to_all(self):
         """`BugSubscriptionFilter`s can be read by anyone."""

@@ -67,3 +67,6 @@ class IBugSubscriptionFilter(Interface):
         title=_("The tags to filter on."),
         required=True, default=frozenset(),
         value_type=SearchTag())
+
+    def delete():
+        """Delete this bug subscription filter."""

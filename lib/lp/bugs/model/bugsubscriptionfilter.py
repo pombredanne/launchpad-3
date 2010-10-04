@@ -13,6 +13,7 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
+    Store,
     Unicode,
     )
 from zope.interface import implements
@@ -182,3 +183,7 @@ class BugSubscriptionFilter(Storm):
     tags = property(
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
+
+    def delete(self):
+        """See `IBugSubscriptionFilter`."""
+        Store.of(self).remove(self)
