@@ -13,7 +13,8 @@ BuilderSet and Builder classes.
 Setup the test builder:
 
     >>> from canonical.buildd.tests import BuilddSlaveTestSetup
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
 
 Setup a suitable chroot for Hoary i386:
 
@@ -168,7 +169,7 @@ Verify if the job (BuildQueue) was updated appropriately:
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
 
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FAILEDTOBUILD
@@ -243,7 +244,8 @@ lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
 
 Before dispatching we can check if the builder is protected against
 mistakes in code that results in a attempt to build a virtual job in
@@ -280,7 +282,7 @@ Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
 environment is back to the initial state.
 
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     >>> build.status = BuildStatus.FAILEDTOBUILD
     >>> ppa_job.destroySelf()
@@ -319,12 +321,13 @@ targeted to SECURITY pocket. However, the builders are forbidden to
 accept such jobs until we have finished the EMBARGOED archive
 implementation.
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
     >>> removeSecurityProxy(bob_builder)._dispatchBuildCandidate(sec_job)
     Traceback (most recent call last):
     ...
     AssertionError: Soyuz is not yet capable of building SECURITY uploads.
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
 
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
