@@ -4,7 +4,9 @@
 """Bug subscription filter interfaces."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    "IBugSubscriptionFilter",
+    ]
 
 
 from lazr.restful.fields import Reference

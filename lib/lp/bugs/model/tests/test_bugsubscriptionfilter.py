@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import ProxyFactory
+
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
@@ -14,7 +17,9 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.testing import (
+    anonymous_logged_in,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -57,6 +62,37 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(True, bug_subscription_filter.exclude_any_tags)
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
+
+    def test_read_to_all(self):
+        """`BugSubscriptionFilter`s can be read by anyone."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags
+        with person_logged_in(self.factory.makePerson()):
+            bug_subscription_filter.find_all_tags
+        with anonymous_logged_in():
+            bug_subscription_filter.find_all_tags
+
+    def test_write_to_subscribers(self):
+        """`BugSubscriptionFilter`s can only be modifed by subscribers."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # The subscriber can edit the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags = True
+        # Any other person is denied rights to edit the filter.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
+        # Anonymous users are also denied.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
 
     def test_defaults(self):
         """Test the default values of `BugSubscriptionFilter` objects."""
