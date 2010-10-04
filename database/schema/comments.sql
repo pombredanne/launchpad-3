@@ -76,12 +76,6 @@ COMMENT ON COLUMN BranchMergeQueue.configuration IS 'A JSON string of configurat
 COMMENT ON COLUMN BranchMergeQueue.date_created IS 'The date the queue was created.';
 
 
--- BranchQueue
-
-COMMENT ON TABLE BranchQueue IS 'Contains links between branches and their associated queues.';
-COMMENT ON COLUMN BranchQueue.branch IS 'A reference to the branch managed by the queue.';
-COMMENT ON COLUMN BranchQueue.queue IS 'A reference to the queue that manages this branch.';
-
 -- BranchJob
 
 COMMENT ON TABLE BranchJob IS 'Contains references to jobs that are executed for a branch.';

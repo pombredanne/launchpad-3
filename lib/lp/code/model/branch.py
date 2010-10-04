@@ -462,6 +462,10 @@ class Branch(SQLBase, BzrIdentityMixin):
                 if target.target_branch.last_scanned_id is not None]
         return jobs
 
+    merge_queue = ForeignKey(
+        dbName='merge_queue', foreignKey='BranchMergeQueue',
+        default=None)
+
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
         launchbag.add(self.product)
