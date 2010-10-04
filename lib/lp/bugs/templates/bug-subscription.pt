@@ -34,11 +34,18 @@
           duplicates.
         </p>
 
+        <div metal:use-macro="context/@@launchpad_form/form">
+        </div>
+
+        <tal:comment replace="nothing">
         <form action="" method="POST">
 
           <div class="field">
             <div>
               <div tal:content="structure view/subscription_widget">
+                <input type="radio" />
+              </div>
+              <div tal:content="structure view/widgets/bug_notification_level">
                 <input type="radio" />
               </div>
             </div>
@@ -61,6 +68,7 @@
                          tal:attributes="href view/cancel_url">Cancel</a>
           </div>
         </form>
+        </tal:comment>
 
       </div>
     </div>

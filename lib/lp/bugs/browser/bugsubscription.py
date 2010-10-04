@@ -15,6 +15,7 @@ import cgi
 from lazr.delegates import delegates
 from simplejson import dumps
 
+from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
@@ -90,9 +91,13 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
-class BugSubscriptionSubscribeSelfView(LaunchpadView,
+class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                                        ReturnToReferrerMixin):
     """A view to handle the +subscribe page for a bug."""
+
+    schema = IBugSubscription
+
+    field_names = ['bug_notification_level']
 
     @property
     def next_url(self):
@@ -111,15 +116,18 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
 
     def initialize(self):
         """Set up the needed widgets."""
-        bug = self.context.bug
+        super(BugSubscriptionSubscribeSelfView, self).initialize()
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
+        bug = self.context.bug
         if self.user is None:
             return
 
-        # Set up widgets in order to handle subscription requests.
         subscription_terms = []
         self_subscribed = False
         for person in bug.getSubscribersForPerson(self.user):
@@ -144,11 +152,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
         person_field = Choice(
             __name__='subscription',
             vocabulary=subscription_vocabulary, required=True)
-        self.subscription_widget = CustomWidgetFactory(RadioWidget)
-        setUpWidget(
-            self, 'subscription', person_field, IInputWidget, value=self.user)
-
-        self.handleSubscriptionRequest()
+        # Add the custom field
+        self.form_fields += formlib.form.Fields(person_field)
+        self.form_fields['subscription'].custom_widget = (
+            CustomWidgetFactory(RadioWidget))
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
