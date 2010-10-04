@@ -18,7 +18,8 @@ Set up build environment.  Clear out the build queue.
     ...     JobStatus.FAILED))
 
     >>> from canonical.buildd.tests import BuilddSlaveTestSetup
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from StringIO import StringIO
@@ -105,4 +106,4 @@ The slave's build method has been called.
 
 Clean up after this test.
 
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
