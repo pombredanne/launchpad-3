@@ -43,6 +43,10 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
+from lp.app.enums import (
+    ServiceUsage,
+    service_uses_launchpad)
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -115,7 +119,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries)
+    implements(IHasBugHeat, IProductSeries, IServiceUsage)
 
     _table = 'ProductSeries'
 
@@ -150,6 +154,52 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        # If translations_usage is set for the Product, respect it.
+        usage = self.product.translations_usage
+        if usage != ServiceUsage.UNKNOWN:
+            return usage
+
+        # If not, usage is based on the presence of current translation
+        # templates for the series.
+        if self.potemplate_count > 0:
+            return ServiceUsage.LAUNCHPAD
+        else:
+            return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
+
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -372,6 +422,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
+
+    def _getOfficialTagClause(self):
+        return self.product._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):

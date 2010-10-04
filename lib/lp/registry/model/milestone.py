@@ -15,6 +15,7 @@ __all__ = [
 
 import datetime
 
+from lazr.restful.error import expose
 from sqlobject import (
     AND,
     BoolCol,
@@ -28,6 +29,7 @@ from storm.locals import (
     And,
     Store,
     )
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -106,14 +108,22 @@ class HasMilestonesMixin:
         result = store.find(Milestone, self._getMilestoneCondition())
         return result.order_by(self._milestone_order)
 
-    @property
-    def milestones(self):
+    def _get_milestones(self):
         """See `IHasMilestones`."""
         store = Store.of(self)
         result = store.find(Milestone,
                             And(self._getMilestoneCondition(),
                                 Milestone.active == True))
         return result.order_by(self._milestone_order)
+
+    milestones = property(_get_milestones)
+
+
+class MultipleProductReleases(Exception):
+    """Raised when a second ProductRelease is created for a milestone."""
+
+    def __init__(self, msg='A milestone can only have one ProductRelease.'):
+        super(MultipleProductReleases, self).__init__(msg)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
@@ -201,8 +211,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise AssertionError(
-                'A milestone can only have one ProductRelease.')
+            raise expose(MultipleProductReleases())
         release = ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -222,7 +231,8 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
-        assert len(self.getSubscriptions()) == 0, (
+        subscriptions = IResultSet(self.getSubscriptions())
+        assert subscriptions.is_empty(), (
             "You cannot delete a milestone which has structural "
             "subscriptions.")
         assert bugtasks.count() == 0, (
@@ -249,7 +259,7 @@ class MilestoneSet:
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         try:
             return Milestone.get(milestoneid)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 

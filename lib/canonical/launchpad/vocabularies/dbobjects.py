@@ -1,5 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the GNU
+# Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies pulling stuff from the database.
 
@@ -10,8 +10,6 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'BranchRestrictedOnProductVocabulary',
-    'BranchVocabulary',
     'BugNominatableDistroSeriesVocabulary',
     'BugNominatableProductSeriesVocabulary',
     'BugNominatableSeriesVocabulary',
@@ -25,17 +23,12 @@ __all__ = [
     'FilteredDistroArchSeriesVocabulary',
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
-    'FutureSprintVocabulary',
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
     'project_products_using_malone_vocabulary_factory',
-    'SpecificationDependenciesVocabulary',
-    'SpecificationVocabulary',
-    'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'TranslationMessageVocabulary',
@@ -71,10 +64,6 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.database import (
-    Archive,
-    BugWatch,
-    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -86,21 +75,13 @@ from canonical.launchpad.webapp.vocabulary import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.enums import ServiceUsage
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.sprint import Sprint
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
-from lp.code.enums import BranchType
-from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.model.branch import Branch
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
@@ -111,6 +92,7 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.processor import (
@@ -144,106 +126,6 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
-
-
-class BranchVocabularyBase(SQLObjectVocabularyBase):
-    """A base class for Branch vocabularies.
-
-    Override `BranchVocabularyBase._getCollection` to provide the collection
-    of branches which make up the vocabulary.
-    """
-
-    implements(IHugeVocabulary)
-
-    _table = Branch
-    _orderBy = ['name', 'id']
-    displayname = 'Select a branch'
-
-    def toTerm(self, branch):
-        """The display should include the URL if there is one."""
-        return SimpleTerm(branch, branch.unique_name, branch.unique_name)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        search_results = self.searchForTerms(token)
-        if search_results.count() == 1:
-            return iter(search_results).next()
-        raise LookupError(token)
-
-    def _getCollection(self):
-        """Override this to return the collection to which the search is
-        restricted.
-        """
-        raise NotImplementedError(self._getCollection)
-
-    def searchForTerms(self, query=None):
-        """See `IHugeVocabulary`."""
-        logged_in_user = getUtility(ILaunchBag).user
-        collection = self._getCollection().visibleByUser(logged_in_user)
-        if query is None:
-            branches = collection.getBranches()
-        else:
-            branches = collection.search(query)
-        return CountableIterator(branches.count(), branches, self.toTerm)
-
-    def __len__(self):
-        """See `IVocabulary`."""
-        return self.search().count()
-
-
-class BranchVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches.
-
-    The name and URL of the branch, the name of the product, and the
-    name of the registrant of the branches is checked for the entered
-    value.
-    """
-
-    def _getCollection(self):
-        return getUtility(IAllBranches)
-
-
-class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restricted on product.
-
-    The query entered checks the name or URL of the branch, or the
-    name of the registrant of the branch.
-    """
-
-    def __init__(self, context=None):
-        BranchVocabularyBase.__init__(self, context)
-        if IProduct.providedBy(self.context):
-            self.product = self.context
-        elif IProductSeries.providedBy(self.context):
-            self.product = self.context.product
-        elif IBranch.providedBy(self.context):
-            self.product = self.context.product
-        else:
-            # An unexpected type.
-            raise AssertionError('Unexpected context type')
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).inProduct(self.product)
-
-
-class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
-    """A vocabulary for hosted branches owned by the current user.
-
-    These are branches that the user is guaranteed to be able to push
-    to.
-    """
-
-    def __init__(self, context=None):
-        """Pass a Person as context, or anything else for the current user."""
-        super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
-        if IPerson.providedBy(self.context):
-            self.user = context
-        else:
-            self.user = getUtility(ILaunchBag).user
-
-    def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
-            BranchType.HOSTED)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -451,73 +333,6 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
             for distroarchseries in results:
                 yield self.toTerm(distroarchseries)
-
-
-class FutureSprintVocabulary(NamedSQLObjectVocabulary):
-    """A vocab of all sprints that have not yet finished."""
-
-    _table = Sprint
-
-    def __iter__(self):
-        future_sprints = Sprint.select("time_ends > 'NOW'")
-        for sprint in future_sprints:
-            yield(self.toTerm(sprint))
-
-
-class SpecificationVocabulary(NamedSQLObjectVocabulary):
-    """List specifications for the current product or distribution in
-    ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
-    """
-
-    _table = Specification
-    _orderBy = 'title'
-
-    def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        target = None
-        product = launchbag.product
-        if product is not None:
-            target = product
-
-        distribution = launchbag.distribution
-        if distribution is not None:
-            target = distribution
-
-        if target is not None:
-            for spec in sorted(
-                target.specifications(), key=attrgetter('title')):
-                # we will not show the current specification in the
-                # launchbag
-                if spec == launchbag.specification:
-                    continue
-                # we will not show a specification that is blocked on the
-                # current specification in the launchbag. this is because
-                # the widget is currently used to select new dependencies,
-                # and we do not want to introduce circular dependencies.
-                if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
-                        continue
-                yield SimpleTerm(spec, spec.name, spec.title)
-
-
-class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
-    """List specifications on which the current specification depends."""
-
-    _table = Specification
-    _orderBy = 'title'
-
-    def __iter__(self):
-        launchbag = getUtility(ILaunchBag)
-        curr_spec = launchbag.specification
-
-        if curr_spec is not None:
-            for spec in sorted(
-                curr_spec.dependencies, key=attrgetter('title')):
-                yield SimpleTerm(spec, spec.name, spec.title)
-
-
-class SprintVocabulary(NamedSQLObjectVocabulary):
-    _table = Sprint
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

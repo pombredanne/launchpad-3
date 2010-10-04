@@ -42,6 +42,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment)
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
     IPropertyCacheManager,
@@ -126,6 +127,16 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status))
 
+    @staticmethod
+    def getByDistroSeriesAndName(distro_series, source_package_name):
+        """See `IDistroSeriesDifferenceSource`."""
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.source_package_name == (
+                SourcePackageName.id),
+            SourcePackageName.name == source_package_name).one()
+
     @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
@@ -172,12 +183,12 @@ class DistroSeriesDifference(Storm):
 
     def update(self):
         """See `IDistroSeriesDifference`."""
-        # Updating is expected to be a heavy operation (not called during
-        # requests). We clear the cache beforehand - even though
-        # it is not currently be necessary so that in the future it
-        # won't cause a hard-to find bug if a script ever creates a difference,
-        # copies/publishes a new version and then calls update() (like the
-        # tests for this method do).
+        # Updating is expected to be a heavy operation (not called
+        # during requests). We clear the cache beforehand - even though
+        # it is not currently necessary - so that in the future it
+        # won't cause a hard-to find bug if a script ever creates a
+        # difference, copies/publishes a new version and then calls
+        # update() (like the tests for this method do).
         IPropertyCacheManager(self).clear()
         self._updateType()
         updated = self._updateVersionsAndStatus()
@@ -242,10 +253,10 @@ class DistroSeriesDifference(Storm):
 
         return updated
 
-    def addComment(self, owner, comment):
+    def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
-            self, owner, comment)
+            self, commenter, comment)
 
     def getComments(self):
         """See `IDistroSeriesDifference`."""
@@ -254,3 +265,15 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceComment,
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
+
+    def blacklist(self, all=False):
+        """See `IDistroSeriesDifference`."""
+        if all:
+            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        else:
+            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+
+    def unblacklist(self):
+        """See `IDistroSeriesDifference`."""
+        self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        self.update()
