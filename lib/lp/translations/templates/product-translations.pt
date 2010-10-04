@@ -37,7 +37,7 @@
           replace="structure context/@@+portlet-configuration"/>
         <tal:not-launchpad
           condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
-          <tal:translations-packages 
+          <tal:translations-packages
             condition="not: view/is_translations_admin"
             replace="structure context/@@+portlet-not-using-launchpad-extra"/>
         </tal:not-launchpad>
