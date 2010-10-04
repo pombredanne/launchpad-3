@@ -162,6 +162,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import (
     FormattersAPI,
@@ -620,7 +621,8 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
+                  FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
@@ -646,6 +648,32 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             heading = 'Bug #%s in %s' % (
                 bugtask.bug.id, bugtask.bugtargetdisplayname)
         return smartquote('%s: "%s"') % (heading, self.context.bug.title)
+
+    @property
+    def next_url(self):
+        """Provided so returning to the page they came from works."""
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            next_url = referer
+        else:
+            next_url = canonical_url(self.context)
+        return next_url
+
+    @property
+    def cancel_url(self):
+        """Provided so returning to the page they came from works."""
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            cancel_url = referer
+        else:
+            cancel_url = canonical_url(self.context)
+        return cancel_url
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -728,6 +756,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         # bug page would raise Unauthorized errors!
         if self._redirecting_to_bug_list:
             return u''
+        elif self._isSubscriptionRequest() and self.request.get('next_url'):
+            self.request.response.redirect(self.request.get('next_url'))
+            return u''
         else:
             return LaunchpadView.render(self)
 
@@ -761,7 +792,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
-        self.notices.append("You have been subscribed to this bug.")
+        self.request.response.addNotification("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
         """Handle an unsubscribe request."""
@@ -833,8 +864,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
                 return (
-                    "You have been unsubscribed from this bug%s." %
-                    unsubed_dupes_msg_fragment)
+                    "You have been unsubscribed from bug %d%s." % (
+                    current_bug.id, unsubed_dupes_msg_fragment))
             else:
                 return (
                     "You have been unsubscribed from bug %d%s. You no "
