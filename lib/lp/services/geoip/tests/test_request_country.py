@@ -12,7 +12,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from lp.services.geoip.helpers import request_country
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 class RequestCountryTestCase(unittest.TestCase):

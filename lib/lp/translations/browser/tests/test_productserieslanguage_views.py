@@ -8,7 +8,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     login_person,

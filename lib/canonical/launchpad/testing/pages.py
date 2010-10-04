@@ -62,7 +62,7 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
+from canonical.testing.layers import PageTestLayer
 from lp.registry.interfaces.person import NameAlreadyTaken
 from lp.testing import (
     ANONYMOUS,

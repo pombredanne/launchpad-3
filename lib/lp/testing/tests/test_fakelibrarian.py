@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

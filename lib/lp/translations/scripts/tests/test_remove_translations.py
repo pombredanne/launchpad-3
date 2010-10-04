@@ -20,7 +20,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import sync
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import TestCase

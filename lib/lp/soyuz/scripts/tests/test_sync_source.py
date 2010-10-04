@@ -28,7 +28,7 @@ from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (

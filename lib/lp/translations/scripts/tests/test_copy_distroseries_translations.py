@@ -15,7 +15,7 @@ from unittest import (
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import syncUpdate
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.testing.faketransaction import FakeTransaction
 from lp.translations.scripts.copy_distroseries_translations import (

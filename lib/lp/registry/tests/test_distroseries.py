@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
