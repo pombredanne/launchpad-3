@@ -26,19 +26,23 @@
              <p>The
                <tal:desktop replace="structure
                token/consumer/integrated_desktop_type" />
-             computer identified
-             as <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
+             computer called
+             <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
              wants access to your Launchpad account. If you allow the
              integration, all applications running
              on <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
              will have read-write access to your Launchpad account,
              including to your private data.</p>
 
-             <p>If
+             <p>If you're using a public computer, if
              <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
-             is not the computer you're using right now, or if you
-             don't trust this computer, you should click "No, thanks,
-             I don't trust this computer", or close this window now.</p>
+             is not the computer you're using right now, or if
+             something just doesn't feel right about this situation,
+             you should click "No, thanks, I don't trust
+             <tal:hostname replace="structure
+              token/consumer/integrated_desktop_name" />",
+             or close this window now. You can always try
+             again later.</p>
 
              <p>Even if you decide to allow the integration, you can
              change your mind later.</p>

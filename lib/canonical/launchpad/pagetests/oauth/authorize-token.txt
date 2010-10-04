@@ -289,7 +289,7 @@ desktop.
     >>> print extract_text(
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
-    The Ubuntu computer identified as mycomputer wants access to your
+    The Ubuntu computer called mycomputer wants access to your
     Launchpad account. If you allow the integration, all applications
     running on mycomputer will have read-write access to your
     Launchpad account, including to your private data.

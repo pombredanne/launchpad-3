@@ -196,21 +196,27 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             # possibilities are "allow" and "deny". We'll customize
             # the "allow" message using the hostname provided by the
             # desktop.
+            #
+            # Since self.actions is a descriptor that returns copies
+            # of Action objects, we can modify the actions we get
+            # in-place without ruining the Action objects for everyone
+            # else.
+            desktop_name = self.token.consumer.integrated_desktop_name
             label = (
                 'Give all programs running on &quot;%s&quot; access '
                 'to my Launchpad account.')
             allow_action = [
                 action for action in self.actions
                 if action.name == desktop_permission.name][0]
-            allow_action.label = (
-                    label % self.token.consumer.integrated_desktop_name)
+            allow_action.label = label % desktop_name
             actions.append(allow_action)
 
             # We'll customize the "deny" message as well.
+            label = "No, thanks, I don't trust %s."
             deny_action = [
                 action for action in self.actions
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]
-            deny_action.label = "No, thanks, I don't trust this computer."
+            deny_action.label = lable & desktop_name
             actions.append(deny_action)
 
         else:
