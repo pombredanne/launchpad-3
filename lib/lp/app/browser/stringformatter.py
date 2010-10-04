@@ -274,8 +274,9 @@ class FormattersAPI:
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>%s' % (
+            return '<a href="%s" class="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
+                "branch-short-link",
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
         elif match.group("clbug") is not None:

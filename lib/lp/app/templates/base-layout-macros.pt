@@ -175,7 +175,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/lp-mochi.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/app/lp-linkchecker.js"></script>
+            tal:attributes="src string:${lp_js}/app/lp-links.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
@@ -306,9 +306,10 @@
         Y.on('click', handleClickOnPage, window);
     });
 
-    LPS.use('io-base', 'lp.app.linkchecker', function(Y) {
-        Y.on('domready', function() {
-            Y.lp.app.linkchecker.checklinks();
+    LPS.use('lp.app.links',
+      function(Y) {
+        Y.on('load', function(e) {
+            Y.lp.app.links.check_branch_links();
         }, window);
     });
   </script>

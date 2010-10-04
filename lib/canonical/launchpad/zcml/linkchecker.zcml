@@ -5,14 +5,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
-
-  <!-- LinkCheckerAPI -->
-  <class class="canonical.launchpad.browser.LinkCheckerAPI">
-    <allow
-      interface="canonical.launchpad.interfaces.ILinkCheckerAPI" />
-  </class>
 
   <browser:page
     for="*"
@@ -20,21 +13,5 @@
     class="canonical.launchpad.browser.LinkCheckerAPI"
     name="+check-links"
     />
-
-<!--
-  <browser:url
-      for="canonical.launchpad.interfaces.ILinkCheckerAPI"
-      urldata="canonical.launchpad.browser.LinkCheckerURL"
-      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
-      path_expression="string:+check-links"
-      />
-
-  <browser:view
-      for="canonical.launchpad.interfaces.ILinkCheckerAPI"
-      urldata="canonical.launchpad.browser.LinkCheckerURL"
-      parent_utility="canonical.launchpad.interfaces.IWebServiceApplication"/>
-      path_expression="string:+check-links"
-      />
--->
 
 </configure>
