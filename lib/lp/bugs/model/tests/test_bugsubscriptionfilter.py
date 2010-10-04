@@ -64,6 +64,18 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
 
+    def test_defaults(self):
+        """Test the default values of `BugSubscriptionFilter` objects."""
+        # Create.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        # Check.
+        self.assertIs(False, bug_subscription_filter.find_all_tags)
+        self.assertIs(False, bug_subscription_filter.include_any_tags)
+        self.assertIs(False, bug_subscription_filter.exclude_any_tags)
+        self.assertIs(None, bug_subscription_filter.other_parameters)
+        self.assertIs(None, bug_subscription_filter.description)
+
     def test_delete(self):
         """`BugSubscriptionFilter` objects can be deleted."""
         bug_subscription_filter = BugSubscriptionFilter()
@@ -141,18 +153,6 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
             self.assertRaises(
                 Unauthorized, setattr, bug_subscription_filter,
                 "find_all_tags", True)
-
-    def test_defaults(self):
-        """Test the default values of `BugSubscriptionFilter` objects."""
-        # Create.
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter.structural_subscription = self.subscription
-        # Check.
-        self.assertIs(False, bug_subscription_filter.find_all_tags)
-        self.assertIs(False, bug_subscription_filter.include_any_tags)
-        self.assertIs(False, bug_subscription_filter.exclude_any_tags)
-        self.assertIs(None, bug_subscription_filter.other_parameters)
-        self.assertIs(None, bug_subscription_filter.description)
 
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are
