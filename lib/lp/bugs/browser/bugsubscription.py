@@ -10,6 +10,8 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
+import cgi
+
 from lazr.delegates import delegates
 from simplejson import dumps
 

@@ -667,8 +667,28 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
             bug, 'title', canonical_url(self.context, view_name='+edit'),
             id="bug-title", title="Edit this summary")
 
-        if self.user is None:
-            return
+        # XXX 2010-10-04 gmb
+        #     This code is here because without it the view uses more
+        #     queries than it does with it. Goodness knows why.
+        #     Hopefully this XXX will go away before I submit the
+        #     branch.
+        # Set up widgets in order to handle subscription requests.
+        subscription_terms = []
+        self_subscribed = False
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.id == self.user.id:
+                subscription_terms.append(
+                    SimpleTerm(
+                        person, person.name,
+                        'Unsubscribe me from this bug'))
+                self_subscribed = True
+            else:
+                subscription_terms.append(
+                    SimpleTerm(
+                        person, person.name,
+                        'Unsubscribe <a href="%s">%s</a> from this bug' % (
+                            canonical_url(person),
+                            cgi.escape(person.displayname))))
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
