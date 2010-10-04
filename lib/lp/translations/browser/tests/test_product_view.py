@@ -85,5 +85,18 @@ class TestProduct(TestCaseWithFactory):
             u'trunk'], series_names)
 
 
+class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
+
+    def test_cannot_configure_translations_product_no_edit_permission(self):
+        product = self.factory.makeProduct()
+        view = create_initialized_view(product, '+translations')
+        self.assertEqual(False, view.can_configure_answers)
+
+    def test_can_configure_translations_product_with_edit_permission(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_initialized_view(product, '+translations')
+        self.assertEqual(True, view.can_configure_answers)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
