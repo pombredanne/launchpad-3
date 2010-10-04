@@ -23,7 +23,10 @@ from zope.event import notify
 from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.schema import Choice
+from zope.schema import (
+    Choice,
+    List,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -539,12 +542,16 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
 
 
 class IDifferencesFormSchema(Interface):
-    selected_differences = Choice(vocabulary=SimpleVocabulary([]))
+    selected_differences = List(
+        title=_('Selected differences'),
+        value_type=Choice(vocabulary=SimpleVocabulary([])),
+        description=_("Select the differences for syncing."),
+        required=True)
 
 
 class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
-    schema = Interface
+    schema = IDifferencesFormSchema
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
 
     page_title = 'Local package differences'
@@ -588,35 +595,53 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         super(DistroSeriesLocalDifferences, self).setUpFields()
         has_edit = check_permission('launchpad.Edit', self.context)
         if has_edit:
-            self.form_fields += self.createSelectDiffsField()
+            diffs_vocabulary = SimpleVocabulary(
+                [SimpleTerm(
+                    difference,
+                    difference.source_package_name.name,
+                    difference.source_package_name.name)
+                    for difference in self.cached_differences.batch])
+            choice = self.form_fields['selected_differences'].field.value_type
+            choice.vocabulary = diffs_vocabulary
 
-    def setUpWidgets(self, context=None):
-        """Setup the custom selected differences widget."""
-        super(DistroSeriesLocalDifferences, self).setUpWidgets()
+    #def setUpWidgets(self, context=None):
+    #    """Update the vocabulary for the selected differences widget."""
+    #    super(DistroSeriesLocalDifferences, self).setUpWidgets()
 
-        has_edit = check_permission('launchpad.Edit', self.context)
-        if has_edit:
-            self.widgets += form.setUpWidgets(
-                self.form_fields.select('selected_differences'),
-                self.prefix, self.context, self.request,
-                data=self.initial_values, ignore_request=False)
+    #    has_edit = check_permission('launchpad.Edit', self.context)
+    #    if has_edit:
+    #        diffs_vocabulary = SimpleVocabulary(
+    #            [SimpleTerm(
+    #                difference,
+    #                difference.source_package_name.name,
+    #                difference.source_package_name.name)
+    #                for difference in self.cached_differences.batch])
+    #        self.widgets['selected_differences'].vocabulary = diffs_vocabulary
 
-    def createSelectDiffsField(self):
-        """Create selected differences field based on the current batch."""
-        diffs_vocabulary = SimpleVocabulary(
-            [SimpleTerm(
-                difference,
-                difference.source_package_name.name,
-                difference.source_package_name.name)
-                for difference in self.cached_differences.batch])
+    #def createSelectDiffsField(self):
+    #    """Create selected differences field based on the current batch."""
+    #    diffs_vocabulary = SimpleVocabulary(
+    #        [SimpleTerm(
+    #            difference,
+    #            difference.source_package_name.name,
+    #            difference.source_package_name.name)
+    #            for difference in self.cached_differences.batch])
 
-        return form.Fields(
-            Choice(__name__='selected_differences',
-                   title=_('Selected differences'),
-                   vocabulary=diffs_vocabulary,
-                   description=_("Select the differences for syncing."),
-                   required=True))
+    #    return form.Fields(
+    #        Choice(__name__='selected_differences',
+    #               title=_('Selected differences'),
+    #               vocabulary=diffs_vocabulary,
+    #               description=_("Select the differences for syncing."),
+    #               required=True))
 
-    @action(_("Sync selected sources"), name="sync")
+    @action(_("Sync sources"), name="sync")#, validator='validate_sync')
     def sync_sources(self, action, data):
         pass
+
+    def validate_sync(self, action, data):
+        """Validate selected differences."""
+        form.getWidgetsData(self.widgets, self.prefix, data)
+
+        if len(data.get('selected_differences', [])) == 0:
+            self.setFieldError(
+                'selected_differences', 'No differences selected.')

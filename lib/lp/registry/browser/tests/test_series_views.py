@@ -231,7 +231,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
 
         checkbox = soup.find(
-            'input', id='field.selected_diffs.%d' % difference.id)
+            'input', id='field.selected_differences.%d' % difference.id)
         self.assertIs(None, checkbox)
         button = soup.find('input', id='field.actions.sync')
         self.assertIs(None, button)
@@ -250,15 +250,15 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
 
         checkbox = soup.find(
-            'input', id='field.selected_diffs.%d' % difference.id)
+            'input', id='field.selected_differences.%d' % difference.id)
         self.assertIsNot(None, checkbox)
         button = soup.find('input', id='field.actions.sync')
         self.assertEqual(
             "Sync selected Lucid versions into Derilucid",
             button['value'])
 
-    def test_selected_diffs_field_for_non_editor(self):
-        # Non-editors do not get a selected_diffs field
+    def test_selected_differences_field_for_non_editor(self):
+        # Non-editors do not get a selected_differences field
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
         difference = self.factory.makeDistroSeriesDifference(
@@ -271,7 +271,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
         self.assertIs(None, view.widgets.get('selected_differences'))
 
-    def test_selected_diffs_field_for_editor(self):
+    def test_selected_differences_field_for_editor(self):
         # Editors see a selected diffs field with the correct
         # vocabulary.
         derived_series = self.makeDerivedSeries(
@@ -289,6 +289,27 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(
             ['my-src-name'],
             widget.vocabulary.by_token.keys())
+
+    def test_notification_after_sync(self):
+        # Syncing one or more diffs results in a stub notification.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            source_package_name_str='my-src-name',
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        with person_logged_in(derived_series.owner):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs',
+                method='POST', form={
+                    'field.selected_differences': [
+                        difference.source_package_name.name,
+                        ],
+                    'field.actions.sync': 'Sync',
+                    })
+
+        self.assertEqual(0, len(view.errors))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):

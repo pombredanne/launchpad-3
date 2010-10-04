@@ -27,7 +27,9 @@
              more about syncing from the parent series</a>).
       </p>
 
-      <div tal:condition="differences/batch">
+      <div metal:use-macro="context/@@launchpad_form/form">
+
+      <div tal:condition="differences/batch" metal:fill-slot="widgets">
         <tal:navigation_top
           replace="structure differences/@@+navigation-links-upper" />
           <table class="listing">
@@ -48,10 +50,10 @@
                 tal:attributes="class parent_source_pub/source_package_name">
               <td>
                 <input tal:condition="context/required:launchpad.Edit"
-                  name="field.selected_diffs" type="checkbox"
+                  name="field.selected_differences" type="checkbox"
                   tal:attributes="
                     value difference/id;
-                    id string:field.selected_diffs.${difference/id}"/>
+                    id string:field.selected_differences.${difference/id}"/>
 
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
                    tal:content="parent_source_pub/source_package_name">Foo</a>
@@ -87,11 +89,17 @@
             </tal:difference>
           </tbody>
         </table>
-        <p>
-          <input
-            tal:replace="structure view/actions/byname/field.actions.sync/render" />
-        </p>
+        <tal:selectable_differences_end
+               define="widget nocall:view/widgets/selected_differences;
+                       field_name widget/context/__name__;
+                       error python:view.getFieldError(field_name);">
+          <input tal:attributes="name string:${widget/name}-empty-marker"
+                 type="hidden" value="1" />
+          <div class="error message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+           </tal:selectable_differences_end>
       </div>
+    </div>
 <script type="text/javascript">
 LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
   diff_module = Y.lp.registry.distroseriesdifferences_details
