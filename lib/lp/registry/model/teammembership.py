@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'sendStatusChangeNotification',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -483,8 +484,8 @@ class TeamMembershipSet:
             from lp.registry.model.person import Person
             conditions.append(TeamMembership.team == Person.id)
             conditions.append(
-                Person.renewal_policy
-                != TeamMembershipRenewalPolicy.AUTOMATIC)
+                Person.renewal_policy !=
+                    TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
 
 
