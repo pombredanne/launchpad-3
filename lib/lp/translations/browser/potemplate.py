@@ -173,11 +173,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         specifications_link.target = self.target
         return specifications_link
 
-    def calendar(self):
-        calendar_link = self.target_facets.calendar()
-        calendar_link.target = self.target
-        return calendar_link
-
     def branches(self):
         branches_link = self.target_facets.branches()
         if not self._is_product_series:

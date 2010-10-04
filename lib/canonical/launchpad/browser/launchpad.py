@@ -483,10 +483,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('support')
     def redirect_support(self):
-        """Redirect /support to Answers root site."""
+        """Redirect /support to launchpad Answers site."""
         target_url = canonical_url(
-            getUtility(ILaunchpadRoot), rootsite='answers')
-        return self.redirectSubTree(target_url + 'questions', status=301)
+            getUtility(ILaunchpadCelebrities).launchpad, rootsite='answers')
+        return self.redirectSubTree(target_url, status=301)
 
     @stepto('legal')
     def redirect_legal(self):
