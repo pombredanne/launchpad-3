@@ -433,9 +433,10 @@ Only bugs that have been checked before are passed on to
 getModifiedRemoteBugs(). I.e., if we have a set of newly created bug
 watches, the getModifiedRemoteBugs() method won't be called.
 
-    >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> from lp.bugs.model.bugtracker import BugTracker
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')

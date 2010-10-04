@@ -14,11 +14,13 @@ __all__ = [
     ]
 
 
+from contextlib import contextmanager
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
 import transaction
 
+from bzrlib.plugins.builder.recipe import RecipeParser
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zisinstance,
@@ -301,3 +303,13 @@ def make_project_cloud_data(factory, details):
         make_project_branch_with_revisions(
             factory, gen, project, revision_count=num_commits)
     transaction.commit()
+
+
+@contextmanager
+def recipe_parser_newest_version(version):
+    old_version = RecipeParser.NEWEST_VERSION
+    RecipeParser.NEWEST_VERSION = version
+    try:
+        yield
+    finally:
+        RecipeParser.NEWEST_VERSION = old_version

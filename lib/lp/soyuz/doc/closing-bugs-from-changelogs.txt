@@ -145,7 +145,7 @@ A bug notification is created for both the status change, and for the
 comment addition. The both notifications will be batched together into a
 single e-mail later.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> notifications = BugNotification.select(orderBy='id')
     >>> for notification in notifications[-2:]:
     ...     print "From %s:\n%s\n" % (

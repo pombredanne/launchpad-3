@@ -6,50 +6,30 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+<head>
+  <tal:head_epilogue metal:fill-slot="head_epilogue">
+    <meta name="robots" content="noindex,nofollow" />
+  </tal:head_epilogue>
+</head>
 
 <body>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     <div id="specs-unknown">
       <strong>
-        <div tal:omit-tag tal:condition="view/is_project">
+        <tal:is-project condition="view/is_project">
           <p>
             Launchpad does not know how
             <tal:project replace="view/context/displayname" /> tracks feature
             planning or documentation.
           </p>
-        </div>
-        
-        <div tal:omit-tag tal:condition="view/is_series">
-          <div
-            tal:omit-tag
-            tal:define="target python:view.context.product and view.context.product or view.context.distribution;
-                        blueprints_usage target/blueprints_usage"> 
+        </tal:is-project>
+
+        <tal:not-project
+          condition="not:view/is_project">
+          <tal:blueprints define="blueprints_usage view/context/blueprints_usage">
           <p tal:condition="blueprints_usage/enumvalue:EXTERNAL">
-            <tal:project replace="target/displayname" />'s
-            <tal:project replace="view/context/displayname" /> series does
-            not use Launchpap for planning or documentation.
-          </p>
-          <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
-            <tal:project replace="target/displayname" />'s
-            <tal:project replace="view/context/displayname" /> series does not track
-            feature planning or documentation.
-          </p>
-          <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
-            Launchpad does not know how
-            <tal:project replace="target/displayname" />'s
-            <tal:project replace="view/context/displayname" /> series tracks feature
-            planning or documentation.
-          </p>
-          </div>
-        </div>
-        
-        <div tal:omit-tag
-          tal:condition="python:not (view.is_project or view.is_series)">
-          <div tal:omit-tag tal:define="blueprints_usage view/context/blueprints_usage">
-          <p tal:condition="blueprints_usage/enumvalue:EXTERNAL">
-            <tal:project replace="view/context/displayname" /> does not use launchpad
+            <tal:project replace="view/context/displayname" /> does not use Launchpad
             for planning or documentation.
           </p>
           <p tal:condition="blueprints_usage/enumvalue:NOT_APPLICABLE">
@@ -57,15 +37,15 @@
             feature planning or documentation.
           </p>
           <p tal:condition="blueprints_usage/enumvalue:UNKNOWN">
-            launchpad does not know how
+            Launchpad does not know how
             <tal:project replace="view/context/displayname" /> tracks feature
             planning or documentation.
           </p>
-          </div>
-        </div>
+          </tal:blueprints>
+        </tal:not-project>
       </strong>
 
-      <div tal:omit-tag tal:condition="view/has_wiki">
+      <tal:has-wiki tal:condition="view/has_wiki">
       <p id="wiki-fallback"
         tal:define="wiki view/context/wikiurl"
         tal:condition="wiki">
@@ -75,7 +55,7 @@
           <tal:project replace="view/context/displayname" /> wiki
         </a>
       </p>
-      </div>
+      </tal:has-wiki>
     </div>
 
     <p id="configure-support"

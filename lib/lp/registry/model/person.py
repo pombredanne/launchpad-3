@@ -191,6 +191,7 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
+from lp.registry.errors import NameAlreadyTaken
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -217,7 +218,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     JoinNotAllowed,
-    NameAlreadyTaken,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -1256,7 +1256,7 @@ class Person(
             try:
                 return self._inTeam_cache[team.id]
             except KeyError:
-                pass 
+                pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
@@ -1265,6 +1265,8 @@ class Person(
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
+            # Note that this query and the tp query above can be consolidated
+            # when we get to a finer grained level of optimisations.
             in_team = self.inTeam(team.teamowner)
         else:
             in_team = False

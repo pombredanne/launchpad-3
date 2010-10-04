@@ -172,7 +172,7 @@ class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
     def setUp(self):
         super(TestGuessPOFileCustomLanguageCode, self).setUp()
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeSeries(product=self.product)
+        self.series = self.factory.makeProductSeries(product=self.product)
         self.queue = TranslationImportQueue()
         self.template = POTemplateSubset(productseries=self.series).new(
             'test', 'test', 'test.pot', self.product.owner)
@@ -311,7 +311,8 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     def _setUpProduct(self):
         """Set up a `Product` with release series and two templates."""
         self.product = self.factory.makeProduct()
-        self.productseries = self.factory.makeSeries(product=self.product)
+        self.productseries = self.factory.makeProductSeries(
+            product=self.product)
         product_subset = POTemplateSubset(productseries=self.productseries)
         self.producttemplate1 = product_subset.new(
             'test1', 'test1', 'test.pot', self.product.owner)

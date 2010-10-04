@@ -363,6 +363,9 @@ class IHasOfficialBugTags(Interface):
         bugs will be returned.
         """
 
+    def _getOfficialTagClause():
+        """Get the storm clause for finding this targets tags."""
+
 
 class IOfficialBugTagTargetPublic(IHasOfficialBugTags):
     """Public attributes for `IOfficialBugTagTarget`."""

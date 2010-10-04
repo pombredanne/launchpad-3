@@ -88,7 +88,6 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
-    SpecificationSort,
     )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
@@ -112,6 +111,7 @@ from lp.bugs.model.bugtarget import (
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import (
     IBaseDistribution,
     IDerivativeDistribution,
@@ -123,7 +123,6 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorStatus,
     )
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import (
     validate_person,
