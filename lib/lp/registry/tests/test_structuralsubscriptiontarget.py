@@ -25,13 +25,15 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
+from lp.registry.errors import (
+    DeleteSubscriptionError,
+    UserCannotSubscribePerson,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
-    DeleteSubscriptionError,
     IStructuralSubscriptionTarget,
-    UserCannotSubscribePerson,
     )
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (

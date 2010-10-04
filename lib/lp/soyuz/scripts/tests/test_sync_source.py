@@ -24,7 +24,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
-from canonical.librarian.ftests.harness import (
+from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
     )

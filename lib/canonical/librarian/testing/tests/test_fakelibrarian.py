@@ -17,6 +17,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAliasSet,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import ILibrarianClient
@@ -25,7 +26,6 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakelibrarian import FakeLibrarian
 
 
 class LibraryAccessScenarioMixin:
