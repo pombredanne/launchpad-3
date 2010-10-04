@@ -614,10 +614,13 @@
     <class
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"/>
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
       <require
           permission="launchpad.Edit"
-          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilter" />
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+      <require
+          permission="launchpad.Edit"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods" />
     </class>
 
     <facet

@@ -29,8 +29,8 @@ from lp.registry.interfaces.structuralsubscription import (
 from lp.services.fields import SearchTag
 
 
-class IBugSubscriptionFilter(Interface):
-    """The relationship between a person and a bug."""
+class IBugSubscriptionFilterAttributes(Interface):
+    """Attributes of `IBugSubscriptionFilter`."""
 
     structural_subscription = Reference(
         IStructuralSubscription,
@@ -68,5 +68,14 @@ class IBugSubscriptionFilter(Interface):
         required=True, default=frozenset(),
         value_type=SearchTag())
 
+
+class IBugSubscriptionFilterMethods(Interface):
+    """Methods of `IBugSubscriptionFilter`."""
+
     def delete():
         """Delete this bug subscription filter."""
+
+
+class IBugSubscriptionFilter(
+    IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
+    """A bug subscription filter."""

@@ -106,6 +106,23 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
                 Unauthorized, setattr, bug_subscription_filter,
                 "find_all_tags", True)
 
+    def test_delete_by_subscribers(self):
+        """`BugSubscriptionFilter`s can only be deleted by subscribers."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # Anonymous users are denied rights to delete the filter.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, getattr, bug_subscription_filter, "delete")
+        # Any other person is also denied.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(
+                Unauthorized, getattr, bug_subscription_filter, "delete")
+        # The subscriber can delete the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.delete()
+
     def test_write_to_any_user_when_no_subscription(self):
         """
         `BugSubscriptionFilter`s can be modifed by any logged-in user when
