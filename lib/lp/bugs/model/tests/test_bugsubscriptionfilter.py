@@ -94,6 +94,25 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
                 Unauthorized, setattr, bug_subscription_filter,
                 "find_all_tags", True)
 
+    def test_write_to_any_user_when_no_subscription(self):
+        """
+        `BugSubscriptionFilter`s can be modifed by any logged-in user when
+        there is no related subscription.
+        """
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter = ProxyFactory(bug_subscription_filter)
+        # The subscriber can edit the filter.
+        with person_logged_in(self.subscriber):
+            bug_subscription_filter.find_all_tags = True
+        # Any other person can edit the filter.
+        with person_logged_in(self.factory.makePerson()):
+            bug_subscription_filter.find_all_tags = True
+        # Anonymous users are denied rights to edit the filter.
+        with anonymous_logged_in():
+            self.assertRaises(
+                Unauthorized, setattr, bug_subscription_filter,
+                "find_all_tags", True)
+
     def test_defaults(self):
         """Test the default values of `BugSubscriptionFilter` objects."""
         # Create.
