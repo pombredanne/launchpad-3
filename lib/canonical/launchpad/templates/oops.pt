@@ -14,7 +14,7 @@
     <script type="text/javascript" src="/+icing/rev5/build/lp/lp.js"></script>
   </head>
   <body>
-    <div class="yui-d0">
+    <div class="yui3-d0">
 
       <div id="maincontent">
         <h1 class="exception">Oops!</h1>

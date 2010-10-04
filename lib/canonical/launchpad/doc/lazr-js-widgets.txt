@@ -25,7 +25,7 @@ The widget is rendered by executing it, it prints out the attribute
 content.
 
     >>> print widget()
-    <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
+    <h1 id="..."><span class="yui3-editable_text-text">My bug is &gt;
         important</span>
     </h1>
 
@@ -35,10 +35,10 @@ link into an AJAX control when JS is available:
 
     >>> login('no-priv@canonical.com')
     >>> print widget()
-    <h1 id="..."><span class="yui-editable_text-text">My bug is &gt;
+    <h1 id="..."><span class="yui3-editable_text-text">My bug is &gt;
         important</span>
         <a href="http://bugs.launchpad.dev/.../+edit"
-           class="yui-editable_text-trigger sprite edit"
+           class="yui3-editable_text-trigger sprite edit"
         ></a>
     </h1>
     <script>
@@ -53,7 +53,7 @@ constructor:
     ...     id="bug-title", title="Edit this summary")
     >>> print widget()
     <h1 id="bug-title">...
-        ...class="yui-editable_text-trigger sprite edit"...
+        ...class="yui3-editable_text-trigger sprite edit"...
 
 The initial_value_override parameter is passed as a JSON-serialized value.
 
@@ -107,7 +107,7 @@ is revealed by Y.lp.app.picker.addPickerPatcher.
     False
     >>> print widget()
     <span id="inline-picker-activator-id-...">...
-    <div class="yui-activator-message-box yui-activator-hidden" />
+    <div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
 
 The foo.bar user can see the activator's edit button.
@@ -118,7 +118,7 @@ The foo.bar user can see the activator's edit button.
     True
     >>> print widget()
     <span id="inline-picker-activator-id-...">
-    ...<div class="yui-activator-message-box yui-activator-hidden" />
+    ...<div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
     ...Y.lp.app.picker.addPickerPatcher(...
 
