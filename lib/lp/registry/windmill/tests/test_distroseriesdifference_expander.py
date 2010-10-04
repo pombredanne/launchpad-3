@@ -70,3 +70,17 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             diff_reloaded.status)
+
+        # Finally, add a comment to this difference.
+        self.client.click(link=u'Add comment')
+        self.client.click(
+            xpath=u"//div[@class='add-comment-placeholder foo']//textarea")
+        self.client.type(
+            xpath=u"//div[@class='add-comment-placeholder foo']//textarea",
+            text=u"Here's a comment.")
+        self.client.click(
+            xpath=u"//div[@class='add-comment-placeholder foo']//button")
+        self.client.waits.forElement(
+            classname=u'boardComment', timeout=constants.FOR_ELEMENT)
+        self.client.asserts.assertText(
+            classname=u'boardCommentBody', validator=u"Here's a comment.")
