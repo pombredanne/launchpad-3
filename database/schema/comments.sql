@@ -346,6 +346,21 @@ COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in wh
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.person IS 'The Person record in Launchpad this user corresponds to.';
 
+-- BugTrackerComponent
+
+COMMENT ON TABLE BugTrackerComponent IS 'A software component in a remote bug tracker, which can be linked to the corresponding source package in a distribution using this table.';
+COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as registered in the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
+COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
+COMMENT ON COLUMN BugTrackerComponent.distro_source_package IS 'A link to the source package in a distribution that corresponds to this component.  This can be undefined if no link has been established yet.';
+
+-- BugTrackerComponentGroup
+
+COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as modeled in a remote bug tracker, often referred to as a product.  Some bug trackers do not categorize software components this way, so they will have a single default component group that all components belong to.';
+COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
+COMMENT ON COLUMN BugTrackerComponentGroup.bug_tracker IS 'The external bug tracker this component group belongs to.';
+
 -- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
@@ -2322,6 +2337,14 @@ COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
 COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
 COMMENT ON COLUMN HWDMIValue.value IS 'The value';
 COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
+
+-- IncrementalDiff
+COMMENT ON TABLE IncrementalDiff IS 'Incremental diffs for merge proposals.';
+COMMENT ON COLUMN IncrementalDiff.diff IS 'The contents of the diff.';
+COMMENT ON COLUMN IncrementalDiff.branch_merge_proposal IS 'The merge proposal the diff is for.';
+COMMENT ON COLUMN IncrementalDiff.old_revision IS 'The revision the diff is from.';
+COMMENT ON COLUMN IncrementalDiff.new_revision IS 'The revision the diff is to.';
+
 
 -- Job
 

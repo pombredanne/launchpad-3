@@ -813,6 +813,15 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3095,25 +3104,25 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
 
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (15, 6, 21, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (16, NULL, 20, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (17, NULL, 20, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (18, NULL, 21, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (19, NULL, 21, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 10, 1);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 11, 2);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 12, 3);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 20, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 21, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 20, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 21, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 20, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 21, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 20, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 21, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 20, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 21, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 20, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 21, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;
@@ -3336,42 +3345,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (1, 2, 1, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (2, 1, 3, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (3, 1, 4, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (4, 2, 5, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (5, 2, 6, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (6, 4, 7, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (7, 5, 8, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (8, 6, 9, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (9, 3, 10, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (10, 7, 11, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (11, 8, 14, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (12, 9, 15, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (13, 10, 17, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (14, 10, 16, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (15, 11, 24, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (16, 11, 25, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (17, 11, 26, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (18, 11, 27, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (19, 11, 28, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (20, 11, 29, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (21, 11, 30, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (22, 12, 31, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (23, 12, 33, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (24, 12, 34, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (25, 12, 35, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (26, 12, 36, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (27, 13, 37, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3795,6 +3804,27 @@ INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (4, 5, 'http://www
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugtrackercomponentgroup DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugtrackercomponentgroup ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugtrackercomponent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugtrackercomponent ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugtrackerperson DISABLE TRIGGER ALL;
 
 
@@ -3996,6 +4026,13 @@ INSERT INTO distributionbounty (id, bounty, distribution, date_created) VALUES (
 ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 
+ALTER TABLE distributionjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
@@ -4011,13 +4048,6 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
@@ -4568,6 +4598,13 @@ ALTER TABLE hwtestanswerdevice DISABLE TRIGGER ALL;
 
 
 ALTER TABLE hwtestanswerdevice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE incrementaldiff DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE incrementaldiff ENABLE TRIGGER ALL;
 
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;

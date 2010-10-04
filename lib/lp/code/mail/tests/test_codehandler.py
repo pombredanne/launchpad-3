@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from difflib import unified_diff
 from textwrap import dedent
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.urlutils import join as urljoin
@@ -25,7 +24,7 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database import MessageSet
+from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
@@ -75,6 +74,7 @@ from lp.services.osutils import override_environ
 from lp.testing import (
     login,
     login_person,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -193,7 +193,7 @@ class TestCodeHandler(TestCaseWithFactory):
             target_branch=target_branch)
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
-        self.code_handler.process( mail, email_addr, None)
+        self.code_handler.process(mail, email_addr, None)
         self.assertIn(
             '<my-id>', [comment.message.rfc822msgid
                         for comment in bmp.all_comments])
@@ -765,8 +765,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual(
             notification.get_payload(),
             'Your email did not contain a merge directive. Please resend '
-            'your email with\nthe merge directive attached.\n'
-            )
+            'your email with\nthe merge directive attached.\n')
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -854,8 +853,7 @@ class TestCodeHandler(TestCaseWithFactory):
             'The target branch at %s is not known to Launchpad.  It\'s\n'
             'possible that your submit branch is not set correctly, or that '
             'your submit\nbranch has not yet been pushed to Launchpad.\n\n'
-            % ('http://www.example.com')
-            )
+            % ('http://www.example.com'))
         self.assertEqual(notification['to'],
             message['from'])
 
@@ -877,8 +875,7 @@ class TestCodeHandler(TestCaseWithFactory):
             notification.get_payload(decode=True),
             'Your message did not contain a subject.  Launchpad code '
             'reviews require all\nemails to contain subject lines.  '
-            'Please re-send your email including the\nsubject line.\n\n'
-            )
+            'Please re-send your email including the\nsubject line.\n\n')
         self.assertEqual(notification['to'],
             mail['from'])
         self.assertEqual(0, bmp.all_comments.count())
@@ -1254,6 +1251,7 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(
             self.merge_proposal, self.merge_proposal.target_branch.owner)
+        self.jrandom = self.factory.makePerson()
         transaction.commit()
         self.layer.switchDbUser(config.processmail.dbuser)
 
@@ -1339,11 +1337,24 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
             str(error))
 
     def test_not_a_reviewer(self):
-        # If the user is not a reviewer, they can not update the status.
+        # If the user is not a reviewer, they cannot update the status.
+        self.context.user = self.jrandom
+        command = UpdateStatusEmailCommand('status', ['approve'])
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
+        target = self.merge_proposal.target_branch.bzr_identity
+        self.assertEqual(
+            "You are not a reviewer for the branch %s.\n" % target,
+            str(error))
+
+    def test_registrant_not_a_reviewer(self):
+        # If the registrant is not a reviewer, they cannot update the status.
         self.context.user = self.context.merge_proposal.registrant
         command = UpdateStatusEmailCommand('status', ['approve'])
-        error = self.assertRaises(
-            EmailProcessingError, command.execute, self.context)
+        with person_logged_in(self.context.user):
+            error = self.assertRaises(
+                EmailProcessingError, command.execute, self.context)
         target = self.merge_proposal.target_branch.bzr_identity
         self.assertEqual(
             "You are not a reviewer for the branch %s.\n" % target,
@@ -1412,8 +1423,3 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
             "There's no such person with the specified name or email: "
             "unknown@example.com\n",
             str(error))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

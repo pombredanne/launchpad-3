@@ -53,6 +53,7 @@ from lp.code.model.sourcepackagerecipe import (
     SourcePackageRecipe,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob,
@@ -246,11 +247,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             old_branches, list(sp_recipe.getReferencedBranches()))
 
     def test_reject_newer_formats(self):
-        builder_recipe = self.factory.makeRecipe()
-        builder_recipe.format = 0.3
-        self.assertRaises(
-            TooNewRecipeFormat,
-            self.factory.makeSourcePackageRecipe, recipe=str(builder_recipe))
+        with recipe_parser_newest_version(145.115):
+            builder_recipe = self.factory.makeRecipe()
+            builder_recipe.format = 145.115
+            self.assertRaises(
+                TooNewRecipeFormat,
+                self.factory.makeSourcePackageRecipe,
+                recipe=str(builder_recipe))
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
