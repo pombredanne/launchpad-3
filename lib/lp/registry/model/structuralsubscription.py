@@ -141,6 +141,12 @@ class StructuralSubscription(SQLBase):
             BugSubscriptionFilter,
             BugSubscriptionFilter.structural_subscription == self)
 
+    def newBugFilter(self):
+        """See `IStructuralSubscription`."""
+        bug_filter = BugSubscriptionFilter()
+        bug_filter.structural_subscription = self
+        return bug_filter
+
 
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""

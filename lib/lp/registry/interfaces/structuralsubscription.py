@@ -137,6 +137,9 @@ class IStructuralSubscription(Interface):
         readonly=True, required=False,
         value_type=Reference(schema=Interface))
 
+    def newBugFilter():
+        """Returns a new `BugSubscriptionFilter` for this subscription."""
+
 
 class IStructuralSubscriptionTargetRead(Interface):
     """A Launchpad Structure allowing users to subscribe to it.
