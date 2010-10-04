@@ -83,7 +83,7 @@
       yui-base-debug.js and move the <script/> node outside of this block.
 
       This will hopefully be fixed in YUI itself.
-      See http://yuilibrary.com/projects/yui3/ticket/2528368
+      See http://yuilibrary.com/projects/yui/ticket/2528368
     </tal:comment>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/yui/yui-base.js"></script>
@@ -133,13 +133,9 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/widget/widget.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${yui}/cookie/cookie.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/widget/widget-position.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
     <script type="text/javascript"
