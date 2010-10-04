@@ -21,6 +21,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Choice
 from zope.schema.vocabulary import (
@@ -59,6 +60,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
+from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
@@ -536,14 +538,14 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         return navigator
 
 
-from zope.interface import Interface
 class IDifferencesFormSchema(Interface):
-    selected_diffs = Choice(vocabulary=SimpleVocabulary([]))
+    selected_differences = Choice(vocabulary=SimpleVocabulary([]))
 
 
 class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = Interface
+    custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
 
     page_title = 'Local package differences'
 
@@ -576,6 +578,44 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         utility = getUtility(IDistroSeriesDifferenceSource)
         differences = utility.getForDistroSeries(self.context)
         return BatchNavigator(differences, self.request)
+
+    def setUpFields(self):
+        """Add the selected differences field.
+
+        As this field depends on other search/filtering field values
+        for its own vocabulary, we set it up after all the others.
+        """
+        super(DistroSeriesLocalDifferences, self).setUpFields()
+        has_edit = check_permission('launchpad.Edit', self.context)
+        if has_edit:
+            self.form_fields += self.createSelectDiffsField()
+
+    def setUpWidgets(self, context=None):
+        """Setup the custom selected differences widget."""
+        super(DistroSeriesLocalDifferences, self).setUpWidgets()
+
+        has_edit = check_permission('launchpad.Edit', self.context)
+        if has_edit:
+            self.widgets += form.setUpWidgets(
+                self.form_fields.select('selected_differences'),
+                self.prefix, self.context, self.request,
+                data=self.initial_values, ignore_request=False)
+
+    def createSelectDiffsField(self):
+        """Create selected differences field based on the current batch."""
+        diffs_vocabulary = SimpleVocabulary(
+            [SimpleTerm(
+                difference,
+                difference.source_package_name.name,
+                difference.source_package_name.name)
+                for difference in self.cached_differences.batch])
+
+        return form.Fields(
+            Choice(__name__='selected_differences',
+                   title=_('Selected differences'),
+                   vocabulary=diffs_vocabulary,
+                   description=_("Select the differences for syncing."),
+                   required=True))
 
     @action(_("Sync selected sources"), name="sync")
     def sync_sources(self, action, data):

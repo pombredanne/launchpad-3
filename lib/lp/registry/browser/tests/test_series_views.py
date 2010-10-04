@@ -16,7 +16,10 @@ from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -69,7 +72,7 @@ class TestDistroSeriesView(TestCaseWithFactory):
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
     """Test the distroseries +localpackagediffs view."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def makeDerivedSeries(self, derived_name=None, parent_name=None):
         # Helper that creates a derived distro series.
@@ -234,7 +237,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertIs(None, button)
 
     def test_sync_option_for_editor(self):
-        # Non-editors cannot perform syncs.
+        # Editors can perform syncs.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
         difference = self.factory.makeDistroSeriesDifference(
@@ -253,6 +256,39 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(
             "Sync selected Lucid versions into Derilucid",
             button['value'])
+
+    def test_selected_diffs_field_for_non_editor(self):
+        # Non-editors do not get a selected_diffs field
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+
+        self.assertIs(None, view.widgets.get('selected_differences'))
+
+    def test_selected_diffs_field_for_editor(self):
+        # Editors see a selected diffs field with the correct
+        # vocabulary.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            source_package_name_str='my-src-name',
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        with person_logged_in(derived_series.owner):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+
+        widget = view.widgets['selected_differences']
+        self.assertEqual(
+            ['my-src-name'],
+            widget.vocabulary.by_token.keys())
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
