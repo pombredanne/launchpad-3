@@ -15,7 +15,6 @@ __all__ = [
     ]
 
 import logging
-import os
 
 import transaction
 from twisted.application import service
@@ -23,15 +22,13 @@ from twisted.internet import (
     defer,
     reactor,
     )
+from twisted.internet.task import LoopingCall
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
-from twisted.python.failure import Failure
 from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp import urlappend
-from lp.services.database import write_transaction
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
@@ -124,60 +121,52 @@ class SlaveScanner:
     def __init__(self, builder_name, logger):
         self.builder_name = builder_name
         self.logger = logger
-        self._deferred_list = []
-
-    def scheduleNextScanCycle(self, ignored=None):
-        """Schedule another scan of the builder some time in the future."""
-        self._deferred_list = []
-        # XXX: Change this to use LoopingCall.
-        reactor.callLater(self.SCAN_INTERVAL, self.startCycle)
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
-        self.logger.debug("Scanning builder: %s" % self.builder_name)
-        d = self._startCycle()
         # XXX: We don't need any of the callback chaining that used
         # to be here, because where it was processing the
         # deferred_list before, that is now all done!  So, we need
         # to review all the error handling that it was doing and
         # make sure we're still doing it.
 
-        transaction.commit()
-        d.addCallback(self.scheduleNextScanCycle)
+        self._loop = LoopingCall(self._startCycle)
+        d = self._loop.start(self.SCAN_INTERVAL)
         return d
 
     def _startCycle(self):
         # Same as _startCycle but the next cycle is not scheduled.  This
         # is so tests can initiate a single scan.
+        self.logger.debug("Scanning builder: %s" % self.builder_name)
         d = self.scan()
 
-        def disaster(failure):
-            # Trap known exceptions and print a a message without a
-            # stack trace in that case, or if we don't know about it,
-            # include the trace.
-            error_message = failure.getErrorMessage()
-            if failure.check(
-                BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
-                CannotResumeHost, BuildDaemonError):
-                self.logger.info("Scanning failed with: %s" % error_message)
-            else:
-                self.logger.info("Scanning failed with: %s\n%s" %
-                    (failure.getErrorMessage(), failure.getTraceback()))
-
-            builder = get_builder(self.builder_name)
-
-            # Decide if we need to terminate the job or fail the
-            # builder.
-            self._incrementFailureCounts(builder)
-            self.logger.info(
-                "builder failure count: %s, job failure count: %s" % (
-                    builder.failure_count,
-                    builder.getCurrentBuildFarmJob().failure_count))
-            assessFailureCounts(builder, failure.getErrorMessage())
-            transaction.commit()
-
-        d.addErrback(disaster)
+        d.addErrback(self._scanFailed)
         return d
+
+    def _scanFailed(self, failure):
+        # Trap known exceptions and print a message without a
+        # stack trace in that case, or if we don't know about it,
+        # include the trace.
+        error_message = failure.getErrorMessage()
+        if failure.check(
+            BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
+            CannotResumeHost, BuildDaemonError):
+            self.logger.info("Scanning failed with: %s" % error_message)
+        else:
+            self.logger.info("Scanning failed with: %s\n%s" %
+                (failure.getErrorMessage(), failure.getTraceback()))
+
+        builder = get_builder(self.builder_name)
+
+        # Decide if we need to terminate the job or fail the
+        # builder.
+        self._incrementFailureCounts(builder)
+        self.logger.info(
+            "builder failure count: %s, job failure count: %s" % (
+                builder.failure_count,
+                builder.getCurrentBuildFarmJob().failure_count))
+        assessFailureCounts(builder, failure.getErrorMessage())
+        transaction.commit()
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
@@ -353,7 +342,7 @@ class BuilddManager(service.Service):
         for builder in builders:
             slave_scanner = SlaveScanner(builder, self.logger)
             self.builder_slaves.append(slave_scanner)
-            slave_scanner.scheduleNextScanCycle()
+            slave_scanner.startCycle()
 
         # Return the slave list for the benefit of tests.
         return self.builder_slaves
