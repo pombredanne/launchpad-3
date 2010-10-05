@@ -39,6 +39,7 @@ it involves OpenID, which would complicate this test quite a bit.)
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
@@ -128,6 +129,7 @@ by the user is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application...wants to access things related to Mozilla Firefox...
 
 A client other than a web browser may request a JSON representation of
@@ -282,13 +284,14 @@ desktop.
     >>> print extract_text(
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
+    Integrating mycomputer into your Launchpad account
     The Ubuntu desktop called mycomputer wants access to your
     Launchpad account. If you allow the integration, all applications
     running on mycomputer will have read-write access to your
     Launchpad account, including to your private data.
     If you're using a public computer, if mycomputer is not the
     computer you're using right now, or if something just doesn't feel
-    right about this situation, you should click "No, thanks, I don't
+    right about this situation, you should choose "No, thanks, I don't
     trust 'mycomputer'", or close this window now. You can always try
     again later.
     Even if you decide to allow the integration, you can change your

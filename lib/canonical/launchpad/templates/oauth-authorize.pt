@@ -23,6 +23,10 @@
           <div metal:fill-slot="extra_top">
 
            <tal:desktop-integration-token condition="token/consumer/is_integrated_desktop">
+             <h1>Integrating
+               <tal:hostname replace="structure
+                token/consumer/integrated_desktop_name" />
+               into your Launchpad account</h1>
              <p>The
                <tal:desktop replace="structure
                token/consumer/integrated_desktop_type" />
@@ -38,7 +42,7 @@
              <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
              is not the computer you're using right now, or if
              something just doesn't feel right about this situation,
-             you should click "No, thanks, I don't trust
+             you should choose "No, thanks, I don't trust
              '<tal:hostname replace="structure
               token/consumer/integrated_desktop_name" />'",
              or close this window now. You can always try
@@ -49,6 +53,10 @@
            </tal:desktop-integration-token>
 
            <tal:web-integration-token condition="not:token/consumer/is_integrated_desktop">
+             <h1>Integrating
+               <tal:hostname replace="structure token/consumer/key" />
+               into your Launchpad account</h1>
+
              <p>The application identified as
                <strong tal:content="token/consumer/key">consumer</strong>
                wants to access
