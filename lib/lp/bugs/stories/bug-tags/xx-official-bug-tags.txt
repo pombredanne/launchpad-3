@@ -52,13 +52,32 @@ administrators but not for ordinary users.
     ...
     Unauthorized...
 
+The link is also available for the bug supervisor.
+
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login(ADMIN_EMAIL)
+    >>> d_owner = factory.makePerson()
+    >>> logout()
+    >>> login_person(d_owner)
+    >>> distro = factory.makeDistribution(name='youbuntu', owner=d_owner)
+    >>> supervisor_team = factory.makeTeam(owner=d_owner)
+    >>> supervisor_member = factory.makePerson(password='g00dpassword')
+    >>> supervisor_team.addMember(supervisor_member, d_owner)
+    >>> distro.setBugSupervisor(supervisor_team, d_owner)
+    >>> bug_super_browser = setupBrowser(
+    ...     auth='Basic %s:g00dpassword' %
+    ...         supervisor_member.preferredemail.email)
+    >>> logout()
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
+
 
 == Official Tags on Bug Pages ==
 
 Official tags are displayed using a different style from unofficial ones.
 They are grouped together at the beginning of the list.
 
-    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
