@@ -127,7 +127,6 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
             [self.product.owner.preferredemail.email,
              self.subscriber.preferredemail.email],
             [mail['To'] for mail in pop_notifications()])
-        person.getSubscriptions()
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
