@@ -82,6 +82,7 @@ from canonical.launchpad.mail import signed_message_from_string
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.job.model.job import Job
+from lp.services.propertycache import cachedproperty
 
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
@@ -158,10 +159,14 @@ class Message(SQLBase):
         """See IMessage."""
         return self.owner
 
-    @property
+    @cachedproperty
     def text_contents(self):
         """See IMessage."""
-        bits = [unicode(chunk) for chunk in self if chunk.content]
+        return Message.chunks_text(self.chunks)
+
+    @classmethod
+    def chunks_text(cls, chunks):
+        bits = [unicode(chunk) for chunk in chunks if chunk.content]
         return '\n\n'.join(bits)
 
     # XXX flacoste 2006-09-08: Bogus attribute only present so that

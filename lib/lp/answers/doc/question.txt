@@ -72,13 +72,13 @@ Official usage
 ==============
 
 A product or distribution may be officially supported by the community using
-the Answer Tracker.  This status is set by the official_answers attribute on
+the Answer Tracker.  This status is set by the answers_usage attribute on
 the IProduct and IDistribution.
 
-    >>> ubuntu.official_answers
-    True
-    >>> firefox.official_answers
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print firefox.answers_usage.name
+    LAUNCHPAD
 
 
 IQuestion interface

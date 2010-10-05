@@ -114,7 +114,8 @@
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
         <require
             permission="launchpad.Edit"
-            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"/>
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"
+            set_attributes="package_diff parent_package_diff"/>
     </class>
 
     <!-- DistroSeriesDifferenceComment -->
@@ -140,6 +141,9 @@
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
@@ -169,21 +173,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getBugNotificationsRecipients
-                getSubscription
-                getSubscriptions
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addBugSubscription
-                addSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
     <securedutility
         class="lp.registry.model.distroseries.DistroSeriesSet"
@@ -194,10 +188,8 @@
     <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries_to_launchpadusage"
+        factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
-    <adapter
-        factory="lp.registry.adapters.distroseries_to_serviceusage" />
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -316,21 +308,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
         <require
             permission="launchpad.Admin"
             set_attributes="registrant"/>
@@ -442,27 +424,24 @@
                 getBugCounts
                 bug_count
                 total_bug_heat
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                parent_subscription_target
-                getBugNotificationsRecipients
                 getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
-                target_type_display
+                _getOfficialTagClause
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+                findRelatedArchivePublications"/>
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                createBug"/>
+            attributes="createBug"/>
+
+        <!-- IStructuralSubscriptionTarget -->
+
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+        <require
+            permission="launchpad.AnyPerson"
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IQuestionTarget -->
 
@@ -959,21 +938,11 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
 
     <!-- IMilestoneSet -->
@@ -1034,7 +1003,7 @@
     <xmlrpc:view
         for="lp.registry.interfaces.mailinglist.IMailingListApplication"
         interface="lp.registry.interfaces.mailinglist.IMailingListAPIView"
-        class="canonical.launchpad.xmlrpc.MailingListAPIView"
+        class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
         class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
@@ -1235,22 +1204,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                userCanAlterSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1374,6 +1331,9 @@
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
+            set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
+        <require
+            permission="launchpad.Edit"
             set_attributes="product name owner driver summary branch
                             translations_branch status releasefileglob
                             translations_autoimport_mode"/>
@@ -1385,29 +1345,14 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getBugNotificationsRecipients
-                getSubscription
-                getSubscriptions
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addBugSubscription
-                addSubscription
-                removeBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
     </class>
     <adapter
         provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries_to_product"
-        permission="zope.Public"/>
-    <adapter
-        provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1517,22 +1462,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            attributes="
-                bug_subscriptions
-                getSubscriptions
-                getSubscription
-                getBugNotificationsRecipients
-                parent_subscription_target
-                target_type_display
-                userHasBugSubscriptions
-                userCanAlterBugSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            attributes="
-                addSubscription
-                addBugSubscription
-                removeBugSubscription
-                userCanAlterSubscription"/>
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 

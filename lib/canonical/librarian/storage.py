@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.librarian.db import write_transaction
+from lp.services.database import write_transaction
 
 __all__ = [
     'DigestMismatchError',
@@ -72,8 +72,8 @@ class LibrarianStorage:
     def startAddFile(self, filename, size):
         return LibraryFileUpload(self, filename, size)
 
-    def getFileAlias(self, aliasid):
-        return self.library.getAlias(aliasid)
+    def getFileAlias(self, aliasid, token, path):
+        return self.library.getAlias(aliasid, token, path)
 
 
 class LibraryFileUpload(object):

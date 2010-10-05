@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.app.enums import ServiceUsage
 
 
 class TestTranslationSharingPOTemplate(TestCaseWithFactory):
@@ -27,12 +28,12 @@ class TestTranslationSharingPOTemplate(TestCaseWithFactory):
         # Create a product with two series and sharing POTemplates
         # in different series ('devel' and 'stable').
         super(TestTranslationSharingPOTemplate, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is a 'sharing' one if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(

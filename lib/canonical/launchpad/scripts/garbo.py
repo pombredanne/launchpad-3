@@ -29,10 +29,14 @@ from canonical.database import postgresql
 from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import (
     cursor,
+    session_store,
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -685,6 +689,43 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         transaction.commit()
 
 
+class OldTimeLimitedTokenDeleter(TunableLoop):
+    """Delete expired url access tokens from the session DB."""
+
+    maximum_chunk_size = 24*60*60 # 24 hours in seconds.
+
+    def __init__(self, log, abort_time=None):
+        super(OldTimeLimitedTokenDeleter, self).__init__(log, abort_time)
+        self.store = session_store()
+        self._update_oldest()
+
+    def _update_oldest(self):
+        self.oldest_age = self.store.execute("""
+            SELECT COALESCE(EXTRACT(EPOCH FROM
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - MIN(created)), 0)
+            FROM TimeLimitedToken
+            """).get_one()[0]
+
+    def isDone(self):
+        return self.oldest_age <= ONE_DAY_IN_SECONDS
+
+    def __call__(self, chunk_size):
+        self.oldest_age = max(
+            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
+
+        self.log.debug(
+            "Removed TimeLimitedToken rows older than %d seconds"
+            % self.oldest_age)
+        self.store.find(
+            TimeLimitedToken,
+            TimeLimitedToken.created < SQL(
+                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
+                % ONE_DAY_IN_SECONDS)).remove()
+        transaction.commit()
+        self._update_oldest()
+
+
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
     """Refresh the SuggestivePOTemplate cache.
 
@@ -806,13 +847,14 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
-        CodeImportResultPruner,
-        RevisionAuthorEmailLinker,
-        HWSubmissionEmailLinker,
-        BugNotificationPruner,
         BranchJobPruner,
+        BugNotificationPruner,
         BugWatchActivityPruner,
+        CodeImportResultPruner,
+        HWSubmissionEmailLinker,
         ObsoleteBugAttachmentDeleter,
+        OldTimeLimitedTokenDeleter,
+        RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
         ]
     experimental_tunable_loops = [

@@ -3,7 +3,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="involvement" class="portlet"
   tal:condition="view/has_involvement"
-  tal:define="is_lpnet modules/canonical.config/config/launchpad/is_lpnet;"
   >
   <h2>Get Involved</h2>
 
@@ -35,7 +34,6 @@
   <tal:editor condition="context/required:launchpad.Edit"
               define="registration view/registration_completeness">
 
-    <tal:not_lpnet condition="not:is_lpnet">
     <tal:show_configuration condition="registration">
       <h2>Configuration Progress</h2>
       <div class="centered" id="progressbar">
@@ -54,7 +52,6 @@
           </table>
       </div>
     </tal:show_configuration>
-    </tal:not_lpnet>
 
     <table style="width: 100%; padding-top: 1em"
            tal:condition="view/configuration_links"
@@ -65,11 +62,9 @@
             <a tal:replace="structure link_status/link/fmt:link" />
           </td>
 
-          <tal:not_lpnet condition="not:is_lpnet">
           <td style="text-align: right;" tal:condition="registration">
             <tal:yes-no replace="structure link_status/configured/image:boolean" />
           </td>
-          </tal:not_lpnet>
 
         </tr>
       </tal:item>

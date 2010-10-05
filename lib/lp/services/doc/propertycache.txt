@@ -16,7 +16,7 @@ and then returned each time it is asked for.
     >>> class Foo:
     ...     @cachedproperty
     ...     def bar(self):
-    ...         return next(counter)
+    ...         return counter.next()
 
     >>> foo = Foo()
 

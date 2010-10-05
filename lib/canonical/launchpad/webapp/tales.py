@@ -995,6 +995,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
             BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
             BuildStatus.BUILDING: {'src': "/@@/processing"},
+            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
             }
 
@@ -1301,12 +1302,6 @@ class PillarFormatterAPI(CustomizableFormatter):
             html = (u'<a href="%s" class="bg-image" '
                      'style="background-image: url(%s)">%s</a>') % (
                 url, custom_icon, summary)
-        if IProduct.providedBy(context):
-            license_status = context.license_status
-            if license_status != LicenseStatus.OPEN_SOURCE:
-                html = '<span title="%s">%s (%s)</span>' % (
-                        license_status.description, html,
-                        license_status.title)
         return html
 
 

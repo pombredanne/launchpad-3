@@ -147,7 +147,7 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active'), required=True, default=True,
+        title=_('Publicly Visible'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
@@ -362,25 +362,6 @@ class IBuilderSet(Interface):
             and the sum of the jobs 'estimated_duration' in queue,
             as a timedelta or None for empty queues.
         """
-
-    def pollBuilders(logger, txn):
-        """Poll all the builders and take any immediately available actions.
-
-        Specifically this will request a resume if needed, update log tails in
-        the database, copy and process the result of builds.
-
-        :param logger: A logger to use to provide information about the polling
-            process.
-        :param txn: A zopeless transaction object which is currently used by
-            legacy code that we are in the process of removing. DO NOT add
-            additional uses of this parameter.
-        """
-
-    def checkBuilders(logger, txn):
-        """Update the status of all builders and commit."""
-
-    def scanActiveBuilders(logger, txn):
-        """Scan all active builders, updating the current build jobs."""
 
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

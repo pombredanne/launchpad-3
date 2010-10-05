@@ -5,9 +5,10 @@ This page shows a list of available languages for user to translate to in
 a single product series, or instructions on how to set up a series for
 translation.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('foo.bar@canonical.com')
-    >>> frobnicator = factory.makeProduct(name='frobnicator')
-    >>> frobnicator.official_rosetta = True
+    >>> frobnicator = factory.makeProduct(name='frobnicator',
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> frobnicator_trunk = frobnicator.getSeries('trunk')
     >>> frobnicator_trunk_url = canonical_url(
     ...     frobnicator_trunk, rootsite='translations')
@@ -148,7 +149,8 @@ Launchpad Translations.
 
     # Use the raw DB object to bypass the security proxy.
     >>> from lp.registry.model.product import Product
-    >>> Product.byName('bazaar').official_rosetta = False
+    >>> product = Product.byName('bazaar')
+    >>> product.translations_usage = ServiceUsage.NOT_APPLICABLE
 
 When the owner now visits the upload page for trunk, there's a notice.
 

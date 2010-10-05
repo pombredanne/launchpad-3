@@ -16,6 +16,7 @@ __all__ = [
 
 
 from bzrlib.plugins.builder.recipe import (
+    ForbiddenInstructionError,
     RecipeParseError,
     RecipeParser,
     )
@@ -57,9 +58,9 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import (
     BuildAlreadyPending,
-    ForbiddenInstruction,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooNewRecipeFormat
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -326,16 +327,19 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
-        parser = RecipeParser(data['recipe_text'])
-        recipe = parser.parse()
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, data['owner'], data['name'], recipe,
-                    data['description'], data['distros'],
+                    self.user, data['owner'], data['name'],
+                    data['recipe_text'], data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
             Store.of(source_package_recipe).flush()
-        except ForbiddenInstruction:
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+            return
+        except ForbiddenInstructionError:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
                 'recipe_text',
@@ -397,9 +401,14 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
             try:
-                self.context.builder_recipe = recipe
+                self.context.setRecipeText(recipe_text)
                 changed = True
-            except ForbiddenInstruction:
+            except TooNewRecipeFormat:
+                self.setFieldError(
+                    'recipe_text',
+                    'The recipe format version specified is not available.')
+                return
+            except ForbiddenInstructionError:
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',

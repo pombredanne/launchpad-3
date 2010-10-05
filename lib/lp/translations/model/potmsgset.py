@@ -396,6 +396,7 @@ class POTMsgSet(SQLBase):
             query = ["(NOT %s)" % in_use_clause]
         query.append('TranslationMessage.language = %s' % sqlvalues(language))
 
+        # XXX j.c.sackett 2010-08-30 bug=627uct ON
         query.append('''
             potmsgset IN (
                 SELECT POTMsgSet.id
@@ -407,7 +408,7 @@ class POTMsgSet(SQLBase):
                 LEFT JOIN ProductSeries ON
                     POTemplate.productseries = ProductSeries.id
                 LEFT JOIN Product ON
-                    ProductSeries.product = Product.id
+                   ProductSeries.product = Product.id
                 LEFT JOIN DistroSeries ON
                     POTemplate.distroseries = DistroSeries.id
                 LEFT JOIN Distribution ON
@@ -887,9 +888,11 @@ class POTMsgSet(SQLBase):
                         upstream_message.is_current_ubuntu = False
                 return None
             else:
+                # The pofile=pofile is only needed until 10.09 rollout.
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
+                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,

@@ -181,7 +181,7 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -538,7 +538,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(CreateFileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 

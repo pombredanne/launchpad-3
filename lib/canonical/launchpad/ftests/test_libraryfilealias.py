@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-import unittest
 
+import unittest
 import transaction
 from zope.component import getUtility
 
@@ -45,8 +45,3 @@ class TestLibraryFileAlias(unittest.TestCase):
         # the remaining content. If it's reset, the file will be auto-opened
         # and its whole content will be returned.
         self.assertEquals(self.text_content, self.file_alias.read())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -43,8 +43,7 @@ submission and doesn't ignore it.
   ...     u'Found %s invalid files')
   >>> user_browser.getControl(name='submit_translations').click()
 
-We got an error, that means the url should be the same.
-We are still in the same URL, because the system detected an error.
+Because of the error, we're still in on the same page.
 
   >>> print user_browser.url
   http://.../hoary/+source/evo.../+pots/evo...-2.2/es/+translate?start=20
