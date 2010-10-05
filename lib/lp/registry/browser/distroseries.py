@@ -594,17 +594,17 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
         has_edit = check_permission('launchpad.Edit', self.context)
-        if has_edit:
-            diffs_vocabulary = SimpleVocabulary(
-                [SimpleTerm(
-                    difference,
-                    difference.source_package_name.name,
-                    difference.source_package_name.name)
-                    for difference in self.cached_differences.batch])
-            choice = self.form_fields['selected_differences'].field.value_type
-            choice.vocabulary = diffs_vocabulary
 
-    @action(_("Sync sources"), name="sync", validator='validate_sync')
+        terms = [
+            SimpleTerm(diff, diff.source_package_name.name,
+                diff.source_package_name.name)
+                for diff in self.cached_differences.batch]
+        diffs_vocabulary = SimpleVocabulary(terms)
+        choice = self.form_fields['selected_differences'].field.value_type
+        choice.vocabulary = diffs_vocabulary
+
+    @action(_("Sync sources"), name="sync", validator='validate_sync',
+            condition='canPerformSync')
     def sync_sources(self, action, data):
         """Mark the diffs as syncing and request the sync.
 
@@ -629,3 +629,11 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         if len(data.get('selected_differences', [])) == 0:
             self.setFieldError(
                 'selected_differences', 'No differences selected.')
+
+    def canPerformSync(self, *args):
+        """Return whether a sync can be performed.
+
+        This method is used as a condition for the above sync action, as
+        well as directly in the template.
+        """
+        return check_permission('launchpad.Edit', self.context)

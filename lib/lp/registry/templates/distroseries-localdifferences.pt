@@ -50,7 +50,7 @@
                             signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;"
                 tal:attributes="class parent_source_pub/source_package_name">
               <td>
-                <input tal:condition="context/required:launchpad.Edit"
+                <input tal:condition="view/canPerformSync"
                   name="field.selected_differences" type="checkbox"
                   tal:attributes="
                     value src_name;

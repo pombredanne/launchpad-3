@@ -69,40 +69,35 @@ class TestDistroSeriesView(TestCaseWithFactory):
         self.assertEqual(view.needs_linking, None)
 
 
+def set_derived_series_ui_feature_flag(test_case):
+    # Helper to set the feature flag enabling the derived series ui.
+    ignore = getFeatureStore().add(FeatureFlag(
+        scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
+        value=u'on', priority=1))
+
+    # XXX Michael Nelson 2010-09-21 bug=631884
+    # Currently LaunchpadTestRequest doesn't set per-thread
+    # features.
+    def in_scope(value):
+        return True
+    per_thread.features = FeatureController(in_scope)
+
+    def reset_per_thread_features():
+        per_thread.features = None
+    test_case.addCleanup(reset_per_thread_features)
+
+
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
     """Test the distroseries +localpackagediffs view."""
 
-    layer = LaunchpadFunctionalLayer
-
-    def makeDerivedSeries(self, derived_name=None, parent_name=None):
-        # Helper that creates a derived distro series.
-        parent = self.factory.makeDistroSeries(name=parent_name)
-        derived_series = self.factory.makeDistroSeries(
-            name=derived_name, parent_series=parent)
-        return derived_series
-
-    def setDerivedSeriesUIFeatureFlag(self):
-        # Helper to set the feature flag enabling the derived series ui.
-        ignore = getFeatureStore().add(FeatureFlag(
-            scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
-            value=u'on', priority=1))
-
-        # XXX Michael Nelson 2010-09-21 bug=631884
-        # Currently LaunchpadTestRequest doesn't set per-thread
-        # features.
-        def in_scope(value):
-            return True
-        per_thread.features = FeatureController(in_scope)
-
-        def reset_per_thread_features():
-            per_thread.features = None
-        self.addCleanup(reset_per_thread_features)
+    layer = LaunchpadZopelessLayer
 
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
         # view simply redirects to the derived series.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
 
         self.assertIs(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
@@ -116,8 +111,9 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_label(self):
         # The view label includes the names of both series.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
 
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
@@ -130,8 +126,9 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
     def test_batch_includes_needing_attention_only(self):
         # The differences attribute includes differences needing
         # attention only.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         current_difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
         old_difference = self.factory.makeDistroSeriesDifference(
@@ -146,8 +143,9 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_batch_includes_different_versions_only(self):
         # The view contains differences of type DIFFERENT_VERSIONS only.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         different_versions_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
         unique_diff = self.factory.makeDistroSeriesDifference(
@@ -163,10 +161,11 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_template_includes_help_link(self):
         # The help link for popup help is included.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -177,14 +176,15 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_diff_row_includes_last_comment_only(self):
         # The most recent comment is rendered for each difference.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
         difference.addComment(difference.owner, "Earlier comment")
         difference.addComment(difference.owner, "Latest comment")
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -200,12 +200,13 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_diff_row_links_to_extra_details(self):
         # The source package name links to the difference details.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
         soup = BeautifulSoup(view())
@@ -217,90 +218,50 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
 
-    def test_sync_option_for_non_editor(self):
-        # Non-editors do not see options to syncs.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+
+class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_canPerformSync_non_editor(self):
+        # Non-editors do not see options to sync.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
-            soup = BeautifulSoup(view())
 
-        checkbox = soup.find(
-            'input', id='field.selected_differences.%s' % (
-                difference.source_package_name.name))
-        self.assertIs(None, checkbox)
-        button = soup.find('input', id='field.actions.sync')
-        self.assertIs(None, button)
+        self.assertFalse(view.canPerformSync())
 
-    def test_sync_option_for_editor(self):
+    def test_canPerformSync_editor(self):
         # Editors are presented with options to perform syncs.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
-            soup = BeautifulSoup(view())
-
-        checkbox = soup.find(
-            'input', id='field.selected_differences.%s' % (
-                difference.source_package_name.name))
-        self.assertIsNot(None, checkbox)
-        button = soup.find('input', id='field.actions.sync')
-        self.assertEqual(
-            "Sync selected Lucid versions into Derilucid",
-            button['value'])
-
-    def test_selected_differences_field_for_non_editor(self):
-        # Non-editors do not get a selected_differences field
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
-        difference = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series)
-
-        self.setDerivedSeriesUIFeatureFlag()
-        with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs')
-
-        self.assertIs(None, view.widgets.get('selected_differences'))
-
-    def test_selected_differences_field_for_editor(self):
-        # Editors see a selected diffs field with the correct
-        # vocabulary.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
-        difference = self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series)
-
-        self.setDerivedSeriesUIFeatureFlag()
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs')
-
-        widget = view.widgets['selected_differences']
-        self.assertEqual(
-            ['my-src-name'],
-            widget.vocabulary.by_token.keys())
+            self.assertTrue(view.canPerformSync())
 
     def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs',
@@ -322,13 +283,14 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs',
@@ -343,13 +305,14 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
-        derived_series = self.makeDerivedSeries(
-            parent_name='lucid', derived_name='derilucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
 
-        self.setDerivedSeriesUIFeatureFlag()
+        set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs',
