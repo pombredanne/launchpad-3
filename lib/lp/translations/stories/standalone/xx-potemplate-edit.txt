@@ -43,7 +43,7 @@ The owner of a product has access to edit page for PO templates.
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/+edit')
     >>> print browser.url
-    http://translations..../evolution/trunk/+pots/evolution-2.2/+edit
+    http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
 Owner will not see admin fields, only those fields designated for the
 edit page.
