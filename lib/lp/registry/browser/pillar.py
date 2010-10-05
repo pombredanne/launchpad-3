@@ -31,8 +31,8 @@ from canonical.launchpad.webapp.publisher import (
     )
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
-    ServiceUsage,
     service_uses_launchpad,
+    ServiceUsage,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.registry.browser.structuralsubscription import (
@@ -43,7 +43,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 
 
@@ -113,24 +112,18 @@ class PillarView(LaunchpadView):
         self.translations_usage = ServiceUsage.UNKNOWN
         self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
-        if IProjectGroup.providedBy(pillar):
-            for product in pillar.products:
-                self._set_official_launchpad(product)
-            # Project groups do not support submit code, override the
-            # default.
-            self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
+
+        self._set_official_launchpad(pillar)
+        if IDistroSeries.providedBy(self.context):
+            distribution = self.context.distribution
+            self.codehosting_usage = distribution.codehosting_usage
+            self.answers_usage = ServiceUsage.NOT_APPLICABLE
+        elif IDistributionSourcePackage.providedBy(self.context):
+            self.blueprints_usage = ServiceUsage.UNKNOWN
+            self.translations_usage = ServiceUsage.UNKNOWN
         else:
-            self._set_official_launchpad(pillar)
-            if IDistroSeries.providedBy(self.context):
-                distribution = self.context.distribution
-                self.codehosting_usage = distribution.codehosting_usage
-                self.answers_usage = ServiceUsage.NOT_APPLICABLE
-            elif IDistributionSourcePackage.providedBy(self.context):
-                self.blueprints_usage = ServiceUsage.UNKNOWN
-                self.translations_usage = ServiceUsage.UNKNOWN
-            else:
-                # The context is used by all apps.
-                pass
+            # The context is used by all apps.
+            pass
 
     def _set_official_launchpad(self, pillar):
         """Does the pillar officially use launchpad."""

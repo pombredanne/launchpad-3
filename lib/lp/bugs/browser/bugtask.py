@@ -163,12 +163,6 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from lp.app.interfaces.launchpad import IServiceUsage
-from lp.app.browser.tales import (
-    FormattersAPI,
-    ObjectImageDisplayAPI,
-    PersonFormatterAPI,
-    )
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
 from canonical.widgets.bug import BugTagsWidget
@@ -189,11 +183,17 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.tales import (
+    FormattersAPI,
+    ObjectImageDisplayAPI,
+    PersonFormatterAPI,
+    )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,
@@ -2454,7 +2454,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
 
-    @property
+    @cachedproperty
     def bug_tracking_usage(self):
         """Whether the context tracks bugs in launchpad.
 

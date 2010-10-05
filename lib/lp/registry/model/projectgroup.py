@@ -52,7 +52,9 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import QuestionTargetSearch
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -486,6 +488,54 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
 
         return ProjectGroupSeries(self, series_name)
+
+    def _get_usage(self, attr):
+        """Determine ProjectGroup usage based on individual projects.
+
+        By default, return ServiceUsage.UNKNOWN.
+        If any project uses Launchpad, return ServiceUsage.LAUNCHPAD.
+        Otherwise, return the ServiceUsage of the last project that was
+        not ServiceUsage.UNKNOWN.
+        """
+        result = ServiceUsage.UNKNOWN
+        for product in self.products:
+            product_usage = getattr(product, attr)
+            if product_usage != ServiceUsage.UNKNOWN:
+                result = product_usage
+                if product_usage == ServiceUsage.LAUNCHPAD:
+                    break
+        return result
+
+    @property
+    def answers_usage(self):
+        return self._get_usage('answers_usage')
+
+    @property
+    def blueprints_usage(self):
+        return self._get_usage('blueprints_usage')
+
+    @property
+    def translations_usage(self):
+        return self._get_usage('translations_usage')
+
+    @property
+    def codehosting_usage(self):
+        # Project groups do not support submitting code.
+        return ServiceUsage.NOT_APPLICABLE
+
+    @property
+    def bug_tracking_usage(self):
+        return self._get_usage('bug_tracking_usage')
+
+    @property
+    def uses_launchpad(self):
+        if (self.answers_usage == ServiceUsage.LAUNCHPAD
+            or self.blueprints_usage == ServiceUsage.LAUNCHPAD
+            or self.translations_usage == ServiceUsage.LAUNCHPAD
+            or self.codehosting_usage == ServiceUsage.LAUNCHPAD
+            or self.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return True
+        return False
 
 
 class ProjectGroupSet:
