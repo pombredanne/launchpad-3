@@ -57,7 +57,9 @@ from lp.code.model.diff import (
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     BrowserTestCase,
+    feature_flags,
     login_person,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -612,6 +614,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
                 old_revision=revisions[1].revision.getLefthandParent(),
                 new_revision=revisions[3].revision)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
         view = create_initialized_view(bmp, '+index')
         comments = view.conversation.comments
         self.assertEqual(
@@ -836,6 +840,8 @@ class TestBranchMergeProposal(BrowserTestCase):
             self.factory.getUniqueDate()).revision
         diff = self.factory.makeDiff()
         bmp.generateIncrementalDiff(parent, revision, diff)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 

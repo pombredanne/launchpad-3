@@ -120,6 +120,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -638,8 +639,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         source = DecoratedBranch(merge_proposal.source_branch)
         comments = [CodeReviewNewRevisions(list(revisions), date, source)
             for date, revisions in groups]
-        diffs = merge_proposal.getCurrentIncrementalDiffs()
-        comments.extend(IncrementalDiffComment(diff) for diff in diffs)
+        if getFeatureFlag('code.incremental_diffs.enabled'):
+            diffs = merge_proposal.getCurrentIncrementalDiffs()
+            comments.extend(IncrementalDiffComment(diff) for diff in diffs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
