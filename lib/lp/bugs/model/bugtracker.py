@@ -739,11 +739,20 @@ class BugTrackerComponent(Storm):
     is_visible = Bool(allow_none=False)
     is_custom = Bool(allow_none=False)
 
-    distro_source_package_id = Int('distro_source_package')
-    distro_source_package = Reference(
-        distro_source_package_id,
-        'DistributionSourcePackageInDatabase.id')
+    distribution_id = Int('distribution')
+    distribution = Reference(
+        distribution_id,
+        'Distribution.id')
 
+    source_package_name_id = Int('source_package_name')
+    source_package_name = Reference(
+        source_package_name_id,
+        'SourcePackageName.id')
+
+    def linkDistroSourcePackage(self, distro_source_package):
+        """Links this component to its corresponding source package"""
+        distribution = distro_source_package.distribution
+        source_package_name = distro_source_package.source_package_name
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.

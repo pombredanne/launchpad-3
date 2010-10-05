@@ -363,6 +363,7 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    @export_read_operation()
     def getAllRemoteComponentGroups():
         """Return collection of all component groups for this bug tracker"""
 
@@ -517,14 +518,28 @@ class IBugTrackerComponent(Interface):
             description=_('The name of a software component'
                           'in a remote bug tracker')))
 
-# XXX: Bug 644794 will implement this link
-#    distro_source_package = exported(
-#        Reference(
-#            title=_('Distribution Source Package'),
-#            schema=Interface,
-#            description=_('The distribution source package for this '
-#                          'component, if one has been defined.')))
+    distribution = exported(
+        Reference(
+            title=_('Distribution'),
+            schema=Interface,
+            description=_('The distribution this component is associated '
+                          'with in launchpad, if one has been defined.')))
 
+    source_package = exported(
+        Reference(
+            title=_('Source Package'),
+            schema=Interface,
+            description=_('The source package this component is associated '
+                          'with in launchpad, if one has been defined.')))
+
+    @operation_parameters(
+        component_name=TextLine(
+            title=_("The distribution source package object that should be "
+                    "linked to this component."),
+            required=True))
+    @export_write_operation()
+    def linkDistroSourcePackage(distro_source_package):
+        """Associate the given distribution source package"""
 
 class IBugTrackerComponentGroup(Interface):
     """A collection of components in a remote bug tracker.
