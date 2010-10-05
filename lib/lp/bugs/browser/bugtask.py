@@ -712,9 +712,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
         # bug page would raise Unauthorized errors!
         if self._redirecting_to_bug_list:
             return u''
-        elif self._isSubscriptionRequest() and self.request.get('next_url'):
-            self.request.response.redirect(self.request.get('next_url'))
-            return u''
         else:
             return LaunchpadView.render(self)
 
