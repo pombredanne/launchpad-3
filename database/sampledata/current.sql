@@ -5115,6 +5115,81 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
 
 
+ALTER TABLE lp_openididentifier DISABLE TRIGGER ALL;
+
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6KHNEe3', 2436141, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6w7kmzC', 2436091, '2007-12-07 13:43:20.393704');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('CALDpFr', 2436171, '2008-03-06 09:55:27.289842');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('GMX7shE', 2436242, '2009-03-17 07:26:14.024613');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('MGWJnTL', 2436111, '2007-12-14 16:52:15.403833');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('R8FpwXd', 2436161, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('WQPMHdf', 2436081, '2007-11-12 15:23:19.847132');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('andrelop_oid', 431, '2005-06-06 08:59:51.561685');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('barbier_oid', 421, '2005-06-06 08:59:51.560604');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-importer_oid', 581, '2005-12-06 09:48:58.287679');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-watch-updater_oid', 621, '2006-05-23 12:49:30.483464');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cCGE3LA', 2436101, '2007-12-14 16:52:15.403833');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cF4PNk3', 2436241, '2008-11-04 12:59:26.965843');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('callipeo_oid', 401, '2005-06-06 08:59:51.558429');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('carlos_oid', 131, '2005-06-06 08:59:51.615543');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cprov_oid', 281, '2005-06-06 08:59:51.59705');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('daf_oid', 141, '2005-06-06 08:59:51.616666');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('danner_oid', 371, '2005-06-06 08:59:51.549651');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('ddaa_oid', 231, '2005-06-06 08:59:51.620823');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('debonzi_oid', 271, '2005-06-06 08:59:51.557224');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('edgar_oid', 331, '2005-06-06 08:59:51.621892');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('former-user_oid', 701, '2006-12-13 21:19:06.369142');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jblack_oid', 81, '2005-06-06 08:59:51.601584');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jdub_oid', 61, '2005-06-06 08:59:51.600523');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jordi_oid', 561, '2005-10-07 14:17:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jorge-gonzalez-gonzalez_oid', 411, '2005-06-06 08:59:51.559519');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('justdave_oid', 31, '2005-06-06 08:59:51.610048');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jvprat_oid', 341, '2005-06-06 08:59:51.622908');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kYFxQYP', 2436243, '2009-08-04 10:50:39.383407');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kamion_oid', 41, '2005-06-06 08:59:51.611185');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('karl_oid', 631, '2006-05-23 12:49:30.483464');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kebil_oid', 491, '2005-06-06 08:59:51.568323');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('keybuk_oid', 51, '2005-06-06 08:59:51.608802');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kiko_oid', 91, '2005-06-06 08:59:51.594941');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kinnison_oid', 261, '2005-06-06 08:59:51.618722');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kreutzm_oid', 511, '2005-06-06 08:59:51.570701');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kurem_oid', 461, '2005-06-06 08:59:51.565033');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-beta-owner_oid', 681, '2007-01-31 06:56:25.096519');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-janitor_oid', 651, '2006-10-04 16:20:51.19954');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('lifeless_oid', 21, '2005-06-06 08:59:51.598107');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('limi_oid', 101, '2005-06-06 08:59:51.619713');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('luk-claes_oid', 451, '2005-06-06 08:59:51.563952');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mTmeENb', 2436231, '2008-06-27 14:49:11.149508');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('marilize_oid', 551, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mark_oid', 11, '2005-06-06 08:59:51.591618');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('martin-pitt_oid', 381, '2005-06-06 08:59:51.555051');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('matsubara_oid', 661, '2006-12-13 21:19:06.369142');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('morten_oid', 471, '2005-06-06 08:59:51.56614');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mpo_oid', 481, '2005-06-06 08:59:51.567224');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name12_oid', 121, '2005-06-06 08:59:51.612277');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name16_oid', 161, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('neMCQNd', 2436061, '2007-08-09 21:25:37.832976');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-priv_oid', 521, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-team-memberships_oid', 2436021, '2007-02-19 11:17:57.755666');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('nsv_oid', 391, '2005-06-06 08:59:51.556132');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('one-membership_oid', 2436031, '2007-02-21 10:53:59.700105');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('rPwGRk4', 2436221, '2008-05-12 17:38:38.798696');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('salgado_oid', 291, '2005-06-06 08:59:51.596025');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('sigurd-ubuntu_oid', 351, '2005-06-06 08:59:51.623962');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('skacel_oid', 361, '2005-06-06 08:59:51.5244');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('spiv_oid', 71, '2005-06-06 08:59:51.551196');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stevea_oid', 111, '2005-06-06 08:59:51.599234');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stub_oid', 221, '2005-06-06 08:59:51.59276');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('team-membership-janitor_oid', 671, '2006-10-04 16:20:51.19954');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('tsukimi_oid', 501, '2005-06-06 08:59:51.569518');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('valyag_oid', 441, '2005-06-06 08:59:51.562857');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('yEzBPbd', 2436151, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('zRtPxw8', 243637, '2010-07-12 09:48:27.198885');
+
+
+ALTER TABLE lp_openididentifier ENABLE TRIGGER ALL;
+
+
 ALTER TABLE lp_personlocation DISABLE TRIGGER ALL;
 
 INSERT INTO lp_personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified, visible, locked) VALUES (1, '2007-06-05 18:34:52.127945', 12, NULL, NULL, 'Australia/Perth', 12, '2007-06-05 18:34:52.127945', true, false);
