@@ -32,7 +32,7 @@ from canonical.launchpad.database import (
     PackageUploadBuild,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.ftests.harness import (
+from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
     )

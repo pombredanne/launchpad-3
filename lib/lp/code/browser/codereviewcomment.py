@@ -26,7 +26,7 @@ from zope.schema import Text
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -243,7 +243,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             comment = ''
         return {'comment': comment}
-
 
     @property
     def is_reply(self):
