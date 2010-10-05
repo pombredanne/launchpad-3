@@ -858,13 +858,13 @@ with different verbose_bugnotifications settings.
     ...     displayname='Verbose Person', email='verbose@example.com')
     >>> verbose_person.verbose_bugnotifications = True
     >>> bug.subscribe(verbose_person, verbose_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> concise_person = factory.makePerson(
     ...     displayname='Concise Person', email='concise@example.com')
     >>> concise_person.verbose_bugnotifications = False
     >>> bug.subscribe(concise_person, concise_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 
 Concise Team doesn't want verbose notifications, while Concise Team
@@ -880,7 +880,7 @@ Person, a member, does.
     >>> ignored = concise_team.addMember(
     ...     concise_team_person, concise_team_person)
     >>> bug.subscribe(concise_team, concise_team_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 Verbose Team wants verbose notifications, while Verbose Team Person, a
 member, does not.
@@ -895,7 +895,7 @@ member, does not.
     >>> ignored = verbose_team.addMember(
     ...     verbose_team_person, verbose_team_person)
     >>> bug.subscribe(verbose_team, verbose_team_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
 We'll expire all existing notifications since we're not interested in
 them:

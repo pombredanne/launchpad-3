@@ -369,6 +369,39 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             ds_diff.status)
 
+    def test_unblacklist(self):
+        # Unblacklisting will return to NEEDS_ATTENTION by default.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        with person_logged_in(ds_diff.owner):
+            ds_diff.unblacklist()
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_unblacklist_resolved(self):
+        # Status is resolved when unblacklisting a now-resolved difference.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'derived': '0.9',
+                'parent': '1.0',
+                },
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+
+        with person_logged_in(ds_diff.owner):
+            ds_diff.unblacklist()
+
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED,
+            ds_diff.status)
+
     def test_source_package_name_unique_for_derived_series(self):
         # We cannot create two differences for the same derived series
         # for the same package.

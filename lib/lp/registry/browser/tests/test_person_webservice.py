@@ -14,6 +14,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class TestPersonRepresentation(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -88,7 +88,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
@@ -165,6 +165,7 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
 
 def notify(func):
     """Decorate a view method to send a notification."""
+
     def decorator(view, *args, **kwargs):
         snapshot = BranchMergeProposalDelta.snapshot(view.context)
         result = func(view, *args, **kwargs)
@@ -175,6 +176,7 @@ def notify(func):
 
 def update_and_notify(func):
     """Decorate an action to update from a form and send a notification."""
+
     @notify
     def decorator(view, action, data):
         result = func(view, action, data)
@@ -190,15 +192,15 @@ class BranchMergeCandidateView(LaunchpadView):
     def friendly_text(self):
         """Prints friendly text for a branch."""
         friendly_texts = {
-            BranchMergeProposalStatus.WORK_IN_PROGRESS : 'On hold',
-            BranchMergeProposalStatus.NEEDS_REVIEW : 'Ready for review',
-            BranchMergeProposalStatus.CODE_APPROVED : 'Approved',
-            BranchMergeProposalStatus.REJECTED : 'Rejected',
-            BranchMergeProposalStatus.MERGED : 'Merged',
-            BranchMergeProposalStatus.MERGE_FAILED :
+            BranchMergeProposalStatus.WORK_IN_PROGRESS: 'On hold',
+            BranchMergeProposalStatus.NEEDS_REVIEW: 'Ready for review',
+            BranchMergeProposalStatus.CODE_APPROVED: 'Approved',
+            BranchMergeProposalStatus.REJECTED: 'Rejected',
+            BranchMergeProposalStatus.MERGED: 'Merged',
+            BranchMergeProposalStatus.MERGE_FAILED:
                 'Approved [Merge Failed]',
-            BranchMergeProposalStatus.QUEUED : 'Queued',
-            BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
+            BranchMergeProposalStatus.QUEUED: 'Queued',
+            BranchMergeProposalStatus.SUPERSEDED: 'Superseded',
         }
         return friendly_texts[self.context.queue_status]
 
@@ -1468,6 +1470,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
 def text_xhtml_representation(context, field, request):
     """Render an `IText` as XHTML using the webservice."""
     formatter = FormattersAPI
+
     def renderer(value):
         nomail = formatter(value).obfuscate_email()
         html = formatter(nomail).text_to_html()
