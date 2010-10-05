@@ -61,11 +61,11 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
-    IMasterStore,
     )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

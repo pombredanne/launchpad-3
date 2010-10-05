@@ -9,7 +9,7 @@
     i18n_domain="launchpad">
 
     <!-- Message -->
-    <class class="canonical.launchpad.database.Message">
+    <class class="canonical.launchpad.database.message.Message">
         <allow interface="canonical.launchpad.interfaces.message.IMessage" />
         <require
             permission="zope.Public"
@@ -22,13 +22,13 @@
     </class>
 
     <!-- MessageChunk -->
-    <class class="canonical.launchpad.database.MessageChunk">
+    <class class="canonical.launchpad.database.message.MessageChunk">
         <allow interface="canonical.launchpad.interfaces.message.IMessageChunk" />
     </class>
 
   <!-- MessageSet -->
   <securedutility
-      class="canonical.launchpad.database.MessageSet"
+      class="canonical.launchpad.database.message.MessageSet"
       provides="canonical.launchpad.interfaces.message.IMessageSet">
       <allow interface="canonical.launchpad.interfaces.message.IMessageSet" />
   </securedutility>

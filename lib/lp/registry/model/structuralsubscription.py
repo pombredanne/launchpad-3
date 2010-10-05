@@ -34,6 +34,10 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.errors import (
+    DeleteSubscriptionError,
+    UserCannotSubscribePerson,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -49,11 +53,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel,
-    DeleteSubscriptionError,
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
-    UserCannotSubscribePerson,
     )
 from lp.services.propertycache import cachedproperty
 
