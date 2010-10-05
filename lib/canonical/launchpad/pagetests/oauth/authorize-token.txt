@@ -47,9 +47,12 @@ it involves OpenID, which would complicate this test quite a bit.)
 This page contains one submit button for each item of OAuthPermission,
 except for 'Desktop Integration', which must be specifically requested.
 
-    >>> actions = main_content.findAll('input', type='submit')
-    >>> for action in actions:
-    ...     print action['value']
+    >>> def print_access_levels(main_content):
+    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
+    ...     for action in actions:
+    ...         print action['value']
+
+    >>> print_access_levels(main_content)
     No Access
     Read Non-Private Data
     Change Non-Private Data
@@ -57,6 +60,7 @@ except for 'Desktop Integration', which must be specifically requested.
     Change Anything
 
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> len(actions) == len(OAuthPermission.items) - 1
     True
 
@@ -72,13 +76,11 @@ to deny permission altogether.
     ...         % (urlencode(params), allow_permission))
     ...     return find_tag_by_id(browser.contents, 'maincontent')
 
-    >>> def print_access_levels(allow_permission):
+    >>> def print_access_levels_for(allow_permission):
     ...     main_content = authorize_token_main_content(allow_permission)
-    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
-    ...     for action in actions:
-    ...         print action['value']
+    ...     print_access_levels(main_content)
 
-    >>> print_access_levels(
+    >>> print_access_levels_for(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
     No Access
     Change Non-Private Data
@@ -88,14 +90,14 @@ If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
 access levels, except for DESKTOP_INTEGRATION.
 
-    >>> print_access_levels('')
+    >>> print_access_levels_for('')
     No Access
     Read Non-Private Data
     Change Non-Private Data
     Read Anything
     Change Anything
 
-    >>> print_access_levels('allow_permission=UNAUTHORIZED')
+    >>> print_access_levels_for('allow_permission=UNAUTHORIZED')
     No Access
     Read Non-Private Data
     Change Non-Private Data
@@ -299,11 +301,11 @@ list of permissions is if the client specifically requests it, and no
 other permission. (Also requesting UNAUTHORIZED is okay--it will show
 up anyway.)
 
-    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
+    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
     Give all programs running on "mycomputer" access to my Launchpad account.
     No, thanks, I don't trust "mycomputer".
 
-    >>> print_access_levels(
+    >>> print_access_levels_for(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
     Give all programs running on "mycomputer" access to my Launchpad account.
     No, thanks, I don't trust "mycomputer".
@@ -312,13 +314,13 @@ A desktop may not request a level of access other than
 DESKTOP_INTEGRATION, since the whole point is to have a permission
 level that specifically applies across the entire desktop.
 
-    >>> print_access_levels('allow_permission=WRITE_PRIVATE')
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
     Traceback (most recent call last):
     ...
     Unauthorized: Desktop integration token requested a permission
     ("Change Anything") not supported for desktop-wide use.
 
-    >>> print_access_levels(
+    >>> print_access_levels_for(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
     Traceback (most recent call last):
     ...
@@ -330,7 +332,7 @@ token, since callback URLs should only be used when integrating
 websites into Launchpad.
 
     >>> params['oauth_callback'] = 'http://launchpad.dev/bzr'
-    >>> print_access_levels('allow_permission=DESKTOP_INTEGRATION')
+    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
     Traceback (most recent call last):
     ...
     Unauthorized: A desktop integration may not specify an OAuth
@@ -339,7 +341,7 @@ websites into Launchpad.
 This is true even if the desktop token isn't asking for the
 DESKTOP_INTEGRATION permission.
 
-    >>> print_access_levels('allow_permission=WRITE_PRIVATE')
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
     Traceback (most recent call last):
     ...
     Unauthorized: A desktop integration may not specify an OAuth
