@@ -20,7 +20,7 @@ class LinkCheckerAPI:
     def __call__(self):
 
         result = {}
-        links_to_check_data = self.request.get('link_href')
+        links_to_check_data = self.request.get('link_hrefs')
         links_to_check = simplejson.loads(links_to_check_data)
         invalid_links = []
         for link in links_to_check:
