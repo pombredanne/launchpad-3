@@ -8,7 +8,7 @@ In order to prepare the tests below some initialization is required.
     >>> from canonical.launchpad.interfaces import (
     ...     IArchivePermissionSet, IPackagesetSet,
     ...     IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> insecure_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')

@@ -28,7 +28,7 @@ from twisted.web import server
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     TwistedLayer,
     )

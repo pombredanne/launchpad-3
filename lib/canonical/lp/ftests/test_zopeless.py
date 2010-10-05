@@ -16,7 +16,7 @@ from sqlobject import StringCol, IntCol
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import LaunchpadScriptLayer
+from canonical.testing.layers import LaunchpadScriptLayer
 
 
 class MoreBeer(SQLBase):

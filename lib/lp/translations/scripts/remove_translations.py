@@ -22,7 +22,6 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import IPersonSet
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -84,6 +83,9 @@ def get_id(identifier, lookup_function=None):
 
 def get_person_id(name):
     """`get_id` helper.  Look up person by name."""
+    # XXX sinzui 2010-10-04 bug=654537: Account and EmailAddress cause cyclic
+    # imports because they are not in the lp tree.
+    from lp.registry.interfaces.person import IPersonSet
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
         return None
@@ -219,7 +221,7 @@ class RemoveTranslations(LaunchpadScript):
             help="Override safety check on moderately unsafe action."),
         ExtendedOption(
             '-d', '--dry-run', action='store_true', dest='dry_run',
-            help="Go through the motions, but don't really delete.")
+            help="Go through the motions, but don't really delete."),
         ]
 
     def add_my_options(self):
@@ -309,7 +311,7 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, 
+def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
                         is_current=None, is_imported=None,
