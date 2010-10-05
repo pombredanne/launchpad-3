@@ -105,7 +105,7 @@ First, we create some bug watches to test with:
 
     >>> from datetime import datetime
     >>> from pytz import utc
-    >>> from canonical.launchpad.database import BugTracker
+    >>> from lp.bugs.model.bugtracker import BugTracker
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IBugSet)
     >>> from lp.bugs.scripts.checkwatches import (

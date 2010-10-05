@@ -445,6 +445,36 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'The bzr-builder instruction "run" is not permitted here.')
 
+    def test_edit_recipe_format_too_new(self):
+        # If the recipe's format version is too new, we should notify the
+        # user.
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch])
+
+        new_recipe_text = dedent(u'''\
+            # bzr-builder format 145.115 deb-version 0+{revno}
+            %s
+            ''') % recipe.base_branch.bzr_identity
+
+        with recipe_parser_newest_version(145.115):
+            browser = self.getViewBrowser(recipe)
+            browser.getLink('Edit recipe').click()
+            browser.getControl('Recipe text').value = new_recipe_text
+            browser.getControl('Update Recipe').click()
+
+            self.assertEqual(
+                get_message_text(browser, 1),
+                'The recipe format version specified is not available.')
+
     def test_edit_recipe_already_exists(self):
         self.factory.makeDistroSeries(
             displayname='Mumbly Midget', name='mumbly',
