@@ -29,6 +29,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.textwidgets import URIWidget
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugwatch import (
     BUG_WATCH_ACTIVITY_SUCCESS_STATUSES,
     IBugWatch,
@@ -131,7 +132,9 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return len(self.context.bugtasks) == 0
+        return (
+            len(self.context.bugtasks) == 0 and
+            self.context.getImportedBugMessages().is_empty())
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):

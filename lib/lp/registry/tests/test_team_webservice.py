@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import httplib
 import unittest
 
 from lazr.restfulclient.errors import HTTPError
@@ -44,7 +45,7 @@ class TestTeamLinking(TestCaseWithFactory):
             team_one.addMember,
             person=team_two)
         self.assertIn('Cannot link person', api_error.content)
-        self.assertEqual(400, api_error.response.status)
+        self.assertEqual(httplib.FORBIDDEN, api_error.response.status)
 
 
 def test_suite():
