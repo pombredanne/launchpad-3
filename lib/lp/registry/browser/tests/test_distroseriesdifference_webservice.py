@@ -59,3 +59,41 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
+
+    def test_unblacklist_not_public(self):
+        # The unblacklist method is not publically available.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(), ds_diff)
+
+        self.assertRaises(Unauthorized, ws_diff.unblacklist)
+
+    def test_unblacklist(self):
+        # The unblacklist method can be called by people with edit access.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        result = ws_diff.unblacklist()
+        transaction.commit()
+
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        ds_diff = utility.getByDistroSeriesAndName(
+            ds_diff.derived_series, ds_diff.source_package_name.name)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_addComment(self):
+        # Comments can be added via the API
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        result = ws_diff.addComment(comment='Hey there')
+
+        self.assertEqual('Hey there', result['body_text'])
+        self.assertTrue(
+            result['resource_type_link'].endswith(
+                '#distro_series_difference_comment'))

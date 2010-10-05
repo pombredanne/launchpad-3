@@ -78,7 +78,7 @@ IBug.getDirectSubscribers().
     >>> mark = personset.getByName("mark")
 
     >>> linux_source_bug.subscribe(mark, mark)
-    <BugSubscription ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -527,7 +527,7 @@ be unsubscribed from dupes.
     False
 
     >>> bug_six.subscribe(sample_person, sample_person)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription...>
 
     >>> bug_five.isSubscribedToDupes(sample_person)
     True
@@ -858,7 +858,7 @@ subscriptions themselves, rather than the subscribers.
     ...     owner=mark)
     >>> ff_bug = firefox.createBug(params)
     >>> ff_bug.subscribe(lifeless, mark)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getDirectSubscriptions():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
@@ -873,10 +873,10 @@ subscriptions themselves, rather than the subscribers.
     >>> dupe_ff_bug.markAsDuplicate(ff_bug)
     >>> dupe_ff_bug.syncUpdate()
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
     ...     print '%s (%s)' % (
     ...         subscription.person.displayname,
     ...         subscription.display_duplicate_subscribed_by)
-    Foo Bar (Subscribed to bug 28 by Robert Collins)
     Scott James Remnant (Self-subscribed to bug 28)
+    Foo Bar (Subscribed to bug 28 by Robert Collins)

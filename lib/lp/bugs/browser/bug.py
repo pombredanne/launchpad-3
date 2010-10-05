@@ -455,10 +455,10 @@ class BugViewMixin:
         """
         if IBug.providedBy(self.context):
             dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
+            return set(sub.person for sub in dupe_subs)
         elif IBugTask.providedBy(self.context):
             dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
+            return set(sub.person for sub in dupe_subs)
         else:
             raise NotImplementedError(
                 'duplicate_subscribers is not implemented for %s' % self)

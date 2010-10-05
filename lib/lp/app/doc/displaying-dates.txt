@@ -39,7 +39,7 @@ timestamp.
 
     >>> fixed_time_utc = datetime(2005, 12, 25, 12, 0, 0, tzinfo=UTC)
     >>> fixed_time = datetime(2005, 12, 25, 12, 0, 0)
-    >>> from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+    >>> from lp.app.browser.tales import DateTimeFormatterAPI
     >>> class TestDateTimeFormatterAPI(DateTimeFormatterAPI):
     ...     def _now(self):
     ...         if self._datetime.tzinfo:
