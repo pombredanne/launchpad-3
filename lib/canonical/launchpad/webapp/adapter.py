@@ -171,7 +171,7 @@ def set_request_started(
     if request_statements is not None:
         # Specify a specific sequence object for the timeline.
         set_request_timeline(request, Timeline(request_statements))
-    else: 
+    else:
         # Ensure a timeline is created, so that time offset for actions is
         # reasonable.
         set_request_timeline(request, Timeline())
@@ -276,7 +276,7 @@ def set_permit_timeout_from_features(enabled):
 
 def _get_request_timeout(timeout=None):
     """Get the timeout value in ms for the current request.
-    
+
     :param timeout: A custom timeout in ms.
     :return None or a time in ms representing the budget to grant the request.
     """
@@ -586,6 +586,8 @@ class LaunchpadStatementTracer:
 
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
+        self._debug_sql_bind_values = bool(
+            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
@@ -594,7 +596,15 @@ class LaunchpadStatementTracer:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
         if self._debug_sql or self._debug_sql_extra:
-            sys.stderr.write(statement + "\n")
+            stmt_to_log = statement
+            if self._debug_sql_bind_values:
+                from storm.variables import Variable
+                param_strings = [
+                    (lambda x:
+                        x.get() if isinstance(x, Variable) else str(x))(p)
+                    for p in params]
+                stmt_to_log = statement % tuple(param_strings)
+            sys.stderr.write(stmt_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
