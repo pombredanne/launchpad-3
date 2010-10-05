@@ -482,9 +482,12 @@ class MemcachedLayer(BaseLayer):
     # memcached.
     _memcached_process = None
 
+    _is_setup = False
+
     @classmethod
     @profiled
     def setUp(cls):
+        cls._is_setup = True
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
         if (BaseLayer.persist_test_services and
@@ -531,6 +534,9 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
         if not BaseLayer.persist_test_services:
@@ -568,9 +574,12 @@ class LibrarianLayer(BaseLayer):
     """
     _reset_between_tests = True
 
+    _is_setup = False
+
     @classmethod
     @profiled
     def setUp(cls):
+        cls._is_setup = True
         if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests changed before LibrarianLayer "
@@ -584,6 +593,9 @@ class LibrarianLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests not reset before LibrarianLayer "
@@ -680,9 +692,12 @@ class DatabaseLayer(BaseLayer):
     # Database.force_dirty_database() when you do so.
     _reset_between_tests = True
 
+    _is_setup = False
+
     @classmethod
     @profiled
     def setUp(cls):
+        cls._is_setup = True
         DatabaseLayer.force_dirty_database()
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
@@ -695,6 +710,9 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
         # in test_layers.py
