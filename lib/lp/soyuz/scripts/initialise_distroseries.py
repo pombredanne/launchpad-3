@@ -185,7 +185,8 @@ class InitialiseDistroSeries:
         spns = []
         if self.packagesets:
             for pkgsetname in self.packagesets:
-                pkgset = getUtility(IPackagesetSet).getByName(pkgsetname)
+                pkgset = getUtility(IPackagesetSet).getByName(
+                    pkgsetname, distroseries=self.parent)
                 spns += list(pkgset.getSourcesIncluded())
 
         for archive in self.parent.distribution.all_distro_archives:
@@ -212,7 +213,7 @@ class InitialiseDistroSeries:
                 distroarchseries_list = ()
             getUtility(IPackageCloner).clonePackages(
                 origin, destination, distroarchseries_list,
-                proc_families, spns)
+                proc_families, spns, self.rebuild)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent
