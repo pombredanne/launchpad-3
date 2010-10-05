@@ -115,38 +115,36 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         return is_intltool_structure(bzr_branch.basis_tree())
 
     @classmethod
-    def generatesTemplates(cls, branch, logger=None):
+    def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         if branch.private:
             # We don't support generating template from private branches
             # at the moment.
-            if logger is not None:
-                logger.debug("Branch %s is private." % branch.unique_name)
+            logger.debug("Branch %s is private.", branch.unique_name)
             return False
 
         utility = getUtility(IRosettaUploadJobSource)
         if not utility.providesTranslationFiles(branch):
             # Nobody asked for templates generated from this branch.
-            if logger is not None:
-                logger.debug(
-                    "No templates requested for branch %s." %
+            logger.debug(
+                    "No templates requested for branch %s.",
                     branch.unique_name)
             return False
 
         if not cls._hasPotteryCompatibleSetup(branch):
             # Nothing we could do with this branch if we wanted to.
-            if logger is not None:
-                logger.debug(
-                    "Branch %s is not pottery-compatible." %
-                    branch.unique_name)
+            logger.debug(
+                "Branch %s is not pottery-compatible.", branch.unique_name)
             return False
 
         # Yay!  We made it.
         return True
 
     @classmethod
-    def create(cls, branch, logger=None):
+    def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
         # default processor architecture.  This stops the buildfarm from
         # accidentally dispatching the jobs to private builders.
@@ -156,14 +154,12 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
         build = getUtility(ITranslationTemplatesBuildSource).create(
             build_farm_job, branch)
-        if logger is not None:
-            logger.debug(
-                "Made BuildFarmJob %s, TranslationTemplatesBuild %s." % (
-                    build_farm_job.id, build.id))
+        logger.debug(
+            "Made BuildFarmJob %s, TranslationTemplatesBuild %s.",
+            build_farm_job.id, build.id)
 
         specific_job = build.makeJob()
-        if logger is not None:
-            logger.debug("Made %s." % specific_job)
+        logger.debug("Made %s.", specific_job)
 
         duration_estimate = cls.duration_estimate
 
@@ -173,8 +169,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             job=specific_job.job, processor=processor)
         IMasterStore(BuildQueue).add(build_queue_entry)
 
-        if logger is not None:
-            logger.debug("Made BuildQueue %s." % build_queue_entry.id)
+        logger.debug("Made BuildQueue %s.", build_queue_entry.id)
 
         return specific_job
 
@@ -195,12 +190,12 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             return
 
         try:
-            if cls.generatesTemplates(branch, logger=logger):
+            if cls.generatesTemplates(branch):
                 # This branch is used for generating templates.
                 logger.info(
-                    "Requesting templates build for branch %s." %
+                    "Requesting templates build for branch %s.",
                     branch.unique_name)
-                cls.create(branch, logger=logger)
+                cls.create(branch)
         except Exception, e:
             logger.error(e)
             raise
