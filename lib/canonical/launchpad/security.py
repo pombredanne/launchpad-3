@@ -901,7 +901,7 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
 class EditProductOfficialBugTagsByOwnerBugSupervisorOrAdmins(AuthorizationBase):
     """The owner of a product and its bug supervisor should be able to
     edit its official bug tags."""
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.BugSupervisor'
     usedfor = IOfficialBugTagTargetRestricted
 
     def checkAuthenticated(self, user):

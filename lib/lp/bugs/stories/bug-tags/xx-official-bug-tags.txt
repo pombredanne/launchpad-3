@@ -63,7 +63,7 @@ The link is also available for the bug supervisor.
     >>> distro = factory.makeDistribution(name='youbuntu', owner=d_owner)
     >>> supervisor_team = factory.makeTeam(owner=d_owner)
     >>> supervisor_member = factory.makePerson(password='g00dpassword')
-    >>> supervisor_team.addMember(supervisor_member, d_owner)
+    >>> added = supervisor_team.addMember(supervisor_member, d_owner)
     >>> distro.setBugSupervisor(supervisor_team, d_owner)
     >>> bug_super_browser = setupBrowser(
     ...     auth='Basic %s:g00dpassword' %
