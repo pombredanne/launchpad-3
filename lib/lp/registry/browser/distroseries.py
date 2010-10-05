@@ -564,7 +564,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
 
         # Update the label for sync action.
         self.__class__.actions.byname['actions.sync'].label = (
-            "Sync selected %s versions into %s" % (
+            "Sync Selected %s Versions into %s" % (
                 self.context.parent_series.displayname,
                 self.context.displayname,
                 ))
@@ -603,7 +603,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
-    @action(_("Sync sources"), name="sync", validator='validate_sync',
+    @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
         """Mark the diffs as syncing and request the sync.
