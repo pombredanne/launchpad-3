@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import logging
 import re
 
 from storm.store import Store
@@ -114,27 +115,37 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         return is_intltool_structure(bzr_branch.basis_tree())
 
     @classmethod
-    def generatesTemplates(cls, branch):
+    def generatesTemplates(cls, branch, logger=None):
         """See `ITranslationTemplatesBuildJobSource`."""
         if branch.private:
             # We don't support generating template from private branches
             # at the moment.
+            if logger is not None:
+                logger.debug("Branch %s is private." % branch.unique_name)
             return False
 
         utility = getUtility(IRosettaUploadJobSource)
         if not utility.providesTranslationFiles(branch):
             # Nobody asked for templates generated from this branch.
+            if logger is not None:
+                logger.debug(
+                    "No templates requested for branch %s." %
+                    branch.unique_name)
             return False
 
         if not cls._hasPotteryCompatibleSetup(branch):
             # Nothing we could do with this branch if we wanted to.
+            if logger is not None:
+                logger.debug(
+                    "Branch %s is not pottery-compatible." %
+                    branch.unique_name)
             return False
 
         # Yay!  We made it.
         return True
 
     @classmethod
-    def create(cls, branch):
+    def create(cls, branch, logger=None):
         """See `ITranslationTemplatesBuildJobSource`."""
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
         # default processor architecture.  This stops the buildfarm from
@@ -145,8 +156,15 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
         build = getUtility(ITranslationTemplatesBuildSource).create(
             build_farm_job, branch)
+        if logger is not None:
+            logger.debug(
+                "Made BuildFarmJob %s, TranslationTemplatesBuild %s." % (
+                    build_farm_job.id, build.id))
 
         specific_job = build.makeJob()
+        if logger is not None:
+            logger.debug("Made %s" % specific_job)
+
         duration_estimate = cls.duration_estimate
 
         build_queue_entry = BuildQueue(
@@ -154,6 +172,9 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
             job=specific_job.job, processor=processor)
         IMasterStore(BuildQueue).add(build_queue_entry)
+
+        if logger is not None:
+            logger.debug("Made BuildQueue %s." % build_queue_entry.id)
 
         return specific_job
 
@@ -167,13 +188,22 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         if not config.rosetta.generate_templates:
             # This feature is disabled by default.
+            logging.debug("Templates generation is disabled.")
             return
 
-        if cls.generatesTemplates(branch):
-            # This branch is used for generating templates.
-            cls.create(branch)
+        try:
+            if cls.generatesTemplates(branch, logger=logger):
+                # This branch is used for generating templates.
+                logger.info(
+                    "Requesting templates build for branch %s." %
+                    branch.unique_name)
+                cls.create(branch, logger=logger)
+        except Exception, e:
+            logger.error(e)
+            raise
 
     @classmethod
     def getByJob(cls, job):
