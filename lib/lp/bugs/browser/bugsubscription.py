@@ -55,6 +55,7 @@ from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
+from lp.services.propertycache import cachedproperty
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -93,8 +94,7 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
-class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
-                                       ReturnToReferrerMixin):
+class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
@@ -109,20 +109,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
         # browser setting referer to localhost.
-        if referer and referer != 'localhost':
+        if referer and referer not in ('localhost', self.request.getURL()):
             next_url = referer
         else:
             next_url = canonical_url(self.context)
         return next_url
 
     cancel_url = next_url
-
-    def initialize(self):
-        """Set up the needed widgets."""
-        super(BugSubscriptionSubscribeSelfView, self).initialize()
-
-        # See render() for how this flag is used.
-        self._redirecting_to_bug_list = False
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -152,24 +145,26 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
+        default_subscription_value = subscription_vocabulary.getTermByToken(
+            self.user.name).value
         subscription_field = Choice(
             __name__='subscription', title=self.schema['person'].title,
-            vocabulary=subscription_vocabulary, required=True)
-        notification_level_terms = [
-            (item.description, item) for item in BugNotificationLevel.items]
-        bug_notification_level_field = Choice(
-            __name__='bug_notification_level',
-            title=self.schema['bug_notification_level'].title,
-            vocabulary=SimpleVocabulary.fromItems(notification_level_terms))
+            vocabulary=subscription_vocabulary, required=True,
+            default=default_subscription_value)
         self.form_fields += formlib.form.Fields(subscription_field)
+        self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
+            RadioWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
-        # We hide the subscription widget since we know who the
-        # subscriber is and we don't need to present them with a single
-        # radio button.
-        self.widgets['subscription'].visible = False
+        if not self.userIsSubscribed():
+            # We hide the subscription widget if the user isn't
+            # subscribed, since we know who the subscriber is and we
+            # don't need to present them with a single radio button.
+            self.widgets['subscription'].visible = False
+        else:
+            self.widgets['bug_notification_level'].visible = False
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
@@ -193,38 +188,16 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         return False
 
-    def render(self):
-        """Render the bug list if the user has permission to see the bug."""
-        # Prevent normal rendering when redirecting to the bug list
-        # after unsubscribing from a private bug, because rendering the
-        # bug page would raise Unauthorized errors!
-        if self._redirecting_to_bug_list:
-            return u''
-        elif self._isSubscriptionRequest() and self.request.get('next_url'):
-            self.request.response.redirect(self.request.get('next_url'))
-            return u''
-        else:
-            return LaunchpadView.render(self)
-
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        import pdb; pdb.set_trace()
-
     @action('Continue', name='continue')
     def subscribe_action(self, action, data):
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
-        # 'subscribe' appears in the request whether the request is to
-        # subscribe or unsubscribe. Since "subscribe someone else" is
-        # handled by a different view we can assume that 'subscribe' +
-        # current user as a parameter means "subscribe the current
-        # user", and any other kind of 'subscribe' request actually
-        # means "unsubscribe". (Yes, this *is* very confusing!)
-        if ('subscribe' in self.request.form and
+        if (not self.userIsSubscribed() and
             (subscription_person == self.user)):
             self._handleSubscribe()
         else:
             self._handleUnsubscribe(subscription_person)
+        self.request.response.redirect(self.next_url)
 
     def _isSubscriptionRequest(self):
         """Return True if the form contains subscribe/unsubscribe input."""
