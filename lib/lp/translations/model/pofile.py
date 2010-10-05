@@ -190,12 +190,12 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
-    if is_read_only():
-        # Nothing can be edited in read-only mode.
+    if person is None:
+        # Anonymous users can't edit anything.
         return False
 
-    # If the person is None, then they cannot edit
-    if person is None:
+    if is_read_only():
+        # Nothing can be edited in read-only mode.
         return False
 
     # XXX Carlos Perello Marin 2006-02-07 bug=4814:
