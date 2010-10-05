@@ -8,6 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
     <include
         file="vocabularies.zcml"/>
@@ -1802,14 +1803,14 @@
     <!-- PersonNotification -->
 
     <class
-        class="canonical.launchpad.database.PersonNotification">
+        class="lp.registry.model.personnotification.PersonNotification">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotification"/>
     </class>
 
     <securedutility
         provides="lp.registry.interfaces.personnotification.IPersonNotificationSet"
-        class="canonical.launchpad.database.PersonNotificationSet">
+        class="lp.registry.model.personnotification.PersonNotificationSet">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotificationSet"/>
     </securedutility>
@@ -1821,6 +1822,12 @@
         <allow
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
+
+    <!-- Registers exceptions used in webservice defined in lp.registry.
+      Other data is in module=canonical.launchpad.interfaces as defined in
+      zcml there.-->
+
+    <webservice:register module="lp.registry.errors" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

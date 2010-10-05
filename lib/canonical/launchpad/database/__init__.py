@@ -4,7 +4,6 @@
 # pylint: disable-msg=W0401,C0301
 
 from canonical.launchpad.database.account import *
-from canonical.launchpad.database.binaryandsourcepackagename import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.logintoken import *
@@ -12,8 +11,6 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.temporaryblobstorage import *
 from lp.buildmaster.model.builder import *
-from lp.coop.answersbugs.model import *
-from lp.registry.model.personnotification import *
 from lp.services.worlddata.model.language import *
 from lp.services.worlddata.model.spokenin import *
 from lp.soyuz.model.archive import *

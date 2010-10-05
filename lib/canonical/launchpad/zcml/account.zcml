@@ -4,7 +4,7 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <class class="canonical.launchpad.database.Account">
+    <class class="canonical.launchpad.database.account.Account">
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.account.IAccountPublic" />
@@ -23,7 +23,7 @@
     </class>
 
     <securedutility
-        class="canonical.launchpad.database.AccountSet"
+        class="canonical.launchpad.database.account.AccountSet"
         provides="canonical.launchpad.interfaces.account.IAccountSet">
         <allow interface="canonical.launchpad.interfaces.account.IAccountSet" />
     </securedutility>

@@ -188,6 +188,9 @@
         path_expression="string:comments/${id}"
         attribute_to_parent="distro_series_difference"
         rootsite="mainsite"/>
+    <adapter
+      factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
+      name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -1075,6 +1078,12 @@
             class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonSubscriptionsView"
+            name="+subscriptions"
+            template="../templates/person-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"

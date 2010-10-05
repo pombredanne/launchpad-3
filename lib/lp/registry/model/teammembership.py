@@ -47,7 +47,10 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
-from lp.registry.errors import TeamMembershipTransitionError
+from lp.registry.errors import (
+    TeamMembershipTransitionError,
+    UserCannotChangeMembershipSilently,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
@@ -63,7 +66,6 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     ITeamParticipation,
     TeamMembershipStatus,
-    UserCannotChangeMembershipSilently,
     )
 
 

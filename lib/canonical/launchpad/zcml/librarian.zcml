@@ -8,23 +8,23 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-  <class class="canonical.launchpad.database.LibraryFileAlias">
+  <class class="canonical.launchpad.database.librarian.LibraryFileAlias">
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAlias" />
   </class>
 
-  <class class="canonical.launchpad.database.LibraryFileAliasWithParent">
+  <class class="canonical.launchpad.database.librarian.LibraryFileAliasWithParent">
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent" />
     <require
       permission="launchpad.Edit"
       set_attributes="mimetype restricted" />
   </class>
 
-  <class class="canonical.launchpad.database.LibraryFileContent">
+  <class class="canonical.launchpad.database.librarian.LibraryFileContent">
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileContent" />
   </class>
 
   <securedutility
-    class="canonical.launchpad.database.LibraryFileAliasSet"
+    class="canonical.launchpad.database.librarian.LibraryFileAliasSet"
     provides="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet">
     <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasSet" />
   </securedutility>
