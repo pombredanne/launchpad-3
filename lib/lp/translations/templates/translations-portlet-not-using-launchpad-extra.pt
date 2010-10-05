@@ -8,7 +8,7 @@
     tal:define="packages context/translatable_packages | nothing"
     tal:condition="packages">
     <tal:project replace="context/displayname" /> messages are
-    tracked in: <tal:packages repeat="package packages">
+    translated in: <tal:packages repeat="package packages">
     <tal:package replace="structure package/fmt:link" />
       <tal:comma condition="not:repeat/package/end">, </tal:comma>
     </tal:packages>.
