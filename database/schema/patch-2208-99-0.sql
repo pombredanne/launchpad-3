@@ -2,6 +2,9 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
+ALTER TABLE Branch DROP COLUMN merge_robot CASCADE;
+ALTER TABLE Branch DROP COLUMN merge_control_status;
+
 CREATE TABLE BranchMergeQueue (
     id serial NOT NULL PRIMARY KEY,
     registrant integer NOT NULL REFERENCES Person,
@@ -14,8 +17,6 @@ CREATE TABLE BranchMergeQueue (
     CONSTRAINT owner_name UNIQUE (owner, name)
 );
 
-ALTER TABLE Branch DROP COLUMN merge_robot CASCADE;
-ALTER TABLE Branch DROP COLUMN merge_control_status;
 ALTER TABLE Branch ADD COLUMN merge_queue integer REFERENCES BranchMergeQueue;
 ALTER TABLE Branch ADD COLUMN merge_queue_config TEXT;
 
