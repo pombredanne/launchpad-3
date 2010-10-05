@@ -9,7 +9,6 @@
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
-    is_edge modules/canonical.config/config/launchpad/is_edge;
     is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
     site_message modules/canonical.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};

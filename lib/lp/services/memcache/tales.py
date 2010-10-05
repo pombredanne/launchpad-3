@@ -274,7 +274,7 @@ class MemcacheMiss:
         self._memcache_expr = memcache_expr
 
     def __call__(self, value):
-        if not config.launchpad.is_lpnet and not config.launchpad.is_edge:
+        if not config.launchpad.is_lpnet:
             # For debugging and testing purposes, prepend a description of
             # the memcache expression used to the stored value.
             rule = '%s [%s seconds]' % (self._memcache_expr, self._max_age)

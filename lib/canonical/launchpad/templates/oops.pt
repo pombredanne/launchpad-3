@@ -33,10 +33,9 @@
 
         <div id="redirect_notice" style="display:none"
              class="informational message">
-          <p>This server runs pre-release code, so it's possible this problem
-          doesn't affect launchpad.net. If you're a member of the Launchpad
-          Beta Testers team, you can disable redirection in order to use
-          launchpad.net.</p>
+          <p>You are using beta features which means it is possible this problem
+          is specific to the beta program. You can disable beta features
+          as a temporary measure to see if it fixes the problem. </p>
           <p><button onclick="setBetaRedirect(false)">Disable redirection
           for 2 hours</button></p>
         </div>
