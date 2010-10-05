@@ -163,7 +163,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
 
         specific_job = build.makeJob()
         if logger is not None:
-            logger.debug("Made %s" % specific_job)
+            logger.debug("Made %s." % specific_job)
 
         duration_estimate = cls.duration_estimate
 
