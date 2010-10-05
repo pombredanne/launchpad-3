@@ -36,6 +36,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -288,6 +289,7 @@ class BaseTranslationView(LaunchpadView):
 
         method = self.request.method
         if method == 'POST':
+            self.lock_timestamp = self._extractLockTimestamp()
             self._checkSubmitConditions()
         else:
             # It's not a POST, so we should generate lock_timestamp.
@@ -317,6 +319,23 @@ class BaseTranslationView(LaunchpadView):
         # again, because of error handling.
         self._initializeTranslationMessageViews()
 
+    def _extractLockTimestamp(self):
+        """Extract the lock timestamp from the request.
+
+        The lock_timestamp is used to detect conflicting concurrent
+        translation updates: if the translation that is being changed
+        has been set after the current form was generated, the user
+        chose a translation based on outdated information.  In that
+        case there is a conflict.
+        """
+        try:
+            return zope_datetime.parseDatetimetz(
+                self.request.form.get('lock_timestamp', u''))
+        except zope_datetime.DateTimeError:
+            # invalid format. Either we don't have the timestamp in the
+            # submitted form or it has the wrong format.
+            return None
+
     def _checkSubmitConditions(self):
         """Verify that this submission is permitted and valid.
 
@@ -324,6 +343,11 @@ class BaseTranslationView(LaunchpadView):
             principle the user should not have been given the option to
             submit the current request.
         """
+        if is_read_only():
+            raise UnexpectedFormData(
+                "Launchpad is currently in read-only mode for maintenance.  "
+                "Please try again later.")
+
         if self.user is None:
             raise UnexpectedFormData(
                 "Anonymous users or users who are not accepting our "
@@ -335,16 +359,8 @@ class BaseTranslationView(LaunchpadView):
             raise UnexpectedFormData(
                 "Users who do not agree to licensing terms "
                 "cannot do POST submissions.")
-        try:
-            # Try to get the timestamp when the submitted form was
-            # created. We use it to detect whether someone else updated
-            # the translation we are working on in the elapsed time
-            # between the form loading and its later submission.
-            self.lock_timestamp = zope_datetime.parseDatetimetz(
-                self.request.form.get('lock_timestamp', u''))
-        except zope_datetime.DateTimeError:
-            # invalid format. Either we don't have the timestamp in the
-            # submitted form or it has the wrong format.
+
+        if self.lock_timestamp is None:
             raise UnexpectedFormData(
                 "We didn't find the timestamp that tells us when was"
                 " generated the submitted form.")
