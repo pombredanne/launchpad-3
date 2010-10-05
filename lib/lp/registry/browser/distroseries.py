@@ -613,8 +613,8 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         """
         selected_differences = data['selected_differences']
         diffs = [
-            diff.source_package_name.name for diff in selected_differences
-            ]
+            diff.source_package_name.name
+                for diff in selected_differences]
 
         self.request.response.addNotification(
             "The following sources would have been synced if this "

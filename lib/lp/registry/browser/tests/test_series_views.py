@@ -35,7 +35,7 @@ from lp.services.features import (
     )
 from lp.testing import (
     TestCaseWithFactory,
-    person_logged_in
+    person_logged_in,
     )
 from lp.testing.views import create_initialized_view
 
