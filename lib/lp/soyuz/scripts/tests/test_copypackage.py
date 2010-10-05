@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import BufferLogger
-from canonical.librarian.ftests.harness import fillLibrarianFile
+from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.testing import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
