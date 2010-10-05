@@ -46,14 +46,15 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
+                            src_name difference/source_package_name/name;
                             signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;"
                 tal:attributes="class parent_source_pub/source_package_name">
               <td>
                 <input tal:condition="context/required:launchpad.Edit"
                   name="field.selected_differences" type="checkbox"
                   tal:attributes="
-                    value difference/id;
-                    id string:field.selected_differences.${difference/id}"/>
+                    value src_name;
+                    id string:field.selected_differences.${src_name}"/>
 
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
                    tal:content="parent_source_pub/source_package_name">Foo</a>

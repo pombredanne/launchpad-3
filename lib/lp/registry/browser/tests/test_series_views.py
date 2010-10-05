@@ -231,7 +231,8 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
 
         checkbox = soup.find(
-            'input', id='field.selected_differences.%d' % difference.id)
+            'input', id='field.selected_differences.%s' % (
+                difference.source_package_name.name))
         self.assertIs(None, checkbox)
         button = soup.find('input', id='field.actions.sync')
         self.assertIs(None, button)
@@ -250,7 +251,8 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
 
         checkbox = soup.find(
-            'input', id='field.selected_differences.%d' % difference.id)
+            'input', id='field.selected_differences.%s' % (
+                difference.source_package_name.name))
         self.assertIsNot(None, checkbox)
         button = soup.find('input', id='field.actions.sync')
         self.assertEqual(
@@ -290,7 +292,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             ['my-src-name'],
             widget.vocabulary.by_token.keys())
 
-    def test_notification_after_sync(self):
+    def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
@@ -310,6 +312,57 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
                     })
 
         self.assertEqual(0, len(view.errors))
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            "The following sources would have been synced if this wasn't "
+            "just a stub operation: my-src-name",
+            notifications[0].message)
+        self.assertEqual(302, view.request.response.getStatus())
+
+    def test_sync_error_nothing_selected(self):
+        # An error is raised when a sync is requested without any selection.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            source_package_name_str='my-src-name',
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        with person_logged_in(derived_series.owner):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs',
+                method='POST', form={
+                    'field.selected_differences': [],
+                    'field.actions.sync': 'Sync',
+                    })
+
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
+
+    def test_sync_error_invalid_selection(self):
+        # An error is raised when an invalid difference is selected.
+        derived_series = self.makeDerivedSeries(
+            parent_name='lucid', derived_name='derilucid')
+        difference = self.factory.makeDistroSeriesDifference(
+            source_package_name_str='my-src-name',
+            derived_series=derived_series)
+
+        self.setDerivedSeriesUIFeatureFlag()
+        with person_logged_in(derived_series.owner):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs',
+                method='POST', form={
+                    'field.selected_differences': ['some-other-name'],
+                    'field.actions.sync': 'Sync',
+                    })
+
+        self.assertEqual(2, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
+        self.assertEqual(
+            'Invalid value', view.errors[1].error_name)
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):

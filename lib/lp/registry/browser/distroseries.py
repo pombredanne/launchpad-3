@@ -604,39 +604,23 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
             choice = self.form_fields['selected_differences'].field.value_type
             choice.vocabulary = diffs_vocabulary
 
-    #def setUpWidgets(self, context=None):
-    #    """Update the vocabulary for the selected differences widget."""
-    #    super(DistroSeriesLocalDifferences, self).setUpWidgets()
-
-    #    has_edit = check_permission('launchpad.Edit', self.context)
-    #    if has_edit:
-    #        diffs_vocabulary = SimpleVocabulary(
-    #            [SimpleTerm(
-    #                difference,
-    #                difference.source_package_name.name,
-    #                difference.source_package_name.name)
-    #                for difference in self.cached_differences.batch])
-    #        self.widgets['selected_differences'].vocabulary = diffs_vocabulary
-
-    #def createSelectDiffsField(self):
-    #    """Create selected differences field based on the current batch."""
-    #    diffs_vocabulary = SimpleVocabulary(
-    #        [SimpleTerm(
-    #            difference,
-    #            difference.source_package_name.name,
-    #            difference.source_package_name.name)
-    #            for difference in self.cached_differences.batch])
-
-    #    return form.Fields(
-    #        Choice(__name__='selected_differences',
-    #               title=_('Selected differences'),
-    #               vocabulary=diffs_vocabulary,
-    #               description=_("Select the differences for syncing."),
-    #               required=True))
-
-    @action(_("Sync sources"), name="sync")#, validator='validate_sync')
+    @action(_("Sync sources"), name="sync", validator='validate_sync')
     def sync_sources(self, action, data):
-        pass
+        """Mark the diffs as syncing and request the sync.
+
+        Currently this is a stub operation, the details of which will
+        be implemented later.
+        """
+        selected_differences = data['selected_differences']
+        diffs = [
+            diff.source_package_name.name for diff in selected_differences
+            ]
+
+        self.request.response.addNotification(
+            "The following sources would have been synced if this "
+            "wasn't just a stub operation: " + ", ".join(diffs))
+
+        self.next_url = self.request.URL
 
     def validate_sync(self, action, data):
         """Validate selected differences."""
