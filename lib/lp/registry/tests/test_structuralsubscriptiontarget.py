@@ -247,6 +247,30 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
             bugtask.bug, BugNotificationLevel.NOTHING)
         self.assertEqual([subscription], list(subscriptions_for_bug))
 
+    def test_getSubscriptionsForBug_with_filter_on_level(self):
+        # All structural subscriptions have a level for bug notifications
+        # which getSubscriptionsForBug() observes.
+        bugtask = self.makeBugTask()
+
+        # Create a new METADATA level subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+
+        # The subscription is found when looking for NOTHING or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+        # The subscription is found when looking for METADATA or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.METADATA)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+        # The subscription is not found when looking for COMMENTS or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.COMMENTS)
+        self.assertEqual([], list(subscriptions_for_bug))
+
     def test_getSubscriptionsForBug_with_multiple_filters(self):
         # If multiple filters exist for a subscription, all filters must
         # match.

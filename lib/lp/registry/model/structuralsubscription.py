@@ -516,10 +516,12 @@ class StructuralSubscriptionTargetMixin:
             ]
 
         conditions = [
-            # There's no filter or ...
-            Or(BugSubscriptionFilter.id == None,
-               # there is a filter ...
-               And(
+            StructuralSubscription.bug_notification_level >= level,
+            Or(
+                # There's no filter or ...
+                BugSubscriptionFilter.id == None,
+                # there is a filter and ...
+                And(
                     # there's no status filter, or there is a status filter
                     # and and it matches.
                     Or(BugSubscriptionFilterStatus.id == None,
