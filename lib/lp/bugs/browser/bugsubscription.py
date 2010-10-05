@@ -296,8 +296,9 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
                     "longer have access to this private bug.") % (
                         current_bug.id, unsubed_dupes_msg_fragment)
         else:
-            return "%s has been unsubscribed from this bug%s." % (
-                cgi.escape(user.displayname), unsubed_dupes_msg_fragment)
+            return "%s has been unsubscribed from bug %d%s." % (
+                cgi.escape(user.displayname), current_bug.id,
+                unsubed_dupes_msg_fragment)
 
     def _getUnsubscribedDupesMsgFragment(self, unsubed_dupes):
         """Return the duplicates fragment of the unsubscription notification.
