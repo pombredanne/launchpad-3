@@ -12,7 +12,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing import (
     DatabaseFunctionalLayer,
