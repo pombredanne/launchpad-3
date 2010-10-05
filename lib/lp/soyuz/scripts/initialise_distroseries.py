@@ -133,7 +133,8 @@ class InitialiseDistroSeries:
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
-            FROM DistroArchSeries WHERE distroseries = %s %s
+            FROM DistroArchSeries WHERE distroseries = %s
+            AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
 

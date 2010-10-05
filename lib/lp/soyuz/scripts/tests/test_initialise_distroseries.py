@@ -240,6 +240,27 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
                 foobuntu.main_archive, 'pmount', uploader,
                 distroseries=foobuntu))
 
+    def test_do_not_copy_disabled_dases(self):
+        # DASes that are disabled in the parent will not be copied
+        i386 = self.factory.makeProcessorFamily()
+        ppc = self.factory.makeProcessorFamily()
+        parent = self.factory.makeDistroSeries()
+        i386_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=i386)
+        ppc_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=ppc)
+        ppc_das.enabled = False
+        parent.nominatedarchindep = i386_das
+        foobuntu = self._create_distroseries(parent)
+        ids = InitialiseDistroSeries(foobuntu)
+        ids.check()
+        ids.initialise()
+        das = list(IStore(DistroArchSeries).find(
+            DistroArchSeries, distroseries = foobuntu))
+        self.assertEqual(len(das), 1)
+        self.assertEqual(
+            das[0].architecturetag, i386_das.architecturetag)
+
     def test_script(self):
         # Do an end-to-end test using the command-line tool
         uploader = self.factory.makePerson()
