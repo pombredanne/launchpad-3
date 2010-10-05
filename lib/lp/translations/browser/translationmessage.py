@@ -286,6 +286,15 @@ class BaseTranslationView(LaunchpadView):
 
         self._initializeAltLanguage()
 
+        method = self.request.method
+        if method == 'POST':
+            self._checkSubmitConditions()
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
+
+
         # The batch navigator needs to be initialized early, before
         # _submitTranslations is called; the reason for this is that
         # _submitTranslations, in the case of no errors, redirects to
@@ -297,49 +306,48 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if self.request.method == 'POST':
-            if self.user is None:
-                raise UnexpectedFormData(
-                    "Anonymous users or users who are not accepting our "
-                    "licensing terms cannot do POST submissions.")
-            translations_person = ITranslationsPerson(self.user)
-            if (translations_person.translations_relicensing_agreement
-                    is not None and
-                not translations_person.translations_relicensing_agreement):
-                raise UnexpectedFormData(
-                    "Users who do not agree to licensing terms "
-                    "cannot do POST submissions.")
-            try:
-                # Try to get the timestamp when the submitted form was
-                # created. We use it to detect whether someone else updated
-                # the translation we are working on in the elapsed time
-                # between the form loading and its later submission.
-                self.lock_timestamp = zope_datetime.parseDatetimetz(
-                    self.request.form.get('lock_timestamp', u''))
-            except zope_datetime.DateTimeError:
-                # invalid format. Either we don't have the timestamp in the
-                # submitted form or it has the wrong format.
-                raise UnexpectedFormData(
-                    "We didn't find the timestamp that tells us when was"
-                    " generated the submitted form.")
-
-            # Check if this is really the form we are listening for..
-            if self.request.form.get("submit_translations"):
-                # Check if this is really the form we are listening for..
-                if self._submitTranslations():
-                    # .. and if no errors occurred, adios. Otherwise, we
-                    # need to set up the subviews for error display and
-                    # correction.
-                    return
-        else:
-            # It's not a POST, so we should generate lock_timestamp.
-            UTC = pytz.timezone('UTC')
-            self.lock_timestamp = datetime.datetime.now(UTC)
+        if method == 'POST' and self.request.form.get('submit_translations'):
+            if self._submitTranslations():
+                # If no errors occurred, adios. Otherwise, we need to set up
+                # the subviews for error display and correction.
+                return
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
         # again, because of error handling.
         self._initializeTranslationMessageViews()
+
+    def _checkSubmitConditions(self):
+        """Verify that this submission is permitted and valid.
+
+        :raises: `UnexpectedFormData` if conditions are not met.  In
+            principle the user should not have been given the option to
+            submit the current request.
+        """
+        if self.user is None:
+            raise UnexpectedFormData(
+                "Anonymous users or users who are not accepting our "
+                "licensing terms cannot do POST submissions.")
+
+        translations_person = ITranslationsPerson(self.user)
+        relicensing = translations_person.translations_relicensing_agreement
+        if relicensing is not None and not relicensing:
+            raise UnexpectedFormData(
+                "Users who do not agree to licensing terms "
+                "cannot do POST submissions.")
+        try:
+            # Try to get the timestamp when the submitted form was
+            # created. We use it to detect whether someone else updated
+            # the translation we are working on in the elapsed time
+            # between the form loading and its later submission.
+            self.lock_timestamp = zope_datetime.parseDatetimetz(
+                self.request.form.get('lock_timestamp', u''))
+        except zope_datetime.DateTimeError:
+            # invalid format. Either we don't have the timestamp in the
+            # submitted form or it has the wrong format.
+            raise UnexpectedFormData(
+                "We didn't find the timestamp that tells us when was"
+                " generated the submitted form.")
 
     #
     # API Hooks
