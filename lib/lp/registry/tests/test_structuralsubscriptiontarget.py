@@ -35,14 +35,16 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.errors import (
+    DeleteSubscriptionError,
+    UserCannotSubscribePerson,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
-    DeleteSubscriptionError,
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
-    UserCannotSubscribePerson,
     )
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (

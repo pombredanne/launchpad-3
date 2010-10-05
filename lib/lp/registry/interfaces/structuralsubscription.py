@@ -10,12 +10,10 @@ __metaclass__ = type
 __all__ = [
     'BlueprintNotificationLevel',
     'BugNotificationLevel',
-    'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget',
     'IStructuralSubscriptionTargetHelper',
-    'UserCannotSubscribePerson',
     ]
 
 from lazr.enum import (
@@ -33,7 +31,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -292,16 +289,3 @@ class IStructuralSubscriptionForm(Interface):
     subscribe_me = Bool(
         title=u"I want to receive these notifications by e-mail.",
         required=False)
-
-
-class DeleteSubscriptionError(Exception):
-    """Delete Subscription Error.
-
-    Raised when an error occurred trying to delete a
-    structural subscription."""
-    webservice_error(400)
-
-
-class UserCannotSubscribePerson(Exception):
-    """User does not have permission to subscribe the person or team."""
-    webservice_error(401)

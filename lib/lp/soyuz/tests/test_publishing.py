@@ -1324,3 +1324,13 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         # This will supersede both atomically.
         bins[0].supersede()
         self.checkOtherPublications(bins[0], [])
+
+    def testDoesntFindPublicationsInOtherSeries(self):
+        """Publications in other series shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        series = self.factory.makeDistroSeries()
+        arch = self.factory.makeDistroArchSeries(distroseries=series)
+        foreign_bins = bins[0].copyTo(
+            series, bins[0].pocket, bins[0].archive)
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bins[0], foreign_bins)

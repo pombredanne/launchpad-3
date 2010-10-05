@@ -253,14 +253,15 @@ thus requires LaunchpadTestSetup or similar to be used in tandam.
 You probably really want LaunchpadFunctionalTestSetup so you can access
 the Librarian as a Utility.
 
->>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+>>> from canonical.librarian.testing.server import LibrarianTestSetup
 >>> from canonical.launchpad.ftests import login, ANONYMOUS
 >>> from zope.app import zapi
 >>> from canonical.librarian.interfaces import ILibrarianClient
 >>> from StringIO import StringIO
 
 >>> LaunchpadFunctionalTestSetup().setUp()
->>> LibrarianTestSetup().setUp()
+>>> librarian = LibrarianTestSetup()
+>>> librarian.setUp()
 >>> login(ANONYMOUS)
 
 >>> some_content = StringIO()
@@ -283,7 +284,7 @@ the same transaction it was added
 >>> data == some_content.getvalue()
 True
 
->>> LibrarianTestSetup().tearDown()
+>>> librarian.tearDown()
 >>> LaunchpadFunctionalTestSetup().tearDown()
 
 >>> from canonical.testing import reset_logging
