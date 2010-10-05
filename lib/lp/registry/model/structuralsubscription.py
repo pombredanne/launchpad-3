@@ -515,23 +515,34 @@ class StructuralSubscriptionTargetMixin:
                     BugSubscriptionFilter.id)),
             ]
 
+        if len(bug.tags) == 0:
+            tag_conditions = [
+                BugSubscriptionFilter.include_any_tags == False,
+                ]
+        else:
+            tag_conditions = [
+                BugSubscriptionFilter.exclude_any_tags == False,
+                ]
+
         conditions = [
             StructuralSubscription.bug_notification_level >= level,
             Or(
                 # There's no filter or ...
                 BugSubscriptionFilter.id == None,
-                # there is a filter and ...
+                # There is a filter and ...
                 And(
-                    # there's no status filter, or there is a status filter
+                    # There's no status filter, or there is a status filter
                     # and and it matches.
                     Or(BugSubscriptionFilterStatus.id == None,
                        BugSubscriptionFilterStatus.status.is_in(
                             bugtask.status for bugtask in bugtasks)),
-                    # there's no importance filter, or there is an importance
+                    # There's no importance filter, or there is an importance
                     # filter and it matches.
                     Or(BugSubscriptionFilterImportance.id == None,
                        BugSubscriptionFilterImportance.importance.is_in(
-                            bugtask.importance for bugtask in bugtasks)))),
+                            bugtask.importance for bugtask in bugtasks)),
+                    # Any number of conditions relating to tags.
+                    *tag_conditions)),
             ]
 
         return Store.of(self.__helper.pillar).using(*origin).find(
