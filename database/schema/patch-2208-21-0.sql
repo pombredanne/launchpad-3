@@ -3,13 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-DROP INDEX translationmessage__pofile__idx;
-
-ALTER TABLE TranslationMessage
-DROP CONSTRAINT translationmessage__pofile__fk;
-
 ALTER TABLE TranslationMessage
 DROP COLUMN pofile;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 21, 0);
 
