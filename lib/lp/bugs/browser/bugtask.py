@@ -115,7 +115,6 @@ from zope.schema.interfaces import (
     )
 from zope.schema.vocabulary import (
     getVocabularyRegistry,
-    SimpleTerm,
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
@@ -162,7 +161,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import (
     FormattersAPI,
