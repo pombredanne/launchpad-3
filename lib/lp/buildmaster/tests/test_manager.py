@@ -148,15 +148,14 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(self._checkDispatch, builder)
         return d
 
-    def _checkNoDispatch(self, recording_slave, builder):
+    def _checkNoDispatch(self, slave, builder):
         """Assert that no dispatch has occurred.
 
-        'recording_slave' is None, so no interations would be passed
+        'slave' is None, so no interations would be passed
         to the asynchonous dispatcher and the builder remained active
         and IDLE.
         """
-        self.assertTrue(
-            recording_slave is None, "Unexpected recording_slave.")
+        self.assertTrue(slave is None, "Unexpected slave.")
 
         builder = getUtility(IBuilderSet).get(builder.id)
         self.assertTrue(builder.builderok)
@@ -508,6 +507,7 @@ class TestBuilddManagerScript(LaunchpadTestCase):
         # The `buildd-manager.tac` starts and stops correctly.
         BuilddManagerTestSetup().setUp()
         BuilddManagerTestSetup().tearDown()
+        self.layer.force_dirty_database()
 
     # XXX Julian 2010-08-06 bug=614275
     # These next 2 tests are in the wrong place, they should be near the
