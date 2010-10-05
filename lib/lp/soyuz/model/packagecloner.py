@@ -75,7 +75,8 @@ class PackageCloner:
             distroarchseries instances.
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        @param the processor families to create builds for.
+        @param proc_families: the processor families to create builds for.
+        @type proc_families: Iterable
         @param always_create: if we should create builds for every source
             package copied, useful if no binaries are to be copied.
         @type always_create: Boolean
