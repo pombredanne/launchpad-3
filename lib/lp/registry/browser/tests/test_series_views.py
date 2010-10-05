@@ -218,17 +218,17 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(difference.source_package_name.name, links[0].string)
 
     def test_sync_option_for_non_editor(self):
-        # Non-editors cannot perform syncs.
+        # Non-editors do not see options to syncs.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         self.setDerivedSeriesUIFeatureFlag()
-        #with person_logged_in(self.factory.makePerson()):
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+            soup = BeautifulSoup(view())
 
         checkbox = soup.find(
             'input', id='field.selected_differences.%s' % (
@@ -238,17 +238,17 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertIs(None, button)
 
     def test_sync_option_for_editor(self):
-        # Editors can perform syncs.
+        # Editors are presented with options to perform syncs.
         derived_series = self.makeDerivedSeries(
             parent_name='lucid', derived_name='derilucid')
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         self.setDerivedSeriesUIFeatureFlag()
-        #with person_logged_in(derived_series.owner):
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
-        soup = BeautifulSoup(view())
+        with person_logged_in(derived_series.owner):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+            soup = BeautifulSoup(view())
 
         checkbox = soup.find(
             'input', id='field.selected_differences.%s' % (
