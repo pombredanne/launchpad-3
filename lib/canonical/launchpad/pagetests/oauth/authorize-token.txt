@@ -47,24 +47,15 @@ it involves OpenID, which would complicate this test quite a bit.)
 This page contains one submit button for each item of OAuthPermission,
 except for 'Desktop Integration', which must be specifically requested.
 
-    >>> browser.getControl('No Access')
-    <SubmitControl...
-    >>> browser.getControl('Read Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Change Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Read Anything')
-    <SubmitControl...
-    >>> browser.getControl('Change Anything')
-    <SubmitControl...
+    >>> actions = main_content.findAll('input', type='submit')
+    >>> for action in actions:
+    ...     print action['value']
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
 
-    # XXX FIXME
-    >>> browser.getControl('Grant Permissions')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Grant Permissions'
-
-    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> len(actions) == len(OAuthPermission.items) - 1
     True
