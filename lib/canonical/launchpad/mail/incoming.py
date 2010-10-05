@@ -149,7 +149,7 @@ def _authenticateDkim(signed_message):
             % (signing_domain, from_domain))
         return False
     if not _isDkimDomainTrusted(signing_domain):
-        log.warning("valid DKIM signature from untrusted domain %s" 
+        log.warning("valid DKIM signature from untrusted domain %s"
             % (signing_domain,))
         return False
     return True
@@ -367,13 +367,19 @@ def handleMail(trans=transaction):
                     continue
 
                 # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header, but
-                # it has an incorrect address.
-                # Process all addresses found as a fall back.
-                cc = mail.get_all('cc') or []
-                to = mail.get_all('to') or []
-                names_addresses = getaddresses(to + cc)
-                addresses = [addr for name, addr in names_addresses]
+                # Launchpad should have an X-Original-To header.
+                if mail.has_key('X-Original-To'):
+                    addresses = [mail['X-Original-To']]
+                else:
+                    log = logging.getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "No X-Original-To header was present in email: %s" %
+                         file_alias_url)
+                    # Process all addresses found as a fall back.
+                    cc = mail.get_all('cc') or []
+                    to = mail.get_all('to') or []
+                    names_addresses = getaddresses(to + cc)
+                    addresses = [addr for name, addr in names_addresses]
 
                 try:
                     do_paranoid_envelope_to_validation(addresses)
