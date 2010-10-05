@@ -17,26 +17,10 @@ from simplejson import dumps
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import (
-    IDisplayWidget,
-    IInputWidget,
-    InputErrors,
-    WidgetsError,
-    )
-from zope.app.form.utility import (
-    setUpWidget,
-    setUpWidgets,
-    )
-from zope.component import (
-    ComponentLookupError,
-    getAdapter,
-    getMultiAdapter,
-    getUtility,
-    queryMultiAdapter,
-    )
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
-    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
