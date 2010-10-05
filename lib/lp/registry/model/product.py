@@ -404,7 +404,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return ServiceUsage.UNKNOWN
         elif self.development_focus.branch.branch_type == BranchType.HOSTED:
             return ServiceUsage.LAUNCHPAD
-        elif self.development_focus.branch.branch_type == BranchType.MIRRORED:
+        elif self.development_focus.branch.branch_type in (
+            BranchType.MIRRORED, BranchType.REMOTE):
             return ServiceUsage.EXTERNAL
         return ServiceUsage.NOT_APPLICABLE
 

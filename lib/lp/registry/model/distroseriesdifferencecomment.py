@@ -22,7 +22,10 @@ from zope.interface import (
     )
 
 from canonical.launchpad.database.message import Message, MessageChunk
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
@@ -46,9 +49,19 @@ class DistroSeriesDifferenceComment(Storm):
     message = Reference(message_id, 'Message.id')
 
     @property
-    def comment(self):
+    def comment_author(self):
+        """See `IDistroSeriesDifferenceComment`."""
+        return self.message.owner
+
+    @property
+    def body_text(self):
         """See `IDistroSeriesDifferenceComment`."""
         return self.message.text_contents
+
+    @property
+    def comment_date(self):
+        """See `IDistroSeriesDifferenceComment`."""
+        return self.message.datecreated
 
     @staticmethod
     def new(distro_series_difference, owner, comment):
@@ -64,4 +77,16 @@ class DistroSeriesDifferenceComment(Storm):
         dsd_comment.distro_series_difference = distro_series_difference
         dsd_comment.message = message
 
-        return store.add(dsd_comment)
+        comment = store.add(dsd_comment)
+        store.flush()
+        return comment
+
+    @staticmethod
+    def getForDifference(distro_series_difference, id):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+        store = IStore(DistroSeriesDifferenceComment)
+        DSDComment = DistroSeriesDifferenceComment
+        return store.find(
+            DSDComment,
+            DSDComment.distro_series_difference == distro_series_difference,
+            DSDComment.id == id).one()

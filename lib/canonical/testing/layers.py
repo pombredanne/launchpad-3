@@ -85,6 +85,7 @@ import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
+from zope.component import globalregistry
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
@@ -116,7 +117,7 @@ from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
-from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.librarian.testing.server import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -262,7 +263,6 @@ class BaseLayer:
         # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
-            LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
             DatabaseLayer.connect().close()
@@ -321,25 +321,39 @@ class BaseLayer:
         BaseLayer.test_name = None
         BaseLayer.check()
 
-        # Check for tests that leave live threads around early.
-        # A live thread may be the cause of other failures, such as
-        # uncollectable garbage.
-        new_threads = [
-            thread for thread in threading.enumerate()
-            if thread not in BaseLayer._threads and thread.isAlive()
-            ]
+        def new_live_threads():
+            return [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+
+        if BaseLayer.disable_thread_check:
+            new_threads = new_live_threads()
+        else:
+            for loop in range(0,100):
+                # Check for tests that leave live threads around early.
+                # A live thread may be the cause of other failures, such as
+                # uncollectable garbage.
+                new_threads = new_live_threads()
+                has_live_threads = False
+                for new_thread in new_threads:
+                    new_thread.join(0.1)
+                    if new_thread.isAlive():
+                        has_live_threads = True
+                if has_live_threads:
+                    # Trigger full garbage collection that might be
+                    # blocking threads from exiting.
+                    gc.collect()
+                else:
+                    break
 
         if new_threads:
-            # XXX gary 2008-12-03 bug=304913
-            # The codehosting acceptance tests are intermittently leaving
-            # threads around, apparently because of bzr. disable_thread_check
-            # is a mechanism to turn off the BaseLayer behavior of causing a
-            # test to fail if it leaves a thread behind. This comment is found
-            # in both lp.codehosting.tests.test_acceptance and
-            # canonical.testing.layers
+            # BaseLayer.disable_thread_check is a mechanism to stop
+            # tests that leave threads behind from failing. Its use
+            # should only ever be temporary.
             if BaseLayer.disable_thread_check:
-                print ("ERROR DISABLED: "
-                       "Test left new live threads: %s") % repr(new_threads)
+                print (
+                    "ERROR DISABLED: "
+                    "Test left new live threads: %s") % repr(new_threads)
             else:
                 BaseLayer.flagTestIsolationFailure(
                     "Test left new live threads: %s" % repr(new_threads))
@@ -837,6 +851,24 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
+    
+    @classmethod
+    def tearDownHelper(cls):
+        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
+
+        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
+        why atexit is used, but because test runners delegate rather than
+        returning, the librarian and other servers are only killed *at the end
+        of the whole test run*, which leads to multiple instances running, so
+        we manually run the teardown for these layers.
+        """
+        try:
+            MemcachedLayer.tearDown()
+        finally:
+            try:
+                LibrarianLayer.tearDown()
+            finally:
+                DatabaseLayer.tearDown()
 
     @classmethod
     @profiled
@@ -1198,7 +1230,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1300,13 +1332,15 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        provideUtility(TestMailBox(), IMailBox)
+        cls._mailbox = TestMailBox()
+        provideUtility(cls._mailbox, IMailBox)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        # Signal Layer cannot be torn down fully
-        raise NotImplementedError
+        if not globalregistry.base.unregisterUtility(cls._mailbox):
+            raise NotImplementedError('failed to unregister mailbox')
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled

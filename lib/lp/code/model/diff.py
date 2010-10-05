@@ -6,12 +6,12 @@
 __metaclass__ = type
 __all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
 
-from cStringIO import StringIO
 import sys
+from cStringIO import StringIO
+
 from uuid import uuid1
 
 from bzrlib import trace
-from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.merge import Merge3Merger
 from bzrlib.patches import (
@@ -158,8 +158,10 @@ class Diff(SQLBase):
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
             this_branch=target_branch, do_merge=False)
+
         def dummy_warning(self, *args, **kwargs):
             pass
+
         real_warning = trace.warning
         trace.warning = dummy_warning
         try:
