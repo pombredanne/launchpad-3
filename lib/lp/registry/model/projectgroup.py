@@ -54,7 +54,6 @@ from lp.answers.model.faq import (
 from lp.answers.model.question import QuestionTargetSearch
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -76,6 +75,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
+    OfficialBugTag,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
