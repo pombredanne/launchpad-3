@@ -135,6 +135,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
             [pofile_sr.id, pofile_es.id, pofile_sr2.id],
             translations)
 
+
 class TestProductSeries(BaseExportViewMixin):
     """Test implementation of BaseExportView on ProductSeries."""
 

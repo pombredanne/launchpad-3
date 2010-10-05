@@ -1,4 +1,5 @@
-= VPOExport and VPOExportSet =
+VPOExport and VPOExportSet
+=========================
 
 The VPOExport and VPOExportSet classes retrieve and format data for
 exports in a more efficient way than fetching the entire objects.
@@ -88,7 +89,8 @@ all current messages that have not been imported.
     2 english2 esperanto2
 
 
-== VPOExport and translation divergence ==
+VPOExport and translation divergence
+------------------------------------
 
 A particular product has two series, trunk and stable, each with the
 same template.  The templates thus share messages.

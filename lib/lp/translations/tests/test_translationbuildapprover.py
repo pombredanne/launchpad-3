@@ -208,7 +208,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual([
                 RosettaImportStatus.APPROVED,
                 RosettaImportStatus.APPROVED,
-                RosettaImportStatus.NEEDS_REVIEW
+                RosettaImportStatus.NEEDS_REVIEW,
                 ],
                 [entry.status for entry in entries])
 

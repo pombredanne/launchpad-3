@@ -33,6 +33,7 @@ class TranslatableProductMixin:
     Sets up a product with series "trunk" and "stable," each with a
     template.
     """
+
     def setUpProduct(self):
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
@@ -141,6 +142,7 @@ class TranslatedProductMixin(TranslatableProductMixin):
     Creates one POTMsgSet for trunk and one for stable, i.e. a
     pre-sharing situation.
     """
+
     def setUpProduct(self):
         super(TranslatedProductMixin, self).setUpProduct()
 
@@ -593,7 +595,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
         # The duplicates have been cleaned up.
         self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
+
         # The is_current and is_imported flags from the duplicate
         # messages have been merged into a single, current, imported
         # message.

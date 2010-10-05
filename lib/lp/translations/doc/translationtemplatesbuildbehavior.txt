@@ -1,10 +1,11 @@
-= TranslationTemplatesBuildJobBehavior =
+TranslationTemplatesBuildJobBehavior
+====================================
 
-== Setup ==
+Setup
+-----
 
 Set up build environment.  Clear out the build queue.
 
-    >>> import transaction
     >>> import logging
     >>> logger = logging.getLogger()
     >>> logger.setLevel(logging.CRITICAL)
@@ -64,7 +65,8 @@ test suite.  But we give it a fake one.
     >>> removeSecurityProxy(builder).slave = slave
 
 
-== Get a job! ==
+Get a job!
+----------
 
 Use the ITranslationTemplatesBuildJobSource to create a
 TranslationTemplatesBuildJob.
@@ -104,7 +106,8 @@ The slave's build method has been called.
     1
 
 
-== Teardown ==
+Teardown
+--------
 
 Clean up after this test.
 

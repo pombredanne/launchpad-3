@@ -1,4 +1,5 @@
-= TranslationsPerson =
+TranslationsPerson
+==================
 
 Adapting IPerson to an ITranslationsPerson yields a TranslationsPerson
 object which provides translatable languages and translation history.

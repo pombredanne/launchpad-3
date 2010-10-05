@@ -91,7 +91,7 @@ has enough privileges for the script to run to completion.
     0
     >>> print stderr
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
-    INFO    Importing: Serbian (sr) translation of evolution-2.2 in Evolution trunk
+    INFO    Importing: Serbian (sr) ... of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
     <BLANKLINE>
     >>> transaction.commit()

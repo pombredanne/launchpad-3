@@ -254,7 +254,8 @@ At this time, there is no current or imported translation and no suggestions.
 
 To add a suggestion, we set the force_suggestion parameter.
 
-    >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
+    >>> new_translation = upstream_potmsgset.updateTranslation(
+    ...     upstream_pofile,
     ...     carlos, {0: u'foo'}, is_imported=False, force_suggestion=True,
     ...     lock_timestamp=datetime.now(pytz.UTC))
 

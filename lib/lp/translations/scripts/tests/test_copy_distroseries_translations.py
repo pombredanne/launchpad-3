@@ -9,7 +9,6 @@ __metaclass__ = type
 import logging
 from unittest import (
     TestCase,
-    TestLoader,
     )
 
 from zope.component import getUtility
@@ -63,8 +62,3 @@ class TestCopying(TestCase):
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-

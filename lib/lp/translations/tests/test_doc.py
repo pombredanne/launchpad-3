@@ -12,7 +12,6 @@ import unittest
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
-    setGlobs,
     setUp,
     tearDown,
     )
@@ -67,8 +66,7 @@ def test_suite():
         suite.addTest(PageTestSuite(story_path))
 
     testsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, os.path.pardir, 'doc'))
-        )
+        os.path.normpath(os.path.join(here, os.path.pardir, 'doc')))
 
     # Add special needs tests
     for key in sorted(special):
@@ -86,8 +84,7 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

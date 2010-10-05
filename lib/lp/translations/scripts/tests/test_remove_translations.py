@@ -141,6 +141,7 @@ class TestRemoveTranslationsConstraints(TestCase):
 
 class OptionChecker(OptionParser):
     """`OptionParser` that doesn't abort the whole program on error."""
+
     def error(self, msg):
         """See `OptionParser`.  Raises exception instead of exiting."""
         raise OptionValueError(msg)
@@ -206,7 +207,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--reviewer=%s' % reviewer.name,
             '--is-current=0',
             '--is-imported=true',
-            '--origin=SCM'
+            '--origin=SCM',
             ])
         self.assertEqual(options.submitter, submitter.id)
         self.assertEqual(options.reviewer, reviewer.id)
@@ -287,8 +288,7 @@ class TestRemoveTranslations(TestCase):
         return sorted(
             message.msgstr0.translation
             for message in pofile.translation_messages
-            if message.msgstr0 is not None
-            )
+            if message.msgstr0 is not None)
 
     def _checkInvariant(self):
         """Check that our translations are in their original state.
@@ -297,7 +297,7 @@ class TestRemoveTranslations(TestCase):
         changes and then testing for them.  Instead they make changes by
         creating new messages, and then using `remove_translations` to
         undo those changes.
-        
+
         We see that a removal worked correctly by verifying that the
         invariant is restored.
         """

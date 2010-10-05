@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
@@ -97,8 +95,3 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         self.assertEqual(
             text_to_html(TRANSLATION, self.potmsgset.flags),
             info['translations'][0]['text'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

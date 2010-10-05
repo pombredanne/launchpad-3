@@ -21,6 +21,7 @@ class DumbAggregator(TranslationLinksAggregator):
 
     The `describe` method returns a tuple of its arguments.
     """
+
     def describe(self, target, link, covered_sheets):
         """See `TranslationLinksAggregator`."""
         return (target, link, covered_sheets)

@@ -221,7 +221,7 @@ class RemoveTranslations(LaunchpadScript):
             help="Override safety check on moderately unsafe action."),
         ExtendedOption(
             '-d', '--dry-run', action='store_true', dest='dry_run',
-            help="Go through the motions, but don't really delete.")
+            help="Go through the motions, but don't really delete."),
         ]
 
     def add_my_options(self):
@@ -311,7 +311,7 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, 
+def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
                         is_current=None, is_imported=None,
