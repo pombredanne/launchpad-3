@@ -1,4 +1,5 @@
-= Incoming Mail =
+Incoming Mail
+=============
 
 When an email is sent to Launchpad we need to handle it somehow. This
 is done by handleEmails:
@@ -14,7 +15,9 @@ message it:
     * Deletes the message from the mail box
 
 
-== Mail Handlers ==
+-------------
+Mail Handlers
+-------------
 
 A mail handler is a utility which knows how to handle mail sent to a
 specific domain. It is registered as a named utility providing
@@ -94,8 +97,9 @@ Now we can see that each handler handled the emails sent to its domain:
     >>> set(bar_handler.handledMails) ^ set(msgids['bar.com'])
     set([])
 
-
-== Unhandled Mail ==
+--------------
+Unhandled Mail
+--------------
 
 So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
@@ -122,8 +126,9 @@ a link to the original message.
 
     >>> stub.test_emails = []
 
-
-== Mail from Persons not registered in Launchpad ==
+---------------------------------------------
+Mail from Persons not registered in Launchpad
+---------------------------------------------
 
 If a Person who isn't registered in Launchpad sends an email, we'll
 most of the time reject the email:
@@ -152,8 +157,9 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 
     >>> stub.test_emails = []
 
-
-== Mail from Persons with with an inactive Launchpad account ==
+---------------------------------------------------------
+Mail from Persons with with an inactive Launchpad account
+---------------------------------------------------------
 
 If a Person who's account is inactive sends an email, it will be
 silently rejected.
@@ -177,7 +183,9 @@ silently rejected.
     >>> msgid not in foo_handler.handledMails
     True
 
-== X-Original-To ==
+-------------
+X-Original-To
+-------------
 
 If available, the X-Original-To header is used to determine to which
 address the email was sent to:
@@ -197,7 +205,9 @@ the To and CC headers will be ignored:
     >>> msgid in foo_handler.handledMails
     False
 
-== OOPSes processing incoming mail ==
+-------------------------------
+OOPSes processing incoming mail
+-------------------------------
 
 If an unhandled exception occurs when we try to process an email from
 a user, we record an OOPS with the exception and send it to the user.
@@ -299,8 +309,9 @@ reporting in the web interface, are not ignored in the email interface.
 
     >>> stub.test_emails = []
 
-
-== DB exceptions ==
+-------------
+DB exceptions
+-------------
 
 If something goes wrongs in the handler, a DB exception can be raised,
 leaving the database in a bad state. If that happens a traceback should
@@ -357,8 +368,9 @@ the user reporting the error:
     >>> len(stub.test_emails)
     1
 
-
-== Librarian not running ==
+---------------------
+Librarian not running
+---------------------
 
 If for some reason the Librarian isn't up and running, we shouldn't
 lose any emails. All that should happen is that an error should get
@@ -385,8 +397,9 @@ logged.
     >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
 
-
-== Handling bounces ==
+----------------
+Handling bounces
+----------------
 
 Some broken mailers might not respect the Errors-To and Return-Path
 headers, send error messages back to the address, from which the email
@@ -444,7 +457,7 @@ another robot. We also drop those.
     0
 
 
-== Doctest cleanup ==
+.. Doctest cleanup
 
     >>> config_data = config.pop('bugmail_error_from_address')
     >>> mail_handlers.add('foo.com', None)

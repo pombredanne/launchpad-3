@@ -338,8 +338,7 @@ def handleMail(trans=transaction):
                 if mail['Return-Path'] == '<>':
                     _handle_error(
                         "Message had an empty Return-Path.",
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
                 if mail.get_content_type() == 'multipart/report':
                     # Mails with a content type of multipart/report are
@@ -351,8 +350,7 @@ def handleMail(trans=transaction):
                 if 'precedence' in mail:
                     _handle_error(
                         "Got a message with a precedence header.",
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
 
                 try:
@@ -368,7 +366,7 @@ def handleMail(trans=transaction):
 
                 # Extract the domain the mail was sent to. Mails sent to
                 # Launchpad should have an X-Original-To header.
-                if mail.has_key('X-Original-To'):
+                if 'X-Original-To' in mail:
                     addresses = [mail['X-Original-To']]
                 else:
                     log = logging.getLogger('canonical.launchpad.mail')
@@ -406,8 +404,7 @@ def handleMail(trans=transaction):
                 if principal is None and not handler.allow_unknown_users:
                     _handle_error(
                         'Unknown user: %s ' % mail['From'],
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)
