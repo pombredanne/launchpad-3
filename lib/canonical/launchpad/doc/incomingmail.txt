@@ -82,7 +82,10 @@ pass through the authentication stage:
     >>> config.push('bugmail_error_from_address', bugmail_error_from_address)
 
 The test mails are now in Launchpad's mail box, so now we can call
-handleMail, so that every mail gets handled by the correct handler.
+handleMail, so that every mail gets handled by the correct handler.  (We
+see warnings about missing `X-Original-To`_ headers, which are discussed
+below; this output merely shows that we emit warnings when the header is
+missing.)
 
     >>> handleMail(zopeless_transaction)
     WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
