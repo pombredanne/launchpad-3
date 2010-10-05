@@ -18,8 +18,6 @@ First make sure it uses Launchpad for translations.
 Netapplet doesn't have TranslationGroup and uses open permissions. We
 can see that from the translations page.
 
-    >>> netapplet_owner_browser = setupBrowser(
-    ...     auth='Basic test@canonical.com:test')
     >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
     >>> netapplet_owner_browser.getLink('Translations').click()
     >>> print netapplet_owner_browser.title
