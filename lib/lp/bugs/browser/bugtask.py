@@ -3023,6 +3023,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return False if a project group that does not use Launchpad."""
         if not self._projectContext():
             return True
+        # XXX: BradCrittenden 2010-10-05 bug=655036: rather than having the
+        # service usage attributs on the PillarView it would be better to move
+        # them to the model so the pillar can be checked directly.
         involvement = getMultiAdapter((self.context, self.request),
                                       name="+get-involved")
         return involvement.official_malone

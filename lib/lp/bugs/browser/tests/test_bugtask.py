@@ -440,11 +440,6 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
         with person_logged_in(product.owner):
             product.project = self.projectgroup
-        expected = {True: 'LAUNCHPAD',
-                    False: 'UNKNOWN',
-                    }
-        self.assertEqual(
-            expected[tracks_bugs_in_lp], product.bug_tracking_usage.name)
 
     def test_empty_project_group(self):
         # An empty project group does not use Launchpad for bugs.
@@ -482,8 +477,8 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         self.assertTrue(view.should_show_bug_information)
 
     def test_project_group_has_no_portlets_if_not_using_LP(self):
-        # A project group that has no projects using Launchpad will not have a
-        # 'Report a bug' link.
+        # A project group that has no projects using Launchpad will not have
+        # bug portlets.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
             self.projectgroup, name=u'+bugs', rootsite='bugs',
@@ -494,8 +489,8 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         self.assertIs(None, report_a_bug)
 
     def test_project_group_has_portlets_link_if_using_LP(self):
-        # A project group that has no projects using Launchpad will not have a
-        # 'Report a bug' link.
+        # A project group that has projects using Launchpad will have a
+        # portlets.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
             self.projectgroup, name=u'+bugs', rootsite='bugs',
