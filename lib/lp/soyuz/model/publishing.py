@@ -1003,7 +1003,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
                     [PUBLISHED, PENDING]),
-                BinaryPackagePublishingHistory.distroarchseries in (
+                BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                     available_architectures),
                 binarypackagerelease=self.binarypackagerelease,
                 archive=self.archive,
