@@ -160,7 +160,8 @@ class SlaveScanner:
 
         # Decide if we need to terminate the job or fail the
         # builder.
-        self._incrementFailureCounts(builder)
+        builder.gotFailure()
+        builder.getCurrentBuildFarmJob().gotFailure()
         self.logger.info(
             "builder failure count: %s, job failure count: %s" % (
                 builder.failure_count,
