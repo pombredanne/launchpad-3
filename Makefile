@@ -239,7 +239,7 @@ start-gdb: check_schema inplace stop support_files
 
 run_all: check_schema inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build

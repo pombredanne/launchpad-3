@@ -68,7 +68,7 @@ class _WaitForExit(process.ProcessReader):
         if not data.startswith('exited'):
             # Bad data, we want to signal that we are closing the connection
             # TODO: How?
-            # self.proc.?
+            self.proc.childConnectionLost(self.name, "invalid data")
             self.close()
             # I don't know what to put here if we get bogus data, but I *do*
             # want to say that the process is now considered dead to me
@@ -137,6 +137,13 @@ class ForkedProcessTransport(process.BaseProcess):
         return response, client_sock
 
     def _spawn(self, executable, args, environment):
+        """Start the new process.
+
+        This talks to the ForkingSessionService and requests a new process be
+        started. Similar to what Process.__init__/_fork would do.
+
+        :return: The pid, communication directory, and request socket.
+        """
         assert executable == 'bzr', executable # Maybe .endswith()
         assert args[0] == 'bzr', args[0]
         command_str = ' '.join(args[1:])
@@ -431,7 +438,9 @@ def launch_smart_server(avatar):
     #       If the forking daemon has been spawned, then we can use it if the
     #       feature is set to true for the given user, etc.
     #       A global config is a good first step, but does require restarting
-    #       the service to change the flag. Or does 'config' support SIGHUP?
+    #       the service to change the flag. 'config' doesn't support SIGHUP.
+    #       For now, restarting the service is necessary to enabled/disable the
+    #       forking daemon.
     if config.codehosting.use_forking_daemon:
         klass = ForkingRestrictedExecOnlySession
     return klass(

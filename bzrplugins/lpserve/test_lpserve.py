@@ -23,7 +23,11 @@ from lp.codehosting import get_bzr_path, get_BZR_PLUGIN_PATH_for_subprocess
 
 
 class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
-    """Wrap starting and stopping an LPForkingService instance in a thread."""
+    """A test-double to run a "forking service" in a thread.
+
+    Note that we don't allow actually forking, but it does allow us to interact
+    with the service for other operations.
+    """
 
     # For testing, we set the timeouts much lower, because we want the tests to
     # run quickly
@@ -32,6 +36,8 @@ class TestingLPForkingServiceInAThread(lpserve.LPForkingService):
     SLEEP_FOR_CHILDREN_TIMEOUT = 0.01
     WAIT_FOR_REQUEST_TIMEOUT = 0.1
 
+    # We're running in a thread as part of the test suite, blow up if we try to
+    # fork
     _fork_function = None
 
     def __init__(self, path, perms=None):
@@ -116,6 +122,7 @@ class TestTestingLPForkingServiceInAThread(tests.TestCaseWithTransport):
     def test_multiple_stops(self):
         service = TestingLPForkingServiceInAThread.start_service(self)
         service.stop_service()
+        # calling stop_service repeatedly is a no-op (and not an error)
         service.stop_service()
 
     def test_autostop(self):
@@ -209,12 +216,6 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
 
-    def test_hello_supports_crlf(self):
-        # telnet seems to always write in text mode. It is nice to be able to
-        # debug with simple telnet, so lets support it.
-        response = self.send_message_to_service('hello\r\n')
-        self.assertEqual('ok\nyep, still alive\n', response)
-
     def test_send_simple_fork(self):
         response = self.send_message_to_service('fork rocks\n')
         self.assertEqual('ok\nfake forking\n', response)
@@ -244,15 +245,6 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertEqual('ok\nfake forking\n', response)
         self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
                          self.service.fork_log)
-        # It should work with 'crlf' endings as well
-        response = self.send_message_to_service(
-            'fork-env rocks\r\n'
-            'BZR_EMAIL: joe@example.com\r\n'
-            'end\r\n', one_byte_at_a_time=True)
-        self.assertEqual('ok\nfake forking\n', response)
-        self.assertEqual([(['rocks'], {'BZR_EMAIL': 'joe@example.com'}),
-                          (['rocks'], {'BZR_EMAIL': 'joe@example.com'})],
-                         self.service.fork_log)
 
     def test_send_incomplete_fork_env_timeout(self):
         # We should get a failure message if we can't quickly read the whole
@@ -275,7 +267,9 @@ class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     """Override the bzr start_bzr_subprocess command.
 
     The launchpad infrastructure requires a fair amount of configuration to get
-    paths, etc correct. So this provides that work.
+    paths, etc correct. This provides a "start_bzr_subprocess" command that
+    has all of those paths appropriately set, but otherwise functions the same
+    as the bzrlib.tests.TestCase version.
     """
 
     def get_python_path(self):
@@ -415,8 +409,6 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
              '--children-timeout=1'],
             env_changes=env_changes)
         trace.mutter('started lp-service subprocess')
-        # preload_line = proc.stderr.readline()
-        # self.assertStartsWith(preload_line, 'Preloading')
         expected = 'Listening on socket: %s\n' % (path,)
         path_line = proc.stderr.readline()
         trace.mutter(path_line)
@@ -452,9 +444,8 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         stdin_path = os.path.join(path, 'stdin')
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
-        # Consider the ordering, the other side should open 'stdin' first, but
-        # we want it to block until we open the last one, or we race and it can
-        # delete the other handles before we get to open them.
+        # The ordering must match the ordering of the service or we get a
+        # deadlock.
         child_stdin = open(stdin_path, 'wb')
         child_stdout = open(stdout_path, 'rb')
         child_stderr = open(stderr_path, 'rb')

@@ -8,12 +8,14 @@ Cribbed from bzrlib.builtins.cmd_serve from Bazaar 0.16.
 
 __metaclass__ = type
 
-__all__ = ['cmd_launchpad_server',
-           'cmd_launchpad_forking_service',
-          ]
+__all__ = [
+    'cmd_launchpad_server',
+    'cmd_launchpad_forking_service',
+    ]
 
 
 import errno
+import logging
 import os
 import resource
 import shlex
@@ -133,14 +135,15 @@ register_command(cmd_launchpad_server)
 class LPForkingService(object):
     """A service that can be asked to start a new bzr subprocess via fork.
 
-    The basic idea is that python startup is very expensive. For example, the
+    The basic idea is that bootstrapping time is long. Most of this is time
+    spent during import of all needed libraries (lp.*).  For example, the
     original 'lp-serve' command could take 2.5s just to start up, before any
     actual actions could be performed.
 
     This class provides a service sitting on a socket, which can then be
     requested to fork and run a given bzr command.
 
-    Clients connect to the socket and make a simple request, which then
+    Clients connect to the socket and make a single request, which then
     receives a response. The possible requests are:
 
         "hello\n":  Trigger a heartbeat to report that the program is still
@@ -148,12 +151,12 @@ class LPForkingService(object):
         "quit\n":   Stop the service, but do so 'nicely', waiting for children
                     to exit, etc. Once this is received the service will stop
                     taking new requests on the port.
-        "fork <command>\n": Request a new subprocess to be started.
-            <command> is the bzr command to be run, such as "rocks" or
-            "lp-serve --inet 12".
+        "fork-env <command>\n<env>\nend\n": Request a new subprocess to be
+            started.  <command> is the bzr command to be run, such as "rocks"
+            or "lp-serve --inet 12".
             The immediate response will be the path-on-disk to a directory full
-            of named pipes (fifos) that will be the stdout/stderr/stdin of the
-            new process.
+            of named pipes (fifos) that will be the stdout/stderr/stdin (named
+            accordingly) of the new process.
             If a client holds the socket open, when the child process exits,
             the exit status (as given by 'wait()') will be written to the
             socket.
@@ -163,6 +166,10 @@ class LPForkingService(object):
             This way, any modules that are already loaded will not need to be
             loaded again. However, care must be taken with any global-state
             that should be reset.
+
+            fork-env allows you to supply environment variables such as
+            "BZR_EMAIL: joe@foo.com" which will be set in os.environ before the
+            command is run.
     """
 
     # Design decisions. These are bits where we could have chosen a different
@@ -309,15 +316,13 @@ class LPForkingService(object):
     def __init__(self, path=DEFAULT_PATH, perms=DEFAULT_PERMISSIONS):
         self.master_socket_path = path
         self._perms = perms
-        self._start_time = time.time()
+        self._start_time = None
         self._should_terminate = threading.Event()
         # We address these locally, in case of shutdown socket may be gc'd
         # before we are
         self._socket_timeout = socket.timeout
         self._socket_error = socket.error
-        self._socket_timeout = socket.timeout
-        self._socket_error = socket.error
-        # Map from pid => information
+        # Map from pid => (temp_path_for_handles, request_socket)
         self._child_processes = {}
         self._children_spawned = 0
 
@@ -326,11 +331,6 @@ class LPForkingService(object):
         self._server_socket.bind(self.master_socket_path)
         if self._perms is not None:
             os.chmod(self.master_socket_path, self._perms)
-        self._server_socket.setsockopt(socket.SOL_SOCKET,
-            socket.SO_REUSEADDR, 1)
-        self._sockname = self._server_socket.getsockname()
-        # self.host = self._sockname[0]
-        self.port = self._sockname[1]
         self._server_socket.listen(5)
         self._server_socket.settimeout(self.SOCKET_TIMEOUT)
         trace.mutter('set socket timeout to: %s' % (self.SOCKET_TIMEOUT,))
@@ -382,14 +382,11 @@ class LPForkingService(object):
         os.mkfifo(stderr_path)
 
     def _bind_child_file_descriptors(self, base_path):
-        import logging
-        from bzrlib import ui
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
-        # Opening for writing blocks (or fails), so do those last
-        # TODO: Consider buffering, though that might interfere with reading
-        #       and writing the smart protocol
+        # These open calls will block until another process connects (which
+        # must connect in the same order)
         stdin_fid = os.open(stdin_path, os.O_RDONLY)
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stderr_path, os.O_WRONLY)
@@ -421,7 +418,7 @@ class LPForkingService(object):
         os.remove(stdin_path)
         os.rmdir(base_path)
 
-    def _close_child_file_descriptons(self):
+    def _close_child_file_descriptors(self):
         sys.stdin.close()
         sys.stderr.close()
         sys.stdout.close()
@@ -434,9 +431,6 @@ class LPForkingService(object):
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
                      % (os.getpid(), command_argv,))
-        self.host = None
-        self.port = None
-        self._sockname = None
         self._bind_child_file_descriptors(path)
         self._run_child_command(command_argv)
 
@@ -451,7 +445,7 @@ class LPForkingService(object):
         #       it looks like ~200ms is 'fork()' time, but only 50ms is
         #       run-the-command time.
         retcode = commands.run_bzr_catch_errors(command_argv)
-        self._close_child_file_descriptons()
+        self._close_child_file_descriptors()
         trace.mutter('%d finished %r'
                      % (os.getpid(), command_argv,))
         # We force os._exit() here, because we don't want to unwind the stack,
@@ -520,6 +514,7 @@ class LPForkingService(object):
                             % (pid, command_argv, temp_name))
 
     def main_loop(self):
+        self._start_time = time.time()
         self._should_terminate.clear()
         self._register_signals()
         self._create_master_socket()
@@ -659,7 +654,7 @@ class LPForkingService(object):
     def _shutdown_children(self):
         self._wait_for_children(self.WAIT_FOR_CHILDREN_TIMEOUT)
         if self._child_processes:
-            trace.warning('Failed to stop children: %s'
+            trace.warning('Children still running: %s'
                 % ', '.join(map(str, self._child_processes)))
             for c_id in self._child_processes:
                 trace.warning('sending SIGINT to %d' % (c_id,))
@@ -689,7 +684,6 @@ class LPForkingService(object):
         if request.startswith('fork-env '):
             while not request.endswith('end\n'):
                 request += osutils.read_bytes_from_socket(conn)
-                request = request.replace('\r\n', '\n')
             command, env = request[9:].split('\n', 1)
         else:
             command = request[5:].strip()
@@ -718,9 +712,11 @@ class LPForkingService(object):
         if request == 'hello\n':
             conn.sendall('ok\nyep, still alive\n')
             self.log_information()
+            conn.close()
         elif request == 'quit\n':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
+            conn.close()
         elif request.startswith('fork ') or request.startswith('fork-env '):
             command_argv, env = self._parse_fork_request(conn, client_addr,
                                                          request)
@@ -732,23 +728,24 @@ class LPForkingService(object):
                 self.fork_one_request(conn, client_addr, command_argv, env)
                 # We don't close the conn like other code paths, since we use
                 # it again later.
-                return
+            else:
+                conn.close()
         else:
             self.log(client_addr, 'FAILURE: unknown request: %r' % (request,))
             # See [Decision #8]
             conn.sendall('FAILURE\nunknown request: %r\n' % (request,))
-        conn.close()
+            conn.close()
 
 
 class cmd_launchpad_forking_service(Command):
     """Launch a long-running process, where you can ask for new processes.
 
-    The process will block on a given --port waiting for requests to be made.
-    When a request is made, it will fork itself and redirect stdout/in/err to
-    fifos on the filesystem, and start running the requested command. The
-    caller will be informed where those file handles can be found. Thus it only
-    makes sense that the process connecting to the port must be on the same
-    system.
+    The process will block on a given AF_UNIX socket waiting for requests to be
+    made.  When a request is made, it will fork itself and redirect
+    stdout/in/err to fifos on the filesystem, and start running the requested
+    command. The caller will be informed where those file handles can be found.
+    Thus it only makes sense that the process connecting to the port must be on
+    the same system.
     """
 
     aliases = ['lp-service']
@@ -761,12 +758,11 @@ class cmd_launchpad_forking_service(Command):
                              ' as an octal integer (same as chmod)'),
                      Option('preload',
                         help="Do/don't preload libraries before startup."),
-                     Option('children-timeout', type=int,
-                        help="Only wait XX seconds for children to exit"),
+                     Option('children-timeout', type=int, argname='SEC',
+                        help="Only wait SEC seconds for children to exit"),
                     ]
 
     def _preload_libraries(self):
-        global libraries_to_preload
         for pyname in libraries_to_preload:
             try:
                 __import__(pyname)

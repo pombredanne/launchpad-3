@@ -27,6 +27,7 @@ from lp.codehosting.sshserver.session import (
     _WaitForExit,
     )
 from lp.codehosting.tests.helpers import AvatarTestCase
+from lp.testing import TestCase
 
 
 class MockReactor:
@@ -74,6 +75,9 @@ class MockProcessTransport:
     def loseConnection(self):
         self.log.append(('loseConnection',))
 
+    def childConnectionLost(self, childFD, reason=None):
+        self.log.append(('childConnectionLost', childFD, reason))
+
     def signalProcess(self, signal):
         if self._executable == 'raise-os-error':
             raise OSError()
@@ -88,15 +92,10 @@ class MockProcessTransport:
         self.log.append(('processEnded', status))
 
 
-# TODO: What base *should* I be using?
-class Test_WaitForExit(AvatarTestCase):
+class Test_WaitForExit(TestCase):
 
     def setUp(self):
-        AvatarTestCase.setUp(self)
-        # self.avatar = CodehostingAvatar(self.aliceUserDict, None)
-        # The logging system will try to get the id of avatar.transport, so
-        # let's give it something to take the id of.
-        # self.avatar.transport = object()
+        TestCase.setUp(self)
         self.reactor = MockReactor()
         self.proc = MockProcessTransport('executable')
         sock = socket.socket()
@@ -119,7 +118,8 @@ class Test_WaitForExit(AvatarTestCase):
         #      better, check that it does so?
         #      self.flushLoggedErrors() doesn't seem to do anything.
         self.exiter.dataReceived('bogus\n')
-        self.assertEqual([('processEnded', (255 << 8))], self.proc.log)
+        self.assertEqual([('childConnectionLost', 'exit', 'invalid data'),
+                          ('processEnded', (255 << 8))], self.proc.log)
 
 
 class TestExecOnlySession(AvatarTestCase):
@@ -394,9 +394,9 @@ class TestSessionIntegration(AvatarTestCase):
             " ForkingRestrictedExecOnlySession when forking is disabled. ")
 
     def test_avatarAdaptsToForkingRestrictedExecOnlySession(self):
-        # config.push('codehosting-forking',
-        #     "[codehosting]\nuse_forking_daemon: True\n")
-        # self.addCleanup(config.pop, 'codehosting-forking')
+        config.push('codehosting-forking',
+            "[codehosting]\nuse_forking_daemon: True\n")
+        self.addCleanup(config.pop, 'codehosting-forking')
         session = ISession(self.avatar)
         self.failUnless(
             isinstance(session, ForkingRestrictedExecOnlySession),

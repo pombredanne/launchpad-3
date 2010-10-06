@@ -185,9 +185,9 @@ class MemcachedService(Service):
 
 
 class ForkingSessionService(Service):
-    """A lp-forking-service for handling ssh access."""
+    """A lp-forking-service for handling codehosting access."""
 
-    # TODO: The SFTP (and bzr+ssh) server depends fairly heavily on this
+    # TODO: The "sftp" (aka codehosting) server depends fairly heavily on this
     #       service. It would seem reasonable to make one always start if the
     #       other one is started. Though this might be a way to "FeatureFlag"
     #       whether this is active or not.
