@@ -8,7 +8,7 @@ __metaclass__ = type
 from canonical.launchpad.ftests import login
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class TestOmitTargetedParameter(TestCaseWithFactory):

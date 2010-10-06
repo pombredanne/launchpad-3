@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestAnnotations(unittest.TestCase):

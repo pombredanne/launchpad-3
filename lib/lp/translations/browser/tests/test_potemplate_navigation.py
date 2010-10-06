@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import NotFoundError
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.potemplate import POTemplateNavigation
