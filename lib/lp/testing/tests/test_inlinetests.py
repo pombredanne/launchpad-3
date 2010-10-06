@@ -10,7 +10,7 @@ from doctest import (
     )
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 from lp import testing
 
 

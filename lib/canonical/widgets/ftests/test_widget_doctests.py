@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 import unittest, doctest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -7,7 +7,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,

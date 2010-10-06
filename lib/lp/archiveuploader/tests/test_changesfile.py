@@ -10,7 +10,7 @@ import os
 from debian.deb822 import Changes
 
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,

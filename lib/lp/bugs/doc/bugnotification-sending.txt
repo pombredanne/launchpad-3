@@ -34,7 +34,7 @@ We'll also define some helper functions to help us with database users.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> def switch_db_to_launchpad():
     ...     commit()

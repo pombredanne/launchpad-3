@@ -4,7 +4,7 @@ If you have a bug and a target, there's method which makes it easier to
 change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('no-priv@canonical.com')

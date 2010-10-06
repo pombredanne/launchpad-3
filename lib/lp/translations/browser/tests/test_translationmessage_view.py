@@ -12,7 +12,7 @@ from unittest import TestLoader
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
