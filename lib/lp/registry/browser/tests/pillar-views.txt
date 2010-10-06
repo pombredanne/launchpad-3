@@ -206,7 +206,7 @@ products are fully configured as translatable.
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> project_group.has_translatables()
     False
-    
+
     >>> view = create_view(project_group, '+get-involved')
     >>> print view.translations_usage.name
     UNKNOWN
