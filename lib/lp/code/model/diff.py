@@ -8,9 +8,10 @@ from __future__ import with_statement
 __metaclass__ = type
 __all__ = ['Diff', 'IncrementalDiff', 'PreviewDiff', 'StaticDiff']
 
-from cStringIO import StringIO
 from contextlib import nested
+from cStringIO import StringIO
 import sys
+
 from uuid import uuid1
 
 from bzrlib import trace
@@ -163,8 +164,10 @@ class Diff(SQLBase):
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
             this_branch=target_branch, do_merge=False)
+
         def dummy_warning(self, *args, **kwargs):
             pass
+
         real_warning = trace.warning
         trace.warning = dummy_warning
         try:
