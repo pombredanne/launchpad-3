@@ -779,6 +779,11 @@ class BranchMergeProposal(SQLBase):
         Store.of(self).flush()
         return self.preview_diff
 
+    def getIncrementalDiffRanges(self):
+        groups = self.getRevisionsSinceReviewStart()
+        return [
+            (group[0].getLefthandParent(), group[-1]) for group in groups]
+
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         """Generate an incremental diff for the merge proposal.
 
