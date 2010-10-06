@@ -615,17 +615,18 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = merge_proposal.getRevisionsSinceReviewStart()
+        groups = list(merge_proposal.getRevisionsSinceReviewStart())
         source = DecoratedBranch(merge_proposal.source_branch)
         comments = []
-        for revisions in groups:
-            revisions = list(revisions)
-            if getFeatureFlag('code.incremental_diffs.enabled'):
-                diff = merge_proposal.getIncrementalDiffs(
-                    [(revisions[0].revision.getLefthandParent(),
-                     revisions[-1].revision)])[0]
-            else:
-                diff = None
+        if getFeatureFlag('code.incremental_diffs.enabled'):
+            ranges = [
+                (revisions[0].revision.getLefthandParent(),
+                 revisions[-1].revision)
+                for revisions in groups]
+            diffs = merge_proposal.getIncrementalDiffs(ranges)
+        else:
+            diffs = [None] * len(groups)
+        for revisions, diff in zip(groups, diffs):
             newrevs = CodeReviewNewRevisions(
                 revisions, revisions[-1].revision.date_created, source, diff)
             comments.append(newrevs)
