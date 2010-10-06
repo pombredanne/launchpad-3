@@ -168,7 +168,7 @@ class TestBuilderWithTrial(TrialTestCase):
         d = builder.resumeSlaveHost()
         return self.assertFailure(d, CannotResumeHost)
 
-    def test_handleTimeout(self):
+    def test_handleTimeout_resume_failure(self):
         reset_fail_config = """
             [builddmaster]
             vm_resume_command: /bin/false"""
@@ -177,14 +177,30 @@ class TestBuilderWithTrial(TrialTestCase):
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
         d = builder.handleTimeout(QuietFakeLogger(), 'blah')
-        return d.addCallback(
-            lambda ignored: self.assertFalse(builder.builderok))
+        return self.assertFailure(d, CannotResumeHost)
+
+    def _setupRecipeBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # recipe, returning both.
+        processor = self.factory.makeProcessor(name="i386")
+        builder = self.factory.makeBuilder(
+            processor=processor, virtualized=True, vm_host="bladh")
+        builder.setSlaveForTesting(OkSlave())
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processorfamily=processor.family)
+        chroot = self.factory.makeLibraryFileAlias()
+        das.addOrUpdateChroot(chroot)
+        distroseries.nominatedarchindep = das
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries)
+        return builder, build
 
     def test_findAndStartJob_returns_candidate(self):
         # findAndStartJob finds the next queued job using _findBuildCandidate.
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="bladh")
         # We don't care about the type of build at all.
-        build = self.factory.makeSourcePackageRecipeBuild()
+        builder, build = self._setupRecipeBuildAndBuilder()
         candidate = build.queueBuild()
         # _findBuildCandidate is tested elsewhere, we just make sure that
         # findAndStartJob delegates to it.
@@ -196,9 +212,8 @@ class TestBuilderWithTrial(TrialTestCase):
     def test_findAndStartJob_starts_job(self):
         # findAndStartJob finds the next queued job using _findBuildCandidate
         # and then starts it.
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="bladh")
         # We don't care about the type of build at all.
-        build = self.factory.makeSourcePackageRecipeBuild()
+        builder, build = self._setupRecipeBuildAndBuilder()
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
