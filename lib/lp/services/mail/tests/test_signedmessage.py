@@ -102,7 +102,10 @@ class TestSignedMessage(TestCaseWithFactory):
         # Trailing whitespace should be ignored when verifying a message's
         # signature.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        body = 'A message with trailing whitespace.   '
+        body = (
+            'A message with trailing spaces.   \n'+
+            'And tabs\t\t\n'+
+            'Also mixed. \t ')
         msg = self._get_clearsigned_for_person(sender, body)
         principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)

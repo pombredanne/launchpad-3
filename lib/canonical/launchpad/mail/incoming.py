@@ -59,7 +59,7 @@ from lp.services.mail.signedmessage import signed_message_from_string
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
 # Match trailing whitespace.
-trailing_whitespace = re.compile(' *$')
+trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
