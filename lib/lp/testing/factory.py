@@ -1251,9 +1251,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranch()
         else:
             source_branch = merge_proposal.source_branch
-        def make_revision(sequence=None, parent=None):
-            if sequence is None:
-                sequence = source_branch.revision_history.count() + 1
+        def make_revision(parent=None):
+            sequence = source_branch.revision_history.count() + 1
             if parent is None:
                 parents = []
             else:
@@ -1269,7 +1268,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 date_created=self.getUniqueDate(),
                 source_branch=source_branch)
         if new_revision is None:
-            new_revision = make_revision(parent=old_revision)
+            new_revision = make_revision(old_revision)
         diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
@@ -1858,22 +1857,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             filename, len(content), StringIO(content), content_type,
             expires=expires, restricted=restricted)
         return library_file_alias
-
-    def makePackageDiff(self, from_spr=None, to_spr=None):
-        """Make a completed package diff."""
-        if from_spr is None:
-            from_spr = self.makeSourcePackageRelease()
-        if to_spr is None:
-            to_spr = self.makeSourcePackageRelease()
-
-        diff = from_spr.requestDiffTo(
-            from_spr.creator, to_spr)
-
-        naked_diff = removeSecurityProxy(diff)
-        naked_diff.status = PackageDiffStatus.COMPLETED
-        naked_diff.diff_content = self.makeLibraryFileAlias()
-        naked_diff.date_fulfilled = UTC_NOW
-        return diff
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):

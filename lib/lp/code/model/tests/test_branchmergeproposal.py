@@ -1889,6 +1889,7 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
             [revisions[0], revisions[1]], [revisions[2]]]
         self.assertRevisionGroups(bmp, expected_groups)
 
+
 class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
