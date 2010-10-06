@@ -577,27 +577,6 @@ class CodeReviewNewRevisions:
         self.display_attachments = False
 
 
-class IIncrementalDiffComment(IComment):
-    """Marker interface used to register views for CodeReviewNewRevisions."""
-
-
-class IncrementalDiffComment:
-    """Provides the comment interface for an incremental diff."""
-
-    implements(IIncrementalDiffComment)
-
-    has_body = True
-
-    has_footer = False
-
-    def __init__(self, incremental_diff):
-        self.incremental_diff = incremental_diff
-
-    @property
-    def date(self):
-        return self.incremental_diff.old_revision.date_created
-
-
 class CodeReviewNewRevisionsView(LaunchpadView):
     """The view for rendering the new revisions."""
 
@@ -647,7 +626,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                      revisions[-1].revision)])[0]
             else:
                 diff = None
-            newrevs = CodeReviewNewRevisions(revisions, None, source, diff)
+            newrevs = CodeReviewNewRevisions(
+                revisions, revisions[-1].revision.date_created, source, diff)
             comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context

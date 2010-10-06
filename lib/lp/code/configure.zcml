@@ -233,7 +233,6 @@
                     review_diff
                     next_preview_diff_job
                     preview_diff
-                    getCurrentIncrementalDiffs
                     getIncrementalDiffs
                     votes
                     all_comments

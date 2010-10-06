@@ -21,7 +21,6 @@ import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
-    isinstance as zisinstance,
     removeSecurityProxy,
     )
 
@@ -42,7 +41,6 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
     ICodeReviewNewRevisions,
-    IncrementalDiffComment,
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
