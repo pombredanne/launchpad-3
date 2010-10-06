@@ -643,7 +643,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         transaction.commit()
         return entry
 
-    def test_translator_persmissions(self):
+    def test_translator_permissions(self):
         # Sanity check that the translator has the right permissions but
         # others don't.
         pofile = self.factory.makePOFile(
@@ -653,7 +653,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         self.assertTrue(
             pofile.canEditTranslations(self.translator.translator))
 
-    def test_templates_are_sharing(self):
+    def test_makeImportEntry_templates_are_sharing(self):
         # Sharing between upstream and Ubuntu was set up correctly.
         entry = self._makeImportEntry(self.UBUNTU)
         subset = getUtility(IPOTemplateSet).getSharingSubset(
