@@ -9,7 +9,7 @@ import unittest
 
 from zope.testing.renormalizing import RENormalizing
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_simple_sendmail():

@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     IGPGHandler,
     IPersonSet,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts.keyringtrustanalyser import (
     addOtherKeyring,
     addTrustedKeyring,

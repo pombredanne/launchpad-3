@@ -10,7 +10,7 @@ from unittest import TestLoader
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )

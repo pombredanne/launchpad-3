@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class MockLogger:

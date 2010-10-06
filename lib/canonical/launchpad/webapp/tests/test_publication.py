@@ -65,7 +65,7 @@ from canonical.launchpad.webapp.servers import (
     WebServicePublication,
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

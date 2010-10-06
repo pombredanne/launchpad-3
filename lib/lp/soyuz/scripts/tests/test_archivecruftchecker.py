@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import (

@@ -13,7 +13,7 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ppareport import PPAReportScript
 from lp.testing.fakemethod import FakeMethod
