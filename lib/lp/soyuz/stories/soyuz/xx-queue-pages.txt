@@ -574,6 +574,6 @@ button will be disabled.
 
 == Clean up ==
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
 

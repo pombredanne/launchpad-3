@@ -10,7 +10,7 @@ from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.librarian import db
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class DBTestCase(unittest.TestCase):

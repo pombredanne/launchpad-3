@@ -14,7 +14,6 @@ __all__ = [
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
-    'UserCannotChangeMembershipSilently',
     ]
 
 from lazr.enum import (
@@ -28,7 +27,6 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -43,7 +41,6 @@ from zope.schema import (
     Int,
     Text,
     )
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 
@@ -51,15 +48,6 @@ from canonical.launchpad import _
 # either inviting him to renew his own membership or asking him to get a team
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
-
-
-class UserCannotChangeMembershipSilently(Unauthorized):
-    """User not permitted to change membership status silently.
-
-    Raised when a user tries to change someone's membership silently, and is
-    not a Launchpad Administrator.
-    """
-    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 class TeamMembershipStatus(DBEnumeratedType):

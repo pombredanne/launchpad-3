@@ -11,7 +11,6 @@
     <!-- Content class configuration -->
     <include file="account.zcml" />
     <include file="batchnavigator.zcml" />
-    <include file="binaryandsourcepackagename.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="emailaddress.zcml" />
