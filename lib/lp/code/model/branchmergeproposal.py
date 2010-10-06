@@ -77,6 +77,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.revision import IRevision
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -807,36 +808,31 @@ class BranchMergeProposal(SQLBase):
 
     def getRevisionsSinceReviewStart(self):
         """Get the grouped revisions since the review started."""
-        resultset = self._getNewerRevisions()
-        # Work out the start of the review.
-        branch_revisions = (
-            branch_revision for branch_revision, revision, revision_author
-            in resultset)
-        # Now group by date created.
-        return groupby(branch_revisions, lambda r: r.revision.date_created)
+        return self._getRevisionGroups()
 
-    def getIncrementalDiffRanges(self):
-        entries = list(self.all_comments)
+    def _getRevisionGroups(self):
+        entries = [
+            (comment.date_created, comment) for comment in self.all_comments]
         revisions = self._getNewerRevisions()
         entries.extend(
-            revision for branch_revision, revision, revision_author
-            in revisions)
-        entries.sort(key=attrgetter('date_created'))
-        ranges = []
-        old_revision = None
-        cur_revision = None
-        for entry in entries:
-            if IRevision.providedBy(entry):
-                cur_revision = entry
-                if old_revision is None:
-                    old_revision = cur_revision.getLefthandParent()
+            (revision.date_created, branch_revision)
+            for branch_revision, revision, revision_author in revisions)
+        entries.sort()
+        current_group = []
+        for date, entry in entries:
+            if IBranchRevision.providedBy(entry):
+                current_group.append(entry)
             else:
-                if cur_revision is not None:
-                    ranges.append(old_revision, cur_revision)
-                cur_revision, old_revision = None, None
-        if cur_revision is not None:
-            ranges.append((old_revision, cur_revision))
-        return ranges
+                if current_group != []:
+                    yield current_group
+                    current_group = []
+        if current_group != []:
+            yield current_group
+
+    def getIncrementalDiffRanges(self):
+        groups = self._getRevisionGroups(self)
+        return [
+            (group[0].getLefthandParent(), group[-1]) for group in groups]
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         """Generate an incremental diff for the merge proposal.

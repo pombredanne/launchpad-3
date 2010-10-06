@@ -1245,11 +1245,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                             new_revision=None):
         diff = self.makeDiff()
         if merge_proposal is None:
-            merge_proposal = self.makeBranchMergeProposal()
+            source_branch = self.makeBranch()
+        else:
+            source_branch = merge_proposal.source_branch
+        def make_revision(sequence, parent=None):
+            if parent is None:
+                parents = []
+            else:
+                parents = [parent]
+            branch_revision = self.makeBranchRevision(
+                source_branch, sequence=sequence,
+                revision_date=self.getUniqueDate(), parents=parents)
+            return branch_revision.revision
         if old_revision is None:
-            old_revision = self.makeRevision()
+            old_revision = make_revision(1)
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal(
+                date_created=self.getUniqueDate(),
+                source_branch=source_branch)
         if new_revision is None:
-            new_revision = self.makeRevision()
+            new_revision = make_revision(2, old_revision)
         diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
@@ -1322,8 +1337,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None):
-        revision = self.makeRevision(rev_id=revision_id)
+    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+                           revision_date=None, parents=None):
+        if parents is None:
+            parent_ids = []
+        else:
+            parent_ids = [revision.revision_id for revision in parents]
+        revision = self.makeRevision(
+            rev_id=revision_id, revision_date=revision_date,
+            parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,

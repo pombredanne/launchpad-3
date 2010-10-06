@@ -620,8 +620,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         comments = view.conversation.comments
         self.assertEqual(
             [diff],
-            [comment.incremental_diff for comment in comments
-             if zisinstance(comment, IncrementalDiffComment)])
+            [comment.diff for comment in comments])
 
     def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
         # The browser helper class implements its interface.
@@ -832,10 +831,12 @@ class TestBranchMergeProposal(BrowserTestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_conversation(self):
-        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
-            date_created = self.factory.getUniqueDate())
-        parent = add_revision_to_branch(self.factory, bmp.source_branch,
+        source_branch = self.factory.makeBranch()
+        parent = add_revision_to_branch(self.factory, source_branch,
             self.factory.getUniqueDate()).revision
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate(),
+            source_branch=source_branch)
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
         diff = self.factory.makeDiff()
