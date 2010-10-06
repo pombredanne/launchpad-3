@@ -822,9 +822,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -10977,13 +10974,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (253, 243651, 243651);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE todrop_branchmergerobot DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE todrop_branchmergerobot ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationimportqueueentry DISABLE TRIGGER ALL;

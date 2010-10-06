@@ -14,12 +14,15 @@ CREATE TABLE BranchMergeQueue (
     configuration TEXT,
     date_created timestamp without time zone
         DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    CONSTRAINT owner_name UNIQUE (owner, name)
+    CONSTRAINT owner_name UNIQUE (owner, name),
+    CONSTRAINT valid_name CHECK (valid_name(name))
 );
+CREATE INDEX branchmergequeue__registrant__idx ON BranchMergeQueue(registrant);
 
 ALTER TABLE Branch ADD COLUMN merge_queue integer REFERENCES BranchMergeQueue;
 ALTER TABLE Branch ADD COLUMN merge_queue_config TEXT;
+CREATE INDEX branch__merge_queue__idx ON Branch(merge_queue);
 
-ALTER TABLE BranchMergeRobot RENAME TO todrop_BranchMergeRobot;
+ALTER TABLE BranchMergeRobot SET SCHEMA todrop;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
