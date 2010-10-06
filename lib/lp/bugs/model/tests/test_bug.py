@@ -6,6 +6,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
@@ -167,3 +168,21 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
         self.assertEqual(
             set([subscriber1, subscriber2]),
             set(bug.getStructuralSubscribers()))
+
+    def test_getStructuralSubscribers_level(self):
+        # getStructuralSubscribers() respects the given level.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product = self.factory.makeProduct()
+        subscription = product.addBugSubscription(subscriber, subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        bug = self.factory.makeBug(product=product)
+        self.assertEqual(
+            [subscriber], list(
+                bug.getStructuralSubscribers(
+                    level=BugNotificationLevel.METADATA)))
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertEqual(
+            [], list(
+                bug.getStructuralSubscribers(
+                    level=BugNotificationLevel.COMMENTS)))
