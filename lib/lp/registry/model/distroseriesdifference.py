@@ -254,7 +254,10 @@ class DistroSeriesDifference(Storm):
         return updated
 
     def _updateBaseVersion(self):
-        """Check the most-recently published common version."""
+        """Check for the most-recently published common version.
+
+        Return whether the record was updated or not.
+        """
         if self.difference_type != (
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
@@ -274,9 +277,12 @@ class DistroSeriesDifference(Storm):
             common_versions.sort()
             self.base_version = unicode(common_versions.pop())
             return True
+
+        if self.base_version is None:
+            return False
         else:
             self.base_version = None
-            return False
+            return True
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""

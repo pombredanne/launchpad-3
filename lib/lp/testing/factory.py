@@ -2623,7 +2623,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = self.makePerson()
 
         if version is None:
-            version = self.getUniqueString('version')
+            version = unicode(self.getUniqueInteger()) + 'version'
 
         return distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=sourcepackagename,

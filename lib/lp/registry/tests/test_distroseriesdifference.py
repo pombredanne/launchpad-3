@@ -422,7 +422,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             ['source_pub', 'parent_source_pub'], cache)
 
-    def test_base_version(self):
+    def test_base_version_none(self):
+        # The attribute is set to None if there is no common base version.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertIs(None, ds_diff.base_version)
+
+    def test_base_version_common(self):
         # The common base version is set when the difference is created.
         # Publish v1.0 of foo in both series.
         derived_series = self.factory.makeDistroSeries(
@@ -447,6 +453,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 })
 
         self.assertEqual('1.0', ds_diff.base_version)
+
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
