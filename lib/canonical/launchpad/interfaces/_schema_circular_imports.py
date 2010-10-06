@@ -40,6 +40,7 @@ from lp.bugs.interfaces.bug import (
     )
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
@@ -111,9 +112,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic,
     )
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload,
-    )
+from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
@@ -397,13 +396,17 @@ patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
 
 # IStructuralSubscription
+patch_collection_property(
+    IStructuralSubscription, 'bug_filters', IBugSubscriptionFilter)
 patch_reference_property(
     IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
 
+# IStructuralSubscriptionTarget
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
+# ISourcePackageRelease
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
     ISourcePackageRecipeBuild)

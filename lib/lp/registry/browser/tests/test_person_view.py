@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -28,8 +29,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView,
-    )
+    TeamInvitationView)
+
 
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
@@ -779,3 +780,32 @@ class TestTeamInvitationView(TestCaseWithFactory):
         self.assertEqual(
             expected,
             notifications[0].message)
+
+
+class TestSubscriptionsView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestSubscriptionsView, self).setUp(
+            user='test@canonical.com')
+        self.user = getUtility(ILaunchBag).user
+        self.person = self.factory.makePerson()
+        self.other_person = self.factory.makePerson()
+        self.team = self.factory.makeTeam(owner=self.user)
+        self.team.addMember(self.person, self.user)
+
+    def test_unsubscribe_link_appears_for_user(self):
+        login_person(self.person)
+        view = create_view(self.person, '+subscriptions')
+        self.assertTrue(view.canUnsubscribeFromBugTasks())
+
+    def test_unsubscribe_link_does_not_appear_for_not_user(self):
+        login_person(self.other_person)
+        view = create_view(self.person, '+subscriptions')
+        self.assertFalse(view.canUnsubscribeFromBugTasks())
+
+    def test_unsubscribe_link_appears_for_team_member(self):
+        login_person(self.person)
+        view = create_initialized_view(self.team, '+subscriptions')
+        self.assertTrue(view.canUnsubscribeFromBugTasks())
