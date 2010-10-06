@@ -51,7 +51,6 @@ from storm.expr import (
     In,
     LeftJoin,
     Max,
-    Min,
     Not,
     Or,
     Select,
@@ -156,14 +155,13 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    BugTaskSet,
     get_bug_privacy_filter,
     NullBugTask,
     )
-from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugwatch import BugWatch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.enum import BugNotificationLevel
@@ -458,11 +456,9 @@ class Bug(SQLBase):
         store = Store.of(self)
         message_by_id = {}
         if include_parents:
-            def to_messages(rows):
-                return [row[0] for row in rows]
+            to_messages = lambda rows: [row[0] for row in rows]
         else:
-            def to_messages(rows):
-                return rows
+            to_messages = lambda rows: rows
         def eager_load_owners(messages):
             # Because we may have multiple owners, we spend less time in storm
             # with very large bugs by not joining and instead querying a second
