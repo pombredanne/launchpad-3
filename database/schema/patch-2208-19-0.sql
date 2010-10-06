@@ -21,4 +21,4 @@ ALTER TABLE BugTrackerComponent ADD CONSTRAINT bugtrackercomponent__disto__spn__
 ALTER TABLE BugTrackerComponent ADD CONSTRAINT valid_target
     CHECK (distribution IS NULL = source_package_name IS NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 19, 0);
