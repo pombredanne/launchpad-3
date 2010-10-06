@@ -11,7 +11,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
     login_person,
     TestCaseWithFactory,

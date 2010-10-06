@@ -15,7 +15,7 @@ from twisted.trial import unittest as trialtest
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
 from lp.buildmaster.tests.mock_slaves import OkSlave
 from lp.registry.interfaces.pocket import (

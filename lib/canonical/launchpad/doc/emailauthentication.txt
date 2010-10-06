@@ -12,7 +12,7 @@ emails:
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import_public_test_keys()

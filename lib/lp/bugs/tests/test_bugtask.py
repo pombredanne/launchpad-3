@@ -16,7 +16,7 @@ from canonical.launchpad.searchbuilder import (
     all,
     any,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

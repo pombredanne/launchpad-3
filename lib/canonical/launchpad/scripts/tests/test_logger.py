@@ -9,7 +9,7 @@ __all__ = []
 import unittest
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 
 
 def test_suite():
