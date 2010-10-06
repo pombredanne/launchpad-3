@@ -59,17 +59,18 @@ class TestSignedMessage(TestCaseWithFactory):
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
         self.assertIs(None, msg.signature)
 
-    def _get_clearsigned_for_person(self, sender):
+    def _get_clearsigned_for_person(self, sender, body=None):
         # Create a signed message for the sender specified with the test
         # secret key.
         key = import_secret_test_key()
         signing_context = GPGSigningContext(key.fingerprint, password='test')
-        body = dedent("""\
-            This is a multi-line body.
+        if body is None:
+            body = dedent("""\
+                This is a multi-line body.
 
-            Sincerely,
-            Your friendly tester.
-            """)
+                Sincerely,
+                Your friendly tester.
+                """)
         msg = self.factory.makeSignedMessage(
             email_address=sender.preferredemail.email,
             body=body, signing_context=signing_context)
@@ -91,6 +92,18 @@ class TestSignedMessage(TestCaseWithFactory):
         # The test keys belong to Sample Person.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         msg = self._get_clearsigned_for_person(sender)
+        principle = authenticateEmail(msg)
+        self.assertIsNot(None, msg.signature)
+        self.assertEqual(sender, principle.person)
+        self.assertFalse(
+            IWeaklyAuthenticatedPrincipal.providedBy(principle))
+
+    def test_trailing_whitespace(self):
+        # Trailing whitespace should be ignored when verifying a message's
+        # signature.
+        sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        body = 'A message with trailing whitespace.   '
+        msg = self._get_clearsigned_for_person(sender, body)
         principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)

@@ -55,9 +55,11 @@ from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
-# followed by a # '\n', and all '\n' that are not preceded by a '\r'.
+# followed by a '\n', and all '\n' that are not preceded by a '\r'.
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
+# Match trailing whitespace.
+trailing_whitespace = re.compile(' *$')
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
@@ -73,6 +75,8 @@ def canonicalise_line_endings(text):
     """
     if non_canonicalised_line_endings.search(text):
         text = non_canonicalised_line_endings.sub('\r\n', text)
+    if trailing_whitespace.search(text):
+        text = trailing_whitespace.sub('', text)
     return text
 
 
