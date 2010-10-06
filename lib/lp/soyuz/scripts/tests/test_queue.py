@@ -37,7 +37,7 @@ from canonical.librarian.testing.server import (
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer, 
     LaunchpadZopelessLayer,
     )

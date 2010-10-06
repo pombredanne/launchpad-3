@@ -3,7 +3,7 @@
 A product with private bugs by default must always have a bug supervisor
 (this is enforced by a DB constraint).
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, CreateBugParams, IProductSet)
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

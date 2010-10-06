@@ -9,7 +9,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,

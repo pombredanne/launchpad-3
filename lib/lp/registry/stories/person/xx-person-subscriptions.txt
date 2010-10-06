@@ -37,7 +37,7 @@ subscriptions table includes the bug number, title and location.
     thunderbird (Ubuntu)
     1
     Firefox does not support SVG
-    mozilla-firefox (Ubuntu)
+    Mozilla Firefox
 
 The bug subscriptions table also includes an unsubscribe link, if they have
 permission to remove the subscription, for bugs to which the person or team is
@@ -89,7 +89,7 @@ subscriptions.
     Mozilla Firefox
     1
     Firefox does not support SVG
-    mozilla-firefox (Ubuntu)
+    Mozilla Firefox
 
 Sample Person adds a bug subscription for a team, HWDB team, of which he is a
 member.

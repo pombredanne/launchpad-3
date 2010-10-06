@@ -19,7 +19,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )

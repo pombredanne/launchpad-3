@@ -39,7 +39,7 @@ from bzrlib.urlutils import (
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.testing import (
+from canonical.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
     )
