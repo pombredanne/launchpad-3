@@ -41,7 +41,7 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
     )
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,

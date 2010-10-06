@@ -14,7 +14,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageNavigation,
