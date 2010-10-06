@@ -888,7 +888,9 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     """Tests for how we handle the result at the end of the test suite."""
 
     def get_body_text(self, email):
-        return email.get_payload()[0].get_payload()
+        # Stringify the utf8-encoded MIME text message part containing the
+        # test run summary.
+        return email.get_payload(0).get_payload(decode=True)
 
     def make_empty_result(self):
         return TestResult()
@@ -988,12 +990,9 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [user_message] = log
         error_result_string = request.format_result(
                 result, logger._start_time, logger._end_time)
-        # Stringify the utf8-encoded MIME text message part containing the
-        # test run summary.
-        summary_text = user_message.get_payload(0).get_payload(decode=True)
         self.assertEqual(
             error_result_string,
-            summary_text)
+            self.get_body_text(user_message))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.
