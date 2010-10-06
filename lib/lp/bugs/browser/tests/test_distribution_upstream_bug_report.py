@@ -17,7 +17,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.systemdocs import create_view
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.distribution_upstream_bug_report import (
     DistributionUpstreamBugReport,
     )

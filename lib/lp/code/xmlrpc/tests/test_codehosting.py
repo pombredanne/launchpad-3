@@ -24,7 +24,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )

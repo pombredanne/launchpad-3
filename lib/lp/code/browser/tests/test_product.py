@@ -19,7 +19,7 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.code.enums import (
     BranchType,
