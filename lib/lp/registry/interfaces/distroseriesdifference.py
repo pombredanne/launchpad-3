@@ -171,8 +171,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name, difference_type,
-            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+    def new(derived_series, source_package_name):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -182,11 +181,6 @@ class IDistroSeriesDifferenceSource(Interface):
         :param source_package_name: A source package name identifying the
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
-        :param difference_type: Indicates the type of difference represented
-            by this record.
-        :type difference_type: `DistroSeriesDifferenceType`.
-        :param status: The current status of this difference.
-        :type status: `DistorSeriesDifferenceStatus`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.

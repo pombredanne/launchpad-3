@@ -1950,8 +1950,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name, difference_type,
-            status=status)
+            derived_series, source_package_name)
+
+        removeSecurityProxy(diff).status = status
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.

@@ -62,9 +62,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             NotADerivedSeriesError, distroseriesdifference_factory.new,
-            distro_series, source_package_name,
-            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES,
-            )
+            distro_series, source_package_name)
 
     def test_source_pub(self):
         # The related source pub is returned for the derived series.
