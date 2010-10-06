@@ -85,7 +85,7 @@ class TestProduct(TestCaseWithFactory):
             u'trunk'], series_names)
 
 
-class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
+class TestCanConfigureAnswers(TestCaseWithFactory):
 
     def test_cannot_configure_translations_product_no_edit_permission(self):
         product = self.factory.makeProduct()
