@@ -59,7 +59,10 @@ from zope.security.proxy import (
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.message import (
@@ -1248,7 +1251,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranch()
         else:
             source_branch = merge_proposal.source_branch
-        def make_revision(sequence, parent=None):
+        def make_revision(parent=None):
+            sequence = source_branch.revision_history.count() + 1
             if parent is None:
                 parents = []
             else:
@@ -1258,13 +1262,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 revision_date=self.getUniqueDate(), parents=parents)
             return branch_revision.revision
         if old_revision is None:
-            old_revision = make_revision(1)
+            old_revision = make_revision()
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal(
                 date_created=self.getUniqueDate(),
                 source_branch=source_branch)
         if new_revision is None:
-            new_revision = make_revision(2, old_revision)
+            new_revision = make_revision(old_revision)
         diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
@@ -1794,7 +1798,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None):
+                              merge_proposal=None, date_created=DEFAULT):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -1808,7 +1812,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
         return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent)
+            sender, subject, body, vote, vote_tag, parent,
+            _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
@@ -1852,22 +1857,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             filename, len(content), StringIO(content), content_type,
             expires=expires, restricted=restricted)
         return library_file_alias
-
-    def makePackageDiff(self, from_spr=None, to_spr=None):
-        """Make a completed package diff."""
-        if from_spr is None:
-            from_spr = self.makeSourcePackageRelease()
-        if to_spr is None:
-            to_spr = self.makeSourcePackageRelease()
-
-        diff = from_spr.requestDiffTo(
-            from_spr.creator, to_spr)
-
-        naked_diff = removeSecurityProxy(diff)
-        naked_diff.status = PackageDiffStatus.COMPLETED
-        naked_diff.diff_content = self.makeLibraryFileAlias()
-        naked_diff.date_fulfilled = UTC_NOW
-        return diff
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):

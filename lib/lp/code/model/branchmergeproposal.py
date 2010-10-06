@@ -845,10 +845,12 @@ class BranchMergeProposal(SQLBase):
     def getRevisionsSinceReviewStart(self):
         """Get the grouped revisions since the review started."""
         entries = [
-            (comment.date_created, comment) for comment in self.all_comments]
+            ((comment.date_created, -1), comment) for comment
+            in self.all_comments]
         revisions = self._getNewerRevisions()
         entries.extend(
-            (revision.date_created, branch_revision)
+            ((revision.date_created, branch_revision.sequence),
+                branch_revision)
             for branch_revision, revision, revision_author in revisions)
         entries.sort()
         current_group = []
