@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -77,6 +79,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import (
@@ -1843,8 +1846,8 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
         review_date = datetime(2009, 9, 10, tzinfo=UTC)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
-        login_person(bmp.registrant)
-        bmp.requestReview(review_date)
+        with person_logged_in(bmp.registrant):
+            bmp.requestReview(review_date)
         revision_date = review_date + timedelta(days=1)
         revisions = []
         for date in range(2):
@@ -1859,6 +1862,32 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
             [revisions[0], revisions[1], revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
 
+    def test_getRevisionsSinceReviewStart_groups_with_comments(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=self.factory.getUniqueDate())
+        revisions = []
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+        with person_logged_in(self.factory.makePerson()):
+            self.factory.makeCodeReviewComment(
+                merge_proposal=bmp,
+                date_created=self.factory.getUniqueDate())
+        revisions.append(
+            add_revision_to_branch(
+                self.factory, bmp.source_branch,
+                self.factory.getUniqueDate()))
+
+        expected_groups = [
+            [revisions[0], revisions[1]], [revisions[2]]]
+        self.assertRevisionGroups(bmp, expected_groups)
 
 class TestBranchMergeProposalGetIncrementalDiffs(TestCaseWithFactory):
 

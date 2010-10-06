@@ -59,7 +59,10 @@ from zope.security.proxy import (
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.message import (
@@ -1796,7 +1799,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None):
+                              merge_proposal=None, date_created=DEFAULT):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -1810,7 +1813,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
         return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent)
+            sender, subject, body, vote, vote_tag, parent,
+            _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
