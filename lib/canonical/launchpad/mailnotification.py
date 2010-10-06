@@ -146,8 +146,6 @@ def get_unified_diff(old_text, new_text, text_width):
     text_diff = '\n'.join(text_diff)
     return text_diff
 
-    bug.getDirectSubscriptions
-
 @block_implicit_flushes
 def notify_invitation_to_join_team(event):
     """Notify team admins that the team has been invited to join another team.
