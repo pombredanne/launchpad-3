@@ -656,9 +656,10 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Only the Launchpad admins need this, we are only going to use it
-        for connecting up series and distroseries where we did not have
-        them."""
+        """Only the Launchpad admins need this, we are only going to use
+        it for connecting up series and distroseries where we did not
+        have them.
+        """
         return user.in_admin
 
 
@@ -898,9 +899,10 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
                 user.in_admin)
 
 
-class EditProductOfficialBugTagsByOwnerBugSupervisorOrAdmins(AuthorizationBase):
-    """The owner of a product and its bug supervisor should be able to
-    edit its official bug tags."""
+class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
+    AuthorizationBase):
+    """Product's owner and bug supervisor can set official bug tags."""
+
     permission = 'launchpad.BugSupervisor'
     usedfor = IOfficialBugTagTargetRestricted
 

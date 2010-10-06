@@ -57,21 +57,19 @@ The link is also available for the bug supervisor.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from canonical.launchpad.ftests import login, logout
     >>> login(ADMIN_EMAIL)
-    >>> d_owner = factory.makePerson()
-    >>> logout()
-    >>> login_person(d_owner)
-    >>> distro = factory.makeDistribution(name='youbuntu', owner=d_owner)
-    >>> supervisor_team = factory.makeTeam(owner=d_owner)
-    >>> supervisor_member = factory.makePerson(password='g00dpassword')
-    >>> added = supervisor_team.addMember(supervisor_member, d_owner)
-    >>> distro.setBugSupervisor(supervisor_team, d_owner)
+    >>> supervisor = factory.makePerson(password='g00dpassword')
+    >>> youbuntu = factory.makeProduct(name='youbuntu',
+    ...     bug_supervisor=supervisor,
+    ...     official_malone=True)
     >>> bug_super_browser = setupBrowser(
     ...     auth='Basic %s:g00dpassword' %
-    ...         supervisor_member.preferredemail.email)
+    ...         supervisor.preferredemail.email)
     >>> logout()
     >>> bug_super_browser.open(
-    ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
-
+    ...     'http://bugs.launchpad.dev/youbuntu')
+    >>> bug_super_browser.getLink('Edit official tags').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu/+manage-official-tags
 
 == Official Tags on Bug Pages ==
 
