@@ -8,7 +8,7 @@
 import unittest
 
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import ZopelessAppServerLayer
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
 
 

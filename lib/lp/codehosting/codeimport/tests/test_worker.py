@@ -42,7 +42,7 @@ import pysvn
 
 from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tarball import (
     create_tarball,

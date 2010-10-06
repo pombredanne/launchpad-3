@@ -1,4 +1,5 @@
-= Language Pack storage =
+Language Pack storage
+=====================
 
 A LanguagePack represents an exported distribution series' language pack.
 
@@ -10,9 +11,7 @@ were updated since the export date for the associate FULL export.
 
     >>> from cStringIO import StringIO
     >>> from zope.component import getUtility
-    >>> from zope.interface import providedBy
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.languagepack import (
     ...     ILanguagePack,
     ...     ILanguagePackSet,
