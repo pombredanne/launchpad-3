@@ -129,7 +129,7 @@ class PillarView(LaunchpadView):
         """Does the pillar officially use launchpad."""
         # This if structure is required because it may be called many
         # times to build the complete set of official applications.
-        if pillar.official_malone:
+        if service_uses_launchpad(IServiceUsage(pillar).bug_tracking_usage):
             self.official_malone = True
         if service_uses_launchpad(IServiceUsage(pillar).answers_usage):
             self.answers_usage = ServiceUsage.LAUNCHPAD

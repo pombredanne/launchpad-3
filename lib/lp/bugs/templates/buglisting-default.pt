@@ -74,10 +74,12 @@
     <tal:menu replace="structure view/@@+related-pages" />
     <tal:do_not_show_portlets_advanced_form
       condition="not: view/shouldShowAdvancedForm">
-      <tal:block content="structure context/@@+portlet-bugfilters" />
+      <tal:block content="structure context/@@+portlet-bugfilters"
+                 tal:condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD"/>
       <tal:block
           content="structure context/@@+portlet-publishing-details | nothing"/>
-      <tal:block content="structure context/@@+portlet-bugtags" />
+      <tal:block content="structure context/@@+portlet-bugtags"
+                 tal:condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD"/>
       <tal:releasecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
           tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />

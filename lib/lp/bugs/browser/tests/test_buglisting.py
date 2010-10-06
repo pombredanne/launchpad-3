@@ -22,6 +22,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         return self.factory.makeDistributionSourcePackage('test-dsp', distro)
 
     def test_distributionsourcepackage_unknown_bugtracker_message(self):
+        # A DistributionSourcePackage whose Distro does not use
+        # Launchpad for bug tracking should explain that.
         dsp = self._makeDistributionSourcePackage()
         url = canonical_url(dsp, rootsite='bugs')
         browser = self.getUserBrowser(url)
@@ -35,12 +37,36 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             extract_text(top_portlet[0]))
 
     def test_distributionsourcepackage_unknown_bugtracker_no_button(self):
+        # A DistributionSourcePackage whose Distro does not use
+        # Launchpad for bug tracking should not show the "Report a bug"
+        # button.
         dsp = self._makeDistributionSourcePackage()
         url = canonical_url(dsp, rootsite='bugs')
         browser = self.getUserBrowser(url)
         self.assertIs(None, find_tag_by_id(browser.contents, 'involvement'),
                       "Involvement portlet with Report-a-bug button should "
                       "not be shown")
+
+    def test_distributionsourcepackage_unknown_bugtracker_no_filters(self):
+        # A DistributionSourcePackage whose Distro does not use
+        # Launchpad for bug tracking should not show links to "New
+        # bugs", "Open bugs", etc.
+        dsp = self._makeDistributionSourcePackage()
+        url = canonical_url(dsp, rootsite='bugs')
+        browser = self.getUserBrowser(url)
+        self.assertIs(None,
+                      find_tag_by_id(browser.contents, 'portlet-bugfilters'),
+                      "portlet-bugfilters should not be shown.")
+
+    def test_distributionsourcepackage_unknown_bugtracker_no_tags(self):
+        # A DistributionSourcePackage whose Distro does not use
+        # Launchpad for bug tracking should not show links to search by
+        # bug tags.
+        dsp = self._makeDistributionSourcePackage()
+        url = canonical_url(dsp, rootsite='bugs')
+        browser = self.getUserBrowser(url)
+        self.assertIs(None, find_tag_by_id(browser.contents, 'portlet-tags'),
+                      "portlet-tags should not be shown.")
 
     def _makeSourcePackage(self):
         distro = self.factory.makeDistribution('test-distro')
@@ -49,6 +75,8 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         return self.factory.makeSourcePackage('test-sp', distro.currentseries)
 
     def test_sourcepackage_unknown_bugtracker_message(self):
+        # A SourcePackage whose Distro does not use
+        # Launchpad for bug tracking should explain that.
         sp = self._makeSourcePackage()
         url = canonical_url(sp, rootsite='bugs')
         browser = self.getUserBrowser(url)
@@ -63,9 +91,32 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             extract_text(top_portlet[0]))
 
     def test_sourcepackage_unknown_bugtracker_no_button(self):
+        # A SourcePackage whose Distro does not use Launchpad for bug
+        # tracking should not show the "Report a bug" button.
         sp = self._makeSourcePackage()
         url = canonical_url(sp, rootsite='bugs')
         browser = self.getUserBrowser(url)
         self.assertIs(None, find_tag_by_id(browser.contents, 'involvement'),
                       "Involvement portlet with Report-a-bug button should "
                       "not be shown")
+
+    def test_sourcepackage_unknown_bugtracker_no_filters(self):
+        # A SourcePackage whose Distro does not use Launchpad for bug
+        # tracking should not show links to "New bugs", "Open bugs",
+        # etc.
+        sp = self._makeSourcePackage()
+        url = canonical_url(sp, rootsite='bugs')
+        browser = self.getUserBrowser(url)
+        self.assertIs(None,
+                      find_tag_by_id(browser.contents, 'portlet-bugfilters'),
+                      "portlet-bugfilters should not be shown.")
+
+    def test_sourcepackage_unknown_bugtracker_no_tags(self):
+        # A SourcePackage whose Distro does not use Launchpad for bug
+        # tracking should not show links to search by bug tags.
+        sp = self._makeSourcePackage()
+        url = canonical_url(sp, rootsite='bugs')
+        browser = self.getUserBrowser(url)
+        self.assertIs(None,
+                      find_tag_by_id(browser.contents, 'portlet-tags'),
+                      "portlet-tags should not be shown.")
