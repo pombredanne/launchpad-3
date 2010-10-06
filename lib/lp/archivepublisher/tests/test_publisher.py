@@ -22,7 +22,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.config import (
+    Config,
+    getPubConfig,
+    )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -1081,6 +1084,62 @@ class TestPublisher(TestPublisherBase):
 
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
+
+    def testNativeNoReleaseFilesForDisabledArchitectures(self):
+        """Test that no release files are generated for disabled archs."""
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.getDistroArchSeries('i386').enabled = False
+        self.config = Config(self.ubuntutest)
+
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubBinaries()
+
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+
+        # binary-disabled doesn't show up anywhere.
+        expected_release_files = {
+            'breezy-autotest': {
+                'main': set(['binary-hppa', 'source']),
+                'multiverse': set(['binary-hppa', 'source']),
+                'restricted': set(['binary-hppa', 'source']),
+                'universe': set(['binary-hppa', 'source']),
+                }
+            }
+        self.assertEquals(
+            expected_release_files,
+            publisher.apt_handler.release_files_needed)
+
+    def testAptFtparchiveNoReleaseFilesForDisabledArchitectures(self):
+        """Test that no release files are generated for disabled archs."""
+        ds = self.ubuntutest.getSeries('breezy-autotest')
+        ds.getDistroArchSeries('i386').enabled = False
+        self.config = Config(self.ubuntutest)
+
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        self.getPubBinaries()
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+
+        # binary-disabled doesn't show up anywhere.
+        expected_release_files = {
+            'breezy-autotest': {
+                'main': set(['binary-hppa', 'source']),
+                'multiverse': set(['binary-hppa', 'source']),
+                'restricted': set(['binary-hppa', 'source']),
+                'universe': set(['binary-hppa', 'source']),
+                }
+            }
+        self.assertEquals(
+            expected_release_files,
+            publisher.apt_handler.release_files_needed)
 
     def testWorldAndGroupReadablePackagesAndSources(self):
         """Test Packages.gz and Sources.gz files are world and group readable.
