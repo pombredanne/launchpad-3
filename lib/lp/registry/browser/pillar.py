@@ -121,7 +121,7 @@ class PillarView(LaunchpadView):
             self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
             # Product groups must have translatable products for
             # translations_usage to be ServiceUsage.LAUNCHPAD
-            if not pillar.has_translatables():
+            if not pillar.has_translatable():
                 self.translations_usage = ServiceUsage.UNKNOWN
         else:
             self._set_official_launchpad(pillar)
