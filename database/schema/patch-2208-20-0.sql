@@ -4,9 +4,9 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE BugTrackerComponentGroup
-    ADD COLUMN remote_name TEXT NOT NULL;
+    DROP CONSTRAINT valid_name;
 
 ALTER TABLE BugTrackerComponent
-    ADD COLUMN remote_name TEXT NOT NULL;
+    DROP CONSTRAINT valid_name;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 20, 0);

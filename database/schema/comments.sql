@@ -349,8 +349,7 @@ COMMENT ON COLUMN BugTrackerPerson.person IS 'The Person record in Launchpad thi
 -- BugTrackerComponent
 
 COMMENT ON TABLE BugTrackerComponent IS 'A software component in a remote bug tracker, which can be linked to the corresponding source package in a distribution using this table.';
-COMMENT ON COLUMN BugTrackerComponent.name IS 'The displayable name of the component.';
-COMMENT ON COLUMN BugTrackerComponent.remote_name IS 'The name of the component as registered in the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as registered in the remote bug tracker.';
 COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
 COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
 COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
@@ -359,8 +358,7 @@ COMMENT ON COLUMN BugTrackerComponent.distro_source_package IS 'A link to the so
 -- BugTrackerComponentGroup
 
 COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as modeled in a remote bug tracker, often referred to as a product.  Some bug trackers do not categorize software components this way, so they will have a single default component group that all components belong to.';
-COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The displayable name of the product or category.';
-COMMENT ON COLUMN BugTrackerComponentGroup.remote_name IS 'The product or category name used in the remote bug tracker for grouping components.';
+COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
 COMMENT ON COLUMN BugTrackerComponentGroup.bug_tracker IS 'The external bug tracker this component group belongs to.';
 
 -- BugCve
