@@ -6,7 +6,10 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.product import ProductView
@@ -85,7 +88,9 @@ class TestProduct(TestCaseWithFactory):
             u'trunk'], series_names)
 
 
-class TestCanConfigureAnswers(TestCaseWithFactory):
+class TestCanConfigureTranslations(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_cannot_configure_translations_product_no_edit_permission(self):
         product = self.factory.makeProduct()
