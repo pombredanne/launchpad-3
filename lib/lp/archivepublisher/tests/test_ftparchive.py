@@ -270,6 +270,15 @@ class TestFTPArchive(TestCaseWithFactory):
     def test_generateConfig(self):
         # Generate apt-ftparchive configuration file and run it.
 
+        # Create a new disabled architecture to confirm that it is
+        # skipped, and no indices are created.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self._distribution.getSeries('hoary-test'),
+            architecturetag='disabled')
+        das.enabled = False
+        # Regenerate the config to not pick up the new arch.
+        self._config = Config(self._distribution)
+
         # Setup FTPArchiveHandler with a real Publisher for Ubuntutest.
         publisher = Publisher(
             self._logger, self._config, self._dp, self._archive)
