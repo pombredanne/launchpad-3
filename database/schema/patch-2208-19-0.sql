@@ -15,5 +15,10 @@ ALTER TABLE BugTrackerComponent
 ALTER TABLE BugTrackerComponent
     DROP COLUMN distro_source_package;
 
+ALTER TABLE BugTrackerComponent ADD CONSTRAINT bugtrackercomponent__disto__spn__key
+    UNIQUE (distribution, source_package_name);
+
+ALTER TABLE BugTrackerComponent ADD CONSTRAINT valid_target
+    CHECK (distribution IS NULL = source_package_name IS NULL);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES(2208, 99, 0);
