@@ -45,6 +45,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.browser.librarian import (
+    ProxiedLibraryFileAlias,
+    )
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -819,8 +822,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
         return [
             ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
@@ -839,6 +840,17 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         binary_urls = self._proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
         return binary_urls
+
+    def packageDiffUrl(self, to_version):
+        """See `ISourcePackagePublishingHistory`."""
+        # There will be only very few diffs for each package so
+        # iterating is fine here, since the package_diffs property is a
+        # multiple join and returns all the diffs quite quickly.
+        for diff in self.sourcepackagerelease.package_diffs:
+            if diff.to_source.version == to_version:
+                return ProxiedLibraryFileAlias(
+                    diff.diff_content, self.archive).http_url
+        return None
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -1003,7 +1015,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
                     [PUBLISHED, PENDING]),
-                BinaryPackagePublishingHistory.distroarchseries in (
+                BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                     available_architectures),
                 binarypackagerelease=self.binarypackagerelease,
                 archive=self.archive,

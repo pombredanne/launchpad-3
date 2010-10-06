@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """tales.py doctests."""
@@ -9,14 +9,14 @@ import unittest
 from zope.component import getAdapter
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
 def test_requestapi():
     """
-    >>> from canonical.launchpad.webapp.tales import IRequestAPI, RequestAPI
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.app.browser.tales import IRequestAPI, RequestAPI
+    >>> from lp.registry.interfaces.person import IPerson
     >>> from zope.interface.verify import verifyObject
 
     >>> class FakePrincipal:
@@ -46,6 +46,7 @@ def test_requestapi():
 
     """
 
+
 def test_cookie_scope():
     """
     The 'request/lp:cookie_scope' TALES expression returns a string
@@ -53,7 +54,7 @@ def test_cookie_scope():
     available for the entire Launchpad site.  It takes into account
     the request URL and the cookie_domains setting in launchpad.conf.
 
-        >>> from canonical.launchpad.webapp.tales import RequestAPI
+        >>> from lp.app.browser.tales import RequestAPI
         >>> def cookie_scope(url):
         ...     class FakeRequest:
         ...         def getURL(self):
@@ -75,9 +76,10 @@ def test_cookie_scope():
         ; Path=/; Secure
     """
 
+
 def test_dbschemaapi():
     """
-    >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
+    >>> from lp.app.browser.tales import DBSchemaAPI
     >>> from lp.code.enums import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
@@ -116,7 +118,6 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         expected = '<a href="%s" class="sprite person">%s</a>' % (
             formatter.url(), person.name)
         self.assertEqual(expected, result)
-
 
 
 def test_suite():

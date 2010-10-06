@@ -9,6 +9,7 @@ __all__ = [
     'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
+    'RDFIndexView',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
     'StatusCount',
@@ -16,6 +17,7 @@ __all__ = [
 
 
 from operator import attrgetter
+import os
 
 from storm.store import Store
 from zope.component import getUtility
@@ -25,7 +27,11 @@ from canonical.launchpad.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.lazr import ExportedFolder
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -284,3 +290,14 @@ class BaseRdfView:
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class RDFIndexView(LaunchpadView):
+    """View for /rdf page."""
+    page_title = label = "Launchpad RDF"
+
+
+class RDFFolder(ExportedFolder):
+    """Export the Launchpad RDF schemas."""
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../rdfspec/')

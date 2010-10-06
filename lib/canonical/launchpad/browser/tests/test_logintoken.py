@@ -13,7 +13,7 @@ from canonical.launchpad.browser.logintoken import (
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

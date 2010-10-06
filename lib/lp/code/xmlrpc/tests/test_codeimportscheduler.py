@@ -5,14 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
 import xmlrpclib
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.codeimporthelpers import make_running_import
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.xmlrpc.faults import NoSuchCodeImportJob
@@ -41,7 +40,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
     def makeCodeImportJob(self, running):
         person = getUtility(ILaunchpadCelebrities).vcs_imports.teamowner
         if running:
-            return removeSecurityProxy(run_with_login(person, make_running_import)).import_job
+            return removeSecurityProxy(
+                run_with_login(person, make_running_import)).import_job
         else:
             return run_with_login(person, self.factory.makeCodeImportJob)
 
@@ -135,8 +135,3 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
             "finishJobID(-1, 'SUCCESS', 0) returned %r, not a Fault."
             % (fault,))
         self.assertEqual(NoSuchCodeImportJob, fault.__class__)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

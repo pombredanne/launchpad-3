@@ -93,7 +93,7 @@ bug got submitted correctly:
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> def get_latest_added_bug():
     ...     latest_notification = BugNotification.selectFirst(orderBy='-id')
     ...     return latest_notification.bug
@@ -772,7 +772,7 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
     [u'Sample Person', u'Ubuntu Team']
 
     >>> bug_six.subscribe(no_priv, no_priv)
-    <BugSubscription...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
@@ -1223,7 +1223,7 @@ bugs directly to series.
 
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     # The script's default user doesn't have permission to change the driver.
     >>> commit()
@@ -1835,7 +1835,7 @@ An empty unsigned mail to new@malone:
 
 If we submit an email with no affects command, it is rejected.
 
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
@@ -1869,7 +1869,6 @@ required. If it is missing, the message is also rejected.
 XXX: Gavin Panella 2009-07-24 bug=404010: The need for this test
 arises from the implementation of MaloneHandler.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
@@ -1903,7 +1902,6 @@ edit@bugs).
 XXX: Gavin Panella 2009-07-24 bug=404010: The need for this test
 arises from the implementation of MaloneHandler.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """\
     ... From: Foo Bar <foo.bar@canonical.com>
@@ -1937,7 +1935,6 @@ bug-related commands do blow up before the check for a bugtask is
 reached. For example, unsubscribing oneself from a private bug then
 linking a CVE.
 
-    >>> from canonical.launchpad.database import Bug
     >>> before_count = Bug.select().count()
     >>> submit_mail = """\
     ... From: Foo Bar <foo.bar@canonical.com>

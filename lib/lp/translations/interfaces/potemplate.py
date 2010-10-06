@@ -739,6 +739,10 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    has_translation_files = Bool(
+        title=_("Does this object have translation files?"),
+        readonly=True)
+
     def getTemplatesCollection():
         """Return templates as a `TranslationTemplatesCollection`.
 
@@ -804,6 +808,7 @@ class IHasTranslationTemplates(Interface):
         exist for it.
         """
 
+
 class ITranslationTemplatesCollection(Interface):
     """A `Collection` of `POTemplate`s."""
 
@@ -816,7 +821,3 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
-
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py

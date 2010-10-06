@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.model.bug import BugAffectsPerson
 from lp.services.database import bulk
 from lp.testing import (

@@ -371,5 +371,6 @@ class DistroBrancher:
             old_db_branch.control_format,
             old_db_branch.branch_format,
             old_db_branch.repository_format)
+        old_db_branch.stacked_on = new_db_branch
         transaction.commit()
         return new_db_branch

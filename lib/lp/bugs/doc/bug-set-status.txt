@@ -4,7 +4,7 @@ If you have a bug and a target, there's method which makes it easier to
 change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('no-priv@canonical.com')
@@ -45,7 +45,7 @@ It returns the edited bugtask.
 It also emits an ObjectModifiedEvent so that BugNotification and
 BugActivity records are created.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     No Privileges Person
@@ -53,7 +53,7 @@ BugActivity records are created.
     ** Changed in: firefox
            Status: New => Confirmed
 
-    >>> from canonical.launchpad.database import BugActivity
+    >>> from lp.bugs.model.bugactivity import BugActivity
     >>> latest_activity = BugActivity.selectFirst(orderBy='-id')
     >>> latest_activity.whatchanged
     u'firefox: status'
