@@ -1828,8 +1828,7 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
 
     def assertRevisionGroups(self, bmp, expected_groups):
         """Get the groups for the merge proposal and check them."""
-        groups = bmp.getRevisionsSinceReviewStart()
-        revision_groups = [list(revisions) for date, revisions in groups]
+        revision_groups = list(bmp.getRevisionsSinceReviewStart())
         self.assertEqual(expected_groups, revision_groups)
 
     def test_getRevisionsSinceReviewStart_no_revisions(self):
@@ -1857,8 +1856,7 @@ class TestGetRevisionsSinceReviewStart(TestCaseWithFactory):
                     self.factory, bmp.source_branch, revision_date))
             revision_date += timedelta(days=1)
         expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
+            [revisions[0], revisions[1], revisions[2], revisions[3]]]
         self.assertRevisionGroups(bmp, expected_groups)
 
 

@@ -1248,7 +1248,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranch()
         else:
             source_branch = merge_proposal.source_branch
-        def make_revision(sequence, parent=None):
+        def make_revision(sequence=None, parent=None):
+            if sequence is None:
+                sequence = source_branch.revision_history.count() + 1
             if parent is None:
                 parents = []
             else:
@@ -1258,13 +1260,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 revision_date=self.getUniqueDate(), parents=parents)
             return branch_revision.revision
         if old_revision is None:
-            old_revision = make_revision(1)
+            old_revision = make_revision()
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal(
                 date_created=self.getUniqueDate(),
                 source_branch=source_branch)
         if new_revision is None:
-            new_revision = make_revision(2, old_revision)
+            new_revision = make_revision(parent=old_revision)
         diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
