@@ -424,6 +424,20 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_base_version_none(self):
         # The attribute is set to None if there is no common base version.
+        # Publish different versions in the series.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.0deri1',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series.parent_series,
+            version='1.0ubu2',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         self.assertIs(None, ds_diff.base_version)
@@ -453,6 +467,42 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 })
 
         self.assertEqual('1.0', ds_diff.base_version)
+
+    def test_base_version_multiple(self):
+        # The latest common base version is set as the base-version.
+        # Publish v1.0 and 1.1 of foo in both series.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.0',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.1',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series.parent_series,
+            version='1.0',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series.parent_series,
+            version='1.1',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
+                })
+
+        self.assertEqual('1.1', ds_diff.base_version)
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
