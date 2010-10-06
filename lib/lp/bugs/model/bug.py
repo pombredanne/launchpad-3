@@ -1038,7 +1038,7 @@ BugMessage""" % sqlvalues(self.id))
         target = structural_subscription_targets.pop()
         subscriptions = target.getSubscriptionsForBug(self, level)
         for target in structural_subscription_targets:
-            subscriptions.union(
+            subscriptions = subscriptions.union(
                 target.getSubscriptionsForBug(self, level))
 
         # XXX: There must be a better way to do it than this.

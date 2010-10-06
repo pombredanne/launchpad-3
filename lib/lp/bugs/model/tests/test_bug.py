@@ -139,7 +139,7 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product)
         self.assertEqual(set(), bug.getStructuralSubscribers())
 
-    def test_getStructuralSubscribers_subscribers(self):
+    def test_getStructuralSubscribers_single_target(self):
         # Subscribers for any of the bug's targets are returned.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
@@ -147,3 +147,23 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
         product.addBugSubscription(subscriber, subscriber)
         bug = self.factory.makeBug(product=product)
         self.assertEqual(set([subscriber]), bug.getStructuralSubscribers())
+
+    def test_getStructuralSubscribers_multiple_targets(self):
+        # Subscribers for any of the bug's targets are returned.
+        actor = self.factory.makePerson()
+        login_person(actor)
+
+        subscriber1 = self.factory.makePerson()
+        subscriber2 = self.factory.makePerson()
+
+        product1 = self.factory.makeProduct(owner=actor)
+        product1.addBugSubscription(subscriber1, subscriber1)
+        product2 = self.factory.makeProduct(owner=actor)
+        product2.addBugSubscription(subscriber2, subscriber2)
+
+        bug = self.factory.makeBug(product=product1)
+        bug.addTask(actor, product2)
+
+        self.assertEqual(
+            set([subscriber1, subscriber2]),
+            bug.getStructuralSubscribers())
