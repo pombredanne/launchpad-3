@@ -247,22 +247,19 @@ def parse_control(control_filename):
 
 
 def extract_source(dsc_filename):
+    oldcwd = os.getcwd()
     # Create and move into a temporary directory
     tmpdir = tempfile.mktemp()
-    os.mkdir(tmpdir)
-    old_cwd = os.getcwd()
-    os.chdir(tmpdir)
 
     # Extract the source package
-    cmd = "dpkg-source -sn -x %s" % (dsc_filename)
-    (result, output) = commands.getstatusoutput(cmd)
-    if (result != 0):
-        print " * command was '%s'" % (cmd)
-        print dak_utils.prefix_multi_line_string(
-            output, " [dpkg-source output:] "), ""
+    try:
+        extract_dpkg_source(dsc_filename, tmpdir)
+    except DpkgSourceError, e:
+        print " * command was '%s'" % (e.command)
+        print e.output
         dak_utils.fubar(
             "'dpkg-source -x' failed for %s [return code: %s]." %
-            (dsc_filename, result))
+            (dsc_filename, e.result))
 
     return (old_cwd, tmpdir)
 

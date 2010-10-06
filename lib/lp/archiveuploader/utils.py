@@ -42,11 +42,12 @@ class DpkgSourceError(Exception):
 
     _fmt = "Unable to unpack source package (%(result)s): %(output)s"
 
-    def __init__(self, output, result):
+    def __init__(self, command, output, result):
         Exception.__init__(
-            self, self._fmt % {"output": output, "result": result})
+            self, self._fmt % {"output": output, "result": result, "command": command})
         self.output = output
         self.result = result
+        self.command = command
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -278,5 +279,5 @@ def extract_dpkg_source(dsc_filepath, target):
 
     if result != 0:
         dpkg_output = prefix_multi_line_string(output, "  ")
-        raise DpkgSourceError(result=result, output=dpkg_output)
+        raise DpkgSourceError(result=result, output=dpkg_output, command=args)
 
