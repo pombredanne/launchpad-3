@@ -18,7 +18,7 @@ from canonical.launchpad.scripts.librarian_apache_log_parser import (
     get_library_file_id,
     )
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessLayer,
     )

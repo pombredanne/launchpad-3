@@ -28,7 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

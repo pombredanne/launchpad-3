@@ -16,7 +16,7 @@ from canonical.database.sqlbase import commit
 from lp.bugs.model.bugtask import BugTask
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
