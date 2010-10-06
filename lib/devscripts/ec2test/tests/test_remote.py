@@ -986,10 +986,14 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         result = self.make_failing_result()
         logger.got_result(result)
         [user_message] = log
+        error_result_string = request.format_result(
+                result, logger._start_time, logger._end_time)
+        # Stringify the utf8-encoded MIME text message part containing the
+        # test run summary.
+        summary_text = user_message.get_payload(0).get_payload(decode=True)
         self.assertEqual(
-            request.format_result(
-                result, logger._start_time, logger._end_time),
-            self.get_body_text(user_message).decode('quoted-printable'))
+            error_result_string,
+            summary_text)
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.
