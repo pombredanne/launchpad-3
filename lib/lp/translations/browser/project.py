@@ -21,6 +21,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.browser.project import ProjectEditView
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -55,6 +56,10 @@ class ProjectView(LaunchpadView):
         translatables = set(self.context.translatables())
         all_products = set(self.context.products)
         return list(all_products - translatables)
+
+    @cachedproperty
+    def has_translatables(self):
+        return self.context.translatables().count() > 0
 
 
 class ProjectSettingsView(TranslationsMixin, ProjectEditView):

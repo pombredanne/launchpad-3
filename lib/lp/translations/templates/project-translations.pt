@@ -6,21 +6,20 @@
 >
 
 <head>
-  <tal:no_translatables condition="not:context/translatables">
-    <tal:head_epilogue metal:fill-slot="head_epilogue">
-      <meta name="robots" content="noindex,nofollow" />
-    </tal:head_epilogue>
-  </tal:no_translatables>
+  <tal:head_epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="not:view/has_translatables"
+          name="robots" content="noindex,nofollow" />
+  </tal:head_epilogue>
 </head>
 
 <body>
   <div metal:fill-slot="main">
 
     <div class="top-portlet">
-      <p tal:condition="context/translatables">
+      <p tal:condition="view/has_translatables">
         Select a project you want to translate into your own language.
       </p>
-      <p tal:condition="not:context/translatables">
+      <p tal:condition="not:view/has_translatables">
         <strong>
         There are no translatable projects in
         <span tal:content="context/displayname">Project Group</span>.
@@ -45,7 +44,7 @@
       <div class="yui-u first">
         <div class="portlet" id="translatable-projects">
           <h3>Translatable projects</h3>
-          <dl tal:condition="context/translatables">
+          <dl tal:condition="view/has_translatables">
             <tal:project repeat="product context/translatables">
               <dt>
                 <a tal:replace="structure product/fmt:link/+translations">

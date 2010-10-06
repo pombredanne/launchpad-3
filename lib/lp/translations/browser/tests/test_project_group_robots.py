@@ -32,23 +32,39 @@ class TestRobots(TestCaseWithFactory):
         self.naked_product = removeSecurityProxy(self.product)
         self.naked_product.project = self.projectgroup
 
-    def _get_soup_and_robots(self, usage):
+    def _set_usage(self, usage):
         self.naked_product.translations_usage = usage
-        view = create_initialized_view(
+
+    def _get_view(self):
+        return create_initialized_view(
             self.projectgroup, '+translations', rootsite='translations')
+
+    def _get_soup_and_robots(self, usage):
+        self._set_usage(usage)
+        view = self._get_view()
         soup = BeautifulSoup(view())
         robots = soup.find('meta', attrs={'name': 'robots'})
         return soup, robots
+
+    def _verify_robots_are_blocked(self, usage):
+        soup, robots = self._get_soup_and_robots(usage)
+        self.assertEqual(0, self.projectgroup.translatables().count())
+        self.assertEqual('noindex,nofollow', robots['content'])
 
     def _verify_robots_not_blocked(self, usage):
         soup, robots = self._get_soup_and_robots(usage)
         self.assertEqual(1, self.projectgroup.translatables().count())
         self.assertIs(None, robots)
 
-    def _verify_robots_are_blocked(self, usage):
-        soup, robots = self._get_soup_and_robots(usage)
-        self.assertEqual(0, self.projectgroup.translatables().count())
-        self.assertEqual('noindex,nofollow', robots['content'])
+    def test_has_translatables_true(self):
+        self._set_usage(ServiceUsage.LAUNCHPAD)
+        view = self._get_view()
+        self.assertTrue(view.has_translatables)
+
+    def test_has_translatables_false(self):
+        self._set_usage(ServiceUsage.UNKNOWN)
+        view = self._get_view()
+        self.assertFalse(view.has_translatables)
 
     def test_UNKNOWN_blocks_robots(self):
         self._verify_robots_are_blocked(ServiceUsage.UNKNOWN)
