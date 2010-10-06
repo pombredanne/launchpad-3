@@ -21,7 +21,6 @@ import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
-    isinstance as zisinstance,
     removeSecurityProxy,
     )
 
@@ -42,7 +41,6 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
     ICodeReviewNewRevisions,
-    IncrementalDiffComment,
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
@@ -57,7 +55,9 @@ from lp.code.model.diff import (
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     BrowserTestCase,
+    feature_flags,
     login_person,
+    set_feature_flag,
     TestCaseWithFactory,
     time_counter,
     )
@@ -612,12 +612,13 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
                 old_revision=revisions[1].revision.getLefthandParent(),
                 new_revision=revisions[3].revision)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
         view = create_initialized_view(bmp, '+index')
         comments = view.conversation.comments
         self.assertEqual(
             [diff],
-            [comment.incremental_diff for comment in comments
-             if zisinstance(comment, IncrementalDiffComment)])
+            [comment.diff for comment in comments])
 
     def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
         # The browser helper class implements its interface.
@@ -828,14 +829,18 @@ class TestBranchMergeProposal(BrowserTestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_conversation(self):
-        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
-            date_created = self.factory.getUniqueDate())
-        parent = add_revision_to_branch(self.factory, bmp.source_branch,
+        source_branch = self.factory.makeBranch()
+        parent = add_revision_to_branch(self.factory, source_branch,
             self.factory.getUniqueDate()).revision
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate(),
+            source_branch=source_branch)
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
         diff = self.factory.makeDiff()
         bmp.generateIncrementalDiff(parent, revision, diff)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 

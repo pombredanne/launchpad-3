@@ -120,6 +120,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -559,13 +560,14 @@ class CodeReviewNewRevisions:
     """
     implements(ICodeReviewNewRevisions)
 
-    def __init__(self, revisions, date, branch):
+    def __init__(self, revisions, date, branch, diff):
         self.revisions = revisions
         self.branch = branch
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+        self.diff = diff
 
         # Other standard IComment attributes are not used.
         self.extra_css_class = None
@@ -573,27 +575,6 @@ class CodeReviewNewRevisions:
         self.body_text = None
         self.comment_date = None
         self.display_attachments = False
-
-
-class IIncrementalDiffComment(IComment):
-    """Marker interface used to register views for CodeReviewNewRevisions."""
-
-
-class IncrementalDiffComment:
-    """Provides the comment interface for an incremental diff."""
-
-    implements(IIncrementalDiffComment)
-
-    has_body = True
-
-    has_footer = False
-
-    def __init__(self, incremental_diff):
-        self.incremental_diff = incremental_diff
-
-    @property
-    def date(self):
-        return self.incremental_diff.old_revision.date_created
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
@@ -636,10 +617,18 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         merge_proposal = self.context
         groups = merge_proposal.getRevisionsSinceReviewStart()
         source = DecoratedBranch(merge_proposal.source_branch)
-        comments = [CodeReviewNewRevisions(list(revisions), date, source)
-            for date, revisions in groups]
-        diffs = merge_proposal.getCurrentIncrementalDiffs()
-        comments.extend(IncrementalDiffComment(diff) for diff in diffs)
+        comments = []
+        for revisions in groups:
+            revisions = list(revisions)
+            if getFeatureFlag('code.incremental_diffs.enabled'):
+                diff = merge_proposal.getIncrementalDiffs(
+                    [(revisions[0].revision.getLefthandParent(),
+                     revisions[-1].revision)])[0]
+            else:
+                diff = None
+            newrevs = CodeReviewNewRevisions(
+                revisions, revisions[-1].revision.date_created, source, diff)
+            comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
