@@ -22,7 +22,7 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.errors import (

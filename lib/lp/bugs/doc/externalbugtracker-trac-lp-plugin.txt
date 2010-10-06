@@ -33,7 +33,7 @@ Trac to validate $token and return a Set-Cookie header.
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.interfaces import ILoginTokenSet
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> class FakeResponse:
     ...     def __init__(self):

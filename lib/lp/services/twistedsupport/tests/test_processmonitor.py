@@ -18,7 +18,7 @@ from twisted.internet import (
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.testing import TwistedLayer
+from canonical.testing.layers import TwistedLayer
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocol,
