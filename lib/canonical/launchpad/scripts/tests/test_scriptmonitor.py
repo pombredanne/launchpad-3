@@ -12,7 +12,7 @@ from canonical import lp
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.scripts.scriptmonitor import check_script
-from canonical.testing import DatabaseLayer
+from canonical.testing.layers import DatabaseLayer
 
 
 class CheckScriptTestCase(unittest.TestCase):

@@ -15,7 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
