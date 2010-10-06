@@ -1041,10 +1041,24 @@ BugMessage""" % sqlvalues(self.id))
             subscriptions = subscriptions.union(
                 target.getSubscriptionsForBug(self, level))
 
-        return Store.of(self).find(
+        # Pull all the subscriptions in.
+        subscriptions = list(subscriptions)
+
+        # Prepare a query for the subscribers.
+        subscribers = Store.of(self).find(
             Person, Person.id.is_in(
                 subscription.subscriberID
                 for subscription in subscriptions))
+
+        if recipients is not None:
+            # We need to process subscriptions, so pull all the subscribes
+            # into the cache, then update recipients with the subscriptions.
+            subscribers = list(subscribers)
+            for subscription in subscriptions:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+
+        return subscribers
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
