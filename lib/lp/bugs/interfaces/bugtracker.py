@@ -533,7 +533,7 @@ class IBugTrackerComponent(Interface):
                           'with in launchpad, if one has been defined.')))
 
     @operation_parameters(
-        component_name=TextLine(
+        distro_source_package=TextLine(
             title=_("The distribution source package object that should be "
                     "linked to this component."),
             required=True))
