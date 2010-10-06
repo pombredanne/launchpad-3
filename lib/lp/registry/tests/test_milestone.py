@@ -14,7 +14,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet

@@ -8,7 +8,7 @@ Run the doctests and pagetests.
 import os
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import (
+from canonical.testing.layers import (
     BaseLayer,
     LaunchpadZopelessLayer,
     )

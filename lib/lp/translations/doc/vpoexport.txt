@@ -1,10 +1,11 @@
-= VPOExport and VPOExportSet =
+VPOExport and VPOExportSet
+=========================
 
 The VPOExport and VPOExportSet classes retrieve and format data for
 exports in a more efficient way than fetching the entire objects.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.vpoexport import IVPOExportSet
 
     >>> vpoexportset = getUtility(IVPOExportSet)
@@ -88,7 +89,8 @@ all current messages that have not been imported.
     2 english2 esperanto2
 
 
-== VPOExport and translation divergence ==
+VPOExport and translation divergence
+------------------------------------
 
 A particular product has two series, trunk and stable, each with the
 same template.  The templates thus share messages.

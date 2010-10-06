@@ -5,7 +5,7 @@
 
 import logging
 import os
-from unittest import TestLoader
+from StringIO import StringIO
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -14,9 +14,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     TwistedLaunchpadZopelessLayer,
     )
@@ -24,6 +24,7 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -47,6 +48,7 @@ from lp.translations.interfaces.translations import (
 
 class FakeBuilder:
     """Pretend `Builder`."""
+
     def __init__(self, slave):
         self.slave = slave
         self.cleanSlave = FakeMethod()
@@ -57,6 +59,7 @@ class FakeBuilder:
 
 class FakeBuildQueue:
     """Pretend `BuildQueue`."""
+
     def __init__(self, behavior):
         """Pretend to be a BuildQueue item for the given build behavior.
 
@@ -345,7 +348,7 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         self.queue = getUtility(ITranslationImportQueue)
         self.dummy_tar = os.path.join(
-            os.path.dirname(__file__),'dummy_templates.tar.gz')
+            os.path.dirname(__file__), 'dummy_templates.tar.gz')
         self.productseries = self.makeProductSeriesWithBranchForTranslation()
         self.branch = self.productseries.branch
 
@@ -359,7 +362,7 @@ class TestTTBuildBehaviorTranslationsQueue(
         expected_templates = [
             'po/domain.pot',
             'po-other/other.pot',
-            'po-thethird/templ3.pot'
+            'po-thethird/templ3.pot',
             ]
 
         paths = [entry.path for entry in entries]
@@ -384,8 +387,3 @@ class TestTTBuildBehaviorTranslationsQueue(
 
         entries = self.queue.getAllEntries(target=self.productseries)
         self.assertEqual(self.branch.owner, entries[0].importer)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-
