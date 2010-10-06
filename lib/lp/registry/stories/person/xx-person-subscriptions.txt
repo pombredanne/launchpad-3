@@ -1,0 +1,131 @@
+Subscriptions View
+==================
+
+XXX: bdmurray 2010-09-24 bug=628411 This story is complete until we publish
+the link that leads to the +subscriptions page.
+
+Any user can view the direct subscriptions that a person or team has to
+blueprints, branches, bugs, merge proposals and questions.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+subscriptions')
+    >>> print anon_browser.title
+    Subscriptions : “Ubuntu Team” team
+
+The user can see that the Ubuntu Team does not have any direct bug
+subscriptions.
+
+    >>> page_text = extract_text(find_main_content(anon_browser.contents))
+    >>> "does not have any direct bug subscriptions" in page_text
+    True
+
+Any user can see that Sample Person is subscribed to several bugs.  The bug
+subscriptions table includes the bug number, title and location.
+
+    >>> anon_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'bug_subscriptions'))
+    Summary
+    In
+    13
+    Launchpad CSS and JS is not testible
+    Launchpad
+    4
+    Reflow problems with complex page layouts
+    Mozilla Firefox
+    9
+    Thunderbird crashes
+    thunderbird (Ubuntu)
+    1
+    Firefox does not support SVG
+    Mozilla Firefox
+
+The bug subscriptions table also includes an unsubscribe link, if they have
+permission to remove the subscription, for bugs to which the person or team is
+subscribed.
+
+Sample Person can see and manage his direct bug subscriptions using the page
+too.  He chooses to view bug 13 - "Launchpad CSS and JS in not testible".
+
+    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> sample_browser.open('http://bugs.launchpad.dev/~name12/+subscriptions')
+    >>> unsub_link = sample_browser.getLink(
+    ...     id='unsubscribe-subscriber-12')
+    >>> unsub_link.click()
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'nonportlets'))
+    Unsubscribe from bug #13
+    ...
+
+After viewing the +subscribe page Sample Person decides that they still want
+to be subscribed to bug 13.  They click cancel which takes them back to their
++subscription page.
+
+    >>> cancel_link = sample_browser.getLink('Cancel')
+    >>> cancel_link.click()
+    >>> print sample_browser.title
+    Subscriptions : Sample Person
+
+He chooses to unsubscribe from bug 9 - "Thunderbird crashes".
+
+    >>> sample_browser.getLink(url='/ubuntu/+source/thunderbird/+bug/9/+subscribe').click()
+    >>> sample_browser.getControl("Unsubscribe me from this bug").selected = True
+    >>> sample_browser.getControl("Continue").click()
+    >>> print sample_browser.title
+    Subscriptions : Sample Person
+
+Sample Person can see that bug 9 is no longer listed in his direct bug
+subscriptions.
+
+    >>> sample_browser.open('http://bugs.launchpad.dev/~name12/+subscriptions')
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug_subscriptions'))
+    Summary
+    In
+    13
+    Launchpad CSS and JS is not testible
+    Launchpad
+    4
+    Reflow problems with complex page layouts
+    Mozilla Firefox
+    1
+    Firefox does not support SVG
+    Mozilla Firefox
+
+Sample Person adds a bug subscription for a team, HWDB team, of which he is a
+member.
+
+    >>> sample_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> sample_browser.getControl('Person').value = 'hwdb-team'
+    >>> sample_browser.getControl('Subscribe user').click()
+
+Sample Person chooses to review the subscriptions for his HWDB team.
+
+    >>> sample_browser.open('https://bugs.launchpad.dev/~hwdb-team/+subscriptions')
+    >>> print sample_browser.title
+    Subscriptions : “HWDB Team” team
+
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'bug_subscriptions'))
+    Summary
+    In
+    1
+    Firefox does not support SVG
+    mozilla-firefox (Ubuntu)
+
+Sample Person now chooses to unsubscribe HWDB team from bug 1.
+
+    >>> sample_browser.getLink(id='unsubscribe-subscriber-243630').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'nonportlets'))
+    Unsubscribe from bug #1
+    ...
+
+    >>> sample_browser.getControl(
+    ...     'Unsubscribe HWDB Team from this bug').selected = True
+    >>> sample_browser.getControl('Continue').click()
+
+    >>> sample_browser.open('https://launchpad.dev/~hwdb-team/+subscriptions')
+    >>> page_text = extract_text(
+    ...     find_main_content(sample_browser.contents))
+    >>> "does not have any direct bug subscriptions" in page_text
+    True

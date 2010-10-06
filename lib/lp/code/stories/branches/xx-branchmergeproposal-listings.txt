@@ -63,11 +63,11 @@ the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
     >>> print_tag_with_id(browser.contents, 'merge-counts')
-    3 active reviews or unmerged proposals
+    3 Active reviews
 
-The 'active reviews or unmerged proposals' text links to the active reviews page.
+The 'active reviews' text links to the active reviews page.
 
-    >>> browser.getLink('active reviews or unmerged proposals').click()
+    >>> browser.getLink('Active reviews').click()
     >>> print browser.title
     Active code reviews for Fooix...
 
@@ -94,7 +94,7 @@ and approved merges.
     >>> browser.open('http://code.launchpad.dev/~albert')
     >>> print_tag_with_id(browser.contents, 'page-summary')
     1 owned branch, 1 registered branch, 1 subscribed branch
-    1 active review or unmerged proposal
+    1 active review
 
 The person's active reviews also lists all of their currently requested
 reviews.

@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
     <include
         file="vocabularies.zcml"/>
@@ -136,11 +137,11 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+            interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+            interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -194,6 +195,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -293,9 +297,9 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"/>
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"/>
         <allow
-            interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+            interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
             interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
         <require
@@ -347,6 +351,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -477,6 +484,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
         permission="zope.Public"/>
 
     <!-- CommercialSubscription -->
@@ -711,7 +721,7 @@
         <!-- PollSubset -->
 
         <adapter
-            for="canonical.launchpad.interfaces.ITeam"
+            for="lp.registry.interfaces.person.ITeam"
             provides="lp.registry.interfaces.poll.IPollSubset"
             factory="lp.registry.adapters.PollSubset"
             permission="zope.Public"/>
@@ -944,6 +954,9 @@
             interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
 
     <!-- IMilestoneSet -->
 
@@ -962,7 +975,7 @@
             interface="lp.registry.interfaces.milestone.IProjectGroupMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1055,7 +1068,7 @@
     <class
         class="lp.registry.model.gpgkey.GPGKey">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKey"/>
+            interface="lp.registry.interfaces.gpg.IGPGKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
@@ -1066,13 +1079,13 @@
     <class
         class="lp.registry.model.gpgkey.GPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.gpgkey.GPGKeySet"
-        provides="canonical.launchpad.interfaces.IGPGKeySet">
+        provides="lp.registry.interfaces.gpg.IGPGKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.IGPGKeySet"/>
+            interface="lp.registry.interfaces.gpg.IGPGKeySet"/>
     </securedutility>
 
     <!-- Product -->
@@ -1193,7 +1206,7 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
@@ -1219,6 +1232,9 @@
             attributes="
                 setBugSupervisor"/>
     </class>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
 
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
@@ -1290,7 +1306,7 @@
     <class
         class="lp.registry.model.person.SSHKey">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKey"/>
+            interface="lp.registry.interfaces.ssh.ISSHKey"/>
         <require
             permission="launchpad.Edit"
             set_attributes="keytext comment"/>
@@ -1301,13 +1317,13 @@
     <class
         class="lp.registry.model.person.SSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </class>
     <securedutility
         class="lp.registry.model.person.SSHKeySet"
-        provides="canonical.launchpad.interfaces.ISSHKeySet">
+        provides="lp.registry.interfaces.ssh.ISSHKeySet">
         <allow
-            interface="canonical.launchpad.interfaces.ISSHKeySet"/>
+            interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
@@ -1352,7 +1368,7 @@
 
     </class>
     <adapter
-        provides="canonical.launchpad.interfaces.IHasExternalBugTracker"
+        provides="canonical.launchpad.interfaces.launchpad.IHasExternalBugTracker"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
@@ -1365,6 +1381,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
         permission="zope.Public"/>
 
     <!-- ProductSeriesSet -->
@@ -1451,7 +1470,7 @@
         <!-- IFAQTarget -->
 
         <allow
-            interface="canonical.launchpad.interfaces.IFAQCollection"
+            interface="lp.answers.interfaces.faqcollection.IFAQCollection"
             attributes="
                 findSimilarFAQs"/>
         <require
@@ -1491,6 +1510,9 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
 
     <!-- DistributionSet -->
 
@@ -1515,7 +1537,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+            interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
 
@@ -1785,14 +1807,14 @@
     <!-- PersonNotification -->
 
     <class
-        class="canonical.launchpad.database.PersonNotification">
+        class="lp.registry.model.personnotification.PersonNotification">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotification"/>
     </class>
 
     <securedutility
         provides="lp.registry.interfaces.personnotification.IPersonNotificationSet"
-        class="canonical.launchpad.database.PersonNotificationSet">
+        class="lp.registry.model.personnotification.PersonNotificationSet">
         <allow
             interface="lp.registry.interfaces.personnotification.IPersonNotificationSet"/>
     </securedutility>
@@ -1804,6 +1826,12 @@
         <allow
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
+
+    <!-- Registers exceptions used in webservice defined in lp.registry.
+      Other data is in module=canonical.launchpad.interfaces as defined in
+      zcml there.-->
+
+    <webservice:register module="lp.registry.errors" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

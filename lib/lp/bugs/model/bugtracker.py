@@ -6,11 +6,13 @@
 __metaclass__ = type
 __all__ = [
     'BugTracker',
+    'BugTrackerSet',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
+    'BugTrackerComponent',
+    'BugTrackerComponentGroup',
     'BugTrackerSet',
     ]
-
 
 from datetime import datetime
 from itertools import chain
@@ -22,9 +24,15 @@ from urllib import (
     splittype,
     )
 
+from storm.base import Storm
+from storm.locals import (
+        Int,
+        Reference,
+        ReferenceSet,
+        Unicode,
+        )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 
 from lazr.uri import URI
 from pytz import timezone
@@ -45,8 +53,6 @@ from storm.expr import (
     )
 from storm.locals import Bool
 from storm.store import Store
-from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -64,6 +70,8 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerAlias,
     IBugTrackerAliasSet,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
     IBugTrackerSet,
     SINGLE_PRODUCT_BUGTRACKERTYPES,
     )
@@ -518,6 +526,41 @@ class BugTracker(SQLBase):
             next_check=new_next_check, lastchecked=None,
             last_error_type=None)
 
+    def addRemoteComponentGroup(self, component_group_name):
+        """See `IBugTracker`."""
+
+        if component_group_name is None:
+            component_group_name = "default"
+        component_group = BugTrackerComponentGroup()
+        component_group.name = component_group_name
+        component_group.bug_tracker = self
+
+        store = IStore(BugTrackerComponentGroup)
+        store.add(component_group)
+        store.commit()
+
+        return component_group
+
+    def getAllRemoteComponentGroups(self):
+        """See `IBugTracker`."""
+        component_groups = []
+
+        component_groups = Store.of(self).find(
+            BugTrackerComponentGroup,
+            BugTrackerComponentGroup.bug_tracker == self.id)
+        component_groups = component_groups.order_by(
+            BugTrackerComponentGroup.name)
+        return component_groups
+
+    def getRemoteComponentGroup(self, component_group_name):
+        """See `IBugTracker`."""
+        component_group = None
+        store = IStore(BugTrackerComponentGroup)
+        component_group = store.find(
+            BugTrackerComponentGroup,
+            name = component_group_name).one()
+        return component_group
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTrackers,
@@ -627,9 +670,11 @@ class BugTrackerSet:
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        store = IStore(self.table)
-        result = store.find(self.table, self.table.id == BugWatch.bugtrackerID)
-        result = result.group_by(self.table)
+        store = IStore(BugTracker)
+        result = store.find(
+            BugTracker,
+            BugTracker.id == BugWatch.bugtrackerID)
+        result = result.group_by(BugTracker)
         result = result.order_by(Desc(Count(BugWatch)))
         if limit is not None:
             return result[:limit]
@@ -671,3 +716,91 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
+
+
+class BugTrackerComponent(Storm):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    implements(IBugTrackerComponent)
+    __storm_table__ = 'BugTrackerComponent'
+
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
+
+    component_group_id = Int('component_group')
+    component_group = Reference(
+        component_group_id,
+        'BugTrackerComponentGroup.id')
+
+    is_visible = Bool(allow_none=False)
+    is_custom = Bool(allow_none=False)
+
+    distro_source_package_id = Int('distro_source_package')
+    distro_source_package = Reference(
+        distro_source_package_id,
+        'DistributionSourcePackageInDatabase.id')
+
+
+class BugTrackerComponentGroup(Storm):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    implements(IBugTrackerComponentGroup)
+    __storm_table__ = 'BugTrackerComponentGroup'
+
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
+    bug_tracker_id = Int('bug_tracker')
+    bug_tracker = Reference(bug_tracker_id, 'BugTracker.id')
+    components = ReferenceSet(
+        id,
+        BugTrackerComponent.component_group_id,
+        order_by=BugTrackerComponent.name)
+
+    def addComponent(self, component_name):
+        """Adds a component that is synced from a remote bug tracker"""
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        component.component_group = self
+
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+        store.flush()
+
+        return component
+
+    def getComponent(self, component_name):
+        """Retrieves a component by the given name.
+
+        None is returned if there is no component by that name in the
+        group.
+        """
+
+        if component_name is None:
+            return None
+        else:
+            return Store.of(self).find(
+                BugTrackerComponent,
+                (BugTrackerComponent.name == component_name)).one()
+
+    def addCustomComponent(self, component_name):
+        """Adds a component locally that isn't synced from a remote tracker
+        """
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        component.component_group = self
+        component.is_custom = True
+
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+        store.flush()
+
+        return component
