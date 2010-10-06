@@ -24,7 +24,6 @@ import errno
 import glob
 import os
 import shutil
-import subprocess
 import tempfile
 
 from zope.component import getUtility
@@ -49,19 +48,16 @@ from lp.archiveuploader.tagfiles import (
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
+    DpkgSourceError,
     determine_source_file_type,
+    extract_dpkg_source,
     get_source_file_extension,
     ParseMaintError,
-    prefix_multi_line_string,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
-    )
-from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -77,17 +73,6 @@ from lp.soyuz.interfaces.archive import (
     )
 
 
-class DpkgSourceError(Exception):
-
-    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
-
-    def __init__(self, output, result):
-        Exception.__init__(
-            self, self._fmt % {"output": output, "result": result})
-        self.output = output
-        self.result = result
-
-
 def unpack_source(dsc_filepath):
     """Unpack a source package into a temporary directory
 
@@ -97,24 +82,7 @@ def unpack_source(dsc_filepath):
     # Get a temporary dir together.
     unpacked_dir = tempfile.mkdtemp()
     try:
-        # chdir into it
-        cwd = os.getcwd()
-        os.chdir(unpacked_dir)
-        try:
-            args = ["dpkg-source", "-sn", "-x", dsc_filepath]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-            output, unused = dpkg_source.communicate()
-            result = dpkg_source.wait()
-        finally:
-            # When all is said and done, chdir out again so that we can
-            # clean up the tree with shutil.rmtree without leaving the
-            # process in a directory we're trying to remove.
-            os.chdir(cwd)
-
-        if result != 0:
-            dpkg_output = prefix_multi_line_string(output, "  ")
-            raise DpkgSourceError(result=result, output=dpkg_output)
+        extract_dpkg_source(dsc_filepath, unpacked_dir)
     except:
         shutil.rmtree(unpacked_dir)
         raise

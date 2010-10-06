@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'DpkgSourceError',
+    'extract_dpkg_source',
     're_taint_free',
     're_isadeb',
     're_issource',
@@ -27,13 +29,24 @@ __all__ = [
 
 import email.Header
 import re
+import subprocess
 
 from canonical.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
-from lp.archiveuploader.tagfiles import TagFileParseError
 from lp.soyuz.enums import BinaryPackageFileType
+
+
+class DpkgSourceError(Exception):
+
+    _fmt = "Unable to unpack source package (%(result)s): %(output)s"
+
+    def __init__(self, output, result):
+        Exception.__init__(
+            self, self._fmt % {"output": output, "result": result})
+        self.output = output
+        self.result = result
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -249,3 +262,21 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
+
+
+def extract_dpkg_source(dsc_filepath, target):
+    """Extract a source package by dsc file path.
+
+    :param dsc_filepath: Path of the DSC file
+    :param target: Target directory
+    """
+    args = ["dpkg-source", "-sn", "-x", dsc_filepath]
+    dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    output, unused = dpkg_source.communicate()
+    result = dpkg_source.wait()
+
+    if result != 0:
+        dpkg_output = prefix_multi_line_string(output, "  ")
+        raise DpkgSourceError(result=result, output=dpkg_output)
+
