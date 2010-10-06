@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import unittest
 
+from storm.expr import compile as compile_storm
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
@@ -22,9 +23,18 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
     UserCannotSubscribePerson,
@@ -34,15 +44,17 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     ANONYMOUS,
     login,
+    login_celebrity,
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing._login import login_celebrity
+from lp.testing.matchers import Provides
 
 
 class StructuralSubscriptionTestBase:
@@ -155,8 +167,197 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             None)
 
 
-class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
+    """Tests for filtered structural subscriptions."""
+
+    def makeBugTask(self):
+        return self.factory.makeBugTask(target=self.target)
+
+    def test_getSubscriptionsForBug(self):
+        # If no one has a filtered subscription for the given bug, the result
+        # of getSubscriptionsForBug() is the same as for getSubscriptions().
+        bugtask = self.makeBugTask()
+        subscriptions = self.target.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.NOTHING)
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual(list(subscriptions), list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_on_status(self):
+        # If a status filter exists for a subscription, the result of
+        # getSubscriptionsForBug() may be a subset of getSubscriptions().
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+
+        # Without any filters the subscription is found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+        # Filter the subscription to bugs in the CONFIRMED state.
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = subscription
+        subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
+
+        # With the filter the subscription is not found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted, the subscription is found again.
+        subscription_filter.statuses = [bugtask.status]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_on_importance(self):
+        # If an importance filter exists for a subscription, the result of
+        # getSubscriptionsForBug() may be a subset of getSubscriptions().
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+
+        # Without any filters the subscription is found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+        # Filter the subscription to bugs in the CRITICAL state.
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = subscription
+        subscription_filter.importances = [BugTaskImportance.CRITICAL]
+
+        # With the filter the subscription is not found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted, the subscription is found again.
+        subscription_filter.importances = [bugtask.importance]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_on_level(self):
+        # All structural subscriptions have a level for bug notifications
+        # which getSubscriptionsForBug() observes.
+        bugtask = self.makeBugTask()
+
+        # Create a new METADATA level subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+
+        # The subscription is found when looking for NOTHING or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+        # The subscription is found when looking for METADATA or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.METADATA)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+        # The subscription is not found when looking for COMMENTS or above.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.COMMENTS)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_include_any_tags(self):
+        # If a subscription filter has include_any_tags, a bug with one or
+        # more tags is matched.
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+        subscription_filter = subscription.newBugFilter()
+        subscription_filter.include_any_tags = True
+
+        # Without any tags the subscription is not found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # With any tag the subscription is found.
+        bugtask.bug.tags = ["foo"]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_filter_exclude_any_tags(self):
+        # If a subscription filter has exclude_any_tags, only bugs with no
+        # tags are matched.
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+        subscription_filter = subscription.newBugFilter()
+        subscription_filter.exclude_any_tags = True
+
+        # Without any tags the subscription is found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+        # With any tag the subscription is not found.
+        bugtask.bug.tags = ["foo"]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+    def test_getSubscriptionsForBug_with_multiple_filters(self):
+        # If multiple filters exist for a subscription, all filters must
+        # match.
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+
+        # Filter the subscription to bugs in the CRITICAL state.
+        subscription_filter = BugSubscriptionFilter()
+        subscription_filter.structural_subscription = subscription
+        subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
+        subscription_filter.importances = [BugTaskImportance.CRITICAL]
+
+        # With the filter the subscription is not found.
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted to match status but not importance, the
+        # subscription is still not found.
+        subscription_filter.statuses = [bugtask.status]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bug))
+
+        # If the filter is adjusted to also match importance, the subscription
+        # is found again.
+        subscription_filter.importances = [bugtask.importance]
+        subscriptions_for_bug = self.target.getSubscriptionsForBug(
+            bugtask.bug, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bug))
+
+
+class TestStructuralSubscriptionForDistro(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -220,7 +421,9 @@ class TestStructuralSubscriptionForDistro(StructuralSubscriptionTestBase,
 
 
 class TestStructuralSubscriptionForProduct(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -230,7 +433,9 @@ class TestStructuralSubscriptionForProduct(
 
 
 class TestStructuralSubscriptionForDistroSourcePackage(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -241,7 +446,9 @@ class TestStructuralSubscriptionForDistroSourcePackage(
 
 
 class TestStructuralSubscriptionForMilestone(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -250,9 +457,15 @@ class TestStructuralSubscriptionForMilestone(
         self.target = self.factory.makeMilestone()
         self.target = ProxyFactory(self.target)
 
+    def makeBugTask(self):
+        # XXX Should test with target *and* series_target.
+        return self.factory.makeBugTask(target=self.target.series_target)
+
 
 class TestStructuralSubscriptionForDistroSeries(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -260,6 +473,166 @@ class TestStructuralSubscriptionForDistroSeries(
         super(TestStructuralSubscriptionForDistroSeries, self).setUp()
         self.target = self.factory.makeDistroSeries()
         self.target = ProxyFactory(self.target)
+
+
+class TestStructuralSubscriptionForProjectGroup(
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionForProjectGroup, self).setUp()
+        self.target = self.factory.makeProject()
+        self.target = ProxyFactory(self.target)
+
+    def makeBugTask(self):
+        return self.factory.makeBugTask(
+            target=self.factory.makeProduct(project=self.target))
+
+
+class TestStructuralSubscriptionForProductSeries(
+    UnrestrictedStructuralSubscription,
+    FilteredStructuralSubscriptionTestBase,
+    TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionForProductSeries, self).setUp()
+        self.target = self.factory.makeProductSeries()
+        self.target = ProxyFactory(self.target)
+
+
+class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
+    """Tests for implementations of `IStructuralSubscriptionTargetHelper`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionTargetHelper, self).setUp()
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+
+    def test_distribution_series(self):
+        target = self.factory.makeDistroSeries()
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("distribution series", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(target.distribution, helper.target_parent)
+        self.assertEqual({"distroseries": target}, helper.target_arguments)
+        self.assertEqual(target.distribution, helper.pillar)
+        self.assertEqual(
+            u"StructuralSubscription.distroseries = ?",
+            compile_storm(helper.join))
+
+    def test_project_group(self):
+        target = self.factory.makeProject(owner=self.person)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("project group", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual({"project": target}, helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.project = ?",
+            compile_storm(helper.join))
+
+    def test_distribution_source_package(self):
+        target = self.factory.makeDistributionSourcePackage()
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("package", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(target.distribution, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.distribution, helper.pillar)
+        self.assertEqual(
+            {"distribution": target.distribution,
+             "sourcepackagename": target.sourcepackagename},
+            helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.distribution = ? AND "
+            u"StructuralSubscription.sourcepackagename = ?",
+            compile_storm(helper.join))
+
+    def test_milestone(self):
+        target = self.factory.makeMilestone()
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("milestone", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(target.target, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.target, helper.pillar)
+        self.assertEqual({"milestone": target}, helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.milestone = ?",
+            compile_storm(helper.join))
+
+    def test_product(self):
+        target = self.factory.makeProduct(owner=self.person)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual({"product": target}, helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.product = ?",
+            compile_storm(helper.join))
+
+    def test_product_in_group(self):
+        project = self.factory.makeProject(owner=self.person)
+        target = self.factory.makeProduct(project=project)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("project", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(project, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual({"product": target}, helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.product = ?",
+            compile_storm(helper.join))
+
+    def test_product_series(self):
+        target = self.factory.makeProductSeries(owner=self.person)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual("project series", helper.target_type_display)
+        self.assertEqual(target, helper.target)
+        self.assertEqual(target.product, helper.target_parent)
+        self.assertThat(
+            helper.target_parent, Provides(IStructuralSubscriptionTarget))
+        self.assertEqual(target.product, helper.pillar)
+        self.assertEqual({"productseries": target}, helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.productseries = ?",
+            compile_storm(helper.join))
+
+    def test_distribution(self):
+        target = self.factory.makeDistribution(owner=self.person)
+        helper = IStructuralSubscriptionTargetHelper(target)
+        self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
+        self.assertEqual(target, helper.target)
+        self.assertEqual("distribution", helper.target_type_display)
+        self.assertEqual(None, helper.target_parent)
+        self.assertEqual(target, helper.pillar)
+        self.assertEqual(
+            {"distribution": target,
+             "sourcepackagename": None},
+            helper.target_arguments)
+        self.assertEqual(
+            u"StructuralSubscription.distribution = ? AND "
+            u"StructuralSubscription.sourcepackagename IS NULL",
+            compile_storm(helper.join))
 
 
 def distributionSourcePackageSetUp(test):
