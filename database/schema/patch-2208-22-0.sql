@@ -25,4 +25,4 @@ CREATE INDEX branch__merge_queue__idx ON Branch(merge_queue);
 
 ALTER TABLE BranchMergeRobot SET SCHEMA todrop;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 22, 0);
