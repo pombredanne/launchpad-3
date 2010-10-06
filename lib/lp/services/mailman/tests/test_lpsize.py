@@ -13,7 +13,10 @@ from Mailman import Errors
 from Mailman.Handlers import LPSize
 
 from canonical.config import config
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.services.mailman.testing import MailmanTestCase
 
 
@@ -35,7 +38,6 @@ class TestLPSizeTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.subscriber = self.team.teamowner
         self.subscriber_email = self.team.teamowner.preferredemail.email
 
     def tearDown(self):
@@ -80,3 +82,48 @@ class TestLPSizeTestCase(MailmanTestCase):
         self.assertRaises(
             Errors.DiscardMessage, LPSize.process, *args)
         self.assertEqual(0, self.mailing_list.getReviewableMessages().count())
+
+
+class TestTruncatedMessage(MailmanTestCase):
+    """Test truncated_message helper."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTruncatedMessage, self).setUp()
+        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
+            'team-1', 'team-1-owner')
+        self.mm_list = self.makeMailmanList(self.mailing_list)
+        self.subscriber_email = self.team.teamowner.preferredemail.email
+
+    def test_attchments_are_removed(self):
+        # Plain-text and multipart are preserved, everything else is removed.
+        attachment = MIMEApplication('binary gibberish', 'octet-stream')
+        message = self.makeMailmanMessage(
+            self.mm_list, self.subscriber_email, 'subject', 'content',
+            attachment=attachment)
+        moderated_message = LPSize.truncated_message(message)
+        parts = [part for part in moderated_message.walk()]
+        types = [part.get_content_type() for part in parts]
+        self.assertEqual(['multipart/mixed', 'text/plain'], types)
+
+    def test_small_text_is_preserved(self):
+        # Text parts below the limit are unchanged.
+        message = self.makeMailmanMessage(
+            self.mm_list, self.subscriber_email, 'subject', 'content')
+        moderated_message = LPSize.truncated_message(message, limit=1000)
+        parts = [part for part in moderated_message.walk()]
+        types = [part.get_content_type() for part in parts]
+        self.assertEqual(['multipart/mixed', 'text/plain'], types)
+        self.assertEqual('content', parts[1].get_payload())
+
+    def test_large_text_is_truncated(self):
+        # Text parts above the limit are truncated.
+        message = self.makeMailmanMessage(
+            self.mm_list, self.subscriber_email, 'subject', 'content excess')
+        moderated_message = LPSize.truncated_message(message, limit=7)
+        parts = [part for part in moderated_message.walk()]
+        types = [part.get_content_type() for part in parts]
+        self.assertEqual(['multipart/mixed', 'text/plain'], types)
+        self.assertEqual(
+            'content [truncated for moderation]', parts[1].get_payload())
