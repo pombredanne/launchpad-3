@@ -1,4 +1,4 @@
-# Copyright 20010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the lpsize monekypatches"""
 
@@ -24,11 +24,11 @@ class TestLPSizeTestCase(MailmanTestCase):
     """Test LPSize.
 
     Mailman process() methods quietly return. They may set msg_data key-values
-    or raise an error to end processing. This group of tests tests often check
-    for errors, but that does not mean there is an error condition, it only
-    means message processing has reached a final decision. Messages that do
-    not cause a final decision pass-through and the process() methods ends
-    without a return.
+    or raise an error to end processing. These tests often check for errors,
+    but that does not mean there is an error condition, it only means message
+    processing has reached a final decision. Messages that do not cause a
+    final decision pass through, and the process() methods ends without a
+    return.
     """
 
     layer = LaunchpadFunctionalLayer
@@ -56,7 +56,7 @@ class TestLPSizeTestCase(MailmanTestCase):
         self.assertEqual(None, silence)
 
     def test_process_size_over_soft_limit_held(self):
-        # Messages over 40km held for moderation.
+        # Messages over 40kb held for moderation.
         self.assertEqual(40000, config.mailman.soft_max_size)
         attachment = MIMEApplication(
             '\n'.join(['x' * 40] * 1000), 'octet-stream')
@@ -126,4 +126,4 @@ class TestTruncatedMessage(MailmanTestCase):
         types = [part.get_content_type() for part in parts]
         self.assertEqual(['multipart/mixed', 'text/plain'], types)
         self.assertEqual(
-            'content [truncated for moderation]', parts[1].get_payload())
+            'content\n[truncated for moderation]', parts[1].get_payload())
