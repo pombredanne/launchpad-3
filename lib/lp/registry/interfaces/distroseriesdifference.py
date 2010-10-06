@@ -110,6 +110,12 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The version of the most recent source publishing in the "
             "parent series."))
 
+    base_version = TextLine(
+        title=_("Base version"), readonly=True,
+        description=_(
+            "The common base version of the package for differences "
+            "with different versions in the parent and derived series."))
+
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
         description=_(

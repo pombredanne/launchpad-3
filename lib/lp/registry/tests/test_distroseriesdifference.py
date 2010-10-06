@@ -422,6 +422,31 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             ['source_pub', 'parent_source_pub'], cache)
 
+    def test_base_version(self):
+        # The common base version is set when the difference is created.
+        # Publish v1.0 of foo in both series.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.0',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series.parent_series,
+            version='1.0',
+            sourcepackagename=source_package_name,
+            status = PackagePublishingStatus.PUBLISHED)
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
+                })
+
+        self.assertEqual('1.0', ds_diff.base_version)
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 

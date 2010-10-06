@@ -83,6 +83,7 @@ class DistroSeriesDifference(Storm):
     source_version = Unicode(name='source_version', allow_none=True)
     parent_source_version = Unicode(name='parent_source_version',
                                     allow_none=True)
+    base_version = Unicode(name='base_version', allow_none=True)
 
     @staticmethod
     def new(derived_series, source_package_name):
