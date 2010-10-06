@@ -132,9 +132,18 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_get_structural_subscribers(self):
-        # getStructuralSubscribers() returns a list of structural subscribers
-        # to the bug, considering subscription filters as it does so.
+    def test_getStructuralSubscribers_no_subscribers(self):
+        # If there are no subscribers for any of the bug's targets then no
+        # subscribers will be returned by getStructuralSubscribers().
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
-        self.assertEqual([], bug.getStructuralSubscribers())
+        self.assertEqual(set(), bug.getStructuralSubscribers())
+
+    def test_getStructuralSubscribers_subscribers(self):
+        # Subscribers for any of the bug's targets are returned.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product = self.factory.makeProduct()
+        product.addBugSubscription(subscriber, subscriber)
+        bug = self.factory.makeBug(product=product)
+        self.assertEqual(set([subscriber]), bug.getStructuralSubscribers())

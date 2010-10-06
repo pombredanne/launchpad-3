@@ -1007,7 +1007,43 @@ BugMessage""" % sqlvalues(self.id))
 
     def getStructuralSubscribers(self, recipients=None, level=None):
         """See `IBug`. """
-        return []
+        structural_subscription_targets = set()
+
+        for bugtask in self.bugtasks:
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                structural_subscription_targets.add(bugtask.target)
+                if bugtask.target.parent_subscription_target is not None:
+                    structural_subscription_targets.add(
+                        bugtask.target.parent_subscription_target)
+
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the source
+                # package set as their target, so we add the distroseries
+                # explicitly to the set of subscription targets.
+                structural_subscription_targets.add(
+                    bugtask.distroseries)
+
+            if bugtask.milestone is not None:
+                structural_subscription_targets.add(bugtask.milestone)
+
+        if len(structural_subscription_targets) == 0:
+            return EmptyResultSet()
+
+        if level is None:
+            # If level is not specified, default to NOTHING so that all
+            # subscriptions are found. XXX: Perhaps this should go in
+            # getSubscriptionsForBug()?
+            level = BugNotificationLevel.NOTHING
+
+        target = structural_subscription_targets.pop()
+        subscriptions = target.getSubscriptionsForBug(self, level)
+        for target in structural_subscription_targets:
+            subscriptions.union(
+                target.getSubscriptionsForBug(self, level))
+
+        # XXX: There must be a better way to do it than this.
+        return set(
+            subscription.subscriber for subscription in subscriptions)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
