@@ -4,6 +4,15 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only"
 >
+
+<head>
+  <tal:no_translatables condition="not:context/translatables">
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:head_epilogue>
+  </tal:no_translatables>
+</head>
+
 <body>
   <div metal:fill-slot="main">
 
@@ -12,8 +21,10 @@
         Select a project you want to translate into your own language.
       </p>
       <p tal:condition="not:context/translatables">
+        <strong>
         There are no translatable projects in
         <span tal:content="context/displayname">Project Group</span>.
+        </strong>
       </p>
       <p tal:condition="not:view/required:launchpad.Edit">
         If a project for <span tal:content="context/displayname">Project Group
