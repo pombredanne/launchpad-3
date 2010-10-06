@@ -30,7 +30,6 @@ class TestPOFileStillInitialized(TestCaseWithFactory):
     def test_pofile_still_initialized(self):
         pofile = self.factory.makePOFile('sux')
         tm = self.factory.makeTranslationMessage(pofile=pofile)
-        self.assertEqual(pofile, tm.pofile)
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
