@@ -514,9 +514,9 @@ class IBugTrackerComponent(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
-            description=_('The name of a software component'
-                          'in a remote bug tracker')))
+            description=_("The name of a software component "
+                          "as shown in Launchpad.  This is a sanitized "
+                          "form of the Remote Name.")))
 
     distribution = exported(
         Reference(
@@ -553,7 +553,6 @@ class IBugTrackerComponentGroup(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
             description=_('The name of the bug tracker product.')))
     components = exported(
         Reference(title=_('Components'), schema=IBugTrackerComponent))
