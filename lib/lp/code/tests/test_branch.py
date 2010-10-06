@@ -10,7 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = []
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.publisher import AnswersLayer
 from lp.testing import (
     login_person,

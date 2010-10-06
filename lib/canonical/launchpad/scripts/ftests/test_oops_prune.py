@@ -35,7 +35,7 @@ from canonical.launchpad.scripts.oops import (
     referenced_oops,
     unwanted_oops_files,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log import uniquefileallocator
 
 

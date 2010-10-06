@@ -21,7 +21,7 @@ from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

@@ -21,7 +21,7 @@ from lp.code.vocabularies.branch import (
     BranchRestrictedOnProductVocabulary,
     BranchVocabulary,
     )
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.registry.interfaces.product import IProductSet
 from lp.testing.factory import LaunchpadObjectFactory

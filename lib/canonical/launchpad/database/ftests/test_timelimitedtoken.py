@@ -10,7 +10,7 @@ import transaction
 
 from canonical.database.sqlbase import session_store
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLibraryFileAlias(testtools.TestCase):
