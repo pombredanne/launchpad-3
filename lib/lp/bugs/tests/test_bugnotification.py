@@ -15,7 +15,7 @@ from zope.interface import providedBy
 from canonical.config import config
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
-from canonical.testing.layers import (
+from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -127,7 +127,6 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
             [self.product.owner.preferredemail.email,
              self.subscriber.preferredemail.email],
             [mail['To'] for mail in pop_notifications()])
-        person.getSubscriptions()
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
