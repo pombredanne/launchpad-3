@@ -432,12 +432,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=derived_series,
             version='1.0deri1',
             sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
+            status=PackagePublishingStatus.PUBLISHED)
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=derived_series.parent_series,
             version='1.0ubu2',
             sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
+            status=PackagePublishingStatus.PUBLISHED)
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         self.assertIs(None, ds_diff.base_version)
@@ -448,16 +448,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
         source_package_name = self.factory.getOrMakeSourcePackageName('foo')
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series,
-            version='1.0',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series.parent_series,
-            version='1.0',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
+        for series in [derived_series, derived_series.parent_series]:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=series,
+                version='1.0',
+                sourcepackagename=source_package_name,
+                status=PackagePublishingStatus.PUBLISHED)
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',
@@ -474,26 +470,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
         source_package_name = self.factory.getOrMakeSourcePackageName('foo')
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series,
-            version='1.0',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series,
-            version='1.1',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series.parent_series,
-            version='1.0',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=derived_series.parent_series,
-            version='1.1',
-            sourcepackagename=source_package_name,
-            status = PackagePublishingStatus.PUBLISHED)
+        for series in [derived_series, derived_series.parent_series]:
+            for version in ['1.0', '1.1']:
+                self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.PUBLISHED)
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',
