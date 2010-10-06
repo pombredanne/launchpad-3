@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.app.form.interfaces import ConversionError
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
