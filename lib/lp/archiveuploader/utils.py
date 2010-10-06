@@ -29,6 +29,7 @@ __all__ = [
 
 import email.Header
 import re
+import signal
 import subprocess
 
 from canonical.encoding import (
@@ -271,13 +272,16 @@ def extract_dpkg_source(dsc_filepath, target):
     :param dsc_filepath: Path of the DSC file
     :param target: Target directory
     """
+    def subprocess_setup():
+        # Python installs a SIGPIPE handler by default. This is usually not what
+        # non-Python subprocesses expect.
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     args = ["dpkg-source", "-sn", "-x", dsc_filepath]
-    dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+    dpkg_source = subprocess.Popen(
+        args, stdout=subprocess.PIPE, cwd=target, stderr=subprocess.PIPE,
+        preexec_fn=subprocess_setup)
     output, unused = dpkg_source.communicate()
     result = dpkg_source.wait()
-
     if result != 0:
         dpkg_output = prefix_multi_line_string(output, "  ")
         raise DpkgSourceError(result=result, output=dpkg_output, command=args)
-
