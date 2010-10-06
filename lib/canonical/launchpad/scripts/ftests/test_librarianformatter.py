@@ -26,7 +26,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 this_directory = os.path.dirname(__file__)

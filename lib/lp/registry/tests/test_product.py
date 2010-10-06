@@ -21,7 +21,7 @@ from canonical.launchpad.testing.pages import (
     get_feedback_messages,
     setupBrowser,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,

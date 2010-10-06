@@ -16,7 +16,7 @@ Mozilla's Bugzilla is an Issuezilla instance here:
 
     >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)

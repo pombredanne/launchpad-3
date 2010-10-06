@@ -13,7 +13,7 @@ from canonical.launchpad.database.tests.test_baseopenidstore import (
     BaseStormOpenIDStoreTestsMixin,
     )
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCase
 
 
