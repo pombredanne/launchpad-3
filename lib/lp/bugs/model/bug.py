@@ -1041,9 +1041,10 @@ BugMessage""" % sqlvalues(self.id))
             subscriptions = subscriptions.union(
                 target.getSubscriptionsForBug(self, level))
 
-        # XXX: There must be a better way to do it than this.
-        return set(
-            subscription.subscriber for subscription in subscriptions)
+        return Store.of(self).find(
+            Person, Person.id.is_in(
+                subscription.subscriberID
+                for subscription in subscriptions))
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,

@@ -137,7 +137,7 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
         # subscribers will be returned by getStructuralSubscribers().
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
-        self.assertEqual(set(), bug.getStructuralSubscribers())
+        self.assertEqual([], list(bug.getStructuralSubscribers()))
 
     def test_getStructuralSubscribers_single_target(self):
         # Subscribers for any of the bug's targets are returned.
@@ -146,7 +146,7 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
         product = self.factory.makeProduct()
         product.addBugSubscription(subscriber, subscriber)
         bug = self.factory.makeBug(product=product)
-        self.assertEqual(set([subscriber]), bug.getStructuralSubscribers())
+        self.assertEqual([subscriber], list(bug.getStructuralSubscribers()))
 
     def test_getStructuralSubscribers_multiple_targets(self):
         # Subscribers for any of the bug's targets are returned.
@@ -166,4 +166,4 @@ class TestBugStructuralSubscribers(TestCaseWithFactory):
 
         self.assertEqual(
             set([subscriber1, subscriber2]),
-            bug.getStructuralSubscribers())
+            set(bug.getStructuralSubscribers()))

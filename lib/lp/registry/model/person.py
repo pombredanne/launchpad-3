@@ -4060,6 +4060,7 @@ class PersonSet:
             Person.id in (%s)
             ''' % branch_clause)
 
+    # XXX
     def getSubscribersForTargets(self, targets, recipients=None, level=None):
         """See `IPersonSet`. """
         if len(targets) == 0:
