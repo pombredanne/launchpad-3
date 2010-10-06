@@ -52,7 +52,10 @@ from lp.code.interfaces.codehosting import (
     compose_public_url,
     SUPPORTED_SCHEMES,
     )
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -63,7 +66,6 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
 
 
 class IBranchSetAPI(Interface):

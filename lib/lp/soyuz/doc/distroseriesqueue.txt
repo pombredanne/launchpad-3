@@ -1026,7 +1026,7 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+   >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
 
 

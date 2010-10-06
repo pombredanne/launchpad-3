@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,7 +10,7 @@
     i18n_domain="launchpad">
     <!-- RDF downloadable documents -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="lp.registry.browser.RDFIndexView"
         name="rdf"
         template="../templates/rdf-index.pt"
@@ -188,6 +188,9 @@
         path_expression="string:comments/${id}"
         attribute_to_parent="distro_series_difference"
         rootsite="mainsite"/>
+    <adapter
+      factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
+      name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -228,7 +231,7 @@
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
             path_expression="string:codeofconduct"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ICodeOfConduct"
             parent_utility="lp.registry.interfaces.codeofconduct.ICodeOfConductSet"
@@ -307,7 +310,7 @@
                 </browser:addform>
     </facet>
     <browser:url
-        for="canonical.launchpad.interfaces.IIrcID"
+        for="lp.registry.interfaces.irc.IIrcID"
         path_expression="string:+ircnick/${id}"
         attribute_to_parent="person"
         rootsite="api"/>
@@ -426,7 +429,7 @@
     <browser:url
         for="lp.registry.interfaces.projectgroup.IProjectGroup"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         facet="overview"
@@ -532,14 +535,14 @@
         path_expression="string:+commercialsubscription/${id}"
         attribute_to_parent="product"/>
     <browser:url
-        for="canonical.launchpad.interfaces.IJabberID"
+        for="lp.registry.interfaces.jabber.IJabberID"
         path_expression="string:+jabberid/${jabberid}"
         attribute_to_parent="person"
         rootsite="api"/>
     <browser:url
         for="lp.registry.interfaces.pillar.IPillarNameSet"
         path_expression="string:pillars"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
         for="lp.registry.browser.pillar.IInvolved"
@@ -576,7 +579,7 @@
         <browser:url
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             path_expression="string:karmaaction"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.karma.IKarmaActionSet"
             name="+index"/>
@@ -755,7 +758,7 @@
     <browser:url
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         path_expression="string:+announcements"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.registry.interfaces.announcement.IAnnouncementSet"
         name="+announcements"/>
@@ -813,7 +816,7 @@
         <browser:url
             for="lp.registry.interfaces.person.IPerson"
             path_expression="string:~${name}"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPerson"
             name="+index"/>
@@ -1075,6 +1078,12 @@
             class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonSubscriptionsView"
+            name="+subscriptions"
+            template="../templates/person-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
@@ -1425,7 +1434,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProduct"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:page
         name="+get-involved"
         for="lp.registry.interfaces.product.IProduct"
@@ -1581,7 +1590,7 @@
     <browser:url
         for="lp.registry.interfaces.product.IProductSet"
         path_expression="string:projects"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.product.IProductSet"
         permission="zope.Public"
@@ -1783,7 +1792,7 @@
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeriesSet"
         path_expression="string:series"
-        parent_utility="canonical.launchpad.interfaces.IBazaarApplication"/>
+        parent_utility="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
     <browser:menus
         classes="
             ProductSeriesFacets
@@ -1963,7 +1972,7 @@
     <browser:url
         for="lp.registry.interfaces.distribution.IDistribution"
         path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistributionSet"
         permission="zope.Public"
@@ -2139,7 +2148,7 @@
         module="lp.registry.browser.productrelease"/>
     <browser:page
         name="+driver"
-        for="canonical.launchpad.interfaces.IHasAppointedDriver"
+        for="canonical.launchpad.interfaces.launchpad.IHasAppointedDriver"
         class="lp.registry.browser.driver.AppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
