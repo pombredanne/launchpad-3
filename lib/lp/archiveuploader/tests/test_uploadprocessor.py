@@ -1919,7 +1919,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.assertEquals(1, len(self.oopses))
-        self.layer.txn.commit()
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(builder, build.builder)
