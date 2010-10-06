@@ -353,8 +353,8 @@ COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as regi
 COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
 COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
 COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
-COMMENT ON COLUMN BugTrackerComponent.distribution IS 'Link to the distribution for the associated source package.  This can be undefined if no ling has been established.';
-COMMENT ON COLUMN BugTrackerComponent.source_package IS 'A link to the source package in a distribution that corresponds to this component.  This can be undefined if no link has been established yet.';
+COMMENT ON COLUMN BugTrackerComponent.distribution IS 'Link to the distribution for the associated source package.  This can be NULL if no ling has been established.';
+COMMENT ON COLUMN BugTrackerComponent.source_package_name IS 'The text name of the source package in a distribution that corresponds to this component.  This can be NULL if no link has been established yet.';
 
 -- BugTrackerComponentGroup
 
