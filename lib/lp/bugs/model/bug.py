@@ -1005,6 +1005,10 @@ BugMessage""" % sqlvalues(self.id))
             (also_notified_subscribers - direct_subscribers),
             key=lambda x: removeSecurityProxy(x).displayname)
 
+    def getStructuralSubscribers(self, recipients=None, level=None):
+        """See `IBug`. """
+        return []
+
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
                                      include_master_dupe_subscribers=False):

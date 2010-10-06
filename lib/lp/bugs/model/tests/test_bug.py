@@ -126,3 +126,15 @@ class TestBug(TestCaseWithFactory):
             dupe_bug.subscribe(team, member)
             dupe_bug.markAsDuplicate(bug)
         self.assertTrue(team in bug.getSubscribersFromDuplicates())
+
+
+class TestBugStructuralSubscribers(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_get_structural_subscribers(self):
+        # getStructuralSubscribers() returns a list of structural subscribers
+        # to the bug, considering subscription filters as it does so.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        self.assertEqual([], bug.getStructuralSubscribers())
