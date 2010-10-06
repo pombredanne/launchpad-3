@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.archivepublisher.debversion import Version
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -247,7 +248,35 @@ class DistroSeriesDifference(Storm):
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
 
+        if self._updateBaseVersion():
+            updated = True
+
         return updated
+
+    def _updateBaseVersion(self):
+        """Check the most-recently published common version."""
+        if self.difference_type != (
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
+            return False
+
+        derived_pubs = self.derived_series.getPublishedSources(
+            self.source_package_name)
+        derived_versions = [
+            Version(pub.sourcepackagerelease.version) for pub in derived_pubs]
+        parent_pubs = self.derived_series.parent_series.getPublishedSources(
+            self.source_package_name)
+        parent_versions = [
+            Version(pub.sourcepackagerelease.version) for pub in parent_pubs]
+
+        common_versions = list(
+            set(derived_versions).intersection(parent_versions))
+        if common_versions:
+            common_versions.sort()
+            self.base_version = unicode(common_versions.pop())
+            return True
+        else:
+            self.base_version = None
+            return False
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
