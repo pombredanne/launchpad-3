@@ -320,6 +320,10 @@ class IProjectGroupPublic(
         It also should have IProduct.official_rosetta flag set.
         """
 
+    def has_translatables():
+        """Return a boolean showing the existance of translatables products.
+        """
+
     def hasProducts():
         """Returns True if a project has products associated with it, False
         otherwise.

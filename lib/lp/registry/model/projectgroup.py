@@ -216,6 +216,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
 
+    def has_translatables(self):
+        """See `IProjectGroup`."""
+        return self.translatables().count() != 0
+
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
             Product.project = %s
