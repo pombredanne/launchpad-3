@@ -2486,6 +2486,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
+    def page_title(self):
+        return "Bugs in %s" % self.context.title
+
+    label = page_title
+
+    @property
     def schema(self):
         """Return the schema that defines the form."""
         if self._personContext():
