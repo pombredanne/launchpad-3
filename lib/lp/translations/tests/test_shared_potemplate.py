@@ -9,7 +9,7 @@ import unittest
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing.factory import LaunchpadObjectFactory
 

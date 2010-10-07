@@ -158,7 +158,6 @@ from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
-from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
@@ -959,7 +958,7 @@ class ProductDownloadFileMixin:
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin, UsesLaunchpadMixin):
+                  ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 

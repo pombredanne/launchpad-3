@@ -9,7 +9,7 @@ import unittest
 from zope.component import getAdapter
 from zope.traversing.interfaces import IPathAdapter
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
