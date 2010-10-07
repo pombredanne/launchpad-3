@@ -7,7 +7,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lazr.restfulclient.errors import HTTPError
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,

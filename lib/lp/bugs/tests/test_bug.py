@@ -5,7 +5,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (

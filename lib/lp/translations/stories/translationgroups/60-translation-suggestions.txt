@@ -13,8 +13,9 @@ suggestions in Spanish.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IDistributionSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     >>> login('foo.bar@canonical.com')

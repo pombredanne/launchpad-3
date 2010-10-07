@@ -937,8 +937,6 @@ COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
 COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
 translation for a POTMsgSet message. It knows who, when and where did it,
 and whether it was reviewed by someone and when was it reviewed.';
-COMMENT ON COLUMN TranslationMessage.pofile IS 'The translation file which
-this translation message is part of.';
 COMMENT ON COLUMN TranslationMessage.potmsgset IS 'The template message which
 this translation message is a translation of.';
 COMMENT ON COLUMN TranslationMessage.date_created IS 'The date we saw this

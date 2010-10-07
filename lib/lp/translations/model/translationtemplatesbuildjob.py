@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import logging
 import re
 
 from storm.store import Store
@@ -19,7 +20,7 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -116,18 +117,25 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     @classmethod
     def generatesTemplates(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         if branch.private:
             # We don't support generating template from private branches
             # at the moment.
+            logger.debug("Branch %s is private.", branch.unique_name)
             return False
 
         utility = getUtility(IRosettaUploadJobSource)
         if not utility.providesTranslationFiles(branch):
             # Nobody asked for templates generated from this branch.
+            logger.debug(
+                    "No templates requested for branch %s.",
+                    branch.unique_name)
             return False
 
         if not cls._hasPotteryCompatibleSetup(branch):
             # Nothing we could do with this branch if we wanted to.
+            logger.debug(
+                "Branch %s is not pottery-compatible.", branch.unique_name)
             return False
 
         # Yay!  We made it.
@@ -136,6 +144,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
         # default processor architecture.  This stops the buildfarm from
         # accidentally dispatching the jobs to private builders.
@@ -145,8 +154,13 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
         build = getUtility(ITranslationTemplatesBuildSource).create(
             build_farm_job, branch)
+        logger.debug(
+            "Made BuildFarmJob %s, TranslationTemplatesBuild %s.",
+            build_farm_job.id, build.id)
 
         specific_job = build.makeJob()
+        logger.debug("Made %s.", specific_job)
+
         duration_estimate = cls.duration_estimate
 
         build_queue_entry = BuildQueue(
@@ -154,6 +168,8 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
             job=specific_job.job, processor=processor)
         IMasterStore(BuildQueue).add(build_queue_entry)
+
+        logger.debug("Made BuildQueue %s.", build_queue_entry.id)
 
         return specific_job
 
@@ -167,13 +183,22 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
         if not config.rosetta.generate_templates:
             # This feature is disabled by default.
+            logging.debug("Templates generation is disabled.")
             return
 
-        if cls.generatesTemplates(branch):
-            # This branch is used for generating templates.
-            cls.create(branch)
+        try:
+            if cls.generatesTemplates(branch):
+                # This branch is used for generating templates.
+                logger.info(
+                    "Requesting templates build for branch %s.",
+                    branch.unique_name)
+                cls.create(branch)
+        except Exception, e:
+            logger.error(e)
+            raise
 
     @classmethod
     def getByJob(cls, job):

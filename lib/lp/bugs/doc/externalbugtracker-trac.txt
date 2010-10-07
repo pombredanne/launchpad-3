@@ -298,7 +298,7 @@ And have a Trac instance process them:
     >>> transaction.commit()
 
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> trac = TestTrac(example_bug_tracker.baseurl)

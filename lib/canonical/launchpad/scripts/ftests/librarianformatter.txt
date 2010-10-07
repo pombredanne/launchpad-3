@@ -33,7 +33,7 @@ Because no Librarian is running, output from the two loggers should be
 identical. Note the overhead involved in attempting to contact the
 Librarian is not significant.
 
->>> from canonical.testing import LibrarianLayer
+>>> from canonical.testing.layers import LibrarianLayer
 >>> LibrarianLayer.hide()
 
 >>> normal_log, normal_out= make_logger(logging.Formatter)
