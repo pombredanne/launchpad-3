@@ -204,7 +204,7 @@ Project groups ignore products translations_usage setting if none of the
 products are fully configured as translatable.
 
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> project_group.has_translatables()
+    >>> project_group.has_translatable()
     False
 
     >>> view = create_view(project_group, '+get-involved')
@@ -218,7 +218,7 @@ If a product is translatable, translations is enabled in the involvment menu.
     ...     productseries=series,
     ...     language_codes=['es'])
     >>> product.translations_usage = ServiceUsage.LAUNCHPAD
-    >>> project_group.has_translatables()
+    >>> project_group.has_translatable()
     True
 
     >>> view = create_view(project_group, '+get-involved')
