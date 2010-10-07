@@ -16,7 +16,7 @@ from zope.app.testing.functional import FunctionalTestSetup
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import (
+from canonical.testing.layers import (
     FunctionalLayer,
     ZopelessLayer,
     )

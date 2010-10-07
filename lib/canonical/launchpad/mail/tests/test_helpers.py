@@ -24,7 +24,7 @@ from canonical.launchpad.mail.helpers import (
     parse_commands,
     )
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login_person,
     TestCase,

@@ -59,7 +59,8 @@ librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> ZecaTestSetup().setUp()
+  >>> zeca = ZecaTestSetup()
+  >>> zeca.setUp()
 
 Import public keyring into current LPDB.
 
@@ -90,7 +91,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> from canonical.librarian.testing.server import fillLibrarianFile
   >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -118,7 +119,7 @@ And then we need a way to process the uploads from the queue
   >>> from lp.testing.logger import MockLogger
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
-  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> def process_uploads(upload_policy, series, loglevel):
   ...     """Simulate process-upload.py script run.
   ...
@@ -754,5 +755,5 @@ everything up.
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
 
-  >>> ZecaTestSetup().tearDown()
+  >>> zeca.tearDown()
 

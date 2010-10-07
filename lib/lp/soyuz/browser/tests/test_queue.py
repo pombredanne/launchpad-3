@@ -16,7 +16,7 @@ from zope.component import (
     )
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet

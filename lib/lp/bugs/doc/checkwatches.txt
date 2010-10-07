@@ -21,7 +21,7 @@ the watch.
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from lp.testing.factory import LaunchpadObjectFactory
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 

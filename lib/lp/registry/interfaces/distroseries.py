@@ -12,7 +12,6 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'NoSuchDistroSeries',
     ]
 
 from lazr.enum import DBEnumeratedType
@@ -26,7 +25,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
-    webservice_error,
     )
 from lazr.restful.fields import (
     Reference,
@@ -51,7 +49,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.version import sane_version
-from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
@@ -59,6 +56,7 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -856,12 +854,6 @@ class IDistroSeriesSet(Interface):
 
         released == None will do no filtering on status.
         """
-
-
-class NoSuchDistroSeries(NameLookupFailed):
-    """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(400) #Bad request.
-    _message_prefix = "No such distribution series"
 
 
 # Monkey patch for circular import avoidance done in

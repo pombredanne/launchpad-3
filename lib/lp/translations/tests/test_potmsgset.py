@@ -19,7 +19,7 @@ from zope.security.proxy import (
     )
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet

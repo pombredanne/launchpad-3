@@ -130,16 +130,16 @@
         module="lp.code.browser.branchref"
         classes="BranchRefNavigation"/>
     <browser:url
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         path_expression="string:+code"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         rootsite="code"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
@@ -741,7 +741,7 @@
         <browser:url
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             path_expression="string:+code-imports"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"

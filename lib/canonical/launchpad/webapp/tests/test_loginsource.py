@@ -12,7 +12,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.webapp.authentication import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import AccessLevel
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class LaunchpadLoginSourceTest(unittest.TestCase):

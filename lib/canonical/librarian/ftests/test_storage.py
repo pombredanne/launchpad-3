@@ -11,7 +11,7 @@ from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class LibrarianStorageDBTests(unittest.TestCase):

@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet

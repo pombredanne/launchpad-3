@@ -18,7 +18,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory

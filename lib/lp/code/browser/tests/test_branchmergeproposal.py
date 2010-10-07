@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

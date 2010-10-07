@@ -249,7 +249,7 @@ have the language among their preferred languages.
   >>> translator_30.addLanguage(sr)
   >>> translator_40 = factory.makePerson(name=u'serbian-translator-karma-40')
   >>> translator_40.addLanguage(sr)
-  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.commit()
 
   # We need to fake some Karma.

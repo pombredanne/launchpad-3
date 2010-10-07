@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login_person,
