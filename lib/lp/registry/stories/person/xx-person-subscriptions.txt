@@ -18,114 +18,122 @@ subscriptions.
     >>> "does not have any direct bug subscriptions" in page_text
     True
 
-Any user can see that Sample Person is subscribed to several bugs.  The bug
+Any user can see that Webster is subscribed to several bugs.  The bug
 subscriptions table includes the bug number, title and location.
 
-    >>> anon_browser.open('http://launchpad.dev/~name12/+subscriptions')
+    >>> login('foo.bar@canonical.com')
+    >>> scofflaw = factory.makeProduct(name='scofflaw')
+    >>> bugA = factory.makeBug(product=scofflaw,
+    ...     title='Word needs more popularity')
+    >>> affluenza = factory.makeProduct(name='affluenza')
+    >>> bugB = factory.makeBug(product=affluenza,
+    ...     title='A terrible affliction')
+    >>> subscriber = factory.makePerson(name='webster',
+    ...     password='g00dpassword')
+    >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
+    >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
+    >>> logout()
+    >>> anon_browser.open('http://launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    13
-    Launchpad CSS and JS is not testible
-    Launchpad
-    4
-    Reflow problems with complex page layouts
-    Mozilla Firefox
-    9
-    Thunderbird crashes
-    thunderbird (Ubuntu)
-    1
-    Firefox does not support SVG
-    Mozilla Firefox
+    16
+    Word needs more popularity
+    Scofflaw
+    17
+    A terrible affliction
+    Affluenza
 
 The bug subscriptions table also includes an unsubscribe link, if they have
 permission to remove the subscription, for bugs to which the person or team is
 subscribed.
 
-Sample Person can see and manage his direct bug subscriptions using the page
-too.  He chooses to view bug 13 - "Launchpad CSS and JS in not testible".
+Webster can see and manage his direct bug subscriptions using the page too.
+He chooses to view bug 16 - "Word needs more popularity".
 
-    >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> sample_browser.open('http://bugs.launchpad.dev/~name12/+subscriptions')
-    >>> unsub_link = sample_browser.getLink(
-    ...     id='unsubscribe-subscriber-12')
+    >>> login('foo.bar@canonical.com')
+    >>> subscriber_browser = setupBrowser(
+    ...     auth='Basic %s:g00dpassword' %
+    ...         subscriber.preferredemail.email)
+    >>> logout()
+    >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
+    >>> unsub_link = subscriber_browser.getLink(
+    ...     id='unsubscribe-subscriber-243656')
     >>> unsub_link.click()
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'nonportlets'))
-    Unsubscribe from bug #13
+    ...     subscriber_browser.contents, 'nonportlets'))
+    Unsubscribe from bug #16
     ...
 
-After viewing the +subscribe page Sample Person decides that they still want
-to be subscribed to bug 13.  They click cancel which takes them back to their
+After viewing the +subscribe page Webster decides that they still want to be
+subscribed to bug 16.  They click cancel which takes them back to their
 +subscription page.
 
-    >>> cancel_link = sample_browser.getLink('Cancel')
+    >>> cancel_link = subscriber_browser.getLink('Cancel')
     >>> cancel_link.click()
-    >>> print sample_browser.title
-    Subscriptions : Sample Person
+    >>> print subscriber_browser.title
+    Subscriptions : Webster
 
-He chooses to unsubscribe from bug 9 - "Thunderbird crashes".
+He chooses to unsubscribe from bug 17 - "A terrible affliction".
 
-    >>> sample_browser.getLink(url='/ubuntu/+source/thunderbird/+bug/9/+subscribe').click()
-    >>> sample_browser.getControl("Unsubscribe me from this bug").selected = True
-    >>> sample_browser.getControl("Continue").click()
-    >>> print sample_browser.title
-    Subscriptions : Sample Person
+    >>> subscriber_browser.getLink(url='/affluenza/+bug/17/+subscribe').click()
+    >>> subscriber_browser.getControl("Unsubscribe me from this bug").selected = True
+    >>> subscriber_browser.getControl("Continue").click()
+    >>> print subscriber_browser.title
+    Subscriptions : Webster
 
-Sample Person can see that bug 9 is no longer listed in his direct bug
+Webster can see that bug 17 is no longer listed in his direct bug
 subscriptions.
 
-    >>> sample_browser.open('http://bugs.launchpad.dev/~name12/+subscriptions')
+    >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'bug_subscriptions'))
+    ...     subscriber_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    13
-    Launchpad CSS and JS is not testible
-    Launchpad
-    4
-    Reflow problems with complex page layouts
-    Mozilla Firefox
-    1
-    Firefox does not support SVG
-    Mozilla Firefox
+    16
+    Word needs more popularity
+    Scofflaw
 
-Sample Person adds a bug subscription for a team, HWDB team, of which he is a
+Webster adds a bug subscription for a team, team America, of which he is a
 member.
 
-    >>> sample_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
-    >>> sample_browser.getControl('Person').value = 'hwdb-team'
-    >>> sample_browser.getControl('Subscribe user').click()
+    >>> login('foo.bar@canonical.com')
+    >>> team = factory.makeTeam(name='america')
+    >>> bugC = factory.makeBug(product=scofflaw,
+    ...     title="Word came from a contest")
+    >>> membership = team.addMember(subscriber, subscriber)
+    >>> subscriptionC = bugC.subscribe(team, subscriber)
+    >>> logout()
 
-Sample Person chooses to review the subscriptions for his HWDB team.
+Webster chooses to review the subscriptions for his team America.
 
-    >>> sample_browser.open('https://bugs.launchpad.dev/~hwdb-team/+subscriptions')
-    >>> print sample_browser.title
-    Subscriptions : “HWDB Team” team
+    >>> subscriber_browser.open('https://bugs.launchpad.dev/~america/+subscriptions')
+    >>> print subscriber_browser.title
+    Subscriptions : “America” team
 
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'bug_subscriptions'))
+    ...     subscriber_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    1
-    Firefox does not support SVG
-    Mozilla Firefox
+    18
+    Word came from a contest
+    Scofflaw
 
-Sample Person now chooses to unsubscribe HWDB team from bug 1.
+Webster now chooses to unsubscribe team America from bug 18.
 
-    >>> sample_browser.getLink(id='unsubscribe-subscriber-243630').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'nonportlets'))
-    Unsubscribe from bug #1
-    ...
+    >>> subscriber_browser.getLink(id='unsubscribe-subscriber-243658').click()
+    >>> print extract_text(find_tags_by_class(
+    ...     subscriber_browser.contents, 'value')[0])
+    Subscribe me to this bug
+    Unsubscribe America from this bug
 
-    >>> sample_browser.getControl(
-    ...     'Unsubscribe HWDB Team from this bug').selected = True
-    >>> sample_browser.getControl('Continue').click()
+    >>> subscriber_browser.getControl(
+    ...     'Unsubscribe America from this bug').selected = True
+    >>> subscriber_browser.getControl('Continue').click()
 
-    >>> sample_browser.open('https://launchpad.dev/~hwdb-team/+subscriptions')
+    >>> subscriber_browser.open('https://launchpad.dev/~america/+subscriptions')
     >>> page_text = extract_text(
-    ...     find_main_content(sample_browser.contents))
+    ...     find_main_content(subscriber_browser.contents))
     >>> "does not have any direct bug subscriptions" in page_text
     True
