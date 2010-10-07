@@ -175,7 +175,8 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
     def test_getSubscriptionsForBugTask(self):
         # If no one has a filtered subscription for the given bug, the result
-        # of getSubscriptionsForBugTask() is the same as for getSubscriptions().
+        # of getSubscriptionsForBugTask() is the same as for
+        # getSubscriptions().
         bugtask = self.makeBugTask()
         subscriptions = self.target.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.NOTHING)
