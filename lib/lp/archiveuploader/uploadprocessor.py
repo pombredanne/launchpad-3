@@ -232,7 +232,8 @@ class UploadProcessor:
         try:
             [changes_file] = self.locateChangesFiles(upload_path)
             logger.debug("Considering changefile %s" % changes_file)
-            result = self.processChangesFile(upload_path, changes_file, logger, build)
+            result = self.processChangesFile(
+                upload_path, changes_file, logger, build)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -279,7 +280,8 @@ class UploadProcessor:
         for changes_file in changes_files:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
-                result = self.processChangesFile(upload_path, changes_file, self.log)
+                result = self.processChangesFile(
+                    upload_path, changes_file, self.log)
                 if result == UploadStatusEnum.FAILED:
                     some_failed = True
                 elif result == UploadStatusEnum.REJECTED:
