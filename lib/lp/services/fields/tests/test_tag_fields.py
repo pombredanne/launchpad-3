@@ -7,7 +7,7 @@ import unittest
 
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.fields import (
     SearchTag,
     Tag,

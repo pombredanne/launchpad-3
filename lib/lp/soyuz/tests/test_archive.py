@@ -19,7 +19,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

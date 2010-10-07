@@ -8,10 +8,10 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.librarian.testing.fake import FakeLibrarian
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakelibrarian import FakeLibrarian
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     OutdatedTranslationError,
