@@ -43,6 +43,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 
 
@@ -121,12 +122,21 @@ class PillarView(LaunchpadView):
         elif IDistributionSourcePackage.providedBy(self.context):
             self.blueprints_usage = ServiceUsage.UNKNOWN
             self.translations_usage = ServiceUsage.UNKNOWN
+        elif IProjectGroup.providedBy(pillar):
+            # XXX: 2010-10-07 EdwinGrubbs bug=656292
+            # Fix _set_official_launchpad().
+
+            # Project groups do not support submit code, override the
+            # default.
+            self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
         else:
             # The context is used by all apps.
             pass
 
     def _set_official_launchpad(self, pillar):
         """Does the pillar officially use launchpad."""
+        # XXX: 2010-10-07 EdwinGrubbs bug=656292
+        # Fix _set_official_launchpad().
         # This if structure is required because it may be called many
         # times to build the complete set of official applications.
         if service_uses_launchpad(IServiceUsage(pillar).bug_tracking_usage):
