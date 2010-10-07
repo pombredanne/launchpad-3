@@ -37,9 +37,6 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.lp import initZopeless
 
-from lp.services.log.mappingfilter import MappingFilter
-from lp.services.log.nullhandler import NullHandler
-
 
 LOCK_PATH = "/var/lock/"
 UTC = pytz.UTC
@@ -360,6 +357,14 @@ class LaunchpadCronScript(LaunchpadScript):
     def __init__(self, name=None, dbuser=None, test_args=None):
         super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
 
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        enabled = cronscript_enabled(
+            config.canonical.cron_control_url, self.name, self.logger)
+        if not enabled:
+            sys.exit(0)
+
         # Configure the IErrorReportingUtility we use with defaults.
         # Scripts can override this if they want.
         globalErrorUtility.configure()
@@ -368,24 +373,10 @@ class LaunchpadCronScript(LaunchpadScript):
         globalErrorUtility.copy_to_zlog = False
 
         # WARN and higher log messages should generate OOPS reports.
-        logging.getLogger().addHandler(OopsHandler(name))
-
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
-        """Run if the cronscript is not disabled by the control file.
-
-        Rather than hand editing crontab files, cronscripts can be
-        enabled and disabled using a config file.
-
-        The control file location is specified by
-        config.canonical.cron_control_url.
-        """
-        enabled = cronscript_enabled(
-            config.canonical.cron_control_url, self.name, self.logger)
-        if not enabled:
-            sys.exit(0)
-        super(LaunchpadCronScript, self).run(
-            use_web_security, implicit_begin, isolation)
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        logging.getLogger().addHandler(OopsHandler(self.name))
 
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
