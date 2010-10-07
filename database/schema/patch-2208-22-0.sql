@@ -23,6 +23,8 @@ ALTER TABLE Branch ADD COLUMN merge_queue integer REFERENCES BranchMergeQueue;
 ALTER TABLE Branch ADD COLUMN merge_queue_config TEXT;
 CREATE INDEX branch__merge_queue__idx ON Branch(merge_queue);
 
+ALTER TABLE BranchMergeRobot DROP CONSTRAINT "branchmergerobot_registrant_fkey";
+ALTER TABLE BranchMergeRobot DROP CONSTRAINT "branchmergerobot_owner_fkey";
 ALTER TABLE BranchMergeRobot SET SCHEMA todrop;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 22, 0);
