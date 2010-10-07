@@ -500,6 +500,29 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         report_a_bug = find_tag_by_id(contents, 'bug-portlets')
         self.assertIsNot(None, report_a_bug)
 
+    def test_project_group_has_help_link_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        self.assertIsNot(None, help_link)
+
+    def test_project_group_has_no_help_link_if_using_LP(self):
+        # A project group that has no projects using Launchpad will not have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        print help_link
+        self.assertIs(None, help_link)
+
 
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
