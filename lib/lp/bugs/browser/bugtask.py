@@ -696,7 +696,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
         #     possibly using witchcraft. It should be rewritten to be
         #     useful or removed in favour of making other queries more
         #     efficient.
-        list(bug.getSubscribersForPerson(self.user))
+        if self.user is not None:
+            list(bug.getSubscribersForPerson(self.user))
 
     def userIsSubscribed(self):
         """Is the user subscribed to this bug?"""
