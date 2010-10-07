@@ -622,10 +622,12 @@ class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
     @run_as_db_user(config.launchpad.dbuser)
     def test_create_on_new_revision(self):
         """When branch tip changes, a job is created."""
+        parent_id = commit_file(self.db_branch, 'foo', 'bar')
+        self.factory.makeBranchRevision(self.db_branch, parent_id,
+                revision_date=self.factory.getUniqueDate())
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch,
             date_created=self.factory.getUniqueDate())
-        parent_id = commit_file(self.db_branch, 'foo', 'bar')
         revision_id = commit_file(self.db_branch, 'foo', 'baz')
         removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         self.assertEqual([], self.getPending())

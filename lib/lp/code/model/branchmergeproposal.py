@@ -782,7 +782,8 @@ class BranchMergeProposal(SQLBase):
     def getIncrementalDiffRanges(self):
         groups = self.getRevisionsSinceReviewStart()
         return [
-            (group[0].getLefthandParent(), group[-1]) for group in groups]
+            (group[0].revision.getLefthandParent(), group[-1].revision)
+            for group in groups]
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
         """Generate an incremental diff for the merge proposal.
