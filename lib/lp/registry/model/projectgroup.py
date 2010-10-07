@@ -74,6 +74,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
+    OfficialBugTag,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
@@ -215,6 +216,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    def has_translatable(self):
+        """See `IProjectGroup`."""
+        return self.translatables().count() != 0
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
