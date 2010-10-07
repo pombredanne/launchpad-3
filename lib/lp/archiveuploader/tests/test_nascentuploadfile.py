@@ -387,3 +387,39 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         self.assertRaises(UploadError, uploadfile.checkBuild, build)
+
+    def test_findSourcePackageRelease(self):
+        # findSourcePackageRelease finds the matching SourcePackageRelease.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="i386")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.factory.makeSourcePackageName("foo"),
+            distroseries=self.policy.distroseries,
+            version="0.42", archive=self.policy.archive)
+        control = self.getBaseControl()
+        control["Source"] = "foo"
+        uploadfile.parseControl(control)
+        self.assertEquals(
+            spph.sourcepackagerelease, uploadfile.findSourcePackageRelease())
+
+    def test_findSourcePackageRelease_no_spph(self):
+        # findSourcePackageRelease raises UploadError if there is no
+        # SourcePackageRelease.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=self.policy.distroseries, architecturetag="i386")
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=das,
+            archive=self.policy.archive)
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None)
+        control = self.getBaseControl()
+        control["Source"] = "foo"
+        uploadfile.parseControl(control)
+        self.assertRaises(UploadError, uploadfile.findSourcePackageRelease)
