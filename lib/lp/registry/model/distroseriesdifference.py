@@ -33,7 +33,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.exceptions import (
+from lp.registry.errors import (
     DistroSeriesDifferenceError,
     NotADerivedSeriesError,
     )
@@ -51,6 +51,7 @@ from lp.services.propertycache import (
     cachedproperty,
     IPropertyCacheManager,
     )
+from lp.soyuz.enums import PackageDiffStatus
 
 
 class DistroSeriesDifference(Storm):
@@ -176,6 +177,24 @@ class DistroSeriesDifference(Storm):
                     'parent_version': self.parent_source_version,
                     'source_version': self.source_version,
                     })
+
+    def _getPackageDiffURL(self, package_diff):
+        """Check status and return URL if appropriate."""
+        if package_diff is None or (
+            package_diff.status != PackageDiffStatus.COMPLETED):
+            return None
+
+        return package_diff.diff_content.getURL()
+
+    @property
+    def package_diff_url(self):
+        """See `IDistroSeriesDifference`."""
+        return self._getPackageDiffURL(self.package_diff)
+
+    @property
+    def parent_package_diff_url(self):
+        """See `IDistroSeriesDifference`."""
+        return self._getPackageDiffURL(self.parent_package_diff)
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""

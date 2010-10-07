@@ -7,8 +7,12 @@ __metaclass__ = type
 
 import transaction
 
-from lazr.restfulclient.errors import Unauthorized
+from lazr.restfulclient.errors import (
+    BadRequest,
+    Unauthorized,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import AppServerLayer
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -16,6 +20,7 @@ from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.testing import (
     TestCaseWithFactory,
     ws_object,
@@ -119,19 +124,30 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertIsNot(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 
-    def test_package_diffs(self):
-        # The `IPackageDiff` attributes are exposed.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            source_package_name_str='foo', versions={
-                'derived': '1.2',
-                'parent': '1.3',
-                'base': '1.0',
-                })
-        from lp.testing import person_logged_in
-        with person_logged_in(ds_diff.owner):
-            ds_diff.requestPackageDiffs(ds_diff.owner)
+    def test_requestPackageDiffs_exception(self):
+        # If one of the pubs is missing an exception is raised.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            })
+
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             ds_diff.owner), ds_diff)
 
-        self.assertEqual('In progress', ws_diff.package_diff.status)
-        self.assertEqual('In progress', ws_diff.parent_package_diff.status)
+        self.assertRaises(
+            BadRequest, ws_diff.requestPackageDiffs)
+
+    def test_package_diffs(self):
+        # The package diff urls exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        naked_dsdiff = removeSecurityProxy(ds_diff)
+        naked_dsdiff.package_diff = self.factory.makePackageDiff(
+            status=PackageDiffStatus.PENDING)
+        naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
+
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        self.assertEqual(None, ws_diff.package_diff_url)
+        self.assertTrue(ws_diff.parent_package_diff_url.startswith(
+            'http://localhost:58000/'))

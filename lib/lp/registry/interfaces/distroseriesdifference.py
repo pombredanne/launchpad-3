@@ -62,16 +62,27 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The package with a difference between the derived series "
             "and its parent."))
 
-    package_diff = exported(Reference(
+    package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
         readonly=True, description=_(
             "The most recently generated package diff from the base to the "
+            "derived version."))
+
+    package_diff_url = exported(TextLine(
+        title=_("Package diff url"), readonly=True, required=False,
+        description=_(
+            "The url for the diff between the base version and the "
             "derived version.")))
 
-    parent_package_diff = exported(Reference(
+    parent_package_diff = Reference(
         IPackageDiff, title=_("Parent package diff"), required=False,
         readonly=True, description=_(
             "The most recently generated package diff from the base to the "
+            "parent version."))
+    parent_package_diff_url = exported(TextLine(
+        title=_("Parent package diff url"), readonly=True, required=False,
+        description=_(
+            "The url for the diff between the base version and the "
             "parent version.")))
 
     status = Choice(

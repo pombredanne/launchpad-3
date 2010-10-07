@@ -13,23 +13,25 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.exceptions import (
-    DistroSeriesDifferenceError,
-    NotADerivedSeriesError,
-    )
+from lp.registry.errors import NotADerivedSeriesError
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
 from lp.services.propertycache import IPropertyCacheManager
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
@@ -540,17 +542,30 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             '1.0', ds_diff.parent_package_diff.from_source.version)
 
-    def test_requestPackageDiffs_exception(self):
-        # If one of the pubs is missing an exception is raised.
-        ds_diff = self.factory.makeDistroSeriesDifference(versions={
-            'derived': '1.2',
-            'parent': '1.3',
-            })
+    def test_package_diff_urls_none(self):
+        # URLs to the package diffs are only present when the diffs
+        # have been generated.
+        ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
-            self.assertRaises(
-                DistroSeriesDifferenceError,
-                ds_diff.requestPackageDiffs, ds_diff.owner)
+        self.assertEqual(None, ds_diff.package_diff_url)
+        self.assertEqual(None, ds_diff.parent_package_diff_url)
+
+
+class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_package_diff_urls(self):
+        # Only completed package diffs have urls.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        naked_dsdiff = removeSecurityProxy(ds_diff)
+        naked_dsdiff.package_diff = self.factory.makePackageDiff(
+            status=PackageDiffStatus.PENDING)
+        naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
+
+        self.assertEqual(None, ds_diff.package_diff_url)
+        self.assertTrue(ds_diff.parent_package_diff_url.startswith(
+            'http://localhost:58000/'))
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
