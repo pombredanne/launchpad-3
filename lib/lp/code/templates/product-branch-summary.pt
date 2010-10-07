@@ -19,14 +19,20 @@
   </div>
 
   <div id="external"
-       tal:condition="context/codehosting_usage/enumvalue:EXTERNAL">
-    <p>
-      <strong>
+       tal:condition="context/codehosting_usage/enumvalue:EXTERNAL"
+       tal:define="branch view/branch">
+    <strong>
+      <p tal:condition="not: branch/branch_type/enumvalue:IMPORTED">
         <tal:project_title replace="context/title" /> hosts its code at
         <a tal:attributes="href view/mirror_location"
            tal:content="view/mirror_location"></a>.
-      </strong>
-    </p>
+      </p>
+      <p tal:condition="branch/branch_type/enumvalue:IMPORTED">
+        <tal:project_title replace="context/title" /> hosts its code at
+        <a tal:attributes="href branch/code_import/url"
+           tal:content="branch/code_import/url"></a>.
+      </p>
+    </strong>
     <p tal:condition="context/homepageurl">
       You can learn more at the project's
       <a tal:attributes="href context/homepageurl">web page</a>.
@@ -34,6 +40,10 @@
     <p tal:condition="view/branch/branch_type/enumvalue:MIRRORED">
       Launchpad has a mirror of the master branch and you can create branches
       from it.
+    </p>
+    <p tal:condition="view/branch/branch_type/enumvalue:IMPORTED">
+      Launchpad imports code from there and you can create
+      branches from it.
     </p>
     <p tal:condition="view/branch/branch_type/enumvalue:REMOTE">
       Launchpad does not have a copy of the remote branch.
@@ -64,27 +74,7 @@
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;
                      dev_focus context/development_focus/branch">
-      <p tal:condition="dev_focus/branch_type/enumvalue:IMPORTED">
-      The development focus for this project is an import from 
-        <tal:import-data define="code_import dev_focus/code_import">
-        <tal:svn condition="code_import/rcs_type/enumvalue:SVN">
-          a Subversion repository
-        </tal:svn>
-        <tal:git condition="code_import/rcs_type/enumvalue:GIT">
-          a GIT repository
-        </tal:git>
-        <tal:hg condition="code_import/rcs_type/enumvalue:HG">
-          a Mercurial repository
-        </tal:hg>
-        <tal:cvs condition="code_import/rcs_type/enumvalue:CVS">
-          a CSV module
-        </tal:cvs>located at
-        <a tal:attributes="href code_import/url"
-          tal:content="code_import/url" />.
-
-        </tal:import-data>
-      </p>
-      You can submit patches there, or if you prefer, you can
+      You can
       <tal:browseable condition="dev_focus/code_is_browseable">
         <a tal:attributes="href dev_focus/browse_source_url"
            >browse the source code</a> for the development focus branch or get a
