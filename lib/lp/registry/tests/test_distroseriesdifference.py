@@ -450,22 +450,11 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_base_version_common(self):
         # The common base version is set when the difference is created.
         # Publish v1.0 of foo in both series.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
-        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
-        for series in [derived_series, derived_series.parent_series]:
-            self.factory.makeSourcePackagePublishingHistory(
-                distroseries=series,
-                version='1.0',
-                sourcepackagename=source_package_name,
-                status=PackagePublishingStatus.PUBLISHED)
-
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series, source_package_name_str='foo',
-            versions={
-                'derived': '1.2',
-                'parent': '1.3',
-                })
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
 
         self.assertEqual('1.0', ds_diff.base_version)
 
@@ -501,26 +490,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_base_source_pub(self):
         # The publishing in the derived series with base_version is returned.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
-        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
-        for series in [derived_series, derived_series.parent_series]:
-            self.factory.makeSourcePackagePublishingHistory(
-                distroseries=series,
-                version='1.0',
-                sourcepackagename=source_package_name,
-                status=PackagePublishingStatus.PUBLISHED)
-
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series, source_package_name_str='foo',
-            versions={
-                'derived': '1.2',
-                'parent': '1.3',
-                })
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
 
         base_pub = ds_diff.base_source_pub
         self.assertEqual('1.0', base_pub.source_package_version)
-        self.assertEqual(derived_series, base_pub.distroseries)
+        self.assertEqual(ds_diff.derived_series, base_pub.distroseries)
 
     def test_requestPackageDiffs(self):
         # IPackageDiffs are created for the corresponding versions.

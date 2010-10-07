@@ -79,6 +79,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         readonly=True, description=_(
             "The most recently generated package diff from the base to the "
             "parent version."))
+
     parent_package_diff_url = exported(TextLine(
         title=_("Parent package diff url"), readonly=True, required=False,
         description=_(
