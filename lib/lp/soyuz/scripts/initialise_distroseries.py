@@ -183,6 +183,8 @@ class InitialiseDistroSeries:
         archive_set = getUtility(IArchiveSet)
 
         spns = []
+        # The overhead from looking up each packageset is mitigated by
+        # this usually running from a job
         if self.packagesets:
             for pkgsetname in self.packagesets:
                 pkgset = getUtility(IPackagesetSet).getByName(

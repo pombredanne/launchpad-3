@@ -19,7 +19,8 @@ class IPackageCloner(Interface):
 
     def clonePackages(
         origin, destination, distroarchseries_list=None,
-        proc_familes=None, spns=None, always_create=False):
+        proc_families=None, sourcepackagenames=None,
+        always_create=False):
         """Copies the source packages from origin to destination as
         well as the binary packages for the DistroArchSeries specified.
 
@@ -27,9 +28,10 @@ class IPackageCloner(Interface):
         :param destination: the location to which the data is to be copied.
         :param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        :param proc_familes: the processor families that builds will be
+        :param proc_families: the processor families that builds will be
             created for.
-        :param spns: the source packages which are to be copied.
+        :param sourcepackagenames: the source packages which are to be
+            copied.
         :param always_create: if builds should always be created.
         """
 
