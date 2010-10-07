@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.app.enums import ServiceUsage
 from lp.code.enums import BranchType

@@ -9,7 +9,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.translations import TranslationConstants
@@ -30,7 +30,6 @@ class TestPOFileStillInitialized(TestCaseWithFactory):
     def test_pofile_still_initialized(self):
         pofile = self.factory.makePOFile('sux')
         tm = self.factory.makeTranslationMessage(pofile=pofile)
-        self.assertEqual(pofile, tm.pofile)
 
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
