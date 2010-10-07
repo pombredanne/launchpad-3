@@ -37,39 +37,6 @@
         <div metal:use-macro="context/@@launchpad_form/form">
         </div>
 
-        <tal:comment replace="nothing">
-        <form action="" method="POST">
-
-          <div class="field">
-            <div>
-              <div tal:content="structure view/subscription_widget">
-                <input type="radio" />
-              </div>
-              <div tal:content="structure view/widgets/bug_notification_level">
-                <input type="radio" />
-              </div>
-            </div>
-
-          </div>
-
-          <div class="actions">
-            <input type="hidden" name="next_url"
-                   tal:condition="view/next_url | nothing"
-                   tal:attributes="value view/next_url" />
-            <input tal:condition="not: view/user_is_subscribed"
-                   type="submit"
-                   name="subscribe"
-                   value="Continue" />
-            <input tal:condition="view/user_is_subscribed"
-                   type="submit"
-                   name="unsubscribe"
-                   value="Continue" />
-                   or <a tal:condition="view/cancel_url | nothing"
-                         tal:attributes="href view/cancel_url">Cancel</a>
-          </div>
-        </form>
-        </tal:comment>
-
       </div>
     </div>
 
