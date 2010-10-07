@@ -598,11 +598,8 @@ class LaunchpadStatementTracer:
         if self._debug_sql or self._debug_sql_extra:
             stmt_to_log = statement
             if self._debug_sql_bind_values:
-                from storm.variables import Variable
-                param_strings = [
-                    (lambda x:
-                        x.get() if isinstance(x, Variable) else str(x))(p)
-                    for p in params]
+                from storm.database import Connection
+                param_strings = Connection.to_database(params)
                 stmt_to_log = statement % tuple(param_strings)
             sys.stderr.write(stmt_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
