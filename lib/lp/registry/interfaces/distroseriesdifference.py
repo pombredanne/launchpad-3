@@ -62,17 +62,17 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The package with a difference between the derived series "
             "and its parent."))
 
-    package_diff = Reference(
+    package_diff = exported(Reference(
         IPackageDiff, title=_("Package diff"), required=False,
         readonly=True, description=_(
             "The most recently generated package diff from the base to the "
-            "derived version."))
+            "derived version.")))
 
-    parent_package_diff = Reference(
+    parent_package_diff = exported(Reference(
         IPackageDiff, title=_("Parent package diff"), required=False,
         readonly=True, description=_(
             "The most recently generated package diff from the base to the "
-            "parent version."))
+            "parent version.")))
 
     status = Choice(
         title=_('Distro series difference status.'),
@@ -115,6 +115,12 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         description=_(
             "The common base version of the package for differences "
             "with different versions in the parent and derived series."))
+
+    base_source_pub = Reference(
+        ISourcePackagePublishingHistory,
+        title=_("Base source pub"), readonly=True,
+        description=_(
+            "The common base version published in the derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
@@ -165,6 +171,15 @@ class IDistroSeriesDifferenceEdit(Interface):
         """Removes this difference from the blacklist.
 
         The status will be updated based on the versions.
+        """
+
+    @call_with(requestor=REQUEST_USER)
+    @export_write_operation()
+    def requestPackageDiffs(requestor):
+        """Requests IPackageDiffs for the derived and parent version.
+
+        :raises DistroSeriesDifferenceError: When package diffs
+            cannot be requested.
         """
 
 

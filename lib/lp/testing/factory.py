@@ -1915,6 +1915,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if versions is None:
             versions = {}
 
+        base_version = versions.get('base')
+        if base_version:
+            for series in [derived_series, derived_series.parent_series]:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=base_version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.PUBLISHED)
+
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 

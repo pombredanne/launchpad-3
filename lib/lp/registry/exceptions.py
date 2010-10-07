@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
     ]
 
@@ -15,3 +16,6 @@ class NotADerivedSeriesError(Exception):
     This is raised when a DistroSeriesDifference is created with a
     non-derived series - that is, a distroseries with a null Parent."""
 
+
+class DistroSeriesDifferenceError(Exception):
+    """Raised when package diffs cannot be created for a difference."""

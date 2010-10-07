@@ -21,7 +21,10 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.exceptions import NotADerivedSeriesError
+from lp.registry.exceptions import (
+    DistroSeriesDifferenceError,
+    NotADerivedSeriesError,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
@@ -486,6 +489,68 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 })
 
         self.assertEqual('1.1', ds_diff.base_version)
+
+    def test_base_source_pub_none(self):
+        # None is simply returned if there is no base version.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        self.assertIs(None, ds_diff.base_version)
+        self.assertIs(None, ds_diff.base_source_pub)
+
+    def test_base_source_pub(self):
+        # The publishing in the derived series with base_version is returned.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        for series in [derived_series, derived_series.parent_series]:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=series,
+                version='1.0',
+                sourcepackagename=source_package_name,
+                status=PackagePublishingStatus.PUBLISHED)
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
+                })
+
+        base_pub = ds_diff.base_source_pub
+        self.assertEqual('1.0', base_pub.source_package_version)
+        self.assertEqual(derived_series, base_pub.distroseries)
+
+    def test_requestPackageDiffs(self):
+        # IPackageDiffs are created for the corresponding versions.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            })
+
+        with person_logged_in(ds_diff.owner):
+            ds_diff.requestPackageDiffs(ds_diff.owner)
+
+        self.assertEqual(
+            '1.2', ds_diff.package_diff.to_source.version)
+        self.assertEqual(
+            '1.3', ds_diff.parent_package_diff.to_source.version)
+        self.assertEqual(
+            '1.0', ds_diff.package_diff.from_source.version)
+        self.assertEqual(
+            '1.0', ds_diff.parent_package_diff.from_source.version)
+
+    def test_requestPackageDiffs_exception(self):
+        # If one of the pubs is missing an exception is raised.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            })
+
+        with person_logged_in(ds_diff.owner):
+            self.assertRaises(
+                DistroSeriesDifferenceError,
+                ds_diff.requestPackageDiffs, ds_diff.owner)
 
 
 class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):

@@ -33,7 +33,10 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.exceptions import NotADerivedSeriesError
+from lp.registry.exceptions import (
+    DistroSeriesDifferenceError,
+    NotADerivedSeriesError,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
@@ -143,6 +146,17 @@ class DistroSeriesDifference(Storm):
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub(for_parent=True)
+
+    @cachedproperty
+    def base_source_pub(self):
+        """See `IDistroSeriesDifference`."""
+        if self.base_version is not None:
+            pubs = self.derived_series.getPublishedSources(
+                self.source_package_name, version=self.base_version,
+                include_pending=True)
+            return pubs[0]
+
+        return None
 
     @property
     def owner(self):
@@ -308,3 +322,18 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         self.update()
+
+    def requestPackageDiffs(self, requestor):
+        """See `IDistroSeriesDifference`."""
+        if (self.base_source_pub is None or self.source_pub is None or
+            self.parent_source_pub is None):
+            raise DistroSeriesDifferenceError(
+                "A derived, parent and base version are required to "
+                "generate package diffs.")
+        base_spr = self.base_source_pub.sourcepackagerelease
+        derived_spr = self.source_pub.sourcepackagerelease
+        parent_spr = self.parent_source_pub.sourcepackagerelease
+        self.package_diff = base_spr.requestDiffTo(
+            requestor, to_sourcepackagerelease=derived_spr)
+        self.parent_package_diff = base_spr.requestDiffTo(
+            requestor, to_sourcepackagerelease=parent_spr)
