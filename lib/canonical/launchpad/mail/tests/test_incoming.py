@@ -12,7 +12,7 @@ from canonical.launchpad.mail.incoming import (
     handleMail,
     MailErrorUtility,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.testing import TestCaseWithFactory

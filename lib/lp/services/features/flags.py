@@ -8,6 +8,7 @@ __all__ = [
 
 
 from lp.services.features.rulesource import (
+    NullFeatureRuleSource,
     StormFeatureRuleSource,
     )
 
@@ -151,7 +152,5 @@ class NullFeatureController(FeatureController):
     """For use in testing: everything is turned off"""
 
     def __init__(self):
-        FeatureController.__init__(self, lambda scope: None)
-
-    def _loadRules(self):
-        return []
+        FeatureController.__init__(self, lambda scope: None,
+            NullFeatureRuleSource())
