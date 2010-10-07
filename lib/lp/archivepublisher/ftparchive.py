@@ -241,35 +241,34 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
-        full_distroseries_name = distroseries.name + pocketsuffix[pocket]
-        # Touch the source file lists and override files
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, "extra", comp]))
-        f_touch(self._config.overrideroot,
-                ".".join(["override", full_distroseries_name, comp, "src"]))
+        full_pocket = distroseries.name + pocketsuffix[pocket]
 
-        dr_comps = self.release_files_needed.setdefault(
-            full_distroseries_name, {})
+        def touch_list(prefix, *parts):
+            f_touch(
+                os.path.join(
+                    self._config.overrideroot,
+                    ".".join(prefix + [full_pocket] + list(parts))))
+        # Create empty override lists.
+        touch_list(["override"], comp)
+        touch_list(["override"], "extra", comp)
+        touch_list(["override"], comp, "src")
 
-        f_touch(self._config.overrideroot,
-                "_".join([full_distroseries_name, comp, "source"]))
+        dr_comps = self.release_files_needed.setdefault(full_pocket, {})
+
+        # Create empty file lists.
+        touch_list([], comp, "source")
         dr_comps.setdefault(comp, set()).add("source")
 
         for arch in self._config.archTagsForSeries(distroseries.name):
             # organize dr/comp/arch into temporary binary
             # archive map for the architecture in question.
             dr_special = self.release_files_needed.setdefault(
-                full_distroseries_name, {})
+                full_pocket, {})
             dr_special.setdefault(comp, set()).add("binary-"+arch)
 
             # Touch more file lists for the archs.
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distroseries_name, comp, "binary-"+arch]))
-            f_touch(self._config.overrideroot,
-                    "_".join([full_distroseries_name, comp,
-                              "debian-installer", "binary-"+arch]))
+            touch_list([], comp, "binary-" + arch)
+            touch_list([], comp, "debian-installer", "binary-" + arch)
 
     #
     # Override Generation
