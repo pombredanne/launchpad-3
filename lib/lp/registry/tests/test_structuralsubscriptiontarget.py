@@ -173,19 +173,19 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
     def makeBugTask(self):
         return self.factory.makeBugTask(target=self.target)
 
-    def test_getSubscriptionsForBug(self):
+    def test_getSubscriptionsForBugTask(self):
         # If no one has a filtered subscription for the given bug, the result
-        # of getSubscriptionsForBug() is the same as for getSubscriptions().
+        # of getSubscriptionsForBugTask() is the same as for getSubscriptions().
         bugtask = self.makeBugTask()
         subscriptions = self.target.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.NOTHING)
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual(list(subscriptions), list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual(list(subscriptions), list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_filter_on_status(self):
+    def test_getSubscriptionsForBugTask_with_filter_on_status(self):
         # If a status filter exists for a subscription, the result of
-        # getSubscriptionsForBug() may be a subset of getSubscriptions().
+        # getSubscriptionsForBugTask() may be a subset of getSubscriptions().
         bugtask = self.makeBugTask()
 
         # Create a new subscription on self.target.
@@ -195,9 +195,9 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription.bug_notification_level = BugNotificationLevel.COMMENTS
 
         # Without any filters the subscription is found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
         # Filter the subscription to bugs in the CONFIRMED state.
         subscription_filter = BugSubscriptionFilter()
@@ -205,19 +205,19 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
 
         # With the filter the subscription is not found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
         # If the filter is adjusted, the subscription is found again.
         subscription_filter.statuses = [bugtask.status]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_filter_on_importance(self):
+    def test_getSubscriptionsForBugTask_with_filter_on_importance(self):
         # If an importance filter exists for a subscription, the result of
-        # getSubscriptionsForBug() may be a subset of getSubscriptions().
+        # getSubscriptionsForBugTask() may be a subset of getSubscriptions().
         bugtask = self.makeBugTask()
 
         # Create a new subscription on self.target.
@@ -227,9 +227,9 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription.bug_notification_level = BugNotificationLevel.COMMENTS
 
         # Without any filters the subscription is found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
         # Filter the subscription to bugs in the CRITICAL state.
         subscription_filter = BugSubscriptionFilter()
@@ -237,19 +237,19 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter.importances = [BugTaskImportance.CRITICAL]
 
         # With the filter the subscription is not found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
         # If the filter is adjusted, the subscription is found again.
         subscription_filter.importances = [bugtask.importance]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_filter_on_level(self):
+    def test_getSubscriptionsForBugTask_with_filter_on_level(self):
         # All structural subscriptions have a level for bug notifications
-        # which getSubscriptionsForBug() observes.
+        # which getSubscriptionsForBugTask() observes.
         bugtask = self.makeBugTask()
 
         # Create a new METADATA level subscription on self.target.
@@ -259,19 +259,19 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription.bug_notification_level = BugNotificationLevel.METADATA
 
         # The subscription is found when looking for NOTHING or above.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
         # The subscription is found when looking for METADATA or above.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.METADATA)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.METADATA)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
         # The subscription is not found when looking for COMMENTS or above.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.COMMENTS)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.COMMENTS)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_filter_include_any_tags(self):
+    def test_getSubscriptionsForBugTask_with_filter_include_any_tags(self):
         # If a subscription filter has include_any_tags, a bug with one or
         # more tags is matched.
         bugtask = self.makeBugTask()
@@ -285,17 +285,17 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter.include_any_tags = True
 
         # Without any tags the subscription is not found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
         # With any tag the subscription is found.
         bugtask.bug.tags = ["foo"]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_filter_exclude_any_tags(self):
+    def test_getSubscriptionsForBugTask_with_filter_exclude_any_tags(self):
         # If a subscription filter has exclude_any_tags, only bugs with no
         # tags are matched.
         bugtask = self.makeBugTask()
@@ -309,17 +309,17 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter.exclude_any_tags = True
 
         # Without any tags the subscription is found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
         # With any tag the subscription is not found.
         bugtask.bug.tags = ["foo"]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
-    def test_getSubscriptionsForBug_with_multiple_filters(self):
+    def test_getSubscriptionsForBugTask_with_multiple_filters(self):
         # If multiple filters exist for a subscription, all filters must
         # match.
         bugtask = self.makeBugTask()
@@ -337,23 +337,23 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter.importances = [BugTaskImportance.CRITICAL]
 
         # With the filter the subscription is not found.
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
         # If the filter is adjusted to match status but not importance, the
         # subscription is still not found.
         subscription_filter.statuses = [bugtask.status]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
 
         # If the filter is adjusted to also match importance, the subscription
         # is found again.
         subscription_filter.importances = [bugtask.importance]
-        subscriptions_for_bug = self.target.getSubscriptionsForBug(
-            bugtask.bug, BugNotificationLevel.NOTHING)
-        self.assertEqual([subscription], list(subscriptions_for_bug))
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
 
 
 class TestStructuralSubscriptionForDistro(
