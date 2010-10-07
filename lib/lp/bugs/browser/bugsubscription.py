@@ -101,6 +101,20 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
 
     cancel_url = next_url
 
+    @cachedproperty
+    def _subscribers_for_current_user(self):
+        """Return a dict of the subscribers for the current user."""
+        persons_for_user = {}
+        person_count = 0
+        bug = self.context.bug
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.name not in persons_for_user:
+                persons_for_user[person.name] = person
+                person_count += 1
+
+        self._subscriber_count_for_current_user = person_count
+        return persons_for_user.values()
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpFields()
@@ -110,7 +124,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
 
         subscription_terms = []
         self_subscribed = False
-        for person in bug.getSubscribersForPerson(self.user):
+        for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
                 subscription_terms.append(
                     SimpleTerm(
@@ -135,22 +149,37 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
             __name__='subscription', title=self.schema['person'].title,
             vocabulary=subscription_vocabulary, required=True,
             default=default_subscription_value)
+        # We need to pop the bug_notification_level field out of
+        # form_fields so that we can put the subscription_field first in
+        # the list. formlib.form.Fields doesn't have an insert() method.
+        bug_notification_level_field = self.form_fields.select(
+            'bug_notification_level')
+        self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(subscription_field)
+        self.form_fields += bug_notification_level_field
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
-        if not self.userIsSubscribed():
+        if (not self.user_is_subscribed and
+            self._subscriber_count_for_current_user == 0):
             # We hide the subscription widget if the user isn't
             # subscribed, since we know who the subscriber is and we
             # don't need to present them with a single radio button.
             self.widgets['subscription'].visible = False
+        elif (not self.user_is_subscribed and
+            self._subscriber_count_for_current_user > 0):
+            # We show the subscription widget when the user is
+            # subscribed via a team, because they can either subscribe
+            # theirself or unsubscribe their team.
+            self.widgets['subscription'].visible = True
         else:
             self.widgets['bug_notification_level'].visible = False
 
-    def userIsSubscribed(self):
+    @cachedproperty
+    def user_is_subscribed(self):
         """Is the user subscribed to this bug?"""
         return (
             self.context.bug.isSubscribed(self.user) or
@@ -162,7 +191,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
         The warning should tell the user that, when unsubscribing, they
         will also be unsubscribed from dupes of this bug.
         """
-        if self.userIsSubscribed():
+        if self.user_is_subscribed:
             return True
 
         bug = self.context.bug
@@ -176,7 +205,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     def subscribe_action(self, action, data):
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
-        if (not self.userIsSubscribed() and
+        if (not self.user_is_subscribed and
             (subscription_person == self.user)):
             self._handleSubscribe()
         else:
