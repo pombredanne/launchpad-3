@@ -1007,39 +1007,36 @@ BugMessage""" % sqlvalues(self.id))
 
     def getStructuralSubscribers(self, recipients=None, level=None):
         """See `IBug`. """
-        structural_subscription_targets = set()
-
+        query_arguments = []
         for bugtask in self.bugtasks:
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                structural_subscription_targets.add(bugtask.target)
+                query_arguments.append((bugtask.target, bugtask))
                 if bugtask.target.parent_subscription_target is not None:
-                    structural_subscription_targets.add(
-                        bugtask.target.parent_subscription_target)
-
+                    query_arguments.append(
+                        (bugtask.target.parent_subscription_target, bugtask))
             if ISourcePackage.providedBy(bugtask.target):
                 # Distribution series bug tasks with a package have the source
                 # package set as their target, so we add the distroseries
                 # explicitly to the set of subscription targets.
-                structural_subscription_targets.add(
-                    bugtask.distroseries)
-
+                query_arguments.append((bugtask.distroseries, bugtask))
             if bugtask.milestone is not None:
-                structural_subscription_targets.add(bugtask.milestone)
+                query_arguments.append((bugtask.milestone, bugtask))
 
-        if len(structural_subscription_targets) == 0:
+        if len(query_arguments) == 0:
             return EmptyResultSet()
 
         if level is None:
             # If level is not specified, default to NOTHING so that all
             # subscriptions are found. XXX: Perhaps this should go in
-            # getSubscriptionsForBug()?
+            # getSubscriptionsForBugTask()?
             level = BugNotificationLevel.NOTHING
 
-        target = structural_subscription_targets.pop()
-        subscriptions = target.getSubscriptionsForBug(self, level)
-        for target in structural_subscription_targets:
-            subscriptions = subscriptions.union(
-                target.getSubscriptionsForBug(self, level))
+        # Build the query.
+        union = lambda left, right: left.union(right)
+        queries = (
+            target.getSubscriptionsForBugTask(bugtask, level)
+            for target, bugtask in query_arguments)
+        subscriptions = reduce(union, queries)
 
         # Pull all the subscriptions in.
         subscriptions = list(subscriptions)
