@@ -39,9 +39,8 @@ class TestBug(TestCaseWithFactory):
     def test_get_subscribers_for_person_indirect_subscription(self):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
-        [team1, team2] = (
-            self.factory.makeTeam(members=[person]),
-            self.factory.makeTeam(members=[person]))
+        team1 = self.factory.makeTeam(members=[person])
+        self.factory.makeTeam(members=[person])
         with person_logged_in(person):
             bug.subscribe(team1, person)
         self.assertEqual([team1], list(bug.getSubscribersForPerson(person)))
