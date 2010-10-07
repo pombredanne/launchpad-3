@@ -36,7 +36,7 @@ from canonical.launchpad.webapp.interaction import (
     setupInteraction,
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
     )

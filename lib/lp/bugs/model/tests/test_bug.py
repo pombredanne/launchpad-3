@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from storm.store import ResultSet
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility

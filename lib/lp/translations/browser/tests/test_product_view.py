@@ -6,7 +6,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.product import ProductView

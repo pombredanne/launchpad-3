@@ -10,7 +10,7 @@ import unittest
 from lazr.restfulclient.errors import HTTPError
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
