@@ -8,6 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
     <include
         file="vocabularies.zcml"/>
@@ -195,6 +196,9 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
+        permission="zope.Public"/>
 
     <facet
         facet="overview">
@@ -348,6 +352,9 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
 
     <facet
         facet="answers"/>
@@ -477,6 +484,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
         permission="zope.Public"/>
 
     <!-- CommercialSubscription -->
@@ -944,6 +954,9 @@
             interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
 
     <!-- IMilestoneSet -->
 
@@ -1219,6 +1232,9 @@
             attributes="
                 setBugSupervisor"/>
     </class>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
 
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
@@ -1366,6 +1382,9 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
 
     <!-- ProductSeriesSet -->
 
@@ -1490,6 +1509,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
         permission="zope.Public"/>
 
     <!-- DistributionSet -->
@@ -1804,6 +1826,12 @@
         <allow
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
+
+    <!-- Registers exceptions used in webservice defined in lp.registry.
+      Other data is in module=canonical.launchpad.interfaces as defined in
+      zcml there.-->
+
+    <webservice:register module="lp.registry.errors" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

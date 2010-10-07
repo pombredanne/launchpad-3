@@ -14,7 +14,7 @@ __all__ = [
 
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,
