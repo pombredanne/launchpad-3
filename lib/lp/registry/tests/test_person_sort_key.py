@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import LaunchpadLayer
+from canonical.testing.layers import LaunchpadLayer
 
 
 class TestPersonSortKey(unittest.TestCase):

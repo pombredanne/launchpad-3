@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import test_tales, TestCaseWithFactory
 
 

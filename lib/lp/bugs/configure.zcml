@@ -609,6 +609,18 @@
             permission="zope.Public"
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
+
+    <!-- BugSubscriptionFilter -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <require
+          permission="launchpad.Edit"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
     <facet
         facet="bugs">
 

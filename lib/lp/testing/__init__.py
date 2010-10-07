@@ -441,6 +441,16 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
+
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -685,16 +695,6 @@ class BrowserTestCase(TestCaseWithFactory):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
-
-    def assertTextMatchesExpressionIgnoreWhitespace(self,
-                                                    regular_expression_txt,
-                                                    text):
-        def normalise_whitespace(text):
-            return ' '.join(text.split())
-        pattern = re.compile(
-            normalise_whitespace(regular_expression_txt), re.S)
-        self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)), text)
 
     def getViewBrowser(self, context, view_name=None, no_login=False):
         login(ANONYMOUS)

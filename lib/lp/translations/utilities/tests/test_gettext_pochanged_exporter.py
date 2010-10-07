@@ -7,7 +7,7 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationexporter import (
     ITranslationFormatExporter,
     )

@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError,
     )

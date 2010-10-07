@@ -8,7 +8,7 @@ from canonical.launchpad.ftests import (
     login,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
