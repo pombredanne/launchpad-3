@@ -31,6 +31,11 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -45,15 +50,25 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     )
-from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    TranslationConflict,
+    TranslationValidationStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 from lp.translations.utilities.kde_po_importer import KdePOImporter
 from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
+from lp.translations.utilities.sanitize import (
+    sanitize_translations_from_import,
+    )
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
-from lp.translations.utilities.validate import GettextValidationError
+from lp.translations.utilities.validate import (
+    GettextValidationError,
+    validate_translation,
+    )
 
 
 importers = {
@@ -445,7 +460,89 @@ class FileImporter(object):
                 context=message.context))
         return potmsgset
 
-    def storeTranslationsInDatabase(self, message, potmsgset):
+    @cachedproperty
+    def share_with_other_side(self):
+        """Returns True if translations should be shared with the other side.
+        """
+        traits = getUtility(
+            ITranslationSideTraitsSet).getForTemplate(self.potemplate)
+        if traits.side == TranslationSide.UPSTREAM:
+            return True
+        # Check from_upstream.
+        if self.translation_import_queue_entry.from_upstream:
+            return True
+        # Find the sharing POFile and check permissions.
+        productseries = self.potemplate.distroseries.getSourcePackage(
+            self.potemplate.sourcepackagename).productseries
+        if productseries is None:
+            return False
+        upstream_template = getUtility(IPOTemplateSet).getSubset(
+            productseries=productseries).getPOTemplateByName(
+                self.potemplate.name)
+        upstream_pofile = upstream_template.getPOFileByLang(
+            self.pofile.language.code)
+        if upstream_pofile is not None:
+            uploader_person = self.translation_import_queue_entry.importer
+            if upstream_pofile.canEditTranslations(uploader_person):
+                return True
+        # Deny the rest.
+        return False
+
+    @cachedproperty
+    def translations_are_msgids(self):
+        """Are these English strings instead of translations?
+
+        If this template uses symbolic message ids, the English POFile
+        will contain the English original texts that correspond to the 
+        symbols."""
+        return (
+            self.importer.uses_source_string_msgids and
+            self.pofile.language.code == 'en')
+
+    def _storeCredits(self, potmsgset, credits):
+        """Store credits but only from upstream."""
+        if not self.translation_import_queue_entry.from_upstream:
+            return None
+        return potmsgset.setCurrentTranslation(
+            self.pofile, self.last_translator, credits,
+            RosettaTranslationOrigin.SCM, self.share_with_other_side)
+
+    def _validateMessage(self, potmsgset, message,
+                         translations, message_data):
+        """Validate the message and report success or failure."""
+        try:
+            validate_translation(
+                potmsgset.singular_text, potmsgset.plural_text,
+                translations, potmsgset.flags)
+        except GettextValidationError, e:
+            self._addUpdateError(message_data, potmsgset, unicode(e))
+            message.validation_status = (
+                TranslationValidationStatus.UNKNOWNERROR)
+            return False
+
+        message.validation_status = TranslationValidationStatus.OK
+        return True
+
+    def _approveMessage(self, potmsgset, message, message_data):
+        """Try to approve the message, return None on TranslationConflict."""
+        try:
+            message.approve(
+                self.pofile, self.last_translator,
+                self.share_with_other_side, self.lock_timestamp)
+        except TranslationConflict:
+            self._addConflictError(message_data, potmsgset)
+            if self.logger is not None:
+                self.logger.info(
+                    "Conflicting updates on message %d." % potmsgset.id)
+            # The message remains a suggestion.
+            return None
+
+        if self.translations_are_msgids:
+            potmsgset.clearCachedSingularText()
+
+        return message
+
+    def storeTranslationsInDatabase(self, message_data, potmsgset):
         """Try to store translations in the database.
 
         Perform check if a PO file is available and if the message has any
@@ -453,7 +550,8 @@ class FileImporter(object):
         is added to the list in self.errors but the translations are stored
         anyway, marked as having an error.
 
-        :param message: The message for which translations will be stored.
+        :param message_data: The message data for which translations will be
+            stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
 
         :return: The updated translation_message entry or None, if no storing
@@ -464,54 +562,39 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        if (not message.translations or
-            set(message.translations) == set([u'']) or
-            set(message.translations) == set([None])):
+        no_translations = (
+            message_data.translations is None or
+            not any(message_data.translations))
+        if no_translations:
             # We don't have anything to import.
             return None
 
-        try:
-            # Do the actual import.
-            translation_message = potmsgset.updateTranslation(
-                self.pofile, self.last_translator, message.translations,
-                self.translation_import_queue_entry.from_upstream,
-                self.lock_timestamp, force_edition_rights=self.is_editor)
-        except TranslationConflict:
-            self._addConflictError(message, potmsgset)
-            if self.logger is not None:
-                self.logger.info(
-                    "Conflicting updates on message %d." % potmsgset.id)
-            return None
-        except GettextValidationError, e:
-            # We got an error, so we submit the translation again but
-            # this time asking to store it as a translation with
-            # errors.
+        sanitized_translations = sanitize_translations_from_import(
+            potmsgset.singular_text, message_data.translations,
+            self.pofile.language.pluralforms)
 
-            # Add the pomsgset to the list of pomsgsets with errors.
-            self._addUpdateError(message, potmsgset, unicode(e))
+        if potmsgset.is_translation_credit:
+            # Translation credits cannot be added as suggestions.
+            return self._storeCredits(potmsgset, sanitized_translations)
 
-            try:
-                translation_message = potmsgset.updateTranslation(
-                    self.pofile, self.last_translator, message.translations,
-                    self.translation_import_queue_entry.from_upstream,
-                    self.lock_timestamp, ignore_errors=True,
-                    force_edition_rights=self.is_editor)
-            except TranslationConflict:
-                # A conflict on top of a validation error?  Give up.
-                # This message is cursed.
-                if self.logger is not None:
-                    self.logger.info(
-                        "Conflicting updates; ignoring invalid message %d." %
-                            potmsgset.id)
-                return None
+        # The message is first stored as a suggestion and only made
+        # current if it validates.
+        new_message = potmsgset.submitSuggestion(
+            self.pofile, self.last_translator, sanitized_translations)
 
-        just_replaced_msgid = (
-            self.importer.uses_source_string_msgids and
-            self.pofile.language.code == 'en')
-        if just_replaced_msgid:
-            potmsgset.clearCachedSingularText()
+        validation_ok = self._validateMessage(
+            potmsgset, new_message, sanitized_translations, message_data)
+        if validation_ok and self.is_editor:
+            return self._approveMessage(potmsgset, new_message, message_data)
 
-        return translation_message
+        if self.translation_import_queue_entry.from_upstream:
+            # XXX: henninge 2010-09-21: Mixed models!
+            # This is mimicking the old behavior to still mark these messages
+            # as "imported". Will have to be removed when
+            # getPOTMsgSetsWithErrors is updated to the new model.
+            new_message.makeCurrentUpstream(True)
+
+        return new_message
 
     def importMessage(self, message):
         """Import a single message.

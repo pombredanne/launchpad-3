@@ -538,7 +538,8 @@ class POFile(SQLBase, POFileMixIn):
         applicable_template = Coalesce(
             TranslationMessage.potemplateID, self.potemplate.id)
         clauses = [
-            TranslationTemplateItem.potmsgsetID == TranslationMessage.potmsgsetID,
+            TranslationTemplateItem.potmsgsetID == (
+                TranslationMessage.potmsgsetID),
             TranslationTemplateItem.potemplate == self.potemplate,
             TranslationMessage.language == self.language,
             applicable_template == self.potemplate.id,
@@ -1108,8 +1109,7 @@ class POFile(SQLBase, POFileMixIn):
 
         # Prepare the mail notification.
         msgsets_imported = self.getTranslationMessages(
-            TranslationMessage.was_obsolete_in_last_import == False
-            ).count()
+            TranslationMessage.was_obsolete_in_last_import == False).count()
 
         replacements = collect_import_info(entry_to_import, self, warnings)
         replacements.update({
@@ -1179,8 +1179,6 @@ class POFile(SQLBase, POFileMixIn):
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # comes from upstream.
-            celebs = getUtility(ILaunchpadCelebrities)
-            rosetta_experts = celebs.rosetta_experts
             if (entry_to_import.from_upstream and
                 entry_to_import.importer.id != rosetta_experts.id):
                 entry_to_import.importer.assignKarma(

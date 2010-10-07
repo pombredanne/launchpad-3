@@ -181,6 +181,8 @@ def sanitize_translations_from_webui(
 
     # Expected plural forms should all exist and empty translations should
     # be normalized to None.
+    if pluralforms is None:
+        pluralforms = 2
     for pluralform in range(pluralforms):
         if pluralform not in sanitized_translations:
             sanitized_translations[pluralform] = None
