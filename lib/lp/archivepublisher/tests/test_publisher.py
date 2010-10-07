@@ -770,7 +770,7 @@ class TestPublisher(TestPublisherBase):
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
-                                   component_name, arch_name):
+                                   component_name, archs):
         """Assert the given context will have it's Release file regenerated.
 
         Check if a request for the given context is correctly stored in:
@@ -782,12 +782,10 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue(
             component_name in suite,
             'Component %s/%s not requested' % (suite_name, component_name))
-        self.assertTrue(
-            arch_name in suite[component_name],
-            'Arch %s/%s/%s not requested' % (
-            suite_name, component_name, arch_name))
+        self.assertEquals(archs, suite[component_name])
 
-    def checkAllRequestedReleaseFiles(self, publisher):
+    def checkAllRequestedReleaseFiles(self, publisher,
+                                      architecturetags=('hppa', 'i386')):
         """Check if all expected Release files are going to be regenerated.
 
         'source', 'binary-i386' and 'binary-hppa' Release Files should be
@@ -798,19 +796,17 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(available_components,
                          ['main', 'multiverse', 'restricted', 'universe'])
 
-        available_archs = ['binary-%s' % a.architecturetag
-                           for a in self.breezy_autotest.architectures]
-        self.assertEqual(available_archs, ['binary-hppa', 'binary-i386'])
+        available_archs = ['binary-%s' % arch for arch in architecturetags]
 
         # XXX cprov 20071210: Include the artificial component 'source' as a
         # location to check for generated indexes. Ideally we should
         # encapsulate this task in publishing.py and this common method
         # in tests as well.
-        dists = ['source'] + available_archs
+        all_archs = set(available_archs)
+        all_archs.add('source')
         for component in available_components:
-            for dist in dists:
-                self.assertReleaseFileRequested(
-                    publisher, 'breezy-autotest', component, dist)
+            self.assertReleaseFileRequested(
+                publisher, 'breezy-autotest', component, all_archs)
 
     def _getReleaseFileOrigin(self, contents):
         origin_header = 'Origin: '
@@ -1085,8 +1081,41 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
-    def testNativeNoReleaseFilesForDisabledArchitectures(self):
-        """Test that no release files are generated for disabled archs."""
+    def assertIndicesForArchitectures(self, publisher, present, absent):
+        """Assert that the correct set of archs has indices.
+
+        Checks that the architecture tags in 'present' have Packages and
+        Release files and are in the series' Release file, and confirms
+        that those in 'absent' are not.
+        """
+
+        self.checkAllRequestedReleaseFiles(
+            publisher, architecturetags=present)
+
+        release_template = os.path.join(
+            publisher._config.distsroot,
+            'breezy-autotest/main/binary-%s/Release')
+        packages_template = os.path.join(
+            publisher._config.distsroot,
+            'breezy-autotest/main/binary-%s/Packages')
+        release_content = open(os.path.join(
+            publisher._config.distsroot,
+            'breezy-autotest/Release')).read()
+
+        for arch in present:
+            self.assertTrue(os.path.exists(release_template % arch))
+            self.assertTrue(os.path.exists(packages_template % arch))
+            self.assertTrue(arch in release_content)
+
+        for arch in absent:
+            self.assertFalse(os.path.exists(release_template % arch))
+            self.assertFalse(os.path.exists(packages_template % arch))
+            self.assertFalse(arch in release_content)
+
+    def testNativeNoIndicesForDisabledArchitectures(self):
+        """Test that no indices are created for disabled archs."""
+        self.getPubBinaries()
+
         ds = self.ubuntutest.getSeries('breezy-autotest')
         ds.getDistroArchSeries('i386').enabled = False
         self.config = Config(self.ubuntutest)
@@ -1094,27 +1123,18 @@ class TestPublisher(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
-
-        self.getPubBinaries()
 
         publisher.A_publish(False)
         publisher.C_writeIndexes(False)
+        publisher.D_writeReleaseFiles(False)
 
-        # binary-disabled doesn't show up anywhere.
-        expected_release_files = {
-            'breezy-autotest': {
-                'main': set(['binary-hppa', 'source']),
-                'multiverse': set(['binary-hppa', 'source']),
-                'restricted': set(['binary-hppa', 'source']),
-                'universe': set(['binary-hppa', 'source']),
-                }
-            }
-        self.assertEquals(
-            expected_release_files,
-            publisher.apt_handler.release_files_needed)
+        self.assertIndicesForArchitectures(
+            publisher, present=['hppa'], absent=['i386'])
 
-    def testAptFtparchiveNoReleaseFilesForDisabledArchitectures(self):
-        """Test that no release files are generated for disabled archs."""
+    def testAptFtparchiveNoIndicesForDisabledArchitectures(self):
+        """Test that no indices are created for disabled archs."""
+        self.getPubBinaries()
+
         ds = self.ubuntutest.getSeries('breezy-autotest')
         ds.getDistroArchSeries('i386').enabled = False
         self.config = Config(self.ubuntutest)
@@ -1123,23 +1143,12 @@ class TestPublisher(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
-        self.getPubBinaries()
-
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
 
-        # binary-disabled doesn't show up anywhere.
-        expected_release_files = {
-            'breezy-autotest': {
-                'main': set(['binary-hppa', 'source']),
-                'multiverse': set(['binary-hppa', 'source']),
-                'restricted': set(['binary-hppa', 'source']),
-                'universe': set(['binary-hppa', 'source']),
-                }
-            }
-        self.assertEquals(
-            expected_release_files,
-            publisher.apt_handler.release_files_needed)
+        self.assertIndicesForArchitectures(
+            publisher, present=['hppa'], absent=['i386'])
 
     def testWorldAndGroupReadablePackagesAndSources(self):
         """Test Packages.gz and Sources.gz files are world and group readable.
