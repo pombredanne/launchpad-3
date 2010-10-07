@@ -199,13 +199,11 @@ class FTPArchiveHandler:
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        # XXX: kiko 2006-08-24: suffix is completely unnecessary here. Just
-        # iterate over the pockets, and do the suffix check inside
-        # createEmptyPocketRequest; that would also allow us to replace
-        # the == "" check we do there by a RELEASE match
+        # XXX: This doesn't just create empty pockets. It also requests
+        # Release files, so it needs to be called every time.
         for distroseries in self.distroseries:
             components = self._config.componentsForSeries(distroseries.name)
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -214,7 +212,7 @@ class FTPArchiveHandler:
                         continue
 
                 for comp in components:
-                    self.createEmptyPocketRequest(distroseries, suffix, comp)
+                    self.createEmptyPocketRequest(distroseries, pocket, comp)
 
     def requestReleaseFile(self, suite_name, component_name, arch_name):
         """Request Release file generation for given context.
@@ -230,12 +228,9 @@ class FTPArchiveHandler:
             component_name, set())
         suite_component_special.add(arch_name)
 
-    def createEmptyPocketRequest(self, distroseries, suffix, comp):
+    def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
-        full_distroseries_name = distroseries.name + suffix
-        arch_tags = self._config.archTagsForSeries(distroseries.name)
-
-        if suffix == "":
+        if pocket == PackagePublishingPocket.RELEASE:
             # organize distroseries and component pair as
             # debian-installer -> distroseries_component
             # internal map. Only the main pocket actually
@@ -246,6 +241,7 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
+        full_distroseries_name = distroseries.name + pocketsuffix[pocket]
         # Touch the source file lists and override files
         f_touch(self._config.overrideroot,
                 ".".join(["override", full_distroseries_name, comp]))
@@ -261,7 +257,7 @@ class FTPArchiveHandler:
                 "_".join([full_distroseries_name, comp, "source"]))
         dr_comps.setdefault(comp, set()).add("source")
 
-        for arch in arch_tags:
+        for arch in self._config.archTagsForSeries(distroseries.name):
             # organize dr/comp/arch into temporary binary
             # archive map for the architecture in question.
             dr_special = self.release_files_needed.setdefault(
