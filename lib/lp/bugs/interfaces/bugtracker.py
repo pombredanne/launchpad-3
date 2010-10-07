@@ -67,7 +67,6 @@ from lp.services.fields import (
     URIField,
     )
 
-
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
 
 
@@ -518,28 +517,14 @@ class IBugTrackerComponent(Interface):
                           "as shown in Launchpad.  This is a sanitized "
                           "form of the Remote Name.")))
 
-    distribution = exported(
+    distro_source_package = exported(
         Reference(
-            title=_('Distribution'),
-            schema=Interface,
-            description=_('The distribution this component is associated '
-                          'with in launchpad, if one has been defined.')))
-
-    source_package = exported(
-        Reference(
-            title=_('Source Package'),
-            schema=Interface,
-            description=_('The source package this component is associated '
-                          'with in launchpad, if one has been defined.')))
-
-    @operation_parameters(
-        distro_source_package=TextLine(
-            title=_("The distribution source package object that should be "
+            Interface,
+            title=_("Distribution Source Package"),
+            description=_("The distribution source package object that should be "
                     "linked to this component."),
-            required=True))
-    @export_write_operation()
-    def linkDistroSourcePackage(distro_source_package):
-        """Associate the given distribution source package"""
+            required=False))
+
 
 class IBugTrackerComponentGroup(Interface):
     """A collection of components in a remote bug tracker.

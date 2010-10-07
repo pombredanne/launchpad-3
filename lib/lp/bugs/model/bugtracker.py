@@ -86,6 +86,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 def normalise_leading_slashes(rest):
@@ -749,10 +753,24 @@ class BugTrackerComponent(Storm):
         source_package_name_id,
         'SourcePackageName.id')
 
-    def linkDistroSourcePackage(self, distro_source_package):
+    def _getDistroSourcePackage(self):
+        """Retrieves the corresponding source package"""
+        if self.distribution is None or self.source_package_name is None:
+            return None
+        self.distribution.getSourcePackage(
+            self.source_package_name)
+
+    def _setDistroSourcePackage(self, distro_source_package):
         """Links this component to its corresponding source package"""
-        distribution = distro_source_package.distribution
-        source_package_name = distro_source_package.source_package_name
+        if distro_source_package is None:
+            self.distribution = None
+            self.source_package_name = None
+        else:
+            self.distribution = distro_source_package.distribution
+            self.source_package_name = distro_source_package.source_package_name
+
+    distro_source_package = property(_getDistroSourcePackage,
+                                     _setDistroSourcePackage)
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
