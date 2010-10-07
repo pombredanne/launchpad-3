@@ -298,6 +298,7 @@ class DistroSeriesTranslationsMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         return Link('+templates', 'Templates', site='translations')
 
     def language_packs(self):

@@ -13,6 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import (
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing.views import (
@@ -21,10 +22,7 @@ from lp.testing.views import (
 
 
 class TestRobotsBase(TestCaseWithFactory):
-    """Test the inclusion of the meta "noindex,nofollow" directives.
-
-    setUp must define the naked_translatable attribute.
-    """
+    """Test the inclusion of the meta "noindex,nofollow" directives."""
 
     layer = DatabaseFunctionalLayer
 
@@ -33,6 +31,11 @@ class TestRobotsBase(TestCaseWithFactory):
 
     def get_view(self):
         """Return an initialized view."""
+        raise NotImplementedError
+
+    @property
+    def naked_translatable(self):
+        """Must be overridden."""
         raise NotImplementedError
 
     def get_soup_and_robots(self, usage):
@@ -74,8 +77,11 @@ class TestRobotsProjectGroup(TestRobotsBase):
         self.product = self.factory.makeProduct()
         self.factory.makePOTemplate(
             productseries=self.product.development_focus)
-        self.naked_translatable = removeSecurityProxy(self.product)
         self.naked_translatable.project = self.projectgroup
+
+    @property
+    def naked_translatable(self):
+        return removeSecurityProxy(self.product)
 
     def get_view(self):
         return create_initialized_view(
@@ -91,8 +97,6 @@ class TestRobotsProjectGroup(TestRobotsBase):
         view = self.get_view()
         self.assertFalse(view.has_translatables)
 
-from lp.registry.interfaces.distribution import IDistributionSet
-from zope.component import getUtility
 
 class TestRobotsDistroSeries(TestRobotsBase):
     """Test noindex,nofollow for distro series."""
@@ -101,19 +105,27 @@ class TestRobotsDistroSeries(TestRobotsBase):
 
     def setUp(self):
         super(TestRobotsDistroSeries, self).setUp()
-        #self.distro = self.factory.makeDistribution(name="whobuntu")
-        self.distro = getUtility(IDistributionSet).getByName('ubuntu')
+        self.owner = self.factory.makePerson()
+        login_person(self.owner)
+        self.distro = self.factory.makeDistribution(
+            name="whobuntu", owner=self.owner)
         self.distroseries = self.factory.makeDistroSeries(
             name="zephyr", distribution=self.distro)
+        self.distroseries.hide_all_translations = False
         new_sourcepackagename = self.factory.makeSourcePackageName()
         self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=new_sourcepackagename)
-        self.naked_translatable = removeSecurityProxy(self.distro)
+
+    @property
+    def naked_translatable(self):
+        return removeSecurityProxy(self.distro)
 
     def get_view(self):
-        return create_initialized_view(
-            self.distroseries, '+translations', rootsite='translations')
+        view = create_initialized_view(
+            self.distroseries, '+translations', rootsite='translations',
+            current_request=True)
+        return view
 
     def test_LAUNCHPAD_does_not_block_robots(self):
         self.verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)
