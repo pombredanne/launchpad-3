@@ -714,9 +714,6 @@ class FTPArchiveHandler:
 
         Also outputs a debian-installer file list if necessary.
         """
-        self.release_files_needed.setdefault(
-            dr_pocketed, {}).setdefault(component, set()).add(arch)
-
         files = []
         di_files = []
         f_path = os.path.join(self._config.overrideroot,
