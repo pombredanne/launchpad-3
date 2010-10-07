@@ -26,6 +26,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
@@ -39,6 +40,7 @@ from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.enum import BugNotificationLevel
+from lp.services import features
 from lp.services.propertycache import cachedproperty
 
 
@@ -83,8 +85,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
 
     schema = IBugSubscription
 
-    field_names = ['bug_notification_level']
-    custom_widget('bug_notification_level', RadioWidget)
+    @property
+    def field_names(self):
+        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+            return ['bug_notification_level']
+        else:
+            return []
 
     @property
     def next_url(self):
@@ -108,8 +114,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
         person_count = 0
         bug = self.context.bug
         for person in bug.getSubscribersForPerson(self.user):
-            if person.name not in persons_for_user:
-                persons_for_user[person.name] = person
+            if person.id not in persons_for_user:
+                persons_for_user[person.id] = person
                 person_count += 1
 
         self._subscriber_count_for_current_user = person_count
@@ -146,37 +152,44 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
         default_subscription_value = subscription_vocabulary.getTermByToken(
             self.user.name).value
         subscription_field = Choice(
-            __name__='subscription', title=self.schema['person'].title,
+            __name__='subscription', title=_("Subscription options"),
             vocabulary=subscription_vocabulary, required=True,
             default=default_subscription_value)
-        # We need to pop the bug_notification_level field out of
-        # form_fields so that we can put the subscription_field first in
-        # the list. formlib.form.Fields doesn't have an insert() method.
-        bug_notification_level_field = self.form_fields.select(
-            'bug_notification_level')
-        self.form_fields = self.form_fields.omit('bug_notification_level')
-        self.form_fields += formlib.form.Fields(subscription_field)
-        self.form_fields += bug_notification_level_field
+
+        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+            # We need to pop the bug_notification_level field out of
+            # form_fields so that we can put the subscription_field first in
+            # the list. formlib.form.Fields doesn't have an insert() method.
+            bug_notification_level_field = self.form_fields.select(
+                'bug_notification_level')
+            self.form_fields = self.form_fields.omit('bug_notification_level')
+            self.form_fields += formlib.form.Fields(subscription_field)
+            self.form_fields += bug_notification_level_field
+            self.form_fields['bug_notification_level'].custom_widget = (
+                CustomWidgetFactory(RadioWidget))
+        else:
+            self.form_fields += formlib.form.Fields(subscription_field)
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
-        if (not self.user_is_subscribed and
-            self._subscriber_count_for_current_user == 0):
-            # We hide the subscription widget if the user isn't
-            # subscribed, since we know who the subscriber is and we
-            # don't need to present them with a single radio button.
-            self.widgets['subscription'].visible = False
-        elif (not self.user_is_subscribed and
-            self._subscriber_count_for_current_user > 0):
-            # We show the subscription widget when the user is
-            # subscribed via a team, because they can either subscribe
-            # theirself or unsubscribe their team.
-            self.widgets['subscription'].visible = True
-        else:
-            self.widgets['bug_notification_level'].visible = False
+        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+            if (not self.user_is_subscribed and
+                self._subscriber_count_for_current_user == 0):
+                # We hide the subscription widget if the user isn't
+                # subscribed, since we know who the subscriber is and we
+                # don't need to present them with a single radio button.
+                self.widgets['subscription'].visible = False
+            elif (not self.user_is_subscribed and
+                self._subscriber_count_for_current_user > 0):
+                # We show the subscription widget when the user is
+                # subscribed via a team, because they can either
+                # subscribe theirself or unsubscribe their team.
+                self.widgets['subscription'].visible = True
+            else:
+                self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
     def user_is_subscribed(self):
