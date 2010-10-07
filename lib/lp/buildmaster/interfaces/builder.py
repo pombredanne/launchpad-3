@@ -154,8 +154,6 @@ class IBuilder(IHasOwner):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    # XXX: This needs to change to become a method that returns a Deferred.
-
     failure_count = Int(
         title=_('Failure Count'), required=False, default=0,
         description=_("Number of consecutive failures for this builder."))

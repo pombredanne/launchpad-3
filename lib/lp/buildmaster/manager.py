@@ -124,12 +124,6 @@ class SlaveScanner:
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
-        # XXX: We don't need any of the callback chaining that used
-        # to be here, because where it was processing the
-        # deferred_list before, that is now all done!  So, we need
-        # to review all the error handling that it was doing and
-        # make sure we're still doing it.
-
         self._loop = LoopingCall(self._startCycle)
         d = self._loop.start(self.SCAN_INTERVAL)
         return d
@@ -183,7 +177,6 @@ class SlaveScanner:
         self.builder = get_builder(self.builder_name)
 
         if self.builder.builderok:
-            # XXX: Now returns a Deferred.
             d = self.builder.updateStatus(self.logger)
         else:
             d = defer.succeed(None)
@@ -194,16 +187,9 @@ class SlaveScanner:
             # See if we think there's an active build on the builder.
             buildqueue = self.builder.getBuildQueue()
 
-            # XXX Julian 2010-07-29 bug=611258
-            # We're not using the RecordingSlave until dispatching, which
-            # means that this part blocks until we've received a response
-            # from the builder.  updateBuild() needs to be made
-            # asyncronous.
-
             # Scan the slave and get the logtail, or collect the build if
             # it's ready.  Yes, "updateBuild" is a bad name.
             if buildqueue is not None:
-                # XXX: Now returns a Deferred.
                 return self.builder.updateBuild(buildqueue)
 
         def got_available(available):

@@ -124,18 +124,11 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    # XXX: This (BuilderSlave) should use composition, rather than
-    # inheritance.
-
     # XXX: Have a documented interface for the XML-RPC server:
     #  - what methods
     #  - what return values expected
     #  - what faults
     #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
-
-    # XXX: Arguably, this interface should be asynchronous
-    # (i.e. Deferred-returning). This would mean that Builder (see below)
-    # would have to expect Deferreds.
 
     # XXX: Once we have a client object with a defined, tested interface, we
     # should make a test double that doesn't do any XML-RPC and can be used to
@@ -260,8 +253,6 @@ class BuilderSlave(object):
 # Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
 def rescueBuilderIfLost(builder, logger=None):
     """See `IBuilder`."""
-    # XXX: Make this return a Deferred.
-
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according the
     # two status we care about. See see lib/canonical/buildd/slave.py
@@ -327,7 +318,6 @@ def rescueBuilderIfLost(builder, logger=None):
 
 def _update_builder_status(builder, logger=None):
     """Really update the builder status."""
-    # XXX: Make this handle & return Deferreds
     d = builder.rescueIfLost(logger)
     def rescue_failed(failure):
         # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
