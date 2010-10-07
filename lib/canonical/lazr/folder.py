@@ -13,16 +13,16 @@ import os
 import re
 import time
 
-from zope.interface import implements
+from zope.browserresource.file import setCacheControl
 from zope.contenttype import guess_content_type
 from zope.datetime import rfc1123_date
-from zope.app.publisher.browser.fileresource import setCacheControl
+from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 
 
 class File:
-    # Copied from zope.app.publisher.fileresource, which
+    # Copied from zope.browserresource.file, which
     # unbelievably throws away the file data, and isn't
     # useful extensible.
     #

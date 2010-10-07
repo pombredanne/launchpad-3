@@ -12,7 +12,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
 from lp.code.model.branchlistingqueryoptimiser import (

@@ -10,7 +10,7 @@ __all__ = []
 from Mailman import Errors
 from Mailman.Handlers import LPModerate
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
 
 

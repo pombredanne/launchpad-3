@@ -14,12 +14,12 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IBinaryAndSourcePackageName
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
     )
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
+from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 from lp.soyuz.model.binarypackagename import getBinaryPackageDescriptions
 
 
@@ -43,6 +43,7 @@ class BinaryAndSourcePackageNameIterator(BatchedCountableIterator):
     Builds descriptions from source and binary descriptions it can
     identify based on the names returned when queried.
     """
+
     def getTermsWithDescriptions(self, results):
         # Note that we grab first source package descriptions and then
         # binary package descriptions, giving preference to the latter,
@@ -70,5 +71,3 @@ class BinaryAndSourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     displayname = 'Select a Package'
     _orderBy = 'name'
     iterator = BinaryAndSourcePackageNameIterator
-
-

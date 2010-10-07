@@ -14,7 +14,7 @@ from unittest import TestLoader
 import pytz
 import transaction
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.model.translatablemessage import TranslatableMessage
