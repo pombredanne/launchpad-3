@@ -68,7 +68,7 @@ the user this time, and inform the user.
   >>> submit.click()
 
   >>> browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
