@@ -186,14 +186,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
             self._handleUnsubscribe(subscription_person)
         self.request.response.redirect(self.next_url)
 
-    def _isSubscriptionRequest(self):
-        """Return True if the form contains subscribe/unsubscribe input."""
-        return (
-            self.user and
-            self.request.method == 'POST' and
-            'cancel' not in self.request.form and
-            self.widgets['subscription'].hasValidInput())
-
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
