@@ -807,37 +807,8 @@ class FTPArchiveHandler:
         """Generates the config stanza for an individual pocket."""
         dr_pocketed = distroseries_name + pocketsuffix[pocket]
 
-        # XXX kiko 2006-08-24: I have no idea what the code below is meant
-        # to do -- it appears to be a rehash of createEmptyPocketRequests.
         archs = self._config.archTagsForSeries(distroseries_name)
         comps = self._config.componentsForSeries(distroseries_name)
-        for comp in comps:
-            comp_path = os.path.join(self._config.overrideroot,
-                                     "_".join([dr_pocketed, comp, "source"]))
-            if not os.path.exists(comp_path):
-                # Create empty files so that even if we don't output
-                # anything here apt-ftparchive will DTRT
-                f_touch(comp_path)
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp]))
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp, "src"]))
-
-        if len(comps) == 0:
-            self.log.debug("Did not find any components to create config "
-                           "for %s" % dr_pocketed)
-            return
-
-        # Second up, pare archs down as appropriate
-        for arch in archs:
-            # XXX: kiko 2006-08-24: why is it comps[0] here?
-            arch_path = os.path.join(self._config.overrideroot,
-                "_".join([dr_pocketed, comps[0], "binary-"+arch]))
-            if not os.path.exists(arch_path):
-                # Create an empty file if we don't have one so that
-                # apt-ftparchive will dtrt.
-                f_touch(arch_path)
-        # XXX kiko 2006-08-24: End uncomprehensible code.
 
         self.log.debug("Generating apt config for %s" % dr_pocketed)
         apt_config.write(STANZA_TEMPLATE % {
