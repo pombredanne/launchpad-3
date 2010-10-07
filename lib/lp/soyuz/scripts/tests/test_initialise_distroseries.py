@@ -244,24 +244,15 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_do_not_copy_disabled_dases(self):
         # DASes that are disabled in the parent will not be copied
-        i386 = self.factory.makeProcessorFamily()
-        ppc = self.factory.makeProcessorFamily()
-        parent = self.factory.makeDistroSeries()
-        i386_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=i386)
         ppc_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=ppc)
+            distroseries=self.parent)
         ppc_das.enabled = False
-        parent.nominatedarchindep = i386_das
-        foobuntu = self._create_distroseries(parent)
-        ids = InitialiseDistroSeries(foobuntu)
-        ids.check()
-        ids.initialise()
+        child = self._full_initialise()
         das = list(IStore(DistroArchSeries).find(
-            DistroArchSeries, distroseries = foobuntu))
+            DistroArchSeries, distroseries = child))
         self.assertEqual(len(das), 1)
         self.assertEqual(
-            das[0].architecturetag, i386_das.architecturetag)
+            das[0].architecturetag, self.parent_das.architecturetag)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool
