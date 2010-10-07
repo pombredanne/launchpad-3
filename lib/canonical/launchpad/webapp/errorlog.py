@@ -43,7 +43,6 @@ from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
 
-
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
@@ -273,10 +272,6 @@ class ErrorReportingUtility:
             section_name = self._default_config_section
         self.copy_to_zlog = config[section_name].copy_to_zlog
         # Start a new UniqueFileAllocator to activate the new configuration.
-        if config[section_name].error_dir is None:
-            raise ValueError("[%s] error_dir config is None" % section_name)
-        if config[section_name].oops_prefix is None:
-            raise ValueError("[%s] oops_prefix config is None" % section_name)
         self.log_namer = UniqueFileAllocator(
             output_root=config[section_name].error_dir,
             log_type="OOPS",

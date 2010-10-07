@@ -449,6 +449,10 @@ class JobCronScript(LaunchpadCronScript):
         self._runner_class = runner_class
 
     @property
+    def dbuser(self):
+        return self.config_section.dbuser
+
+    @property
     def runner_class(self):
         """Enable subclasses to override with command-line arguments."""
         return self._runner_class

@@ -41,10 +41,6 @@ class ProcessJobSource(JobCronScript):
         return 'process-job-source-%s' % self.job_source_name
 
     @property
-    def dbuser(self):
-        return self.config_section.dbuser
-
-    @property
     def runner_class(self):
         runner_class_name = getattr(
             self.config_section, 'runner_class', 'JobRunner')
