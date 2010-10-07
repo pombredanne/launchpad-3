@@ -31,6 +31,7 @@ from lp.testing import (
     BrowserTestCase,
     login,
     login_person,
+    logout,
     TestCaseWithFactory,
     time_counter,
     )
@@ -156,6 +157,26 @@ class TestProductCodeIndexView(ProductTestBase):
 
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
+
+    def test_external_import(self):
+        # Test that the correct information is shown for an import
+        product = self.factory.makeProduct()
+        code_import = self.factory.makeProductCodeImport(
+            svn_branch_url='http://svn.example.org/branch')
+        login_person(product.owner)
+        product.development_focus.branch = code_import.branch    
+        logout()
+        self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        login(ANONYMOUS)
+        content = find_tag_by_id(browser.contents, 'external')
+        text = extract_text(content)
+        expected = ("%(product_title)s hosts its code at %(branch_url)s. "
+            "Launchpad imports code from there and you can create "
+            "branches from it." % dict(
+                product_title=product.title,
+                branch_url=code_import.url))
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_external_mirrored(self):
         # Test that the correct URL is displayed for a mirrored branch.
