@@ -31,7 +31,6 @@ from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
 from bzrlib import (
     commands,
-    errors,
     lockdir,
     osutils,
     trace,
@@ -241,8 +240,8 @@ class LPForkingService(object):
     #          OS naturally closes the socket.
     #          If we want the returncode, then we should put that as bytes on
     #          the socket before we exit. Having the child do the work means
-    #          that in error conditions, it could easily die before being able to
-    #          write anything (think SEGFAULT, etc). The forking server is
+    #          that in error conditions, it could easily die before being able
+    #          to write anything (think SEGFAULT, etc). The forking server is
     #          already 'wait'() ing on its children. So that we don't get
     #          zombies, and with wait3() we can get the rusage (user time,
     #          memory consumption, etc.)
@@ -391,8 +390,8 @@ class LPForkingService(object):
         stdout_fid = os.open(stdout_path, os.O_WRONLY)
         stderr_fid = os.open(stderr_path, os.O_WRONLY)
         # Note: by this point bzrlib has opened stderr for logging
-        #       (as part of starting the service process in the first place). As
-        #       such, it has a stream handler that writes to stderr. logging
+        #       (as part of starting the service process in the first place).
+        #       As such, it has a stream handler that writes to stderr. logging
         #       tries to flush and close that, but the file is already closed.
         #       This just supresses that exception
         logging.raiseExceptions = False
@@ -430,7 +429,7 @@ class LPForkingService(object):
         # Reset the start time
         trace._bzr_log_start_time = time.time()
         trace.mutter('%d starting %r'
-                     % (os.getpid(), command_argv,))
+                     % (os.getpid(), command_argv))
         self._bind_child_file_descriptors(path)
         self._run_child_command(command_argv)
 
@@ -447,7 +446,7 @@ class LPForkingService(object):
         retcode = commands.run_bzr_catch_errors(command_argv)
         self._close_child_file_descriptors()
         trace.mutter('%d finished %r'
-                     % (os.getpid(), command_argv,))
+                     % (os.getpid(), command_argv))
         # We force os._exit() here, because we don't want to unwind the stack,
         # which has complex results. (We can get it to unwind back to the
         # cmd_launchpad_forking_service code, and even back to main() reporting
@@ -530,7 +529,7 @@ class LPForkingService(object):
             pass
         trace.note('Shutting down. Waiting up to %.0fs for %d child processes'
                    % (self.WAIT_FOR_CHILDREN_TIMEOUT,
-                      len(self._child_processes),))
+                      len(self._child_processes)))
         self._shutdown_children()
         trace.note('Exiting')
 
@@ -836,7 +835,6 @@ libraries_to_preload = [
     'lp.codehosting.vfs.hooks',
     'lp.codehosting.vfs.transport',
     ]
-
 
 
 def load_tests(standard_tests, module, loader):

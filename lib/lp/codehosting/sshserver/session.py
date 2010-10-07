@@ -18,13 +18,10 @@ from zope.interface import implements
 
 from twisted.internet import (
     error,
-    fdesc,
     interfaces,
-    main,
     process,
     )
 from twisted.python import log
-from zope.event import notify
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
@@ -100,7 +97,6 @@ class ForkedProcessTransport(process.BaseProcess):
     #       override stuff like __init__ and reapProcess which I don't want to
     #       do in the same way. (Is it ok not to call your Base classes
     #       __init__ if you don't want to do that exact work?)
-
     def __init__(self, reactor, executable, args, environment, proto):
         process.BaseProcess.__init__(self, proto)
         # Map from standard file descriptor to the associated pipe
@@ -175,14 +171,18 @@ class ForkedProcessTransport(process.BaseProcess):
         stdout_path = os.path.join(self._fifo_path, 'stdout')
         stderr_path = os.path.join(self._fifo_path, 'stderr')
         child_stdin_fd = os.open(stdin_path, os.O_WRONLY)
-        self.pipes[0] = process.ProcessWriter(reactor, self, 0, child_stdin_fd)
+        self.pipes[0] = process.ProcessWriter(reactor, self, 0,
+                                              child_stdin_fd)
         child_stdout_fd = os.open(stdout_path, os.O_RDONLY)
-        # forceReadHack=True ? Used in process.py doesn't seem to be needed here
-        self.pipes[1] = process.ProcessReader(reactor, self, 1, child_stdout_fd)
+        # forceReadHack=True ? Used in process.py doesn't seem to be needed
+        # here
+        self.pipes[1] = process.ProcessReader(reactor, self, 1,
+                                              child_stdout_fd)
         child_stderr_fd = os.open(stderr_path, os.O_RDONLY)
-        self.pipes[2] = process.ProcessReader(reactor, self, 2, child_stderr_fd)
+        self.pipes[2] = process.ProcessReader(reactor, self, 2,
+                                              child_stderr_fd)
         # Note: _exiter forms a GC cycle, since it points to us, and we hold a
-        #       reference to it
+        # reference to it
         self._exiter = _WaitForExit(reactor, self, self.process_sock)
         self.pipes['exit'] = self._exiter
 
@@ -272,7 +272,6 @@ class ForkedProcessTransport(process.BaseProcess):
         if not self.lostProcess:
             return
         process.BaseProcess.maybeCallProcessEnded(self)
-
     # pauseProducing, present in process.py, not a IProcessTransport interface
 
 
@@ -422,7 +421,8 @@ def launch_smart_server(avatar):
     from twisted.internet import reactor
 
     python_command = "%(root)s/bin/py %(bzr)s" % {
-            'root': config.root, 'bzr': get_bzr_path()
+            'root': config.root,
+            'bzr': get_bzr_path(),
             }
     args = " lp-serve --inet %(user_id)s"
     command = python_command + args

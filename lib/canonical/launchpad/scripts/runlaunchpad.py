@@ -191,7 +191,6 @@ class ForkingSessionService(Service):
     #       service. It would seem reasonable to make one always start if the
     #       other one is started. Though this might be a way to "FeatureFlag"
     #       whether this is active or not.
-
     @property
     def should_launch(self):
         return (config.codehosting.launch and

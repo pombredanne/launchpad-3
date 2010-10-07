@@ -338,7 +338,8 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
 
     def setUp(self):
         super(TestCaseWithLPForkingServiceSubprocess, self).setUp()
-        self.service_process, self.service_path = self.start_service_subprocess()
+        (self.service_process,
+         self.service_path) = self.start_service_subprocess()
         self.addCleanup(self.stop_service)
 
     def start_conversation(self, message, one_byte_at_a_time=False):
@@ -389,6 +390,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         # I'm not 100% sure about when cleanup runs versus addDetail, but I
         # think this will work.
         self.addCleanup(os.remove, tempname)
+
         def read_log():
             f = os.fdopen(fd)
             f.seek(0)
