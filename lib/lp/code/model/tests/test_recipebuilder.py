@@ -17,7 +17,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     TwistedLaunchpadZopelessLayer,
     )

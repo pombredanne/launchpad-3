@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import ExternalBugTracker
 from lp.bugs.interfaces.bug import (
     CreateBugParams,

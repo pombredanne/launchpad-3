@@ -21,7 +21,7 @@ from canonical.launchpad.ftests import (
     syncUpdate,
     )
 from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
