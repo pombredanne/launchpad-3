@@ -956,30 +956,11 @@ BugMessage""" % sqlvalues(self.id))
 
         also_notified_subscribers = set()
 
-        structural_subscription_targets = set()
-
         for bugtask in self.bugtasks:
             if bugtask.assignee:
                 also_notified_subscribers.add(bugtask.assignee)
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
-
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                structural_subscription_targets.add(bugtask.target)
-                if bugtask.target.parent_subscription_target is not None:
-                    structural_subscription_targets.add(
-                        bugtask.target.parent_subscription_target)
-
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the
-                # source package set as their target, so we add the
-                # distroseries explicitly to the set of subscription
-                # targets.
-                structural_subscription_targets.add(
-                    bugtask.distroseries)
-
-            if bugtask.milestone is not None:
-                structural_subscription_targets.add(bugtask.milestone)
 
             # If the target's bug supervisor isn't set,
             # we add the owner as a subscriber.
@@ -989,16 +970,15 @@ BugMessage""" % sqlvalues(self.id))
                 if recipients is not None:
                     recipients.addRegistrant(pillar.owner, pillar)
 
-        person_set = getUtility(IPersonSet)
-        target_subscribers = person_set.getSubscribersForTargets(
-            structural_subscription_targets, recipients=recipients,
-            level=level)
-
-        also_notified_subscribers.update(target_subscribers)
+        # Structural subscribers.
+        also_notified_subscribers.update(
+            self.getStructuralSubscribers(
+                recipients=recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+
         # Remove security proxy for the sort key, but return
         # the regular proxied object.
         return sorted(
