@@ -12,7 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.translations.browser.distroseries import DistroSeriesTemplatesView

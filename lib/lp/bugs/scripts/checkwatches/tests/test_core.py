@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IQuestionSet,
     )
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.scripts import checkwatches

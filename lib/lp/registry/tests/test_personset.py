@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches,
     )
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
