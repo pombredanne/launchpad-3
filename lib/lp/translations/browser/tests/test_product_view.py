@@ -7,13 +7,17 @@ import unittest
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
     DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_view
 from lp.translations.browser.product import ProductView
-
+from lp.translations.publisher import TranslationsLayer
 
 class TestProduct(TestCaseWithFactory):
     """Test Product view in translations facet."""
@@ -94,14 +98,14 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
 
     def test_cannot_configure_translations_product_no_edit_permission(self):
         product = self.factory.makeProduct()
-        view = create_initialized_view(product, '+translations')
-        self.assertEqual(False, view.can_configure_translations)
+        view = create_view(product, '+translations', layer=TranslationsLayer)
+        self.assertEqual(False, view.can_configure_translations())
 
     def test_can_configure_translations_product_with_edit_permission(self):
         product = self.factory.makeProduct()
         login_person(product.owner)
-        view = create_initialized_view(product, '+translations')
-        self.assertEqual(True, view.can_configure_translations)
+        view = create_view(product, '+translations', layer=TranslationsLayer)
+        self.assertEqual(True, view.can_configure_translations())
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
