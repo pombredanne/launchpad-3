@@ -1092,24 +1092,22 @@ class TestPublisher(TestPublisherBase):
         self.checkAllRequestedReleaseFiles(
             publisher, architecturetags=present)
 
-        release_template = os.path.join(
-            publisher._config.distsroot,
-            'breezy-autotest/main/binary-%s/Release')
-        packages_template = os.path.join(
-            publisher._config.distsroot,
-            'breezy-autotest/main/binary-%s/Packages')
+        arch_template = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest/main/binary-%s')
+        release_template = os.path.join(arch_template, 'Release')
+        packages_template = os.path.join(arch_template, 'Packages')
         release_content = open(os.path.join(
             publisher._config.distsroot,
             'breezy-autotest/Release')).read()
 
         for arch in present:
+            self.assertTrue(os.path.exists(arch_template % arch))
             self.assertTrue(os.path.exists(release_template % arch))
             self.assertTrue(os.path.exists(packages_template % arch))
             self.assertTrue(arch in release_content)
 
         for arch in absent:
-            self.assertFalse(os.path.exists(release_template % arch))
-            self.assertFalse(os.path.exists(packages_template % arch))
+            self.assertFalse(os.path.exists(arch_template % arch))
             self.assertFalse(arch in release_content)
 
     def testNativeNoIndicesForDisabledArchitectures(self):
