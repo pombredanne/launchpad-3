@@ -175,7 +175,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
                         branch_url=branch.url))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
-        # The code page should set robots to noindex, nofollow.
+        # The code page should set not robots to noindex, nofollow.
         meta_string = '<meta name="robots" content="noindex,nofollow" />'
         self.assertNotIn(meta_string, browser.contents)
 
@@ -198,7 +198,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
                         branch_url=branch.url))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
-        # The code page should set robots to noindex, nofollow.
+        # The code page should not set robots to noindex, nofollow.
         meta_string = '<meta name="robots" content="noindex,nofollow" />'
         self.assertNotIn(meta_string, browser.contents)
 
