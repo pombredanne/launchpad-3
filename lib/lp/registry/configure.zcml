@@ -498,13 +498,12 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
-        permission="zope.Public"/>
+        factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
     <adapter
         factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
         permission="zope.Public"/>
+    <adapter
+        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
     <!-- CommercialSubscription -->
 
@@ -1586,10 +1585,9 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"
-        permission="zope.Public"/>
+        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+    <adapter
+        factory="lp.registry.browser.sourcepackage.distribution_from_sourcepackage"/>
 
     <!-- This is class ProductReleaseSet -->
 
