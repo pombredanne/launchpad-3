@@ -86,9 +86,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 
 
 def normalise_leading_slashes(rest):
@@ -768,8 +765,9 @@ class BugTrackerComponent(Storm):
             self.distribution = dsp.distribution
             self.source_package_name = dsp
 
-        dsp = property(_getDistroSourcePackage,
-                       _setDistroSourcePackage)
+        dsp = property(self._getDistroSourcePackage,
+                       self._setDistroSourcePackage)
+
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
