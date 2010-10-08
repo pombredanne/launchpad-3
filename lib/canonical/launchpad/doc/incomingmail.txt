@@ -83,15 +83,15 @@ pass through the authentication stage:
 
 The test mails are now in Launchpad's mail box, so now we can call
 handleMail, so that every mail gets handled by the correct handler.  (We
-see warnings about missing `X-Original-To`_ headers, which are discussed
-below; this output merely shows that we emit warnings when the header is
-missing.)
+see warnings about missing `X-Launchpad-Original-To`_ headers, which are
+discussed below; this output merely shows that we emit warnings when the
+header is missing.)
 
     >>> handleMail(zopeless_transaction)
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:canonical.launchpad.mail:No X-Launchpad-Original-To header was present ...
 
 Now we can see that each handler handled the emails sent to its domain:
 
@@ -137,7 +137,7 @@ If a Person who isn't registered in Launchpad sends an email, we'll
 most of the time reject the email:
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['X-Original-To'] = '123@foo.com'
+    >>> moin_change['X-Launchpad-Original-To'] = '123@foo.com'
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid not in foo_handler.handledMails
@@ -152,7 +152,7 @@ However, bar_handler specifies that it can handle such emails:
 
 So if we send the mail to bar.com, bar_handler will handle the mail:
 
-    >>> moin_change.replace_header('X-Original-To', '123@bar.com')
+    >>> moin_change.replace_header('X-Launchpad-Original-To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
@@ -186,24 +186,24 @@ silently rejected.
     >>> msgid not in foo_handler.handledMails
     True
 
--------------
-X-Original-To
--------------
+-----------------------
+X-Launchpad-Original-To
+-----------------------
 
-If available, the X-Original-To header is used to determine to which
-address the email was sent to:
+If available, the X-Launchpad-Original-To header is used to determine to
+which address the email was sent to:
 
     >>> msg = read_test_message('signed_detached.txt')
     >>> msg.replace_header('To', '123@foo.com')
     >>> msg['CC'] = '123@foo.com'
-    >>> msg['X-Original-To'] = '123@bar.com'
+    >>> msg['X-Launchpad-Original-To'] = '123@bar.com'
     >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
     >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
     True
 
-Only the address in X-Original-To header will be used. The addresses in
-the To and CC headers will be ignored:
+Only the address in X-Launchpad-Original-To header will be used. The
+addresses in the To and CC headers will be ignored:
 
     >>> msgid in foo_handler.handledMails
     False
@@ -232,7 +232,7 @@ And submit an email to the handler.
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@oops.com
-    ... X-Original-To: launchpad@oops.com
+    ... X-Launchpad-Original-To: launchpad@oops.com
     ... Subject: doesn't matter
     ...
     ... doesn't matter
@@ -261,7 +261,7 @@ to the user, citing the OOPS ID, with the original message attached.
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@oops.com
-    X-Original-To: launchpad@oops.com
+    X-Launchpad-Original-To: launchpad@oops.com
     Subject: doesn't matter
     ...
 
@@ -280,7 +280,7 @@ reporting in the web interface, are not ignored in the email interface.
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@unauthorized.com
-    ... X-Original-To: launchpad@unauthorized.com
+    ... X-Launchpad-Original-To: launchpad@unauthorized.com
     ... Subject: doesn't matter
     ...
     ... doesn't matter
@@ -306,7 +306,7 @@ reporting in the web interface, are not ignored in the email interface.
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@unauthorized.com
-    X-Original-To: launchpad@unauthorized.com
+    X-Launchpad-Original-To: launchpad@unauthorized.com
     Subject: doesn't matter
     ...
 
@@ -335,7 +335,7 @@ Now we send a mail to the handler, which will cause an exception:
     >>> exception_raiser = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: something@except.com
-    ... X-Original-To: something@except.com
+    ... X-Launchpad-Original-To: something@except.com
     ... Subject: Raise an exception
     ...
     ... This part is not important.

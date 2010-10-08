@@ -364,14 +364,15 @@ def handleMail(trans=transaction):
                         file_alias_url, notify=False)
                     continue
 
-                # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header.
-                if 'X-Original-To' in mail:
-                    addresses = [mail['X-Original-To']]
+                # Extract the domain the mail was sent to.  Mails sent to
+                # Launchpad should have an X-Launchpad-Original-To header.
+                if 'X-Launchpad-Original-To' in mail:
+                    addresses = [mail['X-Launchpad-Original-To']]
                 else:
                     log = logging.getLogger('canonical.launchpad.mail')
                     log.warn(
-                        "No X-Original-To header was present in email: %s" %
+                        "No X-Launchpad-Original-To header was present "
+                        "in email: %s" %
                          file_alias_url)
                     # Process all addresses found as a fall back.
                     cc = mail.get_all('cc') or []
