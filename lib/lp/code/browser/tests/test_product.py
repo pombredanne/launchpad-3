@@ -237,7 +237,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         self.assertNotIn(meta_string, browser.contents)
 
     def test_view_mirror_location(self):
-        # Mirror's show the correct upstream mirror url.
+        # Mirrors show the correct upstream url as the mirror location.
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED,
