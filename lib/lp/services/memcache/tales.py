@@ -351,9 +351,13 @@ def do_insertText_tal(self, stuff):
 TALInterpreter.bytecode_handlers_tal["insertText"] = do_insertText_tal
 
 
-# Just like the original, except MemcacheHit and MemcacheMiss
-# instances are also passed through unharmed.
 def evaluateText(self, expr):
+    """Replacement for zope.pagetemplate.engine.ZopeContextBase.evaluateText.
+
+    Just like the original, except MemcacheHit and MemcacheMiss
+    instances are also passed through unharmed.
+    """
+
     text = self.evaluate(expr)
     if (text is None
         or isinstance(text, (basestring, MemcacheHit, MemcacheMiss))
@@ -362,4 +366,3 @@ def evaluateText(self, expr):
     return unicode(text)
 import zope.pagetemplate.engine
 zope.pagetemplate.engine.ZopeContextBase.evaluateText = evaluateText
-
