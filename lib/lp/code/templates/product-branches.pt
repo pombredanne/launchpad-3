@@ -7,12 +7,10 @@
   i18n:domain="launchpad"
 >
 <head>
-  <div metal:fill-slot="head_epilogue">
-    <tal:robots
-      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
-      <meta name="robots" content="noindex,nofollow" />
-    </tal:robots>
-  </div>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="context/codehosting_usage/enumvalue:UNKNOWN"
+      name="robots" content="noindex,nofollow" />
+  </tal:head-epilogue>
 </head>
 
 <body>
