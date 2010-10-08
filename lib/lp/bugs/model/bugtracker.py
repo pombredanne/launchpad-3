@@ -753,30 +753,35 @@ class BugTrackerComponent(Storm):
         source_package_name_id,
         'SourcePackageName.id')
 
-    def _getDistroSourcePackage(self):
+    def _get_distro_source_package(self):
         """Retrieves the corresponding source package"""
         if self.distribution is None or self.source_package_name is None:
             return None
-        self.distribution.getSourcePackage(
+        return self.distribution.getSourcePackage(
             self.source_package_name)
 
-    def _setDistroSourcePackage(self, distro_source_package):
+    def _set_distro_source_package(self, dsp):
         """Links this component to its corresponding source package"""
-        if distro_source_package is None:
+        if dsp is None:
             self.distribution = None
             self.source_package_name = None
         else:
-            self.distribution = distro_source_package.distribution
-            self.source_package_name = distro_source_package.source_package_name
+            self.distribution = dsp.distribution
+            self.source_package_name = dsp
 
-    distro_source_package = property(_getDistroSourcePackage,
-                                     _setDistroSourcePackage)
+        # TODO: Add a doc parameter
+        dsp = property(
+            self._get_distro_source_package,
+            self._set_distro_source_package,
+            None,
+            """The distribution's source package for this component""")
+
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
 
-    Some bug trackers organize sets of components into higher level groups,
-    such as Bugzilla's 'product'.
+    Some bug trackers organize sets of components into higher level
+    groups, such as Bugzilla's 'product'.
     """
     implements(IBugTrackerComponentGroup)
     __storm_table__ = 'BugTrackerComponentGroup'
