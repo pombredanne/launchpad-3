@@ -469,8 +469,7 @@ class Publisher(object):
                 distroseries, pocket, component, 'source', all_files)
             for architecture in all_architectures:
                 self._writeDistroArchSeries(
-                    distroseries, pocket, component,
-                    'binary-%s' % architecture, all_files)
+                    distroseries, pocket, component, architecture, all_files)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)
@@ -538,31 +537,30 @@ class Publisher(object):
             full_name, component, architecture))
 
         if architecture != "source":
-            # Strip "binary-" off the front of the architecture
-            clean_architecture = architecture[7:]
             file_stub = "Packages"
+            architecture_path = 'binary-' + architecture
 
             # Only the primary and PPA archives have debian-installer.
             if self.archive.purpose != ArchivePurpose.PARTNER:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
                 di_path = os.path.join(
-                    component, "debian-installer", architecture)
+                    component, "debian-installer", architecture_path)
                 di_file_stub = os.path.join(di_path, file_stub)
                 for suffix in index_suffixes:
                     all_files.add(di_file_stub + suffix)
         else:
             file_stub = "Sources"
-            clean_architecture = architecture
+            architecture_path = architecture
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
-        file_stub = os.path.join(component, architecture, file_stub)
+        file_stub = os.path.join(component, architecture_path, file_stub)
 
         for suffix in index_suffixes:
             all_files.add(file_stub + suffix)
 
-        all_files.add(os.path.join(component, architecture, "Release"))
+        all_files.add(os.path.join(component, architecture_path, "Release"))
 
         release_file = Release()
         release_file["Archive"] = full_name
@@ -570,16 +568,14 @@ class Publisher(object):
         release_file["Component"] = component
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
-        release_file["Architecture"] = clean_architecture
+        release_file["Architecture"] = architecture
 
         f = open(os.path.join(self._config.distsroot, full_name,
-                              component, architecture, "Release"), "w")
+                              component, architecture_path, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
         finally:
             f.close()
-
-        return clean_architecture
 
     def _readIndexFileContents(self, distroseries_name, file_name):
         """Read an index files' contents.

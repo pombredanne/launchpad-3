@@ -199,8 +199,6 @@ class FTPArchiveHandler:
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        # XXX: This doesn't just create empty pockets. It also requests
-        # Release files, so it needs to be called every time.
         for distroseries in self.distroseries:
             components = self._config.componentsForSeries(distroseries.name)
             for pocket in PackagePublishingPocket.items:
