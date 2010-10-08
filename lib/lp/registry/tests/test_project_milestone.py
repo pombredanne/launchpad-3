@@ -17,7 +17,7 @@ from canonical.launchpad.ftests import (
     syncUpdate,
     )
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
     )

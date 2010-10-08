@@ -253,10 +253,10 @@ class DistroSeriesDifference(Storm):
 
         return updated
 
-    def addComment(self, owner, comment):
+    def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
-            self, owner, comment)
+            self, commenter, comment)
 
     def getComments(self):
         """See `IDistroSeriesDifference`."""

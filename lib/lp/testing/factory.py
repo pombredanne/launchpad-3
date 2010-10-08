@@ -245,6 +245,9 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
+from lp.soyuz.model.packagediff import (
+    PackageDiff,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -3148,6 +3151,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             service_root="http://api.launchpad.dev:8085")
         login_person(person)
         return launchpad
+
+    def makePackageDiff(self, from_source=None, to_source=None,
+                        requester=None, status=None, date_fulfilled=None,
+                        diff_content=None):
+        """Create a new `PackageDiff`."""
+        if from_source is None:
+            from_source = self.makeSourcePackageRelease()
+        if to_source is None:
+            to_source = self.makeSourcePackageRelease()
+        if requester is None:
+            requester = self.makePerson()
+        if status is None:
+            status = PackageDiffStatus.COMPLETED
+        if date_fulfilled is None:
+            date_fulfilled = UTC_NOW
+        if diff_content is None:
+            diff_content = self.getUniqueString("packagediff")
+        lfa = self.makeLibraryFileAlias(content=diff_content)
+        return ProxyFactory(
+            PackageDiff(
+                requester=requester, from_source=from_source,
+                to_source=to_source, date_fulfilled=date_fulfilled,
+                status=status, diff_content=lfa))
 
 
 # Some factory methods return simple Python types. We don't add

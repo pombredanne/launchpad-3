@@ -9,15 +9,14 @@ from datetime import datetime
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+from storm.store import Store
 from testtools.matchers import LessThan
 import transaction
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import Bug
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.ftests import (
@@ -42,16 +41,19 @@ from canonical.testing.layers import (
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.errors import (
+    NameAlreadyTaken,
+    PrivatePersonLinkageError,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
     IPersonSet,
-    NameAlreadyTaken,
     PersonCreationRationale,
     PersonVisibility,
-    PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import KarmaCategory

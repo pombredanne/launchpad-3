@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -162,8 +162,9 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -263,6 +264,7 @@ from lp.services.propertycache import cachedproperty
 @implementer(IFieldHTMLRenderer)
 def assignee_renderer(context, field, request):
     """Render a bugtask assignee as a link."""
+
     def render(value):
         if context.assignee is None:
             return ''
@@ -277,6 +279,7 @@ def assignee_renderer(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
+
     def render(value):
         html = """<span>
           <a href="%(href)s" class="%(class)s">%(displayname)s</a>
@@ -618,7 +621,8 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
+                  FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
@@ -644,6 +648,32 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             heading = 'Bug #%s in %s' % (
                 bugtask.bug.id, bugtask.bugtargetdisplayname)
         return smartquote('%s: "%s"') % (heading, self.context.bug.title)
+
+    @property
+    def next_url(self):
+        """Provided so returning to the page they came from works."""
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            next_url = referer
+        else:
+            next_url = canonical_url(self.context)
+        return next_url
+
+    @property
+    def cancel_url(self):
+        """Provided so returning to the page they came from works."""
+        referer = self.request.getHeader('referer')
+
+        # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
+        # browser setting referer to localhost.
+        if referer and referer != 'localhost':
+            cancel_url = referer
+        else:
+            cancel_url = canonical_url(self.context)
+        return cancel_url
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -726,6 +756,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
         # bug page would raise Unauthorized errors!
         if self._redirecting_to_bug_list:
             return u''
+        elif self._isSubscriptionRequest() and self.request.get('next_url'):
+            self.request.response.redirect(self.request.get('next_url'))
+            return u''
         else:
             return LaunchpadView.render(self)
 
@@ -759,7 +792,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
-        self.notices.append("You have been subscribed to this bug.")
+        self.request.response.addNotification("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
         """Handle an unsubscribe request."""
@@ -831,8 +864,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
                 # The user still has permission to see this bug, so no
                 # special-casing needed.
                 return (
-                    "You have been unsubscribed from this bug%s." %
-                    unsubed_dupes_msg_fragment)
+                    "You have been unsubscribed from bug %d%s." % (
+                    current_bug.id, unsubed_dupes_msg_fragment))
             else:
                 return (
                     "You have been unsubscribed from bug %d%s. You no "
@@ -1454,7 +1487,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 not self.userCanEditImportance()):
                 editable_field_names.remove("importance")
         else:
-            editable_field_names = set(('bugwatch',))
+            editable_field_names = set(('bugwatch', ))
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
@@ -2269,11 +2302,11 @@ class BugTaskListingItem:
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
-    # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
+        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
+        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         TableBatchNavigator.__init__(
@@ -2353,7 +2386,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
             return bugtask_listing_item
 
         review_action_field = Choice(
-            __name__='review_action_%d' % (bug_nomination.id,),
+            __name__='review_action_%d' % bug_nomination.id,
             vocabulary=NominatedBugReviewAction,
             title=u'Review action', required=True)
 
@@ -3248,8 +3281,8 @@ class BugTasksAndNominationsView(LaunchpadView):
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
-        # for each bug task.
-        # This query is redundant: the publisher also queries all the bugtasks.
+        # for each bug task. This query is redundant:
+        # the publisher also queries all the bugtasks.
         self.bugtasks = list(self.context.bugtasks)
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
