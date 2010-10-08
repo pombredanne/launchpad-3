@@ -17,12 +17,22 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
-from lp.buildmaster.tests.mock_slaves import OkSlave
+from lp.buildmaster.enums import (
+    BuildStatus,
+    )
+from lp.buildmaster.tests.mock_slaves import (
+    AbortedSlave,
+    AbortingSlave,
+    BuildingSlave,
+    OkSlave,
+    WaitingSlave,
+    )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -248,3 +258,162 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         self.assertEqual(
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))
+
+
+class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
+    """Tests for the BinaryPackageBuildBehavior.
+
+    Using various mock slaves, we check how updateBuild() behaves in
+    various scenarios.
+    """
+
+    # XXX: These tests replace part of the old buildd-slavescanner.txt
+    # It was checking that each call to updateBuild was sending 3 (!)
+    # emails but this behaviour is so ill-defined and dependent on the
+    # sample data that I've not replicated that here.  We need to
+    # examine that behaviour separately somehow.
+
+    layer = TwistedLaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
+        self.factory = LaunchpadObjectFactory()
+        login_as(ANONYMOUS)
+        self.addCleanup(logout)
+        self.layer.switchDbUser('testadmin')
+
+        self.builder = self.factory.makeBuilder()
+        self.build = self.factory.makeBinaryPackageBuild(
+            builder=self.builder, pocket=PackagePublishingPocket.RELEASE)
+        lf = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        self.build.distro_arch_series.addOrUpdateChroot(lf)
+        self.candidate = self.build.queueBuild()
+        self.candidate.markAsBuilding(self.builder)
+        self.behavior = self.candidate.required_build_behavior
+        self.behavior.setBuilder(self.builder)
+
+    def assertBuildProperties(self, build):
+        self.assertNotIdentical(None, build.builder)
+        self.assertNotIdentical(None, build.date_finished)
+        self.assertNotIdentical(None, build.duration)
+        self.assertNotIdentical(None, build.log)
+
+    def test_packagefail_collection(self):
+        # When a package fails to build, make sure the builder notes are
+        # stored and the build status is set as failed.
+        waiting_slave = WaitingSlave('BuildStatus.PACKAGEFAIL')
+        self.builder.setSlaveForTesting(waiting_slave)
+
+        def got_update(ignored):
+            self.assertBuildProperties(self.build)
+            self.assertEqual(BuildStatus.FAILEDTOBUILD, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
+    def test_depwait_collection(self):
+        # Package build was left in dependency wait.
+        DEPENDENCIES = 'baz (>= 1.0.1)'
+        waiting_slave = WaitingSlave('BuildStatus.DEPFAIL', DEPENDENCIES)
+        self.builder.setSlaveForTesting(waiting_slave)
+
+        def got_update(ignored):
+            self.assertBuildProperties(self.build)
+            self.assertEqual(BuildStatus.MANUALDEPWAIT, self.build.status)
+            self.assertEqual(DEPENDENCIES, self.build.dependencies)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
+    def test_chrootfail_collection(self):
+        # There was a chroot problem for this build.
+        waiting_slave = WaitingSlave('BuildStatus.CHROOTFAIL')
+        self.builder.setSlaveForTesting(waiting_slave)
+
+        def got_update(ignored):
+            self.assertBuildProperties(self.build)
+            self.assertEqual(BuildStatus.CHROOTWAIT, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
+    def test_builderfail_collection(self):
+        # The builder failed after we dispatched the build.
+        waiting_slave = WaitingSlave('BuildStatus.BUILDERFAIL')
+        self.builder.setSlaveForTesting(waiting_slave)
+
+        def got_update(ignored):
+            self.assertEqual(
+                "Builder returned BUILDERFAIL when asked for its status",
+                self.builder.failnotes)
+            self.assertIdentical(None, self.candidate.builder)
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+            job = self.candidate.specific_job.job
+            self.assertEqual(JobStatus.WAITING, job.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
+    def test_building_collection(self):
+        # The builder is still building the package.
+        self.builder.setSlaveForTesting(BuildingSlave())
+        
+        def got_update(ignored):
+            # The fake log is returned from the BuildingSlave() mock.
+            self.assertEqual("This is a build log", self.candidate.logtail)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
+    def test_aborted_collection(self):
+        # The builder aborted the job.
+        self.builder.setSlaveForTesting(AbortedSlave())
+
+        def got_update(ignored):
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        d.addCallback(got_update)
+
+    def test_aborting_collection(self):
+        # The builder is in the process of aborting.
+        self.builder.setSlaveForTesting(AbortingSlave())
+
+        def got_update(ignored):
+            self.assertEqual(
+                "Waiting for slave process to be terminated",
+                self.candidate.logtail)
+
+        d = self.builder.updateBuild(self.candidate)
+        d.addCallback(got_update)
+
+    def test_uploading_collection(self):
+        # After a successful build, the status should be UPLOADING.
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+
+        def got_update(ignored):
+            self.assertEqual(self.build.status, BuildStatus.UPLOADING)
+            # We do not store any upload log information when the binary
+            # upload processing succeeded.
+            self.assertIdentical(None, self.build.upload_log)
+
+        d = self.builder.updateBuild(self.candidate)
+        d.addCallback(got_update)
+
+    def test_givenback_collection(self):
+        waiting_slave = WaitingSlave('BuildStatus.GIVENBACK')
+        self.builder.setSlaveForTesting(waiting_slave)
+        score = self.candidate.lastscore
+
+        def got_update(ignored):       
+            self.assertIdentical(None, self.candidate.builder)
+            self.assertIdentical(None, self.candidate.date_started)
+            self.assertEqual(score, self.candidate.lastscore)
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+            job = self.candidate.specific_job.job
+            self.assertEqual(JobStatus.WAITING, job.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        d.addCallback(got_update)
+
