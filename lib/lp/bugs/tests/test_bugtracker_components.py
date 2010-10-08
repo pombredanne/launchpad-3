@@ -78,6 +78,17 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         self.assertTrue(comp_b is not None)
         self.assertTrue(comp_c is not None)
 
+    def test_link_distro_source_package(self):
+        """Check that a link can be set to a distro source package"""
+        component = self.factory.makeBugTrackerComponent(
+            u'example', self.comp_group)
+        package = self.factory.makeDistributionSourcePackage()
+        self.assertTrue(component.distro_source_package is None)
+
+        # Set the source package on the component
+        component.distro_source_package = package
+        self.assertTrue(component.distro_source_package is not None)
+
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
 

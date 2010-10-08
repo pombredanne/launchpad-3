@@ -67,7 +67,6 @@ from lp.services.fields import (
     URIField,
     )
 
-
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
 
 
@@ -363,6 +362,7 @@ class IBugTracker(Interface):
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    @export_read_operation()
     def getAllRemoteComponentGroups():
         """Return collection of all component groups for this bug tracker"""
 
@@ -513,17 +513,17 @@ class IBugTrackerComponent(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
-            description=_('The name of a software component'
-                          'in a remote bug tracker')))
+            description=_("The name of a software component "
+                          "as shown in Launchpad.  This is a sanitized "
+                          "form of the Remote Name.")))
 
-# XXX: Bug 644794 will implement this link
-#    distro_source_package = exported(
-#        Reference(
-#            title=_('Distribution Source Package'),
-#            schema=Interface,
-#            description=_('The distribution source package for this '
-#                          'component, if one has been defined.')))
+    distro_source_package = exported(
+        Reference(
+            Interface,
+            title=_("Distribution Source Package"),
+            description=_("The distribution source package object that should be "
+                    "linked to this component."),
+            required=False))
 
 
 class IBugTrackerComponentGroup(Interface):
@@ -538,7 +538,6 @@ class IBugTrackerComponentGroup(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
             description=_('The name of the bug tracker product.')))
     components = exported(
         Reference(title=_('Components'), schema=IBugTrackerComponent))
