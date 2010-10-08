@@ -3,7 +3,6 @@
 
 __all__ = [
     'Publisher',
-    'suffixpocket',
     'getPublisher',
     ]
 
@@ -46,9 +45,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.component import IComponentSet
-
-
-suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
 
 def reorder_components(components):
