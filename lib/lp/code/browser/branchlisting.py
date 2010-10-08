@@ -406,7 +406,8 @@ class BranchListingItemsMixin:
     @cachedproperty
     def official_package_links_map(self):
         """Return a map from branch id to a list of package links."""
-        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+        query_optimiser = self._query_optimiser
+        links = query_optimiser.getOfficialSourcePackageLinksForBranches(
             self._visible_branch_ids)
         result = {}
         for link in links:
@@ -1183,6 +1184,7 @@ class ProductBranchListingView(BranchListingView):
     def can_configure_branches(self):
         """Whether or not the user can configure branches."""
         return check_permission("launchpad.Edit", self.context)
+
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
                                   ProductBranchListingView):

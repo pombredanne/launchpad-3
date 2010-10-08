@@ -26,7 +26,7 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.publisher import CodeLayer 
+from lp.code.publisher import CodeLayer
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -296,6 +296,7 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         expected = ("New branches you create for %(name)s are public "
                     "initially.*" % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
 
 class TestCanConfigureBranches(TestCaseWithFactory):
 
