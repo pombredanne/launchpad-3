@@ -2486,7 +2486,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @cachedproperty
     def bug_tracking_usage(self):
-        """Whether the context tracks bugs in launchpad.
+        """Whether the context tracks bugs in Launchpad.
 
         :returns: ServiceUsage enum value
         """
@@ -3034,15 +3034,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def should_show_bug_information(self):
-        """Return False if a project group that does not use Launchpad."""
-        if not self._projectContext():
-            return True
-        # XXX: BradCrittenden 2010-10-05 bug=655036: rather than having the
-        # service usage attributs on the PillarView it would be better to move
-        # them to the model so the pillar can be checked directly.
-        involvement = getMultiAdapter((self.context, self.request),
-                                      name="+get-involved")
-        return involvement.official_malone
+        return self.bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
     @property
     def form_has_errors(self):

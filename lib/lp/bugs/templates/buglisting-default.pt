@@ -6,17 +6,18 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="malone"
 >
-  <metal:block fill-slot="head_epilogue">
-    <meta condition="not: view/should_show_bug_information"
-          name="robots" content="noindex,nofollow" />
-  </metal:block>
 
-  <body>
+<metal:block fill-slot="head_epilogue">
+  <meta condition="not: view/should_show_bug_information"
+        name="robots" content="noindex,nofollow" />
+</metal:block>
+
+<body>
 
   <div metal:fill-slot="main">
     <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
          class="top-portlet">
-      <tal:block condition="view/_projectContext">
+      <tal:is_project_group condition="view/_projectContext">
         <tal:block condition="view/required:launchpad.Edit">
           <p tal:condition="not: context/products" class="warning message">
             There are no projects registered for
@@ -27,6 +28,7 @@
             associate an existing project with it.
           </p>
         </tal:block>
+
         <tal:has_products condition="context/products">
           <tal:no_bug_info condition="not:view/should_show_bug_information">
             <p tal:define="name context/displayname">
@@ -44,8 +46,8 @@
             </p>
           </tal:no_bug_info>
         </tal:has_products>
-      </tal:block>
-      <tal:show_bug_info condition="view/should_show_bug_information">
+      </tal:is_project_group>
+
         <h1
           tal:condition="view/shouldShowAdvancedForm"
           tal:content="view/getAdvancedSearchPageHeading"
@@ -53,31 +55,35 @@
 
         <tal:do_not_show_advanced_form
           condition="not: view/shouldShowAdvancedForm">
-        <div tal:define="batch_navigator view/search">
-
-          <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
-          <tal:buglisting content="structure batch_navigator/@@+table-view" />
-        </div>
+          <div tal:define="batch_navigator view/search">
+            <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form"></div>
+            <tal:buglisting content="structure batch_navigator/@@+table-view" />
+          </div>
         </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
-        <metal:advanced_form
-          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced_form>
-    </tal:show_bug_info>
+        <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+          <metal:advanced_form
+             use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+        </tal:show_advanced_form>
+
+
+    </div>
     <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"
           class="top-portlet">
       <p>
-        <tal:displayname replace="context/displayname" />
-        does not use Launchpad for bug tracking.
+        <strong>
+          <tal:displayname replace="context/displayname" />
+          does not use Launchpad for bug tracking.
+        </strong>
       </p>
-      <p>
+      <p id="getting-started-help">
         <a class="sprite maybe"
           href="https://help.launchpad.net/Bugs">Getting started
         with bug tracking in Launchpad</a>.
       </p>
     </div>
   </div>
+
   <tal:side metal:fill-slot="side">
     <div id="bug-portlets" tal:condition="view/should_show_bug_information">
       <div id="involvement" class="portlet involvement">
