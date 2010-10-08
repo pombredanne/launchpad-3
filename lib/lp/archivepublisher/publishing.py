@@ -460,8 +460,8 @@ class Publisher(object):
         # distroseriess and so on we need to generate Release files for.
         # We store this in release_files_needed and consume the information
         # when writeReleaseFiles is called.
-        full_name = distroseries.name + pocketsuffix[pocket]
-        if full_name not in self.apt_handler.release_files_needed:
+        suite = distroseries.getSuite(pocket)
+        if suite not in self.apt_handler.release_files_needed:
             # If we don't need to generate a release for this release
             # and pocket, don't!
             return
@@ -486,7 +486,7 @@ class Publisher(object):
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
-        release_file["Suite"] = full_name
+        release_file["Suite"] = suite
         release_file["Version"] = distroseries.version
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
@@ -498,7 +498,7 @@ class Publisher(object):
         release_file["Description"] = drsummary
 
         for filename in sorted(list(all_files), key=os.path.dirname):
-            entry = self._readIndexFileContents(full_name, filename)
+            entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
             release_file.setdefault("MD5Sum", []).append({
@@ -515,7 +515,7 @@ class Publisher(object):
                 "size": len(entry)})
 
         f = open(os.path.join(
-            self._config.distsroot, full_name, "Release"), "w")
+            self._config.distsroot, suite, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
         finally:
@@ -528,7 +528,7 @@ class Publisher(object):
 
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(full_name)
+        archive_signer.signRepository(suite)
 
     def _writeDistroSeriesArchOrSource(self, distroseries, pocket, component,
                                        file_stub, arch_name, arch_path,
@@ -536,10 +536,9 @@ class Publisher(object):
         """Write out a Release file for an architecture or source."""
         # XXX kiko 2006-08-24: Untested method.
 
-        full_name = distroseries.getSuite(pocket)
-
+        suite = distroseries.getSuite(pocket)
         self.log.debug("Writing Release file for %s/%s/%s" % (
-            full_name, component, arch_path))
+            suite, component, arch_path))
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
@@ -549,14 +548,14 @@ class Publisher(object):
         all_series_files.add(os.path.join(component, arch_path, "Release"))
 
         release_file = Release()
-        release_file["Archive"] = full_name
+        release_file["Archive"] = suite
         release_file["Version"] = distroseries.version
         release_file["Component"] = component
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
         release_file["Architecture"] = arch_name
 
-        f = open(os.path.join(self._config.distsroot, full_name,
+        f = open(os.path.join(self._config.distsroot, suite,
                               component, arch_path, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
