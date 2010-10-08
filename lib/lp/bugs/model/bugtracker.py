@@ -763,7 +763,7 @@ class BugTrackerComponent(Storm):
             self.source_package_name = None
         else:
             self.distribution = dsp.distribution
-            self.source_package_name = dsp
+            self.source_package_name = dsp.name
 
         # TODO: Add a doc parameter
         dsp = property(
