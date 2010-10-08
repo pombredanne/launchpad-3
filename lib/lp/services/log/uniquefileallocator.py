@@ -12,6 +12,7 @@ __metaclass__ = type
 import datetime
 import errno
 import os.path
+import stat
 import threading
 import time
 
@@ -159,7 +160,10 @@ class UniqueFileAllocator:
                 self._last_output_dir = result
                 # make sure the directory exists
                 try:
-                    os.makedirs(result)
+                    # Make sure the directory permission is set to: rwxr-xr-x
+                    permission = (stat.S_IRWXU + stat.S_IRGRP + stat.S_IXGRP +
+                        stat.S_IROTH + stat.S_IXOTH)
+                    os.makedirs(result, permission)
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise

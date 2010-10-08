@@ -10,6 +10,7 @@ import datetime
 import logging
 import os
 import shutil
+import stat
 import StringIO
 import sys
 import tempfile
@@ -290,6 +291,15 @@ class TestErrorReportingUtility(testtools.TestCase):
 
         errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
+
+        # Check errorfile is set with the correct permission: rw-r--r--
+        st = os.stat(errorfile)
+        wanted_permission = (
+            stat.S_IRUSR + stat.S_IWUSR + stat.S_IRGRP + stat.S_IROTH)
+        # Remove the file bits since we know this is a file.
+        file_permission = st.st_mode - stat.S_IFREG
+        self.assertEqual(file_permission, wanted_permission)
+
         lines = open(errorfile, 'r').readlines()
 
         # the header

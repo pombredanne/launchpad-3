@@ -9,6 +9,7 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -95,7 +96,7 @@ class TestUniqueFileAllocator(testtools.TestCase):
         self.assertRaises(ValueError, namer.newId, now)
 
     def test_changeErrorDir(self):
-        """Test changing the log output dur."""
+        """Test changing the log output dir."""
         namer = UniqueFileAllocator(self._tempdir, 'OOPS', 'T')
 
         # First an id in the original error directory.
@@ -133,6 +134,17 @@ class TestUniqueFileAllocator(testtools.TestCase):
         open(os.path.join(output_dir, '12346.B100'), 'w').close()
         # The namer should figure out the right highest serial.
         self.assertEqual(namer._findHighestSerial(output_dir), 10)
+
+    def test_output_dir_permission(self):
+        namer = UniqueFileAllocator(self._tempdir, "OOPS", "T")
+        output_dir = namer.output_dir()
+        st = os.stat(output_dir)
+        # Permission we want here is: rwxr-xr-x
+        wanted_permission = (stat.S_IRWXU + stat.S_IRGRP + stat.S_IXGRP +
+            stat.S_IROTH + stat.S_IXOTH)
+        # Remove the directory bits since we know it's a directory
+        dir_permission = st.st_mode - stat.S_IFDIR
+        self.assertEqual(dir_permission, wanted_permission)
 
 
 def test_suite():
