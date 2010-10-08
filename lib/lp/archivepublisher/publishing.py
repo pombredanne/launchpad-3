@@ -353,7 +353,15 @@ class Publisher(object):
         source_index.close()
 
         for arch in distroseries.architectures:
+            if not arch.enabled:
+                continue
+
             arch_path = 'binary-%s' % arch.architecturetag
+
+            # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
+            # for NMAF is wrong.
+            self.apt_handler.requestReleaseFile(
+                suite_name, component.name, arch_path)
 
             self.log.debug("Generating Packages for %s" % arch_path)
 
@@ -386,15 +394,10 @@ class Publisher(object):
             package_index.close()
             di_index.close()
 
-        # Inject static requests for Release files into self.apt_handler
-        # in a way which works for NoMoreAptFtpArchive without changing
-        # much of the rest of the code, specially D_writeReleaseFiles.
+        # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
+        # is wrong here too.
         self.apt_handler.requestReleaseFile(
             suite_name, component.name, 'source')
-        for arch in distroseries.architectures:
-            arch_name = "binary-" + arch.architecturetag
-            self.apt_handler.requestReleaseFile(
-                suite_name, component.name, arch_name)
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
