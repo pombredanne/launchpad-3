@@ -27,11 +27,16 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import (
+    adapter,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib.form import Fields
-from zope.interface import Interface
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     TextLine,
@@ -42,10 +47,12 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad import (
     _,
     helpers,
     )
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
@@ -170,8 +177,16 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(redirection_url)
 
 
+@adapter(ISourcePackage)
+@implementer(IServiceUsage)
+def distribution_from_sourcepackage(package):
+    return package.distribution
+
+
+@adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
+    implements(IBreadcrumb)
 
     @property
     def text(self):
