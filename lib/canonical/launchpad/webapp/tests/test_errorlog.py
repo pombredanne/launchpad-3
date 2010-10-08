@@ -284,6 +284,10 @@ class TestErrorReportingUtility(testtools.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
+        # Set up default file creation mode to rwx------.
+        umask_permission = stat.S_IRWXG | stat.S_IRWXO
+        old_umask = os.umask(umask_permission)
+
         try:
             raise ArbitraryException('xyz')
         except ArbitraryException:
@@ -295,10 +299,12 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Check errorfile is set with the correct permission: rw-r--r--
         st = os.stat(errorfile)
         wanted_permission = (
-            stat.S_IRUSR + stat.S_IWUSR + stat.S_IRGRP + stat.S_IROTH)
-        # Remove the file bits since we know this is a file.
-        file_permission = st.st_mode - stat.S_IFREG
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        # Get only the permission bits for this file.
+        file_permission = stat.S_IMODE(st.st_mode)
         self.assertEqual(file_permission, wanted_permission)
+        # Restore the umask to the original value.
+        ignored = os.umask(old_umask)
 
         lines = open(errorfile, 'r').readlines()
 

@@ -356,7 +356,7 @@ class ErrorReportingUtility:
         entry.write(open(filename, 'wb'))
         # Set file permission to: rw-r--r--
         wanted_permission = (
-            stat.S_IRUSR + stat.S_IWUSR + stat.S_IRGRP + stat.S_IROTH)
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
         os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id

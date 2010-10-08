@@ -160,13 +160,14 @@ class UniqueFileAllocator:
                 self._last_output_dir = result
                 # make sure the directory exists
                 try:
-                    # Make sure the directory permission is set to: rwxr-xr-x
-                    permission = (stat.S_IRWXU + stat.S_IRGRP + stat.S_IXGRP +
-                        stat.S_IROTH + stat.S_IXOTH)
-                    os.makedirs(result, permission)
+                    os.makedirs(result)
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
+                # Make sure the directory permission is set to: rwxr-xr-x
+                permission = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                    stat.S_IROTH | stat.S_IXOTH)
+                os.chmod(result, permission)
                 # TODO: Note that only one process can do this safely: its not
                 # cross-process safe, and also not entirely threadsafe: another
                 # thread that has a new log and hasn't written it could then

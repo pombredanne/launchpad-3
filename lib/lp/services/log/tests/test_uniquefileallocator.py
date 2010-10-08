@@ -136,15 +136,20 @@ class TestUniqueFileAllocator(testtools.TestCase):
         self.assertEqual(namer._findHighestSerial(output_dir), 10)
 
     def test_output_dir_permission(self):
+        # Set up default dir creation mode to rwx------.
+        umask_permission = stat.S_IRWXG | stat.S_IRWXO
+        old_umask = os.umask(umask_permission)
         namer = UniqueFileAllocator(self._tempdir, "OOPS", "T")
         output_dir = namer.output_dir()
         st = os.stat(output_dir)
         # Permission we want here is: rwxr-xr-x
-        wanted_permission = (stat.S_IRWXU + stat.S_IRGRP + stat.S_IXGRP +
-            stat.S_IROTH + stat.S_IXOTH)
-        # Remove the directory bits since we know it's a directory
-        dir_permission = st.st_mode - stat.S_IFDIR
+        wanted_permission = (stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+            stat.S_IROTH | stat.S_IXOTH)
+        # Get only the permission bits for this directory.
+        dir_permission = stat.S_IMODE(st.st_mode)
         self.assertEqual(dir_permission, wanted_permission)
+        # Restore the umask to the original value.
+        ignored = os.umask(old_umask)
 
 
 def test_suite():
