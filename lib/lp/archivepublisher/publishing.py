@@ -67,6 +67,11 @@ def reorder_components(components):
     return ret
 
 
+def get_suffixed_indices(path):
+    """Return a set of paths to compressed copies of the given index."""
+    return set([path + suffix for suffix in ('', '.gz', '.bz2')])
+
+
 def _getDiskPool(pubconf, log):
     """Return a DiskPool instance for a given PubConf.
 
@@ -532,7 +537,6 @@ class Publisher(object):
         # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.getSuite(pocket)
-        index_suffixes = ('', '.gz', '.bz2')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, arch_path))
@@ -541,9 +545,7 @@ class Publisher(object):
         # the suite's architectures
         file_stub = os.path.join(component, arch_path, file_stub)
 
-        for suffix in index_suffixes:
-            all_series_files.add(file_stub + suffix)
-
+        all_series_files.update(get_suffixed_indices(file_stub))
         all_series_files.add(os.path.join(component, arch_path, "Release"))
 
         release_file = Release()
@@ -571,7 +573,6 @@ class Publisher(object):
     def _writeDistroArchSeries(self, distroseries, pocket, component,
                                arch_name, all_series_files):
         """Write out a Release file for an architecture."""
-        index_suffixes = ('', '.gz', '.bz2')
         file_stub = 'Packages'
         arch_path = 'binary-' + arch_name
         # Only the primary and PPA archives have debian-installer.
@@ -581,8 +582,7 @@ class Publisher(object):
             di_path = os.path.join(
                 component, "debian-installer", arch_path)
             di_file_stub = os.path.join(di_path, file_stub)
-            for suffix in index_suffixes:
-                all_series_files.add(di_file_stub + suffix)
+            all_series_files.update(get_suffixed_indices(di_file_stub))
         self._writeDistroSeriesArchOrSource(
             distroseries, pocket, component, 'Packages', arch_name, arch_path,
             all_series_files)
