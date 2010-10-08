@@ -6,17 +6,16 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="malone"
 >
-  <head>
-    <tal:head_epilogue metal:fill-slot="head_epilogue"
-      condition="not: view/should_show_bug_information">
-      <meta name="robots" content="noindex,nofollow" />
-    </tal:head_epilogue>
-  </head>
+  <metal:block fill-slot="head_epilogue">
+    <meta condition="not: view/should_show_bug_information"
+          name="robots" content="noindex,nofollow" />
+  </metal:block>
 
   <body>
 
   <div metal:fill-slot="main">
-    <div class="top-portlet">
+    <div tal:condition="not: view/bug_tracking_usage/enumvalue:UNKNOWN"
+         class="top-portlet">
       <tal:block condition="view/_projectContext">
         <tal:block condition="view/required:launchpad.Edit">
           <p tal:condition="not: context/products" class="warning message">
@@ -61,11 +60,22 @@
         </div>
         </tal:do_not_show_advanced_form>
 
-        <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
-          <metal:advanced_form
-            use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-        </tal:show_advanced_form>
-      </tal:show_bug_info>
+      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+        <metal:advanced_form
+          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+      </tal:show_advanced_form>
+    </tal:show_bug_info>
+    <div tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN"
+          class="top-portlet">
+      <p>
+        <tal:displayname replace="context/displayname" />
+        does not use Launchpad for bug tracking.
+      </p>
+      <p>
+        <a class="sprite maybe"
+          href="https://help.launchpad.net/Bugs">Getting started
+        with bug tracking in Launchpad</a>.
+      </p>
     </div>
   </div>
   <tal:side metal:fill-slot="side">
