@@ -1180,6 +1180,9 @@ class ProductBranchListingView(BranchListingView):
                 'in this project.')
         return message % self.context.displayname
 
+    def can_configure_branches(self):
+        """Whether or not the user can configure branches."""
+        return check_permission("launchpad.Edit", self.context)
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
                                   ProductBranchListingView):
