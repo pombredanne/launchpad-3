@@ -158,8 +158,9 @@ class TestProductCodeIndexView(ProductTestBase):
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
 
-    def test_external_import(self):
-        # Test that the correct information is shown for an import
+    def test_external_imported(self):
+        # A product with an imported development focus branch should say so,
+        # and should display the upstream information along with the LP info.
         product = self.factory.makeProduct()
         code_import = self.factory.makeProductCodeImport(
             svn_branch_url='http://svn.example.org/branch')
