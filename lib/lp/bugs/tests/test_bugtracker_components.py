@@ -83,11 +83,11 @@ class TestBugTrackerComponent(TestCaseWithFactory):
         component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
         package = self.factory.makeDistributionSourcePackage()
-        self.assertTrue(component.distro_source_package is None)
+        self.assertIs(None, component.distro_source_package)
 
         # Set the source package on the component
         component.distro_source_package = package
-        self.assertTrue(component.distro_source_package is not None)
+        self.assertIsNot(None, component.distro_source_package)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
