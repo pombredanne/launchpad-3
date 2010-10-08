@@ -32,8 +32,8 @@ class TranslationConstants:
     TAB_CHAR_ESCAPED = '<code>' + r'\[tab]' + '</code>'
     NO_BREAK_SPACE_CHAR = '<code>[nbsp]</code>'
     NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nbsp]' + '</code>'
-    NARROW_NO_BREAK_SPACE_CHAR = '<code>[nbthin]</code>'
-    NARROW_NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nbthin]' + '</code>'
+    NARROW_NO_BREAK_SPACE_CHAR = '<code>[nnbsp]</code>'
+    NARROW_NO_BREAK_SPACE_CHAR_ESCAPED = '<code>' + r'\[nnbsp]' + '</code>'
 
 
 class TranslationsBranchImportMode(DBEnumeratedType):

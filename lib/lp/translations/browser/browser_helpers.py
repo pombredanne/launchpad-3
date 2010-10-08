@@ -32,8 +32,8 @@ def contract_rosetta_escapes(text):
                                         r'\[tab]': '[tab]',
                                         '[nbsp]': u'\u00a0',
                                         r'\[nbsp]': '[nbsp]',
-                                        '[nbthin]': u'\u202f',
-                                        r'\[nbthin]': '[nbthin]'})
+                                        '[nnbsp]': u'\u202f',
+                                        r'\[nnbsp]': '[nnbsp]'})
 
 
 def expand_rosetta_escapes(unicode_text):
@@ -43,7 +43,7 @@ def expand_rosetta_escapes(unicode_text):
                u'\u00a0': TranslationConstants.NO_BREAK_SPACE_CHAR,
                u'[nbsp]': TranslationConstants.NO_BREAK_SPACE_CHAR_ESCAPED,
                u'\u202f': TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR,
-               u'[nbthin]':
+               u'[nnbsp]':
     TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR_ESCAPED}
     return helpers.text_replaced(unicode_text, escapes)
 

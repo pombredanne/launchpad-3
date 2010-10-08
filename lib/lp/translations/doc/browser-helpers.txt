@@ -47,16 +47,16 @@ The string '\[nbsp]' gets converted to a literal '[nbsp]'.
     >>> contract_rosetta_escapes('foo\\[nbsp]bar')
     'foo[nbsp]bar'
 
-Similarly, string '[nbthin]' gets converted to narrow no-break space
+Similarly, string '[nnbsp]' gets converted to narrow no-break space
 character.
 
-    >>> contract_rosetta_escapes('foo[nbthin]bar')
+    >>> contract_rosetta_escapes('foo[nnbsp]bar')
     u'foo\u202fbar'
 
-The string '\[nbthin]' gets converted to a literal '[nbthin]'.
+The string '\[nnbsp]' gets converted to a literal '[nnbsp]'.
 
-    >>> contract_rosetta_escapes('foo\\[nbthin]bar')
-    'foo[nbthin]bar'
+    >>> contract_rosetta_escapes('foo\\[nnbsp]bar')
+    'foo[nnbsp]bar'
 
 
 expand_rosetta_escapes
@@ -111,14 +111,14 @@ Similarly, narrow no-break spaces get converted to a special constant
 TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR which renders as below:
 
     >>> expand_rosetta_escapes(u'foo\u202fbar')
-    u'foo<code>[nbthin]</code>bar'
+    u'foo<code>[nnbsp]</code>bar'
 
-Literal occurrences of u'[nbthin]' get escaped to a special constant
+Literal occurrences of u'[nnbsp]' get escaped to a special constant
 TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR_ESCAPED which renders them
 as below:
 
-    >>> expand_rosetta_escapes(u'foo[nbthin]bar')
-    u'foo<code>\\[nbthin]</code>bar'
+    >>> expand_rosetta_escapes(u'foo[nnbsp]bar')
+    u'foo<code>\\[nnbsp]</code>bar'
 
 
 parse_cformat_string
