@@ -66,9 +66,6 @@ from lp.services.fields import (
     StrippedTextLine,
     URIField,
     )
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
 
