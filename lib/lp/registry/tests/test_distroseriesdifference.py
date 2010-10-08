@@ -470,7 +470,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                     distroseries=series,
                     version=version,
                     sourcepackagename=source_package_name,
-                    status=PackagePublishingStatus.PUBLISHED)
+                    status=PackagePublishingStatus.SUPERSEDED)
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',

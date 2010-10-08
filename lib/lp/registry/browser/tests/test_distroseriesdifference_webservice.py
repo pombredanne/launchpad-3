@@ -148,6 +148,5 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             ds_diff.owner), ds_diff)
 
-        self.assertEqual(None, ws_diff.package_diff_url)
-        self.assertTrue(ws_diff.parent_package_diff_url.startswith(
-            'http://localhost:58000/'))
+        self.assertIs(None, ws_diff.package_diff_url)
+        self.assertIsNot(None, ws_diff.parent_package_diff_url)

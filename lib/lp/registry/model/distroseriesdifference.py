@@ -152,9 +152,13 @@ class DistroSeriesDifference(Storm):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            pubs = self.derived_series.getPublishedSources(
-                self.source_package_name, version=self.base_version,
-                include_pending=True)
+            pubs = self.derived_series.main_archive.getPublishedSources(
+                name=self.source_package_name.name,
+                version=self.base_version,
+                distroseries=self.derived_series)
+            # As we know there is a base version published in the
+            # distroseries' main archive, we don't check (equivalent
+            # of calling .one() for a storm resultset.
             return pubs[0]
 
         return None
@@ -295,14 +299,16 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        derived_pubs = self.derived_series.getPublishedSources(
-            self.source_package_name)
+        # Find all source package releases for the derived and parent
+        # series and get the most recent common version.
+        derived_sprs = self.source_pub.meta_sourcepackage.distinctreleases
         derived_versions = [
-            Version(pub.sourcepackagerelease.version) for pub in derived_pubs]
-        parent_pubs = self.derived_series.parent_series.getPublishedSources(
-            self.source_package_name)
+            Version(spr.version) for spr in derived_sprs]
+
+        parent_sourcepkg = self.parent_source_pub.meta_sourcepackage
+        parent_sprs = parent_sourcepkg.distinctreleases
         parent_versions = [
-            Version(pub.sourcepackagerelease.version) for pub in parent_pubs]
+            Version(spr.version) for spr in parent_sprs]
 
         common_versions = list(
             set(derived_versions).intersection(parent_versions))
