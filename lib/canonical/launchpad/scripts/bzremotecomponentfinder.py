@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugzillaRemoteComponentFinder',
-    'BugzillaComponentScraper',
+    'BugzillaRemoteComponentScraper',
     ]
 
 import re
@@ -34,6 +34,7 @@ def dictFromCSV(line):
             'name': item,
             }
     return items_dict
+
 
 class BugzillaRemoteComponentScraper:
     """Scrapes Bugzilla query.cgi page for lists of products and components"""
@@ -142,17 +143,14 @@ class BugzillaRemoteComponentFinder:
 
     def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
         components_to_add = []
-        for product in self.products.itervalues():
-            # TODO: Munge product name so Launchpad accepts it
-            product_display_name = product['name']
-
+        for product in bz_bugtracker.products.itervalues():
             # Look up the component group id from Launchpad for the product
             # if it already exists.  Otherwise, add it.
             lp_component_group = lp_bugtracker.getRemoteComponentGroup(
-                product_display_name)
+                product['name'])
             if lp_component_group is None:
                 lp_component_group = lp_bugtracker.addRemoteComponentGroup(
-                    product_display_name)
+                    product['name'])
                 if lp_component_group is None:
                     self.logger.warning("Failed to add new component group")
                     continue
@@ -160,7 +158,7 @@ class BugzillaRemoteComponentFinder:
                 for component in lp_component_group.components:
                     if (component.name in product['components'] or
                         component.is_visible == False or
-                        component.is_custom == True:
+                        component.is_custom == True):
                         # We already know something about this component,
                         # or a user has configured it, so ignore it
                         del product['components'][component.name]
@@ -175,6 +173,7 @@ class BugzillaRemoteComponentFinder:
                         component, lp_component_group.id))
 
         if len(components_to_add)>0:
+            # TODO: Can this be done with pure storm calls?
             sqltext = """
             INSERT INTO BugTrackerComponent
             (name, component_group, is_visible, is_custom)

@@ -7,13 +7,26 @@ __metaclass__ = type
 
 __all__ = []
 
+import os
 import unittest
 
-from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.ftests import (
+    login_person,
+    login,
+    logout,
+    )
 from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.scripts.bzremotecomponentfinder import (
+    BugzillaRemoteComponentFinder,
+    BugzillaRemoteComponentScraper,
+    dictFromCSV,
+    )
+from lp.testing import TestCaseWithFactory
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    )
 
 def read_test_file(name):
     """Return the contents of the test file named :name:
@@ -48,21 +61,22 @@ class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
     def test_dict_from_csv(self):
         """Test conversion of various comma separated value strings parse correctly"""
         data = [
-            {"'foo'":        {'foo':     {'name': 'foo'}}},
-            {"'B_A_R'":      {'B_A_R':   {'name': 'B_A_R'}}},
-            {"'b@z'":        {'b@z':     {'name': 'b@z'}}},
-            {"'b\\!ah'":     {'b!ah':    {'name': 'b!ah'}}},
-            {"42":           {42:        {'name': 42}}},
-            {"''":           {'':        {'name': ''}}},
-            {u"uni":         {'uni':     {'name': 'uni'}}},
-            {"'a', 'b','c'": {'a':       {'name': 'a'},
-                              'b':       {'name': 'a'},
-                              'c':       {'name': 'a'},
-                              }},
-            }
-        for key, true_dict in dict.items():
-            test_dict = self.dictFromCSV(key)
-            self.assertEqual(test_dict, true_dict)
+            ("'foo'",        {'foo':     {'name': 'foo'}}),
+            ("'B_A_R'",      {'B_A_R':   {'name': 'B_A_R'}}),
+            ("'b@z'",        {'b@z':     {'name': 'b@z'}}),
+            ("'b\\!ah'",     {'b!ah':    {'name': 'b!ah'}}),
+            ("42",           {'42':      {'name': '42'}}),
+            ("''",           {'':        {'name': ''}}),
+            (u"uni",         {'uni':     {'name': 'uni'}}),
+            ("'a', 'b','c'", {'a':       {'name': 'a'},
+                              'b':       {'name': 'b'},
+                              'c':       {'name': 'c'},
+                              }),
+            ]
+        for test_case in data:
+            (key, truth_dict) = test_case
+            test_dict = dictFromCSV(key)
+            self.assertEqual(test_dict, truth_dict)
 
     def test_parse_page(self):
         self.scraper = BugzillaRemoteComponentScraper(
@@ -81,11 +95,10 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTrackerComponent, self).setUp()
+        super(TestBugzillaRemoteComponentFinder, self).setUp()
 
         # TODO: Log in as whatever user runs the cronscript
-        #regular_user = self.factory.makePerson()
-        #login_person(regular_user)
+        login(ADMIN_EMAIL)
 
     def test_get_remote_products_and_components(self):
 
@@ -95,13 +108,11 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         finder = BugzillaRemoteComponentFinder(
             txn=LaunchpadZopelessLayer.txn,
             logger=FakeLogger(),
-            page_text=page_text)
-        self.assertEqual(len(finder.products), 0)
+            static_bugzilla_text=page_text)
 
         finder.getRemoteProductsAndComponents()
 
         # TODO: Validate that database now contains data we expect
-        self.assertEqual(len(finder.products), 42)
 
     def test_cronjob(self):
         """Runs the cron job to verify it executes without error"""
@@ -115,7 +126,13 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
         self.assertEqual(out, '')
         self.assertEqual(process.returncode, 0)
-        self.assertEqual(err, 'DEBUG...TODO')
+        self.assertTrue('Creating lockfile' in err)
+        self.assertTrue('Removing lock file' in err)
+        self.assertTrue('ERROR' not in err)
+        self.assertTrue('CRITICAL' not in err)
+        self.assertTrue('Exception raised' not in err)
+
+        print err
 
 def test_suite():
     suite = unittest.TestSuite()
