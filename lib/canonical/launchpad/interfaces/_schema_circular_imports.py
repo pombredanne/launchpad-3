@@ -474,7 +474,12 @@ patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IPerson
 patch_collection_return_type(
-        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
+    IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# IBugTrackerComponent
+patch_reference_property(
+    IBugTrackerComponent, "distro_source_package",
+    IDistributionSourcePackage)
