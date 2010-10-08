@@ -89,7 +89,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 def normalise_leading_slashes(rest):
@@ -760,23 +759,23 @@ class BugTrackerComponent(Storm):
         self.distribution.getSourcePackage(
             self.source_package_name)
 
-    def _setDistroSourcePackage(self, distro_source_package):
+    def _setDistroSourcePackage(self, dsp):
         """Links this component to its corresponding source package"""
-        if distro_source_package is None:
+        if dsp is None:
             self.distribution = None
             self.source_package_name = None
         else:
-            self.distribution = distro_source_package.distribution
-            self.source_package_name = distro_source_package.source_package_name
+            self.distribution = dsp.distribution
+            self.source_package_name = dsp
 
-    distro_source_package = property(_getDistroSourcePackage,
-                                     _setDistroSourcePackage)
+        dsp = property(_getDistroSourcePackage,
+                       _setDistroSourcePackage)
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.
 
-    Some bug trackers organize sets of components into higher level groups,
-    such as Bugzilla's 'product'.
+    Some bug trackers organize sets of components into higher level
+    groups, such as Bugzilla's 'product'.
     """
     implements(IBugTrackerComponentGroup)
     __storm_table__ = 'BugTrackerComponentGroup'

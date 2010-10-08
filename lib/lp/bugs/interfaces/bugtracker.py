@@ -520,8 +520,8 @@ class IBugTrackerComponent(Interface):
         Reference(
             Interface,
             title=_("Distribution Source Package"),
-            description=_("The distribution source package object that should be "
-                    "linked to this component."),
+            description=_("The distribution source package object that "
+                          "should be linked to this component."),
             required=False))
 
 

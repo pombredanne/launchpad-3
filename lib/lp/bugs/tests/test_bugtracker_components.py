@@ -13,6 +13,7 @@ from canonical.launchpad.ftests import login_person
 from canonical.testing import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
+
 class TestBugTrackerComponent(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
