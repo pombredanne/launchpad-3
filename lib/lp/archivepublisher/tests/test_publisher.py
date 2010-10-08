@@ -1039,7 +1039,7 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
-    def assertIndicesForArchitectures(self, publisher, present, absent):
+    def assertIndicesForArchitectures(self, publisher, present=[], absent=[]):
         """Assert that the correct set of archs has indices.
 
         Checks that the architecture tags in 'present' have Packages and
@@ -1051,23 +1051,51 @@ class TestPublisher(TestPublisherBase):
             'breezy-autotest' in publisher.apt_handler.release_files_needed)
 
         arch_template = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest/%s/binary-%s')
+            publisher._config.distsroot, 'breezy-autotest/%s/%s')
 
         release_template = os.path.join(arch_template, 'Release')
         packages_template = os.path.join(arch_template, 'Packages')
+        sources_template = os.path.join(arch_template, 'Sources')
         release_content = open(os.path.join(
             publisher._config.distsroot,
             'breezy-autotest/Release')).read()
 
         for comp in ('main', 'restricted', 'universe', 'multiverse'):
-            for arch in present:
+            # Check that source indices are present.
+            for path in (release_template, sources_template):
+                self.assertTrue(os.path.exists(path % (comp, 'source')))
+
+            # Check that wanted binary indices are present.
+            for arch_tag in present:
+                arch = 'binary-' + arch_tag
                 for path in (release_template, packages_template):
                     self.assertTrue(os.path.exists(path % (comp, arch)))
                 self.assertTrue(arch in release_content)
 
-            for arch in absent:
+            # Check that unwanted binary indices are absent.
+            for arch_tag in absent:
+                arch = 'binary-' + arch_tag
                 self.assertFalse(os.path.exists(arch_template % (comp, arch)))
                 self.assertFalse(arch in release_content)
+
+    def testAllIndicesArePublished(self):
+        """Test that indices are created for all components and archs."""
+        self.config = Config(self.ubuntutest)
+
+        # Dirty breezy-autotest with a source. Even though there are no
+        # new binaries in the suite, all its indices will still be published.
+        self.getPubSource()
+
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+        publisher.D_writeReleaseFiles(False)
+
+        self.assertIndicesForArchitectures(
+            publisher, present=['hppa', 'i386'])
 
     def testNativeNoIndicesForDisabledArchitectures(self):
         """Test that no indices are created for disabled archs."""
