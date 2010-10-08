@@ -18,6 +18,7 @@ import logging
 import os
 import socket
 import tempfile
+import transaction
 import urllib2
 import xmlrpclib
 
@@ -54,7 +55,6 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from canonical.lazr.utils import safe_hasattr
-from lp.services.database import write_transaction
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -655,21 +655,24 @@ class Builder(SQLBase):
         logger = logging.getLogger('slave-scanner')
         return logger
 
-    # XXX: fix later, this is causing cache issue because it resets the
-    # store after committing.
-    #@write_transaction
     def acquireBuildCandidate(self):
         """Acquire a build candidate in an atomic fashion.
 
         When retrieiving a candidate we need to mark it as building
         immediately so that it is not dispatched by another builder in the
-        build manager.  We use the write_transaction decorator to force a
-        re-try of this method if the commit fails - this happens if another
-        invocation of this method for a different builder got there first
-        and grabbed the same candidate.
+        build manager.
+
+        We can consider this to be atomic because although the build manager
+        is a Twisted app and gives the appearance of doing lots of things at
+        once, it's still single-threaded so no more than one builder scan
+        can be in this code at the same time.
+
+        If there's ever more than one build manager running at once, then
+        this code will need some sort of mutex.
         """
         candidate = self._findBuildCandidate()
         candidate.markAsBuilding(self)
+        transaction.commit()
         return candidate
 
     def _findBuildCandidate(self):
