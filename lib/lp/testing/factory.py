@@ -127,7 +127,6 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -1132,16 +1131,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch,
             ubuntu_branches.teamowner)
         return branch
-
-    def makeBranchMergeQueue(self, name=None):
-        """Create a new multi branch merge queue."""
-        if name is None:
-            name = self.getUniqueString('name')
-        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
-            registrant=self.makePerson(),
-            owner=self.makePerson(),
-            name=name,
-            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,

@@ -394,9 +394,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     stacked_on = Attribute('Stacked-on branch')
 
-    merge_queue = Attribute(
-        "The queue that contains the QUEUED proposals for this branch.")
-
     # Bug attributes
     bug_branches = CollectionField(
             title=_("The bug-branch link objects that link this branch "
