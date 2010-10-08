@@ -749,14 +749,14 @@ class BugTrackerComponent(Storm):
         source_package_name_id,
         'SourcePackageName.id')
 
-    def _getDistroSourcePackage(self):
+    def _get_distro_source_package(self):
         """Retrieves the corresponding source package"""
         if self.distribution is None or self.source_package_name is None:
             return None
-        self.distribution.getSourcePackage(
+        return self.distribution.getSourcePackage(
             self.source_package_name)
 
-    def _setDistroSourcePackage(self, dsp):
+    def _set_distro_source_package(self, dsp):
         """Links this component to its corresponding source package"""
         if dsp is None:
             self.distribution = None
@@ -765,8 +765,12 @@ class BugTrackerComponent(Storm):
             self.distribution = dsp.distribution
             self.source_package_name = dsp
 
-        dsp = property(self._getDistroSourcePackage,
-                       self._setDistroSourcePackage)
+        # TODO: Add a doc parameter
+        dsp = property(
+            self._get_distro_source_package,
+            self._set_distro_source_package,
+            None,
+            """The distribution's source package for this component""")
 
 
 class BugTrackerComponentGroup(Storm):
