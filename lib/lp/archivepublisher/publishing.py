@@ -54,13 +54,14 @@ def reorder_components(components):
     Over time this method needs to be removed and replaced by having
     component ordering codified in the database.
     """
-    ret = []
+    remaining = list(components)
+    ordered = []
     for comp in HARDCODED_COMPONENT_ORDER:
-        if comp in components:
-            ret.append(comp)
-            components.remove(comp)
-    ret.extend(components)
-    return ret
+        if comp in remaining:
+            ordered.append(comp)
+            remaining.remove(comp)
+    ordered.extend(remaining)
+    return ordered
 
 
 def get_suffixed_indices(path):
