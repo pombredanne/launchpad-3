@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'getSourcePackageDescriptions'
-]
+    'getSourcePackageDescriptions',
+    ]
 
 from sqlobject import (
     SQLMultipleJoin,
@@ -24,10 +24,10 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from lp.app.errors import NotFoundError
+from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
     ISourcePackageNameSet,
-    NoSuchSourcePackageName,
     )
 
 
@@ -155,4 +155,3 @@ def getSourcePackageDescriptions(
                 description = ", %s" % binarypackagename
             descriptions[sourcepackagename] += description
     return descriptions
-

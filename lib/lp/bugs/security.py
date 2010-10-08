@@ -17,6 +17,7 @@ from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 
@@ -171,3 +172,14 @@ class AdminBugWatch(AuthorizationBase):
         return (
             user.in_admin or
             user.in_launchpad_developers)
+
+
+class EditBugSubscriptionFilter(AuthorizationBase):
+    """Bug subscription filters may only be modified by the subscriber."""
+    permission = 'launchpad.Edit'
+    usedfor = IBugSubscriptionFilter
+
+    def checkAuthenticated(self, user):
+        return (
+            self.obj.structural_subscription is None or
+            user.inTeam(self.obj.structural_subscription.subscriber))

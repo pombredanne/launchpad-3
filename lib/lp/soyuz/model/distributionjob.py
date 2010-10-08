@@ -13,14 +13,14 @@ import simplejson
 from storm.base import Storm
 from storm.locals import And, Int, Reference, Unicode
 
-from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lazr.delegates import delegates
- 
+
+from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.distributionjob import (
@@ -80,12 +80,12 @@ class DistributionJobDerived(BaseRunnableJob):
 
         :return: the DistributionJob with the specified id, as
                  the current DistributionJobDerived subclass.
-        :raises: SQLObjectNotFound if there is no job with the specified id,
+        :raises: NotFoundError if there is no job with the specified id,
                  or its job_type does not match the desired subclass.
         """
         job = DistributionJob.get(job_id)
         if job.job_type != cls.class_job_type:
-            raise SQLObjectNotFound(
+            raise NotFoundError(
                 'No object found with id %d and type %s' % (job_id,
                 cls.class_job_type.title))
         return cls(job)
@@ -110,4 +110,3 @@ class DistributionJobDerived(BaseRunnableJob):
             ('distribution_job_type', self.context.job_type.title),
             ])
         return vars
-

@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     PageTestLayer,
     )

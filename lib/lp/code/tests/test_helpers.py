@@ -10,7 +10,7 @@ import pytz
 
 from zope.component import getUtility
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.tests.helpers import make_project_cloud_data

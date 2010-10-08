@@ -23,7 +23,7 @@ from zope.testing.loghandler import Handler
 from canonical.config import config
 from lp.hardwaredb.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 
 from lp.testing import TestCase, validate_mock_class
 

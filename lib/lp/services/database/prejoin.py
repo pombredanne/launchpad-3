@@ -1,7 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Prejoin for Storm."""
+"""Prejoin for Storm.
+
+XXX bug=632150 This is duplicated with DecoratedResultSet. please use that.
+RBC 20100907.
+"""
 
 __metaclass__ = type
 __all__ = ['prejoin']

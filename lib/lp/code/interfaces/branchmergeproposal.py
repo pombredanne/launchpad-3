@@ -85,6 +85,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
+    ITwistedJobSource,
     )
 
 
@@ -289,6 +290,13 @@ class IBranchMergeProposal(IPrivacy):
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getRevisionsSinceReviewStart():
+        """Return all the revisions added since the review began.
+
+        Revisions are grouped by creation (i.e. push) time.
+        :return: An iterator of (date, iterator of revision data)
+        """
 
     def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""
@@ -518,8 +526,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param prerequisite_revision_id: The revision id that was used from the
-            prerequisite branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 
@@ -544,7 +552,7 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
-class IBranchMergeProposalJobSource(IJobSource):
+class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 

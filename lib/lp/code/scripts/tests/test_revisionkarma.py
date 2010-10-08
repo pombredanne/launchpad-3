@@ -13,7 +13,7 @@ import transaction
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
 from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma

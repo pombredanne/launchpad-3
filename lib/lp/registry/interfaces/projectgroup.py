@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugtarget import (
@@ -111,7 +112,7 @@ class IProjectGroupPublic(
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
     IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IRootContext, IHasOfficialBugTags):
+    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -320,6 +321,10 @@ class IProjectGroupPublic(
         It also should have IProduct.official_rosetta flag set.
         """
 
+    def has_translatable():
+        """Return a boolean showing the existance of translatables products.
+        """
+
     def hasProducts():
         """Returns True if a project has products associated with it, False
         otherwise.
@@ -327,6 +332,8 @@ class IProjectGroupPublic(
 
     def getSeries(series_name):
         """Return a ProjectGroupSeries object with name `series_name`."""
+
+    product_milestones = Attribute('all the milestones for all the products.')
 
 
 class IProjectGroup(IProjectGroupPublic,

@@ -18,7 +18,7 @@ from lp.testing import TestCaseWithFactory
 
 class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     """Test case for InitialiseDistroSeriesJob."""
-    
+
     layer = LaunchpadZopelessLayer
 
     def test_getOopsVars(self):
@@ -35,12 +35,12 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     def _getJobs(self):
         """Return the pending InitialiseDistroSeriesJobs as a list."""
         return list(InitialiseDistroSeriesJob.iterReady())
-        
+
     def _getJobCount(self):
         """Return the number of InitialiseDistroSeriesJobs in the
         queue."""
         return len(self._getJobs())
-        
+
     def test_create_only_creates_one(self):
         distroseries = self.factory.makeDistroSeries()
         # If there's already a InitialiseDistroSeriesJob for a
@@ -49,7 +49,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         job = getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries)
         transaction.commit()
-    
+
         # There will now be one job in the queue.
         self.assertEqual(1, self._getJobCount())
 

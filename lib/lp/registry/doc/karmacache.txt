@@ -12,7 +12,7 @@ which runs daily. The script does that by using the IKarmaCacheManager API.
     >>> from lp.registry.model.karma import KarmaCategory
     >>> from canonical.launchpad.interfaces import (
     ...     IKarmaCacheManager, IPersonSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('karma')
     >>> karmacachemanager = getUtility(IKarmaCacheManager)

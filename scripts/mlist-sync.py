@@ -39,8 +39,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
-from canonical.launchpad.mailman.config import configure_prefix
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.mailman.config import configure_prefix
+from lp.services.scripts.base import LaunchpadScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')
@@ -49,7 +49,7 @@ RSYNC_SUBDIRECTORIES = ('archives', 'backups', 'lists', 'mhonarc')
 SPACE = ' '
 
 
-class MailingListSyncScript(LaunchpadCronScript):
+class MailingListSyncScript(LaunchpadScript):
     """
     %prog [options] source_url
 
@@ -205,7 +205,7 @@ class MailingListSyncScript(LaunchpadCronScript):
             # Keep going.
 
     def main(self):
-        """See `LaunchpadCronScript`."""
+        """See `LaunchpadScript`."""
         source_url = None
         if len(self.args) == 0:
             self.parser.error('Missing source_url')

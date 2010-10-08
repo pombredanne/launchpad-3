@@ -25,7 +25,7 @@ __all__ = [
 
 from datetime import datetime
 import math
-from urllib import quote
+from urllib import unquote
 
 import pytz
 from zope.app.form.browser import TextAreaWidget
@@ -61,14 +61,13 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )
 from lp.app.errors import UnexpectedFormData
-from lp.registry.browser import MapMixin
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -807,21 +806,27 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         assert(self.mailing_list is not None), (
             'No mailing list: %s' % self.context.name)
 
-    @property
+    @cachedproperty
     def hold_count(self):
         """The number of message being held for moderator approval.
 
         :return: Number of message being held for moderator approval.
         """
-        return self.mailing_list.getReviewableMessages().count()
+        ## return self.mailing_list.getReviewableMessages().count()
+        # This looks like it would be more efficient, but it raises
+        # LocationError.
+        return self.held_messages.currentBatch().listlength
 
-    @property
+    @cachedproperty
     def held_messages(self):
         """All the messages being held for moderator approval.
 
         :return: Sequence of held messages.
         """
-        return self.mailing_list.getReviewableMessages()
+        results = self.mailing_list.getReviewableMessages()
+        navigator = BatchNavigator(results, self.request)
+        navigator.setHeadings('message', 'messages')
+        return navigator
 
     @action('Moderate', name='moderate')
     def moderate_action(self, action, data):
@@ -830,9 +835,19 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         # won't be in data.  Instead, get it out of the request.
         reviewable = self.hold_count
         disposed_count = 0
-        for message in self.held_messages:
-            action_name = self.request.form_ng.getOne(
-                'field.' + quote(message.message_id))
+        actions = {}
+        form = self.request.form_ng
+        for field_name in form:
+            if (field_name.startswith('field.') and
+                field_name.endswith('')):
+                # A moderated message.
+                quoted_id = field_name[len('field.'):]
+                message_id = unquote(quoted_id)
+                actions[message_id] = form.getOne(field_name)
+        messages = self.mailing_list.getReviewableMessages(
+            message_id_filter=actions)
+        for message in messages:
+            action_name = actions[message.message_id]
             # This essentially acts like a switch statement or if/elifs.  It
             # looks the action up in a map of allowed actions, watching out
             # for bogus input.
@@ -1064,7 +1079,7 @@ class TeamMemberAddView(LaunchpadFormView):
         self.request.response.addInfoNotification(msg)
 
 
-class TeamMapView(MapMixin, LaunchpadView):
+class TeamMapView(LaunchpadView):
     """Show all people with known locations on a map.
 
     Also provides links to edit the locations of people in the team without
@@ -1073,12 +1088,6 @@ class TeamMapView(MapMixin, LaunchpadView):
 
     label = "Team member locations"
     limit = None
-
-    def initialize(self):
-        # Tell our base-layout to include Google's gmap2 javascript so that
-        # we can render the map.
-        if self.gmap2_enabled and self.mapped_participants_count > 0:
-            self.request.needs_gmap2 = True
 
     @cachedproperty
     def mapped_participants(self):

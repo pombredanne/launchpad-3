@@ -28,7 +28,10 @@ from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 class LibrarianWebTestCase(unittest.TestCase):

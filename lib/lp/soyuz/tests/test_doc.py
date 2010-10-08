@@ -22,7 +22,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -139,12 +139,6 @@ special = {
     'buildd-slavescanner.txt': LayeredDocFileSuite(
         '../doc/buildd-slavescanner.txt',
         setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
-        ),
-    'buildd-slave.txt': LayeredDocFileSuite(
-        '../doc/buildd-slave.txt',
-        setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         stdout_logging_level=logging.WARNING
         ),

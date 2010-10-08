@@ -34,7 +34,7 @@ from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.config import config
-from canonical.testing import TwistedLayer
+from canonical.testing.layers import TwistedLayer
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
 

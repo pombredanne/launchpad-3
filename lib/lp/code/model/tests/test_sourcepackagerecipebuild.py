@@ -26,6 +26,7 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
@@ -43,7 +44,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.tests.soyuzbuilddhelpers import WaitingSlave
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -291,6 +291,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild()
         build.destroySelf()
 
+    def test_destroySelf_clears_release(self):
+        # Destroying a sourcepackagerecipebuild removes references to it from
+        # its releases.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        build.destroySelf()
+        self.assertIs(None, release.source_package_recipe_build)
+        transaction.commit()
+
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
         # queue entries and then invalidate itself.
@@ -308,6 +319,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build = sprb.build_farm_job
         job = sprb.build_farm_job.getSpecificJob()
         self.assertEqual(sprb, job)
+
+    def test_getUploader(self):
+        # For ACL purposes the uploader is the build requester.
+        build = self.makeSourcePackageRecipeBuild()
+        self.assertEquals(build.requester,
+            build.getUploader(None))
 
 
 class TestAsBuildmaster(TestCaseWithFactory):
@@ -354,15 +371,15 @@ class TestAsBuildmaster(TestCaseWithFactory):
             queue_record.builder.setSlaveForTesting(slave)
             return build
 
-        def assertNotifyOnce(status, build):
+        def assertNotifyCount(status, build, count):
             build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(1, len(pop_notifications()))
-        for status in ['PACKAGEFAIL', 'OK']:
-            assertNotifyOnce(status, prepare_build())
+            self.assertEqual(count, len(pop_notifications()))
+        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
+        assertNotifyCount("OK", prepare_build(), 0)
         build = prepare_build()
         removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
-        result=True)
-        assertNotifyOnce('OK', prepare_build())
+                result=True)
+        assertNotifyCount("OK", prepare_build(), 0)
 
 
 class MakeSPRecipeBuildMixin:
