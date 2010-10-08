@@ -639,11 +639,6 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # Check if apt_handler.release_files_needed has the right requests.
-        # 'source' & 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components. Note that 'debian-installer'
-        # indexes do not need Release files.
-
         # We always regenerate all Releases file for a given suite.
         self.assertTrue(
             'breezy-autotest' in
@@ -1056,22 +1051,23 @@ class TestPublisher(TestPublisherBase):
             'breezy-autotest' in publisher.apt_handler.release_files_needed)
 
         arch_template = os.path.join(
-            publisher._config.distsroot, 'breezy-autotest/main/binary-%s')
+            publisher._config.distsroot, 'breezy-autotest/%s/binary-%s')
+
         release_template = os.path.join(arch_template, 'Release')
         packages_template = os.path.join(arch_template, 'Packages')
         release_content = open(os.path.join(
             publisher._config.distsroot,
             'breezy-autotest/Release')).read()
 
-        for arch in present:
-            self.assertTrue(os.path.exists(arch_template % arch))
-            self.assertTrue(os.path.exists(release_template % arch))
-            self.assertTrue(os.path.exists(packages_template % arch))
-            self.assertTrue(arch in release_content)
+        for comp in ('main', 'restricted', 'universe', 'multiverse'):
+            for arch in present:
+                for path in (release_template, packages_template):
+                    self.assertTrue(os.path.exists(path % (comp, arch)))
+                self.assertTrue(arch in release_content)
 
-        for arch in absent:
-            self.assertFalse(os.path.exists(arch_template % arch))
-            self.assertFalse(arch in release_content)
+            for arch in absent:
+                self.assertFalse(os.path.exists(arch_template % (comp, arch)))
+                self.assertFalse(arch in release_content)
 
     def testNativeNoIndicesForDisabledArchitectures(self):
         """Test that no indices are created for disabled archs."""
