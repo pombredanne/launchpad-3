@@ -514,8 +514,7 @@ class IBugTrackerComponent(Interface):
         Text(
             title=_('Name'),
             description=_("The name of a software component "
-                          "as shown in Launchpad.  This is a sanitized "
-                          "form of the Remote Name.")))
+                          "as shown in Launchpad.")))
 
     distro_source_package = exported(
         Reference(
