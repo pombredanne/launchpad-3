@@ -336,21 +336,21 @@ that can be cast to a string.
     ...     <body>
     ...         <div tal:omit-tag="" tal:repeat="comment comments">
     ...             <div tal:replace="cache:
-    ...                 public,1 hour,comment/comment_num">
+    ...                 public,1 hour,comment/comment_id">
     ...                 <span tal:replace="comment/comment" />
     ...             </div>
     ...         </div>
     ...     </body>"""))
     >>> comments = [
-    ...     {'comment_num': 42, 'comment': "Today's comment"},
-    ...     {'comment_num': 12, 'comment': "Yesterday's comment"}]
+    ...     {'comment_id': 42, 'comment': "Today's comment"},
+    ...     {'comment_id': 'long!'*40, 'comment': "Yesterday's comment"}]
     >>> print template(comments=comments)
     <body>
     Today's comment
     Yesterday's comment
     </body>
 
-    >>> comments.insert(0, {'comment_num': 'foo', 'comment': 'New comment'})
+    >>> comments.insert(0, {'comment_id': 'foo', 'comment': 'New comment'})
     >>> print template(comments=comments)
     <body>
     New comment

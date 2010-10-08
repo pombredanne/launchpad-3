@@ -212,9 +212,9 @@ class MemcacheExpr:
 
         # The extra_key is used to differentiate items inside loops.
         if self.extra_key is not None:
-            # Encode it to base64 to make it memcached key safe.
-            extra_key = unicode(
-                self.extra_key(econtext)).encode('base64').rstrip()
+            # Encode it to to a memcached key safe string. base64
+            # isn't suitable for this because it can contain whitespace.
+            extra_key = unicode(self.extra_key(econtext)).encode('hex')
         else:
             # If no extra_key was specified, we include a counter in the
             # key that is reset at the start of the request. This
