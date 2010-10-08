@@ -465,8 +465,8 @@ class Publisher(object):
         all_architectures = self._config.archTagsForSeries(distroseries.name)
         all_files = set()
         for component in all_components:
-            self._writeDistroArchSeries(
-                distroseries, pocket, component, 'source', all_files)
+            self._writeDistroSeriesSource(
+                distroseries, pocket, component, all_files)
             for architecture in all_architectures:
                 self._writeDistroArchSeries(
                     distroseries, pocket, component, architecture, all_files)
@@ -525,42 +525,26 @@ class Publisher(object):
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(full_name)
 
-    def _writeDistroArchSeries(self, distroseries, pocket, component,
-                                architecture, all_files):
-        """Write out a Release file for a DAR."""
+    def _writeDistroSeriesArchOrSource(self, distroseries, pocket, component,
+                                       file_stub, arch_name, arch_path,
+                                       all_series_files):
+        """Write out a Release file for an architecture or source."""
         # XXX kiko 2006-08-24: Untested method.
 
-        full_name = distroseries.name + pocketsuffix[pocket]
+        full_name = distroseries.getSuite(pocket)
         index_suffixes = ('', '.gz', '.bz2')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
-            full_name, component, architecture))
-
-        if architecture != "source":
-            file_stub = "Packages"
-            architecture_path = 'binary-' + architecture
-
-            # Only the primary and PPA archives have debian-installer.
-            if self.archive.purpose != ArchivePurpose.PARTNER:
-                # Set up the debian-installer paths for main_archive.
-                # d-i paths are nested inside the component.
-                di_path = os.path.join(
-                    component, "debian-installer", architecture_path)
-                di_file_stub = os.path.join(di_path, file_stub)
-                for suffix in index_suffixes:
-                    all_files.add(di_file_stub + suffix)
-        else:
-            file_stub = "Sources"
-            architecture_path = architecture
+            full_name, component, arch_path))
 
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
-        file_stub = os.path.join(component, architecture_path, file_stub)
+        file_stub = os.path.join(component, arch_path, file_stub)
 
         for suffix in index_suffixes:
-            all_files.add(file_stub + suffix)
+            all_series_files.add(file_stub + suffix)
 
-        all_files.add(os.path.join(component, architecture_path, "Release"))
+        all_series_files.add(os.path.join(component, arch_path, "Release"))
 
         release_file = Release()
         release_file["Archive"] = full_name
@@ -568,14 +552,40 @@ class Publisher(object):
         release_file["Component"] = component
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
-        release_file["Architecture"] = architecture
+        release_file["Architecture"] = arch_name
 
         f = open(os.path.join(self._config.distsroot, full_name,
-                              component, architecture_path, "Release"), "w")
+                              component, arch_path, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
         finally:
             f.close()
+
+    def _writeDistroSeriesSource(self, distroseries, pocket, component,
+                                 all_series_files):
+        """Write out a Release file for a series' sources."""
+        self._writeDistroSeriesArchOrSource(
+            distroseries, pocket, component, 'Sources', 'source', 'source',
+            all_series_files)
+
+    def _writeDistroArchSeries(self, distroseries, pocket, component,
+                               arch_name, all_series_files):
+        """Write out a Release file for an architecture."""
+        index_suffixes = ('', '.gz', '.bz2')
+        file_stub = 'Packages'
+        arch_path = 'binary-' + arch_name
+        # Only the primary and PPA archives have debian-installer.
+        if self.archive.purpose != ArchivePurpose.PARTNER:
+            # Set up the debian-installer paths for main_archive.
+            # d-i paths are nested inside the component.
+            di_path = os.path.join(
+                component, "debian-installer", arch_path)
+            di_file_stub = os.path.join(di_path, file_stub)
+            for suffix in index_suffixes:
+                all_series_files.add(di_file_stub + suffix)
+        self._writeDistroSeriesArchOrSource(
+            distroseries, pocket, component, 'Packages', arch_name, arch_path,
+            all_series_files)
 
     def _readIndexFileContents(self, distroseries_name, file_name):
         """Read an index files' contents.
