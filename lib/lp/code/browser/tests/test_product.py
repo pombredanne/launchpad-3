@@ -193,6 +193,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_unknown(self):
+        # A product with no branches should tell the user that Launchpad
+        # doesn't know where the code is hosted.
         product = self.factory.makeProduct()
         self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
@@ -204,6 +206,10 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
             "hosts its code.*" %
             dict(product_title=product.title))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+        # The code page should set robots to noindex, nofollow.
+        meta_string = '<meta name="robots" content="noindex,nofollow" />'
+        self.assertIn(meta_string, browser.contents)
 
     def test_on_launchpad(self):
         product, branch = self.makeProductAndDevelopmentFocusBranch()
