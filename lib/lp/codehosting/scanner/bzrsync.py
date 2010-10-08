@@ -85,13 +85,13 @@ class BzrSync:
         # improve the performance and allow garbage collection in the future.
         db_ancestry, db_history = self.retrieveDatabaseAncestry()
 
-        (added_ancestry, branchrevisions_to_delete,
+        (new_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
             bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history)
-        added_ancestry.difference_update(
-            getUtility(IRevisionSet).onlyPresent(added_ancestry))
-        self.logger.info("Adding %s new revisions.", len(added_ancestry))
-        for revids in iter_list_chunks(list(added_ancestry), 1000):
+        new_db_revs = (
+            new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
+        self.logger.info("Adding %s new revisions.", len(new_db_revs))
+        for revids in iter_list_chunks(list(new_db_revs), 1000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
             for revision in revisions:
                 # This would probably go much faster if we found some way to
@@ -122,7 +122,7 @@ class BzrSync:
         self.updateBranchStatus(bzr_history)
         notify(
             events.ScanCompleted(
-                self.db_branch, bzr_branch, bzr_ancestry, self.logger))
+                self.db_branch, bzr_branch, self.logger, new_ancestry))
         transaction.commit()
 
     def retrieveDatabaseAncestry(self):
