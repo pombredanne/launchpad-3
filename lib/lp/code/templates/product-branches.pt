@@ -6,6 +6,14 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+<head>
+  <div metal:fill-slot="head_epilogue">
+    <tal:robots
+      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:robots>
+  </div>
+</head>
 
 <body>
 
