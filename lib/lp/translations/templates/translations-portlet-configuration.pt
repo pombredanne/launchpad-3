@@ -6,7 +6,8 @@
 
     <div id="translations-explanation">
       <ul>
-        <li>
+        <li
+          tal:condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
           Launchpad allows communities to translate projects using imports
           or a branch.
         </li>
