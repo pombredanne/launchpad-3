@@ -199,6 +199,42 @@ reuse the authenticated cache. The anonymous section is uncached.
     <!-- End cache hit: memcache expression (authenticated) [0 seconds] -->
 
 
+Visibility Modifiers
+--------------------
+
+A optional modifier can also be applied to the visibility. Only 'param'
+and 'noparam' are supported. 'param' is the default, and pages that
+differ by just the query string do not share cache.
+
+    >>> param_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public param">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request1 = LaunchpadTestRequest(QUERY_STRING='a=1')
+    >>> request2 = LaunchpadTestRequest(QUERY_STRING='a=2')
+    >>> print param_template(arg="First", request=request1)
+    Arg: First
+    >>> print param_template(arg="Second", request=request2)
+    Arg: Second
+
+If 'noparam' is used, query parameters are ignored and the cache is shared.
+
+    >>> noparam_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public noparam">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request3 = LaunchpadTestRequest(QUERY_STRING='a=3')
+    >>> request4 = LaunchpadTestRequest(QUERY_STRING='a=4')
+    >>> print noparam_template(arg="Third", request=request3)
+    Arg: Third
+    >>> print noparam_template(arg="Fourth", request=request4)
+    <!-- Cache hit: memcache expression (public noparam) [0 seconds] -->
+    Arg: Third
+    <!-- End cache hit: memcache expression (public noparam) [0 seconds] -->
+
+
 Nesting & Loops
 ---------------
 
@@ -349,7 +385,6 @@ Disabling
 Memcache in templates can be disabled entirely by setting the memcache flag to
 'disabled'.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
     >>> from lp.services.features.webapp import ScopesFromRequest
     >>> from lp.services.features.flags import FeatureController

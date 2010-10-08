@@ -103,6 +103,18 @@ class MemcacheExpr:
         else:
             raise SyntaxError("Too many arguments in cache: expression")
 
+        try:
+            self.visibility, modifier = self.visibility.split()
+            if modifier == 'param':
+                self.include_params = True
+            elif modifier == 'noparam':
+                self.include_params = False
+            else:
+                raise SyntaxError(
+                    'visibility modifier must be param or noparam')
+        except ValueError:
+            self.include_params = True
+
         if self.visibility not in (
             'anonymous', 'public', 'private', 'authenticated'):
             raise SyntaxError(
@@ -170,7 +182,9 @@ class MemcacheExpr:
         # We use a sanitized version in the human readable chunk of
         # the key.
         request = econtext.getValue('request')
-        url = str(request.URL) + '?' + str(request.get('QUERY_STRING', ''))
+        url = str(request.URL)
+        if self.include_params:
+            url += '?' + str(request.get('QUERY_STRING', ''))
         url = url.encode('utf8') # Ensure it is a byte string.
         sanitized_url = url.translate(self._key_translate_map)
 
@@ -268,6 +282,7 @@ class MemcacheMiss:
     tag contents and invokes this callback, which will store the
     result in memcache against the key calculated by the MemcacheExpr.
     """
+
     def __init__(self, key, max_age, memcache_expr):
         self._key = key
         self._max_age = max_age
@@ -292,6 +307,7 @@ class MemcacheHit:
     We use a special object so the TALInterpreter knows that this
     information should not be quoted.
     """
+
     def __init__(self, value):
         self.value = value
 
