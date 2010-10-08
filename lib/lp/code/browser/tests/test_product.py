@@ -164,7 +164,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         code_import = self.factory.makeProductCodeImport(
             svn_branch_url='http://svn.example.org/branch')
         login_person(product.owner)
-        product.development_focus.branch = code_import.branch    
+        product.development_focus.branch = code_import.branch
         logout()
         self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
