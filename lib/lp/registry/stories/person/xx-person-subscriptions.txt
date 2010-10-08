@@ -110,7 +110,7 @@ Sample Person chooses to review the subscriptions for his HWDB team.
     In
     1
     Firefox does not support SVG
-    mozilla-firefox (Ubuntu)
+    Mozilla Firefox
 
 Sample Person now chooses to unsubscribe HWDB team from bug 1.
 
