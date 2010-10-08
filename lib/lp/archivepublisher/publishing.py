@@ -456,25 +456,21 @@ class Publisher(object):
         # We store this in release_files_needed and consume the information
         # when writeReleaseFiles is called.
         full_name = distroseries.name + pocketsuffix[pocket]
-        release_files_needed = self.apt_handler.release_files_needed
-        if full_name not in release_files_needed:
+        if full_name not in self.apt_handler.release_files_needed:
             # If we don't need to generate a release for this release
             # and pocket, don't!
             return
 
-        all_components = set()
-        all_architectures = set()
+        all_components = self._config.componentsForSeries(distroseries.name)
+        all_architectures = self._config.archTagsForSeries(distroseries.name)
         all_files = set()
-        release_files_needed_items = release_files_needed[full_name].items()
-        for component, architectures in release_files_needed_items:
-            all_components.add(component)
-            for architecture in architectures:
-                # XXX malcc 2006-09-20: We don't like the way we build this
-                # all_architectures list. Make this better code.
-                clean_architecture = self._writeDistroArchSeries(
-                    distroseries, pocket, component, architecture, all_files)
-                if clean_architecture != "source":
-                    all_architectures.add(clean_architecture)
+        for component in all_components:
+            self._writeDistroArchSeries(
+                distroseries, pocket, component, 'source', all_files)
+            for architecture in all_architectures:
+                self._writeDistroArchSeries(
+                    distroseries, pocket, component,
+                    'binary-%s' % architecture, all_files)
 
         drsummary = "%s %s " % (self.distro.displayname,
                                 distroseries.displayname)

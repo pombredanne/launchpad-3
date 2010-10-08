@@ -157,7 +157,7 @@ class FTPArchiveHandler:
             else:
                 self.distroseries.append(distroseries)
         self.publisher = publisher
-        self.release_files_needed = {}
+        self.release_files_needed = set()
 
         # We need somewhere to note down where the debian-installer
         # components came from. in _di_release_components we store
@@ -222,11 +222,7 @@ class FTPArchiveHandler:
         value will be another dictionary keyed by 'component_name' and
         containing a set of 'arch_name's as value.
         """
-        suite_special = self.release_files_needed.setdefault(
-            suite_name, {})
-        suite_component_special = suite_special.setdefault(
-            component_name, set())
-        suite_component_special.add(arch_name)
+        self.release_files_needed.add(suite_name)
 
     def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
@@ -253,19 +249,12 @@ class FTPArchiveHandler:
         touch_list(["override"], "extra", comp)
         touch_list(["override"], comp, "src")
 
-        dr_comps = self.release_files_needed.setdefault(full_pocket, {})
+        self.release_files_needed.add(full_pocket)
 
         # Create empty file lists.
         touch_list([], comp, "source")
-        dr_comps.setdefault(comp, set()).add("source")
 
         for arch in self._config.archTagsForSeries(distroseries.name):
-            # organize dr/comp/arch into temporary binary
-            # archive map for the architecture in question.
-            dr_special = self.release_files_needed.setdefault(
-                full_pocket, {})
-            dr_special.setdefault(comp, set()).add("binary-"+arch)
-
             # Touch more file lists for the archs.
             touch_list([], comp, "binary-" + arch)
             touch_list([], comp, "debian-installer", "binary-" + arch)
