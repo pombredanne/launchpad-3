@@ -1420,21 +1420,21 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
-    label = "Configure Blueprints"
+    label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
-    label = "Configure Translations"
+    label = "Configure translations"
     usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
-    label = "Configure Answers"
+    label = "Configure answers"
     usage_fieldname = 'answers_usage'
 
 
