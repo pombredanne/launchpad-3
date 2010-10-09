@@ -765,11 +765,11 @@ class BugTrackerComponent(Storm):
             self.distribution = dsp.distribution
             self.source_package_name = dsp.name
 
-        dsp = property(
-            self._get_distro_source_package,
-            self._set_distro_source_package,
-            None,
-            """The distribution's source package for this component""")
+    dsp = property(
+        self._get_distro_source_package,
+        self._set_distro_source_package,
+        None,
+        """The distribution's source package for this component""")
 
 
 class BugTrackerComponentGroup(Storm):
