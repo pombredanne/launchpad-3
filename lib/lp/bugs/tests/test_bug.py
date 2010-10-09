@@ -125,3 +125,11 @@ class TestBug(TestCaseWithFactory):
             dupe_bug.subscribe(team, member)
             dupe_bug.markAsDuplicate(bug)
         self.assertTrue(team in bug.getSubscribersFromDuplicates())
+
+    def test_get_direct_subscribers_with_level(self):
+        # It's possible to pass a level parameter to
+        # getDirectSubscribers(). If passed, getDirectSubscribers() will
+        # return only those subscribers who will receive that level of
+        # notifications or higher.
+        bug = self.factory.makeBug()
+        subscriber = self.factory.makePerson()
