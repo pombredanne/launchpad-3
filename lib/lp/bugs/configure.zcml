@@ -483,6 +483,7 @@
                 set_attributes="
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
