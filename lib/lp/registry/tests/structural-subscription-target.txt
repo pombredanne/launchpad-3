@@ -3,7 +3,7 @@
 
 Let's subscribe ubuntu-team.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName("ubuntu-team")
     >>> no_priv = personset.getByName("no-priv")

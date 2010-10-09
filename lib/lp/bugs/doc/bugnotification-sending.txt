@@ -12,7 +12,7 @@ be sent:
     >>> from datetime import datetime, timedelta
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> ten_minutes_ago = now - timedelta(minutes=10)
-    >>> from canonical.launchpad.interfaces import IBugNotificationSet
+    >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
     0
 
@@ -54,7 +54,7 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet, IMessageSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = getUtility(IMessageSet).fromText(

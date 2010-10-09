@@ -116,12 +116,12 @@ fetched as a batch:
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet, IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.ROUNDUP)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',
@@ -150,7 +150,7 @@ And have a Roundup instance process them:
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     roundup.convertRemoteStatus)
     Remote bug 1: New

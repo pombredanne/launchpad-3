@@ -5,7 +5,7 @@ of changes to the bug status:
 
     >>> from zope.event import notify
     >>> from zope.interface import providedBy
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IPersonSet
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
 

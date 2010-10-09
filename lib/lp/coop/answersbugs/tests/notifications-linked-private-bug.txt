@@ -9,7 +9,7 @@ they are indirect subscribers.
     >>> from zope.interface import providedBy
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import BugTaskStatus, IPersonSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, IPersonSet
     >>> from lp.testing.mail_helpers import pop_notifications
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
