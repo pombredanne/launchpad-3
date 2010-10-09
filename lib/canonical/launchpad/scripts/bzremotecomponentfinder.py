@@ -13,16 +13,21 @@ import re
 from StringIO import StringIO
 import urllib
 from urllib2 import (
-        HTTPError,
-        urlopen,
-        )
+    HTTPError,
+    urlopen,
+    )
 from BeautifulSoup import BeautifulSoup
 from canonical.launchpad.scripts.logger import log as default_log
 from zope.component import getUtility
 from lp.bugs.interfaces.bugtracker import (
-        BugTrackerType,
-        IBugTrackerSet,
-        )
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+from lp.bugs.model.bugtracker import (
+    BugTrackerComponent,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
+
 
 def dictFromCSV(line):
     items_dict = {}
@@ -170,13 +175,18 @@ class BugzillaRemoteComponentFinder:
             for component in product['components'].values():
                 components_to_add.append(
                     "('%s', %d, 'True', 'False')" %(
-                        component, lp_component_group.id))
+                        component['name'], lp_component_group.id))
 
         if len(components_to_add)>0:
-            # TODO: Can this be done with pure storm calls?
             sqltext = """
             INSERT INTO BugTrackerComponent
             (name, component_group, is_visible, is_custom)
-            VALUES %s;""" % ",\n ".join(components_to_add)
-            print sqltext
+            VALUES %s""" % ",\n ".join(components_to_add)
+            self.logger.warning("...Inserting components into database")
+            #print sqltext
+            store = IStore(BugTrackerComponent)
+            store.execute(sqltext)
+            store.commit()
+            store.flush()
+        self.logger.warning("...Done")
 
