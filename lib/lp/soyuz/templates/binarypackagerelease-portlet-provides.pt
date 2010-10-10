@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="relationships view/provides"
   tal:condition="relationships/has_items"
-  class="first yui3-u" id="portlet-provides">
+  class="first yui-u" id="portlet-provides">
 
   <dl id="provides">
     <dt>Provides:</dt>

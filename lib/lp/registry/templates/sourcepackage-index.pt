@@ -58,18 +58,18 @@
         </ul>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-details" />
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div class="portlet" tal:content="structure context/@@+portlet-associations" />
         </div>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-releases" />
 
           <ul class="horizontal" style="margin-bottom: 1em;">
@@ -79,7 +79,7 @@
           </ul>
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div class="portlet" tal:condition="current">
             <h2>Binary packages</h2>
 

@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="yui3-u" tal:condition="view/teams_with_branches">
+<div class="yui-u" tal:condition="view/teams_with_branches">
   <div class="portlet related" id="portlet-team-branches">
     <h2>Branches owned by</h2>
     <ul>

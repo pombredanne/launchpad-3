@@ -82,8 +82,8 @@
                style="margin: 0 9em 1em 0"/>
         </div>
 
-        <div class="yui3-g">
-          <div class="yui3-u first">
+        <div class="yui-g">
+          <div class="yui-u first">
             <div class="homepage-whatslaunchpad"
                  tal:condition="not:view/user" tal:content="cache:anonymous">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
@@ -156,7 +156,7 @@
             </div>
           </div>
 
-          <div class="yui3-u">
+          <div class="yui-u">
             <form id="homepage-searchform"
               xml:lang="en" lang="en" dir="ltr"
               tal:attributes="action string:${rooturl}+search"
@@ -263,9 +263,9 @@
                 </li>
               </ul>
             </div>
-          </div><!-- yui3-u -->
+          </div><!-- yui-u -->
 
-        </div><!-- yui3-gc -->
+        </div><!-- yui-gc -->
       </div><!-- homepage -->
     </div><!--main-->
   </body>

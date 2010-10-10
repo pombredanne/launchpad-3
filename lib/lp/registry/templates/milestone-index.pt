@@ -36,8 +36,8 @@
         </div>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div id="Release-details" class="portlet">
             <h2>Milestone information</h2>
 
@@ -127,7 +127,7 @@
           </div>
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div id="milestone-activities" class="portlet"
             tal:content="cache:anonymous, view/expire_cache_minutes minute">
             <h2>Activities</h2>

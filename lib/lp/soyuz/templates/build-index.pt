@@ -18,21 +18,21 @@
 
     <div metal:fill-slot="main">
 
-      <div class="yui3-g">
+      <div class="yui-g">
 
-        <div id="status" class="yui3-u first">
+        <div id="status" class="yui-u first">
 	  <div class="portlet">
             <div metal:use-macro="template/macros/status" />
           </div>
         </div>
 
-        <div id="details" class="yui3-u">
+        <div id="details" class="yui-u">
 	  <div class="portlet">
             <div metal:use-macro="template/macros/details" />
           </div>
         </div>
 
-      </div> <!-- yui3-g  -->
+      </div> <!-- yui-g  -->
 
       <tal:binaries condition="context/binarypackages">
 

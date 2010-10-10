@@ -3,10 +3,10 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-  <div id="working-on" class="yui3-g"
+  <div id="working-on" class="yui-g"
        tal:define="bugtasks view/assigned_bugs_in_progress;
                    specs view/assigned_specs_in_progress">
-    <div class="yui3-u first">
+    <div class="yui-u first">
       <div class="portlet"
         tal:condition="bugtasks">
         <h2>
@@ -28,7 +28,7 @@
       </div>
     </div>
 
-    <div class="yui3-u">
+    <div class="yui-u">
       <div class="portlet"
         tal:condition="specs">
         <h2>

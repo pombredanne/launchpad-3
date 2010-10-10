@@ -26,10 +26,10 @@
       <p tal:content="structure context/description/fmt:text-to-html" />
     </div>
 
-    <div class="yui3-g">
+    <div class="yui-g">
       <div class="portlet">
         <h2>Archive information</h2>
-          <div class="yui3-u first">
+          <div class="yui-u first">
             <div class="two-column-list">
               <dl id="owner">
                 <dt>Owner:</dt>
@@ -59,7 +59,7 @@
 
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div class="two-column-list">
             <dl id="speed">
               <dt>Speed:</dt>

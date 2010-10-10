@@ -50,9 +50,9 @@
     </p>
   </div>
 
-  <div class="yui3-g">
+  <div class="yui-g">
 
-    <div class="yui3-u first" tal:define="current context/currentrelease">
+    <div class="yui-u first" tal:define="current context/currentrelease">
       <div class="portlet" tal:condition="current" id="current">
         <h2>Package information</h2>
         <div class="two-column-list">
@@ -89,9 +89,9 @@
         There is no current release for this source package in
         <span tal:replace="context/distribution/displayname">ubuntu</span>.
       </div>
-    </div><!--yui3-u-->
+    </div><!--yui-u-->
 
-    <div class="yui3-u">
+    <div class="yui-u">
       <div class="portlet" id="upstream">
         <tal:project define="project context/upstream_product">
           <div tal:condition="project">
@@ -113,12 +113,12 @@
           </tal:noproject>
         </tal:project>
       </div><!--portlet -->
-    </div><!--yui3-u -->
+    </div><!--yui-u -->
 
-  </div><!--yui3-g -->
+  </div><!--yui-g -->
 
 
-  <div class="yui3-u"
+  <div class="yui-u"
        tal:define="archive context/latest_overall_publication/archive|nothing">
 
     <table class="listing" id="packages_list">
@@ -198,7 +198,7 @@
 
   </div>
 
-  <div class="yui3-u">
+  <div class="yui-u">
   <div class="portlet"
        tal:define="ppa_versions view/related_ppa_versions"
        tal:condition="ppa_versions" id="related-ppa-versions">

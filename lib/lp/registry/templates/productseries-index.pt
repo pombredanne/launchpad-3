@@ -9,7 +9,7 @@
 
 <body>
   <metal:block fill-slot="head_epilogue">
-    <metal:yui3-dependencies
+    <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
     <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
@@ -33,8 +33,8 @@
         </div>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div id="series-details" class="portlet">
             <h2>Series information</h2>
 
@@ -108,7 +108,7 @@
           </div>
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div tal:replace="structure context/@@+code-summary" />
         </div>
       </div>
@@ -133,8 +133,8 @@
         </div>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
@@ -142,7 +142,7 @@
           <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div
             tal:content="structure context/@@+portlet-latestspecs"
             tal:condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />

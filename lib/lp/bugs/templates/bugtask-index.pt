@@ -154,10 +154,10 @@
                   });
               </script>
 
-              <button class="lazr-pos lazr-btn yui3-ieditor-submit_button"
+              <button class="lazr-pos lazr-btn yui-ieditor-submit_button"
                       id="edit-tags-ok" style="display: none"
                       type="button">Ok</button>
-              <button class="lazr-neg lazr-btn yui3-ieditor-cancel_button"
+              <button class="lazr-neg lazr-btn yui-ieditor-cancel_button"
                       id="edit-tags-cancel" style="display: none"
                       type="button">Cancel</button>
            </form>

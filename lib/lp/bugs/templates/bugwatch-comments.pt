@@ -11,16 +11,16 @@
         <h1 tal:replace="view/page_title">Imported comments</h1>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-details" />
         </div>
-        <div class="yui3-u">
+        <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-bugtasks" />
         </div>
       </div>
 
-      <div class="yui3-g">
+      <div class="yui-g">
         <tal:comments repeat="comment view/comments">
           <tal:coment tal:replace="structure comment/@@+box" />
         </tal:comments>

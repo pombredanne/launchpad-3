@@ -63,7 +63,7 @@
   </div>
 
   <div metal:fill-slot="main">
-    <div class="yui3-u">
+    <div class="yui-u">
       <div class="top-portlet">
         <p>
           A bug report in Launchpad can be linked to a bug report in any
@@ -83,7 +83,7 @@
         </p>
       </div>
     </div>
-    <div class="yui3-u" tal:condition="view/inactive_tracker_count">
+    <div class="yui-u" tal:condition="view/inactive_tracker_count">
       <div class="portlet">
         <h2>Inactive bug trackers</h2>
         <tal:table define="id string:inactive-trackers;

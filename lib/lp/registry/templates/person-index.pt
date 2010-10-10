@@ -105,19 +105,19 @@
         tal:content="structure link/fmt:link" />
     </ul>
 
-    <div class="yui3-g">
+    <div class="yui-g">
       <div tal:content="structure context/@@+portlet-contact-details"/>
     </div>
 
     <div tal:content="structure context/@@+portlet-currentfocus"/>
 
-    <div class="yui3-g">
+    <div class="yui-g">
       <!-- First portlet column. -->
-      <div class="first yui3-u">
+      <div class="first yui-u">
         <div tal:content="structure context/@@+portlet-ppas"/>
         <div tal:content="structure context/@@+portlet-memberships"/>
       </div>
-      <div class="yui3-u">
+      <div class="yui-u">
         <div tal:content="structure context/@@+portlet-contributions"/>
 
       </div>

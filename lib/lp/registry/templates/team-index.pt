@@ -66,24 +66,24 @@
     </li>
   </ul>
 
-  <div class="yui3-g">
-    <div class="first yui3-u">
+  <div class="yui-g">
+    <div class="first yui-u">
       <metal:details use-macro="context/@@+person-macros/team-details" />
     </div>
-    <div class="yui3-u">
+    <div class="yui-u">
       <div tal:content="structure context/@@+portlet-membership" />
     </div>
   </div>
 
-  <div class="yui3-g">
+  <div class="yui-g">
     <!-- First portlet column. -->
-    <div class="first yui3-u">
+    <div class="first yui-u">
       <div tal:content="structure context/@@+portlet-ppas" />
       <div tal:content="structure context/@@+portlet-mailinglist" />
     </div>
 
     <!-- Second portlet column. -->
-    <div class="yui3-u">
+    <div class="yui-u">
       <div tal:content="structure context/@@+portlet-related-projects" />
       <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>

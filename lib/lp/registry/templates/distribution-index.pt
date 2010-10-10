@@ -39,18 +39,18 @@
         </tal:search-packages>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
            <tal:distro-information content="structure context/@@+details" />
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <tal:series replace="structure context/@@+series-and-milestones" />
         </div>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-listfaqs"
             tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
@@ -60,7 +60,7 @@
           <div tal:replace="structure context/@@+portlet-top-contributors" />
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-latestquestions"
             tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 

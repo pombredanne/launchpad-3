@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="relationships view/depends"
   tal:condition="relationships/has_items"
-  class="first yui3-u" id="portlet-depends">
+  class="first yui-u" id="portlet-depends">
 
   <dl id="depends">
     <dt>Depends on:</dt>

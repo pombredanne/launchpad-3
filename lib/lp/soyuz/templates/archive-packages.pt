@@ -105,8 +105,8 @@ tr#package-counters p{
         </p>
       </div>
 
-      <div class="yui3-g">
-        <div class="first yui3-u"><div class="portlet">
+      <div class="yui-g">
+        <div class="first yui-u"><div class="portlet">
           <h2>Package totals</h2>
           <p>The following information is related to the total published
              packages in the repository (not on your system).</p>
@@ -116,8 +116,8 @@ tr#package-counters p{
               unavailable.
             </p>
           </div>
-        </div></div> <!-- portlet, yui3-u -->
-        <div class="yui3-u">
+        </div></div> <!-- portlet, yui-u -->
+        <div class="yui-u">
           <div tal:define="archive context"
                tal:condition="archive_active"
                id="build-status-summary"
@@ -134,7 +134,7 @@ tr#package-counters p{
           </div>
         </div>
 
-      </div> <!-- yui3-g -->
+      </div> <!-- yui-g -->
 
       <div class="portlet">
         <h2>Packages</h2>

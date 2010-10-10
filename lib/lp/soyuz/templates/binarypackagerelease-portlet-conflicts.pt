@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="relationships view/conflicts"
   tal:condition="relationships/has_items"
-  class="first yui3-u" id="portlet-conflicts">
+  class="first yui-u" id="portlet-conflicts">
 
   <dl id="conflicts">
     <dt>Conflicts:</dt>

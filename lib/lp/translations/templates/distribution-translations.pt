@@ -49,8 +49,8 @@
                       >trunk</tal:target>.
         </p>
       </div>
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div class="portlet">
             <h3>Permissions</h3>
             <p>
@@ -60,7 +60,7 @@
             </p>
           </div>
         </div>
-        <div class="yui3-u">
+        <div class="yui-u">
           <div class="portlet">
             <h3>Administration</h3>
             <p>To see all the translation files that are waiting to be

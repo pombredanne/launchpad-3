@@ -28,13 +28,13 @@
          <a tal:replace="structure context/owner/fmt:link">OWNER</a>.
        </p>
     </div>
-    <div class="yui3-ge">
+    <div class="yui-ge">
 
-      <div class="first yui3-u">
+      <div class="first yui-u">
         <div metal:use-macro="template/macros/status" />
-      </div><!-- yui3-u -->
+      </div><!-- yui-u -->
 
-      <div class="yui3-u">
+      <div class="yui-u">
         <div class="portlet">
           <h2>Builder information</h2>
           <dl>
@@ -72,7 +72,7 @@
             </dd>
           </dl>
         </div><!-- portlet -->
-      </div><!-- yui3-u -->
+      </div><!-- yui-u -->
       <tal:menu replace="structure view/@@+related-pages" />
     </div>
   </div>

@@ -25,14 +25,14 @@
 </metal:side>
 
 <div metal:fill-slot="main">
-  <div class="yui3-g first">
-    <div class="yui3-u first">
+  <div class="yui-g first">
+    <div class="yui-u first">
       <div class="portlet">
         <h2>Description</h2>
         <tal:description replace="context/description" />
       </div>
     </div>
-    <div class="yui3-u">
+    <div class="yui-u">
       <div class="portlet">
         <h2>Recipe information</h2>
         <div class="two-column-list">
@@ -79,7 +79,7 @@
       </div>
     </div>
   </div>
-  <div class="yui3-g">
+  <div class="yui-g">
     <div class="portlet">
       <h2>Build records</h2>
         <table class="listing" style='margin-bottom: 1em;'>

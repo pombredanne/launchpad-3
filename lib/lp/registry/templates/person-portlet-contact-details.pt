@@ -9,7 +9,7 @@
 
   <h2>User information</h2>
 
-  <div class="first yui3-u">
+  <div class="first yui-u">
     <dl id="email-addresses">
       <dt>Email:
         <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
@@ -108,7 +108,7 @@
     </dl>
   </div>
 
-  <div class="yui3-u two-column-list">
+  <div class="yui-u two-column-list">
     <dl tal:condition="view/should_show_wikinames_section">
       <dt>Wiki:
         <a tal:replace="structure overview_menu/editwikinames/fmt:icon" />

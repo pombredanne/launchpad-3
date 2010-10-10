@@ -50,8 +50,8 @@
         </ul>
       </div>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div id="project-info" class="portlet">
             <h2>Project information</h2>
 
@@ -170,7 +170,7 @@
           </div>
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div class="portlet">
             <h2>
               <span class="see-all"><a
@@ -212,8 +212,8 @@
           tal:content="structure context/@@+portlet-license-missing" />
       </tal:warning-for-owner>
 
-      <div class="yui3-g">
-        <div class="yui3-u first">
+      <div class="yui-g">
+        <div class="yui-u first">
           <div tal:content="structure context/@@+portlet-listfaqs"
             tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
@@ -225,7 +225,7 @@
           <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
-        <div class="yui3-u">
+        <div class="yui-u">
           <div tal:content="structure context/@@+portlet-latestquestions"
             tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 

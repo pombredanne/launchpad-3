@@ -51,9 +51,9 @@
       </form>
     </div> <!-- ppa_search -->
 
-    <div class="yui3-g" tal:condition="no_search">
+    <div class="yui-g" tal:condition="no_search">
 
-      <div class="yui3-u first">
+      <div class="yui-u first">
 
         <div id="ppa_statistics" class="portlet">
           <h2>Statistics</h2>
@@ -116,13 +116,13 @@
           </table>
         </div> <!-- ppa_most_active -->
 
-      </div> <!-- yui3-u -->
+      </div> <!-- yui-u -->
 
-      <div id="supports_virtualized_architectures" class="yui3-u">
+      <div id="supports_virtualized_architectures" class="yui-u">
         <div tal:replace="structure context/@@+portlet-ppa-architectures" />
       </div> <!-- supports-virtualized-archs -->
 
-    </div> <!-- yui3-g -->
+    </div> <!-- yui-g -->
 
     <div id="ppa_list" tal:condition="batch">
       <tal:navigation_top

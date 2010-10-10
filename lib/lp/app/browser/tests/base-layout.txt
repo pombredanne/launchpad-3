@@ -32,8 +32,8 @@ define it in the pagetitles module (this latter is deprecated).
 The main_side layout uses all the defined features of the base-layout
 template. The example template uses the epilogue, main, and side
 slots. The global search and the applications tabs are present. The
-main and side content are positioned using the "yui3-t4", "yui3-main",
-"yui3-b", and "yui3-b side" classes.
+main and side content are positioned using the "yui-t4", "yui-main",
+"yui-b", and "yui-b side" classes.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
@@ -51,7 +51,7 @@ main and side content are positioned using the "yui3-t4", "yui3-main",
 
 The main_only layout excludes the side slot, the main and epilogue slots are
 rendered. The global search and the applications tabs are present. The
-YUI Grid "yui3-t4" and "yui3-b side" divs are not rendered, allowing the main
+YUI Grid "yui-t4" and "yui-b side" divs are not rendered, allowing the main
 content to take up all the horizontal space.
 
     >>> class MainOnlyView(LaunchpadView):
@@ -218,7 +218,7 @@ private, the 'private' class is added to the body's class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless private yui3-skin-sam
+    tab-overview locationless private yui-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 
@@ -227,7 +227,7 @@ When the context is public, the 'public' class is in the class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless public yui3-skin-sam
+    tab-overview locationless public yui-skin-sam
 
 
 Notifications

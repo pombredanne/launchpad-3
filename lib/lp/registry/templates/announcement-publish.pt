@@ -6,7 +6,7 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <metal:block fill-slot="head_epilogue">
-    <metal:yui3-dependencies
+    <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
   </metal:block>
   <body>
