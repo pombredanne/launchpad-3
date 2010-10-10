@@ -17,6 +17,7 @@ from zope.app.server.main import main
 
 from canonical.config import config
 from lp.services.mailman import runmailman
+from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.testing import googletestservice
 from canonical.lazr.pidfile import (
     make_pidfile,
@@ -26,9 +27,6 @@ from canonical.lazr.pidfile import (
 
 def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
-
-
-TWISTD_SCRIPT = make_abspath('bin/twistd')
 
 
 class Service(object):
@@ -91,7 +89,7 @@ class TacFile(Service):
         tacfile = make_abspath(self.tac_filename)
 
         args = [
-            TWISTD_SCRIPT,
+            tachandler.twistd_script,
             "--no_save",
             "--nodaemon",
             "--python", tacfile,
@@ -273,14 +271,14 @@ def start_launchpad(argv=list(sys.argv)):
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
     argv = process_config_arguments(argv)
     services = get_services_to_run(services)
+    # Create the ZCML override file based on the instance.
+    config.generate_overrides()
+
     for service in services:
         service.launch()
 
     # Store our process id somewhere
     make_pidfile('launchpad')
-
-    # Create the ZCML override file based on the instance.
-    config.generate_overrides()
 
     if config.launchpad.launch:
         main(argv)
@@ -303,7 +301,7 @@ def start_librarian():
     prepare_for_librarian()
     pidfile = pidfile_path('librarian')
     cmd = [
-        TWISTD_SCRIPT,
+        tachandler.twistd_script,
         "--python", 'daemons/librarian.tac',
         "--pidfile", pidfile,
         "--prefix", 'Librarian',
