@@ -50,7 +50,7 @@ Change the description of a bug:
 
 Add a CVE reference to a bug:
 
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
     >>> from lp.bugs.model.cve import BugCve
     >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
     ...     status=CveStatus.CANDIDATE)
@@ -152,7 +152,8 @@ Change a bug task's importance:
 
 Create a new bug task on a product:
 
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet, IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
     ...     bug, product=evolution, owner=foo_bar)

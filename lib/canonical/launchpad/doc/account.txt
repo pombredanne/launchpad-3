@@ -14,7 +14,8 @@ implements the IAccountSet interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces import IAccount, IAccountSet
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)

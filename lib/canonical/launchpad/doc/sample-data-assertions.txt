@@ -41,7 +41,8 @@ complete.  The specification should be incomplete too. Finally, Bug #6
 should be a duplicate, and should be incomplete.
 
   >>> from zope.component import getUtility
-  >>> from lp.bugs.interfaces.bug import IBugSet, IDistributionSet
+  >>> from lp.bugs.interfaces.bug import IBugSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> bugset = getUtility(IBugSet)
   >>> distroset = getUtility(IDistributionSet)
   >>> from canonical.launchpad.ftests import login

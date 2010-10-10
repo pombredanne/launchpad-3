@@ -308,7 +308,8 @@ IProduct.developmentfocus. The following attributes are synched:
 We'll open a bug on just the distribution, and also a bug on a specific
 package.
 
-    >>> from lp.bugs.interfaces.bug import CreateBugParams, ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> launchbag = getUtility(ILaunchBag)
     >>> params = CreateBugParams(
     ...     owner=launchbag.user,
