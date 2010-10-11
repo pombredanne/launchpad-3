@@ -54,7 +54,8 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from lp.bugs.interfaces.bug import IBugSet, IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = getUtility(IMessageSet).fromText(

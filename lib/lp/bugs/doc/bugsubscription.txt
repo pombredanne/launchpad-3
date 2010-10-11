@@ -179,7 +179,7 @@ After adding a product bugtask we can see that the upstream bug
 supervisor is also an indirect subscriber.
 
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> from lp.registry.interfaces.person import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> getUtility(IBugTaskSet).createTask(

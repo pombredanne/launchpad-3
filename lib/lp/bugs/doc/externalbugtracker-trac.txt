@@ -274,7 +274,8 @@ export, it will raise an UnparseableBugData error.
 
 First, we create some bug watches to test with:
 
-    >>> from lp.bugs.interfaces.bug import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 

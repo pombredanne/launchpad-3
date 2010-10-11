@@ -16,7 +16,8 @@ Let's add add change notification and see how it works:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from lp.bugs.interfaces.bug import IBugSet, IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> ten_minutes_ago = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
     >>> sample_person = getUtility(ILaunchBag).user

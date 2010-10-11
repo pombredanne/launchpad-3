@@ -14,6 +14,7 @@ The icon is dependent on the importance of the IBugTask object.
 Let's use a few examples to demonstrate:
 
   >>> from zope.component import getUtility
+  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
   >>> from lp.bugs.interfaces.bugtask import BugTaskImportance, IBugTaskSet
   >>> from canonical.launchpad.ftests import test_tales
   >>> from canonical.launchpad.ftests import login
@@ -96,7 +97,8 @@ you might prefer that to read, simply:
 We define a helper that uses the BugTaskListingView class (obtained via
 +listing-view) to render the status:
 
-  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus, ILaunchBag
+  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
   >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 

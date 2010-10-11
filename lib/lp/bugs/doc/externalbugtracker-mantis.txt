@@ -49,7 +49,8 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from lp.bugs.interfaces.bug import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestMantis)
 

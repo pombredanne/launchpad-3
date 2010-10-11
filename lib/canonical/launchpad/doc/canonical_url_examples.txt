@@ -173,7 +173,8 @@ An IProductRelease.
 
 == Bugs and bugtasks ==
 
-    >>> from lp.bugs.interfaces.bug import IBugSet, IBugTaskSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 The IBugSet.
 
