@@ -7,12 +7,13 @@ __metaclass__ = type
 __all__ = ['start_launchpad']
 
 
-import atexit
+from contextlib import nested
 import os
 import signal
 import subprocess
 import sys
 
+import fixtures
 from zope.app.server.main import main
 
 from canonical.config import config
@@ -29,7 +30,7 @@ def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
 
 
-class Service(object):
+class Service(fixtures.Fixture):
 
     @property
     def should_launch(self):
@@ -37,8 +38,18 @@ class Service(object):
         return False
 
     def launch(self):
-        """Launch the service, but do not block."""
+        """Run the service in a thread or external process.
+        
+        May block long enough to kick it off, but must return control to
+        the caller without waiting for it to shutdown.
+        """
         raise NotImplementedError
+
+    def setUp(self):
+        super(Service, self).setUp()
+        if not self.should_launch:
+            return
+        self.launch()
 
 
 class TacFile(Service):
@@ -54,8 +65,7 @@ class TacFile(Service):
         :param pre_launch: A callable that is called before the launch
             process.
         """
-        # No point calling super's __init__.
-        # pylint: disable-msg=W0231
+        super(TacFile, self).__init__()
         self.name = name
         self.tac_filename = tac_filename
         self.section_name = section_name
@@ -78,10 +88,6 @@ class TacFile(Service):
         return config[self.section_name].logfile
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.
-        if not self.should_launch:
-            return
-
         self.pre_launch()
 
         pidfile = pidfile_path(self.name)
@@ -107,15 +113,8 @@ class TacFile(Service):
         # ability to cycle the log files by sending a signal to the twisted
         # process.
         process = subprocess.Popen(args, stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        # I've left this off - we still check at termination and we can
-        # avoid the startup delay. -- StuartBishop 20050525
-        #time.sleep(1)
-        #if process.poll() != None:
-        #    raise RuntimeError(
-        #        "%s did not start: %d"
-        #        % (self.name, process.returncode))
-        stop_at_exit(process)
 
 
 class MailmanService(Service):
@@ -125,11 +124,8 @@ class MailmanService(Service):
         return config.mailman.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.  Also, don't attempt to
-        # shut it down at exit.
-        if self.should_launch:
-            runmailman.start_mailman()
-            atexit.register(runmailman.stop_mailman)
+        runmailman.start_mailman()
+        self.addCleanup(runmailman.stop_mailman)
 
 
 class CodebrowseService(Service):
@@ -142,8 +138,8 @@ class CodebrowseService(Service):
         process = subprocess.Popen(
             ['make', 'run_codebrowse'],
             stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        stop_at_exit(process)
 
 
 class GoogleWebService(Service):
@@ -153,9 +149,7 @@ class GoogleWebService(Service):
         return config.google_test_service.launch
 
     def launch(self):
-        if self.should_launch:
-            process = googletestservice.start_as_process()
-            stop_at_exit(process)
+        self.addCleanup(stop_process, googletestservice.start_as_process())
 
 
 class MemcachedService(Service):
@@ -178,23 +172,18 @@ class MemcachedService(Service):
         else:
             cmd.append('-v')
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        stop_at_exit(process)
 
 
-def stop_at_exit(process):
-    """Create and register an atexit hook for killing a process.
-
-    The hook will BLOCK until the process dies.
+def stop_process(process):
+    """kill process and BLOCK until process dies.
 
     :param process: An instance of subprocess.Popen.
     """
-
-    def stop_process():
-        if process.poll() is None:
-            os.kill(process.pid, signal.SIGTERM)
-            process.wait()
-    atexit.register(stop_process)
+    if process.poll() is None:
+        os.kill(process.pid, signal.SIGTERM)
+        process.wait()
 
 
 def prepare_for_librarian():
@@ -274,23 +263,21 @@ def start_launchpad(argv=list(sys.argv)):
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
 
-    for service in services:
-        service.launch()
+    with nested(*services):
+        # Store our process id somewhere
+        make_pidfile('launchpad')
 
-    # Store our process id somewhere
-    make_pidfile('launchpad')
-
-    if config.launchpad.launch:
-        main(argv)
-    else:
-        # We just need the foreground process to sit around forever waiting
-        # for the signal to shut everything down.  Normally, Zope itself would
-        # be this master process, but we're not starting that up, so we need
-        # to do something else.
-        try:
-            signal.pause()
-        except KeyboardInterrupt:
-            pass
+        if config.launchpad.launch:
+            main(argv)
+        else:
+            # We just need the foreground process to sit around forever waiting
+            # for the signal to shut everything down.  Normally, Zope itself would
+            # be this master process, but we're not starting that up, so we need
+            # to do something else.
+            try:
+                signal.pause()
+            except KeyboardInterrupt:
+                pass
 
 
 def start_librarian():
