@@ -17,6 +17,7 @@ __all__ = [
     'PollBreadcrumb',
     ]
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
@@ -255,6 +256,18 @@ class PollVoteView(BasePollView):
     If the user already voted, the current vote is displayed and the user can
     change it. Otherwise he can register his vote.
     """
+
+    default_template = ViewPageTemplateFile(
+        '../templates/poll-vote-simple.pt')
+    condorcet_template = ViewPageTemplateFile(
+        '../templates/poll-vote-condorcet.pt')
+
+    @property
+    def template(self):
+        if self.isCondorcet():
+            return self.condorcet_template
+        else:
+            return self.default_template
 
     def initialize(self):
         """Process the form, if it was submitted."""

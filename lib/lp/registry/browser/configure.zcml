@@ -625,17 +625,11 @@
                 name="+portlet-options"
                 template="../templates/poll-portlet-options.pt"/>
         </browser:pages>
-        <browser:pages
+        <browser:page
+            name="+vote"
             for="lp.registry.interfaces.poll.IPoll"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.poll.PollVoteView">
-            <browser:page
-                name="+vote-simple"
-                template="../templates/poll-vote-simple.pt"/>
-            <browser:page
-                name="+vote-condorcet"
-                template="../templates/poll-vote-condorcet.pt"/>
-        </browser:pages>
+            class="lp.registry.browser.poll.PollVoteView"/>
         <browser:page
             name="+edit"
             for="lp.registry.interfaces.poll.IPoll"
