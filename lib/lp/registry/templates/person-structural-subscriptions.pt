@@ -13,16 +13,28 @@
     <div metal:fill-slot="main"
          tal:define="structural_subscriptions view/user/structural_subscriptions">
 
-      <ul tal:condition="structural_subscriptions">
-        <li tal:repeat="subscription structural_subscriptions">
-          <span tal:replace="structure subscription/target/fmt:link" />
-          <a tal:attributes="href subscription/target/fmt:url/+subscribe;
-                             title string:Modify subscription to ${subscription/target/title};">
-            <img src="/@@/edit" />
-          </a>
-        </li>
+      <ul class="horizontal">
+        <li
+            tal:define="link context/menu:overview/subscriptions"
+            tal:condition="link/enabled"
+            tal:content="structure link/fmt:link" />
       </ul>
 
+      <div class="yui-g">
+        <div class="portlet">
+          <ul tal:condition="structural_subscriptions">
+            <li tal:repeat="subscription structural_subscriptions">
+              <span tal:replace="structure subscription/target/fmt:link" />
+              <a tal:attributes="href subscription/target/fmt:url/+subscribe;
+                                 title string:Modify subscription to ${subscription/target/title};">
+                <img src="/@@/edit" />
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
     </div>
+
   </body>
 </html>
