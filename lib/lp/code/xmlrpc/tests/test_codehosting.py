@@ -642,17 +642,14 @@ class CodehostingTest(TestCaseWithFactory):
             (branch.control_format, branch.branch_format,
              branch.repository_format))
 
-    def assertCannotTranslate(self, requester, path):
-        """Assert that we cannot translate 'path'."""
-        fault = self.codehosting_api.translatePath(requester.id, path)
-        self.assertEqual(faults.PathTranslationError(path), fault)
-
-    def assertNotFound(self, requester, path):
+    def assertNotFound(self, requester, path, fault_text=None):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
+        if fault_text is None:
+            fault_text = path
         fault = self.codehosting_api.translatePath(requester, path)
-        self.assertEqual(faults.PathTranslationError(path), fault)
+        self.assertEqual(faults.PathTranslationError(fault_text), fault)
 
     def assertPermissionDenied(self, requester, path):
         """Assert that looking at the given path gives permission denied."""
@@ -681,7 +678,7 @@ class CodehostingTest(TestCaseWithFactory):
         # couldn't translate.
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
-        self.assertCannotTranslate(requester, path)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
