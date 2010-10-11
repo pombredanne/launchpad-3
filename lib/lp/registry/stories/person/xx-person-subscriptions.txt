@@ -175,13 +175,8 @@ followed by a link to edit the subscription.
     pmount in ubuntu </ubuntu/+source/pmount>
     --> /ubuntu/+source/pmount/+subscribe
 
-The page links back to the direct subscriptions page.
-
-    >>> admin_browser.getLink("Direct subscriptions").url
-    'http://launchpad.dev/~name16/+subscriptions'
-
-When looking at another's structural subscriptions there are no links
-to modify the subscriptions.
+The links to modify subscriptions are only shown when the user has
+permission to do so.
 
     >>> sample_browser.open(
     ...     "http://launchpad.dev/~name16/+structural-subscriptions")
@@ -193,6 +188,12 @@ to modify the subscriptions.
     ...         extract_text(structure_link), structure_link.get("href"))
     mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
     pmount in ubuntu </ubuntu/+source/pmount>
+
+The structural subscriptions page links back to the direct
+subscriptions page.
+
+    >>> admin_browser.getLink("Direct subscriptions").url
+    'http://launchpad.dev/~name16/+subscriptions'
 
 A simple explanatory message is shown when the user doesn't have any
 structural subscriptions.
