@@ -16,7 +16,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (

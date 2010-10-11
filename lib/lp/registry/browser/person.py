@@ -2368,7 +2368,13 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
 
         for task in bug_tasks:
             if task.bug not in sub_bugs:
-                sub_bug_tasks.append(task)
+                # We order the bugtasks by date_last_updated but we
+                # always display the default task for the bug. This is
+                # to avoid ordering issues in tests and also prevents
+                # user confusion (because nothing is more confusing than
+                # your subscription targets changing seemingly at
+                # random).
+                sub_bug_tasks.append(task.bug.default_bugtask)
                 sub_bugs.append(task.bug)
         return BatchNavigator(sub_bug_tasks, self.request)
 

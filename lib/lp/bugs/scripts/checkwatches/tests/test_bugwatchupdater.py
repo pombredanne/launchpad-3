@@ -10,7 +10,7 @@ import unittest
 
 import transaction
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,

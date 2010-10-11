@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces.librarian import (
     )
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugattachment import (
     BugAttachmentFileNavigation,
     )
