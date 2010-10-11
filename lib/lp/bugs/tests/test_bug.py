@@ -6,6 +6,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
@@ -125,6 +126,18 @@ class TestBug(TestCaseWithFactory):
             dupe_bug.subscribe(team, member)
             dupe_bug.markAsDuplicate(bug)
         self.assertTrue(team in bug.getSubscribersFromDuplicates())
+
+    def test_subscribe_with_level(self):
+        # It's possible to subscribe to a bug at a different
+        # BugNotificationLevel by passing a `level` parameter to
+        # subscribe().
+        for level in BugNotificationLevel.items:
+            subscriber = self.factory.makePerson()
+            bug = self.factory.makeBug()
+            with person_logged_in(subscriber):
+                subscription = bug.subscribe(
+                    subscriber, subscriber, level=level)
+            self.assertEqual(level, subscription.bug_notification_level)
 
     def test_get_direct_subscribers_with_level(self):
         # It's possible to pass a level parameter to

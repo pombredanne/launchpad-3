@@ -81,6 +81,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
@@ -428,12 +429,14 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
-    def subscribe(person, subscribed_by, suppress_notify=True):
+    def subscribe(person, subscribed_by, suppress_notify=True,
+                  level=BugNotificationLevel.COMMENTS):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
         :param suppress_notify: a flag to suppress notify call.
+        :param level: The BugNotificationLevel for the new subscription.
         :return: an `IBugSubscription`.
         """
 

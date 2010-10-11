@@ -555,6 +555,18 @@ COMMENTS, so the user will receive all notifications about the bug.
     >>> print subscription.bug_notification_level.name
     COMMENTS
 
+It's possible to subscribe to a bug at a different BugNotificationLevel
+by passing a `level` parameter to subscribe().
+
+    >>> metadata_subscriber = factory.makePerson()
+    >>> metadata_subscribed_bug = factory.makeBug()
+    >>> metadata_subscription = metadata_subscribed_bug.subscribe(
+    ...     metadata_subscriber, metadata_subscriber,
+    ...     level=BugNotificationLevel.METADATA)
+
+    >>> print metadata_subscription.bug_notification_level.name
+    METADATA
+
 To unsubscribe from all dupes for a bug, call
 IBug.unsubscribeFromDupes. This is useful because direct subscribers
 from dupes are automatically subscribed to dupe targets, so we provide

@@ -717,7 +717,8 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by, suppress_notify=True):
+    def subscribe(self, person, subscribed_by, suppress_notify=True,
+                  level=BugNotificationLevel.COMMENTS):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
@@ -725,7 +726,8 @@ BugMessage""" % sqlvalues(self.id))
                 return sub
 
         sub = BugSubscription(
-            bug=self, person=person, subscribed_by=subscribed_by)
+            bug=self, person=person, subscribed_by=subscribed_by,
+            bug_notification_level=level)
 
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
