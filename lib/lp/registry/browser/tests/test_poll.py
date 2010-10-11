@@ -20,7 +20,6 @@ class TestPollVoteView(TestCaseWithFactory):
         super(TestPollVoteView, self).setUp()
         self.team = self.factory.makeTeam()
 
-
     def test_simple_poll_template(self):
         poll = self.factory.makePoll(
             self.team, 'name', 'title', 'proposition',
