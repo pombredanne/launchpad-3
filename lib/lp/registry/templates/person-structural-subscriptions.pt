@@ -21,9 +21,9 @@
       </ul>
 
       <div class="yui-g">
-        <div class="portlet">
-          <ul id="structural-subscriptions"
-              tal:condition="structural_subscriptions">
+        <div class="portlet" id="structural-subscriptions">
+
+          <ul tal:condition="structural_subscriptions">
             <li tal:repeat="subscription structural_subscriptions">
               <span tal:replace="structure subscription/target/fmt:link" />
               <a tal:condition="context/required:launchpad.Edit"
@@ -33,6 +33,12 @@
               </a>
             </li>
           </ul>
+
+          <p tal:condition="not: structural_subscriptions">
+            <tal:person content="context/fmt:displayname" /> does not
+            have any structural subscriptions.
+          </p>
+
         </div>
       </div>
 

@@ -193,3 +193,12 @@ to modify the subscriptions.
     ...         extract_text(structure_link), structure_link.get("href"))
     mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
     pmount in ubuntu </ubuntu/+source/pmount>
+
+A simple explanatory message is shown when the user doesn't have any
+structural subscriptions.
+
+    >>> sample_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, "structural-subscriptions"))
+    Sample Person does not have any structural subscriptions.
