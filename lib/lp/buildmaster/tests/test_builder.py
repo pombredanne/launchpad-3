@@ -463,6 +463,17 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
+    def test_findBuildCandidate_with_disabled_archive(self):
+        # Disabled archives should not be considered for dispatching
+        # builds.
+        disabled_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+            disabled_job)
+        build.archive.disable()
+        next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
+        self.assertNotEqual(disabled_job, next_job)
+
+
 
 class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
 
