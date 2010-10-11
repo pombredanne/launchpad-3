@@ -7,13 +7,18 @@ from __future__ import with_statement
 
 __metaclass__ = type
 
+import gzip
+import os
+import tempfile
 import transaction
 
 from twisted.internet import defer
 from twisted.trial import unittest as trialtest
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
@@ -416,4 +421,38 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
         d = self.builder.updateBuild(self.candidate)
         d.addCallback(got_update)
+
+    def test_log_file_collection(self):
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        self.build.status = BuildStatus.FULLYBUILT
+        old_tmps = sorted(os.listdir('/tmp'))
+
+        # Grabbing logs should not leave new files in /tmp (bug #172798)
+        logfile_lfa_id = self.build.getLogFromSlave(self.build)
+        logfile_lfa = getUtility(ILibraryFileAliasSet)[logfile_lfa_id]
+        new_tmps = sorted(os.listdir('/tmp'))
+        self.assertEqual(old_tmps, new_tmps)
+
+        # The new librarian file is stored compressed with a .gz
+        # extension and text/plain file type for easy viewing in
+        # browsers, as it decompresses and displays the file inline.
+        self.assertTrue(logfile_lfa.filename).endswith('_FULLYBUILT.txt.gz')
+        self.assertEqual('text/plain', logfile_lfa.mimetype)
+        self.layer.txn.commit()
+
+        # LibrarianFileAlias does not implement tell() or seek(), which
+        # are required by gzip.open(), so we need to read the file out
+        # of the librarian first.
+        fd, fname = tempfile.mkstemp()
+        self.addCleanup(os.remove, fname)
+        tmp = os.fdopen(fd, 'wb')
+        tmp.write(logfile_lfa.read())
+        tmp.close()
+        uncompressed_file = gzip.open(fname).read()
+
+        # XXX: When the mock slave is changed to return a Deferred,
+        # update this test too.
+        orig_file = removeSecurityProxy(self.builder.slave).getFile(
+            'buildlog').read()
+        self.assertEqual(orig_file, uncompressed_file)
 
