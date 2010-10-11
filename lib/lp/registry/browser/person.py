@@ -2454,6 +2454,13 @@ class PersonSubscriptionsView(LaunchpadView):
 class PersonStructuralSubscriptionsView(LaunchpadView):
     """All the structural subscriptions for a person."""
 
+    page_title = 'Structural subscriptions'
+
+    def canUnsubscribeFromBugTasks(self):
+        """Can the current user modify subscriptions for the context?"""
+        return (self.user is not None and
+                self.user.inTeam(self.context))
+
     @property
     def label(self):
         """The header for the structural subscriptions page."""

@@ -157,7 +157,7 @@ structural subscriptions.
     >>> admin_browser.url
     'http://launchpad.dev/~name16/+structural-subscriptions'
     >>> admin_browser.title
-    'Structural subscriptions for Foo Bar...
+    'Structural subscriptions : Foo Bar'
 
 The structures to which the user is subscribed are displayed in a
 list. The title of the structure links to the structure itself, and is
