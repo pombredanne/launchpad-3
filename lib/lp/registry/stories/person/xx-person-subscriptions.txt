@@ -152,20 +152,19 @@ Structural subscriptions
 Leading from the subscriptions view is an overview page of all
 structural subscriptions.
 
-    >>> sample_browser.open(
-    ...     "http://launchpad.dev/~name16/+subscriptions")
-    >>> sample_browser.getLink("Structural subscriptions").click()
-    >>> sample_browser.url
+    >>> admin_browser.open("http://launchpad.dev/people/+me/+subscriptions")
+    >>> admin_browser.getLink("Structural subscriptions").click()
+    >>> admin_browser.url
     'http://launchpad.dev/~name16/+structural-subscriptions'
-    >>> sample_browser.title
-    'Structural subscriptions for Foo Bar : Foo Bar'
+    >>> admin_browser.title
+    'Structural subscriptions for Foo Bar...
 
 The structures to which the user is subscribed are displayed in a
-simple list. The title of the structure links to the structure itself,
-and is followed by a link to edit the subscription.
+list. The title of the structure links to the structure itself, and is
+followed by a link to edit the subscription.
 
     >>> subscriptions = find_tag_by_id(
-    ...     sample_browser.contents, 'structural-subscriptions')
+    ...     admin_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
     ...     structure_link, modify_link = subscription.findAll("a")
     ...     print "%s <%s>" % (
@@ -176,7 +175,21 @@ and is followed by a link to edit the subscription.
     pmount in ubuntu </ubuntu/+source/pmount>
     --> /ubuntu/+source/pmount/+subscribe
 
-The page also links back to the direct subscriptions page.
+The page links back to the direct subscriptions page.
 
-    >>> sample_browser.getLink("Direct subscriptions").url
+    >>> admin_browser.getLink("Direct subscriptions").url
     'http://launchpad.dev/~name16/+subscriptions'
+
+When looking at another's structural subscriptions there are no links
+to modify the subscriptions.
+
+    >>> sample_browser.open(
+    ...     "http://launchpad.dev/~name16/+structural-subscriptions")
+    >>> subscriptions = find_tag_by_id(
+    ...     sample_browser.contents, 'structural-subscriptions')
+    >>> for subscription in subscriptions.findAll("li"):
+    ...     [structure_link] = subscription.findAll("a")
+    ...     print "%s <%s>" % (
+    ...         extract_text(structure_link), structure_link.get("href"))
+    mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
+    pmount in ubuntu </ubuntu/+source/pmount>
