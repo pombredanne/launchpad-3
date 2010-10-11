@@ -635,7 +635,6 @@ class Builder(SQLBase):
 
     def isAvailable(self):
         """See `IBuilder`."""
-        # XXX: Completely lacks unit tests.
         if not self.builderok:
             return defer.succeed(False)
         d = self.slaveStatusSentence()

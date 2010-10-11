@@ -47,6 +47,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
+    BrokenSlave,
     BuildingSlave,
     CorruptBehavior,
     LostBuildingBrokenSlave,
@@ -352,6 +353,25 @@ class TestBuilderSlaveStatus(TestBuilderWithTrial):
     def test_slaveStatus_aborted_slave(self):
         self.assertStatus(
             AbortedSlave(), builder_status='BuilderStatus.ABORTED')
+
+    def test_isAvailable_with_not_builderok(self):
+        # isAvailable() is a wrapper around slaveStatusSentence()
+        builder = self.factory.makeBuilder()
+        builder.builderok = False
+        d = builder.isAvailable()
+        return d.addCallback(self.assertFalse)
+
+    def test_isAvailable_with_slave_fault(self):
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(BrokenSlave())
+        d = builder.isAvailable()
+        return d.addCallback(self.assertFalse)
+
+    def test_isAvailable_with_slave_idle(self):
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(OkSlave())
+        d = builder.isAvailable()
+        return d.addCallback(self.assertTrue)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):

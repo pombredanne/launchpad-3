@@ -247,6 +247,9 @@ class LostBuildingBrokenSlave:
 class BrokenSlave:
     """A mock slave that reports that it is broken."""
 
+    def __init__(self):
+        self.call_log = []
+
     def status(self):
         self.call_log.append('status')
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
