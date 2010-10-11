@@ -11,7 +11,7 @@
   <body>
 
     <div metal:fill-slot="main"
-         tal:define="structural_subscriptions view/user/structural_subscriptions">
+         tal:define="structural_subscriptions context/structural_subscriptions">
 
       <ul class="horizontal">
         <li
@@ -22,7 +22,8 @@
 
       <div class="yui-g">
         <div class="portlet">
-          <ul tal:condition="structural_subscriptions">
+          <ul id="structural-subscriptions"
+              tal:condition="structural_subscriptions">
             <li tal:repeat="subscription structural_subscriptions">
               <span tal:replace="structure subscription/target/fmt:link" />
               <a tal:attributes="href subscription/target/fmt:url/+subscribe;
