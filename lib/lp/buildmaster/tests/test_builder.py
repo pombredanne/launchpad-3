@@ -331,6 +331,38 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
             builder.manual = False
 
 
+class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
+    # Test usage of findBuildCandidate not specific to any archive type.
+
+    def test_findBuildCandidate_supersedes_builds(self):
+        # IBuilder._findBuildCandidate identifies if there are builds
+        # for superseded source package releases in the queue and marks
+        # the corresponding build record as SUPERSEDED.
+        archive = self.factory.makeArchive()
+        self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=archive).createMissingBuilds()
+        old_candidate = removeSecurityProxy(
+            self.frog_builder)._findBuildCandidate()
+
+        # The candidate starts off as NEEDSBUILD:
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(
+            old_candidate)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+
+        # Now supersede the source package:
+        publication = build.current_source_publication
+        publication.status = PackagePublishingStatus.SUPERSEDED
+
+        # The candidate returned is now a different one:
+        new_candidate = removeSecurityProxy(
+            self.frog_builder)._findBuildCandidate()
+        self.assertNotEqual(new_candidate, old_candidate)
+
+        # And the old_candidate is superseded:
+        self.assertEqual(BuildStatus.SUPERSEDED, build.status)
+
+
 class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -472,7 +504,6 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
         build.archive.disable()
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         self.assertNotEqual(disabled_job, next_job)
-
 
 
 class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
