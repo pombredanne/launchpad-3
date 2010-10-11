@@ -220,11 +220,8 @@ class PollView(BasePollView):
         request = self.request
         if (self.userCanVote() and self.context.isOpen() and
             self.context.getActiveOptions()):
-            context_url = canonical_url(self.context)
-            if self.isSimple():
-                request.response.redirect("%s/+vote-simple" % context_url)
-            elif self.isCondorcet():
-                request.response.redirect("%s/+vote-condorcet" % context_url)
+            vote_url = canonical_url(self.context, view_name='+vote')
+            request.response.redirect(vote_url)
 
     def getVotesByOption(self, option):
         """Return the number of votes the given option received."""
