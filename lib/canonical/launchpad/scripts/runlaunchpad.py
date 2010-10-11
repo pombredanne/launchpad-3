@@ -34,7 +34,7 @@ class Service(fixtures.Fixture):
 
     @property
     def should_launch(self):
-        """Return true if this service should be launched."""
+        """Return true if this service should be launched by default."""
         return False
 
     def launch(self):
@@ -47,8 +47,6 @@ class Service(fixtures.Fixture):
 
     def setUp(self):
         super(Service, self).setUp()
-        if not self.should_launch:
-            return
         self.launch()
 
 
