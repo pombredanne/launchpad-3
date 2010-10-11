@@ -269,7 +269,7 @@ webmaster@ubuntu.com doesn't belong to any Person in Launchpad:
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
     >>> from lp.services.mail.sendmail import sendmail
-    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> from lp.services.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
 

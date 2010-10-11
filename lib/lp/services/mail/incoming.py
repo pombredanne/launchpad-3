@@ -325,7 +325,7 @@ def handleMail(trans=transaction):
                     mail = signed_message_from_string(raw_mail)
                 except email.Errors.MessageError, error:
                     mailbox.delete(mail_id)
-                    log = logging.getLogger('canonical.launchpad.mail')
+                    log = logging.getLogger('lp.services.mail')
                     log.warn(
                         "Couldn't convert email to email.Message: %s" % (
                             file_alias_url, ),
@@ -369,7 +369,7 @@ def handleMail(trans=transaction):
                 if 'X-Launchpad-Original-To' in mail:
                     addresses = [mail['X-Launchpad-Original-To']]
                 else:
-                    log = logging.getLogger('canonical.launchpad.mail')
+                    log = logging.getLogger('lp.services.mail')
                     log.warn(
                         "No X-Launchpad-Original-To header was present "
                         "in email: %s" %
