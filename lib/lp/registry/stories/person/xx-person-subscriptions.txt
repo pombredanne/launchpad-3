@@ -176,7 +176,7 @@ followed by a link to edit the subscription.
     --> /ubuntu/+source/pmount/+subscribe
 
 The links to modify subscriptions are only shown when the user has
-permission to do so.
+permission to modify those subscriptions.
 
     >>> sample_browser.open(
     ...     "http://launchpad.dev/~name16/+structural-subscriptions")
