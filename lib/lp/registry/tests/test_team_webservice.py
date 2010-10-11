@@ -8,7 +8,7 @@ import unittest
 
 from lazr.restfulclient.errors import HTTPError
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     launchpadlib_for,

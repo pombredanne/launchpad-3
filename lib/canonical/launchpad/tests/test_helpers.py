@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     IPerson,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 

@@ -14,7 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.services.worlddata.interfaces.language import ILanguageSet

@@ -16,7 +16,7 @@ but have no access to the 'Change permissions' menu.
 
     >>> admin_browser.open(fooproject_url)
     >>> print extract_text(
-    ...     find_tags_by_class(admin_browser.contents, 'edit sprite')[0])
+    ...     find_tags_by_class(admin_browser.contents, 'edit sprite')[1])
     Change permissions
 
     >>> browser.open(fooproject_url)

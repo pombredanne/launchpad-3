@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -668,6 +669,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             ILaunchpadCelebrities).launchpad_beta_testers
         self.name16.leave(beta_testers)
         # Pop the message notifying the membership modification.
+        run_mail_jobs()
         unused = stub.test_emails.pop()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")

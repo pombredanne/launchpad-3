@@ -8,7 +8,7 @@ from unittest import TestLoader
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator,
@@ -21,6 +21,7 @@ class DumbAggregator(TranslationLinksAggregator):
 
     The `describe` method returns a tuple of its arguments.
     """
+
     def describe(self, target, link, covered_sheets):
         """See `TranslationLinksAggregator`."""
         return (target, link, covered_sheets)
