@@ -46,6 +46,7 @@ from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
+    AbortingSlave,
     BuildingSlave,
     CorruptBehavior,
     LostBuildingBrokenSlave,
@@ -298,6 +299,59 @@ class TestBuilderWithTrial(TrialTestCase):
             self.assertIn('abort', building_slave.call_log)
             self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
+
+class TestBuilderSlaveStatus(TestBuilderWithTrial):
+
+    # Verify what IBuilder.slaveStatus returns with slaves in different
+    # states.
+
+    def assertStatus(self, slave, builder_status=None,
+                     build_status=None, logtail=False, filemap=None,
+                     dependencies=None):
+        builder = self.factory.makeBuilder()
+        builder.setSlaveForTesting(slave)
+        d = builder.slaveStatus()
+
+        def got_status(status_dict):
+            expected = {}
+            if builder_status is not None:
+                expected["builder_status"] = builder_status
+            if build_status is not None:
+                expected["build_status"] = build_status
+            if dependencies is not None:
+                expected["dependencies"] = dependencies
+
+            # We don't care so much about the content of the logtail,
+            # just that it's there.
+            if logtail:
+                tail = status_dict.pop("logtail")
+                self.assertIsInstance(tail, xmlrpclib.Binary)
+
+            self.assertEqual(expected, status_dict)
+
+        return d.addCallback(got_status)
+
+    def test_slaveStatus_idle_slave(self):
+        self.assertStatus(
+            OkSlave(), builder_status='BuilderStatus.IDLE')
+
+    def test_slaveStatus_building_slave(self):
+        self.assertStatus(
+            BuildingSlave(), builder_status='BuilderStatus.BUILDING',
+            logtail=True)
+
+    def test_slaveStatus_waiting_slave(self):
+        self.assertStatus(
+            WaitingSlave(), builder_status='BuilderStatus.WAITING',
+            build_status='BuildStatus.OK', filemap={})
+
+    def test_slaveStatus_aborting_slave(self):
+        self.assertStatus(
+            AbortingSlave(), builder_status='BuilderStatus.ABORTING')
+
+    def test_slaveStatus_aborted_slave(self):
+        self.assertStatus(
+            AbortedSlave(), builder_status='BuilderStatus.ABORTED')
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
