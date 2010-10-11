@@ -517,6 +517,14 @@ class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
+        # If the source for the build is still pending, it won't be
+        # dispatched because the builder has to fetch the source files
+        # from the (password protected) repo area, not the librarian.
+        pub = build.current_source_publication
+        pub.status = PackagePublishingStatus.PENDING
+        candidate = removeSecurityProxy(self.builder4)._findBuildCandidate()
+        self.assertNotEqual(next_job.id, candidate.id)
+
 
 class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
