@@ -43,6 +43,7 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     )
 from lp.testing import (
     ANONYMOUS,
@@ -379,7 +380,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
 
         d = self.builder.updateBuild(self.candidate)
-        d.addCallback(got_update)
+        return d.addCallback(got_update)
 
     def test_aborting_collection(self):
         # The builder is in the process of aborting.
@@ -391,7 +392,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
                 self.candidate.logtail)
 
         d = self.builder.updateBuild(self.candidate)
-        d.addCallback(got_update)
+        return d.addCallback(got_update)
 
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
@@ -404,7 +405,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertIdentical(None, self.build.upload_log)
 
         d = self.builder.updateBuild(self.candidate)
-        d.addCallback(got_update)
+        return d.addCallback(got_update)
 
     def test_givenback_collection(self):
         waiting_slave = WaitingSlave('BuildStatus.GIVENBACK')
@@ -420,7 +421,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(JobStatus.WAITING, job.status)
 
         d = self.builder.updateBuild(self.candidate)
-        d.addCallback(got_update)
+        return d.addCallback(got_update)
 
     def test_log_file_collection(self):
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
@@ -455,4 +456,25 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         orig_file = removeSecurityProxy(self.builder.slave).getFile(
             'buildlog').read()
         self.assertEqual(orig_file, uncompressed_file)
+
+    def test_private_build_log_storage(self):
+        # Builds in private archives should have their log uploaded to
+        # the restricted librarian.
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+
+        # Un-publish the source so we don't trip the 'private' field
+        # validator.
+        from storm.store import Store
+        for source in self.build.archive.getPublishedSources():
+            Store.of(source).remove(source)
+        self.build.archive.private = True
+        self.build.archive.buildd_secret = "foo"
+
+        def got_update(ignored):
+            # Librarian needs a commit.  :(
+            self.layer.txn.commit()
+            self.assertTrue(self.build.log.restricted)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
 
