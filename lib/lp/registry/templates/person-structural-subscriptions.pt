@@ -1,0 +1,47 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    xml:lang="en"
+    lang="en"
+    dir="ltr"
+    metal:use-macro="view/macro:page/main_only"
+    i18n:domain="launchpad">
+  <body>
+
+    <div metal:fill-slot="main"
+         tal:define="structural_subscriptions view/user/structural_subscriptions">
+
+      <table id="structural_subscriptions" class="listing"
+             tal:condition="structural_subscriptions">
+        <thead>
+          <tr>
+            <th>Target</th>
+            <th>What</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tr tal:repeat="subscription structural_subscriptions">
+          <td class="icon left">
+            <span tal:replace="structure subscription/target/fmt:link" />
+          </td>
+          <td align="center">
+            <span
+                tal:define="level subscription/bug_notification_level"
+                tal:content="level/name/capitalize"
+                tal:attributes="title python:' '.join(level.description.splitlines())" />
+          </td>
+          <td align="center">
+            <a class="sprite edit"
+               tal:attributes="href subscription/target/fmt:url/+subscribe;
+                               title string:Modify subscription to ${subscription/target/title};">
+              Modify
+            </a>
+          </td>
+        </tr>
+      </table>
+
+    </div>
+  </body>
+</html>
