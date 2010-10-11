@@ -443,6 +443,7 @@
                 latest_overall_publication
                 name
                 new_bugtasks
+                official_bug_tags
                 open_bugtasks
                 parent_subscription_target
                 publishing_history
@@ -458,9 +459,6 @@
                 upstream_product
                 userCanAlterBugSubscription
                 userHasBugSubscriptions"/>
-        <require
-            permission="launchpad.BugSupervisor"
-            attributes="official_bug_tags"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1157,6 +1155,7 @@
                 mugshot
                 official_answers
                 official_blueprints
+                official_bug_tags
                 official_codehosting
                 official_malone
                 owner
@@ -1170,9 +1169,6 @@
                 sourceforgeproject
                 summary
                 title wikiurl"/>
-        <require
-            permission="launchpad.BugSupervisor"
-            set_attributes="official_bug_tags"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1496,15 +1492,13 @@
                 mugshot
                 official_answers
                 official_blueprints
+                official_bug_tags
                 official_malone
                 official_rosetta
                 owner
                 security_contact
                 summary
                 title"/>
-        <require
-            permission="launchpad.BugSupervisor"
-            set_attributes="official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
