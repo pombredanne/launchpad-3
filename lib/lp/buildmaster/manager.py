@@ -23,12 +23,9 @@ from twisted.internet import (
     reactor,
     )
 from twisted.internet.task import LoopingCall
-from twisted.protocols.policies import TimeoutMixin
 from twisted.python import log
-from twisted.web import xmlrpc
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
@@ -48,26 +45,6 @@ buildd_success_result_map = {
     'ensurepresent': True,
     'build': 'BuilderStatus.BUILDING',
     }
-
-
-class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
-    """XMLRPC query protocol with a configurable timeout.
-
-    XMLRPC queries using this protocol will be unconditionally closed
-    when the timeout is elapsed. The timeout is fetched from the context
-    Launchpad configuration file (`config.builddmaster.socket_timeout`).
-    """
-    def connectionMade(self):
-        xmlrpc.QueryProtocol.connectionMade(self)
-        self.setTimeout(config.builddmaster.socket_timeout)
-
-
-class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
-    """XMLRPC client factory with timeout support."""
-    # Make this factory quiet.
-    noisy = False
-    # Use the protocol with timeout support.
-    protocol = QueryWithTimeoutProtocol
 
 
 def get_builder(name):

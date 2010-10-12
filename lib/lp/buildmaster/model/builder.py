@@ -36,6 +36,9 @@ from storm.expr import (
     )
 from twisted.internet import defer
 from twisted.internet.error import ConnectError
+from twisted.protocols.policies import TimeoutMixin
+from twisted.web import xmlrpc
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -60,7 +63,6 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
-    CannotBuild,
     CannotFetchFile,
     CannotResumeHost,
     CorruptBuildCookie,
@@ -79,7 +81,6 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
-from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -91,25 +92,25 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.model.processor import Processor
 
 
-class TimeoutHTTPConnection(httplib.HTTPConnection):
+class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
+    """XMLRPC query protocol with a configurable timeout.
 
-    def connect(self):
-        """Override the standard connect() methods to set a timeout"""
-        ret = httplib.HTTPConnection.connect(self)
-        self.sock.settimeout(config.builddmaster.socket_timeout)
-        return ret
+    XMLRPC queries using this protocol will be unconditionally closed
+    when the timeout is elapsed. The timeout is fetched from the context
+    Launchpad configuration file (`config.builddmaster.socket_timeout`).
+    """
+    def connectionMade(self):
+        xmlrpc.QueryProtocol.connectionMade(self)
+        self.setTimeout(config.builddmaster.socket_timeout)
 
 
-class TimeoutHTTP(httplib.HTTP):
-    _connection_class = TimeoutHTTPConnection
+class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
+    """XMLRPC client factory with timeout support."""
+    # Make this factory quiet.
+    noisy = False
+    # Use the protocol with timeout support.
+    protocol = QueryWithTimeoutProtocol
 
-
-class TimeoutTransport(xmlrpclib.Transport):
-    """XMLRPC Transport to setup a socket with defined timeout"""
-
-    def make_connection(self, host):
-        host, extra_headers, x509 = self.get_host_info(host)
-        return TimeoutHTTP(host)
 
 
 class BuilderSlave(object):
@@ -148,12 +149,11 @@ class BuilderSlave(object):
         self._server = proxy
 
     @classmethod
-    def makeBlockingSlave(cls, builder_url, vm_host):
-        rpc_url = urlappend(builder_url, 'rpc')
-        server_proxy = xmlrpclib.ServerProxy(
-            rpc_url, transport=TimeoutTransport(), allow_none=True)
-        return cls(
-            DeferredBlockingProxy(server_proxy), builder_url, vm_host)
+    def makeBuilderSlave(cls, builder_url, vm_host):
+        rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
+        server_proxy = xmlrpc.Proxy(rpc_url, allowNone=True)
+        server_proxy.queryFactory = QueryFactoryWithTimeout
+        return cls(server_proxy, builder_url, vm_host)
 
     def abort(self):
         """Abort the current build."""
@@ -480,7 +480,7 @@ class Builder(SQLBase):
         # the slave object, which is usually an XMLRPC client, with a
         # stub object that removes the need to actually create a buildd
         # slave in various states - which can be hard to create.
-        return BuilderSlave.makeBlockingSlave(self.url, self.vm_host)
+        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host)
 
     def setSlaveForTesting(self, proxy):
         """See IBuilder."""

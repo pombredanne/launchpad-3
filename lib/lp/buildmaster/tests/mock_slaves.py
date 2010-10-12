@@ -296,7 +296,7 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        return BuilderSlave.makeBlockingSlave(self.TEST_URL, 'vmhost')
+        return BuilderSlave.makeBuilderSlave(self.TEST_URL, 'vmhost')
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
