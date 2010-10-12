@@ -810,12 +810,15 @@ You can traverse to an individual menu item from the facet menu:
     >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
-But if a non-existing entry is requested, a KeyError is raised:
+But if a non-existing entry is requested, a LocationError is raised. This used
+to raise a KeyError. But the menu links are now no longer stored as a dict and
+there's zope code which is hard coded to check specifically for a dict in
+order to use a short circuit.
 
     >>> test_tales('view/menu:foo/broken', view=view)
     Traceback (most recent call last):
     ...
-    KeyError: 'broken'
+    LocationError: ..., 'broken')
 
 We also report when the selected facet does not exist with a
 LocationError exception:
