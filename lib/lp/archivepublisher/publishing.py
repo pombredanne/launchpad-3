@@ -34,10 +34,7 @@ from lp.archivepublisher.utils import (
     get_ppa_reference,
     RepositoryIndexFile,
     )
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -195,7 +192,7 @@ class Publisher(object):
         self.log.debug("* Step A: Publishing packages")
 
         for distroseries in self.distro.series:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
                     self.log.debug(
@@ -235,7 +232,7 @@ class Publisher(object):
 
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.series:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
@@ -295,7 +292,7 @@ class Publisher(object):
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping index generation for %s/%s" %
@@ -323,8 +320,7 @@ class Publisher(object):
         """
         self.log.debug("* Step D: Generating Release files.")
         for distroseries in self.distro:
-            for pocket, suffix in pocketsuffix.items():
-
+            for pocket in PackagePublishingPocket.items:
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
@@ -341,7 +337,7 @@ class Publisher(object):
         Write contents using LP info to an extra plain file (Packages.lp
         and Sources.lp .
         """
-        suite_name = distroseries.name + pocketsuffix[pocket]
+        suite_name = distroseries.getSuite(pocket)
         self.log.debug("Generate Indexes for %s/%s"
                        % (suite_name, component.name))
 
