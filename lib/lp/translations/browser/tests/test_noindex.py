@@ -10,18 +10,20 @@ from BeautifulSoup import BeautifulSoup
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import (
     login_person,
-    TestCaseWithFactory,
+    BrowserTestCase,
     )
 from lp.testing.views import (
     create_initialized_view,
     )
+from lp.translations.publisher import TranslationsLayer
 
 
-class TestRobotsBase(TestCaseWithFactory):
+class TestRobotsBase(BrowserTestCase):
     """Test the inclusion of the meta "noindex,nofollow" directives."""
 
     layer = DatabaseFunctionalLayer
@@ -30,7 +32,11 @@ class TestRobotsBase(TestCaseWithFactory):
         self.naked_translatable.translations_usage = usage
 
     def get_view(self):
-        """Return an initialized view."""
+        """Return an initialized view's rendered contents."""
+        raise NotImplementedError
+
+    def get_rendered_contents(self):
+        """Return an initialized view's rendered contents."""
         raise NotImplementedError
 
     @property
@@ -40,8 +46,8 @@ class TestRobotsBase(TestCaseWithFactory):
 
     def get_soup_and_robots(self, usage):
         self.set_usage(usage)
-        view = self.get_view()
-        soup = BeautifulSoup(view())
+        contents = self.get_rendered_contents()
+        soup = BeautifulSoup(contents)
         robots = soup.find('meta', attrs={'name': 'robots'})
         return soup, robots
 
@@ -84,8 +90,14 @@ class TestRobotsProjectGroup(TestRobotsBase):
         return removeSecurityProxy(self.product)
 
     def get_view(self):
-        return create_initialized_view(
-            self.projectgroup, '+translations', rootsite='translations')
+        view = create_initialized_view(
+            self.projectgroup, '+translations',
+            current_request=True, layer=TranslationsLayer)
+        return view
+
+    def get_rendered_contents(self):
+        view = self.get_view()
+        return view.render()
 
     def test_has_translatables_true(self):
         self.set_usage(ServiceUsage.LAUNCHPAD)
@@ -123,9 +135,19 @@ class TestRobotsDistroSeries(TestRobotsBase):
 
     def get_view(self):
         view = create_initialized_view(
-            self.distroseries, '+translations', rootsite='translations',
+            self.distroseries, '+translations',
+            layer=TranslationsLayer,
+            rootsite='translations',
             current_request=True)
         return view
+
+    def get_rendered_contents(self):
+        # Using create_initialized_view for distroseries causes an error when
+        # rendering the view due to the way the view is registered and menus
+        # are adapted.  Getting the contents via a browser does work.
+        url = canonical_url(self.distroseries, rootsite='translations')
+        browser = self.getUserBrowser(url)
+        return browser.contents
 
     def test_LAUNCHPAD_does_not_block_robots(self):
         self.verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)
