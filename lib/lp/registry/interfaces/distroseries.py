@@ -932,11 +932,5 @@ class DerivationError(Exception):
     _message_prefix = "Error deriving distro series"
 
 
-class NoSuchDistroSeries(NameLookupFailed):
-    """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(400) #Bad request.
-    _message_prefix = "No such distribution series"
-
-
 # Monkey patch for circular import avoidance done in
 # _schema_circular_imports.py
