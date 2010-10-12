@@ -173,10 +173,8 @@ class Publisher(object):
 
         Otherwise, return False.
         """
-        if (self.allowed_suites and
-            (distroseries.name, pocket) not in self.allowed_suites):
-            return False
-        return True
+        return (not self.allowed_suites or
+                (distroseries.name, pocket) in self.allowed_suites)
 
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
