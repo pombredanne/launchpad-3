@@ -15,7 +15,7 @@ You can specify the db_location explicitly:
 
     >>> from lp.bugs.externalbugtracker import (
     ...     BATCH_SIZE_UNLIMITED, DebBugs)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)

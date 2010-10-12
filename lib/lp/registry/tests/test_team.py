@@ -7,12 +7,17 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.interface.exceptions import Invalid
 
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import (
+    ITeamPublic,
+    TeamMembershipRenewalPolicy,
+    )
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -38,6 +43,7 @@ class TestTeamContactAddress(TestCaseWithFactory):
 
     def setUp(self):
         super(TestTeamContactAddress, self).setUp()
+
         self.team = self.factory.makeTeam(name='alpha')
         self.address = self.factory.makeEmail('team@noplace.org', self.team)
         self.store = IMasterStore(self.address)
@@ -102,3 +108,81 @@ class TestTeamContactAddress(TestCaseWithFactory):
         self.team.setContactAddress(None)
         self.assertEqual(None, self.team.preferredemail)
         self.assertEqual([], self.getAllEmailAddresses())
+
+
+class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDefaultRenewalPeriodIsRequiredForSomeTeams, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_person(self.team.teamowner)
+
+    def assertInvalid(self, policy, period):
+        self.team.renewal_policy = policy
+        self.team.defaultrenewalperiod = period
+        self.assertRaises(Invalid, ITeamPublic.validateInvariants, self.team)
+
+    def assertValid(self, policy, period):
+        self.team.renewal_policy = policy
+        self.team.defaultrenewalperiod = period
+        ITeamPublic.validateInvariants(self.team)
+
+    def test_policy_automatic_period_none(self):
+        # Automatic policy cannot have a none day period.
+        self.assertInvalid(
+            TeamMembershipRenewalPolicy.AUTOMATIC, None)
+
+    def test_policy_ondemand_period_none(self):
+        # Ondemand policy cannot have a none day period.
+        self.assertInvalid(
+            TeamMembershipRenewalPolicy.ONDEMAND, None)
+
+    def test_policy_none_period_none(self):
+        # None policy can have a None day period.
+        self.assertValid(
+            TeamMembershipRenewalPolicy.NONE, None)
+
+    def test_policy_requres_period_below_minimum(self):
+        # Automatic and ondemand policy cannot have a zero day period.
+        self.assertInvalid(
+            TeamMembershipRenewalPolicy.AUTOMATIC, 0)
+
+    def test_policy_requres_period_minimum(self):
+        # Automatic and ondemand policy can have a 1 day period.
+        self.assertValid(
+            TeamMembershipRenewalPolicy.AUTOMATIC, 1)
+
+    def test_policy_requres_period_maximum(self):
+        # Automatic and ondemand policy cannot have a 3650 day max value.
+        self.assertValid(
+            TeamMembershipRenewalPolicy.AUTOMATIC, 3650)
+
+    def test_policy_requres_period_over_maximum(self):
+        # Automatic and ondemand policy cannot have a 3650 day max value.
+        self.assertInvalid(
+            TeamMembershipRenewalPolicy.AUTOMATIC, 3651)
+
+
+class TestDefaultMembershipPeriod(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDefaultMembershipPeriod, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_person(self.team.teamowner)
+
+    def test_default_membership_period_over_maximum(self):
+        self.assertRaises(
+            Invalid, ITeamPublic['defaultmembershipperiod'].validate, 3651)
+
+    def test_default_membership_period_none(self):
+        ITeamPublic['defaultmembershipperiod'].validate(None)
+
+    def test_default_membership_period_zero(self):
+        ITeamPublic['defaultmembershipperiod'].validate(0)
+
+    def test_default_membership_period_maximum(self):
+        ITeamPublic['defaultmembershipperiod'].validate(3650)

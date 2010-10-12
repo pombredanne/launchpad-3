@@ -28,7 +28,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.externalbugtracker import (
     BugTrackerConnectError,
     Mantis,
@@ -38,10 +41,34 @@ from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
     )
+from lp.bugs.model.bugtracker import BugTrackerSet
 from lp.bugs.tests.externalbugtracker import Urlib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.sampledata import ADMIN_EMAIL
+
+
+class TestBugTrackerSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_trackers(self):
+        tracker = self.factory.makeBugTracker()
+        trackers = BugTrackerSet()
+        # Active trackers are in all trackers,
+        self.assertTrue(tracker in trackers.trackers())
+        # and active,
+        self.assertTrue(tracker in trackers.trackers(active=True))
+        # But not inactive.
+        self.assertFalse(tracker in trackers.trackers(active=False))
+        login(ADMIN_EMAIL)
+        tracker.active = False
+        # Inactive trackers are in all trackers
+        self.assertTrue(tracker in trackers.trackers())
+        # and inactive,
+        self.assertTrue(tracker in trackers.trackers(active=False))
+        # but not in active.
+        self.assertFalse(tracker in trackers.trackers(active=True))
 
 
 class BugTrackerTestCase(TestCaseWithFactory):

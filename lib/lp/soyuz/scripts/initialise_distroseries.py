@@ -22,8 +22,8 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.packagecloner import clone_packages
 from lp.soyuz.model.packageset import Packageset
 
 
@@ -58,12 +58,13 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries, arches=()):
+    def __init__(self, distroseries, arches=(), rebuild=False):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
+        self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
@@ -134,7 +135,8 @@ class InitialiseDistroSeries:
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
-            FROM DistroArchSeries WHERE distroseries = %s %s
+            FROM DistroArchSeries WHERE distroseries = %s
+            AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
 
@@ -195,7 +197,15 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            clone_packages(origin, destination, distroarchseries_list)
+            proc_families = None
+            if self.rebuild:
+                proc_families = [
+                    das[1].processorfamily
+                    for das in distroarchseries_list]
+                distroarchseries_list = ()
+            getUtility(IPackageCloner).clonePackages(
+                origin, destination, distroarchseries_list,
+                proc_families, self.rebuild)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent

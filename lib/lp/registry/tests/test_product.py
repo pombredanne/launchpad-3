@@ -21,14 +21,14 @@ from canonical.launchpad.testing.pages import (
     get_feedback_messages,
     setupBrowser,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     License,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product
+from lp.registry.model.product import Product, UnDeactivateable
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import TestCaseWithFactory
 
@@ -48,7 +48,7 @@ class TestProduct(TestCaseWithFactory):
         source_package.setPackaging(
             product.development_focus, self.factory.makePerson())
         self.assertRaises(
-            AssertionError,
+            UnDeactivateable,
             setattr, product, 'active', False)
 
     def test_deactivation_success(self):

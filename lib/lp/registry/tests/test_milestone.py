@@ -14,7 +14,8 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
+
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import IMilestoneSet
@@ -78,6 +79,7 @@ class MilestoneTest(unittest.TestCase):
         self.assertEqual(
             all_visible_milestones_ids,
             [1, 2, 3])
+
 
 def test_suite():
     """Return the test suite for the tests in this module."""

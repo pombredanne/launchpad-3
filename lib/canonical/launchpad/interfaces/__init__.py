@@ -55,6 +55,8 @@ from lp.bugs.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
 from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
+from lp.registry.interfaces.distroseriesdifference import *
+from lp.registry.interfaces.distroseriesdifferencecomment import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
 from lp.soyuz.interfaces.distributionsourcepackagerelease import *
 from lp.registry.interfaces.series import *
@@ -71,7 +73,6 @@ from lp.registry.interfaces.entitlement import *
 from lp.bugs.interfaces.externalbugtracker import *
 from lp.registry.interfaces.featuredproject import *
 from lp.soyuz.interfaces.files import *
-from canonical.launchpad.interfaces.geoip import *
 from lp.registry.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
 from lp.hardwaredb.interfaces.hwdb import *

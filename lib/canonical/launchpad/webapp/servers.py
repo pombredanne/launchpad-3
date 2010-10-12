@@ -526,7 +526,27 @@ def get_query_string_params(request):
     return decoded_qs
 
 
-class BasicLaunchpadRequest:
+class LaunchpadBrowserRequestMixin:
+    """Provides methods used for both API and web browser requests."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
+    @property
+    def is_ajax(self):
+        """See `IBasicLaunchpadRequest`."""
+        return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
+
+
+class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
@@ -537,7 +557,6 @@ class BasicLaunchpadRequest:
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -582,24 +601,8 @@ class BasicLaunchpadRequest:
         return get_query_string_params(self)
 
 
-class LaunchpadBrowserRequestMixin:
-    """A mixin for classes that share some method implementations."""
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        if rootsite is not None:
-            assert rootsite in allvhosts.configs, (
-                "rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())))
-            root_url = allvhosts.configs[rootsite].rooturl
-        else:
-            root_url = self.getApplicationURL() + '/'
-        return root_url
-
-
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest,
-                              LaunchpadBrowserRequestMixin):
+                              NotificationRequest, ErrorReportRequest):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
@@ -849,11 +852,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
     >>> request.needs_datepicker_iframe
     False
 
-    And for JSON and GMap2:
+    And for JSON:
 
     >>> request.needs_json
-    False
-    >>> request.needs_gmap2
     False
 
     """
@@ -872,7 +873,6 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         # stub out the FeatureController that would normally be provided by
         # the publication mechanism
         self.features = NullFeatureController()
@@ -1374,7 +1374,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
+                          ErrorReportRequest):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):

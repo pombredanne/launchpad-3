@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -355,10 +356,10 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name="bar")
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary_universe", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # No mails are sent for successful binary uploads.
         self.assertEqual(len(stub.test_emails), 0,
@@ -405,9 +406,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -459,9 +460,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Binary upload to the just-created build record.
         self.options.context = 'buildd'
-        self.options.buildid = build_bar_i386.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~cprov/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build_bar_i386)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -668,6 +669,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             ILaunchpadCelebrities).launchpad_beta_testers
         self.name16.leave(beta_testers)
         # Pop the message notifying the membership modification.
+        run_mail_jobs()
         unused = stub.test_emails.pop()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
@@ -760,9 +762,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name='bar')
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
@@ -804,10 +806,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Binary uploads should exhibit the same behaviour:
         [build] = self.name16.archive.getBuildRecords(name="bar")
         self.options.context = 'buildd'
-        self.options.buildid = build.id
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(self.uploadprocessor, upload_dir, build=build)
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
@@ -1306,14 +1307,14 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         builds = self.name16.archive.getBuildRecords(name='bar')
         [build] = builds
         self.options.context = 'buildd'
-        self.options.buildid = build.id
 
         # Stuff 1024 MiB in name16 PPA, so anything will be above the
         # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
+        self.processUpload(
+            self.uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted, and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(

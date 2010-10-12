@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     IPerson,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
@@ -183,8 +183,8 @@ def test_preferred_or_request_languages():
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.testing import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
+    >>> from lp.services.geoip.interfaces import IRequestPreferredLanguages
+    >>> from lp.services.geoip.interfaces import IRequestLocalLanguages
     >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.

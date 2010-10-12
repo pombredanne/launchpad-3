@@ -18,7 +18,7 @@ from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     )
-from canonical.testing import ZopelessLayer
+from canonical.testing.layers import ZopelessLayer
 
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(

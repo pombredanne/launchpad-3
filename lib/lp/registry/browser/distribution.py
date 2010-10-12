@@ -33,7 +33,6 @@ __all__ = [
     'DistributionSpecificationsMenu',
     'DistributionUnofficialMirrorsView',
     'DistributionView',
-    'UsesLaunchpadMixin',
     ]
 
 import datetime
@@ -47,10 +46,6 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
-    )
-from canonical.launchpad.components.request_country import (
-    ipaddress_from_request,
-    request_country,
     )
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
@@ -74,13 +69,11 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.widgets.image import ImageChangeWidget
-from lp.app.enums import service_uses_launchpad
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -107,45 +100,15 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
-from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.geoip.helpers import (
+    ipaddress_from_request,
+    request_country,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-
-
-class UsesLaunchpadMixin:
-    """This mixin is used for the overview page of products and distros."""
-
-    @property
-    def uses_launchpad_for(self):
-        """Return a string of LP apps (comma-separated) this distro uses."""
-        uses = []
-        href_template = """<a href="%s">%s</a>"""
-        if service_uses_launchpad(self.context.answers_usage):
-            url = canonical_url(self.context, rootsite='answers')
-            uses.append(href_template % (url, 'Answers'))
-        if service_uses_launchpad(self.context.blueprints_usage):
-            url = canonical_url(self.context, rootsite='blueprints')
-            uses.append(href_template % (url, 'Blueprints'))
-        if self.context.official_malone:
-            url = canonical_url(self.context, rootsite='bugs')
-            uses.append(href_template % (url, 'Bug Tracking'))
-        if IProduct.providedBy(self.context):
-            if self.context.codehosting_usage == ServiceUsage.LAUNCHPAD:
-                url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Branches'))
-        if service_uses_launchpad(self.context.translations_usage):
-            url = canonical_url(self.context, rootsite='translations')
-            uses.append(href_template % (url, 'Translations'))
-
-        if len(uses) == 0:
-            text = None
-        else:
-            text = english_list(uses)
-
-        return text
 
 
 class DistributionNavigation(
@@ -342,6 +305,8 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         'announcements',
         'ppas',
         'configure_answers',
+        'configure_blueprints',
+        'configure_translations',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -451,6 +416,18 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
     def configure_answers(self):
         text = 'Configure support tracker'
         summary = 'Allow users to ask questions on this project'
+        return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of feature planning.'
+        return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_translations(self):
+        text = 'Configure translations'
+        summary = 'Allow users to provide translations for this project.'
         return Link('+edit', text, summary, icon='edit')
 
 
@@ -612,7 +589,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         return self.has_exact_matches
 
 
-class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
+class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def linkedMilestonesForSeries(self, series):

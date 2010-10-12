@@ -60,6 +60,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -268,7 +269,7 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
-        'build_daily'
+        'build_daily',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive')
@@ -333,6 +334,11 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                     data['recipe_text'], data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
             Store.of(source_package_recipe).flush()
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+            return
         except ForbiddenInstructionError:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
@@ -378,7 +384,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),}
+            'recipe_text': str(self.context.builder_recipe),
+            }
 
     @property
     def cancel_url(self):
@@ -397,6 +404,11 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             try:
                 self.context.setRecipeText(recipe_text)
                 changed = True
+            except TooNewRecipeFormat:
+                self.setFieldError(
+                    'recipe_text',
+                    'The recipe format version specified is not available.')
+                return
             except ForbiddenInstructionError:
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(

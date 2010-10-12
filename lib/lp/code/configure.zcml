@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -11,6 +11,7 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
   <include package=".browser"/>
+  <include package=".vocabularies"/>
   <authorizations module="lp.code.security" />
 
   <publisher
@@ -182,19 +183,19 @@
   </securedutility>
   <securedutility
       class="canonical.launchpad.systemhomes.BazaarApplication"
-      provides="canonical.launchpad.interfaces.IBazaarApplication">
-    <allow interface="canonical.launchpad.interfaces.IBazaarApplication"/>
+      provides="canonical.launchpad.interfaces.launchpad.IBazaarApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
   </securedutility>
 
   <!-- pages for the bazaar application -->
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
       class="canonical.launchpad.xmlrpc.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
       class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
       permission="zope.Public"/>
@@ -235,8 +236,10 @@
                     votes
                     all_comments
                     related_bugs
+                    revision_end_date
                     isMergable
                     getComment
+                    getRevisionsSinceReviewStart
                     getNotificationRecipients
                     getVoteReference
                     isValidTransition
@@ -277,7 +280,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
+    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility
@@ -923,7 +926,7 @@
     <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
     <!-- This is needed for UploadProcessor to run. The permission isn't
          important; launchpad.Edit isn't actually held by anybody. -->
-    <require permission="launchpad.Edit" set_attributes="status upload_log" />
+    <require permission="launchpad.Edit" set_attributes="status upload_log date_finished requester" />
   </class>
 
   <securedutility
@@ -987,10 +990,6 @@
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
-
-  <call
-    callable="lp.code.model.sourcepackagerecipebuild.register_archive_upload_policy_adapter"
-    />
 
   <webservice:register module="lp.code.interfaces.webservice" />
     <adapter

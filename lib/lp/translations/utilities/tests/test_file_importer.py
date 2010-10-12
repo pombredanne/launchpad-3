@@ -8,10 +8,10 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.librarian.testing.fake import FakeLibrarian
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakelibrarian import FakeLibrarian
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     OutdatedTranslationError,
@@ -169,7 +169,7 @@ class FileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(FileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 
@@ -526,7 +526,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(CreateFileImporterTestCase, self).setUp()
-        self.fake_librarian = self.installFixture(FakeLibrarian())
+        self.fake_librarian = self.useFixture(FakeLibrarian())
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         self.importer_person = self.factory.makePerson()
 

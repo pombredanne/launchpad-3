@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.scripts.migrate_variants import MigrateVariantsProcess

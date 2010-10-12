@@ -6,16 +6,12 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from contextlib import nested
 from doctest import DocTestSuite
 import unittest
 
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+from testtools.matchers import LessThan
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -28,20 +24,17 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
-    BugTaskView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.testing import (
-    person_logged_in,
-    StormStatementRecorder,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
@@ -54,16 +47,6 @@ class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def record_view_initialization(self, bugtask, person):
-        self.invalidate_caches(bugtask)
-        # Login first because logging in triggers queries.
-        with nested(person_logged_in(person), StormStatementRecorder()) as (
-            _,
-            recorder):
-            view = BugTaskView(bugtask, LaunchpadTestRequest())
-            view.initialize()
-        return recorder
-
     def invalidate_caches(self, obj):
         store = Store.of(obj)
         # Make sure everything is in the database.
@@ -72,24 +55,31 @@ class TestBugTaskView(TestCaseWithFactory):
         # the domain objects)
         store.invalidate()
 
-    def test_query_counts_constant_with_team_memberships(self):
+    def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
-        bugtask = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson()
-        person_with_teams = self.factory.makePerson()
+        task = self.factory.makeBugTask()
+        person_no_teams = self.factory.makePerson(password='test')
+        person_with_teams = self.factory.makePerson(password='test')
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
-        recorder = self.record_view_initialization(bugtask, person_no_teams)
-        self.assertThat(recorder, HasQueryCount(LessThan(14)))
+        url = canonical_url(task)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(task)
+        self.getUserBrowser(url, person_no_teams)
+        # This may seem large: it is; there is easily another 30% fat in there.
+        self.assertThat(recorder, HasQueryCount(LessThan(62)))
         count_with_no_teams = recorder.count
         # count with many teams
-        recorder2 = self.record_view_initialization(bugtask, person_with_teams)
+        self.invalidate_caches(task)
+        self.getUserBrowser(url, person_with_teams)
         # Allow an increase of one because storm bug 619017 causes additional
         # queries, revalidating things unnecessarily. An increase which is
         # less than the number of new teams shows it is definitely not
         # growing per-team.
-        self.assertThat(recorder2, HasQueryCount(
+        self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
 
@@ -105,23 +95,32 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.view = BugTasksAndNominationsView(
             self.bug, LaunchpadTestRequest())
 
+    def refresh(self):
+        # The view caches, to see different scenarios, a refresh is needed.
+        self.view = BugTasksAndNominationsView(
+            self.bug, LaunchpadTestRequest())
+
     def test_current_user_affected_status(self):
         self.failUnlessEqual(
             None, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             True, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             False, self.view.current_user_affected_status)
 
     def test_current_user_affected_js_status(self):
         self.failUnlessEqual(
             'null', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             'true', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
 
@@ -148,10 +147,12 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # logged-in user marked him or herself as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
 
@@ -161,17 +162,18 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_1, True)
+        self.bug.markUserAffected(other_user_1, True)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_2, True)
+        self.bug.markUserAffected(other_user_2, True)
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(other_user_1, False)
+        self.bug.markUserAffected(other_user_1, False)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
 
