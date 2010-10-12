@@ -87,3 +87,4 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
         self.assertEqual(naked_job.packagesets, packagesets)
+        self.assertEqual(naked_job.rebuild, False)
