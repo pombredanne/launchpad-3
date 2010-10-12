@@ -157,7 +157,6 @@ class FTPArchiveHandler:
             else:
                 self.distroseries.append(distroseries)
         self.publisher = publisher
-        self.release_files_needed = set()
 
         # We need somewhere to note down where the debian-installer
         # components came from. in _di_release_components we store
@@ -225,6 +224,8 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
+        self.publisher.release_files_needed.add((distroseries.name, pocket))
+
         full_pocket = distroseries.name + pocketsuffix[pocket]
 
         def touch_overrides(*parts):
@@ -235,8 +236,6 @@ class FTPArchiveHandler:
         touch_overrides(comp)
         touch_overrides("extra", comp)
         touch_overrides(comp, "src")
-
-        self.release_files_needed.add(full_pocket)
 
         # Create empty file lists.
         def touch_list(*parts):

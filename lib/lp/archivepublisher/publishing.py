@@ -159,6 +159,11 @@ class Publisher(object):
         # This is a set of tuples in the form (distroseries.name, pocket)
         self.dirty_pockets = set()
 
+        # Track which pockets need release files. This will contain more
+        # than dirty_pockets in the case of a careful index run.
+        # This is a set of tuples in the form (distroseries.name, pocket)
+        self.release_files_needed = set()
+
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
         if not (distroseries.name, pocket) in self.dirty_pockets:
@@ -300,10 +305,7 @@ class Publisher(object):
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
 
-                # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
-                # for NMAF is wrong.
-                self.apt_handler.release_files_needed.add(
-                    distroseries.getSuite(pocket))
+                self.release_files_needed.add((distroseries.name, pocket))
 
                 # Retrieve components from the publisher config because
                 # it gets overridden in getPubConfig to set the
@@ -453,8 +455,7 @@ class Publisher(object):
         # distroseriess and so on we need to generate Release files for.
         # We store this in release_files_needed and consume the information
         # when writeReleaseFiles is called.
-        suite = distroseries.getSuite(pocket)
-        if suite not in self.apt_handler.release_files_needed:
+        if (distroseries.name, pocket) not in self.release_files_needed:
             # If we don't need to generate a release for this release
             # and pocket, don't!
             return
@@ -476,6 +477,7 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
+        suite = distroseries.getSuite(pocket)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()

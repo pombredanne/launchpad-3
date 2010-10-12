@@ -641,8 +641,8 @@ class TestPublisher(TestPublisherBase):
 
         # We always regenerate all Releases file for a given suite.
         self.assertTrue(
-            'breezy-autotest' in
-            archive_publisher.apt_handler.release_files_needed)
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            archive_publisher.release_files_needed)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -790,7 +790,8 @@ class TestPublisher(TestPublisherBase):
         publisher.C_doFTPArchive(False)
 
         self.assertTrue(
-            'breezy-autotest' in publisher.apt_handler.release_files_needed)
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
 
@@ -1051,13 +1052,14 @@ class TestArchiveIndices(TestPublisherBase):
         """Run the index generation step of the publisher."""
         publisher.C_writeIndexes(False)
 
-    def assertIndices(self, publisher, suites=['breezy-autotest'],
-                      present=[], absent=[]):
+    def assertIndices(self, publisher, suites, present=[], absent=[]):
         """Assert that the given suites have correct indices."""
-        for suite in suites:
-            self.assertIndicesForSuite(publisher, suite, present, absent)
+        for series, pocket in suites:
+            self.assertIndicesForSuite(
+                publisher, series, pocket, present, absent)
 
-    def assertIndicesForSuite(self, publisher, suite, present=[], absent=[]):
+    def assertIndicesForSuite(self, publisher, series, pocket,
+                              present=[], absent=[]):
         """Assert that the suite has correct indices.
 
         Checks that the architecture tags in 'present' have Packages and
@@ -1065,16 +1067,18 @@ class TestArchiveIndices(TestPublisherBase):
         that those in 'absent' are not.
         """
 
-        self.assertTrue(suite in publisher.apt_handler.release_files_needed)
+        self.assertTrue(
+            (series.name, pocket) in publisher.release_files_needed)
 
         arch_template = os.path.join(
-            publisher._config.distsroot, suite, '%s/%s')
+            publisher._config.distsroot, series.getSuite(pocket), '%s/%s')
 
         release_template = os.path.join(arch_template, 'Release')
         packages_template = os.path.join(arch_template, 'Packages')
         sources_template = os.path.join(arch_template, 'Sources')
         release_content = open(os.path.join(
-            publisher._config.distsroot, suite, 'Release')).read()
+            publisher._config.distsroot, series.getSuite(pocket),
+            'Release')).read()
 
         for comp in ('main', 'restricted', 'universe', 'multiverse'):
             # Check that source indices are present.
@@ -1116,8 +1120,10 @@ class TestArchiveIndices(TestPublisherBase):
         publisher.D_writeReleaseFiles(False)
 
         self.assertIndices(
-            publisher, ['breezy-autotest', 'breezy-autotest-proposed'],
-            present=['hppa', 'i386'])
+            publisher, [
+                (self.breezy_autotest, PackagePublishingPocket.RELEASE),
+                (self.breezy_autotest, PackagePublishingPocket.PROPOSED),
+            ], present=['hppa', 'i386'])
 
     def testNoIndicesForDisabledArchitectures(self):
         """Test that no indices are created for disabled archs."""
@@ -1136,7 +1142,8 @@ class TestArchiveIndices(TestPublisherBase):
         publisher.D_writeReleaseFiles(False)
 
         self.assertIndicesForSuite(
-            publisher, 'breezy-autotest', present=['hppa'], absent=['i386'])
+            publisher, self.breezy_autotest, PackagePublishingPocket.RELEASE,
+            present=['hppa'], absent=['i386'])
 
     def testWorldAndGroupReadablePackagesAndSources(self):
         """Test Packages.gz and Sources.gz files are world readable."""
