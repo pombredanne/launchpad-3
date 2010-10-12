@@ -333,7 +333,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                self._writeDistroSeries(distroseries, pocket)
+                self._writeSuite(distroseries, pocket)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
@@ -447,8 +447,8 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
-    def _writeDistroSeries(self, distroseries, pocket):
-        """Write out the Release files for the provided distroseries."""
+    def _writeSuite(self, distroseries, pocket):
+        """Write out the Release files for the provided suite."""
         # XXX: kiko 2006-08-24: Untested method.
 
         # As we generate file lists for apt-ftparchive we record which
@@ -464,10 +464,10 @@ class Publisher(object):
         all_architectures = self._config.archTagsForSeries(distroseries.name)
         all_files = set()
         for component in all_components:
-            self._writeDistroSeriesSource(
+            self._writeSuiteSource(
                 distroseries, pocket, component, all_files)
             for architecture in all_architectures:
-                self._writeDistroArchSeries(
+                self._writeSuiteArch(
                     distroseries, pocket, component, architecture, all_files)
 
         drsummary = "%s %s " % (self.distro.displayname,
@@ -525,7 +525,7 @@ class Publisher(object):
         archive_signer = IArchiveSigningKey(self.archive)
         archive_signer.signRepository(suite)
 
-    def _writeDistroSeriesArchOrSource(self, distroseries, pocket, component,
+    def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                        file_stub, arch_name, arch_path,
                                        all_series_files):
         """Write out a Release file for an architecture or source."""
@@ -557,16 +557,16 @@ class Publisher(object):
         finally:
             f.close()
 
-    def _writeDistroSeriesSource(self, distroseries, pocket, component,
+    def _writeSuiteSource(self, distroseries, pocket, component,
                                  all_series_files):
-        """Write out a Release file for a series' sources."""
-        self._writeDistroSeriesArchOrSource(
+        """Write out a Release file for a suite's sources."""
+        self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Sources', 'source', 'source',
             all_series_files)
 
-    def _writeDistroArchSeries(self, distroseries, pocket, component,
+    def _writeSuiteArch(self, distroseries, pocket, component,
                                arch_name, all_series_files):
-        """Write out a Release file for an architecture."""
+        """Write out a Release file for an architecture in a suite."""
         file_stub = 'Packages'
         arch_path = 'binary-' + arch_name
         # Only the primary and PPA archives have debian-installer.
@@ -577,7 +577,7 @@ class Publisher(object):
                 component, "debian-installer", arch_path)
             di_file_stub = os.path.join(di_path, file_stub)
             all_series_files.update(get_suffixed_indices(di_file_stub))
-        self._writeDistroSeriesArchOrSource(
+        self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Packages', arch_name, arch_path,
             all_series_files)
 
