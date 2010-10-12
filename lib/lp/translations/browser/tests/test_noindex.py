@@ -4,26 +4,21 @@
 __metaclass__ = type
 
 
-import unittest
-
 from BeautifulSoup import BeautifulSoup
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import (
-    login_person,
     BrowserTestCase,
+    login_person,
     )
-from lp.testing.views import (
-    create_initialized_view,
-    )
+from lp.testing.views import create_initialized_view
 from lp.translations.publisher import TranslationsLayer
 
 
-class TestRobotsBase(BrowserTestCase):
+class TestRobotsMixin:
     """Test the inclusion of the meta "noindex,nofollow" directives."""
 
     layer = DatabaseFunctionalLayer
@@ -90,7 +85,7 @@ class TestRobotsBase(BrowserTestCase):
         self.verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)
 
 
-class TestRobotsProduct(TestRobotsBase):
+class TestRobotsProduct(BrowserTestCase, TestRobotsMixin):
     """Test noindex,nofollow for products."""
 
     def setUp(self):
@@ -155,7 +150,7 @@ class TestRobotsProductSeries(TestRobotsProduct):
         return self.productseries
 
 
-class TestRobotsDistroSeries(TestRobotsBase):
+class TestRobotsDistroSeries(BrowserTestCase, TestRobotsMixin):
     """Test noindex,nofollow for distro series."""
 
     def setUp(self):
@@ -224,15 +219,3 @@ class TestRobotsDistro(TestRobotsDistroSeries):
     @property
     def naked_translatable(self):
         return removeSecurityProxy(self.distro)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    # Add the tests that should run, excluding TestRobotsBase.
-    suite.addTest(loader.loadTestsFromTestCase(TestRobotsProduct))
-    suite.addTest(loader.loadTestsFromTestCase(TestRobotsProjectGroup))
-    suite.addTest(loader.loadTestsFromTestCase(TestRobotsProductSeries))
-    suite.addTest(loader.loadTestsFromTestCase(TestRobotsDistroSeries))
-    suite.addTest(loader.loadTestsFromTestCase(TestRobotsDistro))
-    return suite
