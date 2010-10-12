@@ -306,11 +306,17 @@ up anyway.)
 
     >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
     Give all programs running on "mycomputer" access to my Launchpad account.
+    I'd like to try the integration for one hour.
+    I'd like to try the integration for one day.
+    I'd like to try the integration for one week.
     No, thanks, I don't trust "mycomputer".
 
     >>> print_access_levels_for(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Give all programs running on "mycomputer" access to my Launchpad account.
+    Permanently integrat "mycomputer" into my Launchpad account.
+    I'd like to try the integration for one hour.
+    I'd like to try the integration for one day.
+    I'd like to try the integration for one week.
     No, thanks, I don't trust "mycomputer".
 
 A desktop may not request a level of access other than

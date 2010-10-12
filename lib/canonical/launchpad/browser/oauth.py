@@ -192,9 +192,11 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                      "the computer being integrated."
                      % self.token.consumer.key))
 
-            # We're going for desktop integration. The only two
-            # possibilities are "allow" and "deny". We'll customize
-            # the "allow" message using the hostname provided by the
+            # We're going for desktop integration. There are four
+            # possibilities: "allow permanently", "allow for one
+            # hour", "allow for one day", "allow for one week", and
+            # "deny". We'll customize the "allow permanently" and
+            # "deny" message using the hostname provided by the
             # desktop.
             #
             # Since self.actions is a descriptor that returns copies
@@ -203,13 +205,27 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             # else.
             desktop_name = self.token.consumer.integrated_desktop_name
             label = (
-                'Give all programs running on &quot;%s&quot; access '
-                'to my Launchpad account.')
+                'Permanently integrate &quot;%s&quot; into my '
+                'Launchpad account.')
             allow_action = [
                 action for action in self.actions
                 if action.name == desktop_permission.name][0]
             allow_action.label = label % desktop_name
             actions.append(allow_action)
+
+            # Now create Action objects for the temporary integration
+            # actions.
+            for duration_name, duration_seconds in (
+                ('hour', 60 * 60), ('day', 60 * 60 * 24),
+                ('week', 60 * 60 * 24 * 7)):
+                action = [
+                    action for action in self.actions
+                    if action.name == desktop_permission.name][0]
+                action.label = (
+                    "I'd like to try the integration for one %s." % (
+                        duration_name))
+                action.duration = duration_seconds
+                actions.append(action)
 
             # We'll customize the "deny" message as well.
             label = "No, thanks, I don't trust &quot;%s&quot;."
