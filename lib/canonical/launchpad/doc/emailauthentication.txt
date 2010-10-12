@@ -3,7 +3,7 @@
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
-    >>> from canonical.launchpad.mail.incoming import authenticateEmail
+    >>> from lp.services.mail.incoming import authenticateEmail
 
 The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
