@@ -348,6 +348,22 @@ class TestFTPArchive(TestCaseWithFactory):
 
         fa.createEmptyPocketRequests(fullpublish=True)
 
+        # createEmptyPocketRequests creates empty override and file
+        # listings.
+        lists = (
+            'hoary-test-updates_main_source',
+            'hoary-test-updates_main_binary-i386',
+            'hoary-test-updates_main_debian-installer_binary-i386',
+            'override.hoary-test-updates.main',
+            'override.hoary-test-updates.extra.main',
+            'override.hoary-test-updates.main.src',
+            )
+
+        for listname in lists:
+            path = os.path.join(self._config.overrideroot, listname)
+            self.assertTrue(os.path.exists(path))
+            self.assertEquals("", open(path).read())
+
         # XXX cprov 2007-03-21: see above, byte-to-byte configuration
         # comparing is weak.
         apt_conf = fa.generateConfig(fullpublish=True)
