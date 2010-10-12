@@ -1039,6 +1039,10 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
+
+
+class TestArchiveIndices(TestPublisherBase):
+
     def assertIndices(self, publisher, suites=['breezy-autotest'],
                       present=[], absent=[]):
         """Assert that the given suites have correct indices."""
