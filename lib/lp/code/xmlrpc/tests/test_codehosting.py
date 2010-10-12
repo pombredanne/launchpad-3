@@ -642,14 +642,12 @@ class CodehostingTest(TestCaseWithFactory):
             (branch.control_format, branch.branch_format,
              branch.repository_format))
 
-    def assertNotFound(self, requester, path, fault_text=None):
+    def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
             requester = requester.id
-        if fault_text is None:
-            fault_text = path
         fault = self.codehosting_api.translatePath(requester, path)
-        self.assertEqual(faults.PathTranslationError(fault_text), fault)
+        self.assertEqual(faults.PathTranslationError(path), fault)
 
     def assertPermissionDenied(self, requester, path):
         """Assert that looking at the given path gives permission denied."""
@@ -958,6 +956,13 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_invalid_product_name(self):
+        # translatePath returns XXX
+        requester = self.factory.makePerson()
+        invalid_name = '_' + self.factory.getUniqueString()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_bzrdir_content(self):
