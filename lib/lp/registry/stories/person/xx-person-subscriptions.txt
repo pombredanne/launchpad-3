@@ -18,8 +18,9 @@ subscriptions.
     >>> "does not have any direct bug subscriptions" in page_text
     True
 
-Any user can see that Webster is subscribed to several bugs.  The bug
-subscriptions table includes the bug number, title and location.
+To test bug subscriptions we are going to create two products, Affluenza and
+Scofflaw, and a user Webster who will be subscribed to bugs about both of
+those.
 
     >>> login('foo.bar@canonical.com')
     >>> scofflaw = factory.makeProduct(name='scofflaw')
@@ -33,6 +34,10 @@ subscriptions table includes the bug number, title and location.
     >>> subscriptionA = bugA.subscribe(subscriber, subscriber)
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
+
+Any user can see that Webster is subscribed to some bugs.  The bug
+subscriptions table includes the bug number, title and location.
+
     >>> anon_browser.open('http://launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'bug_subscriptions'))
@@ -50,7 +55,7 @@ permission to remove the subscription, for bugs to which the person or team is
 subscribed.
 
 Webster can see and manage his direct bug subscriptions using the page too.
-He chooses to view bug 16 - "Word needs more popularity".
+He chooses to view the bug about Scofflaw.
 
     >>> login('foo.bar@canonical.com')
     >>> subscriber_browser = setupBrowser(
@@ -59,7 +64,7 @@ He chooses to view bug 16 - "Word needs more popularity".
     >>> logout()
     >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
     >>> unsub_link = subscriber_browser.getLink(
-    ...     id='unsubscribe-subscriber-243656')
+    ...     id='unsubscribe-subscriber-%s' % subscriber.id)
     >>> unsub_link.click()
     >>> page_text = extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'nonportlets'))
@@ -67,7 +72,7 @@ He chooses to view bug 16 - "Word needs more popularity".
     True
 
 After viewing the +subscribe page Webster decides that they still want to be
-subscribed to bug 16.  They click cancel which takes them back to their
+subscribed to the bug.  They click cancel which takes them back to their
 +subscription page.
 
     >>> cancel_link = subscriber_browser.getLink('Cancel')
@@ -75,16 +80,17 @@ subscribed to bug 16.  They click cancel which takes them back to their
     >>> print subscriber_browser.title
     Subscriptions : Webster
 
-He chooses to unsubscribe from bug 17 - "A terrible affliction".
+He chooses to unsubscribe from the bug Affluenza.
 
-    >>> subscriber_browser.getLink(url='/affluenza/+bug/17/+subscribe').click()
+    >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
+    ...     % bugB.id).click()
     >>> subscriber_browser.getControl("Unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
     Subscriptions : Webster
 
-Webster can see that bug 17 is no longer listed in his direct bug
-subscriptions.
+Webster can see that the bug about Affluenza is no longer listed in his direct
+bug subscriptions.
 
     >>> subscriber_browser.open('http://bugs.launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
@@ -120,9 +126,10 @@ Webster chooses to review the subscriptions for his team America.
     Word came from a contest
     Scofflaw
 
-Webster now chooses to unsubscribe team America from bug 18.
+Webster now chooses to unsubscribe team America from the bug about Scofflaw.
 
-    >>> subscriber_browser.getLink(id='unsubscribe-subscriber-243658').click()
+    >>> subscriber_browser.getLink(id='unsubscribe-subscriber-%s' %
+    ...     team.id).click()
     >>> print extract_text(find_tags_by_class(
     ...     subscriber_browser.contents, 'value')[0])
     Subscribe me to this bug
