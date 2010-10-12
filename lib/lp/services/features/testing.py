@@ -9,6 +9,8 @@ __all__ = ['active_features']
 
 from fixtures import Fixture
 from lp.services.features import per_thread
+from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import Rule, StormFeatureRuleSource
 
 
 class FeatureFixture(Fixture):
@@ -40,18 +42,26 @@ class FeatureFixture(Fixture):
         """Set the feature flags that this fixture is responsible for."""
         super(FeatureFixture, self).setUp()
 
-        controller = FakeFeatureController()
+        rule_source = StormFeatureRuleSource()
+        self.addCleanup(
+            rule_source.setAllRules, rule_source.getAllRulesAsTuples())
 
-        # Save the currently set features and their controller
-        original_features = getattr(per_thread, 'features', None)
-        if original_features:
-            controller.update(original_features.getAllFlags())
+        new_rules = [
+            Rule(
+                flag=flag_name,
+                scope='default',
+                priority=999,
+                value=unicode(value))
+            for flag_name, value in self.desired_features.iteritems()]
 
-        # Add our new flags, overriding old ones if necessary
-        controller.update(self.desired_features)
+        rule_source.setAllRules(new_rules)
 
+
+        original_controller = getattr(per_thread, 'features', None)
+        controller = FeatureController(lambda _: True, rule_source)
         per_thread.features = controller
-        self.addCleanup(setattr, per_thread, 'features', original_features)
+        self.addCleanup(setattr, per_thread, 'features', original_controller)
+
 
 
 class FakeFeatureController:
