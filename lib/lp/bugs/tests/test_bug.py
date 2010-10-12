@@ -183,3 +183,31 @@ class TestBug(TestCaseWithFactory):
         self.assertEqual(
             2, len(direct_subscribers),
             "There should be two direct subscribers to COMMENTS.")
+
+    def test_subscribers_from_dupes_uses_level(self):
+        # When getSubscribersFromDuplicates() is passed a `level`
+        # parameter it will include only subscribers subscribed to
+        # duplicates at that BugNotificationLevel.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+            # We unsubscribe the owner of the duplicate to avoid muddling
+            # the results retuned by getSubscribersFromDuplicates()
+            duplicate_bug.unsubscribe(
+                duplicate_bug.owner, duplicate_bug.owner)
+        for level in BugNotificationLevel.items:
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                subscription = duplicate_bug.subscribe(
+                    subscriber, subscriber, level=level)
+            duplicate_subscribers = (
+                bug.getSubscribersFromDuplicates(level=level))
+            self.assertTrue(
+                subscriber in duplicate_subscribers,
+                "Subscriber at level %s is not in duplicate_subscribers." %
+                level.name)
+            self.assertEqual(
+                1, len(duplicate_subscribers),
+                "There should be only one subscriber to the duplicate "
+                "for level %s." % level.name)

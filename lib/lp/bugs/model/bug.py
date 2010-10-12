@@ -891,11 +891,17 @@ BugMessage""" % sqlvalues(self.id))
         if self.private:
             return []
 
+        if level is None:
+            notification_level = BugNotificationLevel.COMMENTS
+        else:
+            notification_level = level
+
         dupe_details = dict(
             Store.of(self).find(
                 (Person, Bug),
                 BugSubscription.person == Person.id,
                 BugSubscription.bug_id == Bug.id,
+                BugSubscription.bug_notification_level == notification_level,
                 Bug.duplicateof == self.id))
 
         dupe_subscribers = set(dupe_details)
