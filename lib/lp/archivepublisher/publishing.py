@@ -149,11 +149,6 @@ class Publisher(object):
         else:
             self._library = library
 
-        # Grab a reference to an apt_handler as we use it later to
-        # probe which components need releases files generated.
-        self.apt_handler = FTPArchiveHandler(self.log, self._config,
-                                             self._diskpool, self.distro,
-                                             self)
         # Track which distroseries pockets have been dirtied by a
         # change, and therefore need domination/apt-ftparchive work.
         # This is a set of tuples in the form (distroseries.name, pocket)
@@ -288,7 +283,10 @@ class Publisher(object):
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""
         self.log.debug("* Step C: Set apt-ftparchive up and run it")
-        self.apt_handler.run(is_careful)
+        apt_handler = FTPArchiveHandler(self.log, self._config,
+                                        self._diskpool, self.distro,
+                                        self)
+        apt_handler.run(is_careful)
 
     def C_writeIndexes(self, is_careful):
         """Write Index files (Packages & Sources) using LP information.
