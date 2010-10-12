@@ -158,7 +158,6 @@ from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
-from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
@@ -959,7 +958,7 @@ class ProductDownloadFileMixin:
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin, UsesLaunchpadMixin):
+                  ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -1421,21 +1420,21 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
-    label = "Configure Blueprints"
+    label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
-    label = "Configure Translations"
+    label = "Configure translations"
     usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
-    label = "Configure Answers"
+    label = "Configure answers"
     usage_fieldname = 'answers_usage'
 
 

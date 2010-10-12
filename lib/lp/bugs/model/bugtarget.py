@@ -332,7 +332,7 @@ class HasBugHeatMixin:
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
+    This class is intended to be used as a mixin for the classes
     Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
