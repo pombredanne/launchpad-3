@@ -38,10 +38,10 @@ subscriptions table includes the bug number, title and location.
     ...     anon_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    16
+    ...
     Word needs more popularity
     Scofflaw
-    17
+    ...
     A terrible affliction
     Affluenza
 
@@ -61,10 +61,10 @@ He chooses to view bug 16 - "Word needs more popularity".
     >>> unsub_link = subscriber_browser.getLink(
     ...     id='unsubscribe-subscriber-243656')
     >>> unsub_link.click()
-    >>> print extract_text(find_tag_by_id(
+    >>> page_text = extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'nonportlets'))
-    Unsubscribe from bug #16
-    ...
+    >>> "Unsubscribe me from this bug" in page_text
+    True
 
 After viewing the +subscribe page Webster decides that they still want to be
 subscribed to bug 16.  They click cancel which takes them back to their
@@ -91,7 +91,7 @@ subscriptions.
     ...     subscriber_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    16
+    ...
     Word needs more popularity
     Scofflaw
 
@@ -116,7 +116,7 @@ Webster chooses to review the subscriptions for his team America.
     ...     subscriber_browser.contents, 'bug_subscriptions'))
     Summary
     In
-    18
+    ...
     Word came from a contest
     Scofflaw
 
