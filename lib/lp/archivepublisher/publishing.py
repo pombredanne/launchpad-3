@@ -555,7 +555,7 @@ class Publisher(object):
             all_series_files)
 
     def _writeSuiteArch(self, distroseries, pocket, component,
-                               arch_name, all_series_files):
+                        arch_name, all_series_files):
         """Write out a Release file for an architecture in a suite."""
         file_stub = 'Packages'
         arch_path = 'binary-' + arch_name
