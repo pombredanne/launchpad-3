@@ -230,8 +230,8 @@ class TestDKIM(TestCaseWithFactory):
             'foo.bar@canonical.com')
 
     def test_dkim_message_unsigned(self):
-        # This is a degenerate case: no signature is treated as weakly
-        # authenticated.
+        # This is a degenerate case: a message with no signature is
+        # treated as weakly authenticated.
         # The library doesn't log anything if there's no header at all.
         principal = authenticateEmail(
             signed_message_from_string(plain_content))
@@ -240,8 +240,8 @@ class TestDKIM(TestCaseWithFactory):
             'foo.bar@canonical.com')
 
     def test_dkim_body_mismatch(self):
-        # The message message has a syntactically valid DKIM signature
-        # that doesn't actually correspond to what was signed.  We log
+        # The message has a syntactically valid DKIM signature that
+        # doesn't actually correspond to what was signed.  We log
         # something about this but we don't want to drop the message.
         signed_message = self.fake_signing(plain_content)
         signed_message += 'blah blah'
