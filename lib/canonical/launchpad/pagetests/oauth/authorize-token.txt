@@ -4,14 +4,21 @@ Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
 and authorize or not the consumer to act on his behalf.
 
+    >>> def request_token_for(consumer):
+    ...     """Helper method to create a request token."""
+    ...     login('salgado@ubuntu.com')
+    ...     token = consumer.newRequestToken()
+    ...     logout()
+    ...     return token
+
     # Create a new request token.
     >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
     >>> logout()
+    >>> token = request_token_for(consumer)
 
 According to the OAuth Core 1.0 spec, the request to the service
 provider's user authorization URL (+authorize-token in our case) must
@@ -71,10 +78,13 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def authorize_token_main_content(allow_permission):
+    >>> def authorize_token_browser(allow_permission):
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
+
+    >>> def authorize_token_main_content(allow_permission):
+    ...     authorize_token_browser(allow_permission)
     ...     return find_tag_by_id(browser.contents, 'maincontent')
 
     >>> def print_access_levels_for(allow_permission):
@@ -196,10 +206,7 @@ If no oauth_callback is specified, we redirect the user to
 +authorized-token.
 
     # Create a new (unreviewed) token.
-    >>> logout()
-    >>> login('salgado@ubuntu.com')
-    >>> token = consumer.newRequestToken()
-    >>> logout()
+    >>> token = request_token_for(consumer)
 
     >>> params = dict(oauth_token=token.key)
     >>> browser.open(
@@ -268,13 +275,14 @@ entire desktop environment into Launchpad.
 The desktop integration option is only available for OAuth consumers
 that say what kind of desktop they are (eg. Ubuntu) and give a name
 that a user can identify with their computer (eg. the hostname). Here,
-we'll create such a token.
+we'll create such a consumer, and then a request token for that consumer.
 
     >>> login('salgado@ubuntu.com')
-    >>> desktop_key = "System-wide: Ubuntu desktop (mycomputer)"
-    >>> consumer = getUtility(IOAuthConsumerSet).new(desktop_key)
-    >>> token = consumer.newRequestToken()
+    >>> consumer = getUtility(IOAuthConsumerSet).new(
+    ...     "System-wide: Ubuntu desktop (mycomputer)")
     >>> logout()
+
+    >>> token = request_token_for(consumer)
 
 When a desktop tries to integrate with Launchpad, the user gets a
 special warning about giving access to every program running on their
@@ -304,8 +312,9 @@ list of permissions is if the client specifically requests it, and no
 other permission. (Also requesting UNAUTHORIZED is okay--it will show
 up anyway.)
 
-    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
-    Give all programs running on "mycomputer" access to my Launchpad account.
+    >>> allow_desktop = 'allow_permission=DESKTOP_INTEGRATION'
+    >>> print_access_levels_for(allow_desktop)
+    Permanently integrate "mycomputer" into my Launchpad account.
     I'd like to try the integration for one hour.
     I'd like to try the integration for one day.
     I'd like to try the integration for one week.
@@ -313,7 +322,7 @@ up anyway.)
 
     >>> print_access_levels_for(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Permanently integrat "mycomputer" into my Launchpad account.
+    Permanently integrate "mycomputer" into my Launchpad account.
     I'd like to try the integration for one hour.
     I'd like to try the integration for one day.
     I'd like to try the integration for one week.
@@ -330,7 +339,7 @@ level that specifically applies across the entire desktop.
     ("Change Anything") not supported for desktop-wide use.
 
     >>> print_access_levels_for(
-    ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
+    ...     'allow_permission=WRITE_PUBLIC&' + allow_desktop)
     Traceback (most recent call last):
     ...
     Unauthorized: Desktop integration token requested a permission
@@ -341,7 +350,7 @@ token, since callback URLs should only be used when integrating
 websites into Launchpad.
 
     >>> params['oauth_callback'] = 'http://launchpad.dev/bzr'
-    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
+    >>> print_access_levels_for(allow_desktop)
     Traceback (most recent call last):
     ...
     Unauthorized: A desktop integration may not specify an OAuth
@@ -355,3 +364,21 @@ DESKTOP_INTEGRATION permission.
     ...
     Unauthorized: A desktop integration may not specify an OAuth
     callback URL.
+
+    >>> del params['oauth_callback']
+
+Time-limited integration
+------------------------
+
+If the client clicks the "Permanently integrate..." button, the
+resulting access token has no expiration time.
+
+    >>> authorize_token_browser(allow_desktop)
+    >>> browser.getControl('Permanently integrate "mycomputer" into my Launchpad account.').click()
+
+    >>> browser.url
+    'http://launchpad.dev/+token-authorized?...'
+
+    >>> login(ANONYMOUS)
+    >>> token = consumer.getRequestToken(token.key)
+    >>> import pdb; pdb.set_trace()

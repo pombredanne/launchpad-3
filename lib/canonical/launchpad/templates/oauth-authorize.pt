@@ -73,6 +73,8 @@
              <tr tal:repeat="action view/visible_actions">
                <td style="text-align: right">
                  <tal:action replace="structure action/render" />
+                 <input type="hidden" name="allow_permission"
+                  tal:attributes="value action/permission/name" />
                </td>
 
                <tal:web-integration-token
@@ -90,6 +92,7 @@
             <input type="hidden" name="oauth_token"
                    tal:condition="request/form/oauth_token|nothing"
                    tal:attributes="value request/form/oauth_token" />
+
             <input type="hidden" name="oauth_callback"
                    tal:condition="request/form/oauth_callback|nothing"
                    tal:attributes="value request/form/oauth_callback" />

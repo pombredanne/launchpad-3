@@ -174,9 +174,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
         # DESKTOP_INTEGRATION cannot be requested as one of several
         # options--it must be the only option (other than
-        # UNAUTHORIZED). If DESKTOP_INTEGRATION is one of several
-        # options, remove it from the list.
+        # UNAUTHORIZED). If there is any item in the list that doesn't
+        # use DESKTOP_INTEGRATION, remove it from the list.
         desktop_permission = OAuthPermission.DESKTOP_INTEGRATION
+
         if (desktop_permission.name in allowed_permissions
             and len(allowed_permissions) > 1):
             allowed_permissions.remove(desktop_permission.name)
@@ -234,7 +235,6 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]
             deny_action.label = label % desktop_name
             actions.append(deny_action)
-
         else:
             # We're going for web-based integration.
             for action in self.actions_excluding_special_permissions:
