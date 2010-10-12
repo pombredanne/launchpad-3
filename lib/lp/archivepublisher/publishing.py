@@ -526,8 +526,8 @@ class Publisher(object):
         archive_signer.signRepository(suite)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
-                                       file_stub, arch_name, arch_path,
-                                       all_series_files):
+                                file_stub, arch_name, arch_path,
+                                all_series_files):
         """Write out a Release file for an architecture or source."""
         # XXX kiko 2006-08-24: Untested method.
 
@@ -558,7 +558,7 @@ class Publisher(object):
             f.close()
 
     def _writeSuiteSource(self, distroseries, pocket, component,
-                                 all_series_files):
+                          all_series_files):
         """Write out a Release file for a suite's sources."""
         self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Sources', 'source', 'source',
