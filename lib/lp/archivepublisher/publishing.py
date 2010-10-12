@@ -158,9 +158,7 @@ class Publisher(object):
 
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
-        if not (distroseries.name, pocket) in self.dirty_pockets:
-            return False
-        return True
+        return (distroseries.name, pocket) in self.dirty_pockets
 
     def markPocketDirty(self, distroseries, pocket):
         """Mark a pocket dirty only if it's allowed."""
