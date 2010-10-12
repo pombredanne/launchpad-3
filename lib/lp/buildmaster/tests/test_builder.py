@@ -57,6 +57,7 @@ from lp.buildmaster.tests.mock_slaves import (
     TrivialBehavior,
     WaitingSlave,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -435,6 +436,17 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
 
         # And the old_candidate is superseded:
         self.assertEqual(BuildStatus.SUPERSEDED, build.status)
+
+    def test_acquireBuildCandidate_marks_building(self):
+        # acquireBuildCandidate() should call _findBuildCandidate and
+        # mark the build as building.
+        archive = self.factory.makeArchive()
+        self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=archive).createMissingBuilds()
+        candidate = removeSecurityProxy(
+            self.frog_builder).acquireBuildCandidate()
+        self.assertEqual(JobStatus.RUNNING, candidate.job.status)
 
 
 class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):

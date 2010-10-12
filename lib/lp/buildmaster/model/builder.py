@@ -669,7 +669,6 @@ class Builder(SQLBase):
         If there's ever more than one build manager running at once, then
         this code will need some sort of mutex.
         """
-        # XXX: This has no tests.
         candidate = self._findBuildCandidate()
         if candidate is not None:
             candidate.markAsBuilding(self)
