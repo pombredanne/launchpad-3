@@ -26,6 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
@@ -60,7 +61,7 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      proc_families=None):
+                      proc_families=None, always_create=False):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -74,7 +75,11 @@ class PackageCloner:
             distroarchseries instances.
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        @param the processor families to create builds for.
+        @param proc_families: the processor families to create builds for.
+        @type proc_families: Iterable
+        @param always_create: if we should create builds for every source
+            package copied, useful if no binaries are to be copied.
+        @type always_create: Boolean
         """
         # First clone the source packages.
         self._clone_source_packages(origin, destination)
@@ -90,9 +95,12 @@ class PackageCloner:
             proc_families = []
 
         self._create_missing_builds(
-            destination.distroseries, destination.archive, proc_families)
+            destination.distroseries, destination.archive,
+            distroarchseries_list, proc_families, always_create)
 
-    def _create_missing_builds(self, distroseries, archive, proc_families):
+    def _create_missing_builds(
+        self, distroseries, archive, distroarchseries_list,
+        proc_families, always_create):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
@@ -126,7 +134,16 @@ class PackageCloner:
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:
-            pubrec.createMissingBuilds(architectures_available=architectures)
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures)
+            # If the last build was sucessful, we should create a new
+            # build, since createMissingBuilds() won't.
+            if not builds and always_create:
+                for arch in architectures:
+                    build = pubrec.sourcepackagerelease.createBuild(
+                        distro_arch_series=arch, archive=archive,
+                        pocket=PackagePublishingPocket.RELEASE)
+                    build.queueBuild(suspended=not archive.enabled)
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 
@@ -216,7 +233,8 @@ class PackageCloner:
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
         self._create_missing_builds(
-            destination.distroseries, destination.archive, proc_families)
+            destination.distroseries, destination.archive, (),
+            proc_families, False)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.
@@ -245,7 +263,8 @@ class PackageCloner:
                 secsrc.sourcepackagerelease = spr.id AND
                 spr.sourcepackagename = spn.id AND
                 spn.name = mcd.sourcepackagename AND
-                debversion_sort_key(spr.version) > debversion_sort_key(mcd.t_version)
+                debversion_sort_key(spr.version) >
+                debversion_sort_key(mcd.t_version)
         """ % sqlvalues(
                 origin.archive,
                 PackagePublishingStatus.PENDING,
