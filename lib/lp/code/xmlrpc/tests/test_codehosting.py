@@ -958,6 +958,16 @@ class CodehostingTest(TestCaseWithFactory):
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
 
+    def test_translatePath_branch_alias_no_linked_sourcepackage_branch(self):
+        # translatePath returns a not found when there's no linked branch for
+        # a distro series source package.
+        requester = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        distro = sourcepackage.distribution
+        path = '/%s/%s/%s' % (
+            BRANCH_ALIAS_PREFIX, distro.name, sourcepackage.sourcepackagename)
+        self.assertNotFound(requester, path)
+
     def test_translatePath_branch_alias_invalid_product_name(self):
         # translatePath returns XXX
         requester = self.factory.makePerson()
