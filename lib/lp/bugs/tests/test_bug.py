@@ -131,9 +131,9 @@ class TestBug(TestCaseWithFactory):
         # It's possible to subscribe to a bug at a different
         # BugNotificationLevel by passing a `level` parameter to
         # subscribe().
+        bug = self.factory.makeBug()
         for level in BugNotificationLevel.items:
             subscriber = self.factory.makePerson()
-            bug = self.factory.makeBug()
             with person_logged_in(subscriber):
                 subscription = bug.subscribe(
                     subscriber, subscriber, level=level)
@@ -145,4 +145,41 @@ class TestBug(TestCaseWithFactory):
         # return only those subscribers who will receive that level of
         # notifications or higher.
         bug = self.factory.makeBug()
+        # We unsubscribe the bug's owner because if we don't there will
+        # be two COMMENTS-level subscribers.
+        with person_logged_in(bug.owner):
+            bug.unsubscribe(bug.owner, bug.owner)
+        for level in BugNotificationLevel.items:
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                subscription = bug.subscribe(
+                    subscriber, subscriber, level=level)
+            direct_subscribers = bug.getDirectSubscribers(level=level)
+            self.assertTrue(
+                subscriber in direct_subscribers,
+                "Subscriber at level %s is not in direct_subscribers." %
+                level.name)
+            self.assertEqual(
+                1, len(direct_subscribers),
+                "There should be only one direct subscriber for level %s." %
+                level.name)
+
+    def test_get_direct_subscribers_default_level(self):
+        # If no `level` parameter is passed to getDirectSubscribers(),
+        # the assumed `level` is BugNotification.COMMENTS.
+        bug = self.factory.makeBug()
+        level = BugNotificationLevel.COMMENTS
         subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=level)
+        direct_subscribers = bug.getDirectSubscribers(level=level)
+        self.assertTrue(
+            bug.owner in direct_subscribers,
+            "Bug owner is not in direct_subscribers to COMMENTS.")
+        self.assertTrue(
+            subscriber in direct_subscribers,
+            "Subscriber at level COMMENTS is not in direct_subscribers.")
+        self.assertEqual(
+            2, len(direct_subscribers),
+            "There should be two direct subscribers to COMMENTS.")

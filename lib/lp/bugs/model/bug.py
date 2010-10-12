@@ -821,7 +821,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug == self).order_by(
             Func('person_sort_key', Person.displayname, Person.name))
 
-    def getDirectSubscribers(self, recipients=None):
+    def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
@@ -829,10 +829,15 @@ BugMessage""" % sqlvalues(self.id))
         the relevant subscribers and rationales will be registered on
         it.
         """
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
+
         subscribers = list(
             Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = %d""" % self.id,
+                Person.id = BugSubscription.person
+                AND BugSubscription.bug = %s
+                AND BugSubscription.bug_notification_level = %s""" %
+                sqlvalues(self.id, level),
                 orderBy="displayname", clauseTables=["BugSubscription"]))
         if recipients is not None:
             for subscriber in subscribers:

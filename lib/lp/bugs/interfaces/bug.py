@@ -429,8 +429,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
-    def subscribe(person, subscribed_by, suppress_notify=True,
-                  level=BugNotificationLevel.COMMENTS):
+    def subscribe(person, subscribed_by, suppress_notify=True, level=None):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
@@ -473,13 +472,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
-    def getDirectSubscribers():
+    def getDirectSubscribers(recipients=None, level=None):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
         """
 
-    def getIndirectSubscribers():
+    def getIndirectSubscribers(recipients=None, level=None):
         """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
