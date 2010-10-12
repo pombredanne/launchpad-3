@@ -969,7 +969,7 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_invalid_product_name(self):
-        # translatePath returns XXX
+        # translatePath returns a not found when there is an invalid product name.
         requester = self.factory.makePerson()
         invalid_name = '_' + self.factory.getUniqueString()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
