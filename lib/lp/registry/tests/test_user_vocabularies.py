@@ -20,7 +20,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.person import Person
 from lp.testing import TestCaseWithFactory

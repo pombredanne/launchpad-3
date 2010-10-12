@@ -14,7 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
     ChrootManager,

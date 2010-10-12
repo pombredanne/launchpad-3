@@ -17,7 +17,7 @@ from canonical.launchpad.scripts import (
     BufferLogger,
     QuietFakeLogger,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.testing.layers import DatabaseLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
