@@ -1894,7 +1894,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
-        getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            child, architectures, packagesets, rebuild)
 
 
 class DistroSeriesSet:
