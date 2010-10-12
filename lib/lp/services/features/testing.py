@@ -54,22 +54,22 @@ class FeatureFixture(Fixture):
         self.addCleanup(setattr, per_thread, 'features', original_features)
 
 
-class FakeFeatureController(dict):
+class FakeFeatureController:
     """A FeatureController test double that does not hit the database.
 
     This is essentially a glorified dict :)
     """
 
     def __init__(self, scopes_callback=None):
-        pass
+        self._flags = dict()
 
     def getFlag(self, flag_name):
         """See `FeatureController.getFlag' for usage."""
-        return self.get(flag_name)
+        return self._flags.get(flag_name)
 
     def getAllFlags(self):
         """See `FeatureController.getAllFlags' for usage."""
-        return self
+        return self._flags.copy()
 
     def setFlag(self, flag_name, value):
         """A convenience method for setting a feature flag.
@@ -77,4 +77,12 @@ class FakeFeatureController(dict):
         :param flag_name: The name of the flag to be set.
         :param value: The flag's new value.
         """
-        self[flag_name] = value
+        self._flags[flag_name] = value
+
+    def update(self, flags_dict):
+        """A convenience method for updating all of the flags in controller.
+
+        :param flags_dict: A dictionary of flag names and values.
+        """
+        for flag, value in flags_dict.iteritems():
+            self.setFlag(flag, value)
