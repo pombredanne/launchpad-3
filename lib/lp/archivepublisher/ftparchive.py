@@ -212,16 +212,6 @@ class FTPArchiveHandler:
                 for comp in components:
                     self.createEmptyPocketRequest(distroseries, pocket, comp)
 
-    def requestReleaseFile(self, suite_name, component_name, arch_name):
-        """Request Release file generation for given context.
-
-        'suite_name', 'component_name' and 'arch_name' will be organised as
-        a dictionary (self.release_files_needed) keyed by 'suite_name' which
-        value will be another dictionary keyed by 'component_name' and
-        containing a set of 'arch_name's as value.
-        """
-        self.release_files_needed.add(suite_name)
-
     def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
         if pocket == PackagePublishingPocket.RELEASE:

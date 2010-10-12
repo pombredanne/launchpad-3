@@ -299,6 +299,12 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
+
+                # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
+                # for NMAF is wrong.
+                self.apt_handler.release_files_needed.add(
+                    distroseries.getSuite(pocket))
+
                 # Retrieve components from the publisher config because
                 # it gets overridden in getPubConfig to set the
                 # correct components for the archive being used.
@@ -360,11 +366,6 @@ class Publisher(object):
 
             arch_path = 'binary-%s' % arch.architecturetag
 
-            # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
-            # for NMAF is wrong.
-            self.apt_handler.requestReleaseFile(
-                suite_name, component.name, arch_path)
-
             self.log.debug("Generating Packages for %s" % arch_path)
 
             package_index_root = os.path.join(
@@ -395,11 +396,6 @@ class Publisher(object):
 
             package_index.close()
             di_index.close()
-
-        # XXX wgrant 2010-10-06 bug=655690: Using FTPArchiveHandler
-        # is wrong here too.
-        self.apt_handler.requestReleaseFile(
-            suite_name, component.name, 'source')
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
