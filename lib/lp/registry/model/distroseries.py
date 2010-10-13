@@ -1856,11 +1856,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
 
-    def deriveDistroSeries(
-        self, user, name, distribution=None, displayname=None,
-        title=None, summary=None, description=None, version=None,
-        status=SeriesStatus.FROZEN, architectures=(), packagesets=(),
-        rebuild=False):
+    def deriveDistroSeries(self, user, name, distribution=None,
+                           displayname=None, title=None, summary=None,
+                           description=None, version=None,
+                           status=SeriesStatus.FROZEN, architectures=(),
+                           packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
         # XXX StevenK bug=643369 This should be in the security adapter
         # This should be allowed if the user is a driver for self.parent
@@ -1871,13 +1871,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if child is None:
             if distribution is None:
                 distribution = self.distribution
-            for param in (
-                displayname, title, summary, description, version):
-                if param is None or len(param) == 0:
-                    raise DerivationError(
-                        "Display Name, Title, Summary, Description and"
-                        " Version all need to be set when creating a"
-                         " distroseries")
+            if displayname is None or len(displayname) == 0:
+                raise DerivationError("Display Name needs to be set when"
+                    " creating a distroseries.")
+            if title is None or len(title) == 0:
+                raise DerivationError("Title needs to be set when creating"
+                    " a distroseries.")
+            if summary is None or len(summary) == 0:
+                raise DerivationError("Summary needs to be set when"
+                    " creating a distroseries.")
+            if description is None or len(description) == 0:
+                raise DerivationError("Description needs to be set when"
+                    " creating a distroseries.")
+            if version is None or len(version) == 0:
+                raise DerivationError("Version needs to be set when"
+                    " creating a distroseries.")
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,

@@ -822,9 +822,9 @@ class IDistroSeriesPublic(
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
-    def deriveDistroSeries(
-        user, name, displayname, title, summary, description, version,
-        distribution, status, architectures, packagesets, rebuild):
+    def deriveDistroSeries(user, name, displayname, title, summary,
+                           description, version, distribution, status,
+                           architectures, packagesets, rebuild):
         """Derive a distroseries from this one.
 
         This method performs checks, can create the new distroseries if

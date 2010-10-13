@@ -16,6 +16,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
@@ -32,7 +33,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
             parent_series=self.parent)
 
     def test_no_permission_to_call(self):
-        login('admin@canonical.com')
+        login(ADMIN_EMAIL)
         person = self.factory.makePerson()
         logout()
         self.assertRaises(
@@ -45,15 +46,12 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         function errors."""
         self.assertRaisesWithContent(
             DerivationError,
-            'Display Name, Title, Summary, Description and Version all '
-            'need to be set when creating a distroseries',
+            'Display Name needs to be set when creating a distroseries.',
             self.parent.deriveDistroSeries, self.soyuz.teamowner,
-            'foobuntu')
+            'newdistro')
 
     def test_parent_is_not_self(self):
-        login('admin@canonical.com')
         other = self.factory.makeDistroSeries()
-        logout()
         self.assertRaisesWithContent(
             DerivationError,
             "DistroSeries %s parent series isn't %s" % (
@@ -70,9 +68,9 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
 
     def test_create_fully_new_distroseries(self):
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, 'foobuntu', displayname='Foobuntu',
-            title='The Foobuntu', summary='Foobuntu',
-            description='Foobuntu is great', version='11.11')
+            self.soyuz.teamowner, 'deribuntu', displayname='Deribuntu',
+            title='The Deribuntu', summary='Deribuntu',
+            description='Deribuntu is great', version='11.11')
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
-        self.assertEqual(job.distroseries.name, 'foobuntu')
+        self.assertEqual(job.distroseries.name, 'deribuntu')
