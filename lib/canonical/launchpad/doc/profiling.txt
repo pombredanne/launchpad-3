@@ -133,7 +133,7 @@ The feature has two modes.
 
     >>> from lp.services.features import getFeatureFlag
     >>> getFeatureFlag('request_profiling')
-    'on'
+    u'on'
 
     >>> response = http('GET /++profile++ HTTP/1.0')
     >>> '<h1>Profiling Information</h1>' in response.getBody()
