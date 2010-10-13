@@ -421,5 +421,33 @@ class TestPersonBranchesPage(BrowserTestCase):
         self.assertIs(None, branches)
 
 
+class TestProjectBranchListing(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectBranchListing, self).setUp()
+        self.project = self.factory.makeProject()
+        self.product = self.factory.makeProduct(project=self.project)
+    
+    def test_no_branches_gets_message_not_listing(self):
+        # If there are no product branches on the project's products, then
+        # the view shows the no code hosting message instead of a listing.
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        expected_text = ("Launchpad doesn't know where %s hosts its "
+                         "products code." % self.project.displayname)
+        no_branch_div = find_tag_by_id(browser.contents, "no-branchtable")
+        text = extract_text(no_branch_div)
+
+    def test_branches_get_listing(self):
+        # If a product has a branch, then the project view has a branch
+        # listing.
+        branch = self.factory.makeProductBranch(product=self.product)
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        table = find_tag_by_id(browser.contents, "branchtable")
+        self.assertIsNot(None, table)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
