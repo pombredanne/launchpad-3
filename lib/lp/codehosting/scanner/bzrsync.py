@@ -20,6 +20,8 @@ import pytz
 import transaction
 from zope.component import getUtility
 from zope.event import notify
+from bzrlib.graph import DictParentsProvider
+from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 
@@ -78,7 +80,7 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        bzr_ancestry, bzr_history = self.retrieveBranchDetails(bzr_branch)
+        bzr_history = self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -87,7 +89,7 @@ class BzrSync:
 
         (new_ancestry, branchrevisions_to_delete,
             revids_to_insert) = self.planDatabaseChanges(
-            bzr_branch, bzr_ancestry, bzr_history, db_ancestry, db_history)
+            bzr_branch, bzr_history, db_ancestry, db_history)
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
@@ -132,20 +134,47 @@ class BzrSync:
         return db_ancestry, db_history
 
     def retrieveBranchDetails(self, bzr_branch):
-        """Retrieve ancestry from the the bzr branch on disk."""
+        """Retrieve history from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
-        last_revision = bzr_branch.last_revision()
-        # Make bzr_ancestry a set for consistency with db_ancestry.
-        bzr_ancestry_ordered = (
-            bzr_branch.repository.get_ancestry(last_revision))
-        first_ancestor = bzr_ancestry_ordered.pop(0)
-        assert first_ancestor is None, 'history horizons are not supported'
-        bzr_ancestry = set(bzr_ancestry_ordered)
         bzr_history = bzr_branch.revision_history()
-        return bzr_ancestry, bzr_history
+        return bzr_history
 
-    def planDatabaseChanges(self, bzr_branch, bzr_ancestry, bzr_history,
-                            db_ancestry, db_history):
+    def _getRevisionGraph(self, bzr_branch, db_last):
+        if bzr_branch.repository.has_revision(db_last):
+            return bzr_branch.repository.get_graph()
+        from storm.locals import Store
+        from lp.code.model.branchrevision import (BranchRevision)
+        from lp.code.model.revision import Revision
+        revisions = Store.of(self.db_branch).find(Revision,
+                BranchRevision.branch_id == self.db_branch.id,
+                Revision.id == BranchRevision.revision_id)
+        parent_map = dict(
+            (r.revision_id, r.parent_ids) for r in revisions)
+        parents_provider = DictParentsProvider(parent_map)
+        class PPSource:
+
+            @staticmethod
+            def _make_parents_provider():
+                return parents_provider
+
+        return bzr_branch.repository.get_graph(PPSource)
+
+    def getAncestryDelta(self, bzr_branch):
+        bzr_last = bzr_branch.last_revision()
+        db_last = self.db_branch.last_scanned_id
+        if db_last is None:
+            added_ancestry = set(bzr_branch.repository.get_ancestry(bzr_last))
+            added_ancestry.discard(None)
+            removed_ancestry = set()
+        else:
+            graph = self._getRevisionGraph(bzr_branch, db_last)
+            added_ancestry, removed_ancestry = (
+                graph.find_difference(bzr_last, db_last))
+            added_ancestry.discard(NULL_REVISION)
+        return added_ancestry, removed_ancestry
+
+    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
+                            db_history):
         """Plan database changes to synchronize with bzrlib data.
 
         Use the data retrieved by `retrieveDatabaseAncestry` and
@@ -166,8 +195,7 @@ class BzrSync:
                     break
             common_len -= 1
 
-        # Revisions added to the branch's ancestry.
-        added_ancestry = bzr_ancestry.difference(db_ancestry)
+        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
 
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
@@ -178,26 +206,19 @@ class BzrSync:
             events.RevisionsRemoved(
                 self.db_branch, bzr_branch, removed_history))
 
-        # Merged (non-history) revisions in the database and the bzr branch.
-        old_merged = db_ancestry.difference(db_history)
-        new_merged = bzr_ancestry.difference(bzr_history)
-
-        # Revisions added or removed from the set of merged revisions.
-        removed_merged = old_merged.difference(new_merged)
-        added_merged = new_merged.difference(old_merged)
-
         # We must delete BranchRevision rows for all revisions which where
         # removed from the ancestry or whose sequence value has changed.
-        branchrevisions_to_delete = list(
-            removed_merged.union(removed_history))
+        branchrevisions_to_delete = set(removed_history)
+        branchrevisions_to_delete.update(removed_ancestry)
+        branchrevisions_to_delete.update(
+            set(added_history).difference(added_ancestry))
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
         revids_to_insert = dict(
-            self.getRevisions(
-                bzr_history, added_merged.union(added_history)))
+            self.getRevisions(bzr_history, added_ancestry.union(set(added_history) )))
 
-        return (added_ancestry, branchrevisions_to_delete,
+        return (added_ancestry, list(branchrevisions_to_delete),
                 revids_to_insert)
 
     def getBazaarRevisions(self, bzr_branch, revisions):
