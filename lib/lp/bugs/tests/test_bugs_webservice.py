@@ -25,7 +25,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.webapp import snapshot
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

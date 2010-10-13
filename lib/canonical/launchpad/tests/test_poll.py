@@ -10,7 +10,7 @@ import unittest
 import pytz
 
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

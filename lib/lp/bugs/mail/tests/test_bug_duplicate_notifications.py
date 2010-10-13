@@ -15,7 +15,7 @@ from zope.interface import providedBy
 from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.interfaces import BugTaskStatus
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory

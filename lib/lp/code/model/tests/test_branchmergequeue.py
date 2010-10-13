@@ -12,7 +12,7 @@ from zope.security.proxy import isinstance
 
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
     BranchMergeControlStatus,
     BranchMergeProposalStatus,

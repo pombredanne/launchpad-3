@@ -28,7 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
