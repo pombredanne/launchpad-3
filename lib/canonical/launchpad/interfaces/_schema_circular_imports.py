@@ -49,6 +49,7 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerComponent,
+    IBugTrackerComponentGroup,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
@@ -463,6 +464,17 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_collection_return_type(
+    IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+
+## IBugTrackerComponent
+patch_reference_property(
+    IBugTrackerComponent, "distro_source_package",
+    IDistributionSourcePackage)
 
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
@@ -482,7 +494,3 @@ patch_collection_return_type(
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
 
-## IBugTrackerComponent
-patch_reference_property(
-    IBugTrackerComponent, "distro_source_package",
-    IDistributionSourcePackage)

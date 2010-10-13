@@ -763,11 +763,11 @@ class BugTrackerComponent(Storm):
             self.source_package_name = None
         else:
             self.distribution = dsp.distribution
-            self.source_package_name = dsp.name
+            self.source_package_name = dsp.sourcepackagename
 
-    dsp = property(
-        self._get_distro_source_package,
-        self._set_distro_source_package,
+    distro_source_package = property(
+        _get_distro_source_package,
+        _set_distro_source_package,
         None,
         """The distribution's source package for this component""")
 

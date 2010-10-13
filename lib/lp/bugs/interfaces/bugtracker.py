@@ -35,6 +35,7 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     operation_returns_entry,
+    operation_returns_collection_of,
     rename_parameters_as,
     REQUEST_USER,
     )
@@ -358,17 +359,20 @@ class IBugTracker(Interface):
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
     @export_write_operation()
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
     @export_read_operation()
+    @operation_returns_collection_of(Interface)
     def getAllRemoteComponentGroups():
         """Return collection of all component groups for this bug tracker"""
 
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
