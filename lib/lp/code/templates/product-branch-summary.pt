@@ -28,9 +28,17 @@
            tal:content="view/mirror_location"></a>.
       </p>
       <p tal:condition="branch/branch_type/enumvalue:IMPORTED">
+        <tal:has-import-data condition="branch/code_import">
         <tal:project_title replace="context/title" /> hosts its code at
         <a tal:attributes="href branch/code_import/url"
            tal:content="branch/code_import/url"></a>.
+        </tal:has-import-data>
+        <tal:no-import-data condition="not: branch/code_import">
+        <tal:project_title replace="context/title" /> hosts its code
+          externally.
+        <a tal:attributes="href branch/code_import/url"
+           tal:content="branch/code_import/url"></a>.
+        </tal:no-import-data>
       </p>
     </strong>
     <p tal:condition="context/homepageurl">
