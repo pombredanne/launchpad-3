@@ -306,7 +306,6 @@ desktop.
     mind later.
     See all applications authorized to access Launchpad on your behalf.
 
-
 The only time the 'Desktop Integration' permission shows up in the
 list of permissions is if the client specifically requests it, and no
 other permission. (Also requesting UNAUTHORIZED is okay--it will show
@@ -370,15 +369,29 @@ DESKTOP_INTEGRATION permission.
 Time-limited integration
 ------------------------
 
-If the client clicks the "Permanently integrate..." button, the
-resulting access token has no expiration time.
+If the client chooses a permanent integration, the resulting access
+token has no expiration time.
 
     >>> authorize_token_browser(allow_desktop)
-    >>> browser.getControl('Permanently integrate "mycomputer" into my Launchpad account.').click()
+    >>> browser.getControl("I'd like to try the integration for one hour.").click()
 
     >>> browser.url
-    'http://launchpad.dev/+token-authorized?...'
+    'http://launchpad.dev/+token-authorized?'
 
-    >>> login(ANONYMOUS)
-    >>> token = consumer.getRequestToken(token.key)
-    >>> import pdb; pdb.set_trace()
+    >>> token = token.createAccessToken()
+    >>> print token.date_expires
+    None
+
+If the client chooses a time-limited integration, the resulting
+access token has an expiration time.
+
+    >>> token = request_token_for(consumer)
+    >>> params['oauth_token'] = token.key
+    >>> authorize_token_browser(allow_desktop)
+    >>> browser.getControl("I'd like to try the integration for one hour.").click()
+
+    >>> print browser.url
+
+
+    >>> #token = token.createAccessToken()
+    >>> #print token.date_expires
