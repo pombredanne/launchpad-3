@@ -395,10 +395,10 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
-                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -477,6 +477,7 @@
                     name
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <require
                 permission="launchpad.AnyPerson"
