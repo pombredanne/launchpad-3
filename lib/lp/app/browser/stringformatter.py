@@ -274,6 +274,8 @@ class FormattersAPI:
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
             url = '/+branch/%s' % path
+            # Mark the links with a 'branch-short-link' class so they can be
+            # harvested and validated when the page is rendered.
             return '<a href="%s" class="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 "branch-short-link",

@@ -860,12 +860,6 @@ class PersonBranchesMenu(ApplicationMenu):
         'subscribed_branch_count',
         ]
 
-    def __init__(self, context):
-        super(ApplicationMenu, self).__init__(context)
-        # The attribute self.context is defined in IMenuBase.
-#        self.context = context
-#        self.request = None
-
     def _getCountCollection(self):
         """The base collection of branches which should be counted.
 
@@ -1032,12 +1026,7 @@ class PersonSubscribedBranchesView(PersonBaseBranchListingView):
     no_sort_by = (BranchListingSort.DEFAULT, )
 
     def _getCollection(self):
-        import sys
-        sys.stderr.write("11111111111111111111111")
-        try:
-            return getUtility(IAllBranches).subscribedBy(self.context)
-        finally:
-            sys.stderr.write("22222222222222222222")
+        return getUtility(IAllBranches).subscribedBy(self.context)
 
 
 class PersonTeamBranchesView(LaunchpadView):

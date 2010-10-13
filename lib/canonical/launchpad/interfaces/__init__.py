@@ -143,4 +143,3 @@ from lp.answers.interfaces.questionsubscription import *
 from lp.answers.interfaces.questiontarget import *
 
 from canonical.launchpad.interfaces._schema_circular_imports import *
-from canonical.launchpad.interfaces.linkchecker import *
