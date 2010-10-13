@@ -222,6 +222,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IProjectGroup`."""
         return self.translatables().count() != 0
 
+    def has_branches(self):
+        """ See `IProjectGroup`."""
+        return self.getBranches().count() != 0
+
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
             Product.project = %s
