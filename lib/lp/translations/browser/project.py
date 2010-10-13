@@ -57,10 +57,6 @@ class ProjectView(LaunchpadView):
         all_products = set(self.context.products)
         return list(all_products - translatables)
 
-    @cachedproperty
-    def has_translatables(self):
-        return self.context.translatables().count() > 0
-
 
 class ProjectSettingsView(TranslationsMixin, ProjectEditView):
     label = "Set permissions and policies"
