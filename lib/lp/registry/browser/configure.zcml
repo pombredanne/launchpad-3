@@ -231,26 +231,18 @@
                 template="../templates/signedcodeofconduct-index.pt"
                 name="+index"/>
         </browser:pages>
-        <browser:editform
+        <browser:page
             name="+activate"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductActiveView"
-            label="Activate code of conduct signature"
-            fields="admincomment"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-activate.pt">
-                </browser:editform>
-        <browser:editform
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
             name="+deactivate"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductDeactiveView"
-            label="Deactivate code of conduct signature"
-            fields="admincomment"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-deactivate.pt">
-                </browser:editform>
+            template="../../app/templates/generic-edit.pt" />
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             path_expression="string:console"

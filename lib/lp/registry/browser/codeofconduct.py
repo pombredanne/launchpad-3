@@ -23,10 +23,7 @@ __all__ = [
     'SignedCodeOfConductDeactiveView',
     ]
 
-from zope.app.form.browser.add import (
-    AddView,
-    EditView,
-    )
+from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
@@ -49,7 +46,6 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConduct,
     ISignedCodeOfConductSet,
     )
-from lp.registry.interfaces.person import IPerson
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
@@ -265,94 +261,39 @@ class SignedCodeOfConductAdminView:
         return True
 
 
-# XXX: salgado, bug=414861, 2009-08-17: This view must be converted to a
-# LaunchpadFormView and define a 'cancel_url' so that the form gets a cancel
-# link.
-class SignedCodeOfConductActiveView(EditView):
-    """Active a SignedCodeOfConduct Entry.
-    When activating a signature:
-     * Grant a new admincomment,
-     * store the recipient,
-     * set active.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
+class SignedCodeOfConductActiveView(LaunchpadFormView):
+    """Active a SignedCodeOfConduct Entry."""
+    schema = ISignedCodeOfConduct
+    field_names = ['admincomment']
+    label = 'Activate code of conduct signature'
+    page_title = label
+    state = True
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    def changed(self):
-        admincomment = self.request.form.get('field.admincomment')
+    cancel_url = next_url
 
-        if admincomment:
-            # No verification is needed since this page is protected by
-            # lp.Admin
-            recipient = IPerson(self.request.principal, None)
-            kw = {}
-            kw['recipient'] = recipient
-            kw['admincomment'] = admincomment
-            kw['sign_id'] = self.context.id
-            kw['state'] = True
+    def _change(self, action, data):
+        admincomment = data['admincomment']
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        sCoC_util.modifySignature(
+            sign_id=self.context.id, recipient=self.user,
+            admincomment=admincomment, state=self.state)
+        self.request.response.redirect(self.next_url)
 
-            # use utility to active it in the database
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            sCoC_util.modifySignature(**kw)
-
-            # now redirect to view the SignedCoC
-            self.request.response.redirect(self.next_url)
-
-        # XXX: cprov 2005-02-26:
-        # How to proceed with no admincomment ?
+    @action('Activate', name='change')
+    def activate(self, action, data):
+        self._change(action, data)
 
 
-# XXX: salgado, bug=414857, 2009-08-17: This view must be converted to a
-# LaunchpadFormView and define a 'cancel_url' so that the form gets a cancel
-# link.
-class SignedCodeOfConductDeactiveView(EditView):
-    """Deactive a SignedCodeOfConduct Entry.
-    When deactivating a signature:
-     * Grant admincomment,
-     * store recipient,
-     * clear active.
-    """
+class SignedCodeOfConductDeactiveView(SignedCodeOfConductActiveView):
+    """Deactive a SignedCodeOfConduct Entry."""
+    label = 'Deactivate code of conduct signature'
+    page_title = label
+    state = False
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    def changed(self):
-        admincomment = self.request.form.get('field.admincomment')
-
-        if admincomment:
-            # No verification is needed since this page is protected by
-            # lp.Edit
-            recipient = IPerson(self.request.principal, None)
-
-            kw = {}
-            kw['recipient'] = recipient
-            kw['admincomment'] = admincomment
-            kw['sign_id'] = self.context.id
-            kw['state'] = False
-
-            # use utility to active it in the database
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            sCoC_util.modifySignature(**kw)
-
-            # now redirect to view the SignedCoC
-            self.request.response.redirect(self.next_url)
-
-
-        # XXX: cprov 2005-02-26:
-        # How to proceed with no admincomment ?
-
+    @action('Deactivate', name='change')
+    def deactivate(self, action, data):
+        self._change(action, data)
