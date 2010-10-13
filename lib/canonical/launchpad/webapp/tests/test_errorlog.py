@@ -105,7 +105,7 @@ class TestErrorReport(testtools.TestCase):
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
                             [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10,'store_b', 'SELECT\n2')], False)
+                             (5, 10, 'store_b', 'SELECT\n2')], False)
         fp = StringIO.StringIO()
         entry.write(fp)
         self.assertEqual(fp.getvalue(), dedent("""\
@@ -174,7 +174,6 @@ class TestErrorReport(testtools.TestCase):
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
 
-
     def test_read_no_store_id(self):
         """Test ErrorReport.read() for old logs with no store_id."""
         fp = StringIO.StringIO(dedent("""\
@@ -217,6 +216,7 @@ class TestErrorReport(testtools.TestCase):
 
 
 class TestErrorReportingUtility(testtools.TestCase):
+
     def setUp(self):
         super(TestErrorReportingUtility, self).setUp()
         # ErrorReportingUtility reads the global config to get the
@@ -293,7 +293,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except ArbitraryException:
             utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
 
         # Check errorfile is set with the correct permission: rw-r--r--
@@ -349,8 +350,7 @@ class TestErrorReportingUtility(testtools.TestCase):
                     'name1': 'value3 \xa7',
                     'name2': 'value2',
                     u'\N{BLACK SQUARE}': u'value4',
-                    }
-                )
+                    })
         request.setInWSGIEnvironment('launchpad.pageid', 'IFoo:+foo-template')
 
         try:
@@ -358,7 +358,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -420,7 +421,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
         self.assertEqual(lines[16], 'xmlrpc args=(1, 2)\n')
@@ -475,7 +477,8 @@ class TestErrorReportingUtility(testtools.TestCase):
                 ('name1', 'value3')], URL='https://launchpad.net/example')
             utility.raising(sys.exc_info(), request, now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -517,6 +520,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
 
         class UnprintableException(Exception):
+
             def __str__(self):
                 raise RuntimeError('arrgh')
             __repr__ = __str__
@@ -528,7 +532,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.raising(sys.exc_info(), now=now)
         log.uninstall()
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -571,7 +576,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_unauthorized_without_principal(self):
@@ -584,7 +590,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_unauthorized_with_unauthenticated_principal(self):
@@ -597,7 +604,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failIf(os.path.exists(errorfile))
 
     def test_raising_unauthorized_with_authenticated_principal(self):
@@ -610,7 +618,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_translation_unavailable(self):
@@ -628,7 +637,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except TranslationUnavailable:
             utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
 
     def test_raising_no_referrer_error(self):
@@ -646,7 +656,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except NoReferrerError:
             utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
 
     def test_raising_with_string_as_traceback(self):
@@ -666,7 +677,8 @@ class TestErrorReportingUtility(testtools.TestCase):
             exc_tb = traceback.format_exc()
 
         utility.raising((exc_type, exc_value, exc_tb), now=now)
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
 
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
@@ -704,7 +716,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except ArbitraryException:
             utility.handling(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -737,18 +750,18 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_oopsMessage(self):
         """oopsMessage pushes and pops the messages."""
         utility = ErrorReportingUtility()
-        with utility.oopsMessage({'a':'b', 'c':'d'}):
+        with utility.oopsMessage({'a': 'b', 'c': 'd'}):
             self.assertEqual(
-                {0: {'a':'b', 'c':'d'}}, utility._oops_messages)
+                {0: {'a': 'b', 'c': 'd'}}, utility._oops_messages)
             # An additional message doesn't supplant the original message.
             with utility.oopsMessage(dict(e='f', a='z', c='d')):
                 self.assertEqual({
-                    0: {'a':'b', 'c':'d'},
+                    0: {'a': 'b', 'c': 'd'},
                     1: {'a': 'z', 'e': 'f', 'c': 'd'},
                     }, utility._oops_messages)
             # Messages are removed when out of context.
             self.assertEqual(
-                {0: {'a':'b', 'c':'d'}},
+                {0: {'a': 'b', 'c': 'd'}},
                 utility._oops_messages)
 
     def test__makeErrorReport_includes_oops_messages(self):
@@ -802,6 +815,7 @@ class TestRequestWithUnauthenticatedPrincipal(TestRequest):
 
 
 class TestRequestWithPrincipal(TestRequest):
+
     def setInWSGIEnvironment(self, key, value):
         self._orig_env[key] = value
 
@@ -844,7 +858,8 @@ class TestOopsLoggingHandler(TestCase):
         self.error_utility.log_namer._output_root = tempfile.mkdtemp()
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
-        self.addCleanup(remove_tree, self.error_utility.log_namer._output_root)
+        self.addCleanup(
+            remove_tree, self.error_utility.log_namer._output_root)
 
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions
