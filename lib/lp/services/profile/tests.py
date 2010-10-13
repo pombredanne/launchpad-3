@@ -25,6 +25,7 @@ from canonical.launchpad.webapp.errorlog import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
+from canonical.testing import layers
 from lp.services.profile import profile
 from lp.services.features.testing import FeatureFixture
 from lp.testing import TestCase
@@ -44,6 +45,8 @@ EXAMPLE_HTML = EXAMPLE_HTML_START + EXAMPLE_HTML_END
 
 
 class BaseTest(TestCase):
+
+    layer = layers.DatabaseFunctionalLayer
 
     def _get_request(self, path='/'):
         """Return a test request for the given path."""
