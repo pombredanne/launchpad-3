@@ -200,9 +200,13 @@ class SignedCodeOfConductAckView(AddView):
         self.context = context
         self.request = request
         self.bag = getUtility(ILaunchBag)
-        self._nextURL = '.'
+        self.signed_coc_set = getUtility(ISignedCodeOfConductSet)
+        self._nextURL = canonical_url(self.signed_coc_set)
         self.page_title = self.label
         AddView.__init__(self, context, request)
+
+    def initialize(self):
+        pass
 
     def createAndAdd(self, data):
         """Verify and Add the Acknowledge SignedCoC entry."""
@@ -220,8 +224,7 @@ class SignedCodeOfConductAckView(AddView):
         kw['recipient'] = recipient
 
         # use utility to store it in the database
-        sCoC_util = getUtility(ISignedCodeOfConductSet)
-        sCoC_util.acknowledgeSignature(**kw)
+        self.signed_coc_set.acknowledgeSignature(**kw)
 
     def nextURL(self):
         return self._nextURL

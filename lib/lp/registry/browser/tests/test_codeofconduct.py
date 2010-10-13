@@ -5,13 +5,50 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.testing import (
     login_celebrity,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
+
+
+class TestSignedCodeOfConductAckView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSignedCodeOfConductAckView, self).setUp()
+        self.signed_coc_set = getUtility(ISignedCodeOfConductSet)
+        self.owner = self.factory.makePerson()
+        self.admin = login_celebrity('admin')
+
+    def test_view_properties(self):
+        view = create_initialized_view(self.signed_coc_set, name="+new")
+        self.assertEqual(
+            'Register a code of conduct signature', view.label)
+        self.assertEqual(view.label, view.page_title)
+        self.assertEqual(['owner'], view.fieldNames)
+        url = 'http://launchpad.dev/codeofconduct/console/'
+
+    def test_register_coc_signed_on_paper(self):
+        form = {
+            'field.owner': self.owner.name,
+            'UPDATE_SUBMIT': 'Add',
+            }
+        view = create_initialized_view(
+            self.signed_coc_set, name="+new", form=form,
+            principal=self.admin)
+        self.assertEqual((), view.errors)
+        results = self.signed_coc_set.searchByUser(self.owner.id)
+        view.update()
+        self.assertEqual(1, results.count())
+        signed_coc = results[0]
+        self.assertEqual(self.admin, signed_coc.recipient)
 
 
 class SignCodeOfConductTestCase(TestCaseWithFactory):
