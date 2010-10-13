@@ -17,8 +17,16 @@
              tal:condition="link/enabled"
              tal:content="structure link/render" />
       </div>
-
-      <tal:branchlisting content="structure branches/@@+branch-listing" />
+      <tal:no-branches
+        condition="not:context/has_branches">
+        <strong>Launchpad doesn't know where 
+        <tal:project replace="context/displayname"/> hosts its projects source
+        code.</strong>
+      </tal:no-branches>
+      <tal:has-branches
+        condition="context/has_branches">
+        <tal:branchlisting content="structure branches/@@+branch-listing" />
+      </tal:has-branches>
     </div>
 
   </body>
