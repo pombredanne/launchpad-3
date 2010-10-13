@@ -265,16 +265,12 @@
             permission="launchpad.Admin"
             template="../templates/codeofconduct-admin.pt"
             name="+index"/>
-        <browser:addform
+        <browser:page
             name="+new"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            label="Register a code of conduct signature"
-            fields="owner"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAckView"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-acknowledge.pt">
-                </browser:addform>
+            template="../../app/templates/generic-edit.pt" />
     </facet>
     <browser:url
         for="lp.registry.interfaces.irc.IIrcID"

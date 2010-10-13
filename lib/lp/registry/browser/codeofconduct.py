@@ -23,7 +23,6 @@ __all__ = [
     'SignedCodeOfConductDeactiveView',
     ]
 
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
@@ -193,41 +192,24 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
         return coc_set[coc_conf.currentrelease]
 
 
-class SignedCodeOfConductAckView(AddView):
+class SignedCodeOfConductAckView(LaunchpadFormView):
     """Acknowledge a Paper Submitted CoC."""
+    schema = ISignedCodeOfConduct
+    field_names = ['owner']
+    label = 'Register a code of conduct signature'
+    page_title = label
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
-        self.signed_coc_set = getUtility(ISignedCodeOfConductSet)
-        self._nextURL = canonical_url(self.signed_coc_set)
-        self.page_title = self.label
-        AddView.__init__(self, context, request)
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
-    def initialize(self):
-        pass
+    cancel_url = next_url
 
-    def createAndAdd(self, data):
+    @action('Register', name='add')
+    def createAndAdd(self, action, data):
         """Verify and Add the Acknowledge SignedCoC entry."""
-        kw = {}
-
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        # XXX cprov 2005-03-23:
-        # rename unused key:value
-        kw['user'] = kw['owner']
-        del kw['owner']
-
-        recipient = getUtility(ILaunchBag).user
-        kw['recipient'] = recipient
-
-        # use utility to store it in the database
-        self.signed_coc_set.acknowledgeSignature(**kw)
-
-    def nextURL(self):
-        return self._nextURL
+        self.context.acknowledgeSignature(
+            user=data['owner'], recipient=self.user)
 
 
 class SignedCodeOfConductView:

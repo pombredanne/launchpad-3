@@ -32,20 +32,21 @@ class TestSignedCodeOfConductAckView(TestCaseWithFactory):
         self.assertEqual(
             'Register a code of conduct signature', view.label)
         self.assertEqual(view.label, view.page_title)
-        self.assertEqual(['owner'], view.fieldNames)
-        url = 'http://launchpad.dev/codeofconduct/console/'
+        self.assertEqual(['owner'], view.field_names)
+        url = 'http://launchpad.dev/codeofconduct/console'
+        self.assertEqual(url, view.next_url)
+        self.assertEqual(url, view.cancel_url)
 
     def test_register_coc_signed_on_paper(self):
         form = {
             'field.owner': self.owner.name,
-            'UPDATE_SUBMIT': 'Add',
+            'field.actions.add': 'Register',
             }
         view = create_initialized_view(
             self.signed_coc_set, name="+new", form=form,
             principal=self.admin)
-        self.assertEqual((), view.errors)
+        self.assertEqual([], view.errors)
         results = self.signed_coc_set.searchByUser(self.owner.id)
-        view.update()
         self.assertEqual(1, results.count())
         signed_coc = results[0]
         self.assertEqual(self.admin, signed_coc.recipient)
