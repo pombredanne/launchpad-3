@@ -435,8 +435,8 @@ class TestProjectBranchListing(TestCaseWithFactory):
         # the view shows the no code hosting message instead of a listing.
         browser = self.getUserBrowser(
             canonical_url(self.project, rootsite='code'))
-        expected_text = ("Launchpad doesn't know where %s hosts its "
-                         "products code." % self.project.displayname)
+        expected_text = ("None of %s's projects are using Launchpad to host "
+                         "code." % self.project.displayname)
         no_branch_div = find_tag_by_id(browser.contents, "no-branchtable")
         text = extract_text(no_branch_div)
 

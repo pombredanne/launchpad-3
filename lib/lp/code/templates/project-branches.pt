@@ -19,9 +19,10 @@
       </div>
       <tal:no-branches
         condition="not:context/has_branches">
-        <strong>Launchpad doesn't know where 
-        <tal:project replace="context/displayname"/> hosts its projects source
-        code.</strong>
+        <div id="no-branchtable">
+          <strong>None of <tal:project replace="context/displayname"/>'s
+          projects are using Launchpad to host their code.</strong>
+        </div>
       </tal:no-branches>
       <tal:has-branches
         condition="context/has_branches">
