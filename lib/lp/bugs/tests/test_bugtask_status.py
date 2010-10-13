@@ -52,3 +52,16 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.assertEqual(self.task.status, BugTaskStatus.EXPIRED)
             self.task.transitionToStatus(BugTaskStatus.TRIAGED, self.owner)
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
+
+    def test_supervisor_can_set_bug_supervisor_statuses(self):
+        with person_logged_in(self.team_member):
+            self.assertEqual(self.task.status, BugTaskStatus.NEW)
+            self.task.transitionToStatus(
+                BugTaskStatus.WONTFIX, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+            self.task.transitionToStatus(
+                BugTaskStatus.EXPIRED, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.EXPIRED)
+            self.task.transitionToStatus(
+                BugTaskStatus.TRIAGED, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
