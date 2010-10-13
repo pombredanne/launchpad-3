@@ -282,6 +282,10 @@ class SignedCodeOfConductActiveView(EditView):
         self.page_title = self.label
         EditView.__init__(self, context, request)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def changed(self):
         admincomment = self.request.form.get('field.admincomment')
 
@@ -300,7 +304,7 @@ class SignedCodeOfConductActiveView(EditView):
             sCoC_util.modifySignature(**kw)
 
             # now redirect to view the SignedCoC
-            self.request.response.redirect(self.request.URL[-1])
+            self.request.response.redirect(self.next_url)
 
         # XXX: cprov 2005-02-26:
         # How to proceed with no admincomment ?
@@ -323,6 +327,10 @@ class SignedCodeOfConductDeactiveView(EditView):
         self.page_title = self.label
         EditView.__init__(self, context, request)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def changed(self):
         admincomment = self.request.form.get('field.admincomment')
 
@@ -342,7 +350,7 @@ class SignedCodeOfConductDeactiveView(EditView):
             sCoC_util.modifySignature(**kw)
 
             # now redirect to view the SignedCoC
-            self.request.response.redirect(self.request.URL[-1])
+            self.request.response.redirect(self.next_url)
 
 
         # XXX: cprov 2005-02-26:
