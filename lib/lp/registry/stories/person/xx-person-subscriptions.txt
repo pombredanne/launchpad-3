@@ -35,8 +35,8 @@ those.
     >>> subscriptionB = bugB.subscribe(subscriber, subscriber)
     >>> logout()
 
-Any user can see that Webster is subscribed to some bugs.  The bug
-subscriptions table includes the bug number, title and location.
+Any user can see Webster's bug subscriptions.  The bug subscriptions table
+includes the bug number, title and location.
 
     >>> anon_browser.open('http://launchpad.dev/~webster/+subscriptions')
     >>> print extract_text(find_tag_by_id(
@@ -50,7 +50,7 @@ subscriptions table includes the bug number, title and location.
     A terrible affliction
     Affluenza
 
-The bug subscriptions table also includes an unsubscribe link, if they have
+The bug subscriptions table also includes an unsubscribe link, if the user has
 permission to remove the subscription, for bugs to which the person or team is
 subscribed.
 
@@ -71,8 +71,8 @@ He chooses to view the bug about Scofflaw.
     >>> "Unsubscribe me from this bug" in page_text
     True
 
-After viewing the +subscribe page Webster decides that they still want to be
-subscribed to the bug.  They click cancel which takes them back to their
+After viewing the +subscribe page Webster decides that he still wants to be
+subscribed to the bug.  He clicks cancel which takes him back to his
 +subscription page.
 
     >>> cancel_link = subscriber_browser.getLink('Cancel')
@@ -80,7 +80,7 @@ subscribed to the bug.  They click cancel which takes them back to their
     >>> print subscriber_browser.title
     Subscriptions : Webster
 
-He chooses to unsubscribe from the bug Affluenza.
+He chooses to unsubscribe from the bug about Affluenza.
 
     >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
     ...     % bugB.id).click()
