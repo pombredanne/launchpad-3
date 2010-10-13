@@ -9,7 +9,6 @@ import unittest
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from lp.testing.views import create_view
 
 
 class TestProjectBranches(TestCaseWithFactory):
