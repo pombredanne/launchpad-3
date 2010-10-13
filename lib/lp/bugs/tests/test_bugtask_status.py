@@ -1,22 +1,19 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test for choosing the request and publication."""
+"""Tests for setting bug task status."""
 
 __metaclass__ = type
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
-def test_suite():
-    suite = LayeredDocFileSuite(
-            'test_bugtask_status.txt',
-            layer=LaunchpadFunctionalLayer, setUp=setUp, tearDown=tearDown,
-            )
-    return suite
+class TestBugTaskStatusSetting(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_bug_supervisor_statuses(self):
+        self.assertEqual(True, False)
+
 
