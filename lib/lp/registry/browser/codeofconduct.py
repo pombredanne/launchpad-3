@@ -289,7 +289,7 @@ class SignedCodeOfConductActiveView(LaunchpadFormView):
 
 
 class SignedCodeOfConductDeactiveView(SignedCodeOfConductActiveView):
-    """Deactive a SignedCodeOfConduct Entry."""
+    """Deactivate a SignedCodeOfConduct Entry."""
     label = 'Deactivate code of conduct signature'
     page_title = label
     state = False
