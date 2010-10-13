@@ -211,3 +211,27 @@ class TestBug(TestCaseWithFactory):
                 1, len(duplicate_subscribers),
                 "There should be only one subscriber to the duplicate "
                 "for level %s." % level.name)
+
+    def test_subscribers_from_dupes_overrides_using_level(self):
+        # Bug.getSubscribersFromDuplicates() does not return subscribers
+        # who also have a direct subscription to the master bug. This
+        # happens regardless of the level argument passed to
+        # getSubscribersFromDuplicates().
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+            # We unsubscribe the owner of the duplicate to avoid muddling
+            # the results retuned by getSubscribersFromDuplicates()
+            duplicate_bug.unsubscribe(
+                duplicate_bug.owner, duplicate_bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            direct_subscription = bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.METADATA)
+            dupe_subscription = duplicate_bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.NOTHING)
+        duplicate_subscribers = bug.getSubscribersFromDuplicates()
+        self.assertTrue(
+            subscriber not in duplicate_subscribers,
+            "Subscriber should not be in duplicate_subscribers.")
