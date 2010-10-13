@@ -836,7 +836,7 @@ BugMessage""" % sqlvalues(self.id))
             Person.select("""
                 Person.id = BugSubscription.person
                 AND BugSubscription.bug = %s
-                AND BugSubscription.bug_notification_level = %s""" %
+                AND BugSubscription.bug_notification_level >= %s""" %
                 sqlvalues(self.id, level),
                 orderBy="displayname", clauseTables=["BugSubscription"]))
         if recipients is not None:
@@ -901,7 +901,7 @@ BugMessage""" % sqlvalues(self.id))
                 (Person, Bug),
                 BugSubscription.person == Person.id,
                 BugSubscription.bug_id == Bug.id,
-                BugSubscription.bug_notification_level == notification_level,
+                BugSubscription.bug_notification_level >= notification_level,
                 Bug.duplicateof == self.id))
 
         dupe_subscribers = set(dupe_details)

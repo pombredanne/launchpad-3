@@ -141,28 +141,37 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_with_level(self):
         # It's possible to pass a level parameter to
-        # getDirectSubscribers(). If passed, getDirectSubscribers() will
-        # return only those subscribers who will receive that level of
-        # notifications or higher.
+        # getDirectSubscribers() to filter the subscribers returned.
+        # When a `level` is passed to getDirectSubscribers(), the
+        # subscribers returned will be those of that level of
+        # subscription or higher.
         bug = self.factory.makeBug()
         # We unsubscribe the bug's owner because if we don't there will
         # be two COMMENTS-level subscribers.
         with person_logged_in(bug.owner):
             bug.unsubscribe(bug.owner, bug.owner)
-        for level in BugNotificationLevel.items:
+        notification_levels = sorted(BugNotificationLevel.items)
+        reversed_levels = reversed(notification_levels)
+        subscribers = []
+        for level in reversed_levels:
             subscriber = self.factory.makePerson()
+            subscribers.append(subscriber)
             with person_logged_in(subscriber):
                 subscription = bug.subscribe(
                     subscriber, subscriber, level=level)
             direct_subscribers = bug.getDirectSubscribers(level=level)
-            self.assertTrue(
-                subscriber in direct_subscribers,
-                "Subscriber at level %s is not in direct_subscribers." %
-                level.name)
+
+            # All the previous subscribers will be included because
+            # their level of subscription is such that they also receive
+            # notifications at the current level.
+            for subscriber in subscribers:
+                self.assertTrue(
+                    subscriber in direct_subscribers,
+                    "Subscriber at level %s is not in direct_subscribers." %
+                    level.name)
             self.assertEqual(
-                1, len(direct_subscribers),
-                "There should be only one direct subscriber for level %s." %
-                level.name)
+                len(subscribers), len(direct_subscribers),
+                "Number of subscribers did not match expected value.")
 
     def test_get_direct_subscribers_default_level(self):
         # If no `level` parameter is passed to getDirectSubscribers(),
@@ -173,7 +182,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             subscription = bug.subscribe(
                 subscriber, subscriber, level=level)
-        direct_subscribers = bug.getDirectSubscribers(level=level)
+        direct_subscribers = bug.getDirectSubscribers()
         self.assertTrue(
             bug.owner in direct_subscribers,
             "Bug owner is not in direct_subscribers to COMMENTS.")
@@ -187,7 +196,7 @@ class TestBug(TestCaseWithFactory):
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
         # parameter it will include only subscribers subscribed to
-        # duplicates at that BugNotificationLevel.
+        # duplicates at that BugNotificationLevel or higher.
         bug = self.factory.makeBug()
         duplicate_bug = self.factory.makeBug()
         with person_logged_in(duplicate_bug.owner):
@@ -196,27 +205,34 @@ class TestBug(TestCaseWithFactory):
             # the results retuned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
-        for level in BugNotificationLevel.items:
+        notification_levels = sorted(BugNotificationLevel.items)
+        reversed_levels = reversed(notification_levels)
+        subscribers = []
+        for level in reversed_levels:
             subscriber = self.factory.makePerson()
+            subscribers.append(subscriber)
             with person_logged_in(subscriber):
                 subscription = duplicate_bug.subscribe(
                     subscriber, subscriber, level=level)
             duplicate_subscribers = (
                 bug.getSubscribersFromDuplicates(level=level))
-            self.assertTrue(
-                subscriber in duplicate_subscribers,
-                "Subscriber at level %s is not in duplicate_subscribers." %
-                level.name)
+            # All the previous subscribers will be included because
+            # their level of subscription is such that they also receive
+            # notifications at the current level.
+            for subscriber in subscribers:
+                self.assertTrue(
+                    subscriber in duplicate_subscribers,
+                    "Subscriber at level %s is not in "
+                    "duplicate_subscribers." % level.name)
             self.assertEqual(
-                1, len(duplicate_subscribers),
-                "There should be only one subscriber to the duplicate "
-                "for level %s." % level.name)
+                len(subscribers), len(duplicate_subscribers),
+                "Number of subscribers did not match expected value.")
 
     def test_subscribers_from_dupes_overrides_using_level(self):
         # Bug.getSubscribersFromDuplicates() does not return subscribers
-        # who also have a direct subscription to the master bug. This
-        # happens regardless of the level argument passed to
-        # getSubscribersFromDuplicates().
+        # who also have a direct subscription to the master bug provided
+        # that the subscription to the master bug is of the same level
+        # or higher as the subscription to the duplicate.
         bug = self.factory.makeBug()
         duplicate_bug = self.factory.makeBug()
         with person_logged_in(duplicate_bug.owner):
@@ -228,9 +244,9 @@ class TestBug(TestCaseWithFactory):
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
             direct_subscription = bug.subscribe(
-                subscriber, subscriber, level=BugNotificationLevel.METADATA)
-            dupe_subscription = duplicate_bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.NOTHING)
+            dupe_subscription = duplicate_bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.METADATA)
         duplicate_subscribers = bug.getSubscribersFromDuplicates()
         self.assertTrue(
             subscriber not in duplicate_subscribers,
