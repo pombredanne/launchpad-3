@@ -13,22 +13,6 @@
         in Launchpad -->
     <browser:page
         for="*"
-        name="launchpad_addform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-addform.pt"
-        />
-
-    <browser:page
-        for="*"
-        name="launchpad_editform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-editform.pt"
-        />
-
-    <browser:page
-        for="*"
         name="launchpad_form"
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
