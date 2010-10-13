@@ -33,12 +33,14 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitialiseDistroSeriesJobSource)
 
     @classmethod
-    def create(
-        cls, distroseries, arches=(), packagesets=(), rebuild=False):
+    def create(cls, distroseries, arches=(), packagesets=(),
+               rebuild=False):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
-            'arches': arches, 'packagesets': packagesets,
-            'rebuild': rebuild}
+            'arches': arches,
+            'packagesets': packagesets,
+            'rebuild': rebuild,
+            }
         job = DistributionJob(
             distroseries.distribution, distroseries, cls.class_job_type,
             metadata)
