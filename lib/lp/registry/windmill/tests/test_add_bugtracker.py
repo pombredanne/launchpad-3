@@ -56,9 +56,9 @@ def test_inline_add_bugtracker(client, url, name=None, suite='bugtracker',
     client.type(id='field.name', text=bugtracker_name)
     client.click(id=u'formoverlay-add-bugtracker')
     client.waits.forElement(
-        xpath="//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
+        xpath="//div[contains(@class, 'yui3-lazr-formoverlay-errors')]/ul/li")
     client.asserts.assertTextIn(
-        classname='yui-lazr-formoverlay-errors',
+        classname='yui3-lazr-formoverlay-errors',
         validator='name: %s is already in use' % bugtracker_name.lower())
     client.click(classname='close-button')
 
