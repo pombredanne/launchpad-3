@@ -61,7 +61,8 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      proc_families=None, always_create=False):
+                      proc_families=None, sourcepackagenames=None,
+                      always_create=False):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -77,19 +78,24 @@ class PackageCloner:
             for the distroarchseries pairs specified (if any).
         @param proc_families: the processor families to create builds for.
         @type proc_families: Iterable
+        @param sourcepackagenames: the sourcepackages to copy to the
+            destination
+        @type sourcepackagenames: Iterable
         @param always_create: if we should create builds for every source
             package copied, useful if no binaries are to be copied.
         @type always_create: Boolean
         """
         # First clone the source packages.
-        self._clone_source_packages(origin, destination)
+        self._clone_source_packages(
+            origin, destination, sourcepackagenames)
 
         # Are we also supposed to clone binary packages from origin to
         # destination distroarchseries pairs?
         if distroarchseries_list is not None:
             for (origin_das, destination_das) in distroarchseries_list:
                 self._clone_binary_packages(
-                    origin, destination, origin_das, destination_das)
+                    origin, destination, origin_das, destination_das,
+                    sourcepackagenames)
 
         if proc_families is None:
             proc_families = []
@@ -147,8 +153,9 @@ class PackageCloner:
             # Commit to avoid MemoryError: bug 304459
             transaction.commit()
 
-    def _clone_binary_packages(self, origin, destination, origin_das,
-                              destination_das):
+    def _clone_binary_packages(
+        self, origin, destination, origin_das, destination_das,
+        sourcepackagenames=None):
         """Copy binary publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -163,9 +170,12 @@ class PackageCloner:
         @type destination_das: DistroArchSeries
         @param destination_das: the DistroArchSeries to which to copy
             binary packages
+        @param sourcepackagenames: List of source packages to restrict
+            the copy to
+        @type sourcepackagenames: Iterable
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute('''
+        query = '''
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
                 component, section, priority, archive, datecreated,
@@ -183,7 +193,22 @@ class PackageCloner:
                 destination.pocket, origin_das,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
-                origin.pocket, origin.archive))
+                origin.pocket, origin.archive)
+
+        if sourcepackagenames and len(sourcepackagenames) > 0:
+            query += '''AND bpph.binarypackagerelease IN (
+                            SELECT bpr.id
+                            FROM BinaryPackageRelease AS bpr,
+                            BinaryPackageBuild as bpb,
+                            SourcePackageRelease as spr,
+                            SourcePackageName as spn
+                            WHERE bpb.id = bpr.build AND
+                            bpb.source_package_release = spr.id
+                            AND spr.sourcepackagename = spn.id
+                            AND spn.name IN %s)''' % sqlvalues(
+                                sourcepackagenames)
+
+        store.execute(query)
 
     def mergeCopy(self, origin, destination):
         """Please see `IPackageCloner`."""
@@ -378,7 +403,8 @@ class PackageCloner:
                 " AND secsrc.component = %s" % quote(destination.component))
         store.execute(pop_query)
 
-    def _clone_source_packages(self, origin, destination):
+    def _clone_source_packages(
+            self, origin, destination, sourcepackagenames):
         """Copy source publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -387,6 +413,9 @@ class PackageCloner:
         @type destination: PackageLocation
         @param destination: the location to which the data is
             to be copied.
+        @type sourcepackagenames: Iterable
+        @param sourcepackagenames: List of source packages to restrict
+            the copy to
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
@@ -406,6 +435,15 @@ class PackageCloner:
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive)
+
+        if sourcepackagenames and len(sourcepackagenames) > 0:
+            query += '''AND spph.sourcepackagerelease IN (
+                            (SELECT spr.id
+                            FROM SourcePackageRelease AS spr,
+                            SourcePackageName AS spn
+                        WHERE spr.sourcepackagename = spn.id
+                        AND spn.name IN %s))''' % sqlvalues(
+                            sourcepackagenames)
 
         if origin.packagesets:
             query += '''AND spph.sourcepackagerelease IN
