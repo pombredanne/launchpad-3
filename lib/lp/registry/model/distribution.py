@@ -1454,7 +1454,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                                PackagePublishingStatus.PENDING)
             clauses.append("""
             Archive.id IN (
-                SELECT DISTINCT archive FROM SourcepackagePublishingHistory
+                SELECT archive FROM SourcepackagePublishingHistory
                 WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 

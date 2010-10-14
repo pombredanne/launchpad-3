@@ -645,11 +645,6 @@ class CodehostingTest(TestCaseWithFactory):
             (branch.control_format, branch.branch_format,
              branch.repository_format))
 
-    def assertCannotTranslate(self, requester, path):
-        """Assert that we cannot translate 'path'."""
-        fault = self.codehosting_api.translatePath(requester.id, path)
-        self.assertEqual(faults.PathTranslationError(path), fault)
-
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
@@ -684,7 +679,7 @@ class CodehostingTest(TestCaseWithFactory):
         # couldn't translate.
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
-        self.assertCannotTranslate(requester, path)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
@@ -964,6 +959,23 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         product = self.factory.makeProduct()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_no_linked_sourcepackage_branch(self):
+        # translatePath returns a not found when there's no linked branch for
+        # a distro series source package.
+        requester = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        distro = sourcepackage.distribution
+        path = '/%s/%s/%s' % (
+            BRANCH_ALIAS_PREFIX, distro.name, sourcepackage.sourcepackagename)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_invalid_product_name(self):
+        # translatePath returns a not found when there is an invalid product name.
+        requester = self.factory.makePerson()
+        invalid_name = '_' + self.factory.getUniqueString()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_bzrdir_content(self):
