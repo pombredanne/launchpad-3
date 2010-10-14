@@ -772,7 +772,6 @@ def find_changelog(source_dir, logger):
     return open(changelog_file, 'r').read()
 
 
-
 def check_format_1_0_files(filename, file_type_counts, component_counts,
                            bzip2_count):
     """Check that the given counts of each file type suit format 1.0.

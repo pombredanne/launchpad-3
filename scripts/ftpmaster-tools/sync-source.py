@@ -51,6 +51,10 @@ from canonical.launchpad.scripts import (
     )
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import (
@@ -89,14 +93,15 @@ def reject(str, prefix="Rejected: "):
     if str:
         reject_message += prefix + str + "\n"
 
+
 # Following two functions are borrowed and (modified) from apt-listchanges
 def urgency_to_numeric(u):
     urgency_map = {
-        'low' : 1,
-        'medium' : 2,
-        'high' : 3,
-        'emergency' : 4,
-        'critical' : 4,
+        'low': 1,
+        'medium': 2,
+        'high': 3,
+        'emergency': 4,
+        'critical': 4,
         }
     return urgency_map.get(u.lower(), 1)
 
@@ -261,7 +266,7 @@ def extract_source(dsc_filename):
             "'dpkg-source -x' failed for %s [return code: %s]." %
             (dsc_filename, e.result))
 
-    return (old_cwd, tmpdir)
+    return (oldcwd, tmpdir)
 
 
 def cleanup_source(tmpdir, old_cwd, dsc):
@@ -296,12 +301,12 @@ def cleanup_source(tmpdir, old_cwd, dsc):
 
 def check_dsc(dsc, current_sources, current_binaries):
     source = dsc["source"]
-    if current_sources.has_key(source):
+    if source in current_sources:
         source_component = current_sources[source][1]
     else:
         source_component = "universe"
     for binary in map(string.strip, dsc["binary"].split(',')):
-        if current_binaries.has_key(binary):
+        if binary in current_binaries:
             (current_version, current_component) = current_binaries[binary]
 
             # Check that a non-main source package is not trying to
@@ -426,7 +431,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
                 pkg, version, component))
             continue
 
-        if not S.has_key(pkg):
+        if pkg not in S:
             S[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
@@ -462,7 +467,7 @@ def read_current_binaries(distro_series):
     #             version = bp.binarypackagerelease.version
     #             pkg = bp.binarypackagerelease.binarypackagename.name
     #
-    #             if not B.has_key(pkg):
+    #             if pkg not in B:
     #                 B[pkg] = [version, component]
     #             else:
     #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -490,7 +495,7 @@ def read_current_binaries(distro_series):
 
     print "Getting binaries for %s..." % (distro_series.name)
     for (pkg, version, component) in cur.fetchall():
-        if not B.has_key(pkg):
+        if pkg not in B:
             B[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -515,7 +520,7 @@ def read_Sources(filename, origin):
         pkg = Sources.Section.Find("Package")
         version = Sources.Section.Find("Version")
 
-        if S.has_key(pkg) and apt_pkg.VersionCompare(
+        if pkg in S and apt_pkg.VersionCompare(
             S[pkg]["version"], version) > 0:
             continue
 
@@ -541,7 +546,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
-    if not Sources.has_key(pkg):
+    if pkg not in Sources:
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
@@ -580,7 +585,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         stat_count += 1
         dest_version = Suite.get(pkg, [None, ""])[0]
 
-        if not Sources.has_key(pkg):
+        if pkg not in Sources:
             if not Options.all:
                 dak_utils.fubar("%s: not found" % (pkg))
             else:
@@ -588,7 +593,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                 stat_us += 1
                 continue
 
-        if Blacklisted.has_key(pkg):
+        if pkg in Blacklisted:
             print "[BLACKLISTED] %s_%s" % (pkg, dest_version)
             stat_blacklisted += 1
             continue

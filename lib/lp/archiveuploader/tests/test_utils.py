@@ -277,5 +277,6 @@ class DdpkgExtractSourceTests(TestCase):
     def test_nonexistant(self):
         temp_dir = self.makeTemporaryDirectory()
         err = self.assertRaises(
-            DpkgSourceError, extract_dpkg_source, "thispathdoesntexist", temp_dir)
+            DpkgSourceError, extract_dpkg_source,
+            "thispathdoesntexist", temp_dir)
         self.assertEquals(2, err.result)

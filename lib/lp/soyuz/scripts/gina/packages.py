@@ -76,6 +76,8 @@ def stripseq(seq):
 
 
 epoch_re = re.compile(r"^\d+:")
+
+
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
     version = epoch_re.sub("", version)
@@ -462,6 +464,7 @@ class BinaryPackageData(AbstractPackageData):
     is_created = False
     #
     source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
+
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":

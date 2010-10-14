@@ -44,8 +44,9 @@ class DpkgSourceError(Exception):
     _fmt = "Unable to unpack source package (%(result)s): %(output)s"
 
     def __init__(self, command, output, result):
-        Exception.__init__(
-            self, self._fmt % {"output": output, "result": result, "command": command})
+        super(DpkgSourceError, self).__init__(
+            self._fmt % {
+                "output": output, "result": result, "command": command})
         self.output = output
         self.result = result
         self.command = command
@@ -272,9 +273,12 @@ def extract_dpkg_source(dsc_filepath, target):
     :param dsc_filepath: Path of the DSC file
     :param target: Target directory
     """
+
     def subprocess_setup():
-        # Python installs a SIGPIPE handler by default. This is usually not what
-        # non-Python subprocesses expect.
+        # Python installs a SIGPIPE handler by default. This is usually not
+        # what non-Python subprocesses expect.
+        # http://www.chiark.greenend.org.uk/ucgi/~cjwatson/ \
+        #   blosxom/2009-07-02-python-sigpipe.html
         signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     args = ["dpkg-source", "-sn", "-x", dsc_filepath]
     dpkg_source = subprocess.Popen(
