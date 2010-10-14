@@ -401,7 +401,7 @@ class TestBzrSync(BzrSyncTestCase):
         # each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
-        bzr_history = (bzrsync.retrieveBranchDetails(self.bzr_branch))
+        bzr_history = self.bzr_branch.revision_history()
         added_ancestry = bzrsync.getAncestryDelta(self.bzr_branch)[0]
         result = bzrsync.revisionsToInsert(
             bzr_history, self.bzr_branch.revno(), added_ancestry)
@@ -413,7 +413,7 @@ class TestBzrSync(BzrSyncTestCase):
         (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
             'base', 'trunk', 'branch', 'merge')
         bzrsync = self.makeBzrSync(db_branch)
-        bzr_history = (bzrsync.retrieveBranchDetails(bzr_tree.branch))
+        bzr_history = bzr_tree.branch.revision_history()
         added_ancestry = bzrsync.getAncestryDelta(bzr_tree.branch)[0]
         expected = {'base': 1, 'trunk': 2, 'merge': 3, 'branch': None}
         self.assertEqual(
@@ -456,16 +456,6 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncBazaarBranchToDatabase(branch_tree.branch, db_trunk)
         expected = set([(1, 'base'), (2, 'branch')])
         self.assertEqual(self.getBranchRevisions(db_trunk), expected)
-
-    def test_retrieveBranchDetails(self):
-        # retrieveBranchDetails should set last_revision, bzr_ancestry and
-        # bzr_history on the BzrSync instance to match the information in the
-        # Bazaar branch.
-        (db_trunk, trunk_tree), ignored = self.makeBranchWithMerge(
-            'base', 'trunk', 'branch', 'merge')
-        bzrsync = self.makeBzrSync(db_trunk)
-        bzr_history = (bzrsync.retrieveBranchDetails(trunk_tree.branch))
-        self.assertEqual(['base', 'trunk', 'merge'], bzr_history)
 
     def test_retrieveDatabaseAncestry(self):
         # retrieveDatabaseAncestry should set db_ancestry and db_history to

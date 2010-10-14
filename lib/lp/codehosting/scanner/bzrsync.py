@@ -80,6 +80,8 @@ class BzrSync:
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
+        self.logger.info("Retrieving history from bzrlib.")
+        bzr_history = bzr_branch.revision_history()
         bzr_history = self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
@@ -133,12 +135,6 @@ class BzrSync:
         db_ancestry, db_history = self.db_branch.getScannerData()
         return db_ancestry, db_history
 
-    def retrieveBranchDetails(self, bzr_branch):
-        """Retrieve history from the the bzr branch on disk."""
-        self.logger.info("Retrieving ancestry from bzrlib.")
-        bzr_history = bzr_branch.revision_history()
-        return bzr_history
-
     def _getRevisionGraph(self, bzr_branch, db_last):
         if bzr_branch.repository.has_revision(db_last):
             return bzr_branch.repository.get_graph()
@@ -174,6 +170,7 @@ class BzrSync:
         return added_ancestry, removed_ancestry
 
     def getHistoryDelta(self, bzr_history, db_history):
+        self.logger.info("Calculating history delta.")
         common_len = min(len(bzr_history), len(db_history))
         while common_len > 0:
             # The outer conditional improves efficiency. Without it, the
