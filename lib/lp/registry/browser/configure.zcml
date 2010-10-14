@@ -166,6 +166,31 @@
         class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        path_expression="string:+difference/${source_package_name/name}"
+        rootsite="mainsite"
+        attribute_to_parent="derived_series"/>
+    <browser:page
+        name="+listing-distroseries-extra"
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
+        template="../templates/distroseriesdifference-listing-extra.pt"
+        permission="zope.Public"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        name="+listing-distroseries-extra"/>
+    <browser:navigation
+        module="lp.registry.browser.distroseriesdifference"
+        classes="DistroSeriesDifferenceNavigation"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
+        path_expression="string:comments/${id}"
+        attribute_to_parent="distro_series_difference"
+        rootsite="mainsite"/>
+    <adapter
+      factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
+      name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -613,17 +638,11 @@
                 name="+portlet-options"
                 template="../templates/poll-portlet-options.pt"/>
         </browser:pages>
-        <browser:pages
+        <browser:page
+            name="+vote"
             for="lp.registry.interfaces.poll.IPoll"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.poll.PollVoteView">
-            <browser:page
-                name="+vote-simple"
-                template="../templates/poll-vote-simple.pt"/>
-            <browser:page
-                name="+vote-condorcet"
-                template="../templates/poll-vote-condorcet.pt"/>
-        </browser:pages>
+            class="lp.registry.browser.poll.PollVoteView"/>
         <browser:page
             name="+edit"
             for="lp.registry.interfaces.poll.IPoll"
