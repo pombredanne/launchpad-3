@@ -1461,12 +1461,18 @@ CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
+    -- Support obsolete lp_Account.openid_identifier as best we can
+    -- until ISD migrates to using lp_OpenIdIdentifier.
     UPDATE lp_account SET openid_identifier = NEW.identifier
     WHERE id = NEW.account;
     IF NOT found THEN
         INSERT INTO lp_account (id, openid_identifier)
         VALUES (NEW.account, NEW.identifier);
     END IF;
+
+    INSERT INTO lp_OpenIdIdentifier (identifier, account, date_created)
+    VALUES (NEW.identifier, NEW.account, NEW.date_created);
+
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1566,6 +1572,12 @@ BEGIN
         UPDATE lp_Account SET openid_identifier = NEW.identifier
         WHERE openid_identifier = OLD.identifier;
     END IF;
+    UPDATE lp_OpenIdIdentifier
+    SET
+        identifier = NEW.identifier,
+        account = NEW.account,
+        date_created = NEW.date_created
+    WHERE identifier = OLD.identifier;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1596,6 +1608,8 @@ BEGIN
     ELSE
         DELETE FROM lp_account WHERE openid_identifier = OLD.identifier;
     END IF;
+
+    DELETE FROM lp_OpenIdIdentifier WHERE identifier = OLD.identifier;
 
     RETURN NULL; -- Ignored for AFTER triggers.
 END;

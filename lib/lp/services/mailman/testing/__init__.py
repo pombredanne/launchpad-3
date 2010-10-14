@@ -18,7 +18,7 @@ from Mailman import (
     )
 from Mailman.Queue import XMLRPCRunner
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.tests.mailinglists_helper import MailingListXMLRPCTestProxy
 from lp.testing import TestCaseWithFactory

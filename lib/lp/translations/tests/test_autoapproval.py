@@ -22,7 +22,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution

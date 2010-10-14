@@ -19,7 +19,7 @@ from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout,
     ISingleLineWidgetLayout,
     )
-from canonical.testing import FunctionalLayer
+from canonical.testing.layers import FunctionalLayer
 
 
 class LaunchpadFormTest(unittest.TestCase):

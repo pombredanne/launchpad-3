@@ -21,7 +21,8 @@ from lp.code.interfaces.branchrevision import IBranchRevision
 class BranchRevision(Storm):
     """See `IBranchRevision`."""
     __storm_table__ = 'BranchRevision'
-    __storm_primary__ = "branch_id", "revision_id"
+
+    id = Int(primary=True)
 
     implements(IBranchRevision)
 

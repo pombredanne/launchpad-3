@@ -8,6 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
     <include
         file="vocabularies.zcml"/>
@@ -82,6 +83,23 @@
         <allow
             attributes="
                 __call__"/>
+    </class>
+
+    <!-- IPersonTransferJob -->
+    <securedutility
+        component="lp.registry.model.persontransferjob.MembershipNotificationJob"
+        provides="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource">
+        <allow
+            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource"/>
+    </securedutility>
+
+    <class class="lp.registry.model.persontransferjob.PersonTransferJob">
+        <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
+    </class>
+
+    <class class="lp.registry.model.persontransferjob.MembershipNotificationJob">
+        <allow
+            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
     </class>
 
     <!-- Location -->
@@ -194,6 +212,9 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -348,6 +369,9 @@
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
+        permission="zope.Public"/>
 
     <facet
         facet="answers"/>
@@ -385,52 +409,52 @@
 
         <allow
             attributes="
-                distribution
-                development_version
-                sourcepackagename
-                name
-                displayname
-                title
-                summary
-                distro
-                get_distroseries_packages
-                subscribers
-                currentrelease
-                releases
-                publishing_history
-                current_publishing_records
-                bug_reporting_guidelines
-                bug_reported_acknowledgement
-                latest_overall_publication
-                __getitem__
-                getVersion
                 __eq__
+                __getitem__
                 __ne__
-                bugtasks
-                searchTasks
-                open_bugtasks
-                closed_bugtasks
-                critical_bugtasks
-                high_bugtasks
-                inprogress_bugtasks
-                unassigned_bugtasks
-                new_bugtasks
+                _getOfficialTagClause
                 all_bugtasks
-                has_bugtasks
-                getUsedBugTags
-                getUsedBugTagsWithOpenCounts
+                bug_count
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
                 bugtargetdisplayname
                 bugtargetname
+                bugtasks
+                closed_bugtasks
+                critical_bugtasks
+                current_publishing_records
+                currentrelease
+                development_version
+                displayname
+                distribution
+                distro
+                findRelatedArchivePublications
+                findRelatedArchives
                 getBugCounts
-                bug_count
-                total_bug_heat
                 getPersonsByEmail
                 getReleasesAndPublishingHistory
-                upstream_product
-                _getOfficialTagClause
+                getUsedBugTags
+                getUsedBugTagsWithOpenCounts
+                getVersion
+                get_distroseries_packages
+                has_bugtasks
+                high_bugtasks
+                inprogress_bugtasks
+                latest_overall_publication
+                name
+                new_bugtasks
                 official_bug_tags
-                findRelatedArchives
-                findRelatedArchivePublications"/>
+                open_bugtasks
+                publishing_history
+                releases
+                searchTasks
+                sourcepackagename
+                subscribers
+                summary
+                title
+                total_bug_heat
+                unassigned_bugtasks
+                upstream_product"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="createBug"/>
@@ -474,10 +498,12 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
+        factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
         permission="zope.Public"/>
+    <adapter
+        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
     <!-- CommercialSubscription -->
 
@@ -944,6 +970,9 @@
             interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
+    <adapter
+        factory=".model.structuralsubscription.MilestoneTargetHelper"
+        permission="zope.Public"/>
 
     <!-- IMilestoneSet -->
 
@@ -1101,21 +1130,44 @@
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines
-                            bug_reported_acknowledgement bugtracker
-                            commercial_subscription description
-                            development_focus displayname downloadurl
-                            driver enable_bug_expiration
-                            freshmeatproject homepage_content
-                            homepageurl icon license_info licenses
-                            logo mugshot official_answers
-                            official_blueprints official_bug_tags
-                            official_codehosting official_malone owner
-                            programminglang project
-                            redeemSubscriptionVoucher releaseroot
-                            remote_product screenshotsurl
-                            security_contact sourceforgeproject
-                            summary title wikiurl"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtracker
+                commercial_subscription
+                description
+                development_focus
+                displayname
+                downloadurl
+                driver
+                enable_bug_expiration
+                freshmeatproject
+                homepage_content
+                homepageurl
+                icon
+                license_info
+                licenses
+                logo
+                mugshot
+                official_answers
+                official_blueprints
+                official_codehosting
+                official_malone
+                owner
+                programminglang
+                project
+                redeemSubscriptionVoucher
+                releaseroot
+                remote_product
+                screenshotsurl
+                security_contact
+                sourceforgeproject
+                summary
+                title
+                wikiurl"/>
+        <require
+            permission="launchpad.BugSupervisor"
+            set_attributes="official_bug_tags"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1219,6 +1271,9 @@
             attributes="
                 setBugSupervisor"/>
     </class>
+    <adapter
+        factory=".model.structuralsubscription.ProductTargetHelper"
+        permission="zope.Public"/>
 
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
@@ -1366,6 +1421,9 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
+        permission="zope.Public"/>
 
     <!-- ProductSeriesSet -->
 
@@ -1403,12 +1461,27 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                displayname title summary description driver
-                members owner security_contact mirror_admin homepage_content
-                icon logo mugshot enable_bug_expiration
-                bug_reporting_guidelines bug_reported_acknowledgement
-                official_blueprints official_malone
-                official_rosetta official_answers official_bug_tags"/>
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                description
+                displayname
+                driver
+                enable_bug_expiration
+                homepage_content
+                icon
+                logo
+                members
+                mirror_admin
+                mugshot
+                official_answers
+                official_blueprints
+                official_bug_tags
+                official_malone
+                official_rosetta
+                owner
+                security_contact
+                summary
+                title"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
@@ -1491,6 +1564,9 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        factory=".model.structuralsubscription.DistributionTargetHelper"
+        permission="zope.Public"/>
 
     <!-- DistributionSet -->
 
@@ -1547,10 +1623,9 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"
-        permission="zope.Public"/>
+        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
+    <adapter
+        factory="lp.registry.browser.sourcepackage.distribution_from_sourcepackage"/>
 
     <!-- This is class ProductReleaseSet -->
 
@@ -1804,6 +1879,12 @@
         <allow
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
+
+    <!-- Registers exceptions used in webservice defined in lp.registry.
+      Other data is in module=canonical.launchpad.interfaces as defined in
+      zcml there.-->
+
+    <webservice:register module="lp.registry.errors" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

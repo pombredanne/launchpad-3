@@ -739,11 +739,6 @@ class BugTrackerComponent(Storm):
     is_visible = Bool(allow_none=False)
     is_custom = Bool(allow_none=False)
 
-    distro_source_package_id = Int('distro_source_package')
-    distro_source_package = Reference(
-        distro_source_package_id,
-        'DistributionSourcePackageInDatabase.id')
-
 
 class BugTrackerComponentGroup(Storm):
     """A collection of components in a remote bug tracker.

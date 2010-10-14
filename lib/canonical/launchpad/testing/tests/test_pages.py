@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 from canonical.launchpad.testing.pages import PageTestSuite
-from canonical.testing import PageTestLayer
+from canonical.testing.layers import PageTestLayer
 
 
 class TestMakeStoryTest(unittest.TestCase):

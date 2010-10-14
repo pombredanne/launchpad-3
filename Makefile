@@ -255,7 +255,6 @@ run_codehosting: check_schema inplace stop
 	$(RM) thread*.request
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
-
 start_librarian: compile
 	bin/start_librarian
 
