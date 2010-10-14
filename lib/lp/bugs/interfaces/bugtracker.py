@@ -34,8 +34,8 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     operation_parameters,
-    operation_returns_entry,
     operation_returns_collection_of,
+    operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
     )
@@ -60,6 +60,7 @@ from zope.schema import (
 from zope.schema.interfaces import IObject
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import patch_reference_property
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from lp.services.fields import (
@@ -67,6 +68,7 @@ from lp.services.fields import (
     StrippedTextLine,
     URIField,
     )
+
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
 
@@ -528,6 +530,9 @@ class IBugTrackerComponent(Interface):
                           "should be linked to this component."),
             required=False))
 
+    component_group = exported(
+        Reference(title=_('Component Group'), schema=Interface))
+
 
 class IBugTrackerComponentGroup(Interface):
     """A collection of components in a remote bug tracker.
@@ -543,7 +548,9 @@ class IBugTrackerComponentGroup(Interface):
             title=_('Name'),
             description=_('The name of the bug tracker product.')))
     components = exported(
-        Reference(title=_('Components'), schema=IBugTrackerComponent))
+        CollectionField(
+            title=_('Components.'),
+            value_type=Reference(schema=IBugTrackerComponent)))
     bug_tracker = exported(
         Reference(title=_('BugTracker'), schema=IBugTracker))
 
@@ -554,6 +561,12 @@ class IBugTrackerComponentGroup(Interface):
     @export_write_operation()
     def addComponent(component_name):
         """Adds a component to be tracked as part of this component group"""
+
+
+# Patch in a mutual reference between IBugTrackerComponent and
+# IBugTrackerComponentGroup.
+patch_reference_property(
+    IBugTrackerComponent, "component_group", IBugTrackerComponentGroup)
 
 
 class IRemoteBug(Interface):
