@@ -86,3 +86,32 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.CONFIRMED, person)
 
+
+class TestCanTransitionToStatus(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestCanTransitionToStatus, self).setUp()
+        self.user = self.factory.makePerson()
+        self.owner = self.factory.makePerson()
+        self.team_member = self.factory.makePerson()
+        self.supervisor = self.factory.makeTeam(owner=self.owner)
+        self.product = self.factory.makeProduct(owner=self.owner)
+        self.task = self.factory.makeBugTask(target=self.product)
+        self.bug = self.task.bug
+        with person_logged_in(self.owner):
+            self.supervisor.addMember(self.team_member, self.owner)
+            self.product.setBugSupervisor(self.supervisor, self.owner)
+
+    def test_user_cannot_transition_bug_supervisor_statuses(self):
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
+        self.assertEqual(
+            self.task.canTransitionToStatus(BugTaskStatus.WONTFIX, self.user),
+            False)
+        self.assertEqual(
+            self.task.canTransitionToStatus(BugTaskStatus.EXPIRED, self.user),
+            False)
+        self.assertEqual(
+            self.task.canTransitionToStatus(BugTaskStatus.TRIAGED, self.user),
+            False)
