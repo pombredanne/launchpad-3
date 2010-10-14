@@ -478,6 +478,7 @@
                     is_visible
                     is_custom
                     distro_source_package
+                    component_group
                     "/>
             <require
                 permission="launchpad.AnyPerson"
