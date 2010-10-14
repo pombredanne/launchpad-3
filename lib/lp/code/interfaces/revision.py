@@ -154,7 +154,7 @@ class IRevisionSet(Interface):
         :return: ResultSet containing tuples of (Revision, RevisionAuthor)
         """
 
-    def getRevisionsNeedingKarmaAllocated():
+    def getRevisionsNeedingKarmaAllocated(limit=None):
         """Get the revisions needing karma allocated.
 
         Under normal circumstances karma is allocated for revisions by the

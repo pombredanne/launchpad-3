@@ -7,7 +7,6 @@ __all__ = []
 
 from contextlib import contextmanager
 import email
-from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
 import shutil
@@ -88,16 +87,13 @@ class MailmanTestCase(TestCaseWithFactory):
         # Make a Mailman Message.Message.
         if isinstance(sender, (list, tuple)):
             sender = ', '.join(sender)
-        message = MIMEMultipart()
+        message = MIMEText(content, mime_type)
         message['from'] = sender
         message['to'] = mm_list.getListAddress()
         message['subject'] = subject
         message['message-id'] = self.getUniqueString()
-        message.attach(MIMEText(content, mime_type))
-        if attachment is not None:
-            # Rewrap the text message in a multipart message and add the
-            # attachment.
-            message.attach(attachment)
         mm_message = email.message_from_string(
             message.as_string(), Message.Message)
+        if attachment is not None:
+            mm_message.attach(attachment, 'octet-stream')
         return mm_message
