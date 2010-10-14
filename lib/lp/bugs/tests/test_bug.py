@@ -150,8 +150,8 @@ class TestBug(TestCaseWithFactory):
         # be two COMMENTS-level subscribers.
         with person_logged_in(bug.owner):
             bug.unsubscribe(bug.owner, bug.owner)
-        notification_levels = sorted(BugNotificationLevel.items)
-        reversed_levels = reversed(notification_levels)
+        reversed_levels = sorted(
+            BugNotificationLevel.items, reverse=True)
         subscribers = []
         for level in reversed_levels:
             subscriber = self.factory.makePerson()
@@ -164,14 +164,9 @@ class TestBug(TestCaseWithFactory):
             # All the previous subscribers will be included because
             # their level of subscription is such that they also receive
             # notifications at the current level.
-            for subscriber in subscribers:
-                self.assertTrue(
-                    subscriber in direct_subscribers,
-                    "Subscriber at level %s is not in direct_subscribers." %
-                    level.name)
             self.assertEqual(
-                len(subscribers), len(direct_subscribers),
-                "Number of subscribers did not match expected value.")
+                set(subscribers), set(direct_subscribers),
+                "Subscribers did not match expected value.")
 
     def test_get_direct_subscribers_default_level(self):
         # If no `level` parameter is passed to getDirectSubscribers(),
@@ -193,14 +188,9 @@ class TestBug(TestCaseWithFactory):
         # getDirectSubscribers() because it defaults to returning
         # subscribers at level NOTHING, which everything is higher than.
         direct_subscribers = bug.getDirectSubscribers()
-        for subscriber in subscribers:
-            self.assertTrue(
-                subscriber in direct_subscribers,
-                "Subscriber at level %s is not in direct_subscribers." %
-                level.name)
         self.assertEqual(
-            len(subscribers), len(direct_subscribers),
-            "Number of subscribers did not match expected value.")
+            set(subscribers), set(direct_subscribers),
+            "Subscribers did not match expected value.")
 
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
@@ -214,8 +204,8 @@ class TestBug(TestCaseWithFactory):
             # the results retuned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
-        notification_levels = sorted(BugNotificationLevel.items)
-        reversed_levels = reversed(notification_levels)
+        reversed_levels = sorted(
+            BugNotificationLevel.items, reverse=True)
         subscribers = []
         for level in reversed_levels:
             subscriber = self.factory.makePerson()
@@ -228,13 +218,8 @@ class TestBug(TestCaseWithFactory):
             # All the previous subscribers will be included because
             # their level of subscription is such that they also receive
             # notifications at the current level.
-            for subscriber in subscribers:
-                self.assertTrue(
-                    subscriber in duplicate_subscribers,
-                    "Subscriber at level %s is not in "
-                    "duplicate_subscribers." % level.name)
             self.assertEqual(
-                len(subscribers), len(duplicate_subscribers),
+                set(subscribers), set(duplicate_subscribers),
                 "Number of subscribers did not match expected value.")
 
     def test_subscribers_from_dupes_overrides_using_level(self):
