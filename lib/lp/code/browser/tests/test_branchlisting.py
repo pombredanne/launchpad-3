@@ -44,6 +44,7 @@ from lp.registry.model.product import Product
 from lp.testing import (
     BrowserTestCase,
     login_person,
+    normalize_whitespace,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -435,10 +436,11 @@ class TestProjectBranchListing(TestCaseWithFactory):
         # the view shows the no code hosting message instead of a listing.
         browser = self.getUserBrowser(
             canonical_url(self.project, rootsite='code'))
-        expected_text = ("None of %s's projects are using Launchpad to host "
-                         "code." % self.project.displayname)
+        expected_text = normalize_whitespace(
+                            ("None of %s's projects are using Launchpad to "
+                             "host their code." % self.project.displayname))
         no_branch_div = find_tag_by_id(browser.contents, "no-branchtable")
-        text = extract_text(no_branch_div)
+        text = normalize_whitespace(extract_text(no_branch_div))
         self.assertEqual(expected_text, text)
 
     def test_branches_get_listing(self):
