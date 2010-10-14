@@ -368,10 +368,14 @@
                     aliases
                     baseurl
                     bugtrackertype
+                    componentForDistroSourcePackage
+                    component_groups
                     contactdetails
+                    getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentGroup
                     has_lp_plugin
                     id
                     imported_bug_messages
@@ -394,6 +398,7 @@
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
+                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -460,6 +465,47 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </securedutility>
+
+        <!--BugTrackerComponent -->
+
+        <class
+            class="lp.bugs.model.bugtracker.BugTrackerComponent">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    is_visible
+                    is_custom
+                    "/>
+            <require
+                permission="launchpad.AnyPerson"
+                set_attributes="
+                    is_visible
+                    is_custom
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
+        </class>
+
+        <!--BugTrackerComponentGroup -->
+
+        <class
+            class="lp.bugs.model.bugtracker.BugTrackerComponentGroup">
+            <require
+                permission="zope.Public"
+                attributes="
+                    id
+                    name
+                    bug_tracker
+                    components
+                    getComponent
+                    addComponent
+                    addCustomComponent
+                    "/>
+            <implements
+                interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponentGroup"/>
+        </class>
 
         <!-- RemoteBug -->
 
@@ -563,6 +609,18 @@
             permission="zope.Public"
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
+
+    <!-- BugSubscriptionFilter -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <require
+          permission="launchpad.Edit"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
+    </class>
+
     <facet
         facet="bugs">
 
