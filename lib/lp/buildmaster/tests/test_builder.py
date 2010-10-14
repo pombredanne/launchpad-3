@@ -9,6 +9,7 @@ import xmlrpclib
 
 from twisted.web.client import getPage
 
+from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -50,6 +51,7 @@ from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
     BuildingSlave,
     CorruptBehavior,
+    DeadProxy,
     LostBuildingBrokenSlave,
     MockBuilder,
     OkSlave,
@@ -301,6 +303,7 @@ class TestBuilderWithTrial(TrialTestCase):
             self.assertIn('abort', building_slave.call_log)
             self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
+
 
 class TestBuilderSlaveStatus(TestBuilderWithTrial):
 
@@ -776,7 +779,7 @@ class TestSlave(TrialTestCase):
     # This is failing on buildbot but not locally; it's trying to abort
     # before the build has started.
     def disabled_test_abort(self):
-        slave = self.getClientSlave()
+        slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
         d = self.slave_helper.triggerGoodBuild(slave)
         d.addCallback(lambda ignored: slave.abort())
@@ -955,6 +958,50 @@ class TestSlave(TrialTestCase):
         clock.advance(2)
         d.addBoth(check_resume_timeout)
         return d
+
+
+class TestSlaveTimeouts(TrialTestCase):
+    # Testing that the methods that call callRemote() all time out
+    # as required.
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        super(TestSlaveTimeouts, self).setUp()
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.clock = Clock()
+        self.proxy = DeadProxy("url")
+        self.slave = self.slave_helper.getClientSlave(
+            reactor=self.clock, proxy=self.proxy)
+
+    def assertCancelled(self, d):
+        self.clock.advance(config.builddmaster.socket_timeout + 1)
+        return self.assertFailure(d, CancelledError)
+
+    def test_timeout_abort(self):
+        return self.assertCancelled(self.slave.abort())
+
+    def test_timeout_clean(self):
+        return self.assertCancelled(self.slave.clean())
+
+    def test_timeout_echo(self):
+        return self.assertCancelled(self.slave.echo())
+
+    def test_timeout_info(self):
+        return self.assertCancelled(self.slave.info())
+
+    def test_timeout_status(self):
+        return self.assertCancelled(self.slave.status())
+
+    def test_timeout_ensurepresent(self):
+        return self.assertCancelled(
+            self.slave.ensurepresent(None, None, None, None))
+
+    def test_timeout_build(self):
+        return self.assertCancelled(
+            self.slave.build(None, None, None, None, None))
 
 
 class TestSlaveWithLibrarian(TrialTestCase):

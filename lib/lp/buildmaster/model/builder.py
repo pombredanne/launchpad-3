@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 import gzip
-import httplib
 import logging
 import os
 import socket
@@ -34,9 +33,12 @@ from storm.expr import (
     Count,
     Sum,
     )
-from twisted.internet import defer
+
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    )
 from twisted.internet.error import ConnectError
-from twisted.protocols.policies import TimeoutMixin
 from twisted.web import xmlrpc
 
 from zope.component import getUtility
@@ -92,25 +94,9 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.model.processor import Processor
 
 
-class QueryWithTimeoutProtocol(xmlrpc.QueryProtocol, TimeoutMixin):
-    """XMLRPC query protocol with a configurable timeout.
-
-    XMLRPC queries using this protocol will be unconditionally closed
-    when the timeout is elapsed. The timeout is fetched from the context
-    Launchpad configuration file (`config.builddmaster.socket_timeout`).
-    """
-    def connectionMade(self):
-        xmlrpc.QueryProtocol.connectionMade(self)
-        self.setTimeout(config.builddmaster.socket_timeout)
-
-
-class QueryFactoryWithTimeout(xmlrpc._QueryFactory):
-    """XMLRPC client factory with timeout support."""
-    # Make this factory quiet.
+class QuietQueryFactory(xmlrpc._QueryFactory):
+    """XMLRPC client factory that doesn't splatter the log with junk."""
     noisy = False
-    # Use the protocol with timeout support.
-    protocol = QueryWithTimeoutProtocol
-
 
 
 class BuilderSlave(object):
@@ -135,7 +121,7 @@ class BuilderSlave(object):
     # should make a test double that doesn't do any XML-RPC and can be used to
     # make testing easier & tests faster.
 
-    def __init__(self, proxy, builder_url, vm_host):
+    def __init__(self, proxy, builder_url, vm_host, reactor=None):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
@@ -148,38 +134,63 @@ class BuilderSlave(object):
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
 
+        if reactor is None:
+            self.reactor = default_reactor
+        else:
+            self.reactor = reactor
+
     @classmethod
-    def makeBuilderSlave(cls, builder_url, vm_host):
+    def makeBuilderSlave(cls, builder_url, vm_host, reactor=None, proxy=None):
+        """Create and return a `BuilderSlave`.
+
+        :param builder_url: The URL of the slave buildd machine,
+            e.g. http://localhost:8221
+        :param vm_host: If the slave is virtual, specify its host machine here.
+        :param reactor: Used by tests to override the Twisted reactor.
+        :param proxy: Used By tests to override the xmlrpc.Proxy.
+        """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
-        server_proxy = xmlrpc.Proxy(rpc_url, allowNone=True)
-        server_proxy.queryFactory = QueryFactoryWithTimeout
-        return cls(server_proxy, builder_url, vm_host)
+        if proxy is None:
+            server_proxy = xmlrpc.Proxy(rpc_url, allowNone=True)
+            server_proxy.queryFactory = QuietQueryFactory
+        else:
+            server_proxy = proxy
+        return cls(server_proxy, builder_url, vm_host, reactor)
+
+    def _with_timeout(self, d):
+        TIMEOUT = config.builddmaster.socket_timeout
+        delayed_call = self.reactor.callLater(TIMEOUT, d.cancel)
+        def cancel_timeout(passthrough):
+            if not delayed_call.called:
+                delayed_call.cancel()
+            return passthrough
+        return d.addBoth(cancel_timeout)
 
     def abort(self):
         """Abort the current build."""
-        return self._server.callRemote('abort')
+        return self._with_timeout(self._server.callRemote('abort'))
 
     def clean(self):
         """Clean up the waiting files and reset the slave's internal state."""
-        return self._server.callRemote('clean')
+        return self._with_timeout(self._server.callRemote('clean'))
 
     def echo(self, *args):
         """Echo the arguments back."""
-        return self._server.callRemote('echo', *args)
+        return self._with_timeout(self._server.callRemote('echo', *args))
 
     def info(self):
         """Return the protocol version and the builder methods supported."""
-        return self._server.callRemote('info')
+        return self._with_timeout(self._server.callRemote('info'))
 
     def status(self):
         """Return the status of the build daemon."""
-        return self._server.callRemote('status')
+        return self._with_timeout(self._server.callRemote('status'))
 
     def ensurepresent(self, sha1sum, url, username, password):
         # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return self._server.callRemote(
-            'ensurepresent', sha1sum, url, username, password)
+        return self._with_timeout(self._server.callRemote(
+            'ensurepresent', sha1sum, url, username, password))
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
@@ -241,8 +252,8 @@ class BuilderSlave(object):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        d = self._server.callRemote(
-            'build', buildid, builder_type, chroot_sha1, filemap, args)
+        d = self._with_timeout(self._server.callRemote(
+            'build', buildid, builder_type, chroot_sha1, filemap, args))
         def got_fault(failure):
             failure.trap(xmlrpclib.Fault)
             raise BuildSlaveFailure(failure.value)

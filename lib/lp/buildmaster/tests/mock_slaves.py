@@ -11,6 +11,7 @@ __all__ = [
     'BrokenSlave',
     'BuildingSlave',
     'CorruptBehavior',
+    'DeadProxy',
     'LostBuildingBrokenSlave',
     'MockBuilder',
     'OkSlave',
@@ -29,6 +30,7 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 
 from twisted.internet import defer
+from twisted.web import xmlrpc
 
 from canonical.buildd.tests.harness import BuilddSlaveTestSetup
 
@@ -267,6 +269,16 @@ class TrivialBehavior:
         pass
 
 
+class DeadProxy(xmlrpc.Proxy):
+    """An xmlrpc.Proxy that doesn't actually send any messages.
+
+    Used when you want to test timeouts, for example.
+    """
+
+    def callRemote(self, *args, **kwargs):
+        return defer.Deferred()
+
+
 class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
@@ -291,12 +303,13 @@ class SlaveTestHelpers(fixtures.Fixture):
         self.addCleanup(tachandler.tearDown)
         return tachandler
 
-    def getClientSlave(self):
+    def getClientSlave(self, reactor=None, proxy=None):
         """Return a `BuilderSlave` for use in testing.
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        return BuilderSlave.makeBuilderSlave(self.TEST_URL, 'vmhost')
+        return BuilderSlave.makeBuilderSlave(
+            self.TEST_URL, 'vmhost', reactor, proxy)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
