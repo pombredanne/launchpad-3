@@ -718,8 +718,11 @@ BugMessage""" % sqlvalues(self.id))
         return self.latest_patch_uploaded is not None
 
     def subscribe(self, person, subscribed_by, suppress_notify=True,
-                  level=BugNotificationLevel.COMMENTS):
+                  level=None):
         """See `IBug`."""
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
+
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
