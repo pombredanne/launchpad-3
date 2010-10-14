@@ -140,3 +140,44 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.FIXRELEASED, self.user), True)
+
+    def test_bug_supervisor_can_transition_to_any_status(self):
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.WONTFIX, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.EXPIRED, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.TRIAGED, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INCOMPLETE, self.supervisor), True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.OPINION, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INVALID, self.supervisor),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.CONFIRMED, self.supervisor), True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INPROGRESS, self.supervisor), True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, self.supervisor), True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.supervisor), True)
