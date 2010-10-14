@@ -8,13 +8,18 @@ __metaclass__ = type
 import unittest
 
 from twisted.internet import defer
+from twisted.internet.task import Clock
+from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.services.twistedsupport import extract_result
+from lp.services.twistedsupport import (
+    cancel_on_timeout,
+    extract_result,
+    )
 from lp.testing import TestCase
 
 
 class TestExtractResult(TestCase):
-    """Tests for `canonical.twisted_support.extract_result`."""
+    """Tests for `lp.services.twistedsupport.extract_result`."""
 
     def test_success(self):
         # extract_result on a Deferred that has a result returns the result.
@@ -35,6 +40,25 @@ class TestExtractResult(TestCase):
         # returning deferreds).
         deferred = defer.Deferred()
         self.assertRaises(AssertionError, extract_result, deferred)
+
+
+class TestCancelOnTimeout(TrialTestCase):
+    """Tests for lp.services.twistedsupport.cancel_on_timeout."""
+
+    def test_deferred_is_cancelled(self):
+        clock = Clock()
+        d = cancel_on_timeout(defer.Deferred(), 1, clock)
+        clock.advance(2)
+        return self.assertFailure(d, defer.CancelledError)
+
+    def test_deferred_is_not_cancelled(self):
+        clock = Clock()
+        d = cancel_on_timeout(defer.succeed("frobnicle"), 1, clock)
+        clock.advance(2)
+        def result(value):
+            self.assertEqual(value, "frobnicle")
+            self.assertEqual([], clock.getDelayedCalls())
+        return d.addCallback(result)
 
 
 def test_suite():
