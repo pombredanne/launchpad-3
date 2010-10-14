@@ -103,10 +103,6 @@ class ITranslationMessage(Interface):
         title=_("The ID for this translation message"),
         readonly=True, required=True)
 
-    pofile = Object(
-        title=_("The translation file from where this translation comes"),
-        readonly=False, required=False, schema=IPOFile)
-
     browser_pofile = Object(
         title=_("The translation file from where this translation comes"),
         readonly=False, required=False, schema=IPOFile)

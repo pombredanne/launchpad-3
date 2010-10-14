@@ -215,6 +215,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import IPropertyCacheManager
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -250,8 +251,10 @@ from lp.soyuz.model.packagediff import (
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
+    launchpadlib_for,
     login,
     login_as,
+    login_person,
     person_logged_in,
     run_with_login,
     temp_dir,
@@ -1397,6 +1400,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
+        """Make a new bug tracker component group."""
+        if name is None:
+            name = u'default'
+        if bug_tracker is None:
+            bug_tracker = self.makeBugTracker()
+
+        component_group = bug_tracker.addRemoteComponentGroup(name)
+        return component_group
+
+    def makeBugTrackerComponent(self, name=None, component_group=None,
+                                custom=None):
+        """Make a new bug tracker component."""
+        if name is None:
+            name = u'default'
+        if component_group is None:
+            component_group = self.makeBugTrackerComponentGroup()
+        if custom is None:
+            custom = False
+        if custom:
+            component = component_group.addCustomComponent(name)
+        else:
+            component = component_group.addComponent(name)
+        return component
+
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
                      owner=None, bug_task=None):
         """Make a new bug watch."""
@@ -1815,6 +1843,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
+    def makePackageDiff(self, from_spr=None, to_spr=None):
+        """Make a completed package diff."""
+        if from_spr is None:
+            from_spr = self.makeSourcePackageRelease()
+        if to_spr is None:
+            to_spr = self.makeSourcePackageRelease()
+
+        diff = from_spr.requestDiffTo(
+            from_spr.creator, to_spr)
+
+        naked_diff = removeSecurityProxy(diff)
+        naked_diff.status = PackageDiffStatus.COMPLETED
+        naked_diff.diff_content = self.makeLibraryFileAlias()
+        naked_diff.date_fulfilled = UTC_NOW
+        return diff
+
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):
         """Make a new distribution."""
@@ -1905,9 +1949,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename=source_package_name,
                 status = PackagePublishingStatus.PUBLISHED)
 
-        return getUtility(IDistroSeriesDifferenceSource).new(
+        diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name, difference_type,
             status=status)
+
+        # We clear the cache on the diff, returning the object as if it
+        # was just loaded from the store.
+        IPropertyCacheManager(diff).clear()
+        return diff
 
     def makeDistroSeriesDifferenceComment(
         self, distro_series_difference=None, owner=None, comment=None):
@@ -3094,6 +3143,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         new_uuid = getUtility(ITemporaryStorageManager).new(blob, expires)
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
+
+    def makeLaunchpadService(self, person=None):
+        if person is None:
+            person = self.makePerson()
+        launchpad = launchpadlib_for("test", person,
+            service_root="http://api.launchpad.dev:8085")
+        login_person(person)
+        return launchpad
 
     def makePackageDiff(self, from_source=None, to_source=None,
                         requester=None, status=None, date_fulfilled=None,
