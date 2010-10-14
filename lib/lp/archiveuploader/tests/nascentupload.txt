@@ -533,12 +533,18 @@ Once we have a new queue entry we are able to accept it, step 2:
   >>> multibar_src_queue.status.name
   'ACCEPTED'
 
-We can just assume the source was published by step 3 and 4 for
-simplicity and claim 'build from ACCEPTED' feature.
+Then the source gets accepted and published, step 3 and 4:
+
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+  >>> from lp.soyuz.interfaces.publishing import IPublishingSet
+  >>> getUtility(IPublishingSet).newSourcePublication(
+  ...     multibar_src_queue.archive, multibar_spr,
+  ...     sync_policy.distroseries, multibar_spr.component,
+  ...     multibar_spr.section, PackagePublishingPocket.RELEASE)
+  <SourcePackagePublishingHistory at ...>
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
