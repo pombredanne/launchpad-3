@@ -760,8 +760,7 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                self.generateConfigForPocket(
-                    apt_config, distroseries, distroseries_name, pocket)
+                self.generateConfigForPocket(apt_config, distroseries, pocket)
 
         # And now return that string.
         s = apt_config.getvalue()
@@ -773,20 +772,19 @@ class FTPArchiveHandler:
         fp.close()
         return apt_config_filename
 
-    def generateConfigForPocket(self, apt_config, distroseries,
-                                distroseries_name, pocket):
+    def generateConfigForPocket(self, apt_config, distroseries, pocket):
         """Generates the config stanza for an individual pocket."""
-        dr_pocketed = distroseries_name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
 
-        archs = self._config.archTagsForSeries(distroseries_name)
-        comps = self._config.componentsForSeries(distroseries_name)
+        archs = self._config.archTagsForSeries(distroseries.name)
+        comps = self._config.componentsForSeries(distroseries.name)
 
-        self.log.debug("Generating apt config for %s" % dr_pocketed)
+        self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {
                          "LISTPATH": self._config.overrideroot,
-                         "DISTRORELEASE": dr_pocketed,
-                         "DISTRORELEASEBYFILE": dr_pocketed,
-                         "DISTRORELEASEONDISK": dr_pocketed,
+                         "DISTRORELEASE": suite,
+                         "DISTRORELEASEBYFILE": suite,
+                         "DISTRORELEASEONDISK": suite,
                          "ARCHITECTURES": " ".join(archs + ["source"]),
                          "SECTIONS": " ".join(comps),
                          "EXTENSIONS": ".deb",
@@ -794,28 +792,28 @@ class FTPArchiveHandler:
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": ""})
 
-        if archs and dr_pocketed in self._di_release_components:
-            for component in self._di_release_components[dr_pocketed]:
+        if archs and suite in self._di_release_components:
+            for component in self._di_release_components[suite]:
                 apt_config.write(STANZA_TEMPLATE % {
                     "LISTPATH": self._config.overrideroot,
-                    "DISTRORELEASEONDISK": "%s/%s" % (dr_pocketed, component),
-                    "DISTRORELEASEBYFILE": "%s_%s" % (dr_pocketed, component),
-                    "DISTRORELEASE": "%s.%s" % (dr_pocketed, component),
+                    "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
+                    "DISTRORELEASEBYFILE": "%s_%s" % (suite, component),
+                    "DISTRORELEASE": "%s.%s" % (suite, component),
                     "ARCHITECTURES": " ".join(archs),
                     "SECTIONS": "debian-installer",
                     "EXTENSIONS": ".udeb",
                     "CACHEINSERT": "debian-installer-",
                     "DISTS": os.path.basename(self._config.distsroot),
-                    "HIDEEXTRA": "// "
+                    "HIDEEXTRA": "// ",
                     })
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
         for comp in comps:
-            component_path = os.path.join(self._config.distsroot,
-                                          dr_pocketed, comp)
+            component_path = os.path.join(
+                self._config.distsroot, suite, comp)
             base_paths = [component_path]
-            if dr_pocketed in self._di_release_components:
-                if comp in self._di_release_components[dr_pocketed]:
+            if suite in self._di_release_components:
+                if comp in self._di_release_components[suite]:
                     base_paths.append(os.path.join(component_path,
                                                    "debian-installer"))
             for base_path in base_paths:
@@ -823,4 +821,3 @@ class FTPArchiveHandler:
                     safe_mkdir(os.path.join(base_path, "source"))
                 for arch in archs:
                     safe_mkdir(os.path.join(base_path, "binary-"+arch))
-
