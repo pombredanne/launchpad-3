@@ -146,6 +146,8 @@ known_canonical_lp_devs = \
                               u'Jeroen T. Vermeulen',
                               u'Joey Stanford',
                               u'Jonathan Lange',
+                              u'j.c.sackett',
+                              u'jonathan.sackett {_AT_} canonical.com',
                               u'jml {_AT_} canonical.com',
                               u'jml {_AT_} mumak.net',
                               u'Jonathan Knowles',
