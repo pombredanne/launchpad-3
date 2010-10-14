@@ -73,6 +73,13 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.task.transitionToStatus(
                 BugTaskStatus.WONTFIX, self.team_member)
             self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+            self.task.transitionToStatus(
+                BugTaskStatus.NEW, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.NEW)
+        with person_logged_in(self.owner):
+            self.task.transitionToStatus(
+                BugTaskStatus.WONTFIX, self.owner)
+            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(
