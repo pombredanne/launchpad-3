@@ -31,5 +31,5 @@ def run_script(script_relpath, args, expect_returncode=0):
         args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     if process.returncode != expect_returncode:
-        raise AssertionError('Failed:\n%s' % stderr)
+        raise AssertionError('Failed:\n%s\n%s' % (stdout, stderr))
     return (process.returncode, stdout, stderr)
