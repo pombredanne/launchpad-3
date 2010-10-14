@@ -230,30 +230,6 @@ And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
 A new translation is submitted through the view.
 
-    >>> server_url = '/'.join(
-    ...     [canonical_url(translationmessage), '+translate'])
-    >>> form = {
-    ...     'alt': None,
-    ...     'msgset_1': None,
-    ...     'msgset_1_es_translation_0_new_checkbox': True,
-    ...     'msgset_1_es_translation_0_new': 'Foo',
-    ...     'submit_translations': 'Save &amp; Continue'}
-    >>> translationmessage_page_view = create_view(
-    ...     translationmessage, "+translate", form=form,
-    ...     layer=TranslationsLayer, server_url=server_url)
-    >>> translationmessage_page_view.request.method = 'POST'
-
-And when we initialise the view class, we detect that we missed the timestamp
-that allow us to know whether we are working with latest submitted value or
-someone updated the database while we were working on those translations.
-
-    >>> translationmessage_page_view.initialize()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: We didn't find the timestamp...
-
-We do a new submit, but this time including a lock_timestamp field.
-
     >>> form = {
     ...     'lock_timestamp': '2006-11-28T13:00:00+00:00',
     ...     'alt': None,
@@ -268,8 +244,6 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> translationmessage_page_view.request.method = 'POST'
     >>> translationmessage_page_view.initialize()
     >>> transaction.commit()
-
-This time we didn't get any problem with the submission.
 
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last current translation was submitted.

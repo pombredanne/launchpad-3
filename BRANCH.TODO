@@ -2,32 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-* Avoid canEditTranslations; it checks far too much.
-* Abandon special privs for POFile "owner," please!
-* Check for read-only mode before posting, not as part of privs check.
-* Don't repeat identical checks for each message.
-
-Check for every POST:
- * Read-only mode.
- * Licensing (_person_has_not_licensed_translations()).
-
-Check before approving:
- * Translation mode vs. review mode.
- * Admins.
- * On upstream: owners of Product.
- * _check_translation_perms(template.translationpermission, translators, person)
-
- * When approving, who should share:
-  * Admins always share.
-  * On Ubuntu: owners of counterpart Product share.
-  * _check_translation_perms(counterpart_template.translationpermission, counterpart_translators, person)
-
-Isolate edit/suggest choice and sharing choice in separate method(s); pass to
-_storeTranslations.
-
-
-Permissions check (for both approval and sharing):
- * User
- * Product or Distribution
- * Language
--> TranslationsPerson

@@ -65,6 +65,7 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.utilities.validate import GettextValidationError
 
@@ -231,9 +232,6 @@ class BaseTranslationView(LaunchpadView):
     """
 
     pofile = None
-    # There will never be 100 plural forms.  Usually, we'll be iterating
-    # over just two or three.
-    MAX_PLURAL_FORMS = 100
 
     @property
     def label(self):
@@ -246,6 +244,9 @@ class BaseTranslationView(LaunchpadView):
 
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
+
+        self.has_plural_form_information = (
+            self.pofile.hasPluralFormInformation())
 
         # These two dictionaries hold translation data parsed from the
         # form submission. They exist mainly because of the need to
@@ -337,7 +338,7 @@ class BaseTranslationView(LaunchpadView):
             return None
 
     def _checkSubmitConditions(self):
-        """Verify that this submission is permitted and valid.
+        """Verify that this submission is possible and valid.
 
         :raises: `UnexpectedFormData` if conditions are not met.  In
             principle the user should not have been given the option to
@@ -349,21 +350,23 @@ class BaseTranslationView(LaunchpadView):
                 "Please try again later.")
 
         if self.user is None:
-            raise UnexpectedFormData(
-                "Anonymous users or users who are not accepting our "
-                "licensing terms cannot do POST submissions.")
+            raise UnexpectedFormData("You are not logged in.")
 
+        # Users who have declined the licensing agreement can't post
+        # translations.  We don't stop users who haven't made a decision
+        # yet at this point; they may be project owners making
+        # corrections.
         translations_person = ITranslationsPerson(self.user)
         relicensing = translations_person.translations_relicensing_agreement
         if relicensing is not None and not relicensing:
             raise UnexpectedFormData(
-                "Users who do not agree to licensing terms "
-                "cannot do POST submissions.")
+                "You can't post translations since you have not agreed to "
+                "our translations licensing terms.")
 
         if self.lock_timestamp is None:
             raise UnexpectedFormData(
-                "We didn't find the timestamp that tells us when was"
-                " generated the submitted form.")
+                "Your form submission did not contain the lock_timestamp "
+                "that tells Launchpad when the submitted form was generated.")
 
     #
     # API Hooks
@@ -611,15 +614,6 @@ class BaseTranslationView(LaunchpadView):
         self.second_lang_code = second_lang_code
 
     @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.pofile.potemplate.hasPluralMessage():
-            return self.pofile.language.pluralforms is not None
-        # If there are no plural forms, we assume that we have the
-        # plural form information for this language.
-        return True
-
-    @property
     def user_is_official_translator(self):
         """Determine whether the current user is an official translator."""
         return self.pofile.canEditTranslations(self.user)
@@ -682,7 +676,7 @@ class BaseTranslationView(LaunchpadView):
         # Extract the translations from the form, and store them in
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
-        for pluralform in xrange(self.MAX_PLURAL_FORMS):
+        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%d_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
             if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
@@ -761,7 +755,7 @@ class BaseTranslationView(LaunchpadView):
                     potmsgset].append(pluralform)
         else:
             raise AssertionError('More than %d plural forms were submitted!'
-                                 % self.MAX_PLURAL_FORMS)
+                                 % TranslationConstants.MAX_PLURAL_FORMS)
 
     def _observeTranslationUpdate(self, potmsgset):
         """Observe that a translation was updated for the potmsgset.

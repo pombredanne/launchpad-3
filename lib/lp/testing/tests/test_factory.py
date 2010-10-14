@@ -431,6 +431,14 @@ class TestFactory(TestCaseWithFactory):
         for number_of_forms in [None, 1, 3]:
             language = self.factory.makeLanguage(pluralforms=number_of_forms)
             self.assertEqual(number_of_forms, language.pluralforms)
+            self.assertEqual(
+                number_of_forms is None, language.pluralexpression is None)
+
+    def test_makeLanguage_with_plural_expression(self):
+        expression = '(n+1) % 5'
+        language = self.factory.makeLanguage(
+            pluralforms=5, plural_expression=expression)
+        self.assertEqual(expression, language.pluralexpression)
 
     # makeSourcePackagePublishingHistory
     def test_makeSourcePackagePublishingHistory_returns_ISPPH(self):

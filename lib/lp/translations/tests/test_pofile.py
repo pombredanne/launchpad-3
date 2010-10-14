@@ -1888,6 +1888,31 @@ class TestPOFile(TestCaseWithFactory):
         self.pofile.markChanged(translator=translator)
         self.assertEqual(translator, self.pofile.lasttranslator)
 
+    def test_hasPluralFormInformation_bluffs_if_irrelevant(self):
+        # If the template has no messages that use plural forms, the
+        # POFile has all the relevant plural-form information regardless
+        # of whether we know the plural forms for the language.
+        language = self.factory.makeLanguage()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=False)
+        self.assertTrue(pofile.hasPluralFormInformation())
+
+    def test_hasPluralFormInformation_admits_defeat(self):
+        # If there are messages with plurals, hasPluralFormInformation
+        # needs the plural-form information for the language.
+        language = self.factory.makeLanguage()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=True)
+        self.assertFalse(pofile.hasPluralFormInformation())
+
+    def test_hasPluralFormInformation_uses_language_info(self):
+        # hasPluralFormInformation returns True if plural forms
+        # information is available for the language.
+        language = self.factory.makeLanguage(pluralforms=5)
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=True)
+        self.assertTrue(pofile.hasPluralFormInformation())
+
 
 class TestPOFileTranslationMessages(TestCaseWithFactory):
     """Test PO file getTranslationMessages method."""
