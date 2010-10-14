@@ -131,14 +131,21 @@ class SlaveScanner:
 
         # Decide if we need to terminate the job or fail the
         # builder.
-        builder.gotFailure()
-        builder.getCurrentBuildFarmJob().gotFailure()
-        self.logger.info(
-            "builder failure count: %s, job failure count: %s" % (
-                builder.failure_count,
-                builder.getCurrentBuildFarmJob().failure_count))
-        assessFailureCounts(builder, failure.getErrorMessage())
-        transaction.commit()
+        try:
+            builder.gotFailure()
+            builder.getCurrentBuildFarmJob().gotFailure()
+            self.logger.info(
+                "builder failure count: %s, job failure count: %s" % (
+                    builder.failure_count,
+                    builder.getCurrentBuildFarmJob().failure_count))
+            assessFailureCounts(builder, failure.getErrorMessage())
+            transaction.commit()
+        except:
+            # Catastrophic code failure! Not much we can do.
+            self.logger.error(
+                "Miserable failure when trying to examine failure counts:\n",
+                exc_info=True)
+            transaction.abort()
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
