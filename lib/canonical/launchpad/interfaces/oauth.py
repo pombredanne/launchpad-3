@@ -67,9 +67,6 @@ class IOAuthConsumer(Interface):
     def newRequestToken():
         """Return a new `IOAuthRequestToken` with a random key and secret.
 
-        Also sets the token's date_expires to `REQUEST_TOKEN_VALIDITY` hours
-        from the creation date (now).
-
         The other attributes of the token are supposed to be set whenever the
         user logs into Launchpad and grants (or not) access to this consumer.
         """
@@ -132,11 +129,11 @@ class IOAuthToken(Interface):
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
     date_created = Datetime(
-        title=_('Date created'), required=True, readonly=True)
-    date_expires = Datetime(
-        title=_('Date expires'), required=False, readonly=False,
-        description=_('From this date onwards this token can not be used '
-                      'by the consumer to access protected resources.'))
+        title=_('Date created'), required=True, readonly=True,
+        description=_('For a request token, the date the token was created. '
+                      'The request token will be good for a limited time '
+                      'after this date. For an access token, the date '
+                      'some request token was exchanged for this token.'))
     key = TextLine(
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
@@ -154,6 +151,12 @@ class IOAuthToken(Interface):
         title=_("Distribution"), required=False, vocabulary='Distribution')
     context = Attribute("FIXME")
 
+    is_expired = Bool(
+        title=_("Whether or not this token has expired."),
+        required=False, readonly=True,
+        description=_("A token may only be usable for a limited time, "
+                      "after which it will expire."))
+
 
 class IOAuthAccessToken(IOAuthToken):
     """A token used by a consumer to access protected resources in LP.
@@ -167,6 +170,11 @@ class IOAuthAccessToken(IOAuthToken):
         vocabulary=AccessLevel,
         description=_('The level of access given to the application acting '
                       'on your behalf.'))
+
+    date_expires = Datetime(
+        title=_('Date expires'), required=False, readonly=False,
+        description=_('From this date onwards this token can not be used '
+                      'by the consumer to access protected resources.'))
 
     def checkNonceAndTimestamp(nonce, timestamp):
         """Verify the nonce and timestamp.
@@ -202,6 +210,10 @@ class IOAuthRequestToken(IOAuthToken):
         vocabulary=OAuthPermission,
         description=_('The permission you give to the application which may '
                       'act on your behalf.'))
+    date_expires = Datetime(
+        title=_('Date expires'), required=False, readonly=False,
+        description=_('The expiration date for the permission you give to '
+                      'the application which may act on your behalf.')
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
