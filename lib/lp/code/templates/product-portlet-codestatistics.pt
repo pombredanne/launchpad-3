@@ -2,23 +2,21 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-product-codestatistics">
+  id="portlet-product-codestatistics">
 
-  <div id="code-statistics">
     <p>
     <tal:project replace="context/displayname"/> has
     <!--reviews-->
     <span tal:define="count context/menu:branches/active_review_count;
                       link context/menu:branches/active_reviews"
           id="merge-counts">
-      <tal:active-count replace="count"/> 
-      <tal:link replace="structure python: link.render().lower()"/>
-    </span>. 
+      <tal:active-count replace="count"/>
+      <tal:link replace="structure python: link.render().lower()"/></span>.
  
     <!--branches-->
     <span tal:define="count view/branch_count;"
           id="branch-count-summary">
-      It has 
+      It has
       <tal:branch-count replace="count"/>
       <tal:branches replace="python: view.branch_text.lower()">
         branches
@@ -36,11 +34,10 @@
           <tal:toc content="view/team_owner_count">1</tal:toc>
           <tal:people replace="view/team_text">team</tal:people>
         </tal:teams>
-      </tal:has-branches>
-    </span>.
+      </tal:has-branches></span>.
     </p>
-    <p>
 
+    <p>
     <!--commits-->
     <span id="commits"
           tal:define="count view/commit_count">
@@ -56,9 +53,4 @@
         </tal:has-committers>
         in the last month.
     </span>
-  </div>
-
-  <table class="code-links">
-
-  </table>
 </div>
