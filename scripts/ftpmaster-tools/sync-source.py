@@ -324,7 +324,7 @@ def check_dsc(dsc, current_sources, current_binaries):
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
             ubuntu_bin = current_binaries[binary][0].find("ubuntu")
-            if not Options.force and  ubuntu_bin != -1:
+            if not Options.force and ubuntu_bin != -1:
                 dak_utils.fubar(
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
@@ -348,7 +348,8 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
                 gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
-                dak_utils.fubar("signature for %s invalid %r %r" % (dsc_filename, gpg_pre, gpg_post))
+                dak_utils.fubar("signature for %s invalid %r %r" % (
+                    dsc_filename, gpg_pre, gpg_post))
 
     dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
@@ -412,8 +413,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
             status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE
-            )
+            pocket=PackagePublishingPocket.RELEASE)
     else:
         spp = []
         for package in arguments:
@@ -559,7 +559,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         dak_utils.fubar("Fetching files failed: %s" % (str(e),))
 
     if dsc_filename is None:
-        dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
+        dak_utils.fubar(
+            "No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
                origin["dsc"], files_from_librarian, requested_by, origin,
