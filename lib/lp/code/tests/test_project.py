@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-import unittest 
+import unittest
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -19,7 +19,7 @@ class TestProjectBranches(TestCaseWithFactory):
         super(TestProjectBranches, self).setUp()
         self.project = self.factory.makeProject()
         self.product = self.factory.makeProduct(project=self.project)
-    
+
     def test_has_branches_with_no_branches(self):
         # If there are no product branches on the project's products, then
         # has branches returns False.

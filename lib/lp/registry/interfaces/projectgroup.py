@@ -328,7 +328,7 @@ class IProjectGroupPublic(
     def has_branches(self):
         """Return a boolean showing the existance of products with branches.
         """
-        
+
     def hasProducts():
         """Returns True if a project has products associated with it, False
         otherwise.
