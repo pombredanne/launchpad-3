@@ -112,7 +112,7 @@
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"
             facet="bugs"
-            permission="launchpad.Edit"
+            permission="launchpad.BugSupervisor"
             template="../templates/official-bug-target-manage-tags.pt"/>
         <browser:page
             name="+patches"

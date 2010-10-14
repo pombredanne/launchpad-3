@@ -45,8 +45,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         def got_cache_file(ignored):
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-            args = {'arch_tag': self._getDistroArchSeries().architecturetag}
-            args.update(self.buildfarmjob.metadata)
+            args = {
+                'arch_tag': self._getDistroArchSeries().architecturetag,
+                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                }
 
             filemap = {}
 

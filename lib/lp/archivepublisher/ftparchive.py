@@ -699,6 +699,13 @@ class FTPArchiveHandler:
             self.log.debug("Writing file lists for %s" % suite)
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
+                    # XXX wgrant 2010-10-06: There must be a better place to
+                    # do this.
+                    series, pocket = (
+                        self.distro.getDistroSeriesAndPocket(suite))
+                    if (architecture != 'source' and
+                        not series.getDistroArchSeries(architecture[7:]).enabled):
+                        continue
                     self.writeFileList(architecture, file_names,
                                        suite, component)
 
