@@ -25,6 +25,16 @@ or getDistroArchSeries():
 #      This needs many more tests to be effective.
 
 
+Properties
+==========
+
+Enabled is a boolean flag that says whether the arch will receive new builds
+and publish them.
+
+    >>> print hoary_i386.enabled
+    True
+
+
 DistroArchSeries can tell you about their published releases
 ============================================================
 
