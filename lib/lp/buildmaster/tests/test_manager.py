@@ -437,7 +437,7 @@ class TestNewBuilders(TrialTestCase):
             new_builders, builder_scanner.checkForNewBuilders())
 
     def test_scan(self):
-        # See if scan detects new builders and schedules the next scan.
+        # See if scan detects new builders.
 
         # stub out the addScanForBuilders and scheduleScan methods since
         # they use callLater; we only want to assert that they get
@@ -457,9 +457,6 @@ class TestNewBuilders(TrialTestCase):
         builder_scanner.scan()
         advance = NewBuildersScanner.SCAN_INTERVAL + 1
         clock.advance(advance)
-        self.assertNotEqual(
-            0, builder_scanner.scheduleScan.call_count,
-            "scheduleScan did not get called")
 
 
 def is_file_growing(filepath, poll_interval=1, poll_repeat=10):

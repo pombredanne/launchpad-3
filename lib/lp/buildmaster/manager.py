@@ -101,8 +101,8 @@ class SlaveScanner:
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
-        self._loop = LoopingCall(self._startCycle)
-        d = self._loop.start(self.SCAN_INTERVAL)
+        self.loop = LoopingCall(self._startCycle)
+        d = self.loop.start(self.SCAN_INTERVAL)
         return d
 
     def _startCycle(self):
@@ -245,13 +245,15 @@ class NewBuildersScanner:
 
     def scheduleScan(self):
         """Schedule a callback SCAN_INTERVAL seconds later."""
-        return self._clock.callLater(self.SCAN_INTERVAL, self.scan)
+        self.loop = LoopingCall(self.scan)
+        self.loop.clock = self._clock
+        d = self.loop.start(self.SCAN_INTERVAL)
+        return d
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
         new_builders = self.checkForNewBuilders()
         self.manager.addScanForBuilders(new_builders)
-        self.scheduleScan()
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
