@@ -38,7 +38,8 @@ from canonical.launchpad.interfaces.oauth import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IAuthorization,
-    ILaunchpadRoot,
+    ILaunchBag,
+    ILaunchpadRoot
     )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -61,6 +62,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.code.interfaces.branch import (
     IBranch,
@@ -910,6 +912,25 @@ class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
         return (user.inTeam(self.obj.bug_supervisor) or
                 user.inTeam(self.obj.owner) or
                 user.in_admin)
+
+
+class NominateBugForDistroSeries(AuthorizationBase):
+    """A Distribution's bug supervisor can nominate bugs for fixing."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IBug
+
+    def checkAuthenticated(self, user):
+        launchbag = getUtility(ILaunchBag)
+        target = (launchbag.product or
+            launchbag.distribution) #or launchbag.distroseries)
+        #import pdb; pdb.set_trace()
+        if target.bug_supervisor:
+            return (user.inTeam(target.bug_supervisor) or
+                    user.inTeam(target.owner) or
+                    user.in_admin)
+        else:
+            return True
 
 
 class AdminDistroSeries(AdminByAdminsTeam):

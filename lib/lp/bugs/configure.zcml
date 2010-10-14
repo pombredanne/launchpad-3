@@ -686,7 +686,6 @@
                     unsubscribeFromDupes
                     subscribe
                     unsubscribe
-                    addNomination
                     expireNotifications
                     setStatus
                     setPrivate
@@ -731,6 +730,9 @@
                     setCommentVisibility
                     setHeat"
                 set_attributes="heat_last_updated" />
+            <require
+                permission="launchpad.BugSupervisor"
+                attributes="addNomination"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"

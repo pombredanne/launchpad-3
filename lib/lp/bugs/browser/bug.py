@@ -276,7 +276,13 @@ class BugContextMenu(ContextMenu):
         else:
             text = 'Nominate for release'
 
-        return Link('+nominate', text, icon='milestone')
+        if target.bug_supervisor and (check_permission("launchpad.Driver", target) or
+            check_permission("launchpad.BugSupervisor", target)):
+            return Link('+nominate', text, icon='milestone')
+        elif target.bug_supervisor:
+            return Link('+nominate', text, enabled=False, icon='milestone')
+        else:
+            return Link('+nominate', text, icon='milestone')
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
