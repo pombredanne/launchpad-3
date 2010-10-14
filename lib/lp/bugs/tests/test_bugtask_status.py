@@ -65,3 +65,15 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.task.transitionToStatus(
                 BugTaskStatus.TRIAGED, self.team_member)
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
+
+    def test_person_unset_wont_fix_status(self):
+        with person_logged_in(self.team_member):
+            self.task.transitionToStatus(
+                BugTaskStatus.WONTFIX, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.CONFIRMED, person)
+
