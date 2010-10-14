@@ -23,10 +23,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.archivepublisher.utils import process_in_batches
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.component import Component
@@ -292,7 +289,7 @@ class FTPArchiveHandler:
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
         def add_suite(result):
             name, component, section = result
             return (name, suite, component, section)
@@ -347,7 +344,7 @@ class FTPArchiveHandler:
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
         def add_suite(result):
             name, component, section, priority = result
             return (name, suite, component, section, priority.title.lower())
@@ -572,7 +569,7 @@ class FTPArchiveHandler:
             SourcePackageFilePublishing.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
         def add_suite(result):
             name, filename, component = result
             return (name, suite, filename, component)
@@ -609,7 +606,7 @@ class FTPArchiveHandler:
             BinaryPackageFilePublishing.publishingstatus ==
                 PackagePublishingStatus.PUBLISHED)
 
-        suite = distroseries.name + pocketsuffix[pocket]
+        suite = distroseries.getSuite(pocket)
         def add_suite(result):
             name, filename, component, architecturetag = result
             architecture = 'binary-' + architecturetag
@@ -622,7 +619,7 @@ class FTPArchiveHandler:
     def generateFileLists(self, fullpublish=False):
         """Collect currently published FilePublishings and write filelists."""
         for distroseries in self.distroseries:
-            for pocket in pocketsuffix:
+            for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -747,7 +744,7 @@ class FTPArchiveHandler:
         # each of the distroseries we've touched
         for distroseries_name in self._config.distroSeriesNames():
             distroseries = self.distro[distroseries_name]
-            for pocket in pocketsuffix:
+            for pocket in PackagePublishingPocket.items:
 
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
