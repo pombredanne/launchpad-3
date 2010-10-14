@@ -49,13 +49,14 @@
            tal:content="structure link/render"></p>
       </div>
 
-      <div tal:replace="structure context/@@+portlet-product-codestatistics" />
     </div>
   </metal:side>
 
   <tal:main metal:fill-slot="main">
 
     <tal:branch-summary content="structure context/@@+branch-summary" />
+
+    <div tal:replace="structure context/@@+portlet-product-codestatistics" />
 
     <tal:has-branches condition="view/branch_count"
                       define="branches view/branches">
