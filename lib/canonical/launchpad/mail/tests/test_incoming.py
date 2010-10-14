@@ -78,11 +78,6 @@ class TestIncoming(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
     suite.addTest(DocTestSuite('canonical.launchpad.mail.incoming'))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

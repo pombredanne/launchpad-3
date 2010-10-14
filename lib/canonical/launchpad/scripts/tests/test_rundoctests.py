@@ -19,7 +19,3 @@ def test_suite():
         'canonical.launchpad.scripts.logger', tearDown=tearDown
         ))
     return suite
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
-
