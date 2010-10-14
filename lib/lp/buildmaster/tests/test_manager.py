@@ -392,6 +392,13 @@ class TestBuilddManager(TrialTestCase):
         clock.advance(advance)
         self.assertNotEqual(0, manager.new_builders_scanner.scan.call_count)
 
+    def test_shutdown(self):
+        # Test that all the LoopingCalls are terminated.
+        # XXX: cause a shutdown, how?
+        # intercept the Deferred returned from BuilderSlave.startCycle()
+        # which is called back when the loop stops.
+        # Also check that the NewBuilderScanner is stopped.
+
 
 class TestNewBuilders(TrialTestCase):
     """Test detecting of new builders."""

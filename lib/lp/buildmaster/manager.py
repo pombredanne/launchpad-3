@@ -306,9 +306,17 @@ class BuilddManager(service.Service):
         builders = [builder.name for builder in builder_set]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
+        reactor.addSystemEventTrigger('before', 'shutdown', self.shutdown)
 
         # Events will now fire in the SlaveScanner objects to scan each
         # builder.
+
+    def shutdown(self):
+        """Callback from the reactor when we need to shut down."""
+        # All the SlaveScanner objects need to be halted gracefully.
+        self.new_builders_scanner.loop.stop()
+        for slave in self.builder_slaves:
+            slave.loop.stop()
 
     def addScanForBuilders(self, builders):
         """Set up scanner objects for the builders specified."""
