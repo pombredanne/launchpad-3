@@ -30,8 +30,8 @@
         owned by
         <tal:individuals condition="view/person_owner_count">
           <tal:owners content="view/person_owner_count">42</tal:owners>
-          <tal:people replace="view/person_text">people</tal:people>
-        </tal:individuals
+          <tal:people replace="view/person_text">people</tal:people
+        ></tal:individuals
         ><tal:teams condition="view/team_owner_count">
           <tal:individuals condition="view/person_owner_count">
             and

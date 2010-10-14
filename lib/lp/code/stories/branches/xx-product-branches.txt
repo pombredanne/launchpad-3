@@ -250,6 +250,7 @@ The statistics portlet
 The text that is shown giving a summary of the number of branches
 shows correct singular and plural forms.
 
+    >>> from lp.testing import normalize_whitespace
     >>> def get_stats_portlet(browser):
     ...     return find_tag_by_id(
     ...         browser.contents,
@@ -260,13 +261,11 @@ shows correct singular and plural forms.
     ...     if portlet is None:
     ...         print 'None'
     ...     else:
-    ...         print extract_text(portlet)
+    ...         print normalize_whitespace(extract_text(portlet))
 
     >>> setup_code_hosting('gnome-terminal')
     >>> print_portlet('gnome-terminal')
-    0 Active reviews
-    9 Active branches owned by 2 people and 2 teams
-    0 Commits in the last month
+    GNOME Terminal has 9 active branches owned by 2 people and 2 teams. There were 0 commits in the last month.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
@@ -275,23 +274,17 @@ shows correct singular and plural forms.
     >>> logout()
     >>> setup_code_hosting('fooix')
     >>> print_portlet('fooix')
-    0 Active reviews
-    2 Active branches owned by 2 people
-    0 Commits in the last month
+    Fooix has 2 active branches owned by 2 people. There were 0 commits in the last month.
 
     >>> print_portlet('evolution')
-    0 Active reviews
-    3 Active branches owned by 1 person and 1 team
-    0 Commits in the last month
+    Evolution has 3 active branches owned by 1 person and 1 team. There were 0 commits in the last month.
 
     >>> login(ANONYMOUS)
     >>> dinky = factory.makeProduct('dinky')
     >>> logout()
     >>> setup_code_hosting('dinky')
     >>> print_portlet('dinky')
-    0 Active reviews
-    1 Active branch owned by 1 person
-    0 Commits in the last month
+    Dinky has 1 active branch owned by 1 person. There were 0 commits in the last month.
 
 
 Product has Branches, but none initially visible

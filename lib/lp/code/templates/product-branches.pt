@@ -57,7 +57,7 @@
     <tal:branch-summary content="structure context/@@+branch-summary" />
 
     <tal:code-statistics
-      condition="view/branch_count"
+      condition="not: view/context/codehosting_usage/enumvalue:UNKNOWN"
       replace="structure context/@@+portlet-product-codestatistics" />
 
     <tal:has-branches condition="view/branch_count"
