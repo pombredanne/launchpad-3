@@ -242,6 +242,18 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), self.parent.sourcecount)
 
+    def test_do_not_copy_disabled_dases(self):
+        # DASes that are disabled in the parent will not be copied
+        ppc_das = self.factory.makeDistroArchSeries(
+            distroseries=self.parent)
+        ppc_das.enabled = False
+        child = self._full_initialise()
+        das = list(IStore(DistroArchSeries).find(
+            DistroArchSeries, distroseries = child))
+        self.assertEqual(len(das), 1)
+        self.assertEqual(
+            das[0].architecturetag, self.parent_das.architecturetag)
+
     def test_script(self):
         # Do an end-to-end test using the command-line tool
         uploader = self.factory.makePerson()

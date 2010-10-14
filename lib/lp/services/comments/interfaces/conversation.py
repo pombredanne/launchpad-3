@@ -17,6 +17,8 @@ from lazr.restful.fields import (
 from zope.interface import Interface
 from zope.schema import (
     Bool,
+    Datetime,
+    Text,
     TextLine,
     )
 
@@ -35,6 +37,22 @@ class IComment(Interface):
 
     has_footer = Bool(
         description=_("Does the comment have a footer?"),
+        readonly=True)
+
+    body_text = Text(
+        description=_("The body text of the comment."),
+        readonly=True)
+
+    comment_author = Reference(
+        # Really IPerson.
+        Interface, title=_("The author of the comment."),
+        readonly=True)
+
+    comment_date = Datetime(
+        title=_('Comment date.'), readonly=True)
+
+    display_attachments = Bool(
+        description=_("Should attachments be displayed for this comment."),
         readonly=True)
 
 

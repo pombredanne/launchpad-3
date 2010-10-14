@@ -1065,4 +1065,21 @@
         permission="launchpad.Admin"/>
 
     </facet>
+
+<!-- TranslationTemplateBuild -->
+    <browser:defaultView
+        for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
+        name="+index"/>
+    <browser:url
+        for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
+        path_expression="string:+translation-templates-build/${build_farm_job/id}"
+        attribute_to_parent="branch"/>
+    <browser:page
+        for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
+        class="lp.translations.browser.translationtemplatesbuild.TranslationTemplatesBuildView"
+        permission="launchpad.View"
+        name="+index"
+        facet="overview"
+        template="../templates/translationtemplatesbuild-index.pt"/>
+
 </configure>
