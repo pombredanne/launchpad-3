@@ -910,7 +910,7 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers from dupes. Note that we don't supply recipients
         # here because we are doing this to /remove/ subscribers.
         dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers(level=level))
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
