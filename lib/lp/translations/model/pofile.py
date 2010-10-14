@@ -219,13 +219,10 @@ def _can_edit_translations(pofile, person):
     if _person_has_not_licensed_translations(person):
         return False
 
-    # Finally, check whether the user is member of the translation team or
-    # owner for the given PO file.
+    # Finally, check whether the user is a member of the translation team.
     translators = [t.translator for t in pofile.translators]
     return _check_translation_perms(
-        pofile.translationpermission,
-        translators,
-        person) or person.inTeam(pofile.owner)
+        pofile.translationpermission, translators, person)
 
 
 def _can_add_suggestions(pofile, person):
@@ -1334,7 +1331,9 @@ class DummyPOFile(POFileMixIn):
         UTC = pytz.timezone('UTC')
         self.date_changed = None
         self.lastparsed = None
-        self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if owner is None:
+            owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        self.owner = owner
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
