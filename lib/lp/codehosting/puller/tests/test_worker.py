@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 
+import threading
 import gc
 from StringIO import StringIO
 import unittest
@@ -695,6 +696,9 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
+        for t in threading.enumerate():
+            print "Thread Name: %s\nIs Daemon?: %s\nThread target: %s\n" % (
+                t.name, t.daemon, t._Thread__target)
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
