@@ -102,7 +102,6 @@ from canonical.launchpad.interfaces.message import (
     IndexedMessage,
     )
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -1488,7 +1487,6 @@ BugMessage""" % sqlvalues(self.id))
             raise NominationError(
                 "This bug cannot be nominated for %s." %
                     target.bugtargetdisplayname)
-
 
         distroseries = None
         productseries = None
