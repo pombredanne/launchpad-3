@@ -31,6 +31,7 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.product.setBugSupervisor(self.supervisor, self.owner)
 
     def test_person_cannot_set_bug_supervisor_statuses(self):
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(
@@ -44,8 +45,8 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
                 BugTaskStatus.TRIAGED, person)
 
     def test_owner_can_set_bug_supervisor_statuses(self):
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.owner):
-            self.assertEqual(self.task.status, BugTaskStatus.NEW)
             self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
             self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
             self.task.transitionToStatus(BugTaskStatus.EXPIRED, self.owner)
@@ -54,8 +55,8 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
     def test_supervisor_can_set_bug_supervisor_statuses(self):
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.team_member):
-            self.assertEqual(self.task.status, BugTaskStatus.NEW)
             self.task.transitionToStatus(
                 BugTaskStatus.WONTFIX, self.team_member)
             self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
@@ -67,6 +68,7 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
     def test_person_unset_wont_fix_status(self):
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.team_member):
             self.task.transitionToStatus(
                 BugTaskStatus.WONTFIX, self.team_member)
