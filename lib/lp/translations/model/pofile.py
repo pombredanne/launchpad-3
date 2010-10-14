@@ -562,8 +562,8 @@ class POFile(SQLBase, POFileMixIn):
         applicable_template = Coalesce(
             TranslationMessage.potemplateID, self.potemplate.id)
         clauses = [
-            TranslationTemplateItem.potmsgsetID ==
-                TranslationMessage.potmsgsetID,
+            TranslationTemplateItem.potmsgsetID == (
+                TranslationMessage.potmsgsetID),
             TranslationTemplateItem.potemplate == self.potemplate,
             TranslationMessage.language == self.language,
             applicable_template == self.potemplate.id,
@@ -1203,8 +1203,6 @@ class POFile(SQLBase, POFileMixIn):
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # comes from upstream.
-            celebs = getUtility(ILaunchpadCelebrities)
-            rosetta_experts = celebs.rosetta_experts
             if (entry_to_import.from_upstream and
                 entry_to_import.importer.id != rosetta_experts.id):
                 entry_to_import.importer.assignKarma(

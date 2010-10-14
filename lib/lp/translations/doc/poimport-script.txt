@@ -282,9 +282,9 @@ We've imported a new translation for "Foo %s."
 
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
-    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(
+    >>> suggestions = potemplate['Foo %s'].getLocalTranslationMessages(
     ...     potemplate, esperanto)
-    >>> sorted([foo.msgstr0.translation for foo in foos])
+    >>> sorted([suggestion.msgstr0.translation for suggestion in suggestions])
     [u'Bar', u'Bars']
 
 Since this last upload was not the upstream one, however, its credits
