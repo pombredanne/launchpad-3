@@ -1871,21 +1871,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if child is None:
             if distribution is None:
                 distribution = self.distribution
-            if displayname is None or len(displayname) == 0:
-                raise DerivationError("Display Name needs to be set when"
-                    " creating a distroseries.")
-            if title is None or len(title) == 0:
-                raise DerivationError("Title needs to be set when creating"
-                    " a distroseries.")
-            if summary is None or len(summary) == 0:
-                raise DerivationError("Summary needs to be set when"
-                    " creating a distroseries.")
-            if description is None or len(description) == 0:
-                raise DerivationError("Description needs to be set when"
-                    " creating a distroseries.")
-            if version is None or len(version) == 0:
-                raise DerivationError("Version needs to be set when"
-                    " creating a distroseries.")
+            if not displayname:
+                raise DerivationError(
+                    "Display Name needs to be set when creating a "
+                    "distroseries.")
+            if not title:
+                raise DerivationError(
+                    "Title needs to be set when creating a distroseries.")
+            if not summary:
+                raise DerivationError(
+                    "Summary needs to be set when creating a "
+                    "distroseries.")
+            if not description:
+                raise DerivationError(
+                    "Description needs to be set when creating a "
+                    "distroseries.")
+            if not version:
+                raise DerivationError(
+                    "Version needs to be set when creating a "
+                    "distroseries.")
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
