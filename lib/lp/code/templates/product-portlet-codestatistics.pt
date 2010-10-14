@@ -4,60 +4,61 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-product-codestatistics">
 
-  <table class="code-links">
+  <div id="code-statistics">
+    <p>
+    <tal:project replace="context/displayname"/> has
     <!--reviews-->
-    <tr tal:define="menu context/menu:branches"
-        class="code-links"
-        id="merge-counts">
-      <td class="code-count"
-          tal:define="count menu/active_review_count"
-          tal:content="count" />
-      <td>
-        <tal:link
-           define="link menu/active_reviews"
-           replace="structure link/render"
-           />
-      </td>
-    </tr>
-
+    <span tal:define="count context/menu:branches/active_review_count;
+                      link context/menu:branches/active_reviews"
+          id="merge-counts">
+      <tal:active-count replace="count"/> 
+      <tal:link replace="structure python: link.render().lower()"/>
+    </span>. 
+ 
     <!--branches-->
-    <tr class="code-links" id="branch-count-summary">
-      <td class="code-count"
-          tal:define="count view/branch_count"
-          tal:content="count" />
-      <td>
-        <tal:branches replace="view/branch_text">branches</tal:branches>
-        <tal:has-branches condition="view/branch_count">
-          owned by
+    <span tal:define="count view/branch_count;"
+          id="branch-count-summary">
+      It has 
+      <tal:branch-count replace="count"/>
+      <tal:branches replace="python: view.branch_text.lower()">
+        branches
+      </tal:branches> 
+      <tal:has-branches condition="view/branch_count">
+        owned by
+        <tal:individuals condition="view/person_owner_count">
+          <tal:owners content="view/person_owner_count">42</tal:owners>
+          <tal:people replace="view/person_text">people</tal:people>
+        </tal:individuals>
+        <tal:teams condition="view/team_owner_count">
           <tal:individuals condition="view/person_owner_count">
-            <tal:owners content="view/person_owner_count">42</tal:owners>
-            <tal:people replace="view/person_text">people</tal:people>
+            and
           </tal:individuals>
-          <tal:teams condition="view/team_owner_count">
-            <tal:individuals condition="view/person_owner_count">
-              and
-            </tal:individuals>
-            <tal:toc content="view/team_owner_count">1</tal:toc>
-            <tal:people replace="view/team_text">team</tal:people>
-          </tal:teams>
-        </tal:has-branches>
-      </td>
-    </tr>
+          <tal:toc content="view/team_owner_count">1</tal:toc>
+          <tal:people replace="view/team_text">team</tal:people>
+        </tal:teams>
+      </tal:has-branches>
+    </span>.
+    </p>
+    <p>
 
     <!--commits-->
-    <tr class="code-links">
-      <td class="code-count"
-          tal:define="count view/commit_count"
-          tal:content="count" />
-      <td>
-        <tal:commits replace="view/commit_text">commits</tal:commits>
+    <span id="commits"
+          tal:define="count view/commit_count">
+      It has had
+      <tal:commit-count replace="count"/>
+        <tal:commits replace="python: view.commit_text.lower()">
+          commits
+        </tal:commits>
         <tal:has-committers condition="view/committer_count">
           by
           <tal:cc content="view/committer_count">4</tal:cc>
           <tal:people replace="view/committer_text">people</tal:people>
         </tal:has-committers>
-        in the last month
-      </td>
-    </tr>
+        in the last month.
+    </span>
+  </div>
+
+  <table class="code-links">
+
   </table>
 </div>

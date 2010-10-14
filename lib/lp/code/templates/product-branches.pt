@@ -56,7 +56,7 @@
 
     <tal:branch-summary content="structure context/@@+branch-summary" />
 
-    <div tal:replace="structure context/@@+portlet-product-codestatistics" />
+    <tal:code-statistics replace="structure context/@@+portlet-product-codestatistics" />
 
     <tal:has-branches condition="view/branch_count"
                       define="branches view/branches">
