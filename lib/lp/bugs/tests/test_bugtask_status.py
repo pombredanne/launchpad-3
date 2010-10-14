@@ -222,3 +222,11 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.FIXRELEASED, self.owner), True)
+
+    def test_user_cannot_transition_from_wont_fix(self):
+        with person_logged_in(self.owner):
+            self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
+        self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+        self.assertEqual(
+            self.task.canTransitionToStatus(BugTaskStatus.NEW, self.user),
+            False)
