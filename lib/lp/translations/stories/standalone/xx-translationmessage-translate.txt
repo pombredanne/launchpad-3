@@ -44,18 +44,6 @@ pages
   >> print nav.getLink("Translation details").url
   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
-Also, any anonymous POST submission should fail:
-
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate HTTP/1.1
-  ... Host: translations.launchpad.dev
-  ... """)
-  HTTP/1.1 500 Internal Server Error
-  ...
-  ...UnexpectedFormData: Anonymous users or users who are not accepting
-  our licensing terms cannot do POST submissions...
-
-
 Let's log in.
 
   >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
