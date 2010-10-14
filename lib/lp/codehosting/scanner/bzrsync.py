@@ -173,15 +173,7 @@ class BzrSync:
             added_ancestry.discard(NULL_REVISION)
         return added_ancestry, removed_ancestry
 
-    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
-                            db_history):
-        """Plan database changes to synchronize with bzrlib data.
-
-        Use the data retrieved by `retrieveDatabaseAncestry` and
-        `retrieveBranchDetails` to plan the changes to apply to the database.
-        """
-        self.logger.info("Planning changes.")
-        # Find the length of the common history.
+    def getHistoryDelta(self, bzr_history, db_history):
         common_len = min(len(bzr_history), len(db_history))
         while common_len > 0:
             # The outer conditional improves efficiency. Without it, the
@@ -194,13 +186,24 @@ class BzrSync:
                 if db_history[:common_len] == bzr_history[:common_len]:
                     break
             common_len -= 1
-
-        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
-
         # Revision added or removed from the branch's history. These lists may
         # include revisions whose history position has merely changed.
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
+        return added_history, removed_history
+
+    def planDatabaseChanges(self, bzr_branch, bzr_history, db_ancestry,
+                            db_history):
+        """Plan database changes to synchronize with bzrlib data.
+
+        Use the data retrieved by `retrieveDatabaseAncestry` and
+        `retrieveBranchDetails` to plan the changes to apply to the database.
+        """
+        self.logger.info("Planning changes.")
+        # Find the length of the common history.
+        added_history, removed_history = self.getHistoryDelta(
+            bzr_history, db_history)
+        added_ancestry, removed_ancestry = self.getAncestryDelta(bzr_branch)
 
         notify(
             events.RevisionsRemoved(
@@ -215,8 +218,10 @@ class BzrSync:
 
         # We must insert BranchRevision rows for all revisions which were
         # added to the ancestry or whose sequence value has changed.
+        last_revno = len(bzr_history)
         revids_to_insert = dict(
-            self.getRevisions(bzr_history, added_ancestry.union(set(added_history) )))
+            self.revisionsToInsert(
+                added_history, last_revno, added_ancestry))
 
         return (added_ancestry, list(branchrevisions_to_delete),
                 revids_to_insert)
@@ -249,17 +254,20 @@ class BzrSync:
                 self.db_branch, bzr_branch, db_revision, bzr_revision,
                 revids_to_insert[revision_id]))
 
-    def getRevisions(self, bzr_history, revision_subset):
-        """Iterate over '(revid, revno)' pairs in a branch's ancestry.
+    @staticmethod
+    def revisionsToInsert(added_history, last_revno, added_ancestry):
+        """Calculate the revisions to insert and their revnos.
 
-        Generate a sequence of (revision-id, sequence) pairs to be inserted
-        into the branchrevision table.
+        :param added_history: A list of revision ids added to the revision
+            history in parent-to-child order.
+        :param last_revno: The revno of the last revision.
+        :param added_ancestry: A set of revisions that have been added to the
+            ancestry of the branch.  May overlap with added_history.
         """
-        for (index, revision_id) in enumerate(bzr_history):
-            if revision_id in revision_subset:
-                # sequence numbers start from 1
-                yield revision_id, index + 1
-        for revision_id in revision_subset.difference(set(bzr_history)):
+        start_revno = last_revno - len(added_history) + 1
+        for (revno, revision_id) in enumerate(added_history, start_revno):
+            yield revision_id, revno
+        for revision_id in added_ancestry.difference(added_history):
             yield revision_id, None
 
     def deleteBranchRevisions(self, revision_ids_to_delete):
