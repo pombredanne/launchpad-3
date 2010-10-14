@@ -1488,11 +1488,6 @@ BugMessage""" % sqlvalues(self.id))
             raise NominationError(
                 "This bug cannot be nominated for %s." %
                     target.bugtargetdisplayname)
-        #if (target.bug_supervisor and
-        #    not check_permission("launchpad.BugSupervisor",
-        #    target)):
-        #    raise NominationError(
-        #        "Only bug supervisors can nominate bugs.")
 
 
         distroseries = None
@@ -1505,6 +1500,20 @@ BugMessage""" % sqlvalues(self.id))
         else:
             assert IProductSeries.providedBy(target)
             productseries = target
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if (distroseries and distroseries.distribution.bug_supervisor
+            and not owner.inTeam(distroseries.distribution.bug_supervisor)
+            and not owner.inTeam(distroseries.distribution.owner)
+            and not owner.inTeam(admins)):
+            raise NominationError(
+                "Only bug supervisors can nominate bugs.")
+        elif (productseries and productseries.bug_supervisor and not
+              owner.inTeam(productseries.bug_supervisor)
+              and not owner.inTeam(productseries.owner)
+              and not owner.inTeam(admins)):
+            raise NominationError(
+                "Only bug supervisors can nominate bugs.")
 
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,

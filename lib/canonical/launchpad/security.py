@@ -914,25 +914,6 @@ class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
                 user.in_admin)
 
 
-class NominateBugForDistroSeries(AuthorizationBase):
-    """A Distribution's bug supervisor can nominate bugs for fixing."""
-
-    permission = 'launchpad.BugSupervisor'
-    usedfor = IBug
-
-    def checkAuthenticated(self, user):
-        launchbag = getUtility(ILaunchBag)
-        target = (launchbag.product or
-            launchbag.distribution) #or launchbag.distroseries)
-        #import pdb; pdb.set_trace()
-        if target.bug_supervisor:
-            return (user.inTeam(target.bug_supervisor) or
-                    user.inTeam(target.owner) or
-                    user.in_admin)
-        else:
-            return True
-
-
 class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions

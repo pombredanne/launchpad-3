@@ -166,7 +166,7 @@ Nominations are also listed on the +nomination page for a series.
 
 The batch navigator used returns a BugTaskListingItem for each of the
 distribution's bugtasks that are nominated for this release, with a
-widget set up for accepting/declining the nomination. The widet is only
+widget set up for accepting/declining the nomination. The widget is only
 set up if the user has permission to approve the nomination.
 
     >>> from canonical.launchpad.interfaces import CreateBugParams
