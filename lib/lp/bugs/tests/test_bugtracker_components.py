@@ -250,12 +250,13 @@ class TestWebservice(TestCaseWithFactory):
         db_comp_group = self.bug_tracker.addRemoteComponentGroup(
             u'alpha')
         comp_group = ws_object(self.launchpad, db_comp_group)
-        comp_group.addComponent(u'c')
+        comp_group.addComponent(component_name=u'c')
         self.assertEqual(1, len(comp_group.components))
 
     def test_remove_component(self):
         """Make a component not visible in the UI"""
         db_comp = self.factory.makeBugTrackerComponent()
+        transaction.commit()
 
         comp = ws_object(self.launchpad, db_comp)
         self.assertTrue(comp.is_visible)
@@ -267,6 +268,7 @@ class TestWebservice(TestCaseWithFactory):
         db_src_pkg = self.factory.makeDistributionSourcePackage()
         db_comp = self.factory.makeBugTrackerComponent()
         db_comp.distro_source_package = db_src_pkg
+        transaction.commit()
 
         comp = ws_object(self.launchpad, db_comp)
         self.assertIsNot(None, comp.distro_source_package)
@@ -275,6 +277,7 @@ class TestWebservice(TestCaseWithFactory):
         """Link a component to a given source package"""
         db_src_pkg = self.factory.makeDistributionSourcePackage()
         db_comp = self.factory.makeBugTrackerComponent()
+        transaction.commit()
 
         comp = ws_object(self.launchpad, db_comp)
         src_pkg = ws_object(self.launchpad, db_src_pkg)
@@ -288,6 +291,7 @@ class TestWebservice(TestCaseWithFactory):
         db_comp_a = self.factory.makeBugTrackerComponent()
         db_comp_a.distro_source_package = db_src_pkg
         db_comp_b = self.factory.makeBugTrackerComponent()
+        transaction.commit()
 
         comp_b = ws_object(self.launchpad, db_comp_b)
         src_pkg = ws_object(self.launchpad, db_src_pkg)
@@ -303,6 +307,7 @@ class TestWebservice(TestCaseWithFactory):
         db_src_pkg_2 = self.factory.makeDistributionSourcePackage()
         db_comp = self.factory.makeBugTrackerComponent()
         db_comp.distro_source_package = db_src_pkg_1
+        transaction.commit()
 
         comp = ws_object(self.launchpad, db_comp)
         src_pkg_1 = ws_object(self.launchpad, db_src_pkg_1)
@@ -318,6 +323,7 @@ class TestWebservice(TestCaseWithFactory):
         db_src_pkg = self.factory.makeDistributionSourcePackage()
         db_comp = self.factory.makeBugTrackerComponent()
         db_comp.distro_source_package = db_src_pkg
+        transaction.commit()
 
         component = ws_object(self.launchpad, db_comp)
         package = ws_object(self.launchpad, self.src_pkg)
