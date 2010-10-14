@@ -175,23 +175,32 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_default_level(self):
         # If no `level` parameter is passed to getDirectSubscribers(),
-        # the assumed `level` is BugNotification.COMMENTS.
+        # the assumed `level` is BugNotification.NOTHING.
         bug = self.factory.makeBug()
-        level = BugNotificationLevel.COMMENTS
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            subscription = bug.subscribe(
-                subscriber, subscriber, level=level)
+        # We unsubscribe the bug's owner because if we don't there will
+        # be two COMMENTS-level subscribers.
+        with person_logged_in(bug.owner):
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscribers = []
+        for level in BugNotificationLevel.items:
+            subscriber = self.factory.makePerson()
+            subscribers.append(subscriber)
+            with person_logged_in(subscriber):
+                subscription = bug.subscribe(
+                    subscriber, subscriber, level=level)
+
+        # All the subscribers should be returned by
+        # getDirectSubscribers() because it defaults to returning
+        # subscribers at level NOTHING, which everything is higher than.
         direct_subscribers = bug.getDirectSubscribers()
-        self.assertTrue(
-            bug.owner in direct_subscribers,
-            "Bug owner is not in direct_subscribers to COMMENTS.")
-        self.assertTrue(
-            subscriber in direct_subscribers,
-            "Subscriber at level COMMENTS is not in direct_subscribers.")
+        for subscriber in subscribers:
+            self.assertTrue(
+                subscriber in direct_subscribers,
+                "Subscriber at level %s is not in direct_subscribers." %
+                level.name)
         self.assertEqual(
-            2, len(direct_subscribers),
-            "There should be two direct subscribers to COMMENTS.")
+            len(subscribers), len(direct_subscribers),
+            "Number of subscribers did not match expected value.")
 
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`

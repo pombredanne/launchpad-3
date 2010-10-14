@@ -833,7 +833,7 @@ BugMessage""" % sqlvalues(self.id))
         it.
         """
         if level is None:
-            level = BugNotificationLevel.COMMENTS
+            level = BugNotificationLevel.NOTHING
 
         subscribers = list(
             Person.select("""
@@ -895,7 +895,7 @@ BugMessage""" % sqlvalues(self.id))
             return []
 
         if level is None:
-            notification_level = BugNotificationLevel.COMMENTS
+            notification_level = BugNotificationLevel.NOTHING
         else:
             notification_level = level
 
