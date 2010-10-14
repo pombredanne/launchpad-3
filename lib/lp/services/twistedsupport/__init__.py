@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'cancel_on_timeout',
     'defer_to_thread',
     'extract_result',
     'gatherResults',
