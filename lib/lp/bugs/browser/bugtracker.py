@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerAddView',
     'BugTrackerBreadcrumb',
+    'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -51,6 +52,7 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     redirection,
+    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -71,6 +73,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerSet,
     IRemoteBug,
+    IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
 
@@ -443,6 +446,18 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
+
+    @stepthrough("+components")
+    def component_groups(self, name):
+        return self.context.getRemoteComponentGroup(name)
+
+
+class BugTrackerComponentGroupNavigation(Navigation):
+
+    usedfor = IBugTrackerComponentGroup
+
+    def traverse(self, name):
+        return self.context.getComponent(name)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):
