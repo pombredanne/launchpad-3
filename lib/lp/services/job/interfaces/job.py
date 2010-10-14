@@ -11,6 +11,7 @@ __all__ = [
     'IJob',
     'IJobSource',
     'IRunnableJob',
+    'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
     ]
@@ -166,3 +167,10 @@ class IJobSource(Interface):
 
     def contextManager():
         """Get a context for running this kind of job in."""
+
+
+class ITwistedJobSource(IJobSource):
+    """Interface for a job source that is usable by the TwistedJobRunner."""
+
+    def get(id):
+        """Get a job by its id."""

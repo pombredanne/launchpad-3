@@ -1,5 +1,5 @@
-= IStructuralSubscriptionTarget =
-
+IStructuralSubscriptionTarget
+-----------------------------
 
 Let's subscribe ubuntu-team.
 
@@ -61,7 +61,8 @@ we use getSubscriptions.
     ubuntu-team COMMENTS NOTHING
 
 
-=== Structural subscriptions and indirect bug subscriptions ===
+Structural subscriptions and indirect bug subscriptions
+=======================================================
 
     >>> bug = filebug(target, 'test bug one')
     >>> indirect_subscribers = set(

@@ -1,4 +1,5 @@
-= Structural Subscriptions =
+Structural Subscriptions
+------------------------
 
 Structural subscriptions allow a user to subscribe to a launchpad
 structure like a product, project, productseries, distribution,
@@ -44,7 +45,8 @@ distribution.
     3
 
 
-== Parent subscription targets ==
+Parent subscription targets
+===========================
 
 Some subscription targets relate to other targets hierarchically. An
 IDistribution, for example, can be said to be a parent of all
@@ -68,17 +70,17 @@ A target's parent can be retrieved using the
     >>> print ff_milestone.parent_subscription_target.displayname
     Mozilla Firefox
 
-   >>> ff_trunk = firefox.getSeries('trunk')
-   >>> ff_trunk.parent_subscription_target == firefox
-   True
-   >>> print ff_trunk.parent_subscription_target.displayname
-   Mozilla Firefox
+    >>> ff_trunk = firefox.getSeries('trunk')
+    >>> ff_trunk.parent_subscription_target == firefox
+    True
+    >>> print ff_trunk.parent_subscription_target.displayname
+    Mozilla Firefox
 
-   >>> warty = ubuntu.getSeries('warty')
-   >>> warty.parent_subscription_target == ubuntu
-   True
-   >>> print warty.parent_subscription_target.displayname
-   Ubuntu
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty.parent_subscription_target == ubuntu
+    True
+    >>> print warty.parent_subscription_target.displayname
+    Ubuntu
 
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
@@ -127,8 +129,6 @@ the recipients set. Each subscriber is only added once.
     name12
     >>> print_bug_recipients(recipients)
     name12 "Subscriber (evolution in ubuntu)"
-
-
 
 Foo Bar subscribes to Ubuntu.
 
@@ -198,7 +198,8 @@ Firefox.
     name16
 
 
-== Retrieving structural subscribers of targets ==
+Retrieving structural subscribers of targets
+============================================
 
 Subscribers of one or more targets are retrieved by
 PersonSet.getSubscribersForTargets.
@@ -252,7 +253,8 @@ More than one target can be passed to PersonSet.getSubscribersForTargets().
     name16
 
 
-== Target type display ==
+Target type display
+===================
 
 Structural subscription targets have a `target_type_display` attribute, which
 can be used to refer to them in display.
@@ -263,4 +265,3 @@ can be used to refer to them in display.
     package
     >>> print ff_milestone.target_type_display
     milestone
-    

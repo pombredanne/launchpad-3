@@ -16,7 +16,7 @@ no subscriptions associated with a package, an empty list is returned:
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
 
-    >>> debian_firefox.bug_subscriptions
+    >>> list(debian_firefox.bug_subscriptions)
     []
 
 Adding a package subscription is done with the
