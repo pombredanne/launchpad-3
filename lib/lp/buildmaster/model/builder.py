@@ -83,6 +83,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
+from lp.services.twistedsupport import cancel_on_timeout
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -159,12 +160,7 @@ class BuilderSlave(object):
 
     def _with_timeout(self, d):
         TIMEOUT = config.builddmaster.socket_timeout
-        delayed_call = self.reactor.callLater(TIMEOUT, d.cancel)
-        def cancel_timeout(passthrough):
-            if not delayed_call.called:
-                delayed_call.cancel()
-            return passthrough
-        return d.addBoth(cancel_timeout)
+        return cancel_on_timeout(d, TIMEOUT, self.reactor)
 
     def abort(self):
         """Abort the current build."""
