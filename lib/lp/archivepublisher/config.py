@@ -117,8 +117,9 @@ class Config(object):
                 }
 
             for dar in dr.architectures:
-                config_segment["archtags"].append(
-                    dar.architecturetag.encode('utf-8'))
+                if dar.enabled:
+                    config_segment["archtags"].append(
+                        dar.architecturetag.encode('utf-8'))
 
             if dr.lucilleconfig:
                 strio = StringIO(dr.lucilleconfig.encode('utf-8'))
