@@ -504,11 +504,11 @@ class IBugTrackerComponent(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    is_visible = Bool(
+    is_visible = exported(Bool(
         title=_('Is Visible?'),
         description=_("Should the component be shown in "
                       "the Launchpad web interface?"),
-        readonly=True)
+        ))
     is_custom = Bool(
         title=_('Is Custom?'),
         description=_("Was the component added locally in "

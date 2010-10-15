@@ -217,10 +217,6 @@ class TestWebservice(TestCaseWithFactory):
         self.bug_tracker.addRemoteComponentGroup(u'alpha')
 
         bug_tracker = ws_object(self.launchpad, self.bug_tracker)
-        print bug_tracker.lp_attributes
-        print bug_tracker.lp_operations
-        print bug_tracker.lp_collections
-        print bug_tracker.lp_entries
         comp_group = bug_tracker.getRemoteComponentGroup(
             component_group_name=u'alpha')
         self.assertIsNot(None, comp_group)
@@ -238,12 +234,12 @@ class TestWebservice(TestCaseWithFactory):
         """Retrieve the components for a given group"""
         db_comp_group_alpha = self.bug_tracker.addRemoteComponentGroup(
             u'alpha')
+        db_comp_group_alpha.addComponent(u'1')
+        db_comp_group_alpha.addComponent(u'2')
+        transaction.commit()
 
         comp_group = ws_object(self.launchpad, db_comp_group_alpha)
         self.assertEqual(2, len(comp_group.components))
-
-        comp_group = ws_object(self.launchpad, self.comp_group_beta)
-        self.assertEqual(0, len(comp_group.components))
 
     def test_add_component(self):
         """Add a custom (local) component to the component group"""
@@ -282,7 +278,7 @@ class TestWebservice(TestCaseWithFactory):
         comp = ws_object(self.launchpad, db_comp)
         src_pkg = ws_object(self.launchpad, db_src_pkg)
         self.assertIs(None, comp.distro_source_package)
-        comp.addDistroSourcePackage(package)
+        comp.distro_source_package = src_pkg
         self.assertIsNot(None, comp.distro_source_package)
 
     def test_link_linked_source_package(self):
@@ -298,7 +294,7 @@ class TestWebservice(TestCaseWithFactory):
 
         #self.assertRaises(
         #    SomeKindOfExceptionError,
-        #    comp_b.addDistroSourcePackage,
+        #    comp_b.distro_source_package,
         #    src_pkg)
 
     def test_link_two_source_packages(self):
@@ -315,7 +311,7 @@ class TestWebservice(TestCaseWithFactory):
 
         #self.assertRaises(
         #    SomeKindOfExceptionError,
-        #    comp.addDistroSourcePackage,
+        #    comp.distro_source_package,
         #    src_pkg_2)
 
     def test_relink_same_source_package(self):
@@ -326,8 +322,8 @@ class TestWebservice(TestCaseWithFactory):
         transaction.commit()
 
         component = ws_object(self.launchpad, db_comp)
-        package = ws_object(self.launchpad, self.src_pkg)
-        component.addDistroSourcePackage(package)
+        package = ws_object(self.launchpad, db_src_pkg)
+        component.distro_source_package = package
         # TODO: Not sure what to test here... it shouldn't throw an exception
 
 
