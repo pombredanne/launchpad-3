@@ -379,6 +379,9 @@ class IDistroSeriesPublic(
     # DistroArchSeries lookup properties/methods.
     architectures = Attribute("All architectures in this series.")
 
+    enabled_architectures = Attribute(
+        "All enabled architectures in this series.")
+
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
 

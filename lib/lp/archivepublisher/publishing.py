@@ -449,7 +449,8 @@ class Publisher(object):
         all_components = [
             comp.name for comp in
             self.archive.getComponentsForSeries(distroseries)]
-        all_architectures = self._config.archTagsForSeries(distroseries.name)
+        all_architectures = [
+            a.architecturetag for a in distroseries.enabled_architectures]
         all_files = set()
         for component in all_components:
             self._writeSuiteSource(

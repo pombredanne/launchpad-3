@@ -107,14 +107,7 @@ class Config(object):
 
         for dr in distribution:
             distroseries_name = dr.name.encode('utf-8')
-            config_segment =  {
-                "archtags": []
-                }
-
-            for dar in dr.architectures:
-                if dar.enabled:
-                    config_segment["archtags"].append(
-                        dar.architecturetag.encode('utf-8'))
+            config_segment =  {}
 
             if dr.lucilleconfig:
                 strio = StringIO(dr.lucilleconfig.encode('utf-8'))
@@ -142,11 +135,6 @@ class Config(object):
             raise LucilleConfigError(
                 'No Lucille config section for %s in %s' %
                     (dr, self.distroName))
-
-    def archTagsForSeries(self, dr):
-        return [
-            arch.architecturetag
-            for arch in self.distribution[dr].architectures if arch.enabled]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""
