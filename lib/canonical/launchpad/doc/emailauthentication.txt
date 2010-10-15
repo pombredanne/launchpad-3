@@ -1,9 +1,10 @@
-= Authentication of Emails =
+Authentication of Emails
+========================
 
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
-    >>> from canonical.launchpad.mail.incoming import authenticateEmail
+    >>> from lp.services.mail.incoming import authenticateEmail
 
 The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
@@ -159,7 +160,8 @@ hack can be removed.
     Sample Person
 
 
-== IWeaklyAuthenticatedPrinipal ==
+IWeaklyAuthenticatedPrincipal
+-----------------------------
 
 It's a huge difference to signing an email with a key that is associated
 with the authenticated Person, and signing it with a key that isn't
@@ -172,7 +174,8 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces import (
+    ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
     >>> principal = authenticateEmail(msg)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
