@@ -76,9 +76,10 @@
       </div>
       <div class="actions" id="launchpad-form-actions"
            metal:define-slot="buttons">
-        <input tal:repeat="action view/actions"
-               tal:replace="structure action/render"
-          />
+        <tal:actions repeat="action view/actions">
+          <input tal:replace="structure action/render"
+                 tal:condition="action/available"/>
+        </tal:actions>
         <tal:has-cancel-link condition="view/cancel_url">
           <tal:or condition="view/has_available_actions">or&nbsp;</tal:or>
           <a tal:attributes="href view/cancel_url">Cancel</a>

@@ -35,10 +35,9 @@ If we add a message, the cache is updated
 
     >>> cur.execute("""
     ...     INSERT INTO TranslationMessage(
-    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...         potmsgset, msgstr1, origin, submitter, language
     ...       ) VALUES (
-    ...         %(pofile_id)s, %(potmsgset_id)s, 1, 1, %(stub_id)s,
-    ...         %(language_id)s)
+    ...         %(potmsgset_id)s, 1, 1, %(stub_id)s, %(language_id)s)
     ...     """, vars())
     >>> posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
 
@@ -59,10 +58,9 @@ the last touched timestamp.
 
     >>> cur.execute("""
     ...     INSERT INTO TranslationMessage(
-    ...         pofile, potmsgset, msgstr1, origin, submitter, language
+    ...         potmsgset, msgstr1, origin, submitter, language
     ...       ) VALUES (
-    ...         %(pofile_id)s, %(potmsgset_id)s, 2, 1, %(stub_id)s,
-    ...         %(language_id)s)
+    ...         %(potmsgset_id)s, 2, 1, %(stub_id)s, %(language_id)s)
     ...     """, vars())
     >>> new_posubmission_id, new_date_touched = pofiletranslator(
     ...     stub_id, pofile_id)

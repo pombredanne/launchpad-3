@@ -25,18 +25,18 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.mail import signed_message_from_string
-from canonical.launchpad.mail.incoming import (
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.incoming import (
     authenticateEmail,
     canonicalise_line_endings,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 
 
 class TestSignedMessage(TestCaseWithFactory):
-    """Test SignedMessage class correctly extracts and verifies the GPG signatures."""
+    "Test SignedMessage class correctly extracts and verifies GPG signatures."
 
     layer = DatabaseFunctionalLayer
 
@@ -170,4 +170,3 @@ class TestSignedMessage(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
