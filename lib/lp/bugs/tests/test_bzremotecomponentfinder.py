@@ -26,6 +26,7 @@ from lp.testing.sampledata import (
     ADMIN_EMAIL,
     )
 
+
 def read_test_file(name):
     """Return the contents of the test file named :name:
 
@@ -34,6 +35,7 @@ def read_test_file(name):
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
     test_file = open(file_path, 'r')
     return test_file.read()
+
 
 class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
 
@@ -57,7 +59,8 @@ class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
             "http://bugzilla.sample.com/query.cgi?format=advanced")
 
     def test_dict_from_csv(self):
-        """Test conversion of various comma separated value strings parse correctly"""
+        """Test conversion of various CSV strings parse correctly"""
+        
         data = [
             ("'foo'",        {'foo':     {'name': 'foo'}}),
             ("'B_A_R'",      {'B_A_R':   {'name': 'B_A_R'}}),
@@ -87,6 +90,7 @@ class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
         # TODO: Compare self.products with expected listing of products
         true_products = self.scraper.products
         self.assertEqual(self.scraper.products, true_products)
+
 
 class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
