@@ -46,6 +46,7 @@ class TestCronGerminate(unittest.TestCase):
     def tearDown(self):
         for d in [self.UBUNTU_MISC_DIR, self.UBUNTU_GERMINATE_DIR]:
             shutil.rmtree(d)
+        shutil.rmtree(os.path.join(self.ARCHIVE_DIR, "ubuntu/dists"))
 
     def test_mainenance_update(self):
         # write into more-extras.overrides to ensure its alive after we
