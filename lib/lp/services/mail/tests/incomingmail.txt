@@ -1,9 +1,10 @@
-= Incoming Mail =
+Incoming Mail
+=============
 
 When an email is sent to Launchpad we need to handle it somehow. This
 is done by handleEmails:
 
-    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> from lp.services.mail.incoming import handleMail
 
 Basically what it does is to open the Launchpad mail box, and for each
 message it:
@@ -14,7 +15,9 @@ message it:
     * Deletes the message from the mail box
 
 
-== Mail Handlers ==
+-------------
+Mail Handlers
+-------------
 
 A mail handler is a utility which knows how to handle mail sent to a
 specific domain. It is registered as a named utility providing
@@ -79,9 +82,16 @@ pass through the authentication stage:
     >>> config.push('bugmail_error_from_address', bugmail_error_from_address)
 
 The test mails are now in Launchpad's mail box, so now we can call
-handleMail, so that every mail gets handled by the correct handler.
+handleMail, so that every mail gets handled by the correct handler.  (We
+see warnings about missing `X-Launchpad-Original-To`_ headers, which are
+discussed below; this output merely shows that we emit warnings when the
+header is missing.)
 
     >>> handleMail(zopeless_transaction)
+    WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
+    WARNING:lp.services.mail:No X-Launchpad-Original-To header was present ...
 
 Now we can see that each handler handled the emails sent to its domain:
 
@@ -90,8 +100,9 @@ Now we can see that each handler handled the emails sent to its domain:
     >>> set(bar_handler.handledMails) ^ set(msgids['bar.com'])
     set([])
 
-
-== Unhandled Mail ==
+--------------
+Unhandled Mail
+--------------
 
 So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an OOPS was recorded with
@@ -118,14 +129,15 @@ a link to the original message.
 
     >>> stub.test_emails = []
 
-
-== Mail from Persons not registered in Launchpad ==
+---------------------------------------------
+Mail from Persons not registered in Launchpad
+---------------------------------------------
 
 If a Person who isn't registered in Launchpad sends an email, we'll
 most of the time reject the email:
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['X-Original-To'] = '123@foo.com'
+    >>> moin_change['X-Launchpad-Original-To'] = '123@foo.com'
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid not in foo_handler.handledMails
@@ -140,7 +152,7 @@ However, bar_handler specifies that it can handle such emails:
 
 So if we send the mail to bar.com, bar_handler will handle the mail:
 
-    >>> moin_change.replace_header('To', '123@bar.com')
+    >>> moin_change.replace_header('X-Launchpad-Original-To', '123@bar.com')
     >>> msgid = "<%s>" % sendmail(moin_change)
     >>> handleMail(zopeless_transaction)
     >>> msgid in bar_handler.handledMails
@@ -148,8 +160,9 @@ So if we send the mail to bar.com, bar_handler will handle the mail:
 
     >>> stub.test_emails = []
 
-
-== Mail from Persons with with an inactive Launchpad account ==
+---------------------------------------------------------
+Mail from Persons with with an inactive Launchpad account
+---------------------------------------------------------
 
 If a Person who's account is inactive sends an email, it will be
 silently rejected.
@@ -173,15 +186,31 @@ silently rejected.
     >>> msgid not in foo_handler.handledMails
     True
 
-== X-Original-To ==
+-----------------------
+X-Launchpad-Original-To
+-----------------------
 
-Ideally, we would use X-Original-To, as this reflects the actual address
-that the mail was sent to.  Unfortunately, due to mail configuration issues,
-X-Original-To is very wrong, so we must rely on To and Cc, even though these
-may be inaccurate.
+If available, the X-Launchpad-Original-To header is used to determine to
+which address the email was sent to:
 
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['CC'] = '123@foo.com'
+    >>> msg['X-Launchpad-Original-To'] = '123@bar.com'
+    >>> msgid = '<%s>' % sendmail (msg, ['123@bar.com'])
+    >>> handleMail(zopeless_transaction)
+    >>> msgid in bar_handler.handledMails
+    True
 
-== OOPSes processing incoming mail ==
+Only the address in X-Launchpad-Original-To header will be used. The
+addresses in the To and CC headers will be ignored:
+
+    >>> msgid in foo_handler.handledMails
+    False
+
+-------------------------------
+OOPSes processing incoming mail
+-------------------------------
 
 If an unhandled exception occurs when we try to process an email from
 a user, we record an OOPS with the exception and send it to the user.
@@ -203,7 +232,7 @@ And submit an email to the handler.
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@oops.com
-    ... X-Original-To: launchpad@oops.com
+    ... X-Launchpad-Original-To: launchpad@oops.com
     ... Subject: doesn't matter
     ...
     ... doesn't matter
@@ -232,7 +261,7 @@ to the user, citing the OOPS ID, with the original message attached.
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@oops.com
-    X-Original-To: launchpad@oops.com
+    X-Launchpad-Original-To: launchpad@oops.com
     Subject: doesn't matter
     ...
 
@@ -251,7 +280,7 @@ reporting in the web interface, are not ignored in the email interface.
     >>> msg = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: launchpad@unauthorized.com
-    ... X-Original-To: launchpad@unauthorized.com
+    ... X-Launchpad-Original-To: launchpad@unauthorized.com
     ... Subject: doesn't matter
     ...
     ... doesn't matter
@@ -277,14 +306,15 @@ reporting in the web interface, are not ignored in the email interface.
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@unauthorized.com
-    X-Original-To: launchpad@unauthorized.com
+    X-Launchpad-Original-To: launchpad@unauthorized.com
     Subject: doesn't matter
     ...
 
     >>> stub.test_emails = []
 
-
-== DB exceptions ==
+-------------
+DB exceptions
+-------------
 
 If something goes wrongs in the handler, a DB exception can be raised,
 leaving the database in a bad state. If that happens a traceback should
@@ -305,7 +335,7 @@ Now we send a mail to the handler, which will cause an exception:
     >>> exception_raiser = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: something@except.com
-    ... X-Original-To: something@except.com
+    ... X-Launchpad-Original-To: something@except.com
     ... Subject: Raise an exception
     ...
     ... This part is not important.
@@ -328,6 +358,7 @@ out:
     ...
     DataError: division by zero
     <BLANKLINE>
+    WARNING...
 
 The second mail we sent got handled despite the exception:
 
@@ -340,8 +371,9 @@ the user reporting the error:
     >>> len(stub.test_emails)
     1
 
-
-== Librarian not running ==
+---------------------
+Librarian not running
+---------------------
 
 If for some reason the Librarian isn't up and running, we shouldn't
 lose any emails. All that should happen is that an error should get
@@ -357,7 +389,7 @@ logged.
     >>> len(stub.test_emails)
     2
 
-    >>> handleMail(transaction)
+    >>> handleMail(zopeless_transaction)
     ERROR:...:Upload to Librarian failed...
     ...
     UploadFailed: ...Connection refused...
@@ -368,8 +400,9 @@ logged.
     >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
 
-
-== Handling bounces ==
+----------------
+Handling bounces
+----------------
 
 Some broken mailers might not respect the Errors-To and Return-Path
 headers, send error messages back to the address, from which the email
@@ -427,7 +460,7 @@ another robot. We also drop those.
     0
 
 
-== Doctest cleanup ==
+.. Doctest cleanup
 
     >>> config_data = config.pop('bugmail_error_from_address')
     >>> mail_handlers.add('foo.com', None)

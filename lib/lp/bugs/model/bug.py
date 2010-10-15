@@ -710,15 +710,20 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.latest_patch_uploaded is not None
 
-    def subscribe(self, person, subscribed_by, suppress_notify=True):
+    def subscribe(self, person, subscribed_by, suppress_notify=True,
+                  level=None):
         """See `IBug`."""
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
+
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
 
         sub = BugSubscription(
-            bug=self, person=person, subscribed_by=subscribed_by)
+            bug=self, person=person, subscribed_by=subscribed_by,
+            bug_notification_level=level)
 
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
@@ -812,7 +817,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug == self).order_by(
             Func('person_sort_key', Person.displayname, Person.name))
 
-    def getDirectSubscribers(self, recipients=None):
+    def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
@@ -820,10 +825,15 @@ BugMessage""" % sqlvalues(self.id))
         the relevant subscribers and rationales will be registered on
         it.
         """
+        if level is None:
+            level = BugNotificationLevel.NOTHING
+
         subscribers = list(
             Person.select("""
-                Person.id = BugSubscription.person AND
-                BugSubscription.bug = %d""" % self.id,
+                Person.id = BugSubscription.person
+                AND BugSubscription.bug = %s
+                AND BugSubscription.bug_notification_level >= %s""" %
+                sqlvalues(self.id, level),
                 orderBy="displayname", clauseTables=["BugSubscription"]))
         if recipients is not None:
             for subscriber in subscribers:
@@ -877,11 +887,17 @@ BugMessage""" % sqlvalues(self.id))
         if self.private:
             return []
 
+        if level is None:
+            notification_level = BugNotificationLevel.NOTHING
+        else:
+            notification_level = level
+
         dupe_details = dict(
             Store.of(self).find(
                 (Person, Bug),
                 BugSubscription.person == Person.id,
                 BugSubscription.bug_id == Bug.id,
+                BugSubscription.bug_notification_level >= notification_level,
                 Bug.duplicateof == self.id))
 
         dupe_subscribers = set(dupe_details)
@@ -890,7 +906,7 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers from dupes. Note that we don't supply recipients
         # here because we are doing this to /remove/ subscribers.
         dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers(level=level))
+        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
 
         if recipients is not None:
             for subscriber in dupe_subscribers:
