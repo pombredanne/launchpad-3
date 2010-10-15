@@ -475,11 +475,11 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        suite = distroseries.getSuite(pocket)
+        full_name = distroseries.getSuite(pocket)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
-        release_file["Suite"] = suite
+        release_file["Suite"] = full_name
         release_file["Version"] = distroseries.version
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
@@ -491,7 +491,7 @@ class Publisher(object):
         release_file["Description"] = drsummary
 
         for filename in sorted(list(all_files), key=os.path.dirname):
-            entry = self._readIndexFileContents(suite, filename)
+            entry = self._readIndexFileContents(full_name, filename)
             if entry is None:
                 continue
             release_file.setdefault("MD5Sum", []).append({
@@ -508,7 +508,7 @@ class Publisher(object):
                 "size": len(entry)})
 
         f = open(os.path.join(
-            self._config.distsroot, suite, "Release"), "w")
+            self._config.distsroot, full_name, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
         finally:
@@ -521,7 +521,7 @@ class Publisher(object):
 
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(suite)
+        archive_signer.signRepository(full_name)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,

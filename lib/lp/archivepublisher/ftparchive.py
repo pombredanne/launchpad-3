@@ -226,28 +226,26 @@ class FTPArchiveHandler:
 
         self.publisher.release_files_needed.add((distroseries.name, pocket))
 
-        full_pocket = distroseries.name + pocketsuffix[pocket]
+        full_distroseries_name = distroseries.name + pocketsuffix[pocket]
 
-        def touch_overrides(*parts):
-            f_touch(os.path.join(
-                self._config.overrideroot,
-                ".".join(["override", full_pocket] + list(parts))))
-        # Create empty override lists.
-        touch_overrides(comp)
-        touch_overrides("extra", comp)
-        touch_overrides(comp, "src")
+        # Touch the source file lists and override files
+        f_touch(self._config.overrideroot,
+                ".".join(["override", full_distroseries_name, comp]))
+        f_touch(self._config.overrideroot,
+                ".".join(["override", full_distroseries_name, "extra", comp]))
+        f_touch(self._config.overrideroot,
+                ".".join(["override", full_distroseries_name, comp, "src"]))
 
-        # Create empty file lists.
-        def touch_list(*parts):
-            f_touch(os.path.join(
-                self._config.overrideroot,
-                "_".join([full_pocket] + list(parts))))
-        touch_list(comp, "source")
+        f_touch(self._config.overrideroot,
+                "_".join([full_distroseries_name, comp, "source"]))
 
         for arch in self._config.archTagsForSeries(distroseries.name):
             # Touch more file lists for the archs.
-            touch_list(comp, "binary-" + arch)
-            touch_list(comp, "debian-installer", "binary-" + arch)
+            f_touch(self._config.overrideroot,
+                    "_".join([full_distroseries_name, comp, "binary-"+arch]))
+            f_touch(self._config.overrideroot,
+                    "_".join([full_distroseries_name, comp,
+                              "debian-installer", "binary-"+arch]))
 
     #
     # Override Generation
