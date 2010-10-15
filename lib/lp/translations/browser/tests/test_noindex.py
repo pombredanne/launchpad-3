@@ -14,8 +14,7 @@ from lp.testing import (
     BrowserTestCase,
     login_person,
     )
-from lp.testing.views import create_initialized_view
-from lp.translations.publisher import TranslationsLayer
+from lp.services.propertycache import cachedproperty
 
 
 class TestRobotsMixin:
@@ -34,30 +33,30 @@ class TestRobotsMixin:
     def setUsage(self, usage):
         self.naked_translatable.translations_usage = usage
 
-    def getView(self):
-        view = create_initialized_view(
-            self.target, '+translations',
-            current_request=True, layer=TranslationsLayer)
-        return view
+    @cachedproperty
+    def url(self):
+        return canonical_url(self.target, rootsite='translations')
+
+    @cachedproperty
+    def user_browser(self):
+        return self.getUserBrowser(user=self.user)
 
     def getRenderedContents(self):
         """Return an initialized view's rendered contents."""
         # Using create_initialized_view for distroseries causes an error when
         # rendering the view due to the way the view is registered and menus
         # are adapted.  Getting the contents via a browser does work.
-        url = canonical_url(self.target, rootsite='translations')
-        browser = self.getUserBrowser(url)
-        return browser.contents
+        self.user_browser.open(self.url)
+        return self.user_browser.contents
 
-    def getSoupAndRobots(self, usage):
-        self.setUsage(usage)
+    def getRobotsDirective(self):
         contents = self.getRenderedContents()
         soup = BeautifulSoup(contents)
-        robots = soup.find('meta', attrs={'name': 'robots'})
-        return soup, robots
+        return soup.find('meta', attrs={'name': 'robots'})
 
     def verifyRobotsAreBlocked(self, usage):
-        soup, robots = self.getSoupAndRobots(usage)
+        self.setUsage(usage)
+        robots = self.getRobotsDirective()
         self.assertIsNot(None, robots,
                          "Robot blocking meta information not present.")
         self.assertEqual('noindex,nofollow', robots['content'])
@@ -66,21 +65,18 @@ class TestRobotsMixin:
         self.assertContentEqual(expected, actual)
 
     def verifyRobotsNotBlocked(self, usage):
-        soup, robots = self.getSoupAndRobots(usage)
+        self.setUsage(usage)
+        robots = self.getRobotsDirective()
         self.assertIs(
             None, robots,
             "Robot blocking metadata present when it should not be.")
 
-    def test_UNKNOWN_blocks_robots(self):
+    def test_robots(self):
+        # Robots are blocked for usage that is not Launchpad.
         self.verifyRobotsAreBlocked(ServiceUsage.UNKNOWN)
-
-    def test_EXTERNAL_blocks_robots(self):
         self.verifyRobotsAreBlocked(ServiceUsage.EXTERNAL)
-
-    def test_NOT_APPLICABLE_blocks_robots(self):
         self.verifyRobotsAreBlocked(ServiceUsage.NOT_APPLICABLE)
-
-    def test_LAUNCHPAD_does_not_block_robots(self):
+        # Robots are not blocked for Launchpad usage.
         self.verifyRobotsNotBlocked(ServiceUsage.LAUNCHPAD)
 
 
@@ -125,10 +121,9 @@ class TestRobotsDistroSeries(BrowserTestCase, TestRobotsMixin):
 
     def setUp(self):
         super(TestRobotsDistroSeries, self).setUp()
-        self.owner = self.factory.makePerson()
-        login_person(self.owner)
+        login_person(self.user)
         self.distro = self.factory.makeDistribution(
-            name="whobuntu", owner=self.owner)
+            name="whobuntu", owner=self.user)
         self.target = self.factory.makeDistroSeries(
             name="zephyr", distribution=self.distro)
         self.target.hide_all_translations = False
@@ -144,10 +139,9 @@ class TestRobotsDistro(BrowserTestCase, TestRobotsMixin):
 
     def setUp(self):
         super(TestRobotsDistro, self).setUp()
-        self.owner = self.factory.makePerson()
-        login_person(self.owner)
+        login_person(self.user)
         self.target = self.factory.makeDistribution(
-            name="whobuntu", owner=self.owner)
+            name="whobuntu", owner=self.user)
         self.distroseries = self.factory.makeDistroSeries(
             name="zephyr", distribution=self.target)
         self.distroseries.hide_all_translations = False
