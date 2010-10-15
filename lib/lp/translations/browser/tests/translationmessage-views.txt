@@ -11,7 +11,7 @@ ITranslationMessage object.
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from canonical.launchpad.webapp import canonical_url
 
-All the tests will be submitted as comming from Kurem, an editor for the
+All the tests will be submitted as coming from Kurem, an editor for the
 POFile that we are going to edit.
 
     >>> login('kurem@debian.cz')

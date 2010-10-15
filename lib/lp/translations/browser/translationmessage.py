@@ -309,7 +309,7 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if method == 'POST' and self.request.form.get('submit_translations'):
+        if method == 'POST' and 'submit_translations' in self.request.form:
             if self._submitTranslations():
                 # If no errors occurred, adios. Otherwise, we need to set up
                 # the subviews for error display and correction.

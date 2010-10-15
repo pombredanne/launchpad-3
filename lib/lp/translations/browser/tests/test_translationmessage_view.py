@@ -181,14 +181,11 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def _makeView(self, blank_timestamp=False):
+    def _makeView(self):
         message = self.factory.makeTranslationMessage()
         request = LaunchpadTestRequest()
         view = CurrentTranslationMessagePageView(message, request)
-        if blank_timestamp:
-            view.lock_timestamp = None
-        else:
-            view.lock_timestamp = datetime.now(pytz.utc)
+        view.lock_timestamp = datetime.now(pytz.utc)
         return view
 
     def test_extractLockTimestamp(self):
@@ -214,7 +211,8 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
 
     def test_checkSubmitConditions_requires_lock_timestamp(self):
         with person_logged_in(self.factory.makePerson()):
-            view = self._makeView(blank_timestamp=True)
+            view = self._makeView()
+            view.lock_timestamp = None
             self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
 
     def test_checkSubmitConditions_rejects_anonymous_request(self):
