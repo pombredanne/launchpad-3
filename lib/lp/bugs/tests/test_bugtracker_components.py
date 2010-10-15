@@ -281,39 +281,6 @@ class TestWebservice(TestCaseWithFactory):
         comp.distro_source_package = src_pkg
         self.assertIsNot(None, comp.distro_source_package)
 
-    def test_link_linked_source_package(self):
-        """Can't link a source package to multiple components"""
-        db_src_pkg = self.factory.makeDistributionSourcePackage()
-        db_comp_a = self.factory.makeBugTrackerComponent()
-        db_comp_a.distro_source_package = db_src_pkg
-        db_comp_b = self.factory.makeBugTrackerComponent()
-        transaction.commit()
-
-        comp_b = ws_object(self.launchpad, db_comp_b)
-        src_pkg = ws_object(self.launchpad, db_src_pkg)
-
-        #self.assertRaises(
-        #    SomeKindOfExceptionError,
-        #    comp_b.distro_source_package,
-        #    src_pkg)
-
-    def test_link_two_source_packages(self):
-        """Can't add a link on a component if component already has a link"""
-        db_src_pkg_1 = self.factory.makeDistributionSourcePackage()
-        db_src_pkg_2 = self.factory.makeDistributionSourcePackage()
-        db_comp = self.factory.makeBugTrackerComponent()
-        db_comp.distro_source_package = db_src_pkg_1
-        transaction.commit()
-
-        comp = ws_object(self.launchpad, db_comp)
-        src_pkg_1 = ws_object(self.launchpad, db_src_pkg_1)
-        src_pkg_2 = ws_object(self.launchpad, db_src_pkg_2)
-
-        #self.assertRaises(
-        #    SomeKindOfExceptionError,
-        #    comp.distro_source_package,
-        #    src_pkg_2)
-
     def test_relink_same_source_package(self):
         """Attempts to re-link the same source package should not error"""
         db_src_pkg = self.factory.makeDistributionSourcePackage()
@@ -324,7 +291,6 @@ class TestWebservice(TestCaseWithFactory):
         component = ws_object(self.launchpad, db_comp)
         package = ws_object(self.launchpad, db_src_pkg)
         component.distro_source_package = package
-        # TODO: Not sure what to test here... it shouldn't throw an exception
 
 
 def test_suite():
