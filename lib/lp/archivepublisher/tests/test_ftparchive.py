@@ -20,7 +20,7 @@ from canonical.launchpad.scripts.logger import (
     QuietFakeLogger,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.archivepublisher.config import Config
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.ftparchive import (
     f_touch,
@@ -71,7 +71,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
         self._archive = self._distribution.main_archive
-        self._config = Config(self._distribution)
+        self._config = getPubConfig(self._archive)
         self._config.setupArchiveDirs()
         self._sampledir = os.path.join(
             config.root, "lib", "lp", "archivepublisher", "tests",
