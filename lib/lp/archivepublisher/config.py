@@ -37,7 +37,7 @@ def getPubConfig(archive):
     ppa_config = config.personalpackagearchive
 
     pubconf.temproot = os.path.join(
-        config.archivepublisher.root, '%s-temp' % pubconf.distroName)
+        config.archivepublisher.root, '%s-temp' % archive.distribution.name)
 
     if archive.is_ppa:
         if archive.private:
@@ -102,8 +102,6 @@ class Config(object):
 
     def __init__(self, distribution):
         """Initialise the configuration"""
-        self.distribution = distribution
-        self.distroName = distribution.name.encode('utf-8')
         self.publishable_series = set()
         if not distribution.lucilleconfig:
             raise LucilleConfigError(
@@ -117,17 +115,8 @@ class Config(object):
             if dr.lucilleconfig is not None:
                 self.publishable_series.add(distroseries_name)
 
-        strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
-        self._distroconfig = ConfigParser()
-        self._distroconfig.readfp(strio)
-        strio.close()
-
     def setupArchiveDirs(self):
-        """Create missing required directories in archive.
-
-        For PPA publication path are overriden after instantiation
-        and empty locations should not be considered for creation.
-        """
+        """Create missing required directories in archive."""
         required_directories = [
             self.distroroot,
             self.poolroot,

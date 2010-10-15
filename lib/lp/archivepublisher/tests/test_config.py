@@ -39,11 +39,6 @@ class TestConfig(TestCaseWithFactory):
         """Config should instantiate"""
         d = Config(self.ubuntutest)
 
-    def testDistroName(self):
-        """Config should be able to return the distroName"""
-        d = Config(self.ubuntutest)
-        self.assertEqual(d.distroName, "ubuntutest")
-
     def testDistroSeriesNames(self):
         """Config should return two distroseries names"""
         d = Config(self.ubuntutest)
