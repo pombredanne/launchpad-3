@@ -92,7 +92,7 @@ class ForkingServerForTests(object):
         # SIGTERM is the graceful exit request, potentially we could wait a bit
         # and send something stronger?
         if self.process is not None and self.process.poll() is None:
-            self.process.kill(signal.SIGTERM)
+            os.kill(self.process.pid, signal.SIGTERM)
             self.process.wait()
             self.process = None
         # We want to make sure the socket path has been cleaned up, so that
@@ -131,7 +131,6 @@ class SSHServerLayer(ZopelessAppServerLayer):
         atexit.register(tac_handler.tearDown)
         forker = SSHServerLayer.getForker()
         forker.setUp()
-        atexit.register(forker.tearDown)
 
     @classmethod
     @profiled
