@@ -244,8 +244,6 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertBuildingJob(job, builder, logtail='This is a build log')
 
     def testScanUpdatesBuildingJobs(self):
-        # The job assigned to a broken builder is rescued.
-
         # Enable sampledata builder attached to an appropriate testing
         # slave. It will respond as if it was building the sampledata job.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -283,6 +281,19 @@ class TestSlaveScannerScan(TrialTestCase):
         scanner = self._getScanner()
         d = scanner.scan()
         d.addCallback(self._checkNoDispatch, builder)
+        return d
+
+    def test_scan_with_not_ok_builder(self):
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
+        builder.builderok = False
+        scanner = self._getScanner()
+        d = scanner.scan()
+        # Because the builder is not ok, we can't use _checkNoDispatch.
+        d.addCallback(
+            lambda ignored: self.assertIdentical(None, builder.currentjob))
         return d
 
     def _assertFailureCounting(self, builder_count, job_count,
