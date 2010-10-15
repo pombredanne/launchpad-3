@@ -7,7 +7,8 @@ the bug to series for which they are drivers.
 
     >>> from zope.component import getUtility, getMultiAdapter
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IOpenLaunchBag
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login("no-priv@canonical.com")
@@ -43,7 +44,7 @@ Here's an example of nominating a bug for a distroseries.
 
 (Add objects to the LaunchBag that will be used by the view.)
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> launchbag.clear()
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
@@ -169,7 +170,7 @@ distribution's bugtasks that are nominated for this release, with a
 widget set up for accepting/declining the nomination. The widet is only
 set up if the user has permission to approve the nomination.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> login("no-priv@canonical.com")
     >>> no_priv = getUtility(ILaunchBag).user
     >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(
@@ -227,7 +228,7 @@ immediately approved, and a new task added. By "privileged user" in this
 context, we mean a user that has, either directly or through a team,
 launchpad.Driver permission on the nomination.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
 

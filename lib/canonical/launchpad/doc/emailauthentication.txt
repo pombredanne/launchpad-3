@@ -37,7 +37,8 @@ We can check that the user really got authenticated by looking at the
 user in the launch bag:
 
     >>> import email
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> launchbag = getUtility(ILaunchBag)
     >>> name, addr = email.Utils.parseaddr(msg['From'])
@@ -112,7 +113,7 @@ message.
     ...     '\n'.join(msg_lines), _class=SignedMessage)
     >>> msg.parsed_string = msg.as_string()
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):
@@ -125,7 +126,7 @@ message.
 
 authenticateEmail() doesn't have any problems verifying the signature:
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> for line_ending in '\n', '\r\n':
     ...     msg = email.message_from_string(
     ...         line_ending.join(msg_lines), _class=SignedMessage)
@@ -174,7 +175,7 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.mail import (
     ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
     >>> principal = authenticateEmail(msg)
