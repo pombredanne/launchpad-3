@@ -124,7 +124,8 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
     schema = IDistroArchSeries
 
     field_names = [
-        'architecturetag', 'official', 'supports_virtualized'
+        'architecturetag', 'official', 'supports_virtualized',
+        'enabled',
         ]
 
     @action(_('Change'), name='update')

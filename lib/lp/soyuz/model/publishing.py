@@ -1246,6 +1246,10 @@ class PublishingSet:
             binarypackagerelease = binary.binarypackagerelease
             target_component = override_component or binary.component
 
+            # XXX 2010-09-28 Julian bug=649859
+            # This piece of code duplicates the logic in
+            # PackageUploadBuild.publish(), it needs to be refactored.
+
             if binarypackagerelease.architecturespecific:
                 # If the binary is architecture specific and the target
                 # distroseries does not include the architecture then we
@@ -1262,7 +1266,9 @@ class PublishingSet:
                     continue
                 destination_architectures = [target_architecture]
             else:
-                destination_architectures = distroseries.architectures
+                destination_architectures = [
+                    arch for arch in distroseries.architectures
+                    if arch.enabled]
 
             for distroarchseries in destination_architectures:
 
