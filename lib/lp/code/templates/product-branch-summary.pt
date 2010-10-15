@@ -36,8 +36,6 @@
         <tal:no-import-data condition="not: branch/code_import">
         <tal:project_title replace="context/title" /> hosts its code
           externally.
-        <a tal:attributes="href branch/code_import/url"
-           tal:content="branch/code_import/url"></a>.
         </tal:no-import-data>
       </p>
     </strong>
@@ -50,9 +48,10 @@
       from it.
     </p>
     <p tal:condition="view/branch/branch_type/enumvalue:IMPORTED">
-      Launchpad imports code from there and you can create
-      branches from it.
+      Launchpad imports the master branch and you can create branches from 
+      it.
     </p>
+
     <p tal:condition="view/branch/branch_type/enumvalue:REMOTE">
       Launchpad does not have a copy of the remote branch.
     </p>
