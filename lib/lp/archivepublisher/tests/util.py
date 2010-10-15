@@ -218,29 +218,10 @@ def _deepCopy(thing):
 
 
 # NOTE: If you alter the configs here remember to add tests in test_config.py
-fake_ubuntu = FakeDistribution("ubuntu",
-                        """
-[publishing]
-pendingremovalduration=5
-root=FOO
-archiveroot=FOO/BAR
-poolroot=FOO/BAR/pool
-distsroot=FOO/BAR/dists
-overrideroot=FOO/overrides
-cacheroot=FOO/cache
-miscroot=FOO/misc
-                        """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
+fake_ubuntu = FakeDistribution("ubuntu", "")
 
 fake_ubuntu_series = [
-    FakeDistroSeries("warty",
-                      """
-[publishing]
-components = main restricted universe
-                      """, fake_ubuntu),
-    FakeDistroSeries("hoary",
-                      """
-[publishing]
-components = main restricted universe
-                      """, fake_ubuntu)
+    FakeDistroSeries("warty", "", fake_ubuntu),
+    FakeDistroSeries("hoary", "", fake_ubuntu),
     ]
 
