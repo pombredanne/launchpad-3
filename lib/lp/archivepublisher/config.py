@@ -6,24 +6,10 @@
 # to managing the archive publisher's configuration as stored in the
 # distribution and distroseries tables
 
-from ConfigParser import ConfigParser
 import os
-from StringIO import StringIO
 
 from canonical.config import config
 from lp.soyuz.enums import ArchivePurpose
-
-
-def update_pub_config(pubconf):
-    """Update dependent `PubConfig` fields.
-
-    Update fields dependending on 'archiveroot'.
-    """
-    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-    pubconf.overrideroot = None
-    pubconf.cacheroot = None
-    pubconf.miscroot = None
 
 
 def getPubConfig(archive):
@@ -69,18 +55,23 @@ def getPubConfig(archive):
             "Unknown archive purpose %s when getting publisher config.",
             archive.purpose)
 
-    update_pub_config(pubconf)
-
-    # There can be multiple copy archives, so the temp dir needs to be
-    # within the archive.
-    if archive.is_copy:
-        pubconf.temproot = pubconf.archiveroot + '-temp'
+    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
 
     apt_ftparchive_purposes = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
     if archive.purpose in apt_ftparchive_purposes:
         pubconf.overrideroot = pubconf.archiveroot + '-overrides'
         pubconf.cacheroot = pubconf.archiveroot + '-cache'
         pubconf.miscroot = pubconf.archiveroot + '-misc'
+    else:
+        pubconf.overrideroot = None
+        pubconf.cacheroot = None
+        pubconf.miscroot = None
+
+    # There can be multiple copy archives on a single machine, so the temp
+    # dir needs to be within the archive.
+    if archive.is_copy:
+        pubconf.temproot = pubconf.archiveroot + '-temp'
 
     meta_root = os.path.join(
         pubconf.distroroot, archive.owner.name)
