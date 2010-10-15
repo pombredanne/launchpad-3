@@ -24,17 +24,18 @@
             <strong>None of <tal:project replace="context/displayname"/>'s
             projects are using Launchpad to host their code.</strong>
           </p>
+          <div tal:define="products context/getConfigurableProducts">
           <p id="projectgroup-products"
-             tal:condition="context/products">
+             tal:condition="products">
             You can set up code hosting for the following projects that
             are part of <tal:project replace="context/displayname"/>.
           </p>
-          
-          <ul id="product-list" tal:repeat="product context/products">
-            <li tal:condition="product/required:launchpad.Edit">
+            <ul id="product-list" tal:repeat="product products">
+              <li>
                 <a tal:replace="structure product/fmt:link"/>
-            </li>  
-          </ul>
+              </li>  
+            </ul>
+        </div>
         </div>
       </tal:no-branches>
       <tal:has-branches
