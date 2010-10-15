@@ -25,12 +25,11 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
         super(TestBugTaskStatusSetting, self).setUp()
         self.owner = self.factory.makePerson()
         self.team_member = self.factory.makePerson()
-        self.supervisor = self.factory.makeTeam(owner=self.owner)
+        self.supervisor = self.factory.makeTeam(members=[self.team_member])
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
         self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.supervisor.addMember(self.team_member, self.owner)
             self.product.setBugSupervisor(self.supervisor, self.owner)
 
     def test_person_cannot_set_bug_supervisor_statuses(self):
@@ -118,12 +117,11 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.owner = self.factory.makePerson()
         self.team_member = self.factory.makePerson()
-        self.supervisor = self.factory.makeTeam(owner=self.owner)
+        self.supervisor = self.factory.makeTeam(members=[self.team_member])
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
         self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.supervisor.addMember(self.team_member, self.owner)
             self.product.setBugSupervisor(self.supervisor, self.owner)
 
     def test_user_cannot_transition_bug_supervisor_statuses(self):
