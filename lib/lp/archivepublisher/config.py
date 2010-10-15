@@ -36,6 +36,9 @@ def getPubConfig(archive):
     pubconf = Config(archive.distribution)
     ppa_config = config.personalpackagearchive
 
+    pubconf.temproot = os.path.join(
+        config.archivepublisher.root, '%s-temp' % pubconf.distroName)
+
     if archive.is_ppa:
         if archive.private:
             pubconf.distroroot = ppa_config.private_root
@@ -67,10 +70,17 @@ def getPubConfig(archive):
             archive.purpose)
 
     update_pub_config(pubconf)
-    pubconf.temproot = pubconf.archiveroot + '-temp'
-    pubconf.overrideroot = pubconf.archiveroot + '-overrides'
-    pubconf.cacheroot = pubconf.archiveroot + '-cache'
-    pubconf.miscroot = pubconf.archiveroot + '-misc'
+
+    # There can be multiple copy archives, so the temp dir needs to be
+    # within the archive.
+    if archive.is_copy:
+        pubconf.temproot = pubconf.archiveroot + '-temp'
+
+    apt_ftparchive_purposes = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
+    if archive.purpose in apt_ftparchive_purposes:
+        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
+        pubconf.cacheroot = pubconf.archiveroot + '-cache'
+        pubconf.miscroot = pubconf.archiveroot + '-misc'
 
     meta_root = os.path.join(
         pubconf.distroroot, archive.owner.name)
