@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for setting bug task status."""
+"""Tests for bug task status transitions."""
 
 __metaclass__ = type
 
@@ -15,10 +15,13 @@ from lp.testing import (
 
 
 class TestBugTaskStatusSetting(TestCaseWithFactory):
+    """Tests to ensure restricted status changes are enforced."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        # We can work with a project only here, since both project
+        # and distribution use the same methods on IBugTask.
         super(TestBugTaskStatusSetting, self).setUp()
         self.owner = self.factory.makePerson()
         self.team_member = self.factory.makePerson()
@@ -31,6 +34,8 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.product.setBugSupervisor(self.supervisor, self.owner)
 
     def test_person_cannot_set_bug_supervisor_statuses(self):
+        # A regular user should not be able to set statuses in
+        # BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
         person = self.factory.makePerson()
         with person_logged_in(person):
@@ -45,6 +50,8 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
                 BugTaskStatus.TRIAGED, person)
 
     def test_owner_can_set_bug_supervisor_statuses(self):
+        # Project registrant should be able to set statuses in
+        # BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.owner):
             self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
@@ -55,6 +62,8 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
     def test_supervisor_can_set_bug_supervisor_statuses(self):
+        # Bug supervisor should be able to set statuses in
+        # BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.team_member):
             self.task.transitionToStatus(
@@ -67,7 +76,10 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
                 BugTaskStatus.TRIAGED, self.team_member)
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
-    def test_person_unset_wont_fix_status(self):
+    def test_unset_wont_fix_status(self):
+        # A regular user should not be able to transition a bug away
+        # from Won't Fix.  Bug supervisor and owner should be able
+        # to transition away from Won't Fix.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.team_member):
             self.task.transitionToStatus(
@@ -80,6 +92,13 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.task.transitionToStatus(
                 BugTaskStatus.WONTFIX, self.owner)
             self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+            self.task.transitionToStatus(
+                BugTaskStatus.NEW, self.team_member)
+            self.assertEqual(self.task.status, BugTaskStatus.NEW)
+            # Transition back to Won't Fix for final assert below.
+            self.task.transitionToStatus(
+                BugTaskStatus.WONTFIX, self.owner)
+            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(
@@ -88,10 +107,13 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
 
 
 class TestCanTransitionToStatus(TestCaseWithFactory):
+    """Tests for BugTask.canTransitionToStatus."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        # We can work with a project only here, since both project
+        # and distribution use the same methods on IBugTask.
         super(TestCanTransitionToStatus, self).setUp()
         self.user = self.factory.makePerson()
         self.owner = self.factory.makePerson()
@@ -105,6 +127,8 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
             self.product.setBugSupervisor(self.supervisor, self.owner)
 
     def test_user_cannot_transition_bug_supervisor_statuses(self):
+        # A regular user is not allowed to transition to
+        # BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(
             self.task.canTransitionToStatus(BugTaskStatus.WONTFIX, self.user),
             False)
@@ -116,6 +140,8 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
             False)
 
     def test_user_can_transition_to_any_other_status(self):
+        # A regular user should be able to transition to any status
+        # other than those in BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(
             self.task.canTransitionToStatus(BugTaskStatus.NEW, self.user),
             True)
@@ -142,6 +168,7 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
                 BugTaskStatus.FIXRELEASED, self.user), True)
 
     def test_bug_supervisor_can_transition_to_any_status(self):
+        # A bug supervisor can transition to any status.
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.WONTFIX, self.supervisor),
@@ -183,6 +210,7 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
                 BugTaskStatus.FIXRELEASED, self.supervisor), True)
 
     def test_owner_can_transition_to_any_status(self):
+        # An owner can transition to any status.
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.WONTFIX, self.owner),
@@ -224,6 +252,7 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
                 BugTaskStatus.FIXRELEASED, self.owner), True)
 
     def test_user_cannot_transition_from_wont_fix(self):
+        # A regular user cannot transition away from Won't Fix.
         with person_logged_in(self.owner):
             self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
         self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
