@@ -34,7 +34,7 @@
           duplicates.
         </p>
 
-        <form action="." method="POST">
+        <form action="" method="POST">
 
           <div class="field">
             <div>

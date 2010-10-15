@@ -87,6 +87,29 @@ But a different user can't.
     ...
     <BLANKLINE>
 
+The bug supervisor of a product can also add tags.
+
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> product = factory.makeProduct(name='tags-test-product2')
+    >>> logout()
+    >>> ws_salgado = webservice.get('/~salgado').jsonBody()
+    >>> print webservice.patch(
+    ...     '/tags-test-product2', 'application/json',
+    ...     dumps({'bug_supervisor_link': ws_salgado['self_link']}))
+    HTTP/1.1 209 Content Returned...
+
+The webservice client is logged in as salgado and he can add a new official
+tag.
+
+    >>> print webservice.named_post(
+    ...     '/tags-test-product2', 'addOfficialBugTag',
+    ...     tag='test-bug-tag2')
+    HTTP/1.1 200 Ok
+    ...
+    <BLANKLINE>
+    null
+
 Official tags must conform to the same format as ordinary tags.
 
     >>> print webservice.named_post(
