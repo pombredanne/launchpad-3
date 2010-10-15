@@ -2,13 +2,18 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
+import logging
 import os
 import unittest
 
 import transaction
+from zope.security.management import setSecurityPolicy
 
+from canonical.config import config
 from canonical.launchpad.mail.ftests.helpers import testmails_path
-from canonical.launchpad.mail.incoming import (
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from lp.services.mail.incoming import (
     handleMail,
     MailErrorUtility,
     )
@@ -77,7 +82,23 @@ class TestIncoming(TestCaseWithFactory):
             self.assertEqual(old_oops.id, current_oops.id)
 
 
+def setUp(test):
+    test._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+    LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+
+def tearDown(test):
+    setSecurityPolicy(test._old_policy)
+
+
 def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
-    suite.addTest(DocTestSuite('canonical.launchpad.mail.incoming'))
+    suite.addTest(DocTestSuite('lp.services.mail.incoming'))
+    suite.addTest(
+        LayeredDocFileSuite(
+            'incomingmail.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            stdout_logging_level=logging.WARNING))
     return suite
