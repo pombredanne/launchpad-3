@@ -364,15 +364,6 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
         return statement
 
     @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.context.potemplate.hasPluralMessage():
-            return self.context.language.pluralforms is not None
-        # If there are no plural forms, we assume that we have the
-        # plural form information for this language.
-        return True
-
-    @property
     def number_of_plural_forms(self):
         """The number of plural forms for the language or 1 if not known."""
         if self.context.language.pluralforms is not None:

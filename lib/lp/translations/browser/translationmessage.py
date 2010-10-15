@@ -36,6 +36,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -64,6 +65,7 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.utilities.validate import GettextValidationError
 
@@ -230,9 +232,6 @@ class BaseTranslationView(LaunchpadView):
     """
 
     pofile = None
-    # There will never be 100 plural forms.  Usually, we'll be iterating
-    # over just two or three.
-    MAX_PLURAL_FORMS = 100
 
     @property
     def label(self):
@@ -245,6 +244,9 @@ class BaseTranslationView(LaunchpadView):
 
     def initialize(self):
         assert self.pofile, "Child class must define self.pofile"
+
+        self.has_plural_form_information = (
+            self.pofile.hasPluralFormInformation())
 
         # These two dictionaries hold translation data parsed from the
         # form submission. They exist mainly because of the need to
@@ -286,6 +288,16 @@ class BaseTranslationView(LaunchpadView):
 
         self._initializeAltLanguage()
 
+        method = self.request.method
+        if method == 'POST':
+            self.lock_timestamp = self._extractLockTimestamp()
+            self._checkSubmitConditions()
+        else:
+            # It's not a POST, so we should generate lock_timestamp.
+            UTC = pytz.timezone('UTC')
+            self.lock_timestamp = datetime.datetime.now(UTC)
+
+
         # The batch navigator needs to be initialized early, before
         # _submitTranslations is called; the reason for this is that
         # _submitTranslations, in the case of no errors, redirects to
@@ -297,49 +309,64 @@ class BaseTranslationView(LaunchpadView):
         self.start = self.batchnav.start
         self.size = self.batchnav.currentBatch().size
 
-        if self.request.method == 'POST':
-            if self.user is None:
-                raise UnexpectedFormData(
-                    "Anonymous users or users who are not accepting our "
-                    "licensing terms cannot do POST submissions.")
-            translations_person = ITranslationsPerson(self.user)
-            if (translations_person.translations_relicensing_agreement
-                    is not None and
-                not translations_person.translations_relicensing_agreement):
-                raise UnexpectedFormData(
-                    "Users who do not agree to licensing terms "
-                    "cannot do POST submissions.")
-            try:
-                # Try to get the timestamp when the submitted form was
-                # created. We use it to detect whether someone else updated
-                # the translation we are working on in the elapsed time
-                # between the form loading and its later submission.
-                self.lock_timestamp = zope_datetime.parseDatetimetz(
-                    self.request.form.get('lock_timestamp', u''))
-            except zope_datetime.DateTimeError:
-                # invalid format. Either we don't have the timestamp in the
-                # submitted form or it has the wrong format.
-                raise UnexpectedFormData(
-                    "We didn't find the timestamp that tells us when was"
-                    " generated the submitted form.")
-
-            # Check if this is really the form we are listening for..
-            if self.request.form.get("submit_translations"):
-                # Check if this is really the form we are listening for..
-                if self._submitTranslations():
-                    # .. and if no errors occurred, adios. Otherwise, we
-                    # need to set up the subviews for error display and
-                    # correction.
-                    return
-        else:
-            # It's not a POST, so we should generate lock_timestamp.
-            UTC = pytz.timezone('UTC')
-            self.lock_timestamp = datetime.datetime.now(UTC)
+        if method == 'POST' and 'submit_translations' in self.request.form:
+            if self._submitTranslations():
+                # If no errors occurred, adios. Otherwise, we need to set up
+                # the subviews for error display and correction.
+                return
 
         # Slave view initialization depends on _submitTranslations being
         # called, because the form data needs to be passed in to it --
         # again, because of error handling.
         self._initializeTranslationMessageViews()
+
+    def _extractLockTimestamp(self):
+        """Extract the lock timestamp from the request.
+
+        The lock_timestamp is used to detect conflicting concurrent
+        translation updates: if the translation that is being changed
+        has been set after the current form was generated, the user
+        chose a translation based on outdated information.  In that
+        case there is a conflict.
+        """
+        try:
+            return zope_datetime.parseDatetimetz(
+                self.request.form.get('lock_timestamp', u''))
+        except zope_datetime.DateTimeError:
+            # invalid format. Either we don't have the timestamp in the
+            # submitted form or it has the wrong format.
+            return None
+
+    def _checkSubmitConditions(self):
+        """Verify that this submission is possible and valid.
+
+        :raises: `UnexpectedFormData` if conditions are not met.  In
+            principle the user should not have been given the option to
+            submit the current request.
+        """
+        if is_read_only():
+            raise UnexpectedFormData(
+                "Launchpad is currently in read-only mode for maintenance.  "
+                "Please try again later.")
+
+        if self.user is None:
+            raise UnexpectedFormData("You are not logged in.")
+
+        # Users who have declined the licensing agreement can't post
+        # translations.  We don't stop users who haven't made a decision
+        # yet at this point; they may be project owners making
+        # corrections.
+        translations_person = ITranslationsPerson(self.user)
+        relicensing = translations_person.translations_relicensing_agreement
+        if relicensing is not None and not relicensing:
+            raise UnexpectedFormData(
+                "You can't post translations since you have not agreed to "
+                "our translations licensing terms.")
+
+        if self.lock_timestamp is None:
+            raise UnexpectedFormData(
+                "Your form submission did not contain the lock_timestamp "
+                "that tells Launchpad when the submitted form was generated.")
 
     #
     # API Hooks
@@ -587,15 +614,6 @@ class BaseTranslationView(LaunchpadView):
         self.second_lang_code = second_lang_code
 
     @property
-    def has_plural_form_information(self):
-        """Return whether we know the plural forms for this language."""
-        if self.pofile.potemplate.hasPluralMessage():
-            return self.pofile.language.pluralforms is not None
-        # If there are no plural forms, we assume that we have the
-        # plural form information for this language.
-        return True
-
-    @property
     def user_is_official_translator(self):
         """Determine whether the current user is an official translator."""
         return self.pofile.canEditTranslations(self.user)
@@ -658,7 +676,7 @@ class BaseTranslationView(LaunchpadView):
         # Extract the translations from the form, and store them in
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
-        for pluralform in xrange(self.MAX_PLURAL_FORMS):
+        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%d_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
             if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
@@ -737,7 +755,7 @@ class BaseTranslationView(LaunchpadView):
                     potmsgset].append(pluralform)
         else:
             raise AssertionError('More than %d plural forms were submitted!'
-                                 % self.MAX_PLURAL_FORMS)
+                                 % TranslationConstants.MAX_PLURAL_FORMS)
 
     def _observeTranslationUpdate(self, potmsgset):
         """Observe that a translation was updated for the potmsgset.
@@ -1056,7 +1074,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             diverged_and_have_shared = (
                 self.context.potemplate is not None and
-                self.shared_translationmessage is not None) 
+                self.shared_translationmessage is not None)
             if diverged_and_have_shared:
                 pofile = self.shared_translationmessage.ensureBrowserPOFile()
                 if pofile is None:
@@ -1155,10 +1173,10 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def _setOnePOFile(self, messages):
         """Return a list of messages that all have a browser_pofile set.
-        
+
         If a pofile cannot be found for a message, it is not included in
         the resulting list.
-        """ 
+        """
         result = []
         for message in messages:
             if message.browser_pofile is None:
@@ -1170,7 +1188,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     message.setPOFile(pofile)
             result.append(message)
         return result
-    
+
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
 

@@ -493,7 +493,7 @@ class FileImporter(object):
         """Are these English strings instead of translations?
 
         If this template uses symbolic message ids, the English POFile
-        will contain the English original texts that correspond to the 
+        will contain the English original texts that correspond to the
         symbols."""
         return (
             self.importer.uses_source_string_msgids and

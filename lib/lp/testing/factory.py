@@ -1794,16 +1794,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeLanguage(self, language_code=None, name=None, pluralforms=None):
+    def makeLanguage(self, language_code=None, name=None, pluralforms=None,
+                     plural_expression=None):
         """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
         if name is None:
             name = "Language %s" % language_code
+        if plural_expression is None and pluralforms is not None:
+            # If the number of plural forms is known, the language
+            # should also have a plural expression and vice versa.
+            plural_expression = 'n %% %d' % pluralforms
 
         language_set = getUtility(ILanguageSet)
         return language_set.createLanguage(
-            language_code, name, pluralforms=pluralforms)
+            language_code, name, pluralforms=pluralforms,
+            pluralexpression=plural_expression)
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,

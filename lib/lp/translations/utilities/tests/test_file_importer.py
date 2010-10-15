@@ -613,7 +613,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
         if side == self.UPSTREAM:
             potemplate = self.upstream_template
         else:
-            # Create a template in a source package. 
+            # Create a template in a source package.
             ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
             distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
             ubuntu.translation_focus = distroseries
@@ -639,7 +639,7 @@ class FileImporterSharingTest(TestCaseWithFactory):
             uploader=uploader, content=self.POFILE)
         entry.potemplate = potemplate
         entry.pofile = pofile
-        # The uploaded file is only created in the librarian by a commit. 
+        # The uploaded file is only created in the librarian by a commit.
         transaction.commit()
         return entry
 
