@@ -230,6 +230,23 @@ ID or alias.
     >>> bugzilla._getActualBugId(2)
     2
 
+Sometimes a Bugzilla will return bug data without an alias field.
+_storeBugs() handles that, too.
+
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     NoAliasTestBugzillaAPIXMLRPCTransport)
+    >>> no_alias_transport = NoAliasTestBugzillaAPIXMLRPCTransport(
+    ...     'http://bugzilla-3.4.example.com/')
+    >>> no_alias_bugzilla = BugzillaAPI(
+    ...     'http://bugzilla-3.4.example.com/',
+    ...     xmlrpc_transport=no_alias_transport)
+    >>> no_alias_transport.print_method_calls = True
+    >>> no_alias_bugzilla.initializeRemoteBugDB([1])
+    CALLED Bug.get({'ids': [1], 'permissive': True})
+
+    >>> print len(no_alias_bugzilla._bug_aliases)
+    0
+
 
 Getting remote statuses
 -----------------------
