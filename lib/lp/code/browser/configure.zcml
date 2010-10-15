@@ -1072,7 +1072,7 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1081,7 +1081,7 @@
         permission="zope.Public"
         facet="branches"
         name="+subscribedbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1090,7 +1090,7 @@
         permission="zope.Public"
         facet="branches"
         name="+registeredbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
