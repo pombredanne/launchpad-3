@@ -226,12 +226,12 @@ class FTPArchiveHandler:
 
         self.publisher.release_files_needed.add((distroseries.name, pocket))
 
-        suite = distroseries.getSuite(pocket)
+        full_pocket = distroseries.name + pocketsuffix[pocket]
 
         def touch_overrides(*parts):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                ".".join(["override", suite] + list(parts))))
+                ".".join(["override", full_pocket] + list(parts))))
         # Create empty override lists.
         touch_overrides(comp)
         touch_overrides("extra", comp)
@@ -241,7 +241,7 @@ class FTPArchiveHandler:
         def touch_list(*parts):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                "_".join([suite] + list(parts))))
+                "_".join([full_pocket] + list(parts))))
         touch_list(comp, "source")
 
         for arch in self._config.archTagsForSeries(distroseries.name):
