@@ -325,7 +325,7 @@ class IProjectGroupPublic(
         """Return a boolean showing the existance of translatables products.
         """
 
-    def has_branches(self):
+    def has_branches():
         """Return a boolean showing the existance of products with branches.
         """
 

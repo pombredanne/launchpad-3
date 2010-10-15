@@ -224,7 +224,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def has_branches(self):
         """ See `IProjectGroup`."""
-        return self.getBranches().count() != 0
+        return not self.getBranches().is_empty()
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
