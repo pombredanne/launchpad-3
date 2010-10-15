@@ -1309,8 +1309,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None):
-        revision = self.makeRevision(rev_id=revision_id)
+    def makeBranchRevision(self, branch, revision_id, sequence=None,
+                           parent_ids=None):
+        revision = self.makeRevision(rev_id=revision_id, parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,

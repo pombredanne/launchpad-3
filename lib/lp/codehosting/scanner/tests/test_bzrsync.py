@@ -38,9 +38,10 @@ from lp.code.model.revision import (
     RevisionAuthor,
     RevisionParent,
     )
+from lp.codehosting.bzrutils import write_locked
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCaseWithFactory, temp_dir
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -390,6 +391,70 @@ class TestBzrSync(BzrSyncTestCase):
         dt = datetime.datetime.fromtimestamp(1000000000.0, UTC)
         self.assertEqual(rev_1.revision_date, dt)
         self.assertEqual(rev_2.revision_date, dt)
+
+    def getAncestryDelta_test(self, clean_repository=False):
+        """"Test various ancestry delta calculations.
+
+        :param clean_repository: If True, perform calculations with a branch
+            whose repository contains only revisions in the ancestry of the
+            tip.
+        """
+        (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
+            'base', 'trunk', 'branch', 'merge')
+        bzr_branch = bzr_tree.branch
+        self.factory.makeBranchRevision(db_branch, 'base', 0)
+        self.factory.makeBranchRevision(
+            db_branch, 'trunk', 1, parent_ids=['base'])
+        self.factory.makeBranchRevision(
+            db_branch, 'branch', None, parent_ids=['base'])
+        self.factory.makeBranchRevision(
+            db_branch, 'merge', 2, parent_ids=['trunk', 'branch'])
+        sync = self.makeBzrSync(db_branch)
+        self.useContext(write_locked(bzr_branch))
+        def get_delta(bzr_rev, db_rev):
+            db_branch.last_scanned_id = db_rev
+            graph = bzr_branch.repository.get_graph()
+            revno = graph.find_distance_to_null(bzr_rev, [])
+            if clean_repository:
+                tempdir = self.useContext(temp_dir())
+                delta_branch = self.createBranchAtURL(tempdir)
+                self.useContext(write_locked(delta_branch))
+                delta_branch.pull(bzr_branch, stop_revision=bzr_rev)
+            else:
+                bzr_branch.set_last_revision_info(revno, bzr_rev)
+                delta_branch = bzr_branch
+            return sync.getAncestryDelta(delta_branch)
+
+        added_ancestry, removed_ancestry = get_delta('merge', None)
+        # All revisions are new for an unscanned branch
+        self.assertEqual(
+            set(['base', 'trunk', 'branch', 'merge']), added_ancestry)
+        self.assertEqual(set(), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('merge', 'base')
+        self.assertEqual(
+            set(['trunk', 'branch', 'merge']), added_ancestry)
+        self.assertEqual(set(), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta(NULL_REVISION, 'merge')
+        self.assertEqual(
+            set(), added_ancestry)
+        self.assertEqual(
+            set(['base', 'trunk', 'branch', 'merge']), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('base', 'merge')
+        self.assertEqual(
+            set(), added_ancestry)
+        self.assertEqual(
+            set(['trunk', 'branch', 'merge']), removed_ancestry)
+        added_ancestry, removed_ancestry = get_delta('trunk', 'branch')
+        self.assertEqual(set(['trunk']), added_ancestry)
+        self.assertEqual(set(['branch']), removed_ancestry)
+
+    def test_getAncestryDelta(self):
+        """"Test ancestry delta calculations with a dirty repository."""
+        return self.getAncestryDelta_test()
+
+    def test_getAncestryDelta_clean_repository(self):
+        """"Test ancestry delta calculations with a clean repository."""
+        return self.getAncestryDelta_test(clean_repository=True)
 
     def test_revisionsToInsert_empty(self):
         # An empty branch should have no revisions.

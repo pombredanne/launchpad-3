@@ -374,3 +374,12 @@ def read_locked(branch):
         yield
     finally:
         branch.unlock()
+
+@contextmanager
+def write_locked(branch):
+    """Provide a context in which the branch is write-locked."""
+    branch.lock_write()
+    try:
+        yield
+    finally:
+        branch.unlock()
