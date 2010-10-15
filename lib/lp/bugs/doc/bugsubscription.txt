@@ -12,7 +12,7 @@ First, let's login:
 
 IBug has a subscriptions attribute:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from zope.component import getUtility
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
@@ -178,7 +178,8 @@ Here are some examples of the three types of indirect subscribers:
 After adding a product bugtask we can see that the upstream bug
 supervisor is also an indirect subscriber.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> getUtility(IBugTaskSet).createTask(
@@ -367,7 +368,7 @@ subscribers.
 
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
