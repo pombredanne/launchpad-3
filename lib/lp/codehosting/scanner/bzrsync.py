@@ -16,17 +16,20 @@ __all__ = [
 
 import logging
 
-import pytz
-import transaction
-from zope.component import getUtility
-from zope.event import notify
 from bzrlib.graph import DictParentsProvider
 from bzrlib.revision import NULL_REVISION
+import pytz
+import transaction
+from storm.locals import Store
+from zope.component import getUtility
+from zope.event import notify
 
 from canonical.config import config
 
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchrevision import (BranchRevision)
+from lp.code.model.revision import Revision
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.scanner import events
 from lp.translations.interfaces.translationtemplatesbuildjob import (
@@ -67,7 +70,8 @@ class BzrSync:
 
         * Revision: there must be one Revision row for each revision in the
           branch ancestry. If the row for a revision that has just been added
-          to the branch is already present, it must be checked for consistency.
+          to the branch is already present, it must be checked for
+          consistency.
 
         * BranchRevision: there must be one BrancheRevision row for each
           revision in the branch ancestry. If history revisions became merged
@@ -137,15 +141,13 @@ class BzrSync:
     def _getRevisionGraph(self, bzr_branch, db_last):
         if bzr_branch.repository.has_revision(db_last):
             return bzr_branch.repository.get_graph()
-        from storm.locals import Store
-        from lp.code.model.branchrevision import (BranchRevision)
-        from lp.code.model.revision import Revision
         revisions = Store.of(self.db_branch).find(Revision,
                 BranchRevision.branch_id == self.db_branch.id,
                 Revision.id == BranchRevision.revision_id)
         parent_map = dict(
             (r.revision_id, r.parent_ids) for r in revisions)
         parents_provider = DictParentsProvider(parent_map)
+
         class PPSource:
 
             @staticmethod
