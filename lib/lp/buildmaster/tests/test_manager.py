@@ -266,6 +266,14 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
+    def test_scan_with_nothing_to_dispatch(self):
+        factory = LaunchpadObjectFactory()
+        builder = factory.makeBuilder()
+        builder.setSlaveForTesting(OkSlave())
+        scanner = self._getScanner(builder_name=builder.name)
+        d = scanner.scan()
+        return d.addCallback(self._checkNoDispatch, builder)
+
     def _assertFailureCounting(self, builder_count, job_count,
                                expected_builder_count, expected_job_count):
         # If scan() fails with an exception, failure_counts should be
