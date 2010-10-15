@@ -96,7 +96,7 @@ class TestDominator(TestNativePublishingBase):
 
         dominator = Dominator(self.logger, foo_10_source.archive)
         dominator.judgeAndDominate(
-            foo_10_source.distroseries, foo_10_source.pocket, self.config)
+            foo_10_source.distroseries, foo_10_source.pocket)
 
         self.checkPublications(
             [foo_12_source] + foo_12_binaries,
@@ -126,7 +126,7 @@ class TestDominator(TestNativePublishingBase):
 
         dominator = Dominator(self.logger, ppa)
         dominator.judgeAndDominate(
-            foo_10_source.distroseries, foo_10_source.pocket, self.config)
+            foo_10_source.distroseries, foo_10_source.pocket)
 
         self.checkPublications(
             [foo_12_source] + foo_12_binaries,
@@ -172,10 +172,6 @@ class TestDomination(TestNativePublishingBase):
             status=PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
-        # Ensure the stay of execution is 5 days.  This is so that we
-        # can do a sensible check later (see comment below).
-        publisher._config.stayofexecution = 5
-
         publisher.B_dominate(True)
 
         # The publishing records will be scheduled for removal.
@@ -194,7 +190,7 @@ class TestDomination(TestNativePublishingBase):
             superseded_source, PackagePublishingStatus.SUPERSEDED)
         self.checkPastDate(
             superseded_source.scheduleddeletiondate,
-            lag=datetime.timedelta(days=publisher._config.stayofexecution))
+            lag=datetime.timedelta(days=5))
 
 
 class TestDominationOfObsoletedSeries(TestDomination):

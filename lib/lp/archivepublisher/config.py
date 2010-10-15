@@ -122,14 +122,6 @@ class Config(object):
         self._distroconfig.readfp(strio)
         strio.close()
 
-        self._extractConfigInfo()
-
-    def _extractConfigInfo(self):
-        """Extract configuration information into the attributes we use"""
-        self.stayofexecution = self._distroconfig.get(
-            "publishing", "pendingremovalduration", 5)
-        self.stayofexecution = float(self.stayofexecution)
-
     def setupArchiveDirs(self):
         """Create missing required directories in archive.
 

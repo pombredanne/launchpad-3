@@ -51,9 +51,3 @@ class TestConfig(TestCaseWithFactory):
         self.assertEquals(len(dsns), 2)
         self.assertIn("breezy-autotest", dsns)
         self.assertIn("hoary-test", dsns)
-
-    def testDistroConfig(self):
-        """Config should have parsed a distro config"""
-        d = Config(self.ubuntutest)
-        # NOTE: Add checks here when you add stuff in util.py
-        self.assertEquals(d.stayofexecution, 5)
