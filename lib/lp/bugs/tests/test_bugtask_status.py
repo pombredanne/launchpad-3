@@ -30,7 +30,7 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
         self.task = self.factory.makeBugTask(target=self.product)
         self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.supervisor, self.owner)
+            self.product.setBugSupervisor(self.supervisor, self.supervisor)
 
     def test_person_cannot_set_bug_supervisor_statuses(self):
         # A regular user should not be able to set statuses in
@@ -122,7 +122,7 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
         self.task = self.factory.makeBugTask(target=self.product)
         self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.supervisor, self.owner)
+            self.product.setBugSupervisor(self.supervisor, self.supervisor)
 
     def test_user_cannot_transition_bug_supervisor_statuses(self):
         # A regular user is not allowed to transition to
