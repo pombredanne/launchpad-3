@@ -99,8 +99,10 @@ The summary is shown.
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    1 owned branch, 1 registered branch, 1 subscribed branch
+    >>> print_tag_with_id(eric_browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    1 registered branch
+    1 subscribed branch
     0 active reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
@@ -111,6 +113,9 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> logout()
 
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    2 owned branches, 2 registered branches, 1 subscribed branch
+    >>> print_tag_with_id(
+    ...     eric_browser.contents, 'portlet-person-codesummary')
+    2 owned branches
+    2 registered branches
+    1 subscribed branch
     0 active reviews
