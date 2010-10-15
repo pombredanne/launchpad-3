@@ -411,6 +411,7 @@ class TestBzrSync(BzrSyncTestCase):
             db_branch, 'merge', 2, parent_ids=['trunk', 'branch'])
         sync = self.makeBzrSync(db_branch)
         self.useContext(write_locked(bzr_branch))
+
         def get_delta(bzr_rev, db_rev):
             db_branch.last_scanned_id = db_rev
             graph = bzr_branch.repository.get_graph()
@@ -462,8 +463,8 @@ class TestBzrSync(BzrSyncTestCase):
             [], list(BzrSync.revisionsToInsert([], 0, set())))
 
     def test_revisionsToInsert_linear(self):
-        # If the branch has a linear ancestry, revisionsToInsert() should yield
-        # each revision along with a sequence number, starting at 1.
+        # If the branch has a linear ancestry, revisionsToInsert() should
+        # yield each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync(self.db_branch)
         bzr_history = self.bzr_branch.revision_history()

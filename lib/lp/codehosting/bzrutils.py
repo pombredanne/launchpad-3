@@ -162,6 +162,7 @@ def remove_exception_logging_hook(hook_function):
 
 def make_oops_logging_exception_hook(error_utility, request):
     """Make a hook for logging OOPSes."""
+
     def log_oops():
         error_utility.raising(sys.exc_info(), request)
     return log_oops
@@ -340,6 +341,7 @@ class UnsafeUrlSeen(Exception):
 
 def makeURLChecker(allowed_scheme):
     """Make a callable that rejects URLs not on the given scheme."""
+
     def checkURL(url):
         """Check that `url` is safe to open."""
         if URI(url).scheme != allowed_scheme:
@@ -374,6 +376,7 @@ def read_locked(branch):
         yield
     finally:
         branch.unlock()
+
 
 @contextmanager
 def write_locked(branch):
