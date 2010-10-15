@@ -58,6 +58,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
+from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
     RevisionAuthor,
@@ -193,6 +194,30 @@ class RevisionCachePruner(TunableLoop):
         """Delegate to the `IRevisionSet` implementation."""
         getUtility(IRevisionSet).pruneRevisionCache(chunk_size)
         transaction.commit()
+
+
+class CodeImportEventPruner(TunableLoop):
+    """Prune `CodeImportEvent`s that are more than a month old.
+
+    Events that happened more than 30 days ago are really of no interest to us.
+    """
+
+    maximum_chunk_size = 10000
+    minimum_chunk_size = 500
+
+    def _to_remove(self):
+        return IMasterStore(CodeImportEvent).find(
+            CodeImportEvent,
+            CodeImportEvent.date_created < THIRTY_DAYS_AGO)
+
+    def isDone(self):
+        return self._to_remove().count() > 0
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        num_removed = self._to_remove()[:chunk_size].remove()
+        transaction.commit()
+        self.log.debug("Removed %d old CodeImportEvents" % num_removed)
 
 
 class CodeImportResultPruner(TunableLoop):
