@@ -6,16 +6,13 @@
 __metaclass__ = type
 __all__ = []
 
+import transaction
 import unittest
-
 import windmill
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT,
-    PAGE_LOAD,
-    SLEEP,
-    )
+from canonical.launchpad.windmill.testing.constants import SLEEP
 
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
@@ -36,11 +33,32 @@ class TestBranchBugLinks(WindmillTestCase):
     layer = CodeWindmillLayer
     suite_name = "Broken branch links"
 
-    question_text_template = u"""
+    QUESTION_TEXT_TEMPLATE = u"""
     Here is the question. Which branches are valid?
     Valid: %s
     Invalid %s
     """
+
+    BRANCH_URL_TEMPLATE = "lp:%s"
+
+    def make_product_and_valid_links(self):
+        branch = self.factory.makeProductBranch()
+        valid_branch_url = self.BRANCH_URL_TEMPLATE % branch.unique_name
+        product = self.factory.makeProduct()
+        product_branch = self.factory.makeProductBranch(product=product)
+        removeSecurityProxy(product).development_focus.branch = product_branch
+        valid_product_url = self.BRANCH_URL_TEMPLATE % product.name
+
+        return (product, [
+            valid_branch_url,
+            valid_product_url,
+        ])
+
+    def make_invalid_links(self):
+        return [
+            self.BRANCH_URL_TEMPLATE % 'foo',
+            self.BRANCH_URL_TEMPLATE % 'bar',
+            ]
 
     def test_invalid_url_rendering(self):
         """Link a bug from the branch page."""
@@ -48,20 +66,20 @@ class TestBranchBugLinks(WindmillTestCase):
 
         lpuser.FOO_BAR.ensure_login(client)
 
+        product, valid_links = self.make_product_and_valid_links()
+        invalid_links = self.make_invalid_links()
+        transaction.commit()
+
         start_url = (
-            windmill.settings['TEST_URL'] + '/firefox/+addquestion')
+            windmill.settings['TEST_URL'] + '/%s/+addquestion' % product.name)
         client.open(url=start_url)
-        #client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(xpath=CREATE_QUESTION_BUTTON)
         client.type(text='The meaning of life', id=u'field.title')
         client.click(xpath=CREATE_QUESTION_BUTTON)
 
         client.waits.forElement(xpath=ADD_TEXT_BUTTON)
-        valid_links = ['lp:~mark/firefox/release-0.8', 'lp:gnome-terminal/trunk']
-        invalid_links = []#'lp:foo']
-        question_text = self.question_text_template % (
-            ', '.join(valid_links), ', '.join(invalid_links)
-        )
+        question_text = self.QUESTION_TEXT_TEMPLATE % (
+            ', '.join(valid_links), ', '.join(invalid_links))
         client.type(text=question_text, id=u'field.description')
         client.click(xpath=ADD_TEXT_BUTTON)
 
