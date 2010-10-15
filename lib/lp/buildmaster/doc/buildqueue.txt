@@ -217,7 +217,7 @@ corresponding to a build record in NEEDSBUILD state.
 
 Use all architectures available in ubuntu/hoary, i.e, i386 and hppa:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> archseries = [arch for arch in hoary.architectures]
@@ -267,7 +267,7 @@ after other packages in the queue. First we need to create a fake
 language pack build.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import ISectionSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> section_set = getUtility(ISectionSet)
     >>> [transl_section] = [s for s in section_set
     ...     if s.name == u'translations']
