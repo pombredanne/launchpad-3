@@ -78,7 +78,7 @@ class ForkingServerForTests(object):
         self.socket_path = config.codehosting.forking_daemon_socket
         process = subprocess.Popen(
             [sys.executable, bzr_path, 'launchpad-forking-service',
-             '--path', socket_path,
+             '--path', self.socket_path,
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         self.process = process
         # Wait for it to indicate it is running
