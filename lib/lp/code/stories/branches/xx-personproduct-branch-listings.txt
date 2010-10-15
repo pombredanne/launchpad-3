@@ -1,4 +1,6 @@
-= Person / Product listings =
+=========================
+Person / Product listings
+=========================
 
 These listings are where only the branches associated with the product and the
 person are shown, rather than all of the person's branches.
