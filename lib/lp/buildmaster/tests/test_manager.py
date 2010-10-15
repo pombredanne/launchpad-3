@@ -112,15 +112,17 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
-    def _getManager(self):
+    def _getScanner(self, builder_name=None):
         """Instantiate a SlaveScanner object.
 
         Replace its default logging handler by a testing version.
         """
-        manager = SlaveScanner(BOB_THE_BUILDER_NAME, QuietFakeLogger())
-        manager.logger.name = 'slave-scanner'
+        if builder_name is None:
+            builder_name = BOB_THE_BUILDER_NAME
+        scanner = SlaveScanner(builder_name, QuietFakeLogger())
+        scanner.logger.name = 'slave-scanner'
 
-        return manager
+        return scanner
 
     def _checkDispatch(self, slave, builder):
         # SlaveScanner.scan returns a slave when a dispatch was
@@ -144,8 +146,8 @@ class TestSlaveScannerScan(TrialTestCase):
         # Run 'scan' and check its result.
         self.layer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
         return d
 
@@ -182,8 +184,8 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager._startCycle)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner._startCycle)
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
@@ -222,8 +224,8 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
         return d
 
@@ -259,8 +261,8 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Run 'scan' and check its result.
         LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
-        manager = self._getManager()
-        d = defer.maybeDeferred(manager.scan)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
         return d
 
@@ -272,19 +274,19 @@ class TestSlaveScannerScan(TrialTestCase):
         # scan() is setting the counts.
         def failing_scan():
             return defer.fail(Exception("fake exception"))
-        manager = self._getManager()
-        manager.scan = failing_scan
-        manager.scheduleNextScanCycle = FakeMethod()
+        scanner = self._getScanner()
+        scanner.scan = failing_scan
+        scanner.scheduleNextScanCycle = FakeMethod()
         from lp.buildmaster import manager as manager_module
         self.patch(manager_module, 'assessFailureCounts', FakeMethod())
-        builder = getUtility(IBuilderSet)[manager.builder_name]
+        builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
         builder.currentjob.specific_job.build.failure_count = job_count
 
         # startCycle() calls scan() which is our fake one that throws an
         # exception.
-        d = manager._startCycle()
+        d = scanner._startCycle()
 
         # Failure counts should be updated, and the assessment method
         # should have been called.
@@ -336,13 +338,13 @@ class TestSlaveScannerScan(TrialTestCase):
         builder.setSlaveForTesting(slave)
         builder.vm_host = "fake_vm_host"
 
-        manager = self._getManager()
+        scanner = self._getScanner()
 
         # Get the next job that will be dispatched.
         job = removeSecurityProxy(builder._findBuildCandidate())
         job.virtualized = True
         builder.virtualized = True
-        d = manager._startCycle()
+        d = scanner._startCycle()
 
         def check(ignored):
             # The failure_count will have been incremented on the
