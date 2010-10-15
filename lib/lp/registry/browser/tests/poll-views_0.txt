@@ -78,7 +78,7 @@ level checks.
 
     >>> request = TestRequest(form={'changevote': 'Change Vote'})
     >>> request.method = 'POST'
-    >>> voting_page = getMultiAdapter((poll, request), name="+vote-condorcet")
+    >>> voting_page = getMultiAdapter((poll, request), name="+vote")
     >>> form_processed = False
     >>> def form_processing():
     ...     form_processed = True
