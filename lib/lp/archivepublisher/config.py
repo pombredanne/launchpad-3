@@ -19,7 +19,7 @@ def getPubConfig(archive):
     modified according local context, it basically fixes the archive
     paths to cope with non-primary and PPA archives publication workflow.
     """
-    pubconf = Config(archive.distribution)
+    pubconf = Config()
     ppa_config = config.personalpackagearchive
 
     pubconf.temproot = os.path.join(
@@ -90,21 +90,6 @@ class Config(object):
     This class provides a useful abstraction so that if we change
     how the database stores configuration then the publisher will not
     need to be re-coded to cope"""
-
-    def __init__(self, distribution):
-        """Initialise the configuration"""
-        self.publishable_series = set()
-        if not distribution.lucilleconfig:
-            raise LucilleConfigError(
-                'No Lucille config section for %s' % distribution.name)
-
-        for dr in distribution:
-            distroseries_name = dr.name.encode('utf-8')
-
-            # We now just use lucilleconfig's nullness to determine if
-            # the series is initialised and publishable.
-            if dr.lucilleconfig is not None:
-                self.publishable_series.add(distroseries_name)
 
     def setupArchiveDirs(self):
         """Create missing required directories in archive."""

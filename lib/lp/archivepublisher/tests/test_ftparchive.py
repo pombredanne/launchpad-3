@@ -125,19 +125,6 @@ class TestFTPArchive(TestCaseWithFactory):
             self._publisher)
         return fa
 
-    def test_NoLucilleConfig(self):
-        # Distroseries without a lucille configuration get ignored
-        # and trigger a warning, they don't break the publisher
-        logger = BufferLogger()
-        publisher = Publisher(
-            logger, self._config, self._dp, self._archive)
-        self.factory.makeDistroSeries(self._distribution, name="somename")
-        fa = FTPArchiveHandler(logger, self._config, self._dp,
-                               self._distribution, publisher)
-        fa.createEmptyPocketRequests(fullpublish=True)
-        self.assertEquals("WARNING: Distroseries somename in ubuntutest doesn't "
-            "have a lucille configuration.\n", logger.buffer.getvalue())
-
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:
         # (sourcename, suite, component, section)
