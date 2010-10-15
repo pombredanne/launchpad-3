@@ -803,11 +803,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
 
-        # There can only be one matching published source package.
-        published_spphs = [
-            spph for spph in spphs
-            if spph.status == PackagePublishingStatus.PUBLISHED]
-        assert len(published_spphs) <= 1, "Duplicated ancestry"
         return spphs[0].sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
