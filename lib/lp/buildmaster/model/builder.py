@@ -328,10 +328,6 @@ def updateBuilderStatus(builder, logger=None):
     if logger:
         logger.debug('Checking %s' % builder.name)
 
-    # XXX: This *will not work* until we switch to actually using Twisted for
-    # network IO for XMLRPC. We will get EINTR errors that we do not handle
-    # until then.
-
     return builder.rescueIfLost(logger)
 
 
