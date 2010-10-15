@@ -46,6 +46,8 @@ records to disk, including configuration and indexes.
     True
     >>> cprov_archive.is_main
     False
+    >>> cprov_archive.is_partner
+    False
     >>> cprov_archive.is_active
     True
     >>> cprov_archive.distribution.main_archive.is_main
@@ -1365,6 +1367,8 @@ and an ArchivePurpose:
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
     partner
+    >>> print partner_archive.is_partner
+    True
 
 It explicitly fails when purpose is PPA, since such lookup should be
 restricted by archive owner.
