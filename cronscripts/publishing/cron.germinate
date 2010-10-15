@@ -6,12 +6,12 @@
 set -e
 set -u
 
-ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+ARCHIVEROOT=${TEST_ARCHIVEROOT:-/srv/launchpad.net/ubuntu-archive/ubuntu}
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+LAUNCHPADROOT=${TEST_LAUNCHPADROOT:-/srv/launchpad.net/codelines/current}
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
 ## Check to see if another germinate run is in progress
@@ -28,7 +28,6 @@ cleanup () {
 
 trap cleanup EXIT
 
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 echo -n "Running germinate... "
@@ -130,12 +129,15 @@ mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.over
 
 # now generate the Supported extra overrides for all supported distros
 for supported_suite in `$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`; do
-    $MAINTAINCE_CHECK $supported_suite > "$MISCROOT/more-extra.override.$supported_suite.main.supported" 2> _maintenance-check.$supported_suite.stderr
+    echo -n "Running maintenance-check for $supported_suite... "
+    if $MAINTAINCE_CHECK $supported_suite > "$MISCROOT/more-extra.override.$supported_suite.main.supported" 2> _maintenance-check.$supported_suite.stderr; then
 
-    if [ $? -eq 0 ]; then
+        # make sure the more-extra.override file exists
+        touch "$MISCROOT/more-extra.override.$supported_suite.main"
         # remove old "Supporte" info from extra overrides
         sed /"^.* Supported"/d "$MISCROOT/more-extra.override.$supported_suite.main" > "$MISCROOT/more-extra.override.$supported_suite.main.new"
         cat "$MISCROOT/more-extra.override.$supported_suite.main.supported" >> "$MISCROOT/more-extra.override.$supported_suite.main.new"
-        mv -f "$MISCROOT/more-extra.override.$supported_suite.main.new" "$MISCROOT/more-extra.override.$supported_suite.main"
+        mv "$MISCROOT/more-extra.override.$supported_suite.main.new" "$MISCROOT/more-extra.override.$supported_suite.main"
     fi
+    echo " done"
 done

@@ -275,8 +275,8 @@ if __name__ == "__main__":
     # init
     if len(args) > 0:
         distro = args[0]
-        if distro[0] < 'h':
-            print "ERROR: only hardy or later is supported"
+        if distro[0] < 'l':
+            logging.error("only lucid or later is supported")
             sys.exit(1)
     else:
         distro = "lucid"
@@ -297,7 +297,11 @@ if __name__ == "__main__":
     for (name, lts_supported) in DISTRO_NAMES_AND_LTS_SUPPORT:
 
         # get basic structure file
-        structure = get_structure(name, distro)
+        try:
+            structure = get_structure(name, distro)
+        except urllib2.HTTPError:
+            logging.error("can't get structure '%s'" % name)
+            continue
     
         # get dicts of pkgname -> support timeframe string
         support_timeframe = SUPPORT_TIMEFRAME
