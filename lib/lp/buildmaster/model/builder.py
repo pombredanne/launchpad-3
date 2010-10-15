@@ -323,25 +323,6 @@ def rescueBuilderIfLost(builder, logger=None):
     return d
 
 
-def _update_builder_status(builder, logger=None):
-    """Really update the builder status."""
-    d = builder.rescueIfLost(logger)
-    def rescue_failed(failure):
-        # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
-        # disturbing in this context. We should spend sometime sanitizing the
-        # exceptions raised in the Builder API since we already started the
-        # main refactoring of this area.
-        failure.trap(
-            ValueError, TypeError, xmlrpclib.Fault, BuildDaemonError)
-        reason = failure.value
-        builder.failBuilder(str(reason))
-        if logger:
-            logger.warn(
-                "%s (%s) marked as failed due to: %s",
-                builder.name, builder.url, builder.failnotes, exc_info=True)
-    return d.addErrback(rescue_failed)
-
-
 def updateBuilderStatus(builder, logger=None):
     """See `IBuilder`."""
     if logger:
@@ -351,16 +332,7 @@ def updateBuilderStatus(builder, logger=None):
     # network IO for XMLRPC. We will get EINTR errors that we do not handle
     # until then.
 
-    d = _update_builder_status(builder, logger=logger)
-    def handle_timeout(failure):
-        # XXX: Previously, this caught socket.error. That's a pretty general
-        # exception that's just not going to be raised by Twisted code. We
-        # don't want to mess with the logic too much right now, so we'll pick
-        # the lowest level Twisted exception that makes sense. At some later
-        # point, the build manager error handling strategy should be revised.
-        failure.trap(ConnectError)
-        return builder.handleTimeout(logger, str(failure.value))
-    return d.addErrback(handle_timeout)
+    return builder.rescueIfLost(logger)
 
 
 class Builder(SQLBase):

@@ -6,6 +6,7 @@
 import os
 import signal
 import time
+import xmlrpclib
 
 import transaction
 
@@ -46,6 +47,7 @@ from lp.buildmaster.manager import (
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
+    BrokenSlave,
     BuildingSlave,
     OkSlave,
     )
@@ -295,6 +297,15 @@ class TestSlaveScannerScan(TrialTestCase):
         d.addCallback(
             lambda ignored: self.assertIdentical(None, builder.currentjob))
         return d
+
+    def test_scan_of_broken_slave(self):
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(BrokenSlave())
+        builder.failure_count = 0
+        scanner = self._getScanner(builder_name=builder.name)
+        d = scanner.scan()
+        return self.assertFailure(d, xmlrpclib.Fault)
 
     def _assertFailureCounting(self, builder_count, job_count,
                                expected_builder_count, expected_job_count):

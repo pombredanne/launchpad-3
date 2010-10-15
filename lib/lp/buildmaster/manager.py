@@ -118,6 +118,10 @@ class SlaveScanner:
         # Trap known exceptions and print a message without a
         # stack trace in that case, or if we don't know about it,
         # include the trace.
+
+        # Paranoia.
+        transaction.abort()
+
         error_message = failure.getErrorMessage()
         if failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
