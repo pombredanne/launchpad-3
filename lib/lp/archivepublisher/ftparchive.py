@@ -147,7 +147,7 @@ class FTPArchiveHandler:
         self.distro = distro
         self.distroseries = []
         for distroseries in self.distro.series:
-            if not distroseries.name in self._config.distroSeriesNames():
+            if not distroseries.name in self._config.publishable_series:
                 self.log.warning("Distroseries %s in %s doesn't have "
                     "a lucille configuration.", distroseries.name,
                     self.distro.name)
@@ -746,7 +746,7 @@ class FTPArchiveHandler:
 
         # confixtext now contains a basic header. Add a dists entry for
         # each of the distroseries we've touched
-        for distroseries_name in self._config.distroSeriesNames():
+        for distroseries_name in self._config.publishable_series:
             distroseries = self.distro[distroseries_name]
             for pocket in PackagePublishingPocket.items:
 

@@ -100,22 +100,18 @@ class Config(object):
         """Initialise the configuration"""
         self.distribution = distribution
         self.distroName = distribution.name.encode('utf-8')
-        self._distroseries = {}
+        self.publishable_series = set()
         if not distribution.lucilleconfig:
             raise LucilleConfigError(
                 'No Lucille config section for %s' % distribution.name)
 
         for dr in distribution:
             distroseries_name = dr.name.encode('utf-8')
-            config_segment =  {}
 
-            if dr.lucilleconfig:
-                strio = StringIO(dr.lucilleconfig.encode('utf-8'))
-                config_segment["config"] = ConfigParser()
-                config_segment["config"].readfp(strio)
-                strio.close()
-
-                self._distroseries[distroseries_name] = config_segment
+            # We now just use lucilleconfig's nullness to determine if
+            # the series is initialised and publishable.
+            if dr.lucilleconfig is not None:
+                self.publishable_series.add(distroseries_name)
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -123,18 +119,6 @@ class Config(object):
         strio.close()
 
         self._extractConfigInfo()
-
-    def distroSeriesNames(self):
-        # Because dicts iterate for keys only; this works to get dr names
-        return self._distroseries.keys()
-
-    def series(self, dr):
-        try:
-            return self._distroseries[dr]
-        except KeyError:
-            raise LucilleConfigError(
-                'No Lucille config section for %s in %s' %
-                    (dr, self.distroName))
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""
