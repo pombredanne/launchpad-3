@@ -51,12 +51,6 @@ def getPubConfig(archive):
             archive.distribution.name)
         update_pub_config(pubconf)
     elif archive.purpose == ArchivePurpose.PARTNER:
-        # Reset the list of components to partner only.  This prevents
-        # any publisher runs from generating components not related to
-        # the partner archive.
-        for distroseries in pubconf._distroseries.keys():
-            pubconf._distroseries[
-                distroseries]['components'] = ['partner']
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name + '-partner')
@@ -104,6 +98,7 @@ class Config(object):
 
     def __init__(self, distribution):
         """Initialise the configuration"""
+        self.distribution = distribution
         self.distroName = distribution.name.encode('utf-8')
         self._distroseries = {}
         if not distribution.lucilleconfig:
@@ -126,8 +121,6 @@ class Config(object):
                 config_segment["config"] = ConfigParser()
                 config_segment["config"].readfp(strio)
                 strio.close()
-                config_segment["components"] = config_segment["config"].get(
-                    "publishing", "components").split(" ")
 
                 self._distroseries[distroseries_name] = config_segment
 
@@ -151,10 +144,9 @@ class Config(object):
                     (dr, self.distroName))
 
     def archTagsForSeries(self, dr):
-        return self.series(dr)["archtags"]
-
-    def componentsForSeries(self, dr):
-        return self.series(dr)["components"]
+        return [
+            arch.architecturetag
+            for arch in self.distribution[dr].architectures if arch.enabled]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""

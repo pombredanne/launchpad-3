@@ -196,7 +196,9 @@ class FTPArchiveHandler:
         anything in them currently.
         """
         for distroseries in self.distroseries:
-            components = self._config.componentsForSeries(distroseries.name)
+            components = [
+                comp.name for comp in
+                self.publisher.archive.getComponentsForSeries(distroseries)]
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -774,7 +776,9 @@ class FTPArchiveHandler:
         suite = distroseries.getSuite(pocket)
 
         archs = self._config.archTagsForSeries(distroseries.name)
-        comps = self._config.componentsForSeries(distroseries.name)
+        comps = [
+            comp.name for comp in
+            self.publisher.archive.getComponentsForSeries(distroseries)]
 
         self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {
