@@ -102,7 +102,6 @@ class Config(object):
 
     def __init__(self, distribution):
         """Initialise the configuration"""
-        self.distribution = distribution
         self.distroName = distribution.name.encode('utf-8')
         self._distroseries = {}
         if not distribution.lucilleconfig:
@@ -111,7 +110,7 @@ class Config(object):
 
         for dr in distribution:
             distroseries_name = dr.name.encode('utf-8')
-            config_segment =  {}
+            config_segment = {}
 
             if dr.lucilleconfig:
                 strio = StringIO(dr.lucilleconfig.encode('utf-8'))
