@@ -28,7 +28,6 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
