@@ -82,7 +82,6 @@ class BzrSync:
         # if something is wrong with the branch.
         self.logger.info("Retrieving history from bzrlib.")
         bzr_history = bzr_branch.revision_history()
-        bzr_history = self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
