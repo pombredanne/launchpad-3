@@ -59,8 +59,3 @@ class TestCancelOnTimeout(TrialTestCase):
             self.assertEqual(value, "frobnicle")
             self.assertEqual([], clock.getDelayedCalls())
         return d.addCallback(result)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
