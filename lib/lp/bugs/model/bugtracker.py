@@ -224,13 +224,13 @@ class BugTrackerComponent(Storm):
             self.source_package_name = None
         else:
             self.distribution = dsp.distribution
-            self.source_package_name = dsp.name
+            self.source_package_name = dsp.sourcepackagename
 
-        dsp = property(
-            self._get_distro_source_package,
-            self._set_distro_source_package,
-            None,
-            """The distribution's source package for this component""")
+    distro_source_package = property(
+        _get_distro_source_package,
+        _set_distro_source_package,
+        None,
+        """The distribution's source package for this component""")
 
 
 class BugTrackerComponentGroup(Storm):
@@ -257,6 +257,35 @@ class BugTrackerComponentGroup(Storm):
         component = BugTrackerComponent()
         component.name = component_name
         component.component_group = self
+
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+        store.flush()
+
+        return component
+
+    def getComponent(self, component_name):
+        """Retrieves a component by the given name.
+
+        None is returned if there is no component by that name in the
+        group.
+        """
+
+        if component_name is None:
+            return None
+        else:
+            return Store.of(self).find(
+                BugTrackerComponent,
+                (BugTrackerComponent.name == component_name)).one()
+
+    def addCustomComponent(self, component_name):
+        """Adds a component locally that isn't synced from a remote tracker
+        """
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        component.component_group = self
+        component.is_custom = True
 
         store = IStore(BugTrackerComponent)
         store.add(component)
