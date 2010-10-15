@@ -350,6 +350,11 @@ class Archive(SQLBase):
         return self.purpose == ArchivePurpose.PPA
 
     @property
+    def is_partner(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PARTNER
+
+    @property
     def is_copy(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.COPY
@@ -834,6 +839,12 @@ class Archive(SQLBase):
 
         return permission
 
+    def getComponentsForSeries(self, distroseries):
+        if self.is_partner:
+            return [getUtility(IComponentSet)['partner']]
+        else:
+            return distroseries.components
+
     def updateArchiveCache(self):
         """See `IArchive`."""
         # Compiled regexp to remove puntication.
@@ -1101,7 +1112,7 @@ class Archive(SQLBase):
 
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PARTNER:
+        if self.is_partner:
             if pocket not in (
                 PackagePublishingPocket.RELEASE,
                 PackagePublishingPocket.PROPOSED):
