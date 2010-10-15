@@ -173,7 +173,7 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         content = find_tag_by_id(browser.contents, 'external')
         text = extract_text(content)
         expected = ("%(product_title)s hosts its code at %(branch_url)s. "
-            "Launchpad imports code from there and you can create "
+            "Launchpad imports the master branch and you can create "
             "branches from it." % dict(
                 product_title=product.title,
                 branch_url=code_import.url))
