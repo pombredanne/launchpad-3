@@ -274,6 +274,17 @@ class TestSlaveScannerScan(TrialTestCase):
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
 
+    def test_scan_with_manual_builder(self):
+        # Reset sampledata builder.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self._resetBuilder(builder)
+        builder.setSlaveForTesting(OkSlave())
+        builder.manual = True
+        scanner = self._getScanner()
+        d = scanner.scan()
+        d.addCallback(self._checkNoDispatch, builder)
+        return d
+
     def _assertFailureCounting(self, builder_count, job_count,
                                expected_builder_count, expected_job_count):
         # If scan() fails with an exception, failure_counts should be
