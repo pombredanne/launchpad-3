@@ -202,20 +202,32 @@ reuse the authenticated cache. The anonymous section is uncached.
 Visibility Modifiers
 --------------------
 
-A optional modifier can also be applied to the visibility. Only 'param'
-and 'noparam' are supported. 'param' is the default, and pages that
-differ by just the query string do not share cache.
+An optional modifier can also be applied to the visibility. Only 'param'
+and 'noparam' are supported, with 'param' as the default. Pages that
+differ by only the query string do not share cache.
+
+    >>> default_template = TestPageTemplate(dedent("""\
+    ...     <div tal:omit-tag=""><tal:cache content="cache:public">
+    ...         Arg: <tal:x content="arg" />
+    ...     </tal:cache></div>"""))
+    >>> login(ANONYMOUS)
+    >>> request1 = LaunchpadTestRequest(QUERY_STRING='a=1')
+    >>> request2 = LaunchpadTestRequest(QUERY_STRING='a=2')
+    >>> print default_template(arg="First", request=request1)
+    Arg: First
+    >>> print default_template(arg="Second", request=request2)
+    Arg: Second
 
     >>> param_template = TestPageTemplate(dedent("""\
     ...     <div tal:omit-tag=""><tal:cache content="cache:public param">
     ...         Arg: <tal:x content="arg" />
     ...     </tal:cache></div>"""))
     >>> login(ANONYMOUS)
-    >>> request1 = LaunchpadTestRequest(QUERY_STRING='a=1')
-    >>> request2 = LaunchpadTestRequest(QUERY_STRING='a=2')
-    >>> print param_template(arg="First", request=request1)
+    >>> request3 = LaunchpadTestRequest(QUERY_STRING='a=3')
+    >>> request4 = LaunchpadTestRequest(QUERY_STRING='a=4')
+    >>> print param_template(arg="First", request=request3)
     Arg: First
-    >>> print param_template(arg="Second", request=request2)
+    >>> print param_template(arg="Second", request=request4)
     Arg: Second
 
 If 'noparam' is used, query parameters are ignored and the cache is shared.
@@ -225,11 +237,11 @@ If 'noparam' is used, query parameters are ignored and the cache is shared.
     ...         Arg: <tal:x content="arg" />
     ...     </tal:cache></div>"""))
     >>> login(ANONYMOUS)
-    >>> request3 = LaunchpadTestRequest(QUERY_STRING='a=3')
-    >>> request4 = LaunchpadTestRequest(QUERY_STRING='a=4')
-    >>> print noparam_template(arg="Third", request=request3)
+    >>> request5 = LaunchpadTestRequest(QUERY_STRING='a=5')
+    >>> request6 = LaunchpadTestRequest(QUERY_STRING='a=6')
+    >>> print noparam_template(arg="Third", request=request5)
     Arg: Third
-    >>> print noparam_template(arg="Fourth", request=request4)
+    >>> print noparam_template(arg="Fourth", request=request6)
     <!-- Cache hit: memcache expression (public noparam) [0 seconds] -->
     Arg: Third
     <!-- End cache hit: memcache expression (public noparam) [0 seconds] -->
