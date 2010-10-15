@@ -1093,14 +1093,14 @@ class TestArchiveIndices(TestPublisherBase):
         """Run the index generation step of the publisher."""
         publisher.C_writeIndexes(False)
 
-    def assertIndices(self, publisher, suites, present=[], absent=[]):
+    def assertIndices(self, publisher, suites, present=(), absent=()):
         """Assert that the given suites have correct indices."""
         for series, pocket in suites:
             self.assertIndicesForSuite(
                 publisher, series, pocket, present, absent)
 
     def assertIndicesForSuite(self, publisher, series, pocket,
-                              present=[], absent=[]):
+                              present=(), absent=()):
         """Assert that the suite has correct indices.
 
         Checks that the architecture tags in 'present' have Packages and
