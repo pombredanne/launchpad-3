@@ -158,7 +158,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
 
     def test_external_mirrored(self):
-        # Test that the correct URL is displayed for a mirrored branch.
+        # A mirrored branch says code is hosted externally, and displays
+        # upstream data.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED,
             url="http://example.com/mybranch")
@@ -174,8 +175,13 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
                         branch_url=branch.url))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
+        # The code page should set not robots to noindex, nofollow.
+        meta_string = '<meta name="robots" content="noindex,nofollow" />'
+        self.assertNotIn(meta_string, browser.contents)
+
     def test_external_remote(self):
-        # Test that a remote branch is shown properly.
+        # A remote branch says code is hosted externally, and displays
+        # upstream data.
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.REMOTE,
             url="http://example.com/mybranch")
@@ -192,7 +198,13 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
                         branch_url=branch.url))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
+        # The code page does not set robots to noindex, nofollow.
+        meta_string = '<meta name="robots" content="noindex,nofollow" />'
+        self.assertNotIn(meta_string, browser.contents)
+
     def test_unknown(self):
+        # A product with no branches should tell the user that Launchpad
+        # doesn't know where the code is hosted.
         product = self.factory.makeProduct()
         self.assertEqual(ServiceUsage.UNKNOWN, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
@@ -205,7 +217,12 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
             dict(product_title=product.title))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
+        # The code page sets robots to noindex, nofollow.
+        meta_string = '<meta name="robots" content="noindex,nofollow" />'
+        self.assertIn(meta_string, browser.contents)
+
     def test_on_launchpad(self):
+        # A product that hosts its code on Launchpad just shows the branches.
         product, branch = self.makeProductAndDevelopmentFocusBranch()
         self.assertEqual(ServiceUsage.LAUNCHPAD, product.codehosting_usage)
         browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
@@ -215,7 +232,12 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         expected = "1 Active  branch owned by 1 person.*"
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
+        # The code page does not set robots to noindex, nofollow.
+        meta_string = '<meta name="robots" content="noindex,nofollow" />'
+        self.assertNotIn(meta_string, browser.contents)
+
     def test_view_mirror_location(self):
+        # Mirrors show the correct upstream url as the mirror location.
         url = "http://example.com/mybranch"
         product, branch = self.makeProductAndDevelopmentFocusBranch(
             branch_type=BranchType.MIRRORED,
