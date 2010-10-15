@@ -1442,12 +1442,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
-        Person.id = Archive.owner AND
-        Person.id = ValidPersonOrTeamCache.id
+        Archive.owner = ValidPersonOrTeamCache.id
         """ % sqlvalues(ArchivePurpose.PPA, self)]
 
-        clauseTables = ['Person', 'ValidPersonOrTeamCache']
-        orderBy = ['Person.name']
+        clauseTables = ['ValidPersonOrTeamCache']
+        orderBy = ['Archive.displayname']
 
         if not show_inactive:
             active_statuses = (PackagePublishingStatus.PUBLISHED,
