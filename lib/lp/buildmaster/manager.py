@@ -102,8 +102,8 @@ class SlaveScanner:
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
         self.loop = LoopingCall(self._startCycle)
-        d = self.loop.start(self.SCAN_INTERVAL)
-        return d
+        self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
+        return self.stopping_deferred
 
     def _startCycle(self):
         # Same as _startCycle but the next cycle is not scheduled.  This
@@ -247,8 +247,8 @@ class NewBuildersScanner:
         """Schedule a callback SCAN_INTERVAL seconds later."""
         self.loop = LoopingCall(self.scan)
         self.loop.clock = self._clock
-        d = self.loop.start(self.SCAN_INTERVAL)
-        return d
+        self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
+        return self.stopping_deferred
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
@@ -306,17 +306,25 @@ class BuilddManager(service.Service):
         builders = [builder.name for builder in builder_set]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
-        reactor.addSystemEventTrigger('before', 'shutdown', self.shutdown)
 
         # Events will now fire in the SlaveScanner objects to scan each
         # builder.
 
-    def shutdown(self):
-        """Callback from the reactor when we need to shut down."""
+    def stopService(self):
+        """Callback for when we need to shut down."""
         # All the SlaveScanner objects need to be halted gracefully.
+        deferreds = [slave.stopping_deferred for slave in self.builder_slaves]
+        deferreds.append(self.new_builders_scanner.stopping_deferred)
+
         self.new_builders_scanner.loop.stop()
         for slave in self.builder_slaves:
             slave.loop.stop()
+
+        # The 'stopping_deferred's are called back when the loops are
+        # stopped, so we can wait on them all at once here before
+        # exiting.
+        d = defer.DeferredList(deferreds, consumeErrors=True)
+        return d
 
     def addScanForBuilders(self, builders):
         """Set up scanner objects for the builders specified."""

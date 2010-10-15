@@ -398,6 +398,7 @@ class TestBuilddManager(TrialTestCase):
         # intercept the Deferred returned from BuilderSlave.startCycle()
         # which is called back when the loop stops.
         # Also check that the NewBuilderScanner is stopped.
+        pass
 
 
 class TestNewBuilders(TrialTestCase):
