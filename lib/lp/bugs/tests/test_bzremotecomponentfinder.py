@@ -13,9 +13,7 @@ import unittest
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import (
-    login_person,
     login,
-    logout,
     )
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.bzremotecomponentfinder import (
