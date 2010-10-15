@@ -13,7 +13,9 @@ We export DOAP RDF metadata for projects from a link in the
       <lp:title>The Mozilla Project</lp:title>
   ...
       <lp:owner>
-        <lp:specifiedAt rdf:resource="/~name12/+rdf"/>
+        <foaf:Agent>
+          <foaf:Accoun rdf:resource="/~name12/+rdf"/>
+        </foaf:Agent>
       </lp:owner>
   ...
      </lp:Project>
