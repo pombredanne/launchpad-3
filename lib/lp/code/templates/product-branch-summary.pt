@@ -19,14 +19,26 @@
   </div>
 
   <div id="external"
-       tal:condition="context/codehosting_usage/enumvalue:EXTERNAL">
-    <p>
-      <strong>
+       tal:condition="context/codehosting_usage/enumvalue:EXTERNAL"
+       tal:define="branch view/branch">
+    <strong>
+      <p tal:condition="not: branch/branch_type/enumvalue:IMPORTED">
         <tal:project_title replace="context/title" /> hosts its code at
         <a tal:attributes="href view/mirror_location"
            tal:content="view/mirror_location"></a>.
-      </strong>
-    </p>
+      </p>
+      <p tal:condition="branch/branch_type/enumvalue:IMPORTED">
+        <tal:has-import-data condition="branch/code_import">
+        <tal:project_title replace="context/title" /> hosts its code at
+        <a tal:attributes="href branch/code_import/url"
+           tal:content="branch/code_import/url"></a>.
+        </tal:has-import-data>
+        <tal:no-import-data condition="not: branch/code_import">
+        <tal:project_title replace="context/title" /> hosts its code
+          externally.
+        </tal:no-import-data>
+      </p>
+    </strong>
     <p tal:condition="context/homepageurl">
       You can learn more at the project's
       <a tal:attributes="href context/homepageurl">web page</a>.
@@ -35,6 +47,11 @@
       Launchpad has a mirror of the master branch and you can create branches
       from it.
     </p>
+    <p tal:condition="view/branch/branch_type/enumvalue:IMPORTED">
+      Launchpad imports the master branch and you can create branches from 
+      it.
+    </p>
+
     <p tal:condition="view/branch/branch_type/enumvalue:REMOTE">
       Launchpad does not have a copy of the remote branch.
     </p>
