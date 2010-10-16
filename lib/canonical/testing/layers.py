@@ -693,18 +693,19 @@ class DatabaseLayer(BaseLayer):
     _reset_between_tests = True
 
     _is_setup = False
+    _db_fixture = None
 
     @classmethod
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        DatabaseLayer.force_dirty_database()
+        cls.force_dirty_database()
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+        cls._reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
@@ -716,13 +717,13 @@ class DatabaseLayer(BaseLayer):
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
         # in test_layers.py
-        DatabaseLayer.force_dirty_database()
+        cls.force_dirty_database()
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = None
+        cls._reset_sequences_sql = None
 
     @classmethod
     @profiled
@@ -731,9 +732,9 @@ class DatabaseLayer(BaseLayer):
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
+        if cls._reset_between_tests:
             LaunchpadTestSetup(
-                reset_sequences_sql=DatabaseLayer._reset_sequences_sql
+                reset_sequences_sql=cls._reset_sequences_sql
                 ).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
@@ -741,7 +742,7 @@ class DatabaseLayer(BaseLayer):
         attempts = 60
         for count in range(0, attempts):
             try:
-                DatabaseLayer.connect().close()
+                cls.connect().close()
             except psycopg2.Error:
                 if count == attempts - 1:
                     raise
@@ -749,23 +750,23 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.installMockDb()
+        if cls.use_mockdb is True:
+            cls.installMockDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.uninstallMockDb()
+        if cls.use_mockdb is True:
+            cls.uninstallMockDb()
 
         # Ensure that the database is connectable
-        DatabaseLayer.connect().close()
+        cls.connect().close()
 
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
+        if cls._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
         # Fail tests that forget to uninstall their database policies.
@@ -781,7 +782,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def installMockDb(cls):
-        assert DatabaseLayer.mockdb_mode is None, 'mock db already installed'
+        assert cls.mockdb_mode is None, 'mock db already installed'
 
         from canonical.testing.mockdb import (
                 script_filename, ScriptRecorder, ScriptPlayer,
@@ -795,32 +796,32 @@ class DatabaseLayer(BaseLayer):
         # mock db script.
         filename = script_filename(test_key)
         if os.path.exists(filename):
-            DatabaseLayer.mockdb_mode = 'replay'
-            DatabaseLayer.script = ScriptPlayer(test_key)
+            cls.mockdb_mode = 'replay'
+            cls.script = ScriptPlayer(test_key)
         else:
-            DatabaseLayer.mockdb_mode = 'record'
-            DatabaseLayer.script = ScriptRecorder(test_key)
+            cls.mockdb_mode = 'record'
+            cls.script = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg2.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
-            return DatabaseLayer.script.connect(_org_connect, *args, **kw)
+            return cls.script.connect(_org_connect, *args, **kw)
         psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
-        if DatabaseLayer.mockdb_mode is None:
+        if cls.mockdb_mode is None:
             return # Already uninstalled
 
         # Store results if we are recording
-        if DatabaseLayer.mockdb_mode == 'record':
-            DatabaseLayer.script.store()
-            assert os.path.exists(DatabaseLayer.script.script_filename), (
+        if cls.mockdb_mode == 'record':
+            cls.script.store()
+            assert os.path.exists(cls.script.script_filename), (
                     "Stored results but no script on disk.")
 
-        DatabaseLayer.mockdb_mode = None
+        cls.mockdb_mode = None
         global _org_connect
         psycopg2.connect = _org_connect
         _org_connect = None
