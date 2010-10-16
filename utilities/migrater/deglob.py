@@ -126,7 +126,7 @@ def multiline_extract_match(file_path, match_re, substitution=None):
 
 
 def update_multi_doctest_globs_to_interfaces():
-    root = 'lib/lp/registry/doc'
+    root = 'lib'
     types = r'\.(txt)'
     pattern = r'[ ]+>>> from canonical\.launchpad\.interfaces import'
     substitution = True
@@ -140,6 +140,7 @@ def update_multi_doctest_globs_to_interfaces():
 
 def main():
     update_multi_doctest_globs_to_interfaces()
+    update_doctest_globs_to_interfaces()
 
 
 if __name__ == '__main__':
