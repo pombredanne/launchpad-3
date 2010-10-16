@@ -95,7 +95,7 @@ def multiline_extract_match(file_path, match_re, substitution=None):
                     expanded_line = (
                         '%s %s\n' % (current_match.group(0), idf))
                     lines.append(
-                        {'lineno': lineno + 1, 'text': expanded_line,
+                        {'lineno': lineno + 1, 'text': expanded_line.strip(),
                          'match': None})
                     if substitution is not None:
                         content.append(expanded_line)
