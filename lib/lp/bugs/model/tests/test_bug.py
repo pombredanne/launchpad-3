@@ -161,8 +161,7 @@ class TestBug(TestCaseWithFactory):
             subscriber = self.factory.makePerson()
             subscribers.append(subscriber)
             with person_logged_in(subscriber):
-                subscription = bug.subscribe(
-                    subscriber, subscriber, level=level)
+                bug.subscribe(subscriber, subscriber, level=level)
             direct_subscribers = bug.getDirectSubscribers(level=level)
 
             # All the previous subscribers will be included because
@@ -185,8 +184,7 @@ class TestBug(TestCaseWithFactory):
             subscriber = self.factory.makePerson()
             subscribers.append(subscriber)
             with person_logged_in(subscriber):
-                subscription = bug.subscribe(
-                    subscriber, subscriber, level=level)
+                bug.subscribe(subscriber, subscriber, level=level)
 
         # All the subscribers should be returned by
         # getDirectSubscribers() because it defaults to returning
@@ -215,8 +213,7 @@ class TestBug(TestCaseWithFactory):
             subscriber = self.factory.makePerson()
             subscribers.append(subscriber)
             with person_logged_in(subscriber):
-                subscription = duplicate_bug.subscribe(
-                    subscriber, subscriber, level=level)
+                duplicate_bug.subscribe(subscriber, subscriber, level=level)
             duplicate_subscribers = (
                 bug.getSubscribersFromDuplicates(level=level))
             # All the previous subscribers will be included because
@@ -241,9 +238,9 @@ class TestBug(TestCaseWithFactory):
                 duplicate_bug.owner, duplicate_bug.owner)
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
-            direct_subscription = bug.subscribe(
+            bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.NOTHING)
-            dupe_subscription = duplicate_bug.subscribe(
+            duplicate_bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.METADATA)
         duplicate_subscribers = bug.getSubscribersFromDuplicates()
         self.assertTrue(

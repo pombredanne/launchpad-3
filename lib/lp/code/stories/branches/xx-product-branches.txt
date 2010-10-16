@@ -88,9 +88,16 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    You can get a copy of the development focus branch using the
-    command:
-       bzr branch lp://dev/evolution
+    The Evolution Groupware Application hosts its code
+    externally.
+    You can learn more at the project's
+    web page.
+    Launchpad imports the master branch and you can create branches from
+    it.
+    You can
+    get a copy of the development focus branch
+    using the command:
+    bzr branch lp://dev/evolution
 
     >>> links = summary.findAll('a')
 
