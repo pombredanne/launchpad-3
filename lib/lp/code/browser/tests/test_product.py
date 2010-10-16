@@ -26,6 +26,7 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.publisher import CodeLayer
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -34,7 +35,10 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class ProductTestBase(TestCaseWithFactory):
@@ -314,6 +318,22 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         expected = ("New branches you create for %(name)s are public "
                     "initially.*" % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+
+class TestCanConfigureBranches(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cannot_configure_branches_product_no_edit_permission(self):
+        product = self.factory.makeProduct()
+        view = create_view(product, '+branches', layer=CodeLayer)
+        self.assertEqual(False, view.can_configure_branches())
+
+    def test_can_configure_branches_product_with_edit_permission(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_view(product, '+branches', layer=CodeLayer)
+        self.assertEqual(True, view.can_configure_branches())
 
 
 def test_suite():

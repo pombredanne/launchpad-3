@@ -13,7 +13,7 @@ retrieve, parse and include the contents of the BLOB in the bug report,
 perhaps as attachments.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
+    >>> from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
     >>> tsm = getUtility(ITemporaryStorageManager)
 
 To create a new TemporaryBlob, use ITemporaryStorageManager.new:

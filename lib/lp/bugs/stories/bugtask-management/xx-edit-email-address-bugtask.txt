@@ -2,7 +2,8 @@
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
 
     >>> from zope.security.proxy import removeSecurityProxy

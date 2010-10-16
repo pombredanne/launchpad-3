@@ -37,14 +37,12 @@ If there are not any branches, a helpful message is shown.
     ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
     >>> print extract_text(summary)
-    Launchpad does not know where The Gnome Panel Applets hosts its code.
-    There are no branches for Gnome Applets in Launchpad.  You can change this by:
-    activating code hosting directly on Launchpad. (read more)
-    asking Launchpad to mirror a Bazaar branch hosted elsewhere. (read more)
-    asking Launchpad to import code from Git, Subversion, or CVS into a
-      Bazaar branch. (read more)
-    Getting started with code hosting in Launchpad.
-
+    Launchpad does not know where The Gnome Panel Applets
+    hosts its code.
+    There are no branches for Gnome Applets
+    in Launchpad.
+    Getting started
+    with code hosting in Launchpad.
 
     If there are Bazaar branches of Gnome Applets in a publicly
       accessible location, Launchpad can act as a mirror of the branch
@@ -54,13 +52,10 @@ If there are not any branches, a helpful message is shown.
     Launchpad can import code from CVS, Subversion, Mercurial or Git
       into Bazaar branches. Read more...
 
-The 'Read more' links go to the help wiki.
+The 'Help' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
-    https://help.launchpad.net/Code/UploadingABranch
-    https://help.launchpad.net/Code/MirroredBranches
-    https://help.launchpad.net/VcsImports
     https://help.launchpad.net/Code
 
 
