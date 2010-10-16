@@ -29,16 +29,13 @@ from canonical.testing.parallel import (
     )
 
 
-class TestMain(TestCase):
-
-    def test_main_uses_load_list_partitioned(self):
-        pass
-
-
 class TestListTestCase(TestCase, TestWithFixtures):
 
     def test_run(self):
+        # ListTestCase.run should run bin/test adding in --subunit,
+        # --load-list, with a list file containing the supplied list ids.
         def check_list_file(info):
+            """Callback from subprocess.Popen for testing run()."""
             # A temp file should have been made.
             args = info['args']
             load_list = find_load_list(args)
@@ -99,6 +96,9 @@ class TestUtilities(TestCase, TestWithFixtures):
                     ['bin/test', '--load-list', listfile.name, 'foo']))
 
     def test_find_tests_live(self):
+        # When --load-tests wasn't supplied, find_tests needs to run bin/test
+        # with --list-tests and --subunit, and parse the resulting subunit
+        # stream.
         def inject_testlist(args):
             self.assertEqual(subprocess.PIPE, args['stdin'])
             self.assertEqual(subprocess.PIPE, args['stdout'])

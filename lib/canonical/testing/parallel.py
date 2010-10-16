@@ -26,7 +26,7 @@ from testtools import (
 
 
 def prepare_argv(argv):
-    """Remove options from argv that ListTestCase will add in itself."""
+    """Remove options from argv that would be added by ListTestCase."""
     result = []
     skipn = 0
     for pos, arg in enumerate(argv):
@@ -45,6 +45,7 @@ def prepare_argv(argv):
 
 
 def find_load_list(args):
+    """Get the value passed in to --load-list=FOO."""
     load_list = None
     for pos, arg in enumerate(args):
         if arg.startswith('--load-list='):
@@ -71,6 +72,7 @@ def find_tests(argv):
 
     :param argv: The argv given to the test runner, used to get the tests to
         run.
+    :return: A list of test IDs.
     """
     load_list = find_load_list(argv)
     if load_list:
@@ -97,7 +99,7 @@ class ListTestCase(ProtocolTestCase):
         """Create a ListTestCase.
 
         :param test_ids: The ids of the tests to run.
-        :param args; The args to use to run the test runner (without
+        :param args: The args to use to run the test runner (without
             --load-list - that is added automatically).
         """
         self._test_ids = test_ids
@@ -121,7 +123,11 @@ class ListTestCase(ProtocolTestCase):
 
 
 def concurrency():
-    """Return the optimal testing concurrency for this machine."""
+    """Return the number of current tests we should run on this machine.
+    
+    Each test is run in its own process, and we assume that the optimal number
+    is one per core.
+    """
     # TODO: limit by memory as well.
     procs = local_concurrency()
     return procs
