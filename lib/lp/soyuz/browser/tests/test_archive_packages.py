@@ -89,6 +89,11 @@ class TestPPAPackages(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def getPackagesView(self, query_string=None):
+        ppa = self.factory.makeArchive()
+        return create_initialized_view(
+            ppa, "+packages", query_string=query_string)
+
     def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()
         ppa = self.factory.makeArchive()
@@ -96,3 +101,15 @@ class TestPPAPackages(TestCaseWithFactory):
         view = create_initialized_view(ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
+
+    def test_specified_name_filter_works(self):
+        view = self.getPackagesView('field.name_filter=blah')
+        self.assertEquals('blah', view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_omission(self):
+        view = self.getPackagesView()
+        self.assertIs(None, view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_empty_filter(self):
+        view = self.getPackagesView('field.name_filter=')
+        self.assertIs(None, view.specified_name_filter)
