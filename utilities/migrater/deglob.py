@@ -56,7 +56,7 @@ def update_doctest_globs_to_interfaces():
     root = 'lib'
     types = r'\.(txt)'
     globs = r'from \bcanonical\.launchpad\.interfaces import (\w+)$'
-    interfaces = get_interfaces(types=types, glob_interface=globs)
+    interfaces = get_interfaces(types=types, globs=globs)
     interface_modules = get_interface_modules(interfaces)
     glob_interface = r'\b(from canonical\.launchpad\.interfaces import %s)\b'
     for interface, module_ in interface_modules.items():
