@@ -4,7 +4,10 @@
 """Database garbage collection."""
 
 __metaclass__ = type
-__all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
+__all__ = [
+    'DailyDatabaseGarbageCollector',
+    'HourlyDatabaseGarbageCollector',
+    ]
 
 from datetime import (
     datetime,
