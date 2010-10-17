@@ -42,7 +42,3 @@ class TestThreadWaiting(TestCase):
     def test_disabled_thread_check(self):
         # Confirm the BaseLayer.disable_thread_check code path works.
         BaseLayer.disable_thread_check = True
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

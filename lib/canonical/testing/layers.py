@@ -259,6 +259,10 @@ class BaseLayer:
         BaseLayer.isSetUp = True
         BaseLayer.persist_test_services = (
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
+        # We can only do unique test allocation and parallelisation if
+        # LP_PERSISTENT_TEST_SERVICES is off.
+        if not BaseLayer.persist_test_services:
+            os.environ['LP_TEST_INSTANCE'] = str(os.getpid())
         # Kill any Memcached or Librarian left running from a previous
         # test run, or from the parent test process if the current
         # layer is being run in a subprocess. No need to be polite
@@ -278,6 +282,7 @@ class BaseLayer:
     @classmethod
     @profiled
     def tearDown(cls):
+        os.environ.pop('LP_TEST_INSTANCE', '')
         BaseLayer.isSetUp = False
 
     @classmethod

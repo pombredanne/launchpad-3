@@ -8,14 +8,18 @@ to confirm that the environment hasn't been corrupted by tests
 """
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import signal
 import smtplib
-import unittest
-
-from cStringIO import StringIO
 from urllib import urlopen
+
+from fixtures import (
+    EnvironmentVariableFixture,
+    TestWithFixtures,
+    )
 import psycopg2
+import testtools
 
 from zope.component import getUtility, ComponentLookupError
 
@@ -43,7 +47,31 @@ from canonical.testing.layers import (
     )
 from lp.services.memcache.client import memcache_client_factory
 
-class BaseTestCase(unittest.TestCase):
+
+class TestBaseLayer(testtools.TestCase, TestWithFixtures):
+
+    def test_allocates_LP_TEST_INSTANCE(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        layer = BaseLayer
+        layer.setUp()
+        self.assertEqual(str(os.getpid()), os.environ.get('LP_TEST_INSTANCE'))
+        layer.tearDown()
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+    def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES', ''))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        layer = BaseLayer
+        layer.setUp()
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+        layer.tearDown()
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+
+class BaseTestCase(testtools.TestCase):
     """Both the Base layer tests, as well as the base Test Case
     for all the other Layer tests.
     """
@@ -187,7 +215,7 @@ class LibrarianTestCase(BaseTestCase):
                 )
 
 
-class LibrarianNoResetTestCase(unittest.TestCase):
+class LibrarianNoResetTestCase(testtools.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
@@ -230,7 +258,7 @@ class LibrarianNoResetTestCase(unittest.TestCase):
         self.failIfEqual(data, self.sample_data)
 
 
-class LibrarianHideTestCase(unittest.TestCase):
+class LibrarianHideTestCase(testtools.TestCase):
     layer = LaunchpadLayer
 
     def testHideLibrarian(self):
@@ -398,7 +426,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
                           LayerProcessController.startSMTPServer)
 
 
-class LayerProcessControllerTestCase(unittest.TestCase):
+class LayerProcessControllerTestCase(testtools.TestCase):
     """Tests for the `LayerProcessController`."""
     # We need the database to be set up, no more.
     layer = DatabaseLayer
@@ -441,14 +469,10 @@ class LayerProcessControllerTestCase(unittest.TestCase):
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
-class TestNameTestCase(unittest.TestCase):
+class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,
                 "testTestName "
                 "(canonical.testing.ftests.test_layers.TestNameTestCase)")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
