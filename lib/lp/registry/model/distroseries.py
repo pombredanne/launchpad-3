@@ -349,7 +349,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return None
 
     @property
-    def buildable_architectures(self):
+    def enabled_architectures(self):
         store = Store.of(self)
         results = store.find(
             DistroArchSeries,
