@@ -24,7 +24,7 @@ back from the XMLRPC call.
 
 Mailing lists are always tied -- one-to-one -- to teams.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv = person_set.getByName('no-priv')
     >>> team_one = factory.makeTeam(no_priv, name='team-one')
@@ -34,7 +34,7 @@ Mailing lists are always tied -- one-to-one -- to teams.
 A team owner must request that a mailing list be created for their team.  When
 Mailman polls for actions, there will be mailing lists to create.
 
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.new(team_one)
     >>> list_two = list_set.new(team_two)

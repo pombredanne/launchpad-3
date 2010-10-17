@@ -207,6 +207,9 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
+                self.publisher.release_files_needed.add(
+                    (distroseries.name, pocket))
+
                 for comp in components:
                     self.createEmptyPocketRequest(distroseries, pocket, comp)
 
@@ -222,8 +225,6 @@ class FTPArchiveHandler:
             f_touch(self._config.overrideroot,
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
-
-        self.publisher.release_files_needed.add((distroseries.name, pocket))
 
         suite = distroseries.getSuite(pocket)
 
