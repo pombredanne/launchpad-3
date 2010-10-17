@@ -424,6 +424,9 @@ class LayerProcessControllerTestCase(unittest.TestCase):
         # The database should be reset by the test invariants.
         LayerProcessController.startAppServer()
         LayerProcessController.postTestInvariants()
+        # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
+        # a flag that it *needs* a reset, which is actually quite different;
+        # the lack of a teardown will leak daabases.
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 

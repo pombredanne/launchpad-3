@@ -263,6 +263,9 @@ class BaseLayer:
         # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
         # Kill any database left lying around from a previous test run.
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         db_fixture = LaunchpadTestSetup()
@@ -730,10 +733,6 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if cls._reset_between_tests:
             cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
@@ -1770,7 +1769,9 @@ class LayerProcessController:
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
         cls._db_fixture = LaunchpadTestSetup()
-        # XXX: This isn't torn down?!
+        # This is not torn down properly: rather the singleton nature is abused
+        # and the fixture is simply marked as being dirty.
+        # XXX: Robert Collins 2010-10-17 bug=661967
         cls._db_fixture.setUp()
         # The app server will not start at all if the database hasn't been
         # correctly patched. The app server will make exactly this check,

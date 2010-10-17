@@ -111,11 +111,10 @@ LaunchpadTestSetup is identical to PgTestSetup, except that it creates a
 fresh copy of the Launchpad database filled with our sample data. This
 class is defined in canonical.launchpad.ftests.harness.
 
-Note that at this level, you cannot access any of the SQLBase objects
-
 >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
->>> LaunchpadTestSetup().setUp()
->>> connection = LaunchpadTestSetup().connect()
+>>> fixture = LaunchpadTestSetup()
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT displayname FROM person WHERE name='carlos'")
 >>> cursor.fetchone()[0]
@@ -127,7 +126,7 @@ By default, LaunchpadTestSetup connects as the 'launchpad' user:
 >>> cursor.fetchone()[0]
 u'launchpad'
 
->>> LaunchpadTestSetup().tearDown()
+>>> fixture.tearDown()
 
 You can connect as a different database user using the same mechanism
 described above for PgTestSetup
