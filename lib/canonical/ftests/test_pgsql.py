@@ -18,6 +18,7 @@ class TestPgTestSetup(testtools.TestCase):
         expected_name = "%s_%s" % (PgTestSetup.dbname, os.getpid())
         self.assertEqual(expected_name, fixture.dbname)
         fixture.setUp()
+        self.addCleanup(fixture.dropDb)
         self.addCleanup(fixture.tearDown)
         cur = fixture.connect().cursor()
         cur.execute('SELECT current_database()')
