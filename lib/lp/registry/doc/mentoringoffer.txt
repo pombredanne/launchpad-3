@@ -86,8 +86,9 @@ So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=mark,
@@ -201,8 +202,8 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     BugTaskStatus, SpecificationImplementationStatus)
+   >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+   >>> from lp.blueprints.interfaces.specification import SpecificationImplementationStatus
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates

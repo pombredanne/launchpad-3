@@ -5,10 +5,16 @@ to create a new mirror you should use the Distribution.newMirror method.
 
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
-    ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
-    ...     IPersonSet, MirrorContent, MirrorSpeed, MirrorStatus)
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distributionmirror import IDistributionMirrorSet
+    >>> from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distributionmirror import MirrorContent
+    >>> from lp.registry.interfaces.distributionmirror import MirrorSpeed
+    >>> from lp.registry.interfaces.distributionmirror import MirrorStatus
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> mirrorset = getUtility(IDistributionMirrorSet)

@@ -12,8 +12,8 @@ We need to be logged into the security model in order to get any further
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet)
+  >>> from lp.registry.interfaces.series import SeriesStatus
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
@@ -814,8 +814,8 @@ sigining key reference as an IGPGKey:
   False
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import (
-  ...    IGPGKey, IPersonSet)
+  >>> from lp.registry.interfaces.gpg import IGPGKey
+  >>> from lp.registry.interfaces.person import IPersonSet
 
   >>> verifyObject(IGPGKey, bar_ok.changes.dsc.signingkey)
   True

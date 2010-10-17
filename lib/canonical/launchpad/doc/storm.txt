@@ -6,9 +6,12 @@ back into the main replication set as part of login server seperation.
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet,
-    ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.launchpad.database import (
     ...     Account, AccountPassword, EmailAddress)
     >>> from lp.registry.interfaces.person import IPersonSet

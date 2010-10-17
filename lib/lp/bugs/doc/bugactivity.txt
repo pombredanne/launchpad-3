@@ -22,8 +22,10 @@ are simple little functions.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> user = getUtility(ILaunchBag).user
 
@@ -67,8 +69,8 @@ are simple little functions.
 
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageNameSet, IDistributionSet)
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(

@@ -6,8 +6,8 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectGroupSet, IProjectGroup)
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> projectset = getUtility(IProjectGroupSet)
 

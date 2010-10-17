@@ -52,8 +52,9 @@ lib/lp/translations/doc/canonical_url_examples.txt.
 
 == Persons and Teams ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ICodeOfConductSet, ISignedCodeOfConductSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
+    >>> from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 
 The IPersonSet.
 
@@ -133,8 +134,8 @@ An IDistributionSourcePackage.
 
 == Projects groups and products ==
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectGroupSet, IProductSet)
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
 The IProjectGroupSet.
 

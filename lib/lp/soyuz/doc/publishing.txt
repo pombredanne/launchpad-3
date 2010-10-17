@@ -26,12 +26,12 @@ to make sure verifyObject will work.
 Verify if the object follows its interface contracts:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageRelease, IDistroSeries,
-    ...     ISourcePackagePublishingHistory,
-    ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackage,
-    ...     IDistributionSourcePackageRelease)
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -296,9 +296,8 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 Stanza generation
 =================
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBinaryPackagePublishingHistory,
-    ...     ISourcePackageFilePublishing)
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
+    >>> from lp.soyuz.interfaces.publishing import ISourcePackageFilePublishing
 
 Retrieve any SourcePackagePublishingHistory entry.
 
@@ -896,8 +895,7 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and IBinaryPackagePublishingHistory
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBinaryPackageFilePublishing)
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackageFilePublishing
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
     >>> print bpph.displayname

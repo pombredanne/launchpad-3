@@ -5,8 +5,8 @@
 Simple searching is possible on the distro source package bug view page.
 
   >>> from zope.component import getMultiAdapter, getUtility
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> debian = getUtility(IDistributionSet).get(3)

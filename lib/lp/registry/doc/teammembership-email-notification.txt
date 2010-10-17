@@ -27,10 +27,10 @@ for the member.
     ...     pop_notifications, print_distinct_emails, run_mail_jobs)
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
+    >>> from lp.registry.interfaces.person import TeamMembershipRenewalPolicy
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> mark = personset.getByName('mark')

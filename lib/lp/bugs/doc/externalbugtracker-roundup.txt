@@ -11,8 +11,8 @@ bug watches on Roundup bug trackers is externalbugtracker.Roundup, which
 implements IExternalBugTracker.
 
     >>> from lp.bugs.externalbugtracker import Roundup
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject

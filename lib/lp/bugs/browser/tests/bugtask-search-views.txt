@@ -3,8 +3,8 @@
 In the 'Bugs' facet of a distribution we can find a list of bugs
 reported in that distribution and simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOpenLaunchBag, IDistributionSet)
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 

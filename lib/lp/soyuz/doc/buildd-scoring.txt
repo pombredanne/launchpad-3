@@ -30,8 +30,7 @@ BuildQueue entries.
 
     >>> from canonical.database.sqlbase import commit
     >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> from canonical.launchpad.interfaces import (
-    ...     SourcePackageUrgency)
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

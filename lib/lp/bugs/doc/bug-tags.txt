@@ -178,8 +178,8 @@ A LargeBugTagsWidget is rendered as a <textarea>,
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.searchbuilder import all
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(

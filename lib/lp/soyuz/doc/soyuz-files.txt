@@ -13,9 +13,10 @@ SourcePackageReleaseFile or BinaryPackageFile are available via the
  >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
- >>> from canonical.launchpad.interfaces import (
- ...    IDistributionSet, ILibraryFileAlias,
- ...    ISourcePackageReleaseFile, IBinaryPackageFile)
+ >>> from lp.registry.interfaces.distribution import IDistributionSet
+ >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+ >>> from lp.soyuz.interfaces.files import ISourcePackageReleaseFile
+ >>> from lp.soyuz.interfaces.files import IBinaryPackageFile
 
  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
 

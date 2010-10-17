@@ -131,8 +131,8 @@ Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
     >>> from lp.buildmaster.model.buildqueue import BuildQueue
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBuilderSet, IPersonSet)
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> cprov_private_ppa = factory.makeArchive(

@@ -5,9 +5,10 @@ In order to prepare the tests below some initialization is required.
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.database.sqlbase import commit
     >>> from lp.soyuz.enums import ArchivePermissionType
-    >>> from canonical.launchpad.interfaces import (
-    ...     IArchivePermissionSet, IPackagesetSet,
-    ...     IPersonSet, ISourcePackageNameSet)
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+    >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> insecure_policy = getPolicy(

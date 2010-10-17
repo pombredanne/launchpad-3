@@ -22,8 +22,9 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
@@ -247,8 +248,8 @@ other things) the uploader for validating incoming uploads.
     devel
     translations
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IComponentSet, ISectionSet)
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> python = getUtility(ISectionSet).ensure('python')
 
     >>> hoary.addSection(python)
@@ -502,10 +503,9 @@ upstream.
 DistroSeries can build meta objects for packages
 ------------------------------------------------
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackage,
-    ...     IDistroSeriesBinaryPackage,
-    ...     IDistroSeriesSourcePackageRelease)
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import IDistroSeriesBinaryPackage
+    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
 
     >>> pmount_src_name = SourcePackageName.byName('pmount')
     >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
@@ -709,8 +709,7 @@ publication in question:
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBinaryPackagePublishingHistory)
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
     >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
     True
 

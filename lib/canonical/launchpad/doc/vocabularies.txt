@@ -10,8 +10,10 @@ style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import ANONYMOUS, login
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -395,8 +397,8 @@ All bug watches associated with a bugtask's bug.
 Bug watches with an email address URL (i.e. starts with "mailto:") are
 treated differently.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IBugTrackerSet)
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> bug_twelve = getUtility(IBugSet).get(12)
     >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')

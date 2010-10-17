@@ -27,9 +27,14 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
-    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> launchbag = getUtility(IOpenLaunchBag)

@@ -63,8 +63,7 @@ def update_doctest_globs_to_interfaces():
         pattern = glob_interface % interface
         substitution = 'from %s import %s' % (module_, interface)
         for summary in find_matches(
-            root, types, pattern, substitution=substitution,
-            extract_match=multiline_extract_match):
+            root, types, pattern, substitution=substitution):
             print "\n%(file_path)s" % summary
             for line in summary['lines']:
                 print "    %(lineno)4s: %(text)s" % line
@@ -139,7 +138,7 @@ def update_multi_doctest_globs_to_interfaces():
 
 
 def main():
-    update_multi_doctest_globs_to_interfaces()
+    #update_multi_doctest_globs_to_interfaces()
     update_doctest_globs_to_interfaces()
 
 

@@ -13,8 +13,8 @@ IExternalBugTracker.
     >>> from lp.bugs.externalbugtracker import Trac
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> trac = Trac('http://example.com/')
     >>> verifyObject(IExternalBugTracker, trac)

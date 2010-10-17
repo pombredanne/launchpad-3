@@ -52,8 +52,9 @@ For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet, ILibraryFileAliasSet)
+  >>> from lp.registry.interfaces.series import SeriesStatus
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT

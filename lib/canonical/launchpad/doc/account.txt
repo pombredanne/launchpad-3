@@ -126,8 +126,8 @@ email address.
 If we add a new guessed email address, it will be included in the
 guessed list.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "guessed-email@example.com", account=account,
     ...     status=EmailAddressStatus.NEW)

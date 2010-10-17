@@ -227,9 +227,11 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IEmailAddressSet, PersonCreationRationale, IGPGKeySet,
-  ...     GPGKeyAlgorithm)
+  >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+  >>> from lp.registry.interfaces.person import PersonCreationRationale
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
+  >>> from lp.registry.interfaces.gpg import GPGKeyAlgorithm
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
   >>> user = getUtility(IPersonSet).ensurePerson(
   ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)

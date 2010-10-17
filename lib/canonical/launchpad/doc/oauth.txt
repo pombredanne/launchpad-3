@@ -13,9 +13,12 @@ OAuthConsumerSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     AccessLevel, OAuthPermission)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet,
-    ...     IOAuthNonce, IOAuthRequestToken, IPersonSet)
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumer
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthNonce
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthRequestToken
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True

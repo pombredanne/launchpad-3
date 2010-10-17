@@ -133,8 +133,8 @@ Check ISourcePackageRelease.override() behaviour:
    >>> spr.component.name, spr.section.name
    (u'main', u'editors')
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IComponentSet, ISectionSet)
+   >>> from lp.soyuz.interfaces.component import IComponentSet
+   >>> from lp.soyuz.interfaces.section import ISectionSet
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
 
@@ -155,8 +155,9 @@ Abort transaction to avoid error propagation of the new attributes:
 Verify the creation of a new ISourcePackageRelease based on the
 IDistroSeries API:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']

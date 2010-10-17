@@ -106,12 +106,11 @@ First, we create some bug watches to test with:
     >>> from datetime import datetime
     >>> from pytz import utc
     >>> from lp.bugs.model.bugtracker import BugTracker
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.scripts.checkwatches import (
     ...     CheckwatchesMaster)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
 
