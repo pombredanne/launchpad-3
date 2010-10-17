@@ -6,6 +6,7 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from storm.store import ResultSet
+from testtools.matchers import StartsWith
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
@@ -17,7 +18,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import StartsWith
 
 
 class TestBug(TestCaseWithFactory):
