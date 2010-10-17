@@ -1,11 +1,28 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
+import os
+
+import testtools
+
+from canonical.ftests.pgsql import (
+    ConnectionWrapper,
+    PgTestSetup,
+    )
 
 
-class TestOptimization(unittest.TestCase):
+class TestPgTestSetup(testtools.TestCase):
+
+    def test_db_naming(self):
+        fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
+        expected_name = "%s_%s" % (PgTestSetup.dbname, os.getpid())
+        self.assertEqual(expected_name, fixture.dbname)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+        cur = fixture.connect().cursor()
+        cur.execute('SELECT current_database()')
+        where = cur.fetchone()[0]
+        self.assertEqual(expected_name, where)
 
     def testOptimization(self):
         # Test to ensure that the database is destroyed only when necessary

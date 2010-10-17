@@ -7,7 +7,7 @@ Test harness for tests needing a PostgreSQL backend.
 
 __metaclass__ = type
 
-import unittest
+import os
 import time
 
 import psycopg2
@@ -119,7 +119,6 @@ class CursorWrapper:
 
 _org_connect = None
 def fake_connect(*args, **kw):
-    global _org_connect
     return ConnectionWrapper(_org_connect(*args, **kw))
 
 def installFakeConnect():
@@ -136,7 +135,10 @@ def uninstallFakeConnect():
 
 
 class PgTestSetup:
+
     connections = [] # Shared
+    # Use a dynamically generated dbname:
+    dynamic = object()
 
     template = 'template1'
     # Needs to match configs/testrunner*/*:
@@ -166,8 +168,13 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
-        if dbname is not None:
+        if dbname is PgTestSetup.dynamic:
+            self.dbname = self.__class__.dbname + "_" + str(os.getpid())
+        elif dbname is not None:
             self.dbname = dbname
+        else:
+            # Fallback to the class name.
+            self.dbname = self.__class__.dbname
         if dbuser is not None:
             self.dbuser = dbuser
         if host is not None:
