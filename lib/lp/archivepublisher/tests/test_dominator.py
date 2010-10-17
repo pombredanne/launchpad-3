@@ -8,7 +8,7 @@ __metaclass__ = type
 import datetime
 
 from canonical.database.sqlbase import flush_database_updates
-from lp.archivepublisher.domination import Dominator
+from lp.archivepublisher.domination import Dominator, STAY_OF_EXECUTION
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import PackagePublishingStatus
@@ -190,7 +190,7 @@ class TestDomination(TestNativePublishingBase):
             superseded_source, PackagePublishingStatus.SUPERSEDED)
         self.checkPastDate(
             superseded_source.scheduleddeletiondate,
-            lag=datetime.timedelta(days=5))
+            lag=datetime.timedelta(days=STAY_OF_EXECUTION))
 
 
 class TestDominationOfObsoletedSeries(TestDomination):

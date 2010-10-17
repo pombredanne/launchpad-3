@@ -73,6 +73,10 @@ from lp.soyuz.enums import (
     )
 
 
+# Days before a package will be removed from disk.
+STAY_OF_EXECUTION = 1
+
+
 def clear_cache():
     """Flush SQLObject updates and clear the cache."""
     # Flush them anyway, should basically be a noop thanks to not doing
@@ -169,7 +173,7 @@ class Dominator:
             pub_record.scheduleddeletiondate = UTC_NOW
         else:
             pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=5))
+                UTC_NOW + timedelta(days=STAY_OF_EXECUTION))
 
     def _judgeSuperseded(self, source_records, binary_records):
         """Determine whether the superseded packages supplied should
