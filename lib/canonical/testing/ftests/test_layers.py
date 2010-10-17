@@ -20,16 +20,27 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lazr.pidfile import pidfile_path
 from canonical.testing.layers import (
-    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
-    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
+    AppServerLayer,
+    BaseLayer,
+    DatabaseLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadLayer,
+    LaunchpadScriptLayer,
+    LaunchpadTestSetup,
+    LaunchpadZopelessLayer,
+    LayerInvariantError,
+    LayerIsolationError,
+    LayerProcessController,
+    LibrarianLayer,
+    MemcachedLayer,
+    ZopelessLayer,
+    )
 from lp.services.memcache.client import memcache_client_factory
 
 class BaseTestCase(unittest.TestCase):

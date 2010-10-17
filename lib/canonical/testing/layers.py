@@ -35,6 +35,7 @@ __all__ = [
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
+    'LaunchpadTestSetup',
     'LaunchpadZopelessLayer',
     'LayerInvariantError',
     'LayerIsolationError',
@@ -92,6 +93,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -263,11 +265,7 @@ class BaseLayer:
         # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
         # Kill any database left lying around from a previous test run.
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         db_fixture = LaunchpadTestSetup()
         try:
             db_fixture.connect().close()
@@ -705,10 +703,6 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # Read the sequences we'll need from the test template database.
         reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
@@ -1371,6 +1365,12 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         reconnect_stores(database_config_section=database_config_section)
 
 
+class LaunchpadTestSetup(PgTestSetup):
+    template = 'launchpad_ftest_template'
+    dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
+    dbuser = 'launchpad'
+
+
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
@@ -1766,7 +1766,6 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
         cls._db_fixture = LaunchpadTestSetup()
         # This is not torn down properly: rather the singleton nature is abused
