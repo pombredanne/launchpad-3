@@ -38,26 +38,6 @@ class LaunchpadTestSetup(PgTestSetup):
     dbuser = 'launchpad'
 
 
-class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
-    txn = ZopelessTransactionManager
-    def setUp(self, dbuser=None):
-        assert ZopelessTransactionManager._installed is None, \
-                'Last test using Zopeless failed to tearDown correctly'
-        super(LaunchpadZopelessTestSetup, self).setUp()
-        if self.host is not None:
-            raise NotImplementedError('host not supported yet')
-        if self.port is not None:
-            raise NotImplementedError('port not supported yet')
-        if dbuser is not None:
-            self.dbuser = dbuser
-        initZopeless(dbname=self.dbname, dbuser=self.dbuser)
-
-    def tearDown(self):
-        LaunchpadZopelessTestSetup.txn.uninstall()
-        assert ZopelessTransactionManager._installed is None, \
-                'Failed to tearDown Zopeless correctly'
-
-
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
     def _checkLayerInvariants(self):
         assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
