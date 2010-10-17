@@ -17,18 +17,6 @@ from lp.soyuz.enums import ArchivePurpose
 APT_FTPARCHIVE_PURPOSES = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
 
 
-def update_pub_config(pubconf):
-    """Update dependent `PubConfig` fields.
-
-    Update fields dependending on 'archiveroot'.
-    """
-    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-    pubconf.overrideroot = None
-    pubconf.cacheroot = None
-    pubconf.miscroot = None
-
-
 def getPubConfig(archive):
     """Return an overridden Publisher Configuration instance.
 
@@ -72,8 +60,6 @@ def getPubConfig(archive):
             "Unknown archive purpose %s when getting publisher config.",
             archive.purpose)
 
-    update_pub_config(pubconf)
-
     # There can be multiple copy archives, so the temp dir needs to be
     # within the archive.
     if archive.is_copy:
@@ -83,6 +69,13 @@ def getPubConfig(archive):
         pubconf.overrideroot = pubconf.archiveroot + '-overrides'
         pubconf.cacheroot = pubconf.archiveroot + '-cache'
         pubconf.miscroot = pubconf.archiveroot + '-misc'
+    else:
+        pubconf.overrideroot = None
+        pubconf.cacheroot = None
+        pubconf.miscroot = None
+
+    pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+    pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
 
     meta_root = os.path.join(
         pubconf.distroroot, archive.owner.name)
