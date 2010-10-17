@@ -1367,7 +1367,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
 
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
-    dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
+    dbname = 'launchpad_ftest' # Needs to match configs/testrunner*/*
     dbuser = 'launchpad'
 
 

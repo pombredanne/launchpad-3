@@ -22,7 +22,9 @@ class TestPgTestCase(PgTestCase):
 
     testRollback2 = testRollback
 
+
 class TestOptimization(unittest.TestCase):
+
     def testOptimization(self):
         # Test to ensure that the database is destroyed only when necessary
 
@@ -63,11 +65,13 @@ class TestOptimization(unittest.TestCase):
 
         # The database should *always* be recreated if the template
         # changes.
-        PgTestSetup._last_db = ('whatever', 'launchpad_ftest')
+        PgTestSetup._last_db = ('whatever', PgTestSetup.dbname)
         PgTestSetup().setUp()
         try:
             con = PgTestSetup().connect()
             cur = con.cursor()
+            # If this fails, TABLE foo still existed and the DB wasn't reset
+            # correctly.
             cur.execute('CREATE TABLE foo (x int)')
             con.commit()
         finally:
