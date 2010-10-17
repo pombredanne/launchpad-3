@@ -1427,6 +1427,7 @@ class TestComponents(TestCaseWithFactory):
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):
+    """Tests for Archive.getComponentsForSeries."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1437,6 +1438,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         self.comp2 = self.factory.makeComponent()
 
     def test_series_components_for_primary_archive(self):
+        # The primary archive uses the series' defined components.
         archive = self.factory.makeArchive()
         self.assertEquals(
             0, archive.getComponentsForSeries(self.series).count())
@@ -1449,6 +1451,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
             set(archive.getComponentsForSeries(self.series)))
 
     def test_partner_component_for_partner_archive(self):
+        # The partner archive always uses only the 'partner' component.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
         ComponentSelection(distroseries=self.series, component=self.comp1)
         partner_comp = getUtility(IComponentSet)['partner']
