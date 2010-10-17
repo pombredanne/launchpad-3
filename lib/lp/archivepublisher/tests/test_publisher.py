@@ -639,13 +639,10 @@ class TestPublisher(TestPublisherBase):
              ''],
             index_contents)
 
-        # Check if apt_handler.release_files_needed has the right requests.
-        # 'source' & 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components. Note that 'debian-installer'
-        # indexes do not need Release files.
-
         # We always regenerate all Releases file for a given suite.
-        self.checkAllRequestedReleaseFiles(archive_publisher)
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            archive_publisher.release_files_needed)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -769,45 +766,6 @@ class TestPublisher(TestPublisherBase):
         # are marked as dirty.
         self.checkDirtyPockets(publisher, expected=allowed_suites)
 
-    def assertReleaseFileRequested(self, publisher, suite_name,
-                                   component_name, archs):
-        """Assert the given context will have it's Release file regenerated.
-
-        Check if a request for the given context is correctly stored in:
-           publisher.apt_handler.release_files_needed
-        """
-        suite = publisher.apt_handler.release_files_needed.get(suite_name)
-        self.assertTrue(
-            suite is not None, 'Suite %s not requested' % suite_name)
-        self.assertTrue(
-            component_name in suite,
-            'Component %s/%s not requested' % (suite_name, component_name))
-        self.assertEquals(archs, suite[component_name])
-
-    def checkAllRequestedReleaseFiles(self, publisher,
-                                      architecturetags=('hppa', 'i386')):
-        """Check if all expected Release files are going to be regenerated.
-
-        'source', 'binary-i386' and 'binary-hppa' Release Files should be
-        requested for regeneration in all breezy-autotest components.
-        """
-        available_components = sorted([
-            c.name for c in self.breezy_autotest.components])
-        self.assertEqual(available_components,
-                         ['main', 'multiverse', 'restricted', 'universe'])
-
-        available_archs = ['binary-%s' % arch for arch in architecturetags]
-
-        # XXX cprov 20071210: Include the artificial component 'source' as a
-        # location to check for generated indexes. Ideally we should
-        # encapsulate this task in publishing.py and this common method
-        # in tests as well.
-        all_archs = set(available_archs)
-        all_archs.add('source')
-        for component in available_components:
-            self.assertReleaseFileRequested(
-                publisher, 'breezy-autotest', component, all_archs)
-
     def _getReleaseFileOrigin(self, contents):
         origin_header = 'Origin: '
         [origin_line] = [
@@ -831,8 +789,9 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        # We always regenerate all Releases file for a given suite.
-        self.checkAllRequestedReleaseFiles(publisher)
+        self.assertTrue(
+            ('breezy-autotest', PackagePublishingPocket.RELEASE) in
+            publisher.release_files_needed)
 
         publisher.D_writeReleaseFiles(False)
 
@@ -1109,8 +1068,7 @@ class TestArchiveIndices(TestPublisherBase):
         """
 
         self.assertTrue(
-            series.getSuite(pocket) in
-            publisher.apt_handler.release_files_needed)
+            (series.name, pocket) in publisher.release_files_needed)
 
         arch_template = os.path.join(
             publisher._config.distsroot, series.getSuite(pocket), '%s/%s')
