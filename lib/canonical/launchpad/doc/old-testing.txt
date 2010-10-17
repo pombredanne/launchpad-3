@@ -18,11 +18,6 @@ and hide errors (eg. if this object is supposed to be usable outside of
 zope, we should not be testing it with the full Z3 functional test
 harness).
 
-If you are wondering why we use `PgTestSetup().setUp()` and
-`PgTestSetup.tearDown()` instead of `pgtestsetup.setUp()` or
-`pgtestsetup.tearDown()`, it is because I'm mirroring the design used in
-Zope3's `FunctionalTestSetup`.
-
 canonical.functional.FunctionalTestCase
 ---------------------------------------
 
@@ -42,11 +37,12 @@ The class is defined in canonical.ftests.pgsql
 
 The setup procedure builds us a fresh, empty database
 
->>> PgTestSetup().setUp()
+>>> fixture = PgTestSetup()
+>>> fixture.setUp()
 
 We can get connections to this database
 
->>> connection = PgTestSetup().connect()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("""CREATE TABLE Beer (
 ...     id serial PRIMARY KEY, name text, stamp timestamp without time zone
@@ -68,28 +64,29 @@ True
 When we have finished, we need to call the tearDown method which closes
 all outstanding connections and destroys the database
 
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 Because the database has been destroyed, further tests will not be
 affected.
 
->>> PgTestSetup().setUp()
->>> connection = PgTestSetup().connect()
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 We can also specify a different template to duplicate than the default
 clean one (template1). For example, if you need a launchpad database
 containing no data, you can use `launchpad_empty` as the template.
 
->>> PgTestSetup('launchpad_empty').setUp()
->>> connection = PgTestSetup().connect()
+>>> fixture = PgTestSetup('launchpad_empty')
+>>> fixture.setUp()
+>>> connection = fixture.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT COUNT(*) FROM Person")
 >>> int(cursor.fetchone()[0])
 0
->>> PgTestSetup().tearDown()
+>>> fixture.tearDown()
 
 We can also specify the user that we connect as to avoid connecting as the
 PostgreSQL default user.

@@ -139,6 +139,7 @@ class PgTestSetup:
     connections = [] # Shared
 
     template = 'template1'
+    # Needs to match configs/testrunner*/*:
     dbname = 'launchpad_ftest'
     dbuser = None
     host = None
@@ -331,30 +332,3 @@ class PgTestSetup:
         as database changes made from a subprocess.
         """
         PgTestSetup._reset_db = True
-
-
-class PgTestCase(unittest.TestCase):
-    dbname = None
-    dbuser = None
-    host = None
-    port = None
-    template = None
-    def setUp(self):
-        pg_test_setup = PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                )
-        pg_test_setup.setUp()
-        self.dbname = pg_test_setup.dbname
-        self.dbuser = pg_test_setup.dbuser
-        assert self.dbname, 'self.dbname is not set.'
-
-    def tearDown(self):
-        PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).tearDown()
-
-    def connect(self):
-        return PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).connect()
-
