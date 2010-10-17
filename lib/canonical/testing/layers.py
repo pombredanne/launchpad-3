@@ -264,12 +264,15 @@ class BaseLayer:
         if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
         # Kill any database left lying around from a previous test run.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        db_fixture = LaunchpadTestSetup()
         try:
-            DatabaseLayer.connect().close()
+            db_fixture.connect().close()
         except psycopg2.Error:
+            # We assume this means 'no test database exists.'
             pass
         else:
-            DatabaseLayer._dropDb()
+            db_fixture.dropDb()
 
     @classmethod
     @profiled
@@ -699,14 +702,17 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        cls.force_dirty_database()
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        cls._reset_sequences_sql = LaunchpadTestSetup(
+        # Read the sequences we'll need from the test template database.
+        reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
+        cls._db_fixture = LaunchpadTestSetup(
+            reset_sequences_sql=reset_sequences_sql)
+        cls.force_dirty_database()
+        cls._db_fixture.tearDown()
 
     @classmethod
     @profiled
@@ -718,12 +724,8 @@ class DatabaseLayer(BaseLayer):
         # that depend on it not being there on startup, such as found
         # in test_layers.py
         cls.force_dirty_database()
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        cls._reset_sequences_sql = None
+        cls._db_fixture.tearDown()
+        cls._db_fixture = None
 
     @classmethod
     @profiled
@@ -733,9 +735,7 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if cls._reset_between_tests:
-            LaunchpadTestSetup(
-                reset_sequences_sql=cls._reset_sequences_sql
-                ).setUp()
+            cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -762,12 +762,8 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable
         cls.connect().close()
 
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if cls._reset_between_tests:
-            LaunchpadTestSetup().tearDown()
+            cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
         from canonical.launchpad.webapp.adapter import StoreSelector
@@ -829,20 +825,17 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def force_dirty_database(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().force_dirty_database()
+        cls._db_fixture.force_dirty_database()
 
     @classmethod
     @profiled
     def connect(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().connect()
+        return cls._db_fixture.connect()
 
     @classmethod
     @profiled
     def _dropDb(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().dropDb()
+        return cls._db_fixture.dropDb()
 
 
 def test_default_timeout():
@@ -1644,6 +1637,9 @@ class LayerProcessController:
     # configs/testrunner-appserver/mail-configure.zcml
     smtp_controller = None
 
+    # The DB fixture in use
+    _db_fixture = None
+
     @classmethod
     @profiled
     def startSMTPServer(cls):
@@ -1773,7 +1769,9 @@ class LayerProcessController:
         """Start the app server using runlaunchpad.py"""
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
-        LaunchpadTestSetup().setUp()
+        cls._db_fixture = LaunchpadTestSetup()
+        # XXX: This isn't torn down?!
+        cls._db_fixture.setUp()
         # The app server will not start at all if the database hasn't been
         # correctly patched. The app server will make exactly this check,
         # doing it here makes the error more obvious.
