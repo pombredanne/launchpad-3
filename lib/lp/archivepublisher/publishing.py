@@ -3,7 +3,6 @@
 
 __all__ = [
     'Publisher',
-    'suffixpocket',
     'getPublisher',
     ]
 
@@ -35,10 +34,7 @@ from lp.archivepublisher.utils import (
     get_ppa_reference,
     RepositoryIndexFile,
     )
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -46,9 +42,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.component import IComponentSet
-
-
-suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
 
 def reorder_components(components):
@@ -195,7 +188,7 @@ class Publisher(object):
         self.log.debug("* Step A: Publishing packages")
 
         for distroseries in self.distro.series:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
                     self.log.debug(
@@ -235,7 +228,7 @@ class Publisher(object):
 
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.series:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
@@ -295,7 +288,7 @@ class Publisher(object):
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping index generation for %s/%s" %
@@ -323,8 +316,7 @@ class Publisher(object):
         """
         self.log.debug("* Step D: Generating Release files.")
         for distroseries in self.distro:
-            for pocket, suffix in pocketsuffix.items():
-
+            for pocket in PackagePublishingPocket.items:
                 if not is_careful:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
@@ -341,7 +333,7 @@ class Publisher(object):
         Write contents using LP info to an extra plain file (Packages.lp
         and Sources.lp .
         """
-        suite_name = distroseries.name + pocketsuffix[pocket]
+        suite_name = distroseries.getSuite(pocket)
         self.log.debug("Generate Indexes for %s/%s"
                        % (suite_name, component.name))
 
@@ -475,11 +467,11 @@ class Publisher(object):
         else:
             drsummary += pocket.name.capitalize()
 
-        full_name = distroseries.getSuite(pocket)
+        suite = distroseries.getSuite(pocket)
         release_file = Release()
         release_file["Origin"] = self._getOrigin()
         release_file["Label"] = self._getLabel()
-        release_file["Suite"] = full_name
+        release_file["Suite"] = suite
         release_file["Version"] = distroseries.version
         release_file["Codename"] = distroseries.name
         release_file["Date"] = datetime.utcnow().strftime(
@@ -491,7 +483,7 @@ class Publisher(object):
         release_file["Description"] = drsummary
 
         for filename in sorted(list(all_files), key=os.path.dirname):
-            entry = self._readIndexFileContents(full_name, filename)
+            entry = self._readIndexFileContents(suite, filename)
             if entry is None:
                 continue
             release_file.setdefault("MD5Sum", []).append({
@@ -508,7 +500,7 @@ class Publisher(object):
                 "size": len(entry)})
 
         f = open(os.path.join(
-            self._config.distsroot, full_name, "Release"), "w")
+            self._config.distsroot, suite, "Release"), "w")
         try:
             release_file.dump(f, "utf-8")
         finally:
@@ -521,7 +513,7 @@ class Publisher(object):
 
         # Sign the repository.
         archive_signer = IArchiveSigningKey(self.archive)
-        archive_signer.signRepository(full_name)
+        archive_signer.signRepository(suite)
 
     def _writeSuiteArchOrSource(self, distroseries, pocket, component,
                                 file_stub, arch_name, arch_path,
