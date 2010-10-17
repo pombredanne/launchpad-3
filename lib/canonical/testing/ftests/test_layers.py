@@ -134,22 +134,13 @@ class BaseTestCase(unittest.TestCase):
                     )
 
     def testLaunchpadDbAvailable(self):
-        try:
-            con = DatabaseLayer.connect()
-            cur = con.cursor()
-            cur.execute("SELECT id FROM Person LIMIT 1")
-            if cur.fetchone() is not None:
-                self.failUnless(
-                        self.want_launchpad_database,
-                        'Launchpad database should not be available.'
-                        )
-                return
-        except psycopg2.Error:
-            pass
-        self.failIf(
-                self.want_launchpad_database,
-                'Launchpad database should be available but is not.'
-                )
+        if not self.want_launchpad_database:
+            self.assertEqual(None, DatabaseLayer._db_fixture)
+            return
+        con = DatabaseLayer.connect()
+        cur = con.cursor()
+        cur.execute("SELECT id FROM Person LIMIT 1")
+        self.assertNotEqual(None, cur.fetchone())
 
     def testMemcachedWorking(self):
         client = MemcachedLayer.client or memcache_client_factory()
