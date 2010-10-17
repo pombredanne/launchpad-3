@@ -236,7 +236,7 @@ class FTPArchiveHandler:
         def touch_list(*parts):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                "_".join([suite] + list(parts))))
+                "_".join((suite, ) + parts)))
         touch_list(comp, "source")
 
         for arch in self._config.archTagsForSeries(distroseries.name):
