@@ -21,6 +21,7 @@ from storm.locals import (
     In,
     Max,
     Min,
+    Select,
     SQL,
     )
 import transaction
@@ -208,17 +209,22 @@ class CodeImportEventPruner(TunableLoop):
     maximum_chunk_size = 10000
     minimum_chunk_size = 500
 
-    def _to_remove(self):
-        return IMasterStore(CodeImportEvent).find(
+    def isDone(self):
+        store = IMasterStore(CodeImportEvent)
+        events = store.find(
             CodeImportEvent,
             CodeImportEvent.date_created < THIRTY_DAYS_AGO)
-
-    def isDone(self):
-        return self._to_remove().count() > 0
+        return events.any() is None
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
-        num_removed = self._to_remove()[:chunk_size].remove()
+        store = IMasterStore(CodeImportEvent)
+        event_ids = Select(
+            [CodeImportEvent.id],
+            CodeImportEvent.date_created < THIRTY_DAYS_AGO,
+            limit=chunk_size)
+        num_removed = store.find(
+            CodeImportEvent, CodeImportEvent.id.is_in(event_ids)).remove()
         transaction.commit()
         self.log.debug("Removed %d old CodeImportEvents" % num_removed)
 
@@ -878,6 +884,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,
+        CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
         ObsoleteBugAttachmentDeleter,
