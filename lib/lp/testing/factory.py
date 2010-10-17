@@ -146,6 +146,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -1094,6 +1095,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = owner
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
+
+    def makeBranchMergeQueue(self):
+        """Create a BranchMergeQueue."""
+        queue = BranchMergeQueue()
+        return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
