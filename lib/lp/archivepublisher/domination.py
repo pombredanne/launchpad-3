@@ -44,7 +44,7 @@ Note that:
 The 'domination' procedure is the 2nd step of the publication pipeline and
 it is performed for each suite using:
 
-  * judgeAndDominate(distroseries, pocket, pubconfig)
+  * judgeAndDominate(distroseries, pocket)
 
 """
 
@@ -71,6 +71,10 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+
+
+# Days before a package will be removed from disk.
+STAY_OF_EXECUTION = 1
 
 
 def clear_cache():
@@ -159,7 +163,7 @@ class Dominator:
 
         return outpkgs
 
-    def _setScheduledDeletionDate(self, pub_record, conf):
+    def _setScheduledDeletionDate(self, pub_record):
         """Set the scheduleddeletiondate on a publishing record.
 
         If the status is DELETED we set the date to UTC_NOW, otherwise
@@ -169,9 +173,9 @@ class Dominator:
             pub_record.scheduleddeletiondate = UTC_NOW
         else:
             pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=conf.stayofexecution))
+                UTC_NOW + timedelta(days=STAY_OF_EXECUTION))
 
-    def _judgeSuperseded(self, source_records, binary_records, conf):
+    def _judgeSuperseded(self, source_records, binary_records):
         """Determine whether the superseded packages supplied should
         be moved to death row or not.
 
@@ -221,7 +225,7 @@ class Dominator:
                        (binpkg_release.binarypackagename.name,
                         binpkg_release.version,
                         pub_record.distroarchseries.architecturetag))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is useless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
@@ -268,12 +272,12 @@ class Dominator:
                 "%s/%s (%s) source has been judged eligible for removal" %
                 (srcpkg_release.sourcepackagename.name,
                  srcpkg_release.version, pub_record.id))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is pointless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
+    def judgeAndDominate(self, dr, pocket, do_clear_cache=True):
         """Perform the domination and superseding calculations
 
         It only works across the distroseries and pocket specified.
@@ -366,7 +370,7 @@ class Dominator:
                             ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
 
-        self._judgeSuperseded(sources, binaries, config)
+        self._judgeSuperseded(sources, binaries)
 
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))
