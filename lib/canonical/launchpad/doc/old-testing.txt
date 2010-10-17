@@ -144,7 +144,7 @@ LibrarianTestSetup
 Code that needs to access the Librarian can do so easily. Note that
 LibrarianTestSetup requires the Launchpad database to be available, and
 thus requires LaunchpadTestSetup or similar to be used in tandam.
-You probably really want LaunchpadFunctionalTestSetup so you can access
+You probably really want LaunchpadFunctionalLayer so you can access
 the Librarian as a Utility.
 
 >>> from canonical.librarian.testing.server import LibrarianTestSetup
@@ -153,7 +153,6 @@ the Librarian as a Utility.
 >>> from canonical.librarian.interfaces import ILibrarianClient
 >>> from StringIO import StringIO
 
->>> LaunchpadFunctionalTestSetup().setUp()
 >>> librarian = LibrarianTestSetup()
 >>> librarian.setUp()
 >>> login(ANONYMOUS)
@@ -179,7 +178,6 @@ the same transaction it was added
 True
 
 >>> librarian.tearDown()
->>> LaunchpadFunctionalTestSetup().tearDown()
 
 >>> from canonical.testing import reset_logging
 >>> reset_logging()
