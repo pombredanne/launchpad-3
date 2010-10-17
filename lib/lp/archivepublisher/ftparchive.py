@@ -157,7 +157,6 @@ class FTPArchiveHandler:
             else:
                 self.distroseries.append(distroseries)
         self.publisher = publisher
-        self.release_files_needed = {}
 
         # We need somewhere to note down where the debian-installer
         # components came from. in _di_release_components we store
@@ -199,13 +198,9 @@ class FTPArchiveHandler:
         We do this to have Packages or Sources for them even if we lack
         anything in them currently.
         """
-        # XXX: kiko 2006-08-24: suffix is completely unnecessary here. Just
-        # iterate over the pockets, and do the suffix check inside
-        # createEmptyPocketRequest; that would also allow us to replace
-        # the == "" check we do there by a RELEASE match
         for distroseries in self.distroseries:
             components = self._config.componentsForSeries(distroseries.name)
-            for pocket, suffix in pocketsuffix.items():
+            for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -213,29 +208,15 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
+                self.publisher.release_files_needed.add(
+                    (distroseries.name, pocket))
+
                 for comp in components:
-                    self.createEmptyPocketRequest(distroseries, suffix, comp)
+                    self.createEmptyPocketRequest(distroseries, pocket, comp)
 
-    def requestReleaseFile(self, suite_name, component_name, arch_name):
-        """Request Release file generation for given context.
-
-        'suite_name', 'component_name' and 'arch_name' will be organised as
-        a dictionary (self.release_files_needed) keyed by 'suite_name' which
-        value will be another dictionary keyed by 'component_name' and
-        containing a set of 'arch_name's as value.
-        """
-        suite_special = self.release_files_needed.setdefault(
-            suite_name, {})
-        suite_component_special = suite_special.setdefault(
-            component_name, set())
-        suite_component_special.add(arch_name)
-
-    def createEmptyPocketRequest(self, distroseries, suffix, comp):
+    def createEmptyPocketRequest(self, distroseries, pocket, comp):
         """Creates empty files for a release pocket and distroseries"""
-        full_distroseries_name = distroseries.name + suffix
-        arch_tags = self._config.archTagsForSeries(distroseries.name)
-
-        if suffix == "":
+        if pocket == PackagePublishingPocket.RELEASE:
             # organize distroseries and component pair as
             # debian-installer -> distroseries_component
             # internal map. Only the main pocket actually
@@ -246,6 +227,8 @@ class FTPArchiveHandler:
                     ".".join(["override", distroseries.name, comp,
                               "debian-installer"]))
 
+        full_distroseries_name = distroseries.name + pocketsuffix[pocket]
+
         # Touch the source file lists and override files
         f_touch(self._config.overrideroot,
                 ".".join(["override", full_distroseries_name, comp]))
@@ -254,20 +237,10 @@ class FTPArchiveHandler:
         f_touch(self._config.overrideroot,
                 ".".join(["override", full_distroseries_name, comp, "src"]))
 
-        dr_comps = self.release_files_needed.setdefault(
-            full_distroseries_name, {})
-
         f_touch(self._config.overrideroot,
                 "_".join([full_distroseries_name, comp, "source"]))
-        dr_comps.setdefault(comp, set()).add("source")
 
-        for arch in arch_tags:
-            # organize dr/comp/arch into temporary binary
-            # archive map for the architecture in question.
-            dr_special = self.release_files_needed.setdefault(
-                full_distroseries_name, {})
-            dr_special.setdefault(comp, set()).add("binary-"+arch)
-
+        for arch in self._config.archTagsForSeries(distroseries.name):
             # Touch more file lists for the archs.
             f_touch(self._config.overrideroot,
                     "_".join([full_distroseries_name, comp, "binary-"+arch]))
@@ -714,9 +687,6 @@ class FTPArchiveHandler:
 
         Also outputs a debian-installer file list if necessary.
         """
-        self.release_files_needed.setdefault(
-            dr_pocketed, {}).setdefault(component, set()).add(arch)
-
         files = []
         di_files = []
         f_path = os.path.join(self._config.overrideroot,
@@ -807,37 +777,8 @@ class FTPArchiveHandler:
         """Generates the config stanza for an individual pocket."""
         dr_pocketed = distroseries_name + pocketsuffix[pocket]
 
-        # XXX kiko 2006-08-24: I have no idea what the code below is meant
-        # to do -- it appears to be a rehash of createEmptyPocketRequests.
         archs = self._config.archTagsForSeries(distroseries_name)
         comps = self._config.componentsForSeries(distroseries_name)
-        for comp in comps:
-            comp_path = os.path.join(self._config.overrideroot,
-                                     "_".join([dr_pocketed, comp, "source"]))
-            if not os.path.exists(comp_path):
-                # Create empty files so that even if we don't output
-                # anything here apt-ftparchive will DTRT
-                f_touch(comp_path)
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp]))
-                f_touch(self._config.overrideroot,
-                        ".".join(["override", dr_pocketed, comp, "src"]))
-
-        if len(comps) == 0:
-            self.log.debug("Did not find any components to create config "
-                           "for %s" % dr_pocketed)
-            return
-
-        # Second up, pare archs down as appropriate
-        for arch in archs:
-            # XXX: kiko 2006-08-24: why is it comps[0] here?
-            arch_path = os.path.join(self._config.overrideroot,
-                "_".join([dr_pocketed, comps[0], "binary-"+arch]))
-            if not os.path.exists(arch_path):
-                # Create an empty file if we don't have one so that
-                # apt-ftparchive will dtrt.
-                f_touch(arch_path)
-        # XXX kiko 2006-08-24: End uncomprehensible code.
 
         self.log.debug("Generating apt config for %s" % dr_pocketed)
         apt_config.write(STANZA_TEMPLATE % {
