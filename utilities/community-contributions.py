@@ -275,6 +275,8 @@ merge_names_pairs = (
      u'John Arbash Meinel <john {_AT_} arbash-meinel.com>'),
     (u'Martin Pool <mbp {_AT_} sourcefrog.net>',
      u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'Andrea Corbellini <corbellini.andrea {_AT_} gmail.com>',
+     u'Andrea Corbellini <andrea.corbellini {_AT_} beeseek.org>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
