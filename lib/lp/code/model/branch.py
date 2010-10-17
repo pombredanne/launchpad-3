@@ -475,14 +475,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
 
-    def getMergeQueue(self):
-        """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
-            orderBy="queue_position")
-
     @property
     def code_is_browseable(self):
         """See `IBranch`."""
@@ -1140,6 +1132,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
         return SourcePackageRecipeData.findRecipes(self)
+
+    merge_queue = ForeignKey(
+        dbName='merge_queue', foreignKey='BranchMergeQueue', notNull=False)
+    merge_queue_config = StringCol(dbName='merge_queue_config')
 
 
 class DeletionOperation:

@@ -82,6 +82,7 @@ from lp.code.enums import (
     UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
@@ -591,9 +592,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def getStackedBranches():
         """The branches that are stacked on this one."""
 
-    def getMergeQueue():
-        """The proposals that are QUEUED to land on this branch."""
-
     def getMainlineBranchRevisions(start_date, end_date=None,
                                    oldest_first=False):
         """Return the matching mainline branch revision objects.
@@ -992,6 +990,18 @@ class IBranchEditableAttributes(Interface):
             title=_("Control Directory"),
             required=False, readonly=True,
             vocabulary=ControlFormat))
+
+    merge_queue = Reference(
+        title=_('Branch Merge Queue'),
+        schema=IBranchMergeQueue, required=False, readonly=True,
+        description=_(
+            "The branch merge queue that manages merges for this branch."))
+
+    merge_queue_config = TextLine(
+            title=_('Name'), required=True, constraint=branch_name_validator,
+            description=_(
+                "A JSON string of configuration values to send to a branch"
+                "merge robot."))
 
 
 class IBranchEdit(Interface):
