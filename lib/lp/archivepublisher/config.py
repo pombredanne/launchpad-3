@@ -14,6 +14,9 @@ from canonical.config import config
 from lp.soyuz.enums import ArchivePurpose
 
 
+APT_FTPARCHIVE_PURPOSES = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
+
+
 def update_pub_config(pubconf):
     """Update dependent `PubConfig` fields.
 
@@ -76,8 +79,7 @@ def getPubConfig(archive):
     if archive.is_copy:
         pubconf.temproot = pubconf.archiveroot + '-temp'
 
-    apt_ftparchive_purposes = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
-    if archive.purpose in apt_ftparchive_purposes:
+    if archive.purpose in APT_FTPARCHIVE_PURPOSES:
         pubconf.overrideroot = pubconf.archiveroot + '-overrides'
         pubconf.cacheroot = pubconf.archiveroot + '-cache'
         pubconf.miscroot = pubconf.archiveroot + '-misc'
