@@ -141,7 +141,7 @@ discarded.
 Similarly, email addresses with an unvalidated status are not considered
 registered either.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> new_address = emailset.new(
     ...     'frederick@example.com', fred, account=fred.account)
@@ -185,7 +185,7 @@ By default, Launchpad members have an unknown, and thus not good, standing.
 Anne is a bad person and the Launchpad administrator assigns her a poor
 standing.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> anne.personal_standing = PersonalStanding.POOR
     >>> transaction.commit()
 
@@ -276,7 +276,7 @@ Launchpad.
 This is true even if by dumb luck the address actually gets registered in
 Launchpad.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> new_address = emailset.new(
     ...     config.mailman.archive_address, fred,
     ...     EmailAddressStatus.VALIDATED, account=fred.account)

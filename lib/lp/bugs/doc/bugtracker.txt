@@ -9,7 +9,7 @@ and an external bug, see bugwatch.txt.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
     >>> now = datetime.now(pytz.UTC)
@@ -208,7 +208,7 @@ Aliases
 
 A bug tracker can have a number of alias URLs associated with it.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerAliasSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerAliasSet
     >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 
 The most natural way to work with aliases is via the aliases attribute
@@ -325,7 +325,7 @@ The Mozilla Bugzilla has only one imported bug message.
 
 We will forge some BugMessage records before trying again:
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> from zope.security.proxy import removeSecurityProxy
 
     >>> for num, bug_watch in enumerate(mozilla_bugzilla.watches):

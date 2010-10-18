@@ -32,7 +32,7 @@ create a a new bug on the bugtarget. It will be converted to a
 question.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug = filebug(bugtarget, "Print is broken", status=BugTaskStatus.NEW)
 
 
@@ -51,7 +51,7 @@ pillar must use Launchpad to track bugs.
 A Firefox bug in Debian cannot be converted to a question because the
 distribution does not use Launchpad to track bugs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> firefox_bug = getUtility(IBugSet).get(8)
     >>> firefox = firefox_bug.bugtasks[0].target
     >>> IQuestionTarget.providedBy(firefox)
@@ -69,7 +69,7 @@ the bugtarget's bugs, and choose to make it into a question. The UI
 would pass Sample Person as the Person changing the status. He may
 provide a message about why the report is a question.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')

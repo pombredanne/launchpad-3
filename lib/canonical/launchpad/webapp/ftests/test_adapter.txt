@@ -18,14 +18,18 @@ Imports and test setup:
     >>> from canonical.launchpad.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
     ...     set_request_started)
+    >>> from canonical.testing.layers import DatabaseLayer
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
 
 There are several possible database connections available via the
 IStoreSelector utility.
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> print store.execute("SELECT current_database()").get_one()[0]
-    launchpad_ftest
+    >>> dbname = DatabaseLayer._db_fixture.dbname
+    >>> active_name = store.execute("SELECT current_database()").get_one()[0]
+    >>> if active_name != dbname: print '%s != %s' % (active_name, dbname)
+    >>> active_name == dbname
+    True
 
 
 Statement Logging
