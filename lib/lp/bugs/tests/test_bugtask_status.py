@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
 from lp.bugs.model.bugtask import BugTaskStatus
@@ -292,3 +294,29 @@ class TestBugTaskStatusTransitionBugSupervisorTeamMember(
         with person_logged_in(self.owner):
             self.product.setBugSupervisor(self.team, self.team)
 
+
+class TestBugTaskStatusTransitionBugWatchUpdater(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure bug_watch_updater can transition to any status."""
+
+    def makePersonAndTask(self):
+        self.person = getUtility(ILaunchpadCelebrities).bug_watch_updater
+        self.task = self.factory.makeBugTask()
+
+
+class TestBugTaskStatusTransitionBugImporter(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure bug_importer can transition to any status."""
+
+    def makePersonAndTask(self):
+        self.person = getUtility(ILaunchpadCelebrities).bug_importer
+        self.task = self.factory.makeBugTask()
+
+
+class TestBugTaskStatusTransitionJanitor(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure lp janitor can transition to any status."""
+
+    def makePersonAndTask(self):
+        self.person = getUtility(ILaunchpadCelebrities).janitor
+        self.task = self.factory.makeBugTask()
