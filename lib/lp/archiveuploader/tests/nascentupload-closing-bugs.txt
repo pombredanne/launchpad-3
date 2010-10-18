@@ -31,7 +31,7 @@ Check the current status of the bug we are supposed to fix:
     >>> the_bug_id = 6
 
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.interfaces import (
     ...    IBugTaskSet, IDistributionSet, IPersonSet)
     >>> login('no-priv@canonical.com')
