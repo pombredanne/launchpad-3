@@ -128,12 +128,6 @@ class IOAuthToken(Interface):
     person = Object(
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
-    date_created = Datetime(
-        title=_('Date created'), required=True, readonly=True,
-        description=_('For a request token, the date the token was created. '
-                      'The request token will be good for a limited time '
-                      'after this date. For an access token, the date '
-                      'some request token was exchanged for this token.'))
     key = TextLine(
         title=_('Key'), required=True, readonly=True,
         description=_('The key used to identify this token.  It is included '
@@ -170,6 +164,11 @@ class IOAuthAccessToken(IOAuthToken):
         vocabulary=AccessLevel,
         description=_('The level of access given to the application acting '
                       'on your behalf.'))
+
+    date_created = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_('The date some request token was exchanged for '
+                      'this token.'))
 
     date_expires = Datetime(
         title=_('Date expires'), required=False, readonly=False,
@@ -210,15 +209,22 @@ class IOAuthRequestToken(IOAuthToken):
         vocabulary=OAuthPermission,
         description=_('The permission you give to the application which may '
                       'act on your behalf.'))
+    date_created = Datetime(
+        title=_('Date created'), required=True, readonly=True,
+        description=_('The date the token was created. The request token '
+                      'will be good for a limited time after this date.'))
+
     date_expires = Datetime(
         title=_('Date expires'), required=False, readonly=False,
         description=_('The expiration date for the permission you give to '
-                      'the application which may act on your behalf.')
+                      'the application which may act on your behalf.'))
+
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
+
     is_reviewed = Bool(
         title=_('Has this token been reviewed?'),
         required=False, readonly=True,

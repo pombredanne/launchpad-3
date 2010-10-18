@@ -265,11 +265,13 @@ class OAuthRequestToken(OAuthBase):
 
     def review(self, user, permission, context=None):
         """See `IOAuthRequestToken`."""
-        assert not self.is_reviewed, (
-            "Request tokens can be reviewed only once.")
-        assert not self.is_expired, (
-            'This request token has expired and can no longer be reviewed.'
-            )
+        if self.is_reviewed:
+            raise AssertionError(
+                "Request tokens can be reviewed only once.")
+        if self.is_expired:
+            raise AssertionError(
+                'This request token has expired and can no longer be '
+                'reviewed.')
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.person = user
         self.permission = permission
@@ -287,14 +289,17 @@ class OAuthRequestToken(OAuthBase):
 
     def createAccessToken(self):
         """See `IOAuthRequestToken`."""
-        assert self.is_reviewed, (
-            'Cannot create an access token from an unreviewed request token.')
-        assert self.permission != OAuthPermission.UNAUTHORIZED, (
-            'The user did not grant access to this consumer.')
-        assert not self.is_expired, (
-            'This request token has expired and can no longer be exchanged '
-            'for an access token.'
-            )
+        if not self.is_reviewed:
+            raise AssertionError(
+                'Cannot create an access token from an unreviewed request '
+                'token.')
+        if self.permission == OAuthPermission.UNAUTHORIZED:
+            raise AssertionError(
+                'The user did not grant access to this consumer.')
+        if self.is_expired:
+            raise AssertionError(
+                'This request token has expired and can no longer be '
+                'exchanged for an access token.')
 
         key, secret = create_token_key_and_secret(table=OAuthAccessToken)
         access_level = AccessLevel.items[self.permission.name]
