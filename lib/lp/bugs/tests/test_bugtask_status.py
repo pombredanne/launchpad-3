@@ -14,6 +14,35 @@ from lp.testing import (
     )
 
 
+class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
+    """Test bugtask status restrictions for a regular logged in user."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # We can work with a project only here, since both project
+        # and distribution use the same methods on IBugTask.
+        super(TestBugTaskStatusUserRestrictions, self).setUp()
+        self.user = self.factory.makePerson()
+        self.task = self.factory.makeBugTask()
+
+    def test_person_cannot_set_bug_supervisor_statuses(self):
+        # A regular user should not be able to set statuses in
+        # BUG_SUPERVISOR_BUGTASK_STATUSES.
+        self.assertEqual(self.task.status, BugTaskStatus.NEW)
+        with person_logged_in(self.user):
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.WONTFIX, self.user)
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.EXPIRED, self.user)
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.TRIAGED, self.user)
+
+
+
 class TestBugTaskStatusSetting(TestCaseWithFactory):
     """Tests to ensure restricted status changes are enforced."""
 
@@ -31,22 +60,6 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
         self.bug = self.task.bug
         with person_logged_in(self.owner):
             self.product.setBugSupervisor(self.supervisor, self.supervisor)
-
-    def test_person_cannot_set_bug_supervisor_statuses(self):
-        # A regular user should not be able to set statuses in
-        # BUG_SUPERVISOR_BUGTASK_STATUSES.
-        self.assertEqual(self.task.status, BugTaskStatus.NEW)
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            self.assertRaises(
-                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
-                BugTaskStatus.WONTFIX, person)
-            self.assertRaises(
-                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
-                BugTaskStatus.EXPIRED, person)
-            self.assertRaises(
-                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
-                BugTaskStatus.TRIAGED, person)
 
     def test_owner_can_set_bug_supervisor_statuses(self):
         # Project registrant should be able to set statuses in
