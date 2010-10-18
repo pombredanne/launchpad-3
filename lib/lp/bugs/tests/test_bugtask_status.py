@@ -208,6 +208,14 @@ class TestBugTaskStatusTransitionForPrivilegedUserBase:
                 BugTaskStatus.FIXRELEASED, self.person),
             True)
 
+    def test_privileged_user_canTransitionToStatus_from_wontfix(self):
+        # A privileged user can transition away from Won't Fix.
+        removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.person),
+            True)
+
 
 class TestBugTaskStatusTransitionOwnerPerson(
     TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
