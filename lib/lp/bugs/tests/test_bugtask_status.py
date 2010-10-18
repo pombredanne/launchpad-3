@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
 from lp.bugs.model.bugtask import BugTaskStatus
@@ -40,6 +42,15 @@ class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
             self.assertRaises(
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.TRIAGED, self.user)
+
+    def test_unset_wont_fix_status(self):
+        # A regular user should not be able to transition a bug away
+        # from Won't Fix.
+        removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
+        with person_logged_in(self.user):
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.CONFIRMED, self.user)
 
 
 
@@ -88,34 +99,6 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
                 BugTaskStatus.TRIAGED, self.team_member)
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
-    def test_unset_wont_fix_status(self):
-        # A regular user should not be able to transition a bug away
-        # from Won't Fix.  Bug supervisor and owner should be able
-        # to transition away from Won't Fix.
-        self.assertEqual(self.task.status, BugTaskStatus.NEW)
-        with person_logged_in(self.team_member):
-            self.task.transitionToStatus(
-                BugTaskStatus.WONTFIX, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-            self.task.transitionToStatus(
-                BugTaskStatus.NEW, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.NEW)
-        with person_logged_in(self.owner):
-            self.task.transitionToStatus(
-                BugTaskStatus.WONTFIX, self.owner)
-            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-            self.task.transitionToStatus(
-                BugTaskStatus.NEW, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.NEW)
-            # Transition back to Won't Fix for final assert below.
-            self.task.transitionToStatus(
-                BugTaskStatus.WONTFIX, self.owner)
-            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            self.assertRaises(
-                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
-                BugTaskStatus.CONFIRMED, person)
 
 
 class TestCanTransitionToStatus(TestCaseWithFactory):
