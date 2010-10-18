@@ -218,7 +218,7 @@ def normalize_doctest_imports(file_path, match_re, substitution=None):
 def normalize_all_doctest_imports():
     root = 'lib'
     types = r'\.(txt)'
-    pattern = r'([ ]+)>>> from ([\w.]+) import ([\w.]+)$'
+    pattern = r'^([ ]+)>>> from ([\w.]+) import ([\w.]+)$'
     substitution = True
     for summary in find_matches(
         root, types, pattern, substitution=substitution,
