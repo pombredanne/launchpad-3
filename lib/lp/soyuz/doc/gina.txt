@@ -37,7 +37,7 @@ Create a distribution release and an arch release for breezy:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")
@@ -211,7 +211,7 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 

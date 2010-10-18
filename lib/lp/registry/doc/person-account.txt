@@ -97,7 +97,7 @@ will cause this spec to be reassigned.
     >>> [coc.active for coc in foobar.signedcocs]
     [True]
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(foobar, assignee=foobar)
     >>> foobar.searchTasks(params).count() > 0
     True
@@ -197,7 +197,7 @@ adds a '-deactivatedaccount' suffix to the person's name...
 It's also important to note that the teams/pillars owned/driven by Foo
 Bar are now owned/driven by the registry admins team.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
 
     >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
