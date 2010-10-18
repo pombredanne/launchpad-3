@@ -977,7 +977,11 @@ class PersonBaseBranchListingView(BranchListingView):
 
     @property
     def show_action_menu(self):
-        return check_permission('launchpad.Edit', self.context)
+        return self.user.inTeam(self.context)
+
+    @property
+    def show_junk_directions(self):
+        return self.user == self.context
 
     @property
     def initial_values(self):

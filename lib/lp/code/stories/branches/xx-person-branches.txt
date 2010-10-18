@@ -33,6 +33,19 @@ message.
     There are no branches related to Daniel Silverstone in Launchpad today.
 
 
+Junk branches
+=============
+
+On the user's own code page, they will see directions on pushing a branch.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'junk-branch-directions'))
+    You can push (upload) personal branches
+    (those not related to a project) with the following command:
+    bzr push lp:~name12/+junk/BRANCHNAME
+
+
 Owned Branches
 ==============
 
