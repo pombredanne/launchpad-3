@@ -17,7 +17,7 @@ Useful properties:
    >>> firefox_bin_release.name, firefox_bin_release.version
    (u'mozilla-firefox', u'0.9')
 
-   >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
    >>> warty = getUtility(IDistroSeriesSet).get(1)
    >>> warty.name
    u'warty'
