@@ -163,7 +163,17 @@ def normalize_doctest_imports(file_path, match_re, substitution=None):
                 continue
             # If the import section is passed, normalize the imports.
             if not match and in_match:
-                for module_ in sorted(imports.keys()):
+                module_names = sorted(imports.keys())
+                # Put zope modules first.
+                zopes = list(module_names)
+                zopes.reverse()
+                for name in zopes:
+                    if name.startswith('zope'):
+                        module_names.remove(name)
+                        module_names.insert(0, name)
+                    else:
+                        break
+                for module_ in module_names:
                     identifiers = sorted(imports[module_])
                     if len(identifiers) == 1:
                         expanded_line = (
