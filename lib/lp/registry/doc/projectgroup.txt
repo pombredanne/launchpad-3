@@ -19,7 +19,7 @@ When creating a new project there are a bunch of things we need to provide.
 While some of them (homepageurl, icon, logo and mugshot) are optional, others
 (name, displayname, title, summary, description and owner) are required).
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> test_project = projectset.new(
     ...     name='project-test', displayname='Test Project',
@@ -132,7 +132,7 @@ Specification Listings
 We should be able to generate filtered lists of specs on a project.
 
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
@@ -168,7 +168,7 @@ Inactive products are excluded from the listings.
     >>> mozilla.specifications(filter=filter).count()
     5
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
 
     # Unlink the source packages so the project can be deactivated.
@@ -210,7 +210,7 @@ Specification Listings for a ProjectGroupSeries
 
 An IProjectGroupSeries object can be retrieved by IProjectGroup.getSeries.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSeries
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSeries
     >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
     >>> mozilla_series_1_0
     <lp.registry.model.projectgroup.ProjectGroupSeries object at...
@@ -405,7 +405,7 @@ a project.
 
     >>> from lp.registry.tests.test_project_milestone import (
     ...     ProjectMilestoneTest)
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> login('foo.bar@canonical.com')
     >>> test_helper = ProjectMilestoneTest(helper_only=True)
     >>> test_helper.setUpProjectMilestoneTests()

@@ -59,10 +59,13 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries, arches=(), rebuild=False):
+    def __init__(
+        self, distroseries, arches=(), packagesets=(), rebuild=False):
+
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
+        self.packagesets = packagesets
         self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 
@@ -134,7 +137,8 @@ class InitialiseDistroSeries:
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
-            FROM DistroArchSeries WHERE distroseries = %s %s
+            FROM DistroArchSeries WHERE distroseries = %s
+            AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
 
@@ -179,6 +183,15 @@ class InitialiseDistroSeries:
         """
         archive_set = getUtility(IArchiveSet)
 
+        spns = []
+        # The overhead from looking up each packageset is mitigated by
+        # this usually running from a job
+        if self.packagesets:
+            for pkgsetname in self.packagesets:
+                pkgset = getUtility(IPackagesetSet).getByName(
+                    pkgsetname, distroseries=self.parent)
+                spns += list(pkgset.getSourcesIncluded())
+
         for archive in self.parent.distribution.all_distro_archives:
             if archive.purpose not in (
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
@@ -203,7 +216,7 @@ class InitialiseDistroSeries:
                 distroarchseries_list = ()
             getUtility(IPackageCloner).clonePackages(
                 origin, destination, distroarchseries_list,
-                proc_families, self.rebuild)
+                proc_families, spns, self.rebuild)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent
@@ -281,6 +294,8 @@ class InitialiseDistroSeries:
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
+            if self.packagesets and parent_ps.name not in self.packagesets:
+                continue
             child_ps = getUtility(IPackagesetSet).new(
                 parent_ps.name, parent_ps.description,
                 self.distroseries.owner, distroseries=self.distroseries,

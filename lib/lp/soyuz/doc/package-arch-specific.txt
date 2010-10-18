@@ -65,7 +65,7 @@ Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
 
 Create a PPA source publication.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> pub_ppa = test_publisher.getPubSource(
@@ -120,6 +120,17 @@ each of these options:
 
     >>> print_build_architectures(pub_one)
     hppa
+
+If an architecture is disabled for some reason, then the results from
+determineArchitecturesToBuild() will not include it.
+
+    >>> hoary['hppa'].enabled = False
+
+    >>> print_build_architectures(pub_three)
+    i386
+
+Re-enable it before continuing:
+    >>> hoary['hppa'].enabled = True
 
 
 == Check support for kernel notation in architecture hint list ==

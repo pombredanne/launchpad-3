@@ -1,0 +1,62 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  i18n:domain="launchpad">
+
+  <tal:show_options condition="view/show_edit_options">
+  <div class="blacklist-options" style="float:right">
+      <dl>
+        <dt>Blacklisted:</dt>
+        <dd>
+          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
+        </dd>
+      </dl>
+  </div>
+  </tal:show_options>
+
+  <dl>
+    <dt>Binary descriptions:</dt>
+      <dd><ul>
+        <li tal:repeat="summary view/binary_summaries">
+          <tal:description replace="summary" /></li>
+      </ul></dd>
+    <dt>Last common version:</dt>
+    <dd>Not implemented.</dd>
+    <dt>Differences from last common version:</dt>
+    <dd>
+      <ul>
+        <tal:source-diff-option condition="context/source_pub">
+        <li tal:condition="context/package_diff"
+            tal:content="structure context/package_diff/fmt:link">
+          <a>link to a diff</a></li>
+        <li tal:condition="not: context/package_diff" class="request-derived-diff">
+          <span tal:replace="context/derived_series/displayname">
+            Derilucid</span> version: <span
+          tal:replace="context/source_version">1.2.3</span>
+        </li>
+        </tal:source-diff-option>
+
+        <tal:parent-diff-option condition="context/parent_source_pub">
+        <li tal:condition="context/parent_package_diff"
+            tal:content="structure context/parent_package_diff/fmt:link">
+          <a>link to a diff</a></li>
+        <li tal:condition="not: context/parent_package_diff" class="request-derived-diff">
+          <span
+              tal:replace="context/derived_series/parent_series/displayname">
+              Lucid</span> version: <span
+              tal:replace="context/parent_source_version">1.2.3</span>
+        </li>
+        </tal:parent-diff-option>
+      </ul>
+    </dd>
+  </dl>
+
+  <h2>Comments:</h2>
+  <tal:conversation replace="structure view/@@+render"/>
+  <tal:show_options condition="view/show_edit_options"
+                    define="src_name context/source_package_name/name">
+  <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
+  </tal:show_options>
+
+</tal:root>

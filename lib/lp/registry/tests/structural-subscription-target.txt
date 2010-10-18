@@ -1,9 +1,9 @@
-= IStructuralSubscriptionTarget =
-
+IStructuralSubscriptionTarget
+-----------------------------
 
 Let's subscribe ubuntu-team.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName("ubuntu-team")
     >>> no_priv = personset.getByName("no-priv")
@@ -61,7 +61,8 @@ we use getSubscriptions.
     ubuntu-team COMMENTS NOTHING
 
 
-=== Structural subscriptions and indirect bug subscriptions ===
+Structural subscriptions and indirect bug subscriptions
+=======================================================
 
     >>> bug = filebug(target, 'test bug one')
     >>> indirect_subscribers = set(

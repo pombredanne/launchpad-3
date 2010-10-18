@@ -54,7 +54,7 @@ It's also possible to ask a product for all its associated series.
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from lp.registry.interfaces.productseries import IProductSeriesSet
 
     >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
     >>> print firefox_1_0.product.name
@@ -190,7 +190,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
     >>> onezero = firefox.getSeries("1.0")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
