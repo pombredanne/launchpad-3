@@ -22,23 +22,6 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="code" />
 
-  <!-- Branch Merge Queue -->
-
-  <class class="lp.code.model.branchmergequeue.SingleBranchMergeQueue">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"/>
-  </class>
-  <class class="lp.code.model.branchmergequeue.MultiBranchMergeQueue">
-    <allow interface="lp.code.interfaces.branchmergequeue.IMultiBranchMergeQueue"/>
-    <require
-        permission="launchpad.Edit"
-        set_schema="lp.code.interfaces.branchmergequeue.IMultiBranchMergeQueue"/>
-  </class>
-  <securedutility
-      class="lp.code.model.branchmergequeue.BranchMergeQueueSet"
-      provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSet">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSet"/>
-  </securedutility>
-
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require
@@ -514,28 +497,6 @@
   <subscriber
       for="lp.codehosting.scanner.events.IScanCompleted"
       handler="lp.codehosting.scanner.mergedetection.auto_merge_branches"/>
-
-  <!-- Temporarily disabling queues
-       <browser:page
-
-
-       name="+merge-queue"
-
-
-       for="lp.code.interfaces.branch.IBranch"
-
-
-       class="lp.code.browser.branch.BranchMergeQueueView"
-
-
-       facet="branches"
-
-
-       permission="zope.Public"
-
-
-       template="../templates/branch-merge-queue.pt" />
-  -->
 
   <!-- BranchSet -->
 

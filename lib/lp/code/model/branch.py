@@ -462,15 +462,6 @@ class Branch(SQLBase, BzrIdentityMixin):
                 if target.target_branch.last_scanned_id is not None]
         return jobs
 
-    # XXX: Tim Penhey, 2008-06-18, bug 240881
-    merge_queue = ForeignKey(
-        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
-        default=None)
-
-    merge_control_status = EnumCol(
-        enum=BranchMergeControlStatus, notNull=True,
-        default=BranchMergeControlStatus.NO_QUEUE)
-
     def addToLaunchBag(self, launchbag):
         """See `IBranch`."""
         launchbag.add(self.product)
