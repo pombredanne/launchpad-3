@@ -16,15 +16,15 @@ from lp.testing import (
     )
 
 
-class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
-    """Test bugtask status restrictions for a regular logged in user."""
+class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
+    """Test bugtask status transitions for a regular logged in user."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         # We can work with a project only here, since both project
         # and distribution use the same methods on IBugTask.
-        super(TestBugTaskStatusUserRestrictions, self).setUp()
+        super(TestBugTaskStatusTransitionForUser, self).setUp()
         self.user = self.factory.makePerson()
         self.task = self.factory.makeBugTask()
 
