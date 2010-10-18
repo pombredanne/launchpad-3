@@ -81,8 +81,8 @@ Only bugs that the user has access to view will be searched. If we set
 the Firefox bug to private, and repeat the search as a user who isn't
 allowed to view it, only the Thunderbird bug will be returned this time.
 
-    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
     >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)

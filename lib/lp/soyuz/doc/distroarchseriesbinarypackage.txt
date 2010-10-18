@@ -28,10 +28,10 @@ existing builds that are in sampledata!
 
   >>> from lp.soyuz.model.publishing import (
   ...     BinaryPackagePublishingHistory)
+  >>> from canonical.database.constants import UTC_NOW
   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
-  >>> from canonical.database.constants import UTC_NOW
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
@@ -197,8 +197,8 @@ DistroArchSeriesBinaryPackage.summary should be simplified.
 
 First, update the cache tables for Celso's PPA:
 
-  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> from canonical.config import config
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
   >>> class TestLog:

@@ -118,8 +118,8 @@ Limitations:
 The system fingerprint is stored in a separate table, HWSystemFingerprint.
 IHWSystemFingerPrintSet.createFingerprint creates a new row in this table.
 
-    >>> from storm.store import Store
     >>> from lp.hardwaredb.interfaces.hwdb import IHWSystemFingerprintSet
+    >>> from storm.store import Store
     >>> hw_fingerprint_set = getUtility(IHWSystemFingerprintSet)
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
     >>> fp.fingerprint
@@ -153,10 +153,12 @@ IHWSubmissionSet.createSubmission creates a new entry in the
 HWSubmission table.
 
     >>> import pytz
-    >>> from datetime import datetime
     >>> from StringIO import StringIO
-    >>> from lp.hardwaredb.interfaces.hwdb import HWSubmissionFormat
-    >>> from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+    >>> from datetime import datetime
+    >>> from lp.hardwaredb.interfaces.hwdb (
+    ...     HWSubmissionFormat,
+    ...     IHWSubmissionSet,
+    ...     )
     >>> date_created = datetime(2007, 04, 01, tzinfo=pytz.timezone('UTC'))
     >>> date_submitted = datetime(2007, 04, 02, tzinfo=pytz.timezone('UTC'))
     >>> submission_data = 'submission data'

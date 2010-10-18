@@ -45,8 +45,8 @@ IBugTracker in Launchpad, and the bug target, in which the bug should be
 imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',

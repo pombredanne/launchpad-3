@@ -11,8 +11,8 @@ changing the status, the target, and the new status.
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> bug_params = CreateBugParams(
     ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
     >>> firefox = getUtility(IProductSet).getByName('firefox')

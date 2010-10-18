@@ -4,9 +4,11 @@ BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
    >>> from canonical.launchpad.database import BinaryPackageRelease
-   >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
-   >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
    >>> from canonical.launchpad.webapp.testing import verifyObject
+   >>> from lp.soyuz.interfaces.binarypackagerelease (
+   ...     IBinaryPackageRelease,
+   ...     IBinaryPackageReleaseSet,
+   ...     )
 
    >>> firefox_bin_release = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)
@@ -100,9 +102,9 @@ Display the current firefox component and section:
 
 Fetch brand new component, section and priority:
 
+   >>> from lp.soyuz.enums import PackagePublishingPriority
    >>> from lp.soyuz.interfaces.component import IComponentSet
    >>> from lp.soyuz.interfaces.section import ISectionSet
-   >>> from lp.soyuz.enums import PackagePublishingPriority
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
    >>> new_priority = PackagePublishingPriority.IMPORTANT

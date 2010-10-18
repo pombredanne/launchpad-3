@@ -230,8 +230,8 @@ distribution context.
 And now we'll change the status of one of the bugtasks, but first we
 need to be logged in.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login
 
     >>> login("test@canonical.com")
 

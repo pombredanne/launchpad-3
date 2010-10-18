@@ -54,8 +54,8 @@ those notifications look like.
 
 === Editing a bug report ===
 
-    >>> from lp.bugs.interfaces.bug import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = ObjectModifiedEvent(
@@ -210,9 +210,11 @@ bug. Let's take a look at each type.
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask (
+    ...     BugTaskStatus,
+    ...     IDistroBugTask,
+    ...     )
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_crashes_in_debian, providing=IDistroBugTask)

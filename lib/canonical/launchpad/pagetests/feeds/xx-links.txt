@@ -117,8 +117,10 @@ it must have quotes and html escaped.
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.product import License
+    >>> from lp.registry.interfaces.product (
+    ...     IProductSet,
+    ...     License,
+    ...     )
     >>> user = getUtility(ILaunchBag).user
     >>> getUtility(IProductSet).createProduct(
     ...     user, 'bad-displayname',

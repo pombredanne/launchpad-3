@@ -101,8 +101,8 @@ They are grouped together at the beginning of the list.
 
 The tags portlet displays a mix of official and unofficial tags.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> firesocks = factory.makeProduct(name='firesocks')
     >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')

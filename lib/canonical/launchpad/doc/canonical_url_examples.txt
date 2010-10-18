@@ -52,9 +52,11 @@ lib/lp/translations/doc/canonical_url_examples.txt.
 
 == Persons and Teams ==
 
+    >>> from lp.registry.interfaces.codeofconduct (
+    ...     ICodeOfConductSet,
+    ...     ISignedCodeOfConductSet,
+    ...     )
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-    >>> from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 
 The IPersonSet.
 
@@ -134,8 +136,8 @@ An IDistributionSourcePackage.
 
 == Projects groups and products ==
 
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
 The IProjectGroupSet.
 
@@ -290,8 +292,8 @@ An IBugNomination.
 
 == Remote Bug Trackers and Remote Bugs ==
 
-    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> from lp.bugs.browser.bugtracker import RemoteBug
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
 An IBugTrackerSet.
 

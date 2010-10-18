@@ -28,11 +28,13 @@ be sent. We'll start by importing some things we'll need for the
 examples that follow:
 
     >>> from zope.component import getUtility
-    >>> from lp.bugs.interfaces.bug import IBugDelta
-    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.adapters.bugdelta import BugDelta
+    >>> from lp.bugs.interfaces.bug (
+    ...     IBugDelta,
+    ...     IBugSet,
+    ...     )
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 = Filing a bug =
 
@@ -282,11 +284,13 @@ text representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
 
-    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskDelta
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtask (
+    ...     BugTaskStatus,
+    ...     IBugTaskDelta,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> example_bug_task = factory.makeBugTask()
     >>> example_delta = BugTaskDelta(example_bug_task)
     >>> verifyObject(IBugTaskDelta, example_delta)

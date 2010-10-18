@@ -95,12 +95,12 @@ Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
 later.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.enums import PackageDiffStatus
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.soyuz.enums import PackageDiffStatus
 
     >>> def perform_fake_diff(diff, filename):
     ...     naked_diff = removeSecurityProxy(diff)

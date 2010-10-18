@@ -12,8 +12,8 @@ First, let's login:
 
 IBug has a subscriptions attribute:
 
-    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
     >>> bug.subscriptions.count()
@@ -43,10 +43,10 @@ a bug is unduped, and so forth.
 Let's create a new bug to demonstrate how direct and indirect
 subscriptions work.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> personset = getUtility(IPersonSet)
 

@@ -502,8 +502,8 @@ a web service request
 
     >>> from zope.app.security.principalregistry import (
     ...     UnauthenticatedPrincipal)
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.interaction import setupInteraction
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from lazr.restful.utils import get_current_browser_request
     >>> anonymous = UnauthenticatedPrincipal(None, None, None)
     >>> api_request = WebServiceTestRequest()

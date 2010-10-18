@@ -10,8 +10,8 @@ Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
     >>> from zope.component import getMultiAdapter
-    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> ubuntu_thunderbird_task = bug_nine.bugtasks[1]

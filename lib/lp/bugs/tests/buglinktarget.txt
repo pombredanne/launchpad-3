@@ -16,9 +16,11 @@ shouldn't have any bugs linked to it at the start of the test.)
     # to a registered user.
     >>> login('no-priv@canonical.com')
     >>> from zope.interface.verify import verifyObject
-    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
-    >>> from lp.bugs.interfaces.buglink import IBugLink
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.buglink (
+    ...     IBugLink,
+    ...     IBugLinkTarget,
+    ...     )
 
     >>> verifyObject(IBugLinkTarget, target)
     True

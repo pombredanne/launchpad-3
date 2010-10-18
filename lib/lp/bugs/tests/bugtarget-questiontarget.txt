@@ -13,8 +13,8 @@ in this interface test for creating the bug. The target may be a:
 Product, Distribution, ProductSeries, DistributionSeries,
 SourcePackage, or DistributionSourcePackages.
 
-    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
+    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
 
     >>> login('foo.bar@canonical.com')
     >>> IBugTarget.providedBy(bugtarget)

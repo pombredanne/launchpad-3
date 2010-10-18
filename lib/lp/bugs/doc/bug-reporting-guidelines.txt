@@ -7,8 +7,8 @@ them to FAQs, and so forth.
     >>> login('foo.bar@canonical.com')
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
 
     >>> distribution = getUtility(IDistributionSet).getByName('ubuntu')
     >>> distribution_source_package = (

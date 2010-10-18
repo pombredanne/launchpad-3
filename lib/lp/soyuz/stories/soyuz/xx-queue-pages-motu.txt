@@ -70,9 +70,9 @@ permission to manipulate them.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
     >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from canonical.launchpad.database import (
     ...     BinaryPackageRelease, SourcePackageRelease)
     >>> universe = getUtility(IComponentSet)['universe']

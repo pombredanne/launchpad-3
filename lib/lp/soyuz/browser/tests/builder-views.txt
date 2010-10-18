@@ -130,8 +130,8 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
-    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")

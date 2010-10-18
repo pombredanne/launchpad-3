@@ -4,8 +4,10 @@ SourcePackagePublishingHistory
 
 This class provides public access to publishing records via a SQL view.
 
-    >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-    >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
+    >>> from canonical.launchpad.database (
+    ...     BinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     )
 
 Select a publishing record from the sampledata (pmount is a
 interesting one):
@@ -17,8 +19,8 @@ interesting one):
 None of the sources in the sample data are signed, so we can fake one here
 to make sure verifyObject will work.
 
-    >>> from lp.registry.model.gpgkey import GPGKey
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
@@ -26,12 +28,14 @@ to make sure verifyObject will work.
 Verify if the object follows its interface contracts:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
-    >>> from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.soyuz.interfaces.publishing (
+    ...     IBinaryPackagePublishingHistory,
+    ...     ISourcePackagePublishingHistory,
+    ...     )
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -296,8 +300,10 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 Stanza generation
 =================
 
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
-    >>> from lp.soyuz.interfaces.publishing import ISourcePackageFilePublishing
+    >>> from lp.soyuz.interfaces.publishing (
+    ...     IBinaryPackagePublishingHistory,
+    ...     ISourcePackageFilePublishing,
+    ...     )
 
 Retrieve any SourcePackagePublishingHistory entry.
 

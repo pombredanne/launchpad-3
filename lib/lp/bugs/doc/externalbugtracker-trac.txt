@@ -13,9 +13,9 @@ IExternalBugTracker.
     >>> from lp.bugs.externalbugtracker import Trac
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> trac = Trac('http://example.com/')
     >>> verifyObject(IExternalBugTracker, trac)
     True
@@ -55,9 +55,9 @@ from a Trac with the plugin installed (when we've accidentally passed
 a valid token, which is very unlikely), is that the broken Trac will
 not include a "trac_auth" cookie.
 
+    >>> from StringIO import StringIO
     >>> from httplib import HTTPMessage
     >>> from urllib import addinfourl
-    >>> from StringIO import StringIO
 
     >>> class TracReturning200ForPageNotFound(Trac):
     ...     def urlopen(self, url):
@@ -298,8 +298,8 @@ And have a Trac instance process them:
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> trac = TestTrac(example_bug_tracker.baseurl)

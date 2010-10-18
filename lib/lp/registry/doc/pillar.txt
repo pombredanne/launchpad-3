@@ -5,10 +5,10 @@ to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, ProjectGroup and Distribution.
 
+    >>> from lp.registry.interfaces.distribution import IDistribution
     >>> from lp.registry.interfaces.pillar import IPillarNameSet
     >>> from lp.registry.interfaces.product import IProduct
     >>> from lp.registry.interfaces.projectgroup import IProjectGroup
-    >>> from lp.registry.interfaces.distribution import IDistribution
     >>> pillar_set = getUtility(IPillarNameSet)
 
     >>> 'ubuntu' in pillar_set

@@ -22,9 +22,11 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.distroseries import IDistroSeries
-    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries (
+    ...     IDistroSeries,
+    ...     IDistroSeriesSet,
+    ...     )
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)

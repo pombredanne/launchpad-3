@@ -4,12 +4,12 @@ In order to prepare the tests below some initialization is required.
     >>> from lp.archiveuploader.tests import (
     ...     datadir, getPolicy, mock_logger_quiet)
     >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from lp.soyuz.enums import ArchivePermissionType
     >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
     >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> insecure_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')

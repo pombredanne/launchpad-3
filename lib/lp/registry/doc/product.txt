@@ -6,10 +6,12 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.registry.interfaces.product import IProduct
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.app.errors import NotFoundError
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product (
+    ...     IProduct,
+    ...     IProductSet,
+    ...     )
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login

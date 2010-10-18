@@ -1,8 +1,8 @@
 = Launchpad field validators =
 
     >>> from zope.component import getUtility
-    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
 

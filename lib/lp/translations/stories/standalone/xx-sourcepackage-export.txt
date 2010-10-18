@@ -31,8 +31,8 @@ The option to download a package's full translations is restricted to
 users who are involved in certain ways, in order to keep load to a
 reasonable level.
 
-    >>> from mechanize import LinkNotFoundError
     >>> from zope.security.interfaces import Unauthorized
+    >>> from mechanize import LinkNotFoundError
 
     >>> def can_download_translations(browser):
     ...     """Can browser download full package translations?
@@ -90,8 +90,8 @@ admin or expert, but he is one of the owners of a translation group.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
     >>> personset = getUtility(IPersonSet)

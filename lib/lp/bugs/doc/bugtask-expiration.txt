@@ -31,9 +31,11 @@ findExpirableBugTasks() requires a parameter for the minimum days old
 (min_days_old) that the bugtask has been in the unattended Incomplete
 status. It also requires specifying the user that is doing the search.
 
+    >>> from lp.bugs.interfaces.bugtask (
+    ...     BugTaskStatus,
+    ...     IBugTaskSet,
+    ...     )
     >>> from storm.store import Store
-    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks()
