@@ -78,4 +78,3 @@ class LanguagesSeriesTest(WindmillTestCase):
             u'French': True,
             u'Croatian': True,
             })
-

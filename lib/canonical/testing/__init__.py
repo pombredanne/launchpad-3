@@ -71,9 +71,9 @@ def getAppServerConfig():
     return BaseLayer.getAppServerConfig()
 
 
-def getRootLaunchpadUrl(sitename='mainsite', ensureSlash=False):
-    """Return the root url eg http://launchpad.dev:8085"""
-    return getAppServerConfig().root_launchpad_url(sitename, ensureSlash)
+def getRootLaunchpadUrl(facet='mainsite', ensureSlash=False):
+    """Return the correct root url for the given facet."""
+    return getAppServerConfig().root_launchpad_url(facet, ensureSlash)
 
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec
