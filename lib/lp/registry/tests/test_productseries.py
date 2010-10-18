@@ -106,7 +106,6 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
         object_with_driver.driver = self.factory.makePerson()
         return object_with_driver.driver
 
-
     def test_drivers_group(self):
         # A driver on the group is reported as one of the drivers of the
         # series.
@@ -276,7 +275,7 @@ class TestProductSeriesSet(TestCaseWithFactory):
 
 class TestProductSeriesReleases(TestCaseWithFactory):
     '''Tests the releases functions for productseries.'''
-    
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -300,6 +299,7 @@ class TestProductSeriesReleases(TestCaseWithFactory):
         self.assertEqual(
             second_release,
             self.productseries.getLatestRelease())
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
