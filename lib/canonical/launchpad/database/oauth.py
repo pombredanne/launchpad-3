@@ -263,7 +263,7 @@ class OAuthRequestToken(OAuthBase):
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
 
-    def review(self, user, permission, context=None):
+    def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
         assert not self.is_reviewed, (
             "Request tokens can be reviewed only once.")
@@ -271,6 +271,7 @@ class OAuthRequestToken(OAuthBase):
             'This request token has expired and can no longer be reviewed.'
             )
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_expires = date_expires
         self.person = user
         self.permission = permission
         if IProduct.providedBy(context):

@@ -213,7 +213,8 @@ class IOAuthRequestToken(IOAuthToken):
     date_expires = Datetime(
         title=_('Date expires'), required=False, readonly=False,
         description=_('The expiration date for the permission you give to '
-                      'the application which may act on your behalf.')
+                      'the application which may act on your behalf.'))
+    
     date_reviewed = Datetime(
         title=_('Date reviewed'), required=True, readonly=True,
         description=_('The date in which the user authorized (or not) the '
