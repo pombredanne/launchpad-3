@@ -127,5 +127,3 @@ And nothing about them is rendered at all:
         <foaf:nick>name21</foaf:nick>
       </foaf:Group>
     </rdf:RDF>
-
-
