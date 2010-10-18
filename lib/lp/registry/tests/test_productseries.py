@@ -273,5 +273,26 @@ class TestProductSeriesSet(TestCaseWithFactory):
                 self.ps_set.findByTranslationsImportBranch(branch, True))
 
 
+class TestProductSeriesReleases(TestCaseWithFactory):
+    '''Tests the releases functions for productseries.'''
+    
+    def setUp(self):
+        self.product = self.factory.makeProduct()
+        self.series = self.factory.makeProductSeries(product=self.product)
+
+    def test_getLatestRelease(self):
+        # getLatestRelease returns the most recent release.
+        release = self.makeProductRelease(
+                        product=self.product,
+                        productseries=self.productseries)
+        self.assertEqual(release, self.productseries.getLatestRelease())
+
+        second_release = self.makeProductRelease(
+                                product=self.product,
+                                productseries=self.productseries)
+        self.assertEqual(
+            second_release,
+            self.productseries.getLatestRelease())
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
