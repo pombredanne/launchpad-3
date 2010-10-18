@@ -22,16 +22,10 @@
            tal:define="are_private view/new_branches_are_private"
            tal:attributes="class python: are_private and 'first portlet private' or 'first portlet public'">
 
-        <p tal:condition="not:view/new_branches_are_private" id="privacy-text">
+        <p id="privacy-text">
           New branches you create for <tal:name replace="context/displayname"/>
-          are <strong>public</strong> initially.
+          are <strong tal:content="view/base_visibility_rule/title">Public</strong> initially.
         </p>
-
-        <p tal:condition="view/new_branches_are_private" id="privacy-text">
-          New branches you create for <tal:name replace="context/displayname"/>
-          are <strong>private</strong> initially.
-        </p>
-
       </div>
 
       <div id="involvement" class="portlet"
