@@ -50,6 +50,7 @@ from lp.code.errors import (
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
     NewBranchMergeProposalEvent,
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
@@ -645,12 +646,12 @@ class TestCreateCommentNotifications(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         commenter = self.factory.makePerson()
         login_person(commenter)
-        result, event = self.assertNotifies(
+        result, events = self.assertNotifies(
             NewCodeReviewCommentEvent,
             merge_proposal.createComment,
             owner=commenter,
             subject='A review.')
-        self.assertEqual(result, event.object)
+        self.assertEqual(result, events[0].object)
 
     def test_notify_on_nominate_suppressed_if_requested(self):
         # Ensure that the notification is supressed if the notify listeners
@@ -758,10 +759,11 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
         registrant = self.factory.makePerson()
-        result, event = self.assertNotifies(
-            NewBranchMergeProposalEvent,
+        result, events = self.assertNotifies(
+            [NewBranchMergeProposalEvent,
+             BranchMergeProposalNeedsReviewEvent],
             source_branch.addLandingTarget, registrant, target_branch)
-        self.assertEqual(result, event.object)
+        self.assertEqual(result, events[0].object)
 
     def test_getNotificationRecipients(self):
         """Ensure that recipients can be added/removed with subscribe"""
@@ -1333,12 +1335,12 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
-        result, event = self.assertNotifies(
+        result, events = self.assertNotifies(
             ReviewerNominatedEvent,
             merge_proposal.nominateReviewer,
             reviewer=reviewer,
             registrant=merge_proposal.source_branch.owner)
-        self.assertEqual(result, event.object)
+        self.assertEqual(result, events[0].object)
 
     def test_notify_on_nominate_suppressed_if_requested(self):
         # Ensure that a notification is suppressed if notify listeners is set

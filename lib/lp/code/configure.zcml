@@ -353,6 +353,10 @@
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
+           lp.code.interfaces.event.IBranchMergeProposalNeedsReviewEvent"
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_needs_review"/>
+  <subscriber
+      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_modified"/>
   <subscriber
