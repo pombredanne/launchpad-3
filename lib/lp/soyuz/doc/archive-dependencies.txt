@@ -157,7 +157,7 @@ despite the component it is actually published in.
 
 We will use Celso's PPA for testing these mechanisms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> print cprov.archive.displayname
     PPA for Celso Providelo

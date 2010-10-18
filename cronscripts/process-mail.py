@@ -13,7 +13,7 @@ from zope.component.interfaces import ComponentLookupError
 from canonical.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.mail.incoming import handleMail
+from lp.services.mail.incoming import handleMail
 from canonical.launchpad.interfaces import IMailBox
 
 
@@ -21,6 +21,7 @@ class ProcessMail(LaunchpadCronScript):
     usage = """%prog [options]
 
     """ + __doc__
+
     def main(self):
         try:
             handleMail(self.txn)

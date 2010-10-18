@@ -41,7 +41,7 @@ approve or reject.
 This message is now in Launchpad's librarian and accessible through the
 IMessageApprovalSet interface.
 
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_set = getUtility(IMessageApprovalSet)
     >>> held_message_anne = message_set.getMessageByMessageID('<first-post>')
     >>> print held_message_anne.message_id

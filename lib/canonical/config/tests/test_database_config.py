@@ -3,16 +3,19 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCase
-
 from canonical.config import config, dbconfig
-
 from canonical.launchpad.readonly import read_only_file_exists
 from canonical.launchpad.tests.readonly import (
-    remove_read_only_file, touch_read_only_file)
+    remove_read_only_file,
+    touch_read_only_file,
+    )
+from canonical.testing.layers import DatabaseLayer
+from lp.testing import TestCase
 
 
 class TestDatabaseConfig(TestCase):
+
+    layer = DatabaseLayer
 
     def test_overlay(self):
         # The dbconfig option overlays the database configurations of a
@@ -25,11 +28,12 @@ class TestDatabaseConfig(TestCase):
         self.assertEquals('librarian', config.librarian.dbuser)
 
         dbconfig.setConfigSection('librarian')
-        self.assertEquals('dbname=launchpad_ftest', dbconfig.rw_main_master)
+        expected_db = 'dbname=%s' % DatabaseLayer._db_fixture.dbname
+        self.assertEquals(expected_db, dbconfig.rw_main_master)
         self.assertEquals('librarian', dbconfig.dbuser)
 
         dbconfig.setConfigSection('launchpad')
-        self.assertEquals('dbname=launchpad_ftest', dbconfig.rw_main_master)
+        self.assertEquals(expected_db, dbconfig.rw_main_master)
         self.assertEquals('launchpad_main', dbconfig.dbuser)
 
     def test_required_values(self):

@@ -15,6 +15,7 @@ from datetime import (
     timedelta,
     )
 
+import re
 import pytz
 from sqlobject import (
     BoolCol,
@@ -93,6 +94,7 @@ class OAuthBase(SQLBase):
 
     getStore = _get_store
 
+
 class OAuthConsumer(OAuthBase):
     """See `IOAuthConsumer`."""
     implements(IOAuthConsumer)
@@ -101,6 +103,51 @@ class OAuthConsumer(OAuthBase):
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
+
+    # This regular expression singles out a consumer key that
+    # represents any and all apps running on a specific computer
+    # (usually a desktop). For instance:
+    #
+    # System-wide: Ubuntu desktop (hostname1)
+    #  - An Ubuntu desktop called "hostname1"
+    # System-wide: Windows desktop (Computer Name)
+    #  - A Windows desktop called "Computer Name"
+    # System-wide: Mac OS desktop (hostname2)
+    #  - A Macintosh desktop called "hostname2"
+    # System-wide Android phone (Bob's Phone)
+    #  - An Android phone called "Bob's Phone"
+    integrated_desktop_re = re.compile("^System-wide: (.*) \(([^)]*)\)$")
+
+    def _integrated_desktop_match_group(self, position):
+        """Return information about a desktop integration token.
+
+        A convenience method that runs the desktop integration regular
+        expression against the consumer key.
+
+        :param position: The match group to return if the regular
+        expression matches.
+
+        :return: The value of one of the match groups, or None.
+        """
+        match = self.integrated_desktop_re.match(self.key)
+        if match is None:
+            return None
+        return match.groups()[position]
+
+    @property
+    def is_integrated_desktop(self):
+        """See `IOAuthConsumer`."""
+        return self.integrated_desktop_re.match(self.key) is not None
+
+    @property
+    def integrated_desktop_type(self):
+        """See `IOAuthConsumer`."""
+        return self._integrated_desktop_match_group(0)
+
+    @property
+    def integrated_desktop_name(self):
+        """See `IOAuthConsumer`."""
+        return self._integrated_desktop_match_group(1)
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""

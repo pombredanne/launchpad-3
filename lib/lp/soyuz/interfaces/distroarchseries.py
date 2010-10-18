@@ -83,6 +83,12 @@ class IDistroArchSeries(IHasOwner):
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
             required=False))
+    enabled = Bool(
+        title=_("Enabled"),
+        description=_(
+            "Whether or not this DistroArchSeries is enabled for build "
+            "creation and publication."),
+        required=False, readonly=False)
 
     # Joins.
     packages = Attribute('List of binary packages in this port.')
