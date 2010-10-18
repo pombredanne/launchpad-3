@@ -7,14 +7,6 @@ Edit packaging view
     >>> product = factory.makeProduct(name='bonkers', displayname='Bonkers')
     >>> productseries = factory.makeProductSeries(
     ...     name='crazy', product=product)
-    >>> milestone = factory.makeMilestone(
-    ...     product=product,
-    ...     productseries=productseries,
-    ...     name='1.0')
-    >>> release = factory.makeProductRelease(
-    ...     product=product,
-    ...     productseries=productseries,
-    ...     milestone=milestone)
     >>> distribution = factory.makeDistribution(
     ...     name='youbuntu', displayname='Youbuntu')
     >>> distroseries = factory.makeDistroRelease(name='busy',
@@ -189,8 +181,6 @@ bonkers project, the portlet will display that information.
 
     >>> print extract_text(content)
     Bonkers...crazy...
-    Latest version:
-    1.0
     Bug supervisor: no
     Bug tracker: no
     Branch: no
