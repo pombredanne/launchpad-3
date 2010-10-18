@@ -34,6 +34,7 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
     CannotBuild,
+    CannotFetchFile,
     CannotResumeHost,
     )
 
@@ -125,7 +126,7 @@ class SlaveScanner:
         error_message = failure.getErrorMessage()
         if failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
-            CannotResumeHost, BuildDaemonError):
+            CannotResumeHost, BuildDaemonError, CannotFetchFile):
             self.logger.info("Scanning failed with: %s" % error_message)
         else:
             self.logger.info("Scanning failed with: %s\n%s" %
