@@ -183,13 +183,24 @@ class IBuilder(IHasOwner):
         build will be aborted and the slave cleaned in preparation for a new
         task. The decision about the slave's correctness is left up to
         `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
         """
 
     def updateStatus(logger=None):
-        """Update the builder's status by probing it."""
+        """Update the builder's status by probing it.
+        
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
 
     def cleanSlave():
-        """Clean any temporary files from the slave."""
+        """Clean any temporary files from the slave.
+        
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
 
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
@@ -200,6 +211,9 @@ class IBuilder(IHasOwner):
         This takes place asynchronously: Actually killing everything running
         can take some time so the slave status should be queried again to
         detect when the abort has taken effect. (Look for status ABORTED).
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
         """
 
     def resumeSlaveHost():
@@ -211,7 +225,9 @@ class IBuilder(IHasOwner):
         :raises: CannotResumeHost: if builder is not virtual or if the
             configuration command has failed.
 
-        :return: command stdout and stderr buffers as a tuple.
+        :return: A Deferred that fires when the resume operation finishes,
+            whose value is a (stdout, stderr) tuple for success, or a Failure
+            whose value is a CannotResumeHost exception.
         """
 
     def setSlaveForTesting(proxy):
@@ -220,16 +236,19 @@ class IBuilder(IHasOwner):
     def slaveStatus():
         """Get the slave status for this builder.
 
-        :return: a dict containing at least builder_status, but potentially
-            other values included by the current build behavior.
+        :return: A Deferred which fires when the slave dialog is complete.
+            Its value is a dict containing at least builder_status, but
+            potentially other values included by the current build
+            behavior.
         """
 
     def slaveStatusSentence():
         """Get the slave status sentence for this builder.
 
-        :return: A tuple with the first element containing the slave status,
-            build_id-queue-id and then optionally more elements depending on
-            the status.
+        :return: A Deferred which fires when the slave dialog is complete.
+            Its value is a  tuple with the first element containing the
+            slave status, build_id-queue-id and then optionally more
+            elements depending on the status.
         """
 
     def verifySlaveBuildCookie(slave_build_id):
@@ -249,9 +268,10 @@ class IBuilder(IHasOwner):
 
         :param build_queue_item: A BuildQueueItem to build.
         :param logger: A logger to be used to log diagnostic information.
-        :raises BuildSlaveFailure: When the build slave fails.
-        :raises CannotBuild: When a build cannot be started for some reason
-            other than the build slave failing.
+
+        :return: A Deferred that fires after the dispatch has completed whose
+            value is None, or a Failure that contains an exception
+            explaining what went wrong.
         """
 
     def transferSlaveFileToLibrarian(file_sha1, filename, private):
@@ -278,6 +298,8 @@ class IBuilder(IHasOwner):
 
         :param logger: The logger object to be used for logging.
         :param error_message: The error message to be used for logging.
+        :return: A Deferred that fires after the virtual slave was resumed
+            or immediately if it's a non-virtual slave.
         """
 
     def findAndStartJob(buildd_slave=None):
@@ -285,7 +307,8 @@ class IBuilder(IHasOwner):
 
         :param buildd_slave: An optional buildd slave that this builder should
             talk to.
-        :return: the `IBuildQueue` instance found or None if no job was found.
+        :return: A Deferred whose value is the `IBuildQueue` instance
+            found or None if no job was found.
         """
 
     def getBuildQueue():
