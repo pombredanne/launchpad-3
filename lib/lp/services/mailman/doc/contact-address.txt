@@ -22,8 +22,10 @@ The team is set as the project's answer contact.
 
     >>> from canonical.launchpad.testing.pages import strip_label
 
+    >>> from canonical.testing import getRootLaunchpadUrl
+    >>> root_url = getRootLaunchpadUrl()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
+    >>> browser.open('%s/~itest-one/+contactaddress' % root_url)
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
@@ -33,8 +35,9 @@ The team is set as the project's answer contact.
     >>> [strip_label(label) for label in control.displayValue]
     ['The Launchpad mailing list for this team...]
 
+    >>> answers_url = getRootLaunchpadUrl('answers')
     >>> browser.open(
-    ...     'http://answers.launchpad.dev:8085/firefox/+answer-contact')
+    ...     '%s/firefox/+answer-contact' % answers_url)
     >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
     ...     'Itest One']
     >>> browser.getControl('Continue').click()
@@ -42,7 +45,7 @@ The team is set as the project's answer contact.
 Now that the contact address for the team is its mailing list, a new questions
 will be delivered to the mailing list.
 
-    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
+    >>> browser.open('%s/firefox/+addquestion' % answers_url)
     >>> browser.getControl('Summary').value = 'A new question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'
@@ -86,7 +89,7 @@ Here is the message to the person who added the question.
     X-RcptTo: no-priv@canonical.com
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev:8085/firefox/+question/...
+    http://answers.launchpad.dev:.../firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -125,7 +128,7 @@ Here is the message to Anne, the mailing list member.
     X-RcptTo: anne.person@example.com
     <BLANKLINE>
     New question #... on Mozilla Firefox:
-    http://answers.launchpad.dev:8085/firefox/+question/...
+    http://answers.launchpad.dev:.../firefox/+question/...
     <BLANKLINE>
     More detail.
     <BLANKLINE>
@@ -154,7 +157,7 @@ Similarly, when the team is subscribed to a blueprint, a notification will be
 sent to Anne and to the archive, via the mailing list.
 
     >>> browser.open(
-    ...     'http://launchpad.dev:8085/firefox/+spec/canvas/+addsubscriber')
+    ...     '%s/firefox/+spec/canvas/+addsubscriber' % root_url)
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
@@ -195,7 +198,7 @@ This one gets sent to Anne...
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:.../firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -222,7 +225,7 @@ This one gets sent to Anne...
     Objects.
     <BLANKLINE>
     --
-      http://blueprints.launchpad.dev:8085/firefox/+spec/canvas
+      http://blueprints.launchpad.dev:.../firefox/+spec/canvas
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
@@ -232,7 +235,7 @@ This one gets sent to Anne...
 The team's contact address is set to each team member individually.
 Notifications will no longer be sent to the mailing list.
 
-    >>> browser.open('http://launchpad.dev:8085/~itest-one/+contactaddress')
+    >>> browser.open('%s/~itest-one/+contactaddress' % root_url)
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
@@ -242,7 +245,7 @@ Notifications will no longer be sent to the mailing list.
     >>> [strip_label(label) for label in control.displayValue]
     ['Each member individually']
 
-    >>> browser.open('http://answers.launchpad.dev:8085/firefox/+addquestion')
+    >>> browser.open('%s/firefox/+addquestion' % answers_url)
     >>> browser.getControl('Summary').value = 'Another question'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Description').value = 'More detail.'

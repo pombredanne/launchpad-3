@@ -15,4 +15,5 @@ from canonical.testing.layers import BaseWindmillLayer
 class TranslationsWindmillLayer(BaseWindmillLayer):
     """Layer for Translations Windmill tests."""
 
-    base_url = 'http://translations.launchpad.dev:8085/'
+    from canonical.testing import getRootLaunchpadUrl
+    base_url = getRootLaunchpadUrl('translations')

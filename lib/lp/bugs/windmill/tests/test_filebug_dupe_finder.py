@@ -11,7 +11,7 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
+FILEBUG_URL = '%s/firefox/+filebug' % BugsWindmillLayer.base_url
 
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/div'
 FORM_OVERLAY_CANCEL = (

@@ -11,6 +11,8 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'getAppServerConfig'
+    'getRootLaunchpadUrl',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -63,6 +65,15 @@ def reset_logging():
     from zope.testing.testrunner.logsupport import Logging
     Logging(Runner()).global_setup()
 
+
+def getAppServerConfig():
+    """Return a config suitable for AppServer tests."""
+    return BaseLayer.getAppServerConfig()
+
+
+def getRootLaunchpadUrl(sitename='mainsite', ensureSlash=False):
+    """Return the root url eg http://launchpad.dev:8085"""
+    return getAppServerConfig().root_launchpad_url(sitename, ensureSlash)
 
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec

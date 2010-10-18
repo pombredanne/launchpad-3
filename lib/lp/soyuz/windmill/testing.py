@@ -15,4 +15,5 @@ from canonical.testing.layers import BaseWindmillLayer
 class SoyuzWindmillLayer(BaseWindmillLayer):
     """Layer for Soyuz Windmill tests."""
 
-    base_url = 'http://launchpad.dev:8085/'
+    from canonical.testing import getRootLaunchpadUrl
+    base_url = getRootLaunchpadUrl()

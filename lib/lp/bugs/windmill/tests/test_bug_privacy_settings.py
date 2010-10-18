@@ -11,7 +11,7 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
+BUG_URL = u'%s/bugs/15' % BugsWindmillLayer.base_url
 MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/div'
 FORM_NOT_VISIBLE = (
     u'element.className.search("yui-lazr-formoverlay-hidden") != -1')

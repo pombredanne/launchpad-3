@@ -13,7 +13,7 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
+BUG_URL = u'%s/bugs/%%s' % BugsWindmillLayer.base_url
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
 PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
 

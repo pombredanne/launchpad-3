@@ -465,6 +465,12 @@ class BaseLayer:
         finally:
             del frame # As per no-leak stack inspection in Python reference.
 
+    @classmethod
+    def getAppServerConfig(cls):
+        """Return a config suitable for AppServer tests."""
+        # XXX wallyworld 2010-10-18
+        # use BaseLayer.appserver_config_name when available
+        return CanonicalConfig('testrunner-appserver')
 
 class MemcachedLayer(BaseLayer):
     """Provides tests access to a memcached.
@@ -1934,15 +1940,11 @@ class BaseWindmillLayer(AppServerLayer):
 
         # Patch the config to provide the port number and not use https.
         sites = (
-            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
-            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
-            ('vhost.blueprints',
-                'rooturl: http://blueprints.launchpad.dev:8085/'),
-            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
-            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
-            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
-            ('vhost.translations',
-                'rooturl: http://translations.launchpad.dev:8085/'))
+            (('vhost.%s' % sitename,
+            'rooturl: %s/' % getattr(BaseLayer.getAppServerConfig().vhost,
+                                    sitename).rooturl)
+            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
+                            'code', 'testopenid', 'translations']))
         for site in sites:
             config.push('windmillsettings', "\n[%s]\n%s\n" % site)
         allvhosts.reload()
@@ -2013,7 +2015,7 @@ class BaseWindmillLayer(AppServerLayer):
         # driver from out here.
         config_text = dedent("""\
             START_FIREFOX = True
-            TEST_URL = '%s'
+            TEST_URL = '%s/'
             CONSOLE_LOG_LEVEL = %d
             """ % (cls.base_url, logging.NOTSET))
         cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')

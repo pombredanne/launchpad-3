@@ -3148,8 +3148,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None):
         if person is None:
             person = self.makePerson()
+        from canonical.testing import getRootLaunchpadUrl
         launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
+            service_root=getRootLaunchpadUrl("api"))
         login_person(person)
         return launchpad
 

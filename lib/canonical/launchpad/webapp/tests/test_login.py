@@ -57,6 +57,7 @@ from canonical.launchpad.webapp.login import (
     OpenIDLogin,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import getRootLaunchpadUrl
 from canonical.testing.layers import (
     AppServerLayer,
     DatabaseFunctionalLayer,
@@ -549,7 +550,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
 
     def test_replay_attacks_do_not_succeed(self):
         browser = Browser(mech_browser=MyMechanizeBrowser())
-        browser.open('http://launchpad.dev:8085/+login')
+        browser.open('%s/+login' % getRootLaunchpadUrl())
         # On a JS-enabled browser this page would've been auto-submitted
         # (thanks to the onload handler), but here we have to do it manually.
         self.assertIn('body onload', browser.contents)
@@ -650,20 +651,20 @@ class TestOpenIDRealm(TestCaseWithFactory):
 
     def test_realm_for_mainsite(self):
         browser = Browser()
-        browser.open('http://launchpad.dev:8085/+login')
+        browser.open('%s/+login' % getRootLaunchpadUrl())
         # At this point browser.contents contains a hidden form which would've
         # been auto-submitted if we had in-browser JS support, but since we
         # don't we can easily inspect what's in the form.
-        self.assertEquals('http://launchpad.dev:8085/',
+        self.assertEquals('%s/' % browser.rooturl,
                           browser.getControl(name='openid.realm').value)
 
     def test_realm_for_vhosts(self):
         browser = Browser()
-        browser.open('http://bugs.launchpad.dev:8085/+login')
+        browser.open('%s/+login' % getRootLaunchpadUrl('bugs'))
         # At this point browser.contents contains a hidden form which would've
         # been auto-submitted if we had in-browser JS support, but since we
         # don't we can easily inspect what's in the form.
-        self.assertEquals('http://launchpad.dev:8085/',
+        self.assertEquals('%s/' % browser.rooturl,
                           browser.getControl(name='openid.realm').value)
 
 

@@ -731,8 +731,9 @@ class TestWebservice(TestCaseWithFactory):
             recipe_text = self.makeRecipeText()
         db_archive = self.factory.makeArchive(owner=owner, name="recipe-ppa")
         transaction.commit()
+        from canonical.testing import getRootLaunchpadUrl
         launchpad = launchpadlib_for('test', user,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=getRootLaunchpadUrl('api'))
         login(ANONYMOUS)
         distroseries = ws_object(launchpad, db_distroseries)
         ws_owner = ws_object(launchpad, owner)

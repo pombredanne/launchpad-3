@@ -15,4 +15,5 @@ from canonical.testing.layers import BaseWindmillLayer
 class CodeWindmillLayer(BaseWindmillLayer):
     """Layer for Code Windmill tests."""
 
-    base_url = 'http://code.launchpad.dev:8085/'
+    from canonical.testing import getRootLaunchpadUrl
+    base_url = getRootLaunchpadUrl('code')

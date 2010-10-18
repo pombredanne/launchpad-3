@@ -9,10 +9,12 @@ __all__ = [
     ]
 
 
+from canonical.config import config
 from canonical.testing.layers import BaseWindmillLayer
 
 
 class BugsWindmillLayer(BaseWindmillLayer):
     """Layer for Bugs Windmill tests."""
 
-    base_url = 'http://bugs.launchpad.dev:8085/'
+    from canonical.testing import getRootLaunchpadUrl
+    base_url = getRootLaunchpadUrl('bugs')

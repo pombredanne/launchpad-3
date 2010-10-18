@@ -114,8 +114,10 @@ list.  It is a list-wide url, not a url-specific to the individual message
 
 This url should exactly match the link given on the team's overview page.
 
+    >>> from canonical.testing import getRootLaunchpadUrl
+    >>> root_url = getRootLaunchpadUrl()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/~itest-one')
+    >>> browser.open('%s/~itest-one' % root_url)
     >>> browser.getLink(id='mailing-list-archive')
     <Link text='View archive' url='http://lists.launchpad.dev/itest-one'>
     >>> print message['list-archive']

@@ -15,8 +15,8 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-CHOOSE_AFFECTED_URL = ('http://bugs.launchpad.dev:8085/tomcat/+bug/3/'
-                       '+choose-affected-product')
+CHOOSE_AFFECTED_URL = ('%s/tomcat/+bug/3/+choose-affected-product'
+                       % BugsWindmillLayer.base_url)
 
 class TestBugAlsoAffects(WindmillTestCase):
 
