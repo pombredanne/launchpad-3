@@ -30,7 +30,7 @@ are simple little functions.
 
 == User files a bug ==
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> params = CreateBugParams(
     ...     title="a test bug",
@@ -48,7 +48,7 @@ are simple little functions.
 
 == Bug title edited ==
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.title = "new bug title"
     >>> bug_edited = ObjectModifiedEvent(
@@ -66,7 +66,7 @@ are simple little functions.
 == Source package assignment edited ==
 
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IDistributionSet)
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']

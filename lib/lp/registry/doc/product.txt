@@ -274,7 +274,7 @@ one.
 
 This is true even if its project has a bug tracker specified.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
@@ -407,7 +407,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 

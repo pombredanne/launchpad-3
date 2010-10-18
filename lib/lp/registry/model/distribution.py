@@ -129,6 +129,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pocket import suffixpocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
@@ -918,8 +919,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
-        from lp.archivepublisher.publishing import suffixpocket
-
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
         # Sort it longest string first.
