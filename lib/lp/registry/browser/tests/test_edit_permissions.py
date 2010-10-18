@@ -75,21 +75,46 @@ class PersonEditViewPermissionTestCase(EditViewPermissionBase):
 
 
 class ProductEditViewPermissionTestCase(EditViewPermissionBase):
-    """Tests for permissions to access prodcut +edit page."""
+    """Tests for permissions to access product +edit page."""
     def setupTarget(self):
         self.target = self.factory.makeProduct()
 
 
 class ProjectEditViewPermissionTestCase(EditViewPermissionBase):
-    """Tests for permissions to access prodcut +edit page."""
+    """Tests for permissions to access product +edit page."""
     def setupTarget(self):
         self.target = self.factory.makeProject()
 
 
 class DistributionEditViewPermissionTestCase(EditViewPermissionBase):
-    """Tests for permissions to access prodcut +edit page."""
+    """Tests for permissions to access product +edit page."""
     def setupTarget(self):
         self.target = self.factory.makeDistribution()
+
+
+class DistroSourcePackageEditViewPermissionTestCase(EditViewPermissionBase):
+    """Test for permissions to access a distribution source package
+       +edit page."""
+
+    def setupTarget(self):
+        self.d_owner = self.factory.makePerson()
+        login_person(self.d_owner)
+        self.distro = self.factory.makeDistribution(name='youbuntu',
+                                                    owner=self.d_owner)
+        self.target = self.factory.makeDistributionSourcePackage(
+            distribution=self.distro)
+        self.supervisor_team = self.factory.makeTeam(
+            owner=self.d_owner)
+        self.supervisor_member = self.factory.makePerson()
+        self.supervisor_team.addMember(
+            self.supervisor_member, self.d_owner)
+        self.distro.setBugSupervisor(
+            self.supervisor_team, self.d_owner)
+
+    def test_bug_supervisor_can_edit(self):
+        login_person(self.supervisor_member)
+        view = create_initialized_view(self.target, '+edit')
+        self.assertTrue(check_permission('launchpad.Edit', view))
 
 
 def test_suite():

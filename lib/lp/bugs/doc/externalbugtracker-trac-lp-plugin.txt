@@ -32,8 +32,8 @@ Trac to validate $token and return a Set-Cookie header.
     >>> import random
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.url import urlappend
-    >>> from canonical.launchpad.interfaces import ILoginTokenSet
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> class FakeResponse:
     ...     def __init__(self):
@@ -311,7 +311,7 @@ TracLPPlugin implements the ISupportsCommentImport interface, providing
 three methods: getCommentIds(), getPosterForComment() and
 getMessageForComment().
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> ISupportsCommentImport.providedBy(trac)
     True
 
@@ -476,7 +476,7 @@ The TracLPPlugin ExternalBugTracker implements the
 ISupportsCommentPushing interface, which allows Launchpad to use it to
 push comments to the remote bug tracker.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> ISupportsCommentPushing.providedBy(trac)
     True
 
@@ -491,7 +491,7 @@ To demonstrate this method, we'll create a comment to push.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> message = getUtility(IMessageSet).fromText(
     ...     "A subject", "An example comment to push.", poster)
 

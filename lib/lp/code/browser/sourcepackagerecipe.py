@@ -60,7 +60,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
-    TooNewRecipeFormat
+    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -269,7 +269,7 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
-        'build_daily'
+        'build_daily',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive')
@@ -384,7 +384,8 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),}
+            'recipe_text': str(self.context.builder_recipe),
+            }
 
     @property
     def cancel_url(self):

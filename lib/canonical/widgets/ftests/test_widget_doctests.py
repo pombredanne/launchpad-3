@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 import unittest, doctest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -13,7 +13,3 @@ def test_suite():
     suite.addTest(doctest.DocTestSuite('canonical.widgets.textwidgets'))
     suite.addTest(doctest.DocTestSuite('canonical.widgets.date'))
     return suite
-
-if __name__ == '__main__':
-    default_test = test_suite()
-    unittest.main('default_test')

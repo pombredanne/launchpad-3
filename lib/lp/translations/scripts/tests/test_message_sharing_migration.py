@@ -12,7 +12,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     record_statements,
@@ -33,6 +33,7 @@ class TranslatableProductMixin:
     Sets up a product with series "trunk" and "stable," each with a
     template.
     """
+
     def setUpProduct(self):
         self.product = self.factory.makeProduct()
         self.trunk = self.product.getSeries('trunk')
@@ -141,6 +142,7 @@ class TranslatedProductMixin(TranslatableProductMixin):
     Creates one POTMsgSet for trunk and one for stable, i.e. a
     pre-sharing situation.
     """
+
     def setUpProduct(self):
         super(TranslatedProductMixin, self).setUpProduct()
 
@@ -597,6 +599,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         # The is_current_ubuntu and is_current_upstream flags from the
         # duplicate messages have been merged into a single message,
         # current in both ubuntu and upstream.
+
         message = self._getMessage(potmsgset, self.trunk_template)
         self.assertTrue(message.is_current_ubuntu)
         self.assertTrue(message.is_current_upstream)

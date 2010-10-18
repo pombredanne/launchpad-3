@@ -139,7 +139,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
                 'This translation message already exists in the database.')
 
         self.id = None
-        self.pofile = None
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
@@ -218,7 +217,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     _table = 'TranslationMessage'
 
-    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=False)
     browser_pofile = None
     potemplate = ForeignKey(
         foreignKey='POTemplate', dbName='potemplate', notNull=False,

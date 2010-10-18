@@ -53,9 +53,9 @@ Download translations and Translation details should linked to the proper
 pages
 
     >> print nav.getLink("Download translation").url
-    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
     >> print nav.getLink("Translation details").url
-    https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Rendering the form in read-only mode does not actually stop an anonymous
 visitor (e.g. a spam bot, or a user whose login has expired) from submitting
@@ -68,28 +68,28 @@ Translation Admin Access
 
 Let's log in.
 
-  >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
-  ...     'evolution/+pots/evolution-2.2/es/+translate')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/+translate')
 
 As a translation admin you will have access to the download, upload
 and details pages for the pofile this message belongs to. In the same time
 you have access to the link for switching between translator and reviewer
 working mode
 
-  >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
-  >>> print extract_text(nav)
-  Download translation Upload translation Translation details
-  Reviewer mode (What's this?)
+    >>> nav = find_tag_by_id(admin_browser.contents, 'nav-pofile-subpages')
+    >>> print extract_text(nav)
+    Download translation Upload translation Translation details
+    Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 
-  >> print nav.getLink("Download translation").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
-  >> print nav.getLink("Upload translation").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
-  >> print nav.getLink("Translation details").url
-  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
+    >> print nav.getLink("Download translation").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    >> print nav.getLink("Upload translation").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+    >> print nav.getLink("Translation details").url
+    https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 
 Requesting English and its variant languages

@@ -1,11 +1,12 @@
-= TranslationMessage =
+TranslationMessage
+==================
 
 Let's do some imports we will need to test this class.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationmessage import (
     ...     ITranslationMessage)
     >>> from lp.translations.interfaces.translator import ITranslatorSet
@@ -31,7 +32,8 @@ DummyTranslationMessage both implement ITranslationMessage interface:
     True
 
 
-== plural_forms ==
+plural_forms
+------------
 
 This property returns a number of plural forms needed for a
 TranslationMessage to be 'complete', i.e. contain all the necessary
@@ -87,7 +89,8 @@ a default of 2, which is the most common number of plural forms:
     2
 
 
-== isHidden ==
+isHidden
+--------
 
 This method tells if a TranslationMessage is actually shown in the
 web translation interface or not.
@@ -201,7 +204,9 @@ and last current translation is not hidden either.
     >>> new_current_translation.isHidden(pofile_sr)
     False
 
-== translations & all_msgstrs ==
+
+translations & all_msgstrs
+--------------------------
 
 The translations attribute is a list containing all translation strings
 for the message, up to and including the last plural form it can have.
@@ -260,7 +265,8 @@ These are POTranslation references, not strings.
     None
 
 
-== Composing SQL involving plural forms ==
+Composing SQL involving plural forms
+------------------------------------
 
 SQL Queries involving the TranslationMessage.msgstr* attributes often
 get repetitive.  We have some helper functions to make it easier on the

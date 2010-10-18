@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet

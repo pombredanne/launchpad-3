@@ -460,7 +460,7 @@ class ReturnToReferrerMixin:
     between the request to view the form and submitting the form.
 
     _return_attribute_name and _return_attribute_values are also stored
-    as hidden fields and they are use to check the validity of _return_url.
+    as hidden fields and they are used to check the validity of _return_url.
 
     If _return_url depends on _return_attribute_name, the result of a form
     submission can invalidate it.

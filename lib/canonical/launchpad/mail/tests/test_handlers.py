@@ -14,7 +14,7 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import MaloneHandler
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import (
     person_logged_in,
@@ -114,7 +114,3 @@ def test_suite():
     suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

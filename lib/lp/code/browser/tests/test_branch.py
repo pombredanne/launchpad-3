@@ -22,7 +22,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
@@ -45,7 +45,6 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.testing import (
-    ANONYMOUS,
     login,
     login_person,
     logout,
@@ -78,6 +77,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://example.com/good/mirror")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "http://example.com/good/mirror", view.mirror_location)
@@ -89,6 +89,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "<private server>", view.mirror_location)
@@ -106,6 +107,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, owner)
         self.assertEqual(
             "http://private.example.com/bzr-mysql/mysql-5.0",
@@ -126,6 +128,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('other@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, other)
         self.assertEqual(
             "<private server>", view.mirror_location)
@@ -160,7 +163,7 @@ class TestBranchView(TestCaseWithFactory):
             len(branch.mirror_status_message)
             <= branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH,
             "branch.mirror_status_message longer than expected: %r"
-            % (branch.mirror_status_message,))
+            % (branch.mirror_status_message, ))
         self.assertEqual(
             branch.mirror_status_message, branch_view.mirror_status_message)
         self.assertEqual(
@@ -185,7 +188,7 @@ class TestBranchView(TestCaseWithFactory):
                 'whiteboard': '',
                 'owner': arbitrary_person,
                 'author': arbitrary_person,
-                'product': arbitrary_product
+                'product': arbitrary_product,
                 }
             add_view.add_action.success(data)
             # Make sure that next_mirror_time is a datetime, not an sqlbuilder

@@ -27,9 +27,13 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistroSeries, ILaunchpadCelebrities,
-    ...     IProductSet, ISourcePackageNameSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.distroseries import DistroSeries
@@ -98,7 +102,7 @@ imported.
     False
 
     >>> entry.getGuessedPOFile().title
-    u'Serbian (sr) translation of evolution-2.2 in Ubuntu Hoary package "evolution"'
+    u'Serbian (sr) ... of evolution-2.2 in Ubuntu Hoary package "evolution"'
 
 
 Let's try now to update the entries.
@@ -256,7 +260,6 @@ First, we are going to add three new sourcepackagenames for this test,
 kdebase, kde-i18n-es and kde-l10n-sr-latin. The first is from where the .pot
 file come and the others have .po files.
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> kdebase = sourcepackagenameset.new('kdebase')
     >>> kde_i18n_es = sourcepackagenameset.new('kde-i18n-es')
@@ -296,7 +299,7 @@ Let's attach a .po file from kde-i18n-es
 And we will get the right IPOFile.
 
     >>> es_entry.getGuessedPOFile().title
-    u'Spanish (es) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
+    u'Spanish (es) ... of kdebugdialog in Ubuntu Hoary package "kdebase"'
 
 The kde-i18n-sr-latin is a bit special, the language is sr@latin and we should
 be able to know that.
@@ -310,7 +313,7 @@ be able to know that.
 And we will get the right IPOFile.
 
     >>> sr_latin_entry.getGuessedPOFile().title
-    u'Serbian Latin (sr@latin) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
+    u'Serbian Latin (sr@latin) ... of kdebugdialog ... package "kdebase"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
@@ -437,7 +440,7 @@ Let's try now a language with variant information like sr@latin.
 And we will get the right IPOFile.
 
     >>> sr_latin_entry.getGuessedPOFile().title
-    u'Serbian Latin (sr@latin) translation of koffice in Ubuntu Hoary package "koffice"'
+    u'Serbian Latin (sr@latin) ... koffice in Ubuntu Hoary package "koffice"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
@@ -600,7 +603,8 @@ sourcepackagename and test that layout.
 Let's attach the .pot file
 
     >>> zope_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/zope.pot',
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/'
+    ...     'locales/zope.pot',
     ...     'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
@@ -610,20 +614,23 @@ Create the template name and attach this new import to it.
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
     >>> zope_pot_entry.potemplate = subset.new(
     ...     'zope', 'zope',
-    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/zope.pot',
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/'
+    ...     'locales/zope.pot',
     ...     rosetta_experts)
     >>> zope_pot_entry.potemplate.title
     u'Template "zope" in Ubuntu Hoary package "zope"'
 
 And set this entry as already imported.
 
-    >>> zope_pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
+    >>> zope_pot_entry.setStatus(
+    ...     RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> flush_database_updates()
 
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/es/LC_MESSAGES/zope.po',
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales'
+    ...     '/es/LC_MESSAGES/zope.po',
     ...     'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
@@ -636,7 +643,8 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales/es/LC_MESSAGES/zope-test.po',
+    ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/'
+    ...     'locales/es/LC_MESSAGES/zope-test.po',
     ...     'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
@@ -732,7 +740,7 @@ Let's attach a .po file now.
 And we will get the right IPOFile.
 
     >>> es_entry.getGuessedPOFile().title
-    u'Spanish (es) translation of help in Ubuntu Hoary package "gnome-terminal"'
+    u'Spanish (es) ... of help in Ubuntu Hoary package "gnome-terminal"'
 
 Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.

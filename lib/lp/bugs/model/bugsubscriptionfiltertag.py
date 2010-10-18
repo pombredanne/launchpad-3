@@ -27,3 +27,11 @@ class BugSubscriptionFilterTag(Storm):
 
     include = Bool(allow_none=False)
     tag = Unicode(allow_none=False)
+
+    @property
+    def qualified_tag(self):
+        """The tag qualified with a hyphen if it is to be omitted."""
+        if self.include:
+            return self.tag
+        else:
+            return u"-" + self.tag

@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp import urlsplit
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -48,7 +48,10 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.bugs.model.bugwatch import get_bug_watch_ids
+from lp.bugs.model.bugwatch import (
+    BugWatchDeletionError,
+    get_bug_watch_ids,
+    )
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
@@ -464,6 +467,14 @@ class TestBugWatch(TestCaseWithFactory):
         # watches or resemble IDs.
         self.assertRaises(
             AssertionError, list, get_bug_watch_ids(['fred']))
+
+    def test_destroySelf_raise_error_when_linked_to_a_task(self):
+        # It's not possible to delete a bug watch that's linked to a
+        # task. Trying will result in a BugWatchDeletionError.
+        bug_watch = self.factory.makeBugWatch()
+        bug = bug_watch.bug
+        bug.default_bugtask.bugwatch = bug_watch
+        self.assertRaises(BugWatchDeletionError, bug_watch.destroySelf)
 
 
 class TestBugWatchSet(TestCaseWithFactory):

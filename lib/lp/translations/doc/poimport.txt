@@ -1,4 +1,3 @@
-==========
 PO Imports
 ==========
 
@@ -6,12 +5,14 @@ The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
 Test Setup
-==========
+----------
 
 Here are some imports we need to get this test running.
 
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
@@ -34,10 +35,10 @@ Login as an admin to be able to do changes to the import queue.
 
 
 Importing a Template
-====================
+--------------------
 
-Normal procedure is to import a template, followed by translations.
-A template is created first.  After that, imports are done using the
+Normal procedure is to import a template, followed by translations. A
+template is created first.  After that, imports are done using the
 POFile.importFromQueue and POTemplate.importFromQueue methods.
 
     >>> distroseries = factory.makeUbuntuDistroSeries()
@@ -91,8 +92,8 @@ This is the file that'll get imported.
 
 We sometimes saw deadlocks as POFile statistics were updated after
 importing a template.  The operation would read all translation messages
-for the entire template in the same transaction that did the import.
-To prevent this, the importer now does intermediate commits while
+for the entire template in the same transaction that did the import. To
+prevent this, the importer now does intermediate commits while
 recomputing statistics.
 
     >>> from lp.testing.faketransaction import FakeTransaction
@@ -138,6 +139,7 @@ A successful import is confirmed by email.
 
     >>> print subject
     Translation template import - ...
+
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -168,7 +170,7 @@ The file references field should be there
 
 
 Import Preconditions
-====================
+....................
 
 The API for POTemplate.importFromQueue demands a translation import
 queue entry to import.
@@ -198,7 +200,7 @@ any other file would be an error.
 
 
 Importing a Translation
-=======================
+-----------------------
 
 Now let's get a PO file to import.
 
@@ -214,8 +216,8 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.setPathIfUnique(u'po/cy.po')
 
-It's newly created, so it has only one translation which is the translation
-credits.
+It's newly created, so it has only one translation which is the
+translation credits.
 
     >>> pofile.getPOTMsgSetTranslated().count()
     1
@@ -227,7 +229,7 @@ And the statistics reflect it.
 
 
 Import With Errors
-------------------
+..................
 
 Here are the contents of the file we'll be importing. It has some
 validation errors.
@@ -337,6 +339,7 @@ We can also get the ones that have validation errors.
     >>> potmsgsets = pofile.getPOTMsgSetWithErrors()
     >>> potmsgsets.count()
     1
+
     >>> for potmsgset in potmsgsets:
     ...     translationmessages = potmsgset.getLocalTranslationMessages(
     ...         pofile.potemplate, pofile.language)
@@ -354,6 +357,7 @@ Check that the plural form was imported correctly.
     ...     pofile.potemplate, pofile.language)
     >>> print imported_translationmessage.validation_status.name
     OK
+
     >>> imported_translationmessage.translations
     [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
@@ -365,10 +369,12 @@ translator.
     u'Carlos Perell\xf3 Mar\xedn'
 
 The import process produces an email warning us of partial failure, but
-doesn't send it out for upstream uploads (indicated with subject of None).
+doesn't send it out for published uploads (indicated with subject of
+None).
 
     >>> print subject
     None
+
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
@@ -403,7 +409,7 @@ error_output.
 
 
 Import With Warnings
---------------------
+....................
 
 The import may also succeed but produce syntax warnings.  These need not
 be tied to particular messages (they could be in the header, for
@@ -467,7 +473,7 @@ that, but it should help a bit.
 
 
 Import Without Errors
----------------------
+.....................
 
 Now, let's import one without errors.
 
@@ -513,13 +519,15 @@ We must approve the entry to be able to import it.
 
 At this point, the statistics note that we have 2 translations coming
 from imported files (currentCount), and none updated in Launchpad
-Translations. The translation credits message is counted as translated in
-rosetta.
+Translations. The translation credits message is counted as translated
+in rosetta.
 
     >>> pofile.currentCount()
     2
+
     >>> pofile.updatesCount()
     0
+
     >>> pofile.rosettaCount()
     1
 
@@ -540,8 +548,10 @@ files are now counted as coming from Launchpad translations
 
     >>> pofile.currentCount()
     2
+
     >>> pofile.updatesCount()
     0
+
     >>> pofile.rosettaCount()
     1
 
@@ -551,6 +561,7 @@ upload.
 
     >>> print subject
     None
+
     >>> print body
     Hello Rosetta Administrators,
     <BLANKLINE>
@@ -564,19 +575,20 @@ There was no error output either.
 The translation has been augmented with the strings from the imported
 file.  The translation credits are special; upstream uploads can
 "translate" credits messages to provide translator names, but since
-credits for translations in Launchpad are generated automatically,
-non-upstream translations for these messages are ignored.
+credits for translations in Launchpad are generated automatically, non-
+upstream translations for these messages are ignored.
 
     >>> message = get_pofile_translation_message(pofile, 'foo')
     >>> message.msgstr0.translation
     u'blah'
+
     >>> message = get_pofile_translation_message(pofile, 'translator-credits')
     >>> message.msgstr0.translation
     u'helpful@example.com'
 
 
 Import Preconditions
-====================
+....................
 
 The API for POFile.importFromQueue demands a translation import queue
 entry to import.
@@ -614,7 +626,7 @@ the exact right POFile.
 
 
 Plural forms handling
-=====================
+---------------------
 
 Apart from the basic plural form handling, which is documented above as
 part of the import process, there are some peculiarities with importing
@@ -687,8 +699,9 @@ language, we should not have to reimport all translations):
     >>> current.msgstr2.translation
     u'Third form %d'
 
+
 Upstream import notifications
-=============================
+-----------------------------
 
 Add an upstream POFile import (i.e. from a package or bzr branch),
 approve and import it.
@@ -719,12 +732,14 @@ Import succeeds but no email is sent out.
 
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
+
     >>> print subject
     None
 
 For syntax errors, failure notification is still sent out.
 
     # Remove final quote from the contents, causing a syntax error.
+
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, from_upstream, person,
@@ -738,6 +753,48 @@ Import fails and email is sent out even though it's an upstream upload.
 
     >>> entry.status == RosettaImportStatus.FAILED
     True
+
     >>> subject
     u'Import problem - Serbian (sr) - ...'
 
+
+No Contact Address
+------------------
+
+Not every user has a valid email address.  For instance, Kermit the
+Hermit has none at the moment.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> from canonical.launchpad.helpers import get_contact_email_addresses
+    >>> hermit = factory.makePerson(
+    ...     name='hermit', email_address_status=EmailAddressStatus.OLD)
+
+    >>> len(get_contact_email_addresses(hermit))
+    0
+
+Kermit uploads a translation, which gets approved.
+
+    >>> pofile = factory.makePOFile('lo')
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     'lo.po', 'Invalid content', True, hermit,
+    ...     pofile=pofile, potemplate=pofile.potemplate,
+    ...     productseries=pofile.potemplate.productseries)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
+    >>> transaction.commit()
+
+The import fails.  The importer would like to send Kermit an email about
+this, but is unable to.  This is unfortunate, but does not faze the
+importer.  It completes normally.
+
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG Starting the import process.
+    INFO Importing: Lao ...
+    INFO Import requests completed.
+    DEBUG Finished the import process.
+
+    >>> print entry.status.name
+    FAILED

@@ -213,7 +213,7 @@ policy in process-upload.py.
 So, load the GPG key:
 
   >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-  >>> from canonical.launchpad.interfaces import IGPGHandler
+  >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
   >>> from zope.component import getUtility
   >>> gpg_handler = getUtility(IGPGHandler)
   >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
@@ -260,13 +260,14 @@ just imported. Remember that process-upload.py is running as
 a different process.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> ZecaTestSetup().setUp()
+  >>> zeca = ZecaTestSetup()
+  >>> zeca.setUp()
 
 
 Include non-free in the database. This will be done by the
 NascentUpload in the 'sync' policy in the future.
 
-  >>> from canonical.launchpad.interfaces import IComponentSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
   >>> component_set = getUtility(IComponentSet)
   >>> non_free = component_set.new("non-free")
   >>> contrib = component_set.new("contrib")
@@ -763,7 +764,7 @@ everything up.
 Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
-  >>> ZecaTestSetup().tearDown()
+  >>> zeca.tearDown()
 
 
 Feito! ;-)

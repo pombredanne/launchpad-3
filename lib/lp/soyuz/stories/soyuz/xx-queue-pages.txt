@@ -264,7 +264,7 @@ the builds can be created.
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
   >>> login('foo.bar@canonical.com')
@@ -574,6 +574,6 @@ button will be disabled.
 
 == Clean up ==
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
 

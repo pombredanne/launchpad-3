@@ -686,7 +686,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 # Circular dependancies now. Should be resolved by moving the
                 # object image display api.
-                from canonical.launchpad.webapp.tales import (
+                from lp.app.browser.tales import (
                     ObjectImageDisplayAPI)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
