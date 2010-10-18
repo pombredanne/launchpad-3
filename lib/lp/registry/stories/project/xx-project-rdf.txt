@@ -14,7 +14,7 @@ We export DOAP RDF metadata for projects from a link in the
   ...
       <lp:owner>
         <foaf:Agent>
-          <foaf:Accoun rdf:resource="/~name12/+rdf"/>
+          <foaf:Account rdf:resource="/~name12/+rdf"/>
         </foaf:Agent>
       </lp:owner>
   ...
