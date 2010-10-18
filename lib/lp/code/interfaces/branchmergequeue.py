@@ -31,6 +31,7 @@ from lp.services.fields import (
     )
 
 class IBranchMergeQueue(Interface):
+    """An interface for managing branch merges."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
@@ -75,6 +76,12 @@ class IBranchMergeQueue(Interface):
             'on this branch.'),
         readonly=True,
         value_type=Reference(Interface))
+
+    def setMergeQueueConfig(config):
+        """Set the JSON string configuration of the merge queue.
+
+        :param config: A JSON string of configuration values.
+        """
 
 
 class IBranchMergeQueueSource(Interface):

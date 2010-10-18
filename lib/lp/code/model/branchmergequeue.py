@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['BranchMergeQueue']
 
+import simplejson
+
 from storm.locals import (
     Int,
     Reference,
@@ -19,6 +21,7 @@ from zope.interface import (
     )
 
 from canonical.database.datetimecol import UtcDateTimeCol
+from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,
     IBranchMergeQueueSource,
@@ -49,13 +52,23 @@ class BranchMergeQueue(Storm):
 
     @property
     def branches(self):
+        """See `IBranchMergeQueue`."""
         return Store.of(self).find(
             Branch,
             Branch.merge_queue_id == self.id)
 
+    def setMergeQueueConfig(self, config):
+        """See `IBranchMergeQueue`."""
+        try:
+            simplejson.loads(config)
+            self.configuration = config
+        except ValueError: # The config string is not valid JSON
+            raise InvalidMergeQueueConfig
+
     @staticmethod
     def new(name, owner, registrant, description=None,
             configuration=None):
+        """See `IBranchMergeQueueSource`."""
         queue = BranchMergeQueue()
         queue.name = name
         queue.owner = owner

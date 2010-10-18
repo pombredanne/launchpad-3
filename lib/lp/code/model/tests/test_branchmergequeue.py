@@ -8,6 +8,7 @@ import simplejson
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.testing import (
@@ -68,3 +69,21 @@ class TestBranchMergeQueue(TestCaseWithFactory):
         self.assertEqual(
             list(queue.branches),
             [branch])
+
+    def test_setMergeQueueConfig(self):
+        """Test that the configuration is set properly."""
+        queue = self.factory.makeBranchMergeQueue()
+        config = unicode(simplejson.dumps({
+            'test': 'make test'}))
+
+        queue.setMergeQueueConfig(config)
+
+        self.assertEqual(queue.configuration, config)
+
+    def test_setMergeQueueConfig_invalid_json(self):
+        """Test that invalid json can't be set as the config."""
+        queue = self.factory.makeBranchMergeQueue()
+        self.assertRaises(
+            InvalidMergeQueueConfig,
+            queue.setMergeQueueConfig,
+            'abc')
