@@ -142,8 +142,8 @@ project group.
     >>> anon_browser.getControl(name='field.scope.target').value = 'gnome'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in The GNOME Project'
+    >>> print anon_browser.title
+    Bugs : GNOME
     >>> anon_browser.url
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
