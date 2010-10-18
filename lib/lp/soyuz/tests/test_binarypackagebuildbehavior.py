@@ -160,8 +160,8 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
         return d
 
     def test_virtual_ppa_dispatch(self):
-        # This is testing to make sure the builder slave gets reset
-        # before a build is dispatched to it.
+        # Make sure the builder slave gets reset before a build is
+        # dispatched to it.
         archive = self.factory.makeArchive(virtualized=True)
         slave = OkSlave()
         builder = self.factory.makeBuilder(
@@ -277,7 +277,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     # It was checking that each call to updateBuild was sending 3 (!)
     # emails but this behaviour is so ill-defined and dependent on the
     # sample data that I've not replicated that here.  We need to
-    # examine that behaviour separately somehow.
+    # examine that behaviour separately somehow, but the old tests gave
+    # NO clue as to what, exactly, they were testing.
 
     layer = TwistedLaunchpadZopelessLayer
 
@@ -300,6 +301,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.behavior.setBuilder(self.builder)
 
     def assertBuildProperties(self, build):
+        """Check that a build happened by making sure some of its properties
+        are set."""
         self.assertNotIdentical(None, build.builder)
         self.assertNotIdentical(None, build.date_finished)
         self.assertNotIdentical(None, build.duration)
@@ -451,7 +454,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         tmp.close()
         uncompressed_file = gzip.open(fname).read()
 
-        # XXX: When the mock slave is changed to return a Deferred,
+        # XXX: 2010-10-18 bug=662631
+        # When the mock slave is changed to return a Deferred,
         # update this test too.
         orig_file = removeSecurityProxy(self.builder.slave).getFile(
             'buildlog').read()

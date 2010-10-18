@@ -38,7 +38,6 @@ from twisted.internet import (
     defer,
     reactor as default_reactor,
     )
-from twisted.internet.error import ConnectError
 from twisted.web import xmlrpc
 
 from zope.component import getUtility
@@ -112,16 +111,6 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    # XXX: Have a documented interface for the XML-RPC server:
-    #  - what methods
-    #  - what return values expected
-    #  - what faults
-    #  (see XMLRPCBuildDSlave in lib/canonical/buildd/slave.py).
-
-    # XXX: Once we have a client object with a defined, tested interface, we
-    # should make a test double that doesn't do any XML-RPC and can be used to
-    # make testing easier & tests faster.
-
     def __init__(self, proxy, builder_url, vm_host, reactor=None):
         """Initialize a BuilderSlave.
 
@@ -190,7 +179,8 @@ class BuilderSlave(object):
 
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
-        # XXX: Change this to do non-blocking IO.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         file_url = urlappend(self._file_cache_url, sha_sum)
         return urllib2.urlopen(file_url)
 
@@ -209,7 +199,7 @@ class BuilderSlave(object):
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self._vm_host}
         # Twisted API requires string but the configuration provides unicode.
-        resume_argv = [str(term) for term in resume_command.split()]
+        resume_argv = [term.encode('utf-8') for term in resume_command.split()]
         d = defer.Deferred()
         p = ProcessWithTimeout(
             d, config.builddmaster.socket_timeout, clock=clock)
@@ -407,10 +397,7 @@ class Builder(SQLBase):
 
     def updateStatus(self, logger=None):
         """See `IBuilder`."""
-        # updateBuilderStatus returns a Deferred if the builder timed
-        # out, otherwise it returns a thing that we can wrap in a
-        # defer.succeed. maybeDeferred() handles this for us.
-        return defer.maybeDeferred(updateBuilderStatus, self, logger)
+        return updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
         """See IBuilder."""
@@ -755,9 +742,8 @@ class Builder(SQLBase):
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
         # XXX This method should be removed in favour of two separately
-        # called methods that find and dispatch the job.  But I don't
-        # want to do that right now because I don't want to fix all the
-        # tests.
+        # called methods that find and dispatch the job.  It will
+        # require a lot of test fixing.
         logger = self._getSlaveScannerLogger()
         candidate = self.acquireBuildCandidate()
 

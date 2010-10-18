@@ -24,7 +24,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.buildmaster.interfaces.builder import CorruptBuildCookie
+from lp.buildmaster.interfaces.builder import (
+    BuildSlaveFailure,
+    CorruptBuildCookie,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     IBuildFarmJobBehavior,
@@ -76,15 +79,9 @@ class BuildFarmJobBehaviorBase:
         def got_failure(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
             info = failure.value
-            # XXX cprov 2005-06-29:
-            # Hmm, a problem with the xmlrpc interface,
-            # disable the builder ?? or simple notice the failure
-            # with a timestamp.
             info = ("Could not contact the builder %s, caught a (%s)"
                     % (queueItem.builder.url, info))
-            logger.debug(info, exc_info=True)
-            # keep the job for scan
-            return
+            raise BuildSlaveFailure(info)
 
         def got_status(slave_status):
             builder_status_handlers = {
