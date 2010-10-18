@@ -1,9 +1,7 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213,F0401,W0611
-
-"""Branch interfaces."""
+"""Branch merge queue interfaces."""
 
 __metaclass__ = type
 
@@ -27,8 +25,9 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.services.fields import (
     PersonChoice,
-    PublicPersonChoice
+    PublicPersonChoice,
     )
+
 
 class IBranchMergeQueue(Interface):
     """An interface for managing branch merges."""
@@ -44,8 +43,7 @@ class IBranchMergeQueue(Interface):
         title=_('Owner'),
         required=True, readonly=True,
         vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
+        description=_("The owner of the merge queue."))
 
     name = TextLine(
         title=_('Name'), required=True,
@@ -57,7 +55,7 @@ class IBranchMergeQueue(Interface):
     description = Text(
         title=_('Description'), required=False,
         description=_(
-            'A short description of the changes in this branch.'))
+            'A short description of the purpose of this merge queue.'))
 
     configuration = TextLine(
         title=_('Configuration'), required=False,
@@ -71,9 +69,7 @@ class IBranchMergeQueue(Interface):
 
     branches = CollectionField(
         title=_('Dependent Branches'),
-        description=_(
-            'A collection of the merge proposals that are dependent '
-            'on this branch.'),
+        description=_('A collection of branches that this queue manages.'),
         readonly=True,
         value_type=Reference(Interface))
 
