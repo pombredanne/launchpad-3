@@ -11,6 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
@@ -276,18 +277,24 @@ class TestProductSeriesSet(TestCaseWithFactory):
 class TestProductSeriesReleases(TestCaseWithFactory):
     '''Tests the releases functions for productseries.'''
     
+    layer = DatabaseFunctionalLayer
+
     def setUp(self):
+        super(TestProductSeriesReleases, self).setUp()
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeProductSeries(product=self.product)
+        self.productseries = self.factory.makeProductSeries(
+                                            product=self.product)
 
     def test_getLatestRelease(self):
         # getLatestRelease returns the most recent release.
-        release = self.makeProductRelease(
+        self.assertIs(None, self.productseries.getLatestRelease())
+
+        release = self.factory.makeProductRelease(
                         product=self.product,
                         productseries=self.productseries)
         self.assertEqual(release, self.productseries.getLatestRelease())
 
-        second_release = self.makeProductRelease(
+        second_release = self.factory.makeProductRelease(
                                 product=self.product,
                                 productseries=self.productseries)
         self.assertEqual(

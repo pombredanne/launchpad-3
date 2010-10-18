@@ -451,6 +451,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
 
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
+         
     def getRelease(self, version):
         for release in self.releases:
             if release.version == version:
