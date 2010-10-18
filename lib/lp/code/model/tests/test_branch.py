@@ -2733,6 +2733,7 @@ class TestMergeQueue(TestCaseWithFactory):
         self.assertEqual(branch.merge_queue_config, config)
 
     def test_setMergeQueueConfig_invalid(self):
+        """Test that invalid JSON strings aren't added to the database."""
         branch = self.factory.makeBranch()
         config = 'abc'
 
