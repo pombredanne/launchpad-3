@@ -22,7 +22,7 @@ __all__ = [
     'BranchMergeProposalJobType',
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
-    'MergeProposalCreatedJob',
+    'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
     'UpdatePreviewDiffJob',
@@ -86,8 +86,8 @@ from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
     ICreateMergeProposalJob,
     ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource,
+    IMergeProposalNeedsReviewEmailJob,
+    IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJob,
@@ -296,17 +296,17 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return vars
 
 
-class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
-    """See `IMergeProposalCreatedJob`."""
+class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
+    """See `IMergeProposalNeedsReviewEmailJob`."""
 
-    implements(IMergeProposalCreatedJob)
+    implements(IMergeProposalNeedsReviewEmailJob)
 
-    classProvides(IMergeProposalCreatedJobSource)
+    classProvides(IMergeProposalNeedsReviewEmailJobSource)
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
     def run(self):
-        """See `IMergeProposalCreatedJob`."""
+        """See `IMergeProposalNeedsReviewEmailJob`."""
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
@@ -647,7 +647,7 @@ class BranchMergeProposalJobFactory:
 
     job_classes = {
         BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED:
-            MergeProposalCreatedJob,
+            MergeProposalNeedsReviewEmailJob,
         BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF:
             UpdatePreviewDiffJob,
         BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL:
