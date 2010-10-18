@@ -85,7 +85,8 @@ def create_view(context, name, form=None, layer=None, server_url=None,
 def create_initialized_view(context, name, form=None, layer=None,
                             server_url=None, method=None, principal=None,
                             query_string=None, cookie=None, request=None,
-                            path_info='/', rootsite=None):
+                            path_info='/', rootsite=None,
+                            current_request=False):
     """Return a view that has already been initialized."""
     if method is None:
         if form is None:
@@ -94,7 +95,8 @@ def create_initialized_view(context, name, form=None, layer=None,
             method = 'POST'
     view = create_view(
         context, name, form, layer, server_url, method, principal,
-        query_string, cookie, request, path_info, rootsite=rootsite)
+        query_string, cookie, request, path_info, rootsite=rootsite,
+        current_request=current_request)
     view.initialize()
     return view
 

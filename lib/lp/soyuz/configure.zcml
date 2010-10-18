@@ -898,4 +898,19 @@
     <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
       <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
     </class>
+
+    <!-- InitialiseDistroSeriesJobSource -->
+    <securedutility
+      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+    </securedutility>
+    <class class="lp.soyuz.model.distributionjob.DistributionJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
 </configure>

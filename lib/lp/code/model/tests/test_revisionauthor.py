@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import (
     RevisionAuthor,
