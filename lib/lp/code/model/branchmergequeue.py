@@ -65,11 +65,11 @@ class BranchMergeQueue(Storm):
         except ValueError: # The config string is not valid JSON
             raise InvalidMergeQueueConfig
 
-    @staticmethod
-    def new(name, owner, registrant, description=None,
+    @classmethod
+    def new(cls, name, owner, registrant, description=None,
             configuration=None):
         """See `IBranchMergeQueueSource`."""
-        queue = BranchMergeQueue()
+        queue = cls()
         queue.name = name
         queue.owner = owner
         queue.registrant = registrant
