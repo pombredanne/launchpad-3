@@ -1385,6 +1385,7 @@ class ProductBranchesView(ProductBranchListingView):
             'sort_by': BranchListingSort.LIFECYCLE,
             }
 
+
 class ProjectBranchesView(BranchListingView):
     """View for branch listing for a project."""
 
