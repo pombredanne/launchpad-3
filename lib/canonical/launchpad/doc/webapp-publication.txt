@@ -875,7 +875,7 @@ But if there is a logged in user, the transaction user attribute will
 contain its ID (as well as an empty '/' path, which is a Zope artefact
 allowing different authentication based on the traversed objects):
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -912,7 +912,7 @@ be automatically reverted in a GET request.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.database import EmailAddress
     >>> from lp.registry.model.person import Person
-    >>> from canonical.launchpad.interfaces import IMasterStore
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
     >>> def get_foo_bar_person():
