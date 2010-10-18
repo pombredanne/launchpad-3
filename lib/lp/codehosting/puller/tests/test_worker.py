@@ -31,13 +31,13 @@ from bzrlib.tests import (
     TestCaseInTempDir,
     TestCaseWithTransport,
     )
-from bzrlib.tests.http_server import HttpServer
 from bzrlib.transport import get_transport
 
 from lp.code.enums import BranchType
 from lp.codehosting.puller.tests import (
     AcceptAnythingPolicy,
     BlacklistPolicy,
+    FixedHttpServer,
     PullerWorkerMixin,
     WhitelistPolicy,
     )
@@ -698,7 +698,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
 
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
-        server = HttpServer()
+        server = FixedHttpServer()
         server.start_server()
         self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.

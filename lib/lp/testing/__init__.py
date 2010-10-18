@@ -325,20 +325,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         transaction.commit()
         self.layer.switchDbUser(dbuser)
 
-    def installFixture(self, fixture):
-        """Install 'fixture', an object that has a `setUp` and `tearDown`.
-
-        `installFixture` will run 'fixture.setUp' and schedule
-        'fixture.tearDown' to be run during the test's tear down (using
-        `addCleanup`).
-
-        :param fixture: Any object that has a `setUp` and `tearDown` method.
-        :return: `fixture`.
-        """
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
-        return fixture
-
     def __str__(self):
         """The string representation of a test is its id.
 
@@ -511,7 +497,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
-        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)

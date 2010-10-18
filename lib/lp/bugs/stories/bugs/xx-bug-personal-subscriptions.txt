@@ -124,7 +124,7 @@ Let's unsubscribe the Launchpad team.
 
   >>> for tag in find_tags_by_class(browser.contents, 'informational message'):
   ...   print tag.renderContents()
-  Launchpad Developers has been unsubscribed from this bug.
+  Launchpad Developers has been unsubscribed from bug 1.
 
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/bugs/1/+bug-portlet-subscribers-content')
@@ -337,7 +337,7 @@ up in the indirect subscriptions.
   >>> for tag in find_tags_by_class(
   ...     foobar_browser.contents, 'informational message'):
   ...   print tag.renderContents()
-  Ubuntu Team has been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
+  Ubuntu Team has been unsubscribed from bug 3 and 1 duplicate (<a...#2</a>)...
 
 (ubuntu-team is no longer an indirect subscriber.)
 

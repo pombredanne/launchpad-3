@@ -27,7 +27,7 @@ These are the builders available.
 The 'alsa-utils' package is the one to be built (in the ubuntu/hoary
 distroseries).
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
     >>> hoary.main_archive.require_virtualized
