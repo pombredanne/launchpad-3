@@ -71,7 +71,8 @@ def execute_zcml_for_scripts(use_web_security=False):
                 Instead, your test should use the Zopeless layer.
             """
 
-    if config.instance_name == 'testrunner':
+    if (config.instance_name == 'testrunner' or
+        config.instance_name.startswith('testrunner_')):
         scriptzcmlfilename = 'script-testing.zcml'
     else:
         scriptzcmlfilename = 'script.zcml'

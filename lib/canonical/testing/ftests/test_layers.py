@@ -8,12 +8,17 @@ to confirm that the environment hasn't been corrupted by tests
 """
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import signal
 import smtplib
 from cStringIO import StringIO
 from urllib import urlopen
 
+from fixtures import (
+    EnvironmentVariableFixture,
+    TestWithFixtures,
+    )
 import psycopg2
 import testtools
 from zope.component import getUtility, ComponentLookupError
@@ -41,6 +46,71 @@ from canonical.testing.layers import (
     ZopelessLayer,
     )
 from lp.services.memcache.client import memcache_client_factory
+
+
+class TestBaseLayer(testtools.TestCase, TestWithFixtures):
+
+    def test_allocates_LP_TEST_INSTANCE(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        layer = BaseLayer
+        layer.setUp()
+        try:
+            self.assertEqual(str(os.getpid()), os.environ.get('LP_TEST_INSTANCE'))
+        finally:
+            layer.tearDown()
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+    def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES', ''))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        layer = BaseLayer
+        layer.setUp()
+        try:
+            self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+        finally:
+            layer.tearDown()
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+    def test_generates_unique_config(self):
+        config.setInstance('testrunner')
+        orig_instance = config.instance_name
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
+        layer = BaseLayer
+        layer.setUp()
+        try:
+            self.assertEqual(
+                'testrunner_%s' % os.environ['LP_TEST_INSTANCE'],
+                config.instance_name)
+        finally:
+            layer.tearDown()
+        self.assertEqual(orig_instance, config.instance_name)
+
+    def test_generates_unique_config_dirs(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
+        layer = BaseLayer
+        layer.setUp()
+        try:
+            runner_root = 'configs/%s' % config.instance_name
+            runner_appserver_root = 'configs/testrunner-appserver_%s' % \
+                os.environ['LP_TEST_INSTANCE']
+            self.assertTrue(os.path.isfile(
+                runner_root + '/launchpad-lazr.conf'))
+            self.assertTrue(os.path.isfile(
+                runner_appserver_root + '/launchpad-lazr.conf'))
+        finally:
+            layer.tearDown()
+        self.assertFalse(os.path.exists(runner_root))
+        self.assertFalse(os.path.exists(runner_appserver_root))
+
 
 class BaseTestCase(testtools.TestCase):
     """Both the Base layer tests, as well as the base Test Case
