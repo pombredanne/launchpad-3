@@ -200,8 +200,8 @@ class IStructuralSubscriptionTargetRead(Interface):
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
-    def getSubscriptionsForBug(bug, level):
-        """Return subscriptions for a given `IBug` at `level`."""
+    def getSubscriptionsForBugTask(bug, level):
+        """Return subscriptions for a given `IBugTask` at `level`."""
 
 
 class IStructuralSubscriptionTargetWrite(Interface):

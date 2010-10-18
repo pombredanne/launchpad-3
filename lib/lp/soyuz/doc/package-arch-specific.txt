@@ -65,7 +65,7 @@ Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
 
 Create a PPA source publication.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> pub_ppa = test_publisher.getPubSource(
