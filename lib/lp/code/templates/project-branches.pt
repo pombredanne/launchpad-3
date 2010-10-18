@@ -21,8 +21,9 @@
         condition="not:context/has_branches">
         <div id="no-branchtable">
           <p>
-            <strong>None of <tal:project replace="context/displayname"/>'s
-            projects are using Launchpad to host their code.</strong>
+            <strong>Launchpad does not know where any of
+            <tal:project replace="context/displayname"/>'s
+            projects host their code.</strong>
           </p>
           <div tal:define="products context/getConfigurableProducts">
           <p id="projectgroup-products"
