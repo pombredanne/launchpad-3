@@ -289,14 +289,14 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
   </securedutility>
 
-  <class class="lp.code.model.branchmergeproposaljob.MergeProposalReviewRequestedEmailJob">
+  <class class="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalReviewRequestedEmailJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJob"/>
   </class>
   <securedutility
-      component="lp.code.model.branchmergeproposaljob.MergeProposalReviewRequestedEmailJob"
-      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalReviewRequestedEmailJobSource">
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalReviewRequestedEmailJobSource"/>
+      component="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob"
+      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource"/>
   </securedutility>
 
   <securedutility
