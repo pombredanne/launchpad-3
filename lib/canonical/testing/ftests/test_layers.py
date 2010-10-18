@@ -11,12 +11,11 @@ __metaclass__ = type
 import os
 import signal
 import smtplib
-import unittest
-
 from cStringIO import StringIO
 from urllib import urlopen
-import psycopg2
 
+import psycopg2
+import testtools
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
@@ -43,7 +42,7 @@ from canonical.testing.layers import (
     )
 from lp.services.memcache.client import memcache_client_factory
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(testtools.TestCase):
     """Both the Base layer tests, as well as the base Test Case
     for all the other Layer tests.
     """
@@ -178,7 +177,7 @@ class LibrarianTestCase(BaseTestCase):
                 )
 
 
-class LibrarianNoResetTestCase(unittest.TestCase):
+class LibrarianNoResetTestCase(testtools.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
@@ -221,7 +220,7 @@ class LibrarianNoResetTestCase(unittest.TestCase):
         self.failIfEqual(data, self.sample_data)
 
 
-class LibrarianHideTestCase(unittest.TestCase):
+class LibrarianHideTestCase(testtools.TestCase):
     layer = LaunchpadLayer
 
     def testHideLibrarian(self):
@@ -389,12 +388,13 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
                           LayerProcessController.startSMTPServer)
 
 
-class LayerProcessControllerTestCase(unittest.TestCase):
+class LayerProcessControllerTestCase(testtools.TestCase):
     """Tests for the `LayerProcessController`."""
     # We need the database to be set up, no more.
     layer = DatabaseLayer
 
     def tearDown(self):
+        super(LayerProcessControllerTestCase, self).tearDown()
         # Stop both servers.  It's okay if they aren't running.
         LayerProcessController.stopSMTPServer()
         LayerProcessController.stopAppServer()
@@ -432,14 +432,10 @@ class LayerProcessControllerTestCase(unittest.TestCase):
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
-class TestNameTestCase(unittest.TestCase):
+class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,
                 "testTestName "
                 "(canonical.testing.ftests.test_layers.TestNameTestCase)")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
