@@ -28,7 +28,7 @@ class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.task = self.factory.makeBugTask()
 
-    def test_person_cannot_set_bug_supervisor_statuses(self):
+    def test_user_cannot_set_bug_supervisor_statuses(self):
         # A regular user should not be able to set statuses in
         # BUG_SUPERVISOR_BUGTASK_STATUSES.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
@@ -43,7 +43,7 @@ class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.TRIAGED, self.user)
 
-    def test_unset_wont_fix_status(self):
+    def test_user_cannot_unset_wont_fix_status(self):
         # A regular user should not be able to transition a bug away
         # from Won't Fix.
         removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
@@ -52,6 +52,60 @@ class TestBugTaskStatusUserRestrictions(TestCaseWithFactory):
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.CONFIRMED, self.user)
 
+    def test_user_canTransitionToStatus(self):
+        # Regular user cannot transition to BUG_SUPERVISOR_BUGTASK_STATUSES.
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.WONTFIX, self.user),
+            False)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.EXPIRED, self.user),
+            False)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.TRIAGED, self.user),
+            False)
+        # User can transition to any other status.
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INCOMPLETE, self.user), True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.OPINION, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INVALID, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.CONFIRMED, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INPROGRESS, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, self.user),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.user),
+            True)
+
+    def test_user_canTransitionToStatus_from_wontfix(self):
+        # A regular user cannot transition away from Won't Fix.
+        removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.user),
+            False)
 
 
 class TestBugTaskStatusSetting(TestCaseWithFactory):
@@ -100,7 +154,6 @@ class TestBugTaskStatusSetting(TestCaseWithFactory):
             self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
 
 
-
 class TestCanTransitionToStatus(TestCaseWithFactory):
     """Tests for BugTask.canTransitionToStatus."""
 
@@ -119,47 +172,6 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
         self.bug = self.task.bug
         with person_logged_in(self.owner):
             self.product.setBugSupervisor(self.supervisor, self.supervisor)
-
-    def test_user_cannot_transition_bug_supervisor_statuses(self):
-        # A regular user is not allowed to transition to
-        # BUG_SUPERVISOR_BUGTASK_STATUSES.
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.WONTFIX, self.user),
-            False)
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.EXPIRED, self.user),
-            False)
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.TRIAGED, self.user),
-            False)
-
-    def test_user_can_transition_to_any_other_status(self):
-        # A regular user should be able to transition to any status
-        # other than those in BUG_SUPERVISOR_BUGTASK_STATUSES.
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.NEW, self.user),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INCOMPLETE, self.user), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.OPINION, self.user),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.INVALID, self.user),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.CONFIRMED, self.user), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INPROGRESS, self.user), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.user), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXRELEASED, self.user), True)
 
     def test_bug_supervisor_can_transition_to_any_status(self):
         # A bug supervisor can transition to any status.
@@ -245,11 +257,3 @@ class TestCanTransitionToStatus(TestCaseWithFactory):
             self.task.canTransitionToStatus(
                 BugTaskStatus.FIXRELEASED, self.owner), True)
 
-    def test_user_cannot_transition_from_wont_fix(self):
-        # A regular user cannot transition away from Won't Fix.
-        with person_logged_in(self.owner):
-            self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
-        self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-        self.assertEqual(
-            self.task.canTransitionToStatus(BugTaskStatus.NEW, self.user),
-            False)
