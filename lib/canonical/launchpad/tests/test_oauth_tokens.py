@@ -1,6 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""OAuth is a mechanism for allowing a user's desktop or a third-party
+website to access Launchpad on a user's behalf.  These applications
+are identified by a unique key and are stored as OAuthConsumers.  The
+OAuth specification is defined in <http://oauth.net/core/1.0/>.
+"""
+
 from datetime import (
     datetime,
     timedelta
@@ -8,7 +14,13 @@ from datetime import (
 import pytz
 
 from zope.component import getUtility
+from zope.proxy import sameProxiedObjects
+from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.ftests import (
+    login_person,
+    logout,
+    )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
@@ -25,12 +37,28 @@ from canonical.launchpad.interfaces.oauth import (
 
 from lp.testing import (
     TestCaseWithFactory,
+    oauth_access_token_for
     )
 
 
-class TestConsumerSet(TestCaseWithFactory):
+class TestOAuth(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Set up some convenient data objects and timestamps."""
+        super(TestOAuth, self).setUp()
+
+        self.person = self.factory.makePerson()
+        self.consumer = self.factory.makeOAuthConsumer()
+
+        now = datetime.now(pytz.timezone('UTC'))
+        self.in_a_while = now + timedelta(hours=1)
+        self.a_long_time_ago = now - timedelta(hours=1000)
+
+
+class TestConsumerSet(TestOAuth):
+    """Tests of the utility that manages OAuth consumers."""
 
     def setUp(self):
         super(TestConsumerSet, self).setUp()
@@ -58,20 +86,13 @@ class TestConsumerSet(TestCaseWithFactory):
         self.assertEqual(self.consumers.getByKey(nonexistent_key), None)
 
 
-class TestRequestTokens(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestRequestTokens(TestOAuth):
+    """Tests for OAuth request tokens."""
 
     def setUp(self):
         """Set up a dummy person and OAuth consumer."""
         super(TestRequestTokens, self).setUp()
 
-        self.person = self.factory.makePerson()
-        self.consumer = self.factory.makeOAuthConsumer()
-
-        now = datetime.now(pytz.timezone('UTC'))
-        self.in_a_while = now + timedelta(hours=1)
-        self.a_long_time_ago = now - timedelta(hours=1000)
 
     def test_new_token(self):
         request_token = self.consumer.newRequestToken()
@@ -173,8 +194,11 @@ class TestRequestTokens(TestCaseWithFactory):
         # The expiration date, like the permission and context, is
         # associated with the eventual access token. It has nothing to
         # do with how long the *request* token will remain
-        # valid. Setting the expiration date to a date in the past is
-        # not a good idea, but it won't expire the request token.
+        # valid.
+        #
+        # As such, although setting the expiration date to a date in
+        # the past is not a good idea, it won't expire the request
+        # token.
         request_token = self.consumer.newRequestToken()
         request_token.review(
             self.person, OAuthPermission.WRITE_PUBLIC,
@@ -212,12 +236,44 @@ class TestRequestTokens(TestCaseWithFactory):
             self.factory.makeDistributionSourcePackage)
         self.assertEquals(token.context.name, name)
 
+    def test_expired_request_token_cant_be_reviewed(self):
+        """An expired request token can't be reviewed."""
+        token = self.factory.makeOAuthRequestToken(
+            date_created=self.a_long_time_ago)
+        self.assertRaises(
+            AssertionError, token.review, self.person,
+            OAuthPermission.WRITE_PUBLIC)
+
+    def test_get_request_tokens_for_person(self):
+        """It's possible to get a person's request tokens."""
+        person = self.factory.makePerson()
+        self.assertEquals(person.oauth_request_tokens.count(), 0)
+        for i in range(0,3):
+            request_token = self.factory.makeOAuthRequestToken(
+                reviewed_by=person)
+        self.assertEquals(person.oauth_request_tokens.count(), 3)
+
+        # Once an request token expires, it's no longer available.
+        login_person(person)
+        request_token.date_expires = self.a_long_time_ago
+        logout()
+        self.assertEquals(person.oauth_request_tokens.count(), 2)
+
+
+class TestAccessTokens(TestOAuth):
+    """Tests for OAuth access tokens."""
+
     def test_exchange_request_token_for_access_token(self):
         # Once a request token is reviewed, it can be exchanged for an
         # access token.
         request_token = self.consumer.newRequestToken()
         request_token.review(self.person, OAuthPermission.WRITE_PRIVATE)
         access_token = request_token.createAccessToken()
+
+        # The access token is associated with the same consumer as the
+        # request token was.
+        self.assertEquals(
+            self.consumer.getAccessToken(access_token.key), access_token)
 
         # An access token inherits its permission from the request
         # token that created it. But an access token's .permission is
@@ -250,6 +306,8 @@ class TestRequestTokens(TestCaseWithFactory):
         self.assertRaises(AssertionError, token.createAccessToken)
 
     def test_access_token_inherits_context_and_expiration(self):
+        # An access token takes its context and expiration date from
+        # the request token that created it.
         request_token = self.consumer.newRequestToken()
         context = self.factory.makeProduct()
         request_token.review(
@@ -261,15 +319,7 @@ class TestRequestTokens(TestCaseWithFactory):
         self.assertEquals(
             request_token.date_expires, access_token.date_expires)
 
-    def testExpiredRequestTokenCantBeReviewed(self):
-        """An expired request token can't be reviewed."""
-        token = self.factory.makeOAuthRequestToken(
-            date_created=self.a_long_time_ago)
-        self.assertRaises(
-            AssertionError, token.review, self.person,
-            OAuthPermission.WRITE_PUBLIC)
-
-    def testExpiredRequestTokenCantBeExchanged(self):
+    def test_expired_request_token_cant_be_exchanged(self):
         """An expired request token can't be exchanged for an access token.
 
         This can only happen if the token was reviewed before it expired.
@@ -277,3 +327,60 @@ class TestRequestTokens(TestCaseWithFactory):
         token = self.factory.makeOAuthRequestToken(
             date_created=self.a_long_time_ago, reviewed_by=self.person)
         self.assertRaises(AssertionError, token.createAccessToken)
+
+    def test_write_permission(self):
+        """An access token can only be modified by its creator."""
+        access_token = self.factory.makeOAuthAccessToken()
+        def try_to_set():
+            access_token.permission = AccessLevel.WRITE_PUBLIC
+        self.assertRaises(Unauthorized, try_to_set)
+
+        login_person(access_token.person)
+        try_to_set()
+        logout()
+
+    def test_get_access_tokens_for_person(self):
+        """It's possible to get a person's access tokens."""
+        person = self.factory.makePerson()
+        self.assertEquals(person.oauth_access_tokens.count(), 0)
+        for i in range(0,3):
+            access_token = self.factory.makeOAuthAccessToken(
+                self.consumer, person)
+        self.assertEquals(person.oauth_access_tokens.count(), 3)
+
+        # The creator of an access token may expire it. Once an
+        # access token expires, it's no longer available.
+        login_person(access_token.person)
+        access_token.date_expires = self.a_long_time_ago
+        logout()
+        self.assertEquals(person.oauth_access_tokens.count(), 2)
+
+class TestHelperMethods(TestOAuth):
+
+    def test_oauth_access_token_for(self):
+        """Get an access token for user/consumer key/permission/context."""
+
+        # If the token doesn't already exist, it is created.
+        person = self.factory.makePerson()
+        consumer = self.factory.makeOAuthConsumer()
+        context = self.factory.makeProduct()
+        access_token = oauth_access_token_for(
+            consumer.key, person, OAuthPermission.WRITE_PUBLIC, context)
+
+        # If the token already exists, it is retrieved.
+        access_token_2 = oauth_access_token_for(
+            access_token.consumer.key, access_token.person,
+            access_token.permission, access_token.context)
+        self.assertTrue(sameProxiedObjects(access_token, access_token_2))
+
+    def test_oauth_access_token_string_permission(self):
+        """You can pass in a string instead of an OAuthPermission."""
+        access_token = oauth_access_token_for(
+            self.consumer.key, self.person, 'WRITE_PUBLIC')
+        self.assertEqual(access_token.permission, AccessLevel.WRITE_PUBLIC)
+
+        # If you pass in a string that doesn't correspond to any
+        # OAuthPermission object, you'll get an error.
+        self.assertRaises(
+            KeyError, oauth_access_token_for, self.consumer.key,
+            self.person, 'NO_SUCH_PERMISSION')

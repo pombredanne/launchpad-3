@@ -353,7 +353,8 @@ class OAuthRequestToken(OAuthBase):
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=access_level, product=self.product,
+            secret=secret, permission=access_level,
+            date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         self.destroySelf()
