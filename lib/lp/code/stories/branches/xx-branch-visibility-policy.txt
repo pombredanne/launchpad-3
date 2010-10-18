@@ -1,7 +1,7 @@
 = Branch Visibility Policy Pages =
 
 Controlling the branch visibility policies for products and projects is only
-available to launchpad admins and launchpad commercial admins.
+available to Launchpad admins and Launchpad commercial admins.
 
 Not to anonymous people.
 
@@ -67,6 +67,28 @@ And members of the Launchpad Commercial team can view the pages.
     >>> commercial_browser.getLink('Customise policy for Mozilla Firefox').click()
     >>> print commercial_browser.url
     http://launchpad.dev/firefox/+addbranchvisibilitypolicy
+
+Admins can define branch visibility on projects, too.
+
+    >>> admin_browser.open('http://code.launchpad.dev/mozilla')
+    >>> admin_browser.getLink('Define branch visibility').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/mozilla/+branchvisibility
+
+    >>> admin_browser.getLink('Set policy for a team').click()
+    >>> print admin_browser.url
+    http://launchpad.dev/mozilla/+addbranchvisibilitypolicy
+
+As can commercial admins.
+
+    >>> commercial_browser.open('http://code.launchpad.dev/mozilla')
+    >>> commercial_browser.getLink('Define branch visibility').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/mozilla/+branchvisibility
+
+    >>> commercial_browser.getLink('Set policy for a team').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/mozilla/+addbranchvisibilitypolicy
 
 
 == Default policies ==

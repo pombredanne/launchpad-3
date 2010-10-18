@@ -33,11 +33,15 @@ from lp.code.browser.branchlisting import (
     GroupedDistributionSourcePackageBranchesView,
     SourcePackageBranchesView,
     )
+from lp.code.enums import BranchVisibilityRule
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks,
     )
 from lp.code.model.branch import Branch
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
@@ -50,6 +54,10 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    COMMERCIAL_ADMIN_EMAIL,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -419,6 +427,72 @@ class TestPersonBranchesPage(BrowserTestCase):
         # Since there are no teams with branches that the user can see, the
         # portlet isn't shown.
         self.assertIs(None, branches)
+
+
+class TestProjectGroupBranchesPage(BrowserTestCase):
+    """Test for the project group branches page.
+
+    This is the default page shown for a person on the code subdomain.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        BrowserTestCase.setUp(self)
+        self.project = self.factory.makeProject(owner=self.user)
+
+    def test_project_with_no_branch_visibility_rule(self):
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        privacy_portlet = find_tag_by_id(browser.contents, 'privacy-portlet')
+        text = extract_text(privacy_portlet)
+        expected = ("By default, new branches you create for projects in .* "
+                    "are Public initially. Individual "
+                    "projects may override this setting.")
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_project_with_private_branch_visibility_rule(self):
+        self.project.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        privacy_portlet = find_tag_by_id(browser.contents, 'privacy-portlet')
+        text = extract_text(privacy_portlet)
+        expected = ("By default, new branches you create for projects in .* "
+                    "are Forbidden initially. Individual "
+                    "projects may override this setting.")
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def _testBranchVisibilityLink(self, user):
+        browser = self.getUserBrowser(
+            url=canonical_url(self.project, rootsite='code'),
+            user=user)
+        action_portlet = find_tag_by_id(browser.contents, 'action-portlet')
+        text = extract_text(action_portlet)
+        expected = '.*Define branch visibility.*'
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_branch_visibility_link_admin(self):
+        # An admin will be displayed a link to define branch visibility in the
+        # action portlet.
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_commercial_admin(self):
+        # An commercial admin will be displayed a link to define branch
+        # visibility in the action portlet.
+        admin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_non_admin(self):
+        # A non-admin will not see the action portlet.
+        browser = self.getUserBrowser(
+            url=canonical_url(self.project, rootsite='code'))
+        action_portlet = find_tag_by_id(browser.contents, 'action-portlet')
+        self.assertIs(None, action_portlet)
 
 
 def test_suite():
