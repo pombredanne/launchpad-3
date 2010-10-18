@@ -137,9 +137,89 @@ def update_multi_doctest_globs_to_interfaces():
             print "    %(lineno)4s: %(text)s" % line
 
 
+def normalize_doctest_imports(file_path, match_re, substitution=None):
+    """Return a summary of matches in a file."""
+    lines = []
+    content = []
+    match = None
+    file_ = open(file_path, 'r')
+    in_match = False
+    imports = None
+    try:
+        for lineno, line in enumerate(file_):
+            match = match_re.search(line)
+            # Start match imports.
+            if match and not in_match:
+                in_match = True
+                whitespace = match.group(1)
+                imports = {}
+                # Fall-through.
+            # Store the collected imports.
+            if match:
+                module_ = match.group(2)
+                if module_ not in imports:
+                    imports[module_] = []
+                imports[module_].append(match.group(3))
+                continue
+            # If the import section is passed, normalize the imports.
+            if not match and in_match:
+                for module_ in sorted(imports.keys()):
+                    identifiers = sorted(imports[module_])
+                    if len(identifiers) == 1:
+                        expanded_line = (
+                            '%s>>> from %s import %s\n' %
+                            (whitespace, module_, identifiers[0]))
+                    else:
+                        continuation = ',\n%s...     ' % whitespace
+                        idfs = continuation.join(identifiers)
+                        expanded_line = (
+                            '%s>>> from %s (%s%s%s)\n' %
+                            (whitespace, module_,
+                             continuation[1:], idfs, continuation))
+                    lines.append(
+                        {'lineno': lineno + 1, 'text': expanded_line.strip(),
+                         'match': None})
+                    if substitution is not None:
+                        content.append(expanded_line)
+                # Clear imports.
+                in_match = False
+                imports = None
+                # Append the current line.
+                if substitution is not None:
+                    content.append(line)
+                continue
+            # Always append the non-matching lines to content to rebuild
+            # the file.
+            if substitution is not None:
+                content.append(line)
+    finally:
+        file_.close()
+    if lines:
+        if substitution is not None:
+            file_ = open(file_path, 'w')
+            try:
+                file_.write(''.join(content))
+            finally:
+                file_.close()
+        return {'file_path': file_path, 'lines': lines}
+    return None
+
+
+def normalize_all_doctest_imports():
+    root = 'lib/lp/registry/doc'
+    types = r'\.(txt)'
+    pattern = r'([ ]+)>>> from ([\w.]+) import ([\w.]+)$'
+    substitution = True
+    for summary in find_matches(
+        root, types, pattern, substitution=substitution,
+        extract_match=normalize_doctest_imports):
+        print "\n%(file_path)s" % summary
+        for line in summary['lines']:
+            print "    %(lineno)4s: %(text)s" % line
+
+
 def main():
-    update_multi_doctest_globs_to_interfaces()
-    update_doctest_globs_to_interfaces()
+    normalize_all_doctest_imports()
 
 
 if __name__ == '__main__':
