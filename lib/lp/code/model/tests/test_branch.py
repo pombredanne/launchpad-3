@@ -2704,5 +2704,20 @@ class TestGetBzrBranch(TestCaseWithFactory):
         self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
 
 
+class TestMergeQueue(TestCaseWithFactory):
+    """Tests for branch merge queue functionality in branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_addToQueue(self):
+        """Test Branch.addToQueue."""
+        branch = self.factory.makeBranch()
+        queue = self.factory.makeBranchMergeQueue()
+        with person_logged_in(branch.owner):
+            branch.addToQueue(queue)
+
+        self.assertEqual(branch.merge_queue, queue)
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -31,7 +31,11 @@ from storm.expr import (
     Or,
     Select,
     )
-from storm.locals import AutoReload
+from storm.locals import (
+    AutoReload,
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -1133,9 +1137,14 @@ class Branch(SQLBase, BzrIdentityMixin):
             SourcePackageRecipeData)
         return SourcePackageRecipeData.findRecipes(self)
 
-    merge_queue = ForeignKey(
-        dbName='merge_queue', foreignKey='BranchMergeQueue', notNull=False)
+    merge_queue_id = Int(name='merge_queue', allow_none=True)
+    merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
+
     merge_queue_config = StringCol(dbName='merge_queue_config')
+
+    def addToQueue(self, queue):
+        """See `IBranchEdit`."""
+        self.merge_queue = queue
 
 
 class DeletionOperation:

@@ -1076,6 +1076,14 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
+    def addToQueue(queue):
+        """Add this branch to a specified queue.
+
+        A branch's merges can be managed by a queue.
+
+        :param queue: The branch merge queue that will manage the branch.
+        """
+
 
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
               IBranchEditableAttributes, IBranchAnyone):
