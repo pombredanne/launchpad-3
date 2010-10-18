@@ -36,6 +36,7 @@ from itertools import count
 from operator import isSequenceType
 import os
 from random import randint
+import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -1098,7 +1099,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeQueue(self):
         """Create a BranchMergeQueue."""
-        queue = BranchMergeQueue()
+        name = unicode(self.getUniqueString('queue'))
+        owner = self.makePerson()
+        description = unicode(self.getUniqueString('queue-description'))
+        configuration = unicode(simplejson.dumps({
+            self.getUniqueString('key'): self.getUniqueString('value')}))
+
+        queue = BranchMergeQueue.new(
+            name, owner, owner, description, configuration)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
