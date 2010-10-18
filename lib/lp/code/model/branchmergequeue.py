@@ -12,17 +12,24 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.interface import implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
+from lp.code.interfaces.branchmergequeue import (
+    IBranchMergeQueue,
+    IBranchMergeQueueSource,
+    )
 
 
 class BranchMergeQueue(Storm):
     """See `IBranchMergeQueue`."""
 
-    implements(IBranchMergeQueue)
     __storm_table__ = 'BranchMergeQueue'
+    implements(IBranchMergeQueue)
+    classProvides(IBranchMergeQueueSource)
 
     id = Int(primary=True)
 
@@ -37,3 +44,15 @@ class BranchMergeQueue(Storm):
     configuration = Unicode(allow_none=False)
 
     date_created = UtcDateTimeCol(notNull=True)
+
+    @staticmethod
+    def new(name, owner, registrant, description=None,
+            configuration=None):
+        queue = BranchMergeQueue()
+        queue.name = name
+        queue.owner = owner
+        queue.registrant = registrant
+        queue.description = description
+        queue.configuration = configuration
+
+        return queue

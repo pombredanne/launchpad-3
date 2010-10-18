@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBranchMergeQueue',
+    'IBranchMergeQueueSource',
     ]
 
 from zope.interface import Interface
@@ -63,3 +64,17 @@ class IBranchMergeQueue(Interface):
         title=_('Date Created'),
         required=True,
         readonly=True)
+
+
+class IBranchMergeQueueSource(Interface):
+
+    def new(name, owner, registrant, description, configuration, branches):
+        """Create a new IBranchMergeQueue object.
+
+        :param name: The name of the branch merge queue.
+        :param description: A description of queue.
+        :param configuration: A JSON string of configuration values.
+        :param owner: The owner of the queue.
+        :param registrant: The registrant of the queue.
+        :param branches: A list of branches to add to the queue.
+        """
