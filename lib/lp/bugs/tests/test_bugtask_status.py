@@ -28,9 +28,10 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.task = self.factory.makeBugTask()
 
-    def test_user_cannot_set_bug_supervisor_statuses(self):
+    def test_user_transition_all_statuses(self):
         # A regular user should not be able to set statuses in
-        # BUG_SUPERVISOR_BUGTASK_STATUSES.
+        # BUG_SUPERVISOR_BUGTASK_STATUSES, but can set any
+        # other status.
         self.assertEqual(self.task.status, BugTaskStatus.NEW)
         with person_logged_in(self.user):
             self.assertRaises(
@@ -42,6 +43,26 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             self.assertRaises(
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.TRIAGED, self.user)
+            self.task.transitionToStatus(BugTaskStatus.NEW, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.NEW)
+            self.task.transitionToStatus(
+                BugTaskStatus.INCOMPLETE, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.INCOMPLETE)
+            self.task.transitionToStatus(BugTaskStatus.OPINION, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.OPINION)
+            self.task.transitionToStatus(BugTaskStatus.INVALID, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.INVALID)
+            self.task.transitionToStatus(BugTaskStatus.CONFIRMED, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
+            self.task.transitionToStatus(
+                BugTaskStatus.INPROGRESS, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.INPROGRESS)
+            self.task.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.FIXCOMMITTED)
+            self.task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.user)
+            self.assertEqual(self.task.status, BugTaskStatus.FIXRELEASED)
 
     def test_user_cannot_unset_wont_fix_status(self):
         # A regular user should not be able to transition a bug away
