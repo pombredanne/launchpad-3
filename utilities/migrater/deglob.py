@@ -138,7 +138,7 @@ def update_multi_doctest_globs_to_interfaces():
 
 
 def main():
-    #update_multi_doctest_globs_to_interfaces()
+    update_multi_doctest_globs_to_interfaces()
     update_doctest_globs_to_interfaces()
 
 
