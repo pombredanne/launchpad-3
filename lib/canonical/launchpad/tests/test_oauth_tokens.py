@@ -9,10 +9,10 @@ OAuth specification is defined in <http://oauth.net/core/1.0/>.
 
 from datetime import (
     datetime,
-    timedelta
+    timedelta,
     )
-import pytz
 
+import pytz
 from zope.component import getUtility
 from zope.proxy import sameProxiedObjects
 from zope.security.interfaces import Unauthorized
@@ -21,23 +21,21 @@ from canonical.launchpad.ftests import (
     login_person,
     logout,
     )
-from canonical.launchpad.webapp.interfaces import (
-    AccessLevel,
-    OAuthPermission,
-    )
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
-
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumer,
     IOAuthConsumerSet,
     IOAuthRequestToken,
     IOAuthRequestTokenSet,
     )
-
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    OAuthPermission,
+    )
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
+    oauth_access_token_for,
     TestCaseWithFactory,
-    oauth_access_token_for
     )
 
 
