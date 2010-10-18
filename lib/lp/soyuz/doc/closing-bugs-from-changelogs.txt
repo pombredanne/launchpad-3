@@ -92,7 +92,7 @@ been published. Passing a queue item with a Launchpad-bugs-fixed header
 will close the specified bug.
 
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> def print_single_task_status(bug_id):
     ...     bug = getUtility(IBugSet).get(bug_id)
@@ -236,7 +236,7 @@ Uploads to PPAs will not close bugs (see bug #137767).  Here we upload a
 package, cdrkit, to cprov's PPA.  The bug status before and after calling
 close_bugs is "NEW".
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> arbitrary_ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> queue_item_id = add_package_upload(
     ...     cdrkit_release, cdrkit_bug_id, archive=arbitrary_ppa).id
@@ -295,7 +295,7 @@ queue items have been processed.
     >>> queue_item = add_package_upload(pmount_release, fixing_text)
     >>> queue_item.setAccepted()
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
