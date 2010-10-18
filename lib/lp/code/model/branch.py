@@ -75,7 +75,6 @@ from lp.code.bzr import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
-    BranchMergeControlStatus,
     BranchMergeProposalStatus,
     BranchType,
     )
