@@ -108,152 +108,151 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             False)
 
 
-class TestBugTaskStatusSetting(TestCaseWithFactory):
-    """Tests to ensure restricted status changes are enforced."""
+class TestBugTaskStatusTransitionForPrivilegedUserBase:
+    """Base class used to test privileged users and status transitions."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        # We can work with a project only here, since both project
-        # and distribution use the same methods on IBugTask.
-        super(TestBugTaskStatusSetting, self).setUp()
+        super(TestBugTaskStatusTransitionForPrivilegedUserBase, self).setUp()
+        # Creation of task and target are deferred to subclasses.
+        self.task = None
+        self.person = None
+        self.makePersonAndTask()
+
+    def makePersonAndTask(self):
+        """Create a bug task and privileged person for this task.
+
+        This method is user by subclasses to correctly setup
+        each test.
+        """
+        raise NotImplementedError(self.makePersonAndTask)
+
+    def test_privileged_user_transition_any_status(self):
+        # Privileged users (like owner or bug supervisor) should
+        # be able to set any status.
+        with person_logged_in(self.person):
+            self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
+            self.task.transitionToStatus(BugTaskStatus.EXPIRED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.EXPIRED)
+            self.task.transitionToStatus(BugTaskStatus.TRIAGED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
+            self.task.transitionToStatus(BugTaskStatus.NEW, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.NEW)
+            self.task.transitionToStatus(
+                BugTaskStatus.INCOMPLETE, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.INCOMPLETE)
+            self.task.transitionToStatus(BugTaskStatus.OPINION, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.OPINION)
+            self.task.transitionToStatus(BugTaskStatus.INVALID, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.INVALID)
+            self.task.transitionToStatus(BugTaskStatus.CONFIRMED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
+            self.task.transitionToStatus(
+                BugTaskStatus.INPROGRESS, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.INPROGRESS)
+            self.task.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.FIXCOMMITTED)
+            self.task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.FIXRELEASED)
+
+    def test_privileged_user_canTransitionToStatus(self):
+        # Privileged users (like owner or bug supervisor) should
+        # be able to set any status, so canTransitionToStatus should
+        # always return True.
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.WONTFIX, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.EXPIRED, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.TRIAGED, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INCOMPLETE, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.OPINION, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INVALID, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.CONFIRMED, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.INPROGRESS, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, self.person),
+            True)
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.person),
+            True)
+
+
+class TestBugTaskStatusTransitionOwnerPerson(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure owner person can transition to any status.."""
+
+    def makePersonAndTask(self):
+        self.person = self.factory.makePerson()
+        self.product = self.factory.makeProduct(owner=self.person)
+        self.task = self.factory.makeBugTask(target=self.product)
+
+
+class TestBugTaskStatusTransitionOwnerTeam(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure owner team can transition to any status.."""
+
+    def makePersonAndTask(self):
+        self.person = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.person])
+        self.product = self.factory.makeProduct(owner=self.team)
+        self.task = self.factory.makeBugTask(target=self.product)
+
+
+class TestBugTaskStatusTransitionBugSupervisorPerson(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure bug supervisor person can transition to any status."""
+
+    def makePersonAndTask(self):
         self.owner = self.factory.makePerson()
-        self.team_member = self.factory.makePerson()
-        self.supervisor = self.factory.makeTeam(members=[self.team_member])
+        self.person = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
-        self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.supervisor, self.supervisor)
-
-    def test_owner_can_set_bug_supervisor_statuses(self):
-        # Project registrant should be able to set statuses in
-        # BUG_SUPERVISOR_BUGTASK_STATUSES.
-        self.assertEqual(self.task.status, BugTaskStatus.NEW)
-        with person_logged_in(self.owner):
-            self.task.transitionToStatus(BugTaskStatus.WONTFIX, self.owner)
-            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-            self.task.transitionToStatus(BugTaskStatus.EXPIRED, self.owner)
-            self.assertEqual(self.task.status, BugTaskStatus.EXPIRED)
-            self.task.transitionToStatus(BugTaskStatus.TRIAGED, self.owner)
-            self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
-
-    def test_supervisor_can_set_bug_supervisor_statuses(self):
-        # Bug supervisor should be able to set statuses in
-        # BUG_SUPERVISOR_BUGTASK_STATUSES.
-        self.assertEqual(self.task.status, BugTaskStatus.NEW)
-        with person_logged_in(self.team_member):
-            self.task.transitionToStatus(
-                BugTaskStatus.WONTFIX, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.WONTFIX)
-            self.task.transitionToStatus(
-                BugTaskStatus.EXPIRED, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.EXPIRED)
-            self.task.transitionToStatus(
-                BugTaskStatus.TRIAGED, self.team_member)
-            self.assertEqual(self.task.status, BugTaskStatus.TRIAGED)
+            self.product.setBugSupervisor(self.person, self.person)
 
 
-class TestCanTransitionToStatus(TestCaseWithFactory):
-    """Tests for BugTask.canTransitionToStatus."""
+class TestBugTaskStatusTransitionBugSupervisorTeamMember(
+    TestBugTaskStatusTransitionForPrivilegedUserBase, TestCaseWithFactory):
+    """Tests to ensure bug supervisor team can transition to any status."""
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        # We can work with a project only here, since both project
-        # and distribution use the same methods on IBugTask.
-        super(TestCanTransitionToStatus, self).setUp()
-        self.user = self.factory.makePerson()
+    def makePersonAndTask(self):
         self.owner = self.factory.makePerson()
-        self.team_member = self.factory.makePerson()
-        self.supervisor = self.factory.makeTeam(members=[self.team_member])
+        self.person = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.person])
         self.product = self.factory.makeProduct(owner=self.owner)
         self.task = self.factory.makeBugTask(target=self.product)
-        self.bug = self.task.bug
         with person_logged_in(self.owner):
-            self.product.setBugSupervisor(self.supervisor, self.supervisor)
-
-    def test_bug_supervisor_can_transition_to_any_status(self):
-        # A bug supervisor can transition to any status.
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.WONTFIX, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.EXPIRED, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.TRIAGED, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.NEW, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INCOMPLETE, self.supervisor), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.OPINION, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INVALID, self.supervisor),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.CONFIRMED, self.supervisor), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INPROGRESS, self.supervisor), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.supervisor), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXRELEASED, self.supervisor), True)
-
-    def test_owner_can_transition_to_any_status(self):
-        # An owner can transition to any status.
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.WONTFIX, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.EXPIRED, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.TRIAGED, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.NEW, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INCOMPLETE, self.owner), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.OPINION, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INVALID, self.owner),
-            True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.CONFIRMED, self.owner), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.INPROGRESS, self.owner), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXCOMMITTED, self.owner), True)
-        self.assertEqual(
-            self.task.canTransitionToStatus(
-                BugTaskStatus.FIXRELEASED, self.owner), True)
+            self.product.setBugSupervisor(self.team, self.team)
 
