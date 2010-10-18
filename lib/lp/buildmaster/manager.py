@@ -11,7 +11,6 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     'FailDispatchResult',
     'ResetDispatchResult',
-    'buildd_success_result_map',
     ]
 
 import logging
@@ -42,12 +41,6 @@ from lp.buildmaster.interfaces.builder import (
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
-buildd_success_result_map = {
-    'ensurepresent': True,
-    'build': 'BuilderStatus.BUILDING',
-    }
-
-
 def get_builder(name):
     """Helper to return the builder given the slave for this request."""
     # Avoiding circular imports.
@@ -57,6 +50,9 @@ def get_builder(name):
 
 def assessFailureCounts(builder, fail_notes):
     """View builder/job failure_count and work out which needs to die.  """
+    # XXX: completely lacks tests
+    # XXX: Change behaviour to allow for more builder failures.
+
     # builder.currentjob hides a complicated query, don't run it twice.
     # See bug 623281.
     current_job = builder.currentjob
@@ -94,6 +90,10 @@ def assessFailureCounts(builder, fail_notes):
 class SlaveScanner:
     """A manager for a single builder."""
 
+    # The interval between each poll cycle, in seconds.  We'd ideally
+    # like this to be lower but 5 seems a reasonable compromise between
+    # responsivity and load on the database server, since in each cycle
+    # we can run quite a few queries.
     SCAN_INTERVAL = 5
 
     def __init__(self, builder_name, logger):
@@ -102,13 +102,15 @@ class SlaveScanner:
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
-        self.loop = LoopingCall(self._startCycle)
+        self.loop = LoopingCall(self.singleCycle)
         self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
         return self.stopping_deferred
 
-    def _startCycle(self):
-        # Same as _startCycle but the next cycle is not scheduled.  This
-        # is so tests can initiate a single scan.
+    def stopCycle(self):
+        """Terminate the LoopingCall."""
+        self.loop.stop()
+
+    def singleCycle(self):
         self.logger.debug("Scanning builder: %s" % self.builder_name)
         d = self.scan()
 
@@ -116,13 +118,18 @@ class SlaveScanner:
         return d
 
     def _scanFailed(self, failure):
-        # Trap known exceptions and print a message without a
-        # stack trace in that case, or if we don't know about it,
-        # include the trace.
+        """Deal with failures encountered during the scan cycle.
 
-        # Paranoia.
+        1. Print the error in the log
+        2. Increment and assess failure counts on the builder and job.
+        """
+        # Make sure that pending database updates are removed as it
+        # could leave the database in an inconsistent state (e.g. The
+        # job says it's running but the buildqueue has no builder set).
         transaction.abort()
 
+        # If we don't recognise the exception include a stack trace with
+        # the error.
         error_message = failure.getErrorMessage()
         if failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
@@ -132,12 +139,13 @@ class SlaveScanner:
             self.logger.info("Scanning failed with: %s\n%s" %
                 (failure.getErrorMessage(), failure.getTraceback()))
 
-        builder = get_builder(self.builder_name)
-
         # Decide if we need to terminate the job or fail the
         # builder.
         try:
+            builder = get_builder(self.builder_name)
             builder.gotFailure()
+            # XXX: There might not be a current job so check for that
+            # first before trying to fail it.
             builder.getCurrentBuildFarmJob().gotFailure()
             self.logger.info(
                 "builder failure count: %s, job failure count: %s" % (
@@ -155,10 +163,25 @@ class SlaveScanner:
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
 
-        The whole method is wrapped in a transaction, but we do partial
-        commits to avoid holding locks on tables.
+        There are several steps to scanning:
 
-        :return: A `BuilderSlave` if we dispatched a job to it, or None.
+        1. If the builder is marked as "ok" then probe it to see what state
+            it's in.  This is where lost jobs are rescued if we think the
+            builder is doing something that it later tells us it's not,
+            and also where the multi-phase abort procedure happens.
+            See IBuilder.rescueIfLost, which is called by
+            IBuilder.updateStatus().
+        2. If the builder is still happy, we ask it if it has an active build
+            and then either update the build in Launchpad or collect the
+            completed build. (builder.updateBuild)
+        3. If the builder is not happy or it was marked as unavailable
+            mid-build, we need to reset the job that we thought it had, so
+            that the job is dispatched elsewhere.
+        4. If the builder is idle and we have another build ready, dispatch
+            it.
+
+        :return: A Deferred that fires when the scan is complete, whose
+            value is A `BuilderSlave` if we dispatched a job to it, or None.
         """
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
@@ -170,7 +193,9 @@ class SlaveScanner:
         else:
             d = defer.succeed(None)
 
-        def got_update_status(ignored):
+        def status_updated(ignored):
+            # Commit the changes done while possibly rescuing jobs, to
+            # avoid holding table locks.
             transaction.commit()
 
             # See if we think there's an active build on the builder.
@@ -180,6 +205,27 @@ class SlaveScanner:
             # it's ready.  Yes, "updateBuild" is a bad name.
             if buildqueue is not None:
                 return self.builder.updateBuild(buildqueue)
+
+        def build_updated(ignored):
+            # Commit changes done while updating the build, to avoid
+            # holding table locks.
+            transaction.commit()
+
+            # If the builder is in manual mode, don't dispatch anything.
+            if self.builder.manual:
+                self.logger.debug(
+                    '%s is in manual mode, not dispatching.' %
+                    self.builder.name)
+                return
+
+            # If the builder is marked unavailable, don't dispatch anything.
+            # Additionaly, because builders can be removed from the pool at
+            # any time, we need to see if we think there was a build running
+            # on it before it was marked unavailable. In this case we reset
+            # the build thusly forcing it to get re-dispatched to another
+            # builder.
+
+            return self.builder.isAvailable().addCallback(got_available)
 
         def got_available(available):
             if not available:
@@ -206,27 +252,8 @@ class SlaveScanner:
                     return None
             return d.addCallback(job_started)
 
-        def got_update_build(ignored):
-            transaction.commit()
-
-            # If the builder is in manual mode, don't dispatch anything.
-            if self.builder.manual:
-                self.logger.debug(
-                    '%s is in manual mode, not dispatching.' %
-                    self.builder.name)
-                return
-
-            # If the builder is marked unavailable, don't dispatch anything.
-            # Additionaly, because builders can be removed from the pool at
-            # any time, we need to see if we think there was a build running
-            # on it before it was marked unavailable. In this case we reset
-            # the build thusly forcing it to get re-dispatched to another
-            # builder.
-
-            return self.builder.isAvailable().addCallback(got_available)
-
-        d.addCallback(got_update_status)
-        d.addCallback(got_update_build)
+        d.addCallback(status_updated)
+        d.addCallback(build_updated)
         return d
 
 
@@ -247,6 +274,10 @@ class NewBuildersScanner:
         from lp.buildmaster.interfaces.builder import IBuilderSet
         self.current_builders = [
             builder.name for builder in getUtility(IBuilderSet)]
+
+    def stop(self):
+        """Terminate the LoopingCall."""
+        self.loop.stop()
 
     def scheduleScan(self):
         """Schedule a callback SCAN_INTERVAL seconds later."""
@@ -281,10 +312,7 @@ class BuilddManager(service.Service):
             manager=self, clock=clock)
 
     def _setupLogger(self):
-        """Setup a 'slave-scanner' logger that redirects to twisted.
-
-        It is going to be used locally and within the thread running
-        the scan() method.
+        """Set up a 'slave-scanner' logger that redirects to twisted.
 
         Make it less verbose to avoid messing too much with the old code.
         """
@@ -321,9 +349,9 @@ class BuilddManager(service.Service):
         deferreds = [slave.stopping_deferred for slave in self.builder_slaves]
         deferreds.append(self.new_builders_scanner.stopping_deferred)
 
-        self.new_builders_scanner.loop.stop()
+        self.new_builders_scanner.stop()
         for slave in self.builder_slaves:
-            slave.loop.stop()
+            slave.stopCycle()
 
         # The 'stopping_deferred's are called back when the loops are
         # stopped, so we can wait on them all at once here before

@@ -34,7 +34,7 @@ from canonical.launchpad.scripts.logger import (
     )
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
-    LaunchpadZopelessLayer,
+    TwistedLaunchpadZopelessLayer,
     TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
@@ -64,7 +64,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
     This method uses the old framework for scanning and dispatching builds.
     """
-    layer = LaunchpadZopelessLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         """Setup TwistedLayer, TrialTestCase and BuilddSlaveTest.
@@ -147,7 +147,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
         # Run 'scan' and check its result.
         self.layer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkDispatch, builder)
@@ -185,9 +185,9 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
         scanner = self._getScanner()
-        d = defer.maybeDeferred(scanner._startCycle)
+        d = defer.maybeDeferred(scanner.singleCycle)
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
@@ -225,7 +225,7 @@ class TestSlaveScannerScan(TrialTestCase):
         login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobRescued, builder, job)
@@ -260,7 +260,7 @@ class TestSlaveScannerScan(TrialTestCase):
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
-        LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+        self.layer.switchDbUser(config.builddmaster.dbuser)
         scanner = self._getScanner()
         d = defer.maybeDeferred(scanner.scan)
         d.addCallback(self._checkJobUpdated, builder, job)
@@ -317,17 +317,19 @@ class TestSlaveScannerScan(TrialTestCase):
             return defer.fail(Exception("fake exception"))
         scanner = self._getScanner()
         scanner.scan = failing_scan
-        scanner.scheduleNextScanCycle = FakeMethod()
         from lp.buildmaster import manager as manager_module
         self.patch(manager_module, 'assessFailureCounts', FakeMethod())
         builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
         builder.currentjob.specific_job.build.failure_count = job_count
+        # The _scanFailed() calls abort, so make sure our existing
+        # failure counts are persisted.
+        self.layer.txn.commit()
 
         # startCycle() calls scan() which is our fake one that throws an
         # exception.
-        d = scanner._startCycle()
+        d = scanner.singleCycle()
 
         # Failure counts should be updated, and the assessment method
         # should have been called.
@@ -385,7 +387,7 @@ class TestSlaveScannerScan(TrialTestCase):
         job = removeSecurityProxy(builder._findBuildCandidate())
         job.virtualized = True
         builder.virtualized = True
-        d = scanner._startCycle()
+        d = scanner.singleCycle()
 
         def check(ignored):
             # The failure_count will have been incremented on the
@@ -402,7 +404,7 @@ class TestSlaveScannerScan(TrialTestCase):
 
 class TestBuilddManager(TrialTestCase):
 
-    layer = LaunchpadZopelessLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def _stub_out_scheduleNextScanCycle(self):
         # stub out the code that adds a callLater, so that later tests
@@ -439,7 +441,7 @@ class TestBuilddManager(TrialTestCase):
 class TestNewBuilders(TrialTestCase):
     """Test detecting of new builders."""
 
-    layer = LaunchpadZopelessLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def _getScanner(self, manager=None, clock=None):
         return NewBuildersScanner(manager=manager, clock=clock)
@@ -482,9 +484,6 @@ class TestNewBuilders(TrialTestCase):
     def test_scan(self):
         # See if scan detects new builders.
 
-        # stub out the addScanForBuilders and scheduleScan methods since
-        # they use callLater; we only want to assert that they get
-        # called.
         def fake_checkForNewBuilders():
             return "new_builders"
 
