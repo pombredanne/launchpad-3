@@ -14,6 +14,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import simplejson
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
@@ -66,6 +67,7 @@ from lp.code.errors import (
     BranchTargetError,
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
+    InvalidMergeQueueConfig,
     )
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -2717,6 +2719,28 @@ class TestMergeQueue(TestCaseWithFactory):
             branch.addToQueue(queue)
 
         self.assertEqual(branch.merge_queue, queue)
+
+    def test_setMergeQueueConfig(self):
+        """Test Branch.setMergeQueueConfig."""
+        branch = self.factory.makeBranch()
+        config = simplejson.dumps({
+            'path': '/',
+            'test': 'make test',})
+
+        with person_logged_in(branch.owner):
+            branch.setMergeQueueConfig(config)
+
+        self.assertEqual(branch.merge_queue_config, config)
+
+    def test_setMergeQueueConfig_invalid(self):
+        branch = self.factory.makeBranch()
+        config = 'abc'
+
+        with person_logged_in(branch.owner):
+            self.assertRaises(
+                InvalidMergeQueueConfig,
+                branch.setMergeQueueConfig,
+                config)
 
 
 def test_suite():

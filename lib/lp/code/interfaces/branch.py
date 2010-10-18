@@ -1084,6 +1084,15 @@ class IBranchEdit(Interface):
         :param queue: The branch merge queue that will manage the branch.
         """
 
+    def setMergeQueueConfig(config):
+        """Set the merge_queue_config property.
+
+        A branch can store a JSON string of configuration data for a merge
+        robot to retrieve.
+
+        :param config: A JSON string of data.
+        """
+
 
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
               IBranchEditableAttributes, IBranchAnyone):

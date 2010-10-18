@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -86,6 +87,7 @@ from lp.code.errors import (
     BranchTypeError,
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
+    InvalidMergeQueueConfig,
     )
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
@@ -1145,6 +1147,14 @@ class Branch(SQLBase, BzrIdentityMixin):
     def addToQueue(self, queue):
         """See `IBranchEdit`."""
         self.merge_queue = queue
+
+    def setMergeQueueConfig(self, config):
+        """See `IBranchEdit`."""
+        try:
+            simplejson.loads(config)
+            self.merge_queue_config = config
+        except ValueError: # The json string is invalid
+            raise InvalidMergeQueueConfig
 
 
 class DeletionOperation:
