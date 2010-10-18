@@ -389,7 +389,7 @@ class IDistroSeriesPublic(
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
 
-    enabled_architectures = Attribute(
+    buildable_architectures = Attribute(
         "All architectures in this series with available chroot tarball.")
 
     def __getitem__(archtag):

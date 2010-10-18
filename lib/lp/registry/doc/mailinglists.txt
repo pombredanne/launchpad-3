@@ -79,7 +79,7 @@ neither and thus may not create a list for team_two.
 
 However, if we make Anne a team owner, she can create the mailing list.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> ignored = team_two.addMember(
@@ -161,7 +161,7 @@ a mailing list is made active, its email address is registered in Launchpad
 and associated with the team's mailing list, so that it can be used as the
 team's contact address.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
@@ -415,7 +415,7 @@ subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IMailingList
+    >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
