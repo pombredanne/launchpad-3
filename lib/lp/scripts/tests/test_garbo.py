@@ -34,7 +34,7 @@ from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts.garbo import (
+from lp.scripts.garbo import (
     DailyDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
