@@ -114,11 +114,10 @@ from lp.services.mail.sendmail import format_address_for_person
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
 
-    MERGE_PROPOSAL_CREATED = DBItem(0, """
-        Merge proposal created
+    MERGE_PROPOSAL_NEEDS_REVIEW = DBItem(0, """
+        Merge proposal needs review
 
-        This job generates the review diff for a BranchMergeProposal if
-        needed, then sends mail to all interested parties.
+        This job sends mail to all interested parties about the proposal.
         """)
 
     UPDATE_PREVIEW_DIFF = DBItem(1, """
@@ -303,7 +302,7 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
 
     classProvides(IMergeProposalNeedsReviewEmailJobSource)
 
-    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
+    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
 
     def run(self):
         """See `IMergeProposalNeedsReviewEmailJob`."""
@@ -646,7 +645,7 @@ class BranchMergeProposalJobFactory:
     """Construct a derived merge proposal job for a BranchMergeProposalJob."""
 
     job_classes = {
-        BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED:
+        BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW:
             MergeProposalNeedsReviewEmailJob,
         BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF:
             UpdatePreviewDiffJob,
