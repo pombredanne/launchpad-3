@@ -130,15 +130,19 @@ class TestBuilderWithTrial(TrialTestCase):
         login_as(ANONYMOUS)
         self.addCleanup(logout)
 
-    def test_updateStatus_deactivates_builder_when_abort_fails(self):
+    def test_updateStatus_aborts_lost_and_broken_slave(self):
+        # A slave that's 'lost' should be aborted; when the slave is
+        # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
         d = lostbuilding_builder.updateStatus(QuietFakeLogger())
-        def check_slave_status(ignored):
+        def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
-            self.assertFalse(lostbuilding_builder.builderok)
-        return d.addCallback(check_slave_status)
+            # 'Fault' comes from the LostBuildingBrokenSlave, this is
+            # just testing that the value is passed through.
+            self.assertIsInstance(failure.value, xmlrpclib.Fault)
+        return d.addBoth(check_slave_status)
 
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
@@ -841,8 +845,8 @@ class TestSlave(TrialTestCase):
         # build has been triggered, the status is BUILDING.
         slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
-        self.slave_helper.triggerGoodBuild(slave, build_id)
-        d = slave.status()
+        d = self.slave_helper.triggerGoodBuild(slave, build_id)
+        d.addCallback(lambda ignored: slave.status())
         def check_status(status):
             self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
             [log_file] = status[2:]
