@@ -143,7 +143,7 @@ class TestBugTaskStatusTransitionForPrivilegedUserBase:
     def makePersonAndTask(self):
         """Create a bug task and privileged person for this task.
 
-        This method is user by subclasses to correctly setup
+        This method is implemented by subclasses to correctly setup
         each test.
         """
         raise NotImplementedError(self.makePersonAndTask)
