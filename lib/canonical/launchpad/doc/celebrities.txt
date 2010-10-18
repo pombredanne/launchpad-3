@@ -7,7 +7,7 @@ database, which we want to give easy access to in the code. To this end,
 there is an ILaunchpadCelebrities utility available that gives access
 to these well-known objects through attributes.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -91,7 +91,7 @@ The bug_watch_updater celebrity updates the bug watches.
 For all the products using SourceForge, we have a single registered
 tracker
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> sf_tracker = getUtility(IBugTrackerSet).getByName('sf')
     >>> celebs.sourceforge_tracker == sf_tracker
     True
@@ -112,7 +112,7 @@ and old incomplete bugtasks.
 
 The Launchpad product itself.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> celebs.launchpad == launchpad
     True
@@ -159,7 +159,7 @@ has the ability to de-activate projects.
 There is a 'Savannah Bug Tracker' bugtracker which represents the
 bug tracker for all registered Savannah projects.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> savannah_tracker = getUtility(IBugTrackerSet).getByName(
     ...     'savannah')
     >>> celebs.savannah_tracker == savannah_tracker

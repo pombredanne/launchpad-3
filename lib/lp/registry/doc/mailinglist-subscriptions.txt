@@ -125,7 +125,7 @@ they've confirmed with Launchpad.
 However, should Anne register a new, but not-validated email address, she may
 not post from it.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> address_set = getUtility(IEmailAddressSet)
     >>> alternative = address_set.new(
     ...     'anne.x.person@example.net', anne, account=anne.account)
@@ -139,7 +139,7 @@ not post from it.
 
 Once Anne validates her new address, she can post from it.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
     >>> transaction.commit()
 
@@ -169,7 +169,7 @@ address (if any) a user is subscribed. That information is available
 as the email_address member.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IMailingListSubscription
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSubscription
     >>> subscription = list_one.getSubscription(bart)
     >>> verifyObject(IMailingListSubscription, subscription)
     True
@@ -196,7 +196,7 @@ we first create team-two as a subteam of team-one.
     >>> team_two = factory.makeTeam(name='team-two', owner=team_owner)
     >>> team_names.append(team_two.name)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> team_two.join(team_one, salgado)
     >>> sorted(member.displayname for member in team_one.allmembers)
@@ -378,7 +378,7 @@ Dirk) who have no other indirect membership in the superteam will be
 unsubscribed from the superteam's mailing list.
 
     >>> dirk.leave(team_two)
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> team_one.setMembershipData(team_three,
     ...     TeamMembershipStatus.DEACTIVATED, salgado)
     >>> transaction.commit()
@@ -805,7 +805,7 @@ list are dropped.
     # Deactivation isn't complete until the list's status is transitioned to
     # INACTIVE.
     >>> list_one.deactivate()
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
     >>> transaction.commit()
 

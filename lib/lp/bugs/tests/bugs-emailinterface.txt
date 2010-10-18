@@ -90,7 +90,7 @@ bug got submitted correctly:
 
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import sync
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.services.mail import stub
     >>> bugset = getUtility(IBugSet)
     >>> from lp.bugs.model.bugnotification import BugNotification
@@ -263,7 +263,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
@@ -757,7 +757,7 @@ Unsubscribing from a bug also unsubscribes you from its duplicates. To
 demonstrate, let's first make no_privs an indirect subscriber from bug
 #5, by subscribing him directly to a dupe of bug #5, bug #6.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login("no-priv@canonical.com")
 
@@ -1222,7 +1222,7 @@ If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     # The script's default user doesn't have permission to change the driver.
@@ -1398,7 +1398,7 @@ Bug supervisors can set some restricted statuses:
 
 Everyone else gets an explanatory error message:
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
 
     >>> commit()
@@ -2877,7 +2877,7 @@ possible).
 To demonstrate this we need to set up some example objects. Firstly,
 we'll create a new bug on firefox and link it to a remote bug.
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
@@ -2983,7 +2983,7 @@ The BugMessage instance which links the emailed comment to the bug also
 links it to the remote bug via the BugWatch that the original comment
 was imported from.
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 
     >>> reply_bug_message = getUtility(

@@ -9,7 +9,7 @@ Distro Arch Series
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from lp.registry.interfaces.distribution import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
 
@@ -23,6 +23,16 @@ or getDistroArchSeries():
 
 # XXX: daniels 2005-10-17 bug=3257:
 #      This needs many more tests to be effective.
+
+
+Properties
+==========
+
+Enabled is a boolean flag that says whether the arch will receive new builds
+and publish them.
+
+    >>> print hoary_i386.enabled
+    True
 
 
 DistroArchSeries can tell you about their published releases

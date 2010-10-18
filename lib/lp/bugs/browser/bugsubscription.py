@@ -84,6 +84,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    # XXX 2010-10-18 gmb bug=651108:
+    #     field_names is currently empty because we don't use any of
+    #     them.  This will be amended in a subsequent branch.
+    field_names = []
 
     @property
     def field_names(self):
@@ -96,16 +100,25 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     def next_url(self):
         """Provided so returning to the page they came from works."""
         referer = self.request.getHeader('referer')
+        context_url = canonical_url(self.context)
 
         # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
         # browser setting referer to localhost.
-        if referer and referer not in ('localhost', self.request.getURL()):
+        # We also ignore the current request URL and the context URL as
+        # far as referrers are concerned so that we can handle privacy
+        # issues properly.
+        ignored_referrer_urls = (
+            'localhost', self.request.getURL(),  context_url)
+        if referer and referer not in ignored_referrer_urls:
             next_url = referer
+        elif self._redirecting_to_bug_list:
+            next_url = canonical_url(self.context.target, view_name="+bugs")
         else:
-            next_url = canonical_url(self.context)
+            next_url = context_url
         return next_url
 
     cancel_url = next_url
+    _redirecting_to_bug_list = False
 
     @cachedproperty
     def _subscribers_for_current_user(self):
@@ -225,14 +238,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
             self._handleUnsubscribe(subscription_person)
         self.request.response.redirect(self.next_url)
 
-    def _isSubscriptionRequest(self):
-        """Return True if the form contains subscribe/unsubscribe input."""
-        return (
-            self.user and
-            self.request.method == 'POST' and
-            'cancel' not in self.request.form and
-            self.widgets['subscription'].hasValidInput())
-
     def _handleSubscribe(self):
         """Handle a subscribe request."""
         self.context.bug.subscribe(self.user, self.user)
@@ -272,8 +277,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.
-            self.request.response.redirect(
-                canonical_url(self.context.target) + "/+bugs")
             self._redirecting_to_bug_list = True
 
     def _handleUnsubscribeOtherUser(self, user):
