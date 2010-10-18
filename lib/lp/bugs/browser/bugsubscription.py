@@ -84,6 +84,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+    # XXX 2010-10-18 gmb bug=651108:
+    #     field_names is currently empty because we don't use any of
+    #     them.  This will be amended in a subsequent branch.
+    field_names = []
 
     @property
     def next_url(self):
