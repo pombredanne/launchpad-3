@@ -261,16 +261,24 @@ class BaseLayer:
     # Things we need to cleanup.
     fixture = None
 
-    # The config names that are generated for this layer
+    # ConfigFixtures for the configs generated for this layer. Set to None
+    # if the layer is not setUp, or if persistent tests services are in use.
+    config = None
+    appserver_config = None
+
+    # The config names that are generated for this layer. Set to None when
+    # the layer is not setUp.
     config_name = None
     appserver_config_name = None
 
     @classmethod
-    def make_config(cls, config_name, clone_from):
+    def make_config(cls, config_name, clone_from, attr_name):
         """Create a temporary config and link it into the layer cleanup."""
         cfg_fixture = ConfigFixture(config_name, clone_from)
         cls.fixture.addCleanup(cfg_fixture.cleanUp)
         cfg_fixture.setUp()
+        cls.fixture.addCleanup(setattr, cls, attr_name, None)
+        setattr(cls, attr_name, cfg_fixture)
 
     @classmethod
     @profiled
@@ -294,9 +302,10 @@ class BaseLayer:
             if not BaseLayer.persist_test_services:
                 kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             config_name = 'testrunner_%s' % test_instance
-            cls.make_config(config_name, 'testrunner')
+            cls.make_config(config_name, 'testrunner', 'config')
             app_config_name = 'testrunner-appserver_%s' % test_instance
-            cls.make_config(app_config_name, 'testrunner-appserver')
+            cls.make_config(
+                app_config_name, 'testrunner-appserver', 'appserver_config')
         else:
             config_name = 'testrunner'
             app_config_name = 'testrunner-appserver'

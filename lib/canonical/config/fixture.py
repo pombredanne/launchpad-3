@@ -31,17 +31,21 @@ class ConfigFixture(Fixture):
         self.instance_name = instance_name
         self.copy_from_instance = copy_from_instance
 
+    def add_section(self, sectioncontent):
+        """Add sectioncontent to the lazy config."""
+        with open(self.absroot + '/launchpad-lazr.conf', 'ab') as out:
+            out.write(sectioncontent)
+
     def setUp(self):
         super(ConfigFixture, self).setUp()
         root = 'configs/' + self.instance_name
         os.mkdir(root)
-        absroot = os.path.abspath(root)
-        self.addCleanup(shutil.rmtree, absroot)
+        self.absroot = os.path.abspath(root)
+        self.addCleanup(shutil.rmtree, self.absroot)
         source = 'configs/' + self.copy_from_instance
         for basename in os.listdir(source):
             if basename == 'launchpad-lazr.conf':
-                with open(root + '/launchpad-lazr.conf', 'wb') as out:
-                    out.write("""[meta]
+                self.add_section("""[meta]
 extends: ../%s/launchpad-lazr.conf
 
 """ % self.copy_from_instance)

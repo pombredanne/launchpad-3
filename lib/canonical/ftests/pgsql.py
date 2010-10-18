@@ -11,6 +11,8 @@ import os
 import time
 
 import psycopg2
+
+from canonical.config import config
 from canonical.database.postgresql import (
     generateResetSequencesSQL, resetSequences)
 
@@ -159,7 +161,7 @@ class PgTestSetup:
     # Class attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
-    def __init__(self, template=None, dbname=None, dbuser=None,
+    def __init__(self, template=None, dbname=dynamic, dbuser=None,
             host=None, port=None, reset_sequences_sql=None):
         '''Construct the PgTestSetup
 
@@ -168,10 +170,12 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
+        self._dynamic_name = False
         if dbname is PgTestSetup.dynamic:
             if os.environ.get('LP_TEST_INSTANCE'):
                 self.dbname = "%s_%s" % (
                     self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
+                self._dynamic_name = True
             else:
                 # Fallback to the class name.
                 self.dbname = self.__class__.dbname
@@ -214,6 +218,23 @@ class PgTestSetup:
         '''
         # This is now done globally in test.py
         #installFakeConnect()
+        if self._dynamic_name:
+            # Stash the name we use in the config if a writable config is
+            # available.
+            # Avoid circular imports
+            from canonical.testing.layers import BaseLayer
+            section = """[database]
+rw_main_master: dbname=%s
+rw_main_slave:  dbname=%s
+
+""" % (self.dbname, self.dbname)
+            if BaseLayer.config is not None:
+                BaseLayer.config.add_section(section)
+            if BaseLayer.appserver_config is not None:
+                BaseLayer.appserver_config.add_section(section)
+            if config.instance_name in (
+                BaseLayer.config_name, BaseLayer.appserver_config_name):
+                config.reloadConfig()
         if (self.template, self.dbname) != PgTestSetup._last_db:
             PgTestSetup._reset_db = True
         if not PgTestSetup._reset_db:
@@ -297,6 +318,7 @@ class PgTestSetup:
                 con = psycopg2.connect(self._connectionString(self.template))
             except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
+                    print x
                     return
                 raise
             try:
