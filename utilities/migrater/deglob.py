@@ -216,7 +216,7 @@ def normalize_doctest_imports(file_path, match_re, substitution=None):
 
 
 def normalize_all_doctest_imports():
-    root = 'lib/lp/registry/doc'
+    root = 'lib'
     types = r'\.(txt)'
     pattern = r'([ ]+)>>> from ([\w.]+) import ([\w.]+)$'
     substitution = True
