@@ -162,18 +162,53 @@ class IBuilder(IHasOwner):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
+    def gotFailure():
+        """Increment failure_count on the builder."""
+
+    def resetFailureCount():
+        """Set the failure_count back to zero."""
+
+    def failBuilder(reason):
+        """Mark builder as failed for a given reason."""
+
+    def setSlaveForTesting(proxy):
+        """Sets the RPC proxy through which to operate the build slave."""
+
+    def verifySlaveBuildCookie(slave_build_id):
+        """Verify that a slave's build cookie is consistent.
+
+        This should delegate to the current `IBuildFarmJobBehavior`.
+        """
+
+    def transferSlaveFileToLibrarian(file_sha1, filename, private):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian file
+            alias.
+        :param private: True if the build is for a private archive.
+        :return: A librarian file alias.
+        """
+
+    def getBuildQueue():
+        """Return a `BuildQueue` if there's an active job on this builder.
+
+        :return: A BuildQueue, or None.
+        """
+
+    def getCurrentBuildFarmJob():
+        """Return a `BuildFarmJob` for this builder."""
+
+    # All methods below here return Deferred.
+
     def isAvailable():
         """Whether or not a builder is available for building new jobs.
 
         :return: A Deferred that fires with True or False, depending on
             whether the builder is available or not.
         """
-
-    def gotFailure():
-        """Increment failure_count on the builder."""
-
-    def resetFailureCount():
-        """Set the failure_count back to zero."""
 
     def rescueIfLost(logger=None):
         """Reset the slave if its job information doesn't match the DB.
@@ -202,9 +237,6 @@ class IBuilder(IHasOwner):
             finished.  It does not have a return value.
         """
 
-    def failBuilder(reason):
-        """Mark builder as failed for a given reason."""
-
     def requestAbort():
         """Ask that a build be aborted.
 
@@ -230,9 +262,6 @@ class IBuilder(IHasOwner):
             whose value is a CannotResumeHost exception.
         """
 
-    def setSlaveForTesting(proxy):
-        """Sets the RPC proxy through which to operate the build slave."""
-
     def slaveStatus():
         """Get the slave status for this builder.
 
@@ -251,16 +280,12 @@ class IBuilder(IHasOwner):
             elements depending on the status.
         """
 
-    def verifySlaveBuildCookie(slave_build_id):
-        """Verify that a slave's build cookie is consistent.
-
-        This should delegate to the current `IBuildFarmJobBehavior`.
-        """
-
     def updateBuild(queueItem):
         """Verify the current build job status.
 
         Perform the required actions for each state.
+
+        :return: A Deferred that fires when the slave dialog is finished.
         """
 
     def startBuild(build_queue_item, logger):
@@ -272,18 +297,6 @@ class IBuilder(IHasOwner):
         :return: A Deferred that fires after the dispatch has completed whose
             value is None, or a Failure that contains an exception
             explaining what went wrong.
-        """
-
-    def transferSlaveFileToLibrarian(file_sha1, filename, private):
-        """Transfer a file from the slave to the librarian.
-
-        :param file_sha1: The file's sha1, which is how the file is addressed
-            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
-            will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian file
-            alias.
-        :param private: True if the build is for a private archive.
-        :return: A librarian file alias.
         """
 
     def handleTimeout(logger, error_message):
@@ -310,15 +323,6 @@ class IBuilder(IHasOwner):
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """
-
-    def getBuildQueue():
-        """Return a `BuildQueue` if there's an active job on this builder.
-
-        :return: A BuildQueue, or None.
-        """
-
-    def getCurrentBuildFarmJob():
-        """Return a `BuildFarmJob` for this builder."""
 
 
 class IBuilderSet(Interface):
