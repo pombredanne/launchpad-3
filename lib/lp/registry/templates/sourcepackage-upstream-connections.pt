@@ -24,6 +24,10 @@
           structure context/menu:overview/remove_packaging/fmt:icon " />
       </span>
     </dd>
+    <dd>
+      Lastest version:
+      <tal:version replace="structure python: series.getLatestRelease().version"/>
+    </dd>
   </dl>
 
   <style>
