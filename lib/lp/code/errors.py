@@ -293,6 +293,7 @@ class BuildNotAllowedForDistro(RecipeBuildException):
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
 
+
 class InvalidMergeQueueConfig(Exception):
     """The config specified is not a valid JSON string."""
 
