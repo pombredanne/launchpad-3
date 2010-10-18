@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 import re
-import unittest
 
 from zope.testing.renormalizing import RENormalizing
 
@@ -114,6 +113,3 @@ def test_suite():
         (re.compile(r'Revision="\d+"'), 'Revision="1999"')]))
     suite.layer = LaunchpadFunctionalLayer
     return suite
-
-if __name__ == '__main__':
-    unittest.main(test_suite())

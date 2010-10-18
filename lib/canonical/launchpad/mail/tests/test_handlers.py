@@ -114,7 +114,3 @@ def test_suite():
     suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

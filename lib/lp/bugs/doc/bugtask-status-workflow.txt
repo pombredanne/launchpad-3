@@ -51,7 +51,7 @@ Only its datecreated value will be set. All other dates will be None.
 The bug status cannot be set directly, but the value can be retrieved
 directly.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> ubuntu_firefox_task.status = BugTaskStatus.CONFIRMED
     Traceback (most recent call last):
@@ -275,7 +275,7 @@ unassigned, to assigned, but not if the assignee changes from one person
 to another. Like status, assignee cannot be set directly, because
 setting an assignee has "side effects".
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
 
     >>> ubuntu_firefox_task.assignee = foobar

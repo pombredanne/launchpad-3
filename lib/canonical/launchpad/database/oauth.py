@@ -60,7 +60,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 
 # How many hours should a request token be valid for?
-REQUEST_TOKEN_VALIDITY = 12
+REQUEST_TOKEN_VALIDITY = 2
 # The OAuth Core 1.0 spec (http://oauth.net/core/1.0/#nonce) says that a
 # timestamp "MUST be equal or greater than the timestamp used in previous
 # requests," but this is likely to cause problems if the client does request
@@ -152,10 +152,8 @@ class OAuthConsumer(OAuthBase):
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
         key, secret = create_token_key_and_secret(table=OAuthRequestToken)
-        date_expires = (datetime.now(pytz.timezone('UTC'))
-                        + timedelta(hours=REQUEST_TOKEN_VALIDITY))
         return OAuthRequestToken(
-            consumer=self, key=key, secret=secret, date_expires=date_expires)
+            consumer=self, key=key, secret=secret)
 
     def getAccessToken(self, key):
         """See `IOAuthConsumer`."""
@@ -223,6 +221,11 @@ class OAuthAccessToken(OAuthBase):
                 return self.distribution
         else:
             return None
+
+    @property
+    def is_expired(self):
+        now = datetime.now(pytz.timezone('UTC'))
+        return self.date_expires is not None and self.date_expires <= now
 
     def checkNonceAndTimestamp(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
@@ -301,11 +304,23 @@ class OAuthRequestToken(OAuthBase):
         else:
             return None
 
-    def review(self, user, permission, context=None):
+    @property
+    def is_expired(self):
+        now = datetime.now(pytz.timezone('UTC'))
+        expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
+        return expires <= now
+
+    def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
-        assert not self.is_reviewed, (
-            "Request tokens can be reviewed only once.")
+        if self.is_reviewed:
+            raise AssertionError(
+                "Request tokens can be reviewed only once.")
+        if self.is_expired:
+            raise AssertionError(
+                'This request token has expired and can no longer be '
+                'reviewed.')
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_expires = date_expires
         self.person = user
         self.permission = permission
         if IProduct.providedBy(context):
@@ -322,15 +337,24 @@ class OAuthRequestToken(OAuthBase):
 
     def createAccessToken(self):
         """See `IOAuthRequestToken`."""
-        assert self.is_reviewed, (
-            'Cannot create an access token from an unreviewed request token.')
-        assert self.permission != OAuthPermission.UNAUTHORIZED, (
-            'The user did not grant access to this consumer.')
+        if not self.is_reviewed:
+            raise AssertionError(
+                'Cannot create an access token from an unreviewed request '
+                'token.')
+        if self.permission == OAuthPermission.UNAUTHORIZED:
+            raise AssertionError(
+                'The user did not grant access to this consumer.')
+        if self.is_expired:
+            raise AssertionError(
+                'This request token has expired and can no longer be '
+                'exchanged for an access token.')
+
         key, secret = create_token_key_and_secret(table=OAuthAccessToken)
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=access_level, product=self.product,
+            secret=secret, permission=access_level,
+            date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         self.destroySelf()
