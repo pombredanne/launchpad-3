@@ -22,8 +22,6 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        # We can work with a project only here, since both project
-        # and distribution use the same methods on IBugTask.
         super(TestBugTaskStatusTransitionForUser, self).setUp()
         self.user = self.factory.makePerson()
         self.task = self.factory.makeBugTask()
@@ -74,7 +72,8 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
                 BugTaskStatus.CONFIRMED, self.user)
 
     def test_user_canTransitionToStatus(self):
-        # Regular user cannot transition to BUG_SUPERVISOR_BUGTASK_STATUSES.
+        # Regular user cannot transition to BUG_SUPERVISOR_BUGTASK_STATUSES,
+        # but can transition to any other status.
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.WONTFIX, self.user),
@@ -87,7 +86,6 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             self.task.canTransitionToStatus(
                 BugTaskStatus.TRIAGED, self.user),
             False)
-        # User can transition to any other status.
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.NEW, self.user),
@@ -121,7 +119,8 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             True)
 
     def test_user_canTransitionToStatus_from_wontfix(self):
-        # A regular user cannot transition away from Won't Fix.
+        # A regular user cannot transition away from Won't Fix,
+        # so canTransitionToStatus should return False.
         removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
         self.assertEqual(
             self.task.canTransitionToStatus(
@@ -230,7 +229,8 @@ class TestBugTaskStatusTransitionForPrivilegedUserBase:
             True)
 
     def test_privileged_user_canTransitionToStatus_from_wontfix(self):
-        # A privileged user can transition away from Won't Fix.
+        # A privileged user can transition away from Won't Fix, so
+        # canTransitionToStatus should return True.
         removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
         self.assertEqual(
             self.task.canTransitionToStatus(
