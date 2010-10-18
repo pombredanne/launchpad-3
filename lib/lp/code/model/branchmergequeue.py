@@ -9,6 +9,7 @@ __all__ = ['BranchMergeQueue']
 from storm.locals import (
     Int,
     Reference,
+    Store,
     Storm,
     Unicode,
     )
@@ -22,6 +23,7 @@ from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,
     IBranchMergeQueueSource,
     )
+from lp.code.model.branch import Branch
 
 
 class BranchMergeQueue(Storm):
@@ -44,6 +46,12 @@ class BranchMergeQueue(Storm):
     configuration = Unicode(allow_none=False)
 
     date_created = UtcDateTimeCol(notNull=True)
+
+    @property
+    def branches(self):
+        return Store.of(self).find(
+            Branch,
+            Branch.merge_queue_id == self.id)
 
     @staticmethod
     def new(name, owner, registrant, description=None,

@@ -5,11 +5,15 @@
 
 import simplejson
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchMergeQueueInterface(TestCaseWithFactory):
@@ -18,7 +22,8 @@ class TestBranchMergeQueueInterface(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_implements_interface(self):
-        queue = BranchMergeQueue()
+        queue = self.factory.makeBranchMergeQueue()
+        IStore(BranchMergeQueue).add(queue)
         verifyObject(IBranchMergeQueue, queue)
 
 
@@ -41,3 +46,25 @@ class TestBranchMergeQueueSource(TestCaseWithFactory):
         self.assertEqual(queue.registrant, owner)
         self.assertEqual(queue.description, description)
         self.assertEqual(queue.configuration, config)
+
+
+class TestBranchMergeQueue(TestCaseWithFactory):
+    """Test the functions of the BranchMergeQueue."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_branches(self):
+        """Test that a merge queue can get all its managed branches."""
+        store = IStore(BranchMergeQueue)
+
+        queue = self.factory.makeBranchMergeQueue()
+        store.add(queue)
+
+        branch = self.factory.makeBranch()
+        store.add(branch)
+        with person_logged_in(branch.owner):
+            branch.addToQueue(queue)
+
+        self.assertEqual(
+            list(queue.branches),
+            [branch])

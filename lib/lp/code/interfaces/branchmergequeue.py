@@ -12,6 +12,10 @@ __all__ = [
     'IBranchMergeQueueSource',
     ]
 
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import Interface
 from zope.schema import (
     Datetime,
@@ -25,7 +29,6 @@ from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice
     )
-
 
 class IBranchMergeQueue(Interface):
 
@@ -64,6 +67,14 @@ class IBranchMergeQueue(Interface):
         title=_('Date Created'),
         required=True,
         readonly=True)
+
+    branches = CollectionField(
+        title=_('Dependent Branches'),
+        description=_(
+            'A collection of the merge proposals that are dependent '
+            'on this branch.'),
+        readonly=True,
+        value_type=Reference(Interface))
 
 
 class IBranchMergeQueueSource(Interface):
