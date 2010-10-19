@@ -27,6 +27,14 @@ def merge_proposal_created(merge_proposal, event):
     Also create a job to email the subscribers about the new proposal.
     """
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
+
+
+def merge_proposal_needs_review(merge_proposal, event):
+    """A new merge proposal needs a review.
+
+    This event is raised when the proposal moves from work in progress to
+    needs review.
+    """
     getUtility(IMergeProposalNeedsReviewEmailJobSource).create(
         merge_proposal)
 
