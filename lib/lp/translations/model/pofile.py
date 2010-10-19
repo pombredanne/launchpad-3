@@ -68,7 +68,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.pofile import (
     IPOFile,
@@ -233,13 +232,10 @@ def _can_edit_translations(pofile, person):
     if _person_has_not_licensed_translations(person):
         return False
 
-    # Finally, check whether the user is member of the translation team or
-    # owner for the given PO file.
+    # Finally, check whether the user is a member of the translation team.
     translators = [t.translator for t in pofile.translators]
     return _check_translation_perms(
-        pofile.translationpermission,
-        translators,
-        person) or person.inTeam(pofile.owner)
+        pofile.translationpermission, translators, person)
 
 
 def _can_add_suggestions(pofile, person):
@@ -315,11 +311,6 @@ class POFileMixIn(RosettaStats):
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
         return _can_add_suggestions(self, person)
-
-    def setOwnerIfPrivileged(self, person):
-        """See `IPOFile`."""
-        if self.canEditTranslations(person):
-            self.owner = person
 
     def getHeader(self):
         """See `IPOFile`."""
@@ -599,6 +590,9 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
+        # Avoid circular import.
+        from lp.registry.model.person import Person
+
         # Translation credit messages are "translated" by
         # rosetta_experts.  Shouldn't show up in contributors lists
         # though.
@@ -1358,12 +1352,12 @@ class DummyPOFile(POFileMixIn):
         UTC = pytz.timezone('UTC')
         self.date_changed = None
         self.lastparsed = None
-        self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        # The default POFile owner is the Rosetta Experts team unless the
-        # given owner has rights to write into that file.
-        if self.canEditTranslations(owner):
-            self.owner = owner
+        if owner is None:
+            owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        # The "owner" is really just the creator, without any extra
+        # privileges.
+        self.owner = owner
 
         self.path = u'unknown'
         self.datecreated = datetime.datetime.now(UTC)

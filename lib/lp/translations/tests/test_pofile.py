@@ -33,6 +33,7 @@ from lp.translations.interfaces.translatablemessage import (
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
+from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
@@ -1887,6 +1888,16 @@ class TestPOFile(TestCaseWithFactory):
         translator = self.factory.makePerson()
         self.pofile.markChanged(translator=translator)
         self.assertEqual(translator, self.pofile.lasttranslator)
+
+    def test_owner_has_no_privileges(self):
+        # Being a POFile's owner does not imply edit privileges.
+        creator = self.factory.makePerson()
+        removeSecurityProxy(self.pofile).owner = creator
+        naked_product = removeSecurityProxy(
+            self.potemplate.productseries.product)
+        naked_product.translationpermission = TranslationPermission.RESTRICTED
+
+        self.assertFalse(self.pofile.canEditTranslations(creator))
 
     def test_hasPluralFormInformation_bluffs_if_irrelevant(self):
         # If the template has no messages that use plural forms, the
