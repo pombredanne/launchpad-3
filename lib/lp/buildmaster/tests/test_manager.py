@@ -459,6 +459,13 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
+    def test_job_failing_more_than_builder_fails_job(self):
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
+
 
 class TestNewBuilders(TrialTestCase):
     """Test detecting of new builders."""
