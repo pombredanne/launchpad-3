@@ -82,7 +82,7 @@ the first one (new upload).
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> diffs = list(diff_set.getPendingDiffs())
     >>> for diff in diffs:

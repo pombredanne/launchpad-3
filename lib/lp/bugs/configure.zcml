@@ -706,6 +706,7 @@
                     getSubscribersForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
+                    getStructuralSubscribers
                     getBugWatch
                     canBeNominatedFor
                     getNominationFor
@@ -1033,6 +1034,12 @@
         name="bugs"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
 
