@@ -475,6 +475,15 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertTrue(self.builder.builderok)
 
+    def test_builder_failing_more_than_job_but_over_fail_threshold(self):
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
+
 
 
 class TestNewBuilders(TrialTestCase):
