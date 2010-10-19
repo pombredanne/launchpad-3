@@ -68,7 +68,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.pofile import (
     IPOFile,
@@ -288,11 +287,6 @@ class POFileMixIn(RosettaStats):
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
         return _can_add_suggestions(self, person)
-
-    def setOwnerIfPrivileged(self, person):
-        """See `IPOFile`."""
-        if self.canEditTranslations(person):
-            self.owner = person
 
     def getHeader(self):
         """See `IPOFile`."""
@@ -572,6 +566,9 @@ class POFile(SQLBase, POFileMixIn):
     @property
     def contributors(self):
         """See `IPOFile`."""
+        # Avoid circular import.
+        from lp.registry.model.person import Person
+
         # Translation credit messages are "translated" by
         # rosetta_experts.  Shouldn't show up in contributors lists
         # though.

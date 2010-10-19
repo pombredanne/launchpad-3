@@ -103,10 +103,7 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus,
     )
-from lp.translations.model.pofile import (
-    DummyPOFile,
-    POFile,
-    )
+from lp.translations.model.pofile import POFile
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationimportqueue import collect_import_info
@@ -170,7 +167,8 @@ def get_pofiles_for(potemplates, language):
     for entry, pofile in enumerate(result):
         assert pofile == result[entry], "This enumerate confuses me."
         if pofile is None:
-            result[entry] = DummyPOFile(potemplates[entry], language)
+            result[entry] = potemplates[entry].getDummyPOFile(
+                language, check_for_existing=False)
 
     return result
 
@@ -744,7 +742,7 @@ class POTemplate(SQLBase, RosettaStats):
             # Update cache to reflect the change.
             template._cached_pofiles_by_language[language_code] = pofile
 
-    def newPOFile(self, language_code, create_sharing=True):
+    def newPOFile(self, language_code, create_sharing=True, owner=None):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code)
@@ -773,7 +771,8 @@ class POTemplate(SQLBase, RosettaStats):
             data['origin'] = self.sourcepackagename.name
 
         # The default POFile owner is the Rosetta Experts team.
-        owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if owner is None:
+            owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         path = self._composePOFilePath(language)
 
@@ -806,6 +805,9 @@ class POTemplate(SQLBase, RosettaStats):
     def getDummyPOFile(self, language, requester=None,
                        check_for_existing=True):
         """See `IPOTemplate`."""
+        # Avoid circular import.
+        from lp.translations.model.pofile import DummyPOFile
+
         if check_for_existing:
             # see if a valid one exists.
             existingpo = self.getPOFileByLang(language.code)
