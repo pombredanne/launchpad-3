@@ -133,7 +133,7 @@ Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
