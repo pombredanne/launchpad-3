@@ -8,6 +8,7 @@ import _pythonpath
 
 import time
 
+from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
@@ -37,5 +38,5 @@ if __name__ == "__main__":
 
     updater = UpdateRemoteComponentsFromBugzilla(
         "updatebugzillaremotecomponents",
-        dbuser="updatebugzillaremotecomponents")
+        dbuser=config.updatesourceforgeremoteproduct.dbuser)
     updater.lock_and_run()
