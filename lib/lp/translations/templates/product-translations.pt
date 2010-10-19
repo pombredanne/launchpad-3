@@ -29,17 +29,18 @@
       </div>
       <div class="top-portlet notice">
 
-        <tal:not-using-launchpad
+        <tal:message
+          condition="not: context/translations_usage/enumvalue:LAUNCHPAD"
+          replace="structure context/@@+portlet-not-using-launchpad"/>
+        <tal:translations-configuration
+          condition="view/can_configure_translations"
+          replace="structure context/@@+portlet-configuration"/>
+        <tal:not-launchpad
           condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
-          <tal:message
-            replace="structure context/@@+portlet-not-using-launchpad"/>
-          <tal:translations-configuration
-            condition="view/can_configure_translations"
-            replace="structure context/@@+portlet-configuration"/>
-          <tal:translatable-packages
+          <tal:translations-packages
             condition="not: view/is_translations_admin"
             replace="structure context/@@+portlet-not-using-launchpad-extra"/>
-        </tal:not-using-launchpad>
+        </tal:not-launchpad>
 
         <div tal:condition="view/no_translations_available">
           There are no translations for this project.

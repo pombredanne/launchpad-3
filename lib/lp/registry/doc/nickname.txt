@@ -38,8 +38,8 @@ And it needs to maintain a minimum length
     >>> _counter = 0
     >>> from zope.security.proxy import removeSecurityProxy
     >>> def new_person(email):
-    ...     from canonical.launchpad.interfaces import IPersonSet
-    ...     from canonical.launchpad.interfaces import IEmailAddressSet
+    ...     from lp.registry.interfaces.person import IPersonSet
+    ...     from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     ...     from lp.registry.interfaces.person import (
     ...         PersonCreationRationale)
     ...     UNKNOWN = PersonCreationRationale.UNKNOWN
