@@ -56,8 +56,10 @@
             </lp:ProductSeries>
         </lp:series>
         <lp:owner>
-            <lp:specifiedAt tal:attributes="rdf:resource
-                string:${context/owner/fmt:url}/+rdf" />
+            <foaf:Agent>
+                <foaf:Account
+                    tal:attributes="rdf:resource string:${context/owner/fmt:url}/+rdf"/>
+            </foaf:Agent>
         </lp:owner>
         <lp:status tal:condition="context/active">Active</lp:status>
         <lp:status tal:condition="not:context/active">Inactive</lp:status>

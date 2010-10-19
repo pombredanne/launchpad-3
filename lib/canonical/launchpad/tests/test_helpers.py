@@ -319,7 +319,3 @@ def test_suite():
     suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(TestEmailPeople))
     return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
-

@@ -237,6 +237,8 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
+    dependencies = None
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -273,7 +275,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         return self.date_finished - self.date_started
 
     def makeJob(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
     def jobStarted(self):
@@ -420,7 +422,8 @@ class BuildFarmJobSet:
             # specific private builds to which they have access.
             origin.extend(left_join_archive)
             origin.append(LeftJoin(
-                TeamParticipation, TeamParticipation.teamID == Archive.ownerID))
+                TeamParticipation,
+                TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
                 Or(Coalesce(Archive.private, False) == False,
                    TeamParticipation.person == user))
