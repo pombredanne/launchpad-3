@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
@@ -11,9 +11,9 @@ __all__ = [
     'LibrarianTestSetup',
     ]
 
+import atexit
 import os
 import shutil
-import tempfile
 import warnings
 
 from fixtures import Fixture
@@ -24,7 +24,6 @@ from canonical.launchpad.daemons.tachandler import (
     get_pid_from_file,
     TacException,
     TacTestSetup,
-    two_stage_kill,
     )
 from canonical.librarian.storage import _relFileLocation
 
@@ -136,6 +135,18 @@ class LibrarianServerFixture(TacTestSetup):
                 DeprecationWarning, stacklevel=3)
             return
         TacTestSetup.cleanUp(self)
+
+    def tearDownOnExit(self):
+        """Tell the librarian to shut down when Python exits."""
+        def tear_down():
+            # This is cleanUp(), but without the deprecation warning.  If
+            # Python provided a way of cancelling atexit calls, then we would
+            # just cancel the call on tearDown rather than silencing the
+            # DeprecationWarning.
+            if self._persistent_servers():
+                return
+            TacTestSetup.cleanUp(self)
+        atexit.register(tear_down)
 
     def clear(self):
         """Clear all files from the Librarian"""

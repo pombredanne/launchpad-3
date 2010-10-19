@@ -591,8 +591,8 @@ class LibrarianLayer(BaseLayer):
                     )
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
+        the_librarian.tearDownOnExit()
         LibrarianLayer._check_and_reset()
-        atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
