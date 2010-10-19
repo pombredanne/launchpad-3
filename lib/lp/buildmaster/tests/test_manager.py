@@ -444,18 +444,20 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.builder = self.factory.makeBuilder()
+        self.build = self.factory.makeSourcePackageRecipeBuild()
+        self.buildqueue = self.build.queueBuild()
+        self.buildqueue.markAsBuilding(self.builder)
+
     def test_equal_failures_reset_job(self):
-        builder = self.factory.makeBuilder()
-        build = self.factory.makeSourcePackageRecipeBuild()
-        buildqueue = build.queueBuild()
-        buildqueue.markAsBuilding(builder)
+        self.builder.gotFailure()
+        self.builder.getCurrentBuildFarmJob().gotFailure()
 
-        builder.gotFailure()
-        builder.getCurrentBuildFarmJob().gotFailure()
-
-        assessFailureCounts(builder, "notes")
-        self.assertIs(None, builder.currentjob)
-        self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
 
 class TestNewBuilders(TrialTestCase):
