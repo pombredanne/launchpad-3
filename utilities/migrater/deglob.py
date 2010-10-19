@@ -183,7 +183,7 @@ def normalize_doctest_imports(file_path, match_re, substitution=None):
                         continuation = ',\n%s...     ' % whitespace
                         idfs = continuation.join(identifiers)
                         expanded_line = (
-                            '%s>>> from %s (%s%s%s)\n' %
+                            '%s>>> from %s import (%s%s%s)\n' %
                             (whitespace, module_,
                              continuation[1:], idfs, continuation))
                     lines.append(
