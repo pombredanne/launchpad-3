@@ -1,15 +1,21 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
@@ -45,8 +51,13 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
         potemplate.priority = priority
         return potemplate
 
-    def addPOFile(self, potemplate):
-        """Add a `POFile` for the given `POTemplate`, in `self.language`."""
+    def addPOFile(self, potemplate=None):
+        """Add a `POFile` for the given `POTemplate`, in `self.language`.
+
+        If no `potemplate` is given, one will be created.
+        """
+        if potemplate is None:
+            potemplate = self.addPOTemplate()
         return self.factory.makePOFile(self.language.code, potemplate)
 
     def assertIsDummy(self, pofile):
@@ -142,20 +153,27 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def test_pofiles_slicing(self):
         # Slicing still works, and always does the same constant number
         # of queries (1).
+        # 
         translated_language = self.getTranslatedLanguage(self.language)
-        # Three templates with different priorities so they get sorted
-        # appropriately.
-        pofile1 = self.addPOFile(self.addPOTemplate(priority=2))
-        pofile2 = self.addPOFile(self.addPOTemplate(priority=1))
-        self.addPOTemplate(priority=0)
+        pofile1 = self.addPOFile()
+        pofile2 = self.addPOFile()
+        self.addPOTemplate(priority=-1)
 
-        pofiles = translated_language.pofiles[0:2]
-        self.assertEqual([pofile1, pofile2], list(pofiles))
+        # This does assume that a few teams with special privileges are
+        # already cached.  For a normal user without those special
+        # privileges, no further queries are needed to authorize access.
+        user = self.factory.makePerson()
+        celebs = getUtility(ILaunchpadCelebrities)
 
-        # Slicing executes only a single query.
-        get_slice = lambda of, start, end: list(of[start:end])
-        self.assertStatementCount(1, get_slice,
-                                  translated_language.pofiles, 1, 3)
+        with person_logged_in(user):
+            self.assertFalse(user.inTeam(celebs.admin))
+            self.assertFalse(user.inTeam(celebs.rosetta_experts))
+            pofiles = translated_language.pofiles[0:2]
+            self.assertContentEqual([pofile1, pofile2], list(pofiles))
+
+            get_slice = lambda of, start, end: list(of[start:end])
+            self.assertStatementCount(
+                1, get_slice, translated_language.pofiles, 1, 3)
 
     def test_pofiles_slicing_dummies(self):
         # Slicing includes DummyPOFiles.

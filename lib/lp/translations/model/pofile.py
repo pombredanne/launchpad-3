@@ -1331,14 +1331,12 @@ class DummyPOFile(POFileMixIn):
         UTC = pytz.timezone('UTC')
         self.date_changed = None
         self.lastparsed = None
+
         if owner is None:
             owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        # The "owner" is really just the creator, without any extra
+        # privileges.
         self.owner = owner
-
-        # The default POFile owner is the Rosetta Experts team unless the
-        # given owner has rights to write into that file.
-        if self.canEditTranslations(owner):
-            self.owner = owner
 
         self.path = u'unknown'
         self.datecreated = datetime.datetime.now(UTC)
