@@ -373,16 +373,12 @@ Now let's create a helper function to go through the entire desktop
 integration process, given the name of the desktop and the level of
 integration desired.
 
-    >>> def integrate_desktop(computer_name, button_to_click):
+    >>> def integrate_desktop(button_to_click):
     ...     """Authorize (or don't) a desktop integration request token.
+    ...     The token is authorized for the computer "mycomputer".
     ...
     ...     :return: the IOAuthRequestToken, possibly authorized.
     ...     """
-    ...     consumer_key = (
-    ...         "System-wide: Ubuntu desktop (%s)" % computer_name)
-    ...     login('foo.bar@canonical.com')
-    ...     consumer = factory.makeOAuthConsumer(consumer_key)
-    ...     logout()
     ...     token = request_token_for(consumer)
     ...     params['oauth_token'] = token.key
     ...     authorize_token_browser(allow_desktop)
@@ -394,11 +390,10 @@ If the client chooses a permanent desktop integration, the request
 token is approved and has no expiration date.
 
     >>> token = integrate_desktop(
-    ...     "my_computer",
-    ...     'Permanently integrate "my_computer" into my Launchpad account.')
+    ...     'Permanently integrate "mycomputer" into my Launchpad account.')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
-    The Ubuntu desktop called my_computer now has access to your
+    The Ubuntu desktop called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
     start using its Launchpad integration features.
 
@@ -417,17 +412,16 @@ reviewed and given an expiration date. Here, we authorize a token for
 one hour.
 
     >>> token = integrate_desktop(
-    ...     "my_computer3",
     ...     "I'd like to try the integration for one hour.")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
-    The Ubuntu desktop called my_computer3 now has access to your
+    The Ubuntu desktop called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
     start using its Launchpad integration features.
     The integration you just authorized will expire in 59 minutes. At
     that time, you'll have to re-authorize the Ubuntu desktop called
-    my_computer3, if you want to keep using its Launchpad integration
+    mycomputer, if you want to keep using its Launchpad integration
     features.
 
     >>> print token.is_reviewed
@@ -437,10 +431,16 @@ one hour.
     >>> token.date_expires is None
     False
 
+Note that a single computer (in this case "mycomputer") may have more
+than one desktop integration token. This is because there's no way to
+know that a user hasn't given more than one computer the same name
+(eg. "ubuntu" or "localhost"). The assignment of computer names to
+integration tokens is a useful convention, not something we try to
+enforce.
+
 Here we authorize a token for one day.
 
     >>> token = integrate_desktop(
-    ...     "my_computer4",
     ...     "I'd like to try the integration for one day.")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
@@ -457,7 +457,6 @@ Here, we authorize a token for a week. The expiration time is given as
 a date.
 
     >>> token = integrate_desktop(
-    ...     "my_computer5",
     ...     "I'd like to try the integration for one week.")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
@@ -479,12 +478,11 @@ If the client declines integration, the request token is reviewed but
 cannot be exchanged for an access token.
 
     >>> token = integrate_desktop(
-    ...     "my_computer2",
-    ...     """No, thanks, I don't trust "my_computer2".""")
+    ...     """No, thanks, I don't trust "mycomputer".""")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     You decided against desktop integration
-    You decided not to give the Ubuntu desktop called my_computer2
+    You decided not to give the Ubuntu desktop called mycomputer
     access to your Launchpad account. You can always change your mind
     later.
 
