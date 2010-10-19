@@ -6,12 +6,15 @@ __metaclass__ = type
 import unittest
 
 from canonical.config import config
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
-from lp.translations.utilities.translation_import import (
-    ExistingPOFileInDatabase)
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
+from lp.translations.utilities.translation_import import (
+    ExistingPOFileInDatabase,
+    )
+
 
 class TestSuperFastImports(TestCaseWithFactory):
     """Test how ExistingPOFileInDatabase cache works."""

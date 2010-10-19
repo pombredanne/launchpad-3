@@ -10,8 +10,8 @@ __metaclass__ = type
 __all__ = ['GoogleServiceTestSetup']
 
 
-import os
 import errno
+import os
 import signal
 
 from canonical.launchpad.testing import googletestservice

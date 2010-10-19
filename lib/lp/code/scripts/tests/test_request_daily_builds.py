@@ -6,12 +6,13 @@
 """Test the request_daily_builds script"""
 
 import unittest
+
 import transaction
 
-from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 
 

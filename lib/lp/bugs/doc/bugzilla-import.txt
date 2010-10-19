@@ -87,8 +87,7 @@ it to return:
 
   >>> duplicates = [
   ...     (1, 2),
-  ...     (2, 3),
-  ...     (2, 4),
+  ...     (3, 4),
   ...     ]
 
   >>> class FakeBackend:
@@ -536,9 +535,9 @@ Now check that the bugs have been marked duplicate:
   None
   >>> bug2.duplicateof == bug1
   True
-  >>> bug3.duplicateof == bug2
+  >>> bug3.duplicateof == None
   True
-  >>> bug4.duplicateof == bug2
+  >>> bug4.duplicateof == bug3
   True
 
 

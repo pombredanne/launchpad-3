@@ -9,15 +9,16 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote
-
-from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-
-from lp.services.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.scripts.base import LaunchpadScript
 
 
 collect_order = [

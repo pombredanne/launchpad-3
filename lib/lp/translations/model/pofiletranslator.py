@@ -9,17 +9,21 @@ __all__ = [
 
 
 from sqlobject import ForeignKey
-from zope.interface import implements
-
 from storm.expr import And
 from storm.store import Store
+from zope.interface import implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.translations.model.translationmessage import TranslationMessage
-from lp.translations.interfaces.pofiletranslator import (
-    IPOFileTranslator, IPOFileTranslatorSet)
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.translations.interfaces.pofiletranslator import (
+    IPOFileTranslator,
+    IPOFileTranslatorSet,
+    )
+from lp.translations.model.translationmessage import TranslationMessage
 
 
 class POFileTranslator(SQLBase):

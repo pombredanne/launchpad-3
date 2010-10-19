@@ -3,18 +3,18 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
-from lp.translations.browser.serieslanguage import (
-    ProductSeriesLanguageView)
-from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.browser.productseries import ProductSeriesView
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.translations.browser.productseries import ProductSeriesView
+from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
+from lp.translations.interfaces.translator import ITranslatorSet
 
 
 class TestProductSeries(TestCaseWithFactory):
@@ -99,7 +99,6 @@ class TestProductSeries(TestCaseWithFactory):
             [psl.language.englishname for psl in view.productserieslanguages],
             [u'Serbian', u'Spanish'])
 
-
     def test_productserieslanguages_english(self):
         # Even if there's an English POFile, it's not listed
         # among translated languages.
@@ -165,6 +164,3 @@ class TestProductSeriesLanguage(TestCaseWithFactory):
             self.psl, LaunchpadTestRequest())
         self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

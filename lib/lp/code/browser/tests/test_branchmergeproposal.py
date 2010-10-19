@@ -7,9 +7,11 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from difflib import unified_diff
-import operator
 import unittest
 
 import pytz
@@ -18,34 +20,47 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branch import RegisterBranchMergeProposalView
-from lp.code.browser.branchmergeproposal import (
-    BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
-    BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
-    BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
-    latest_proposals_for_each_branch)
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.tests.helpers import add_revision_to_branch
-from lp.testing import (
-    login_person, TestCaseWithFactory, time_counter)
-from lp.testing.views import create_initialized_view
-from lp.code.model.diff import PreviewDiff, StaticDiff
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.code.browser.branch import RegisterBranchMergeProposalView
+from lp.code.browser.branchmergeproposal import (
+    BranchMergeProposalAddVoteView,
+    BranchMergeProposalChangeStatusView,
+    BranchMergeProposalContextMenu,
+    BranchMergeProposalMergedView,
+    BranchMergeProposalVoteView,
+    DecoratedCodeReviewVoteReference,
+    ICodeReviewNewRevisions,
+    latest_proposals_for_each_branch,
+    )
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.model.diff import (
+    PreviewDiff,
+    StaticDiff,
+    )
+from lp.code.tests.helpers import add_revision_to_branch
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestBranchMergeProposalPrimaryContext(TestCaseWithFactory):
     """Tests the adaptation of a merge proposal into a primary context."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        # Use an admin so we don't have to worry about launchpad.Edit
-        # permissions on the merge proposals.
-        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
 
     def testPrimaryContext(self):
         # The primary context of a merge proposal is the same as the primary
@@ -66,7 +81,6 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
             set_state=BranchMergeProposalStatus.REJECTED)
         login_person(bmp.registrant)
         menu = BranchMergeProposalContextMenu(bmp)
-        link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
 
 
@@ -254,9 +268,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
         charles = self.factory.makePerson(name='charles')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.APPROVE)
         self._createComment(bob, CodeReviewVote.ABSTAIN)
         self._createComment(charles, CodeReviewVote.DISAPPROVE)
@@ -272,9 +283,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
-
-        owner = self.bmp.source_branch.owner
-
         self._createComment(albert, CodeReviewVote.ABSTAIN)
         self._createComment(bob, CodeReviewVote.APPROVE)
         self._createComment(albert, CodeReviewVote.APPROVE)
@@ -287,7 +295,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def addReviewTeam(self):
         review_team = self.factory.makeTeam(name='reviewteam')
-        target_branch = self.factory.makeAnyBranch()
         self.bmp.target_branch.reviewer = review_team
 
     def test_review_team_members_trusted(self):
@@ -572,62 +579,19 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
-    def test_revision_end_date_active(self):
-        # An active merge proposal will have None as an end date.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index')
-        self.assertIs(None, view.revision_end_date)
-
-    def test_revision_end_date_merged(self):
-        # An merged proposal will have the date merged as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.MERGED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_merged, view.revision_end_date)
-
-    def test_revision_end_date_rejected(self):
-        # An rejected proposal will have the date reviewed as an end date.
-        bmp = self.factory.makeBranchMergeProposal(
-            set_state=BranchMergeProposalStatus.REJECTED)
-        view = create_initialized_view(bmp, '+index')
-        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
-
-    def assertRevisionGroups(self, bmp, expected_groups):
-        """Get the groups for the merge proposal and check them."""
-        view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        view_groups = [
-            obj.revisions for obj in sorted(
-                groups, key=operator.attrgetter('date'))]
-        self.assertEqual(expected_groups, view_groups)
-
-    def test_getRevisionsSinceReviewStart_no_revisions(self):
-        # If there have been no revisions pushed since the start of the
-        # review, the method returns an empty list.
-        self.assertRevisionGroups(self.bmp, [])
-
-    def test_getRevisionsSinceReviewStart_groups(self):
-        # Revisions that were scanned at the same time have the same
-        # date_created.  These revisions are grouped together.
+    def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
+        # The browser helper class implements its interface.
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        revision_date = review_date + timedelta(days=1)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
-        login_person(bmp.registrant)
-        bmp.requestReview(review_date)
-        revision_date = review_date + timedelta(days=1)
-        revisions = []
-        for date in range(2):
-            revisions.append(
-                add_revision_to_branch(
-                    self.factory, bmp.source_branch, revision_date))
-            revisions.append(
-                add_revision_to_branch(
-                    self.factory, bmp.source_branch, revision_date))
-            revision_date += timedelta(days=1)
-        expected_groups = [
-            [revisions[0], revisions[1]],
-            [revisions[2], revisions[3]]]
-        self.assertRevisionGroups(bmp, expected_groups)
+        revision = add_revision_to_branch(
+            self.factory, bmp.source_branch, revision_date)
+
+        view = create_initialized_view(bmp, '+index')
+        new_revisions = view.conversation.comments[0]
+
+        self.assertTrue(verifyObject(ICodeReviewNewRevisions, new_revisions))
 
     def test_include_superseded_comments(self):
         for x, time in zip(range(3), time_counter()):
@@ -752,7 +716,6 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-
     def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code
         # review comment from it.
@@ -762,7 +725,8 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
             body='testing',
             attachments=[('test.diff', 'text/plain', attachment_body)])
         message = MessageSet().fromEmail(msg.as_string())
-        return bmp.createCommentFromMessage(message, None, None, msg)
+        return CodeReviewDisplayComment(
+            bmp.createCommentFromMessage(message, None, None, msg))
 
     def test_nonascii_in_attachment_renders(self):
         # The view should render without errors.
@@ -778,7 +742,7 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
-        [diff_attachment] = view.display_attachments
+        [diff_attachment] = view.comment.display_attachments
         self.assertEqual(u'\u2615', diff_attachment.diff_text)
 
 

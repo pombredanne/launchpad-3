@@ -9,8 +9,8 @@
   <body>
     <metal:registering fill-slot="registering">
       Created by <a tal:replace="structure context/owner/fmt:link" />
-      on 
-      <span 
+      on
+      <span
         tal:attributes="title context/date_created/fmt:datetime"
         tal:content="context/date_created/fmt:displaydate">2005-10-05</span>
     </metal:registering>

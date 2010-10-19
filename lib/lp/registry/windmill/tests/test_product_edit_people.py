@@ -8,11 +8,10 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing.widgets import (
-    FormPickerWidgetTest)
-
+from canonical.launchpad.windmill.testing.widgets import FormPickerWidgetTest
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 class TestProductEditPeople(WindmillTestCase):
     """Test picker +edit-people page."""

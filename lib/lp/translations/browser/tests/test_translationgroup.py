@@ -5,16 +5,14 @@
 
 __metaclass__ = type
 
-import unittest
-
+import transaction
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.browser.translationgroup import TranslationGroupView
 from lp.testing import TestCaseWithFactory
+from lp.translations.browser.translationgroup import TranslationGroupView
 
 
 class TestTranslationGroupView(TestCaseWithFactory):
@@ -41,6 +39,7 @@ class TestTranslationGroupView(TestCaseWithFactory):
         # translator_list composes dicts using _makeTranslatorDict.
         group = self._makeGroup()
         tr_translator = self.factory.makeTranslator('tr', group)
+        transaction.commit()
         view = self._makeView(group)
         translator_dict = view._makeTranslatorDict(
             tr_translator, tr_translator.language, tr_translator.translator)
@@ -63,7 +62,3 @@ class TestTranslationGroupView(TestCaseWithFactory):
         self.assertEqual(xhosa.datecreated, output['datecreated'])
         self.assertEqual(xhosa.style_guide_url, output['style_guide_url'])
         self.assertEqual(xhosa, output['context'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

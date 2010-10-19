@@ -28,8 +28,12 @@ __all__ = [
 import email.Header
 import re
 
+from canonical.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
 from lp.archiveuploader.tagfiles import TagFileParseError
-from canonical.encoding import guess as guess_encoding, ascii_smash
+from lp.soyuz.enums import BinaryPackageFileType
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
@@ -91,13 +95,12 @@ def determine_source_file_type(filename):
 
 def determine_binary_file_type(filename):
     """Determine the BinaryPackageFileType of the given filename."""
-    # Avoid circular imports.
-    from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
-
     if filename.endswith(".deb"):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
         return BinaryPackageFileType.UDEB
+    elif filename.endswith(".ddeb"):
+        return BinaryPackageFileType.DDEB
     else:
         return None
 
@@ -128,54 +131,6 @@ def extract_component_from_section(section, default_component="main"):
     return (section, component)
 
 
-def build_file_list(tagfile, is_dsc = False, default_component="main" ):
-    files = {}
-
-    if "files" not in tagfile:
-        raise ValueError("No Files section in supplied tagfile")
-
-    format = tagfile["format"]
-
-    format = float(format)
-
-    if not is_dsc and (format < 1.5 or format > 2.0):
-        raise ValueError("Unsupported format '%s'" % tagfile["format"])
-
-    for line in tagfile["files"].split("\n"):
-        if not line:
-            break
-
-        tokens = line.split()
-
-        section = priority = ""
-
-        try:
-            if is_dsc:
-                (md5, size, name) = tokens
-            else:
-                (md5, size, section, priority, name) = tokens
-        except ValueError:
-            raise TagFileParseError(line)
-
-        if section == "":
-            section = "-"
-        if priority == "":
-            priority = "-"
-
-        (section, component) = extract_component_from_section(
-            section, default_component)
-
-        files[name] = {
-            "md5sum": md5,
-            "size": size,
-            "section": section,
-            "priority": priority,
-            "component": component
-            }
-
-    return files
-
-
 def force_to_utf8(s):
     """Forces a string to UTF-8.
 
@@ -185,7 +140,7 @@ def force_to_utf8(s):
         unicode(s, 'utf-8')
         return s
     except UnicodeError:
-        latin1_s = unicode(s,'iso8859-1')
+        latin1_s = unicode(s, 'iso8859-1')
         return latin1_s.encode('utf-8')
 
 
@@ -221,11 +176,11 @@ class ParseMaintError(Exception):
 
     def __init__(self, message):
         Exception.__init__(self)
-        self.args = (message,)
+        self.args = (message, )
         self.message = message
 
 
-def fix_maintainer (maintainer, field_name="Maintainer"):
+def fix_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field and returns:
 
     (1) an RFC822 compatible version,
@@ -264,6 +219,10 @@ def fix_maintainer (maintainer, field_name="Maintainer"):
     # Force the name to be UTF-8
     name = force_to_utf8(name)
 
+    # If the maintainer's name contains a full stop then the whole field will
+    # not work directly as an email address due to a misfeature in the syntax
+    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
+    # for details.
     if name.find(',') != -1 or name.find('.') != -1:
         rfc822_maint = "%s (%s)" % (email, name)
         rfc2047_maint = "%s (%s)" % (email, rfc2047_name)
@@ -290,4 +249,3 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
-

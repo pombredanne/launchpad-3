@@ -89,7 +89,7 @@ When a Launchpad object is modified, its JSON representations for
 recognized web service versions are automatically removed from the
 cache.
 
-    >>> person.addressline1 = "New address"
+    >>> person.homepage_content = "Whatever"
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(person)
 

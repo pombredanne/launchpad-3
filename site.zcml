@@ -38,4 +38,5 @@
     <include file="summarizerequests.zcml" />
 
     <include package="zc.zservertracelog" />
+
 </configure>

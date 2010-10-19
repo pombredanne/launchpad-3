@@ -6,7 +6,7 @@
 __all__ = [
     'AuthServerApplication',
     'BazaarApplication',
-    'CodeImportScheduler',
+    'CodeImportSchedulerApplication',
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
@@ -20,37 +20,63 @@ __metaclass__ = type
 import codecs
 import os
 
+from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IWebServiceApplication)
+    BugTaskSearchParams,
+    IAuthServerApplication,
+    IBazaarApplication,
+    IBugTaskSet,
+    IBugTrackerSet,
+    IBugWatchSet,
+    IDistroSeriesSet,
+    IFeedsApplication,
+    IHWDBApplication,
+    ILanguageSet,
+    ILaunchBag,
+    ILaunchpadStatisticSet,
+    IMailingListApplication,
+    IMaloneApplication,
+    IPrivateMaloneApplication,
+    IProductSet,
+    IRosettaApplication,
+    IWebServiceApplication,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot,
+    ICanonicalUrlData,
+    )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    InvalidBugTargetType,
+    )
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    ParameterError,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.product import IProduct
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
-    ITranslationsOverview)
-from lp.hardwaredb.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
-    IHWVendorIDSet, ParameterError)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import ICodehostingApplication
-from lp.code.interfaces.codeimportscheduler import (
-    ICodeImportSchedulerApplication)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lazr.restful import ServiceRootResource
-from lazr.restful.interfaces import ITopLevelEntryLink
+    ITranslationsOverview,
+    )
 
 
 class AuthServerApplication:
@@ -388,3 +414,11 @@ class WebServiceApplication(ServiceRootResource):
 
 class TestOpenIDApplication:
     implements(ITestOpenIDApplication)
+
+
+class APIDocRoot:
+    implements(IAPIDocRoot)
+    __parent__ = None
+    __name__ = None
+
+apidocroot = APIDocRoot()

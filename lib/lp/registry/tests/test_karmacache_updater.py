@@ -7,16 +7,19 @@ __metaclass__ = type
 import subprocess
 import unittest
 
+import transaction
 from zope.component import getUtility
 
-import transaction
-
 from canonical.database.sqlbase import flush_database_caches
-from lp.registry.model.karma import KarmaCache
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.model.karma import KarmaCache
 
 
 class TestKarmaCacheUpdater(unittest.TestCase):

@@ -5,14 +5,24 @@
 
 __metaclass__ = type
 __all__ = [
+    'FileIsADirectory',
     'FileTransferServer',
     ]
 
+from bzrlib import errors as bzr_errors
 from twisted.conch.ssh import filetransfer
-
 from zope.event import notify
 
 from lp.services.sshserver import events
+
+
+class FileIsADirectory(bzr_errors.PathError):
+    """Raised when writeChunk is called on a directory.
+
+    This exists mainly to be translated into the appropriate SFTP error.
+    """
+
+    _fmt = 'File is a directory: %(path)r%(extra)s'
 
 
 class FileTransferServer(filetransfer.FileTransferServer):

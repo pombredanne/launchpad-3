@@ -66,9 +66,7 @@ def close_account(con, log, username):
         UPDATE Person
         SET displayname='Removed by request',
             name=%(new_name)s, language=NULL, account=NULL,
-            addressline1=NULL, addressline2=NULL, organization=NULL,
-            city=NULL, province=NULL, country=NULL, postcode=NULL,
-            phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
+            homepage_content=NULL, icon=NULL, mugshot=NULL,
             hide_email_addresses=TRUE, registrant=NULL, logo=NULL,
             creation_rationale=%(unknown_rationale)s, creation_comment=NULL
         WHERE id=%(person_id)s

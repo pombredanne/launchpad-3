@@ -1,17 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.browser.archivesubscription import PersonalArchiveSubscription
-from lp.testing import login, login_person
+from lp.testing import (
+    login,
+    login_person,
+    )
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
@@ -65,9 +65,8 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
 
     def test_personal_archive_subscription(self):
         subscription_url = canonical_url(self.personal_archive_subscription)
-        crumbs = self.getBreadcrumbsForObject(self.personal_archive_subscription)
+        crumbs = self.getBreadcrumbsForObject(
+            self.personal_archive_subscription)
         self.assertEquals(subscription_url, crumbs[-1].url)
-        self.assertEquals("Access to %s" % self.ppa.displayname, crumbs[-1].text)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEquals(
+            "Access to %s" % self.ppa.displayname, crumbs[-1].text)

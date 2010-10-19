@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Testing infrastructure for page tests."""
 
 # Stop lint warning about not initializing TestCase parent on
@@ -9,43 +11,67 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
 import re
-import transaction
 import unittest
-
-from BeautifulSoup import (
-    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
-    ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import (
-    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
-from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from BeautifulSoup import (
+    BeautifulSoup,
+    CData,
+    Comment,
+    Declaration,
+    NavigableString,
+    PageElement,
+    ProcessingInstruction,
+    SoupStrainer,
+    Tag,
+    )
+from contrib.oauth import (
+    OAuthConsumer,
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
+    )
+from lazr.restful.interfaces import IRepresentationCache
+from lazr.restful.testing.webservice import WebServiceCaller
+import transaction
+from zope.app.testing.functional import (
+    HTTPCaller,
+    SimpleCookie,
+    )
 from zope.component import getUtility
-from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
-
-from launchpadlib.launchpad import Launchpad
+from zope.testbrowser.testing import Browser
 
 from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
-    TeamMembershipStatus)
+    ILaunchpadCelebrities,
+    IOAuthConsumerSet,
+    OAUTH_REALM,
+    TeamMembershipStatus,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
+    LayeredDocFileSuite,
+    SpecialOutputChecker,
+    stop,
+    strip_prefix,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
-from lazr.restful.interfaces import IRepresentationCache
-from lazr.restful.testing.webservice import WebServiceCaller
+from canonical.testing.layers import PageTestLayer
+from lp.registry.errors import NameAlreadyTaken
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, logout)
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.registry.interfaces.person import NameAlreadyTaken
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -303,7 +329,7 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
+    buttons = main.findAll(
         'input', {'name': 'field.%s' % name})
     for button in buttons:
         if button.parent.name == 'label':
@@ -787,6 +813,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
+    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 
@@ -821,7 +848,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -883,20 +910,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
-    # Add unnumbered tests to the suite individually.
+    suite = unittest.TestSuite()
     checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    # Add unnumbered tests to the suite individually.
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

@@ -8,24 +8,46 @@ __metaclass__ = type
 import gc
 import sys
 
+from bzrlib import (
+    errors,
+    trace,
+    )
+from bzrlib.branch import (
+    Branch,
+    BranchReferenceFormat,
+    )
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
+from bzrlib.remote import RemoteBranch
+from bzrlib.tests import (
+    multiply_tests,
+    test_server,
+    TestCase,
+    TestCaseWithTransport,
+    TestLoader,
+    TestNotApplicable,
+    )
+from bzrlib.tests.per_branch import (
+    branch_scenarios,
+    TestCaseWithBzrDir,
+    )
+from bzrlib.transport import chroot
 from lazr.uri import URI
 
-from bzrlib import errors, trace
-from bzrlib.branch import Branch, BranchReferenceFormat
-from bzrlib.bzrdir import BzrDir, format_registry
-from bzrlib.remote import RemoteBranch
-from bzrlib.smart import server
-from bzrlib.tests import (
-    multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
-    TestNotApplicable)
-from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
-from bzrlib.transport import chroot
-
 from lp.codehosting.bzrutils import (
-    DenyingServer, UnsafeUrlSeen, _install_checked_open_hook,
-    add_exception_logging_hook, checked_open, get_branch_stacked_on_url,
-    get_vfs_format_classes, is_branch_stackable,
-    remove_exception_logging_hook, safe_open)
+    _install_checked_open_hook,
+    add_exception_logging_hook,
+    checked_open,
+    DenyingServer,
+    get_branch_stacked_on_url,
+    get_vfs_format_classes,
+    is_branch_stackable,
+    remove_exception_logging_hook,
+    safe_open,
+    UnsafeUrlSeen,
+    )
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -191,7 +213,7 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
         # of the branch, repo and bzrdir, even if the branch is a
         # RemoteBranch.
         vfs_branch = self.make_branch('.')
-        smart_server = server.SmartTCPServer_for_testing()
+        smart_server = test_server.SmartTCPServer_for_testing()
         smart_server.start_server(self.get_vfs_only_server())
         self.addCleanup(smart_server.stop_server)
         remote_branch = Branch.open(smart_server.get_url())

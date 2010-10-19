@@ -14,7 +14,6 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.webapp.vhosts import allvhosts
-
 from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 

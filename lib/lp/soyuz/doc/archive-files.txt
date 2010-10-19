@@ -3,7 +3,7 @@
 `IArchive` provides a method that looks up files involved in the context
 archive, getFileByName()
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 The given filename is looked up in the context corresponding to its
@@ -208,4 +208,12 @@ Adding and retrieving a upload_log.
 Retrieve a built file:
 
     >>> deb == build.getFileByName('test_1.0_all.deb')
+    True
+
+We can also retrieve the corresponding BinaryPackageFile:
+
+    >>> bpf = build.getBinaryPackageFileByName('test_1.0_all.deb')
+    >>> bpf
+    <BinaryPackageFile ...>
+    >>> bpf.libraryfile == deb
     True

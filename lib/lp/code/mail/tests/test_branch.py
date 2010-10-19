@@ -5,14 +5,21 @@
 
 from unittest import TestLoader
 
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    CodeReviewNotificationLevel)
-from lp.code.mail.branch import BranchMailer, RecipientReason
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.mail.branch import (
+    BranchMailer,
+    RecipientReason,
+    )
 from lp.code.model.branch import Branch
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestRecipientReason(TestCaseWithFactory):

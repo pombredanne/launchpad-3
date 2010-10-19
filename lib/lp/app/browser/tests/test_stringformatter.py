@@ -5,16 +5,16 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 from textwrap import dedent
 import unittest
 
 from zope.component import getUtility
-from zope.testing.doctestunit import DocTestSuite
 
 from canonical.config import config
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.testing import TestCase
 

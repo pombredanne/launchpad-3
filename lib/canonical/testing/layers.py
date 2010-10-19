@@ -35,6 +35,7 @@ __all__ = [
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
+    'LaunchpadTestSetup',
     'LaunchpadZopelessLayer',
     'LayerInvariantError',
     'LayerIsolationError',
@@ -85,18 +86,24 @@ import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
+from zope.component import globalregistry
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
-from canonical.database.sqlbase import cursor, ZopelessTransactionManager
+from canonical.database.sqlbase import (
+    cursor,
+    session_store,
+    ZopelessTransactionManager,
+    )
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
@@ -112,7 +119,7 @@ from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
-from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.librarian.testing.server import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
@@ -193,9 +200,7 @@ def reconnect_stores(database_config_section='launchpad'):
     # as soon as SQLBase._connection is accessed
     r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert r.get_one()[0] > 0, 'Storm is not talking to the database'
-
-    session_store = getUtility(IZStorm).get('session', 'launchpad-session:')
-    assert session_store is not None, 'Failed to reconnect'
+    assert session_store() is not None, 'Failed to reconnect'
 
 
 def wait_children(seconds=120):
@@ -260,14 +265,15 @@ class BaseLayer:
         # about killing memcached - just do it quickly.
         if not BaseLayer.persist_test_services:
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
-            LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
+        db_fixture = LaunchpadTestSetup()
         try:
-            DatabaseLayer.connect().close()
+            db_fixture.connect().close()
         except psycopg2.Error:
+            # We assume this means 'no test database exists.'
             pass
         else:
-            DatabaseLayer._dropDb()
+            db_fixture.dropDb()
 
     @classmethod
     @profiled
@@ -319,25 +325,39 @@ class BaseLayer:
         BaseLayer.test_name = None
         BaseLayer.check()
 
-        # Check for tests that leave live threads around early.
-        # A live thread may be the cause of other failures, such as
-        # uncollectable garbage.
-        new_threads = [
-            thread for thread in threading.enumerate()
-            if thread not in BaseLayer._threads and thread.isAlive()
-            ]
+        def new_live_threads():
+            return [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+
+        if BaseLayer.disable_thread_check:
+            new_threads = new_live_threads()
+        else:
+            for loop in range(0,100):
+                # Check for tests that leave live threads around early.
+                # A live thread may be the cause of other failures, such as
+                # uncollectable garbage.
+                new_threads = new_live_threads()
+                has_live_threads = False
+                for new_thread in new_threads:
+                    new_thread.join(0.1)
+                    if new_thread.isAlive():
+                        has_live_threads = True
+                if has_live_threads:
+                    # Trigger full garbage collection that might be
+                    # blocking threads from exiting.
+                    gc.collect()
+                else:
+                    break
 
         if new_threads:
-            # XXX gary 2008-12-03 bug=304913
-            # The codehosting acceptance tests are intermittently leaving
-            # threads around, apparently because of bzr. disable_thread_check
-            # is a mechanism to turn off the BaseLayer behavior of causing a
-            # test to fail if it leaves a thread behind. This comment is found
-            # in both lp.codehosting.tests.test_acceptance and
-            # canonical.testing.layers
+            # BaseLayer.disable_thread_check is a mechanism to stop
+            # tests that leave threads behind from failing. Its use
+            # should only ever be temporary.
             if BaseLayer.disable_thread_check:
-                print ("ERROR DISABLED: "
-                       "Test left new live threads: %s") % repr(new_threads)
+                print (
+                    "ERROR DISABLED: "
+                    "Test left new live threads: %s") % repr(new_threads)
             else:
                 BaseLayer.flagTestIsolationFailure(
                     "Test left new live threads: %s" % repr(new_threads))
@@ -411,11 +431,10 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
-            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)
-            except:
+            except LayerIsolationError:
                 test_result.addError(test_case, sys.exc_info())
 
     @classmethod
@@ -467,9 +486,12 @@ class MemcachedLayer(BaseLayer):
     # memcached.
     _memcached_process = None
 
+    _is_setup = False
+
     @classmethod
     @profiled
     def setUp(cls):
+        cls._is_setup = True
         # Create a client
         MemcachedLayer.client = memcache_client_factory()
         if (BaseLayer.persist_test_services and
@@ -516,6 +538,9 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
         if not BaseLayer.persist_test_services:
@@ -553,9 +578,12 @@ class LibrarianLayer(BaseLayer):
     """
     _reset_between_tests = True
 
+    _is_setup = False
+
     @classmethod
     @profiled
     def setUp(cls):
+        cls._is_setup = True
         if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests changed before LibrarianLayer "
@@ -569,6 +597,9 @@ class LibrarianLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests not reset before LibrarianLayer "
@@ -665,50 +696,46 @@ class DatabaseLayer(BaseLayer):
     # Database.force_dirty_database() when you do so.
     _reset_between_tests = True
 
+    _is_setup = False
+    _db_fixture = None
+
     @classmethod
     @profiled
     def setUp(cls):
-        DatabaseLayer.force_dirty_database()
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+        cls._is_setup = True
+        # Read the sequences we'll need from the test template database.
+        reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
+        cls._db_fixture = LaunchpadTestSetup(
+            reset_sequences_sql=reset_sequences_sql)
+        cls.force_dirty_database()
+        cls._db_fixture.tearDown()
 
     @classmethod
     @profiled
     def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
         # in test_layers.py
-        DatabaseLayer.force_dirty_database()
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = None
+        cls.force_dirty_database()
+        cls._db_fixture.tearDown()
+        cls._db_fixture = None
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup(
-                reset_sequences_sql=DatabaseLayer._reset_sequences_sql
-                ).setUp()
+        if cls._reset_between_tests:
+            cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
         attempts = 60
         for count in range(0, attempts):
             try:
-                DatabaseLayer.connect().close()
+                cls.connect().close()
             except psycopg2.Error:
                 if count == attempts - 1:
                     raise
@@ -716,24 +743,20 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.installMockDb()
+        if cls.use_mockdb is True:
+            cls.installMockDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.uninstallMockDb()
+        if cls.use_mockdb is True:
+            cls.uninstallMockDb()
 
         # Ensure that the database is connectable
-        DatabaseLayer.connect().close()
+        cls.connect().close()
 
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().tearDown()
+        if cls._reset_between_tests:
+            cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
         from canonical.launchpad.webapp.adapter import StoreSelector
@@ -748,7 +771,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def installMockDb(cls):
-        assert DatabaseLayer.mockdb_mode is None, 'mock db already installed'
+        assert cls.mockdb_mode is None, 'mock db already installed'
 
         from canonical.testing.mockdb import (
                 script_filename, ScriptRecorder, ScriptPlayer,
@@ -762,32 +785,32 @@ class DatabaseLayer(BaseLayer):
         # mock db script.
         filename = script_filename(test_key)
         if os.path.exists(filename):
-            DatabaseLayer.mockdb_mode = 'replay'
-            DatabaseLayer.script = ScriptPlayer(test_key)
+            cls.mockdb_mode = 'replay'
+            cls.script = ScriptPlayer(test_key)
         else:
-            DatabaseLayer.mockdb_mode = 'record'
-            DatabaseLayer.script = ScriptRecorder(test_key)
+            cls.mockdb_mode = 'record'
+            cls.script = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg2.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
-            return DatabaseLayer.script.connect(_org_connect, *args, **kw)
+            return cls.script.connect(_org_connect, *args, **kw)
         psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
-        if DatabaseLayer.mockdb_mode is None:
+        if cls.mockdb_mode is None:
             return # Already uninstalled
 
         # Store results if we are recording
-        if DatabaseLayer.mockdb_mode == 'record':
-            DatabaseLayer.script.store()
-            assert os.path.exists(DatabaseLayer.script.script_filename), (
+        if cls.mockdb_mode == 'record':
+            cls.script.store()
+            assert os.path.exists(cls.script.script_filename), (
                     "Stored results but no script on disk.")
 
-        DatabaseLayer.mockdb_mode = None
+        cls.mockdb_mode = None
         global _org_connect
         psycopg2.connect = _org_connect
         _org_connect = None
@@ -795,20 +818,17 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def force_dirty_database(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().force_dirty_database()
+        cls._db_fixture.force_dirty_database()
 
     @classmethod
     @profiled
     def connect(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().connect()
+        return cls._db_fixture.connect()
 
     @classmethod
     @profiled
     def _dropDb(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().dropDb()
+        return cls._db_fixture.dropDb()
 
 
 def test_default_timeout():
@@ -836,6 +856,24 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
+    
+    @classmethod
+    def tearDownHelper(cls):
+        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
+
+        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
+        why atexit is used, but because test runners delegate rather than
+        returning, the librarian and other servers are only killed *at the end
+        of the whole test run*, which leads to multiple instances running, so
+        we manually run the teardown for these layers.
+        """
+        try:
+            MemcachedLayer.tearDown()
+        finally:
+            try:
+                LibrarianLayer.tearDown()
+            finally:
+                DatabaseLayer.tearDown()
 
     @classmethod
     @profiled
@@ -1197,7 +1235,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        pass
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1299,13 +1337,15 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         # XXX flacoste 2006-10-25 bug=68189: This should be configured from
         # ZCML but execute_zcml_for_scripts() doesn't cannot support a
         # different testing configuration.
-        provideUtility(TestMailBox(), IMailBox)
+        cls._mailbox = TestMailBox()
+        provideUtility(cls._mailbox, IMailBox)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        # Signal Layer cannot be torn down fully
-        raise NotImplementedError
+        if not globalregistry.base.unregisterUtility(cls._mailbox):
+            raise NotImplementedError('failed to unregister mailbox')
+        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1323,6 +1363,11 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     @profiled
     def switchDbConfig(cls, database_config_section):
         reconnect_stores(database_config_section=database_config_section)
+
+
+class LaunchpadTestSetup(PgTestSetup):
+    template = 'launchpad_ftest_template'
+    dbuser = 'launchpad'
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
@@ -1590,6 +1635,9 @@ class LayerProcessController:
     # configs/testrunner-appserver/mail-configure.zcml
     smtp_controller = None
 
+    # The DB fixture in use
+    _db_fixture = None
+
     @classmethod
     @profiled
     def startSMTPServer(cls):
@@ -1717,9 +1765,12 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
-        LaunchpadTestSetup().setUp()
+        cls._db_fixture = LaunchpadTestSetup()
+        # This is not torn down properly: rather the singleton nature is abused
+        # and the fixture is simply marked as being dirty.
+        # XXX: Robert Collins 2010-10-17 bug=661967
+        cls._db_fixture.setUp()
         # The app server will not start at all if the database hasn't been
         # correctly patched. The app server will make exactly this check,
         # doing it here makes the error more obvious.

@@ -5,12 +5,14 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.webapp.authentication import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import AccessLevel
-from canonical.launchpad.webapp.authentication import (
-    IPlacelessLoginSource)
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class LaunchpadLoginSourceTest(unittest.TestCase):

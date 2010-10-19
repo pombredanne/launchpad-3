@@ -10,12 +10,10 @@
   <body>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         created
-        <span tal:content="context/datecreated/fmt:displaydate"
-              tal:attributes="title context/datecreated/fmt:datetime"
+        <span tal:content="context/date_created/fmt:displaydate"
+              tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -37,7 +35,7 @@
       </div> <!-- yui-g  -->
 
       <div id="buildlog" class="portlet"
-           tal:condition="context/buildstate/enumvalue:BUILDING">
+           tal:condition="context/status/enumvalue:BUILDING">
         <div metal:use-macro="template/macros/buildlog" />
       </div>
 
@@ -78,8 +76,6 @@
           <dd><span tal:replace="context/pocket/title">Release</span></dd>
       </dl>
       <dl>
-        <dt tal:condition="context/source_package_release">Result:</dt>
-        <dd tal:condition="context/source_package_release" tal:content="structure context/source_package_release/fmt:link"></dd>
         <dt>Binary builds:</dt>
         <dd tal:repeat="binary view/binary_builds"
             tal:content="structure binary/fmt:link">
@@ -97,9 +93,9 @@
     <p>
       <span tal:replace="structure context/image:icon" />
       <span tal:attributes="
-            class string:buildstatus${context/buildstate/name};"
-            tal:content="context/buildstate/title">Fully built</span>
-      <tal:building condition="context/buildstate/enumvalue:BUILDING">
+            class string:buildstatus${context/status/name};"
+            tal:content="context/status/title">Fully built</span>
+      <tal:building condition="context/status/enumvalue:BUILDING">
         on <a tal:content="context/buildqueue_record/builder/title"
               tal:attributes="href context/buildqueue_record/builder/fmt:url"/>
       </tal:building>
@@ -118,37 +114,40 @@
       <tal:pending condition="context/buildqueue_record/job/status/enumvalue:WAITING">
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime">
           Start <tal:eta
-            replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+          (<span tal:replace="context/buildqueue_record/lastscore"/>)
+          <a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>
         </li>
       </tal:pending>
       </tal:reallypending>
-      <tal:started condition="context/datestarted">
-        <li tal:condition="context/datestarted">
+      <tal:started condition="context/date_started">
+        <li tal:condition="context/date_started">
           Started <span
-           tal:define="start context/datestarted"
+           tal:define="start context/date_started"
            tal:attributes="title start/fmt:datetime"
            tal:content="start/fmt:displaydate">2008-01-01</span>
         </li>
       </tal:started>
-      <tal:finish condition="not: context/datebuilt">
+      <tal:finish condition="not: context/date_finished">
         <li tal:define="eta view/eta" tal:condition="view/eta">
           Estimated finish <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
         </li>
       </tal:finish>
 
-      <li tal:condition="context/datebuilt">
+      <li tal:condition="context/date_finished">
         Finished <span
-          tal:attributes="title context/datebuilt/fmt:datetime"
-          tal:content="context/datebuilt/fmt:displaydate">2008-01-01</span>
-        <tal:duration condition="context/buildduration">
-          (took <span tal:replace="context/buildduration/fmt:exactduration"/>)
+          tal:attributes="title context/date_finished/fmt:datetime"
+          tal:content="context/date_finished/fmt:displaydate">2008-01-01</span>
+        <tal:duration condition="context/duration">
+          (took <span tal:replace="context/duration/fmt:exactduration"/>)
         </tal:duration>
       </li>
-      <li tal:define="file context/buildlog"
+      <li tal:define="file context/log"
           tal:condition="file">
         <a class="sprite download"
-           tal:attributes="href context/build_log_url">buildlog</a>
+           tal:attributes="href context/log_url">buildlog</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"
@@ -158,6 +157,25 @@
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
     </ul>
+
+    <div
+      style="margin-top: 1.5em"
+      tal:define="context_menu view/context/menu:context;
+                  link context_menu/cancel"
+      tal:condition="link/enabled"
+      >
+      <a tal:replace="structure link/fmt:link" />
+    </div>
+    <div
+      style="margin-top: 1.5em"
+      tal:define="context_menu view/context/menu:context;
+                  link context_menu/rescore"
+      tal:condition="link/enabled"
+      >
+      <a tal:replace="structure link/fmt:link" />
+    </div>
+
+
   </metal:macro>
 
   <metal:macro define-macro="buildlog">

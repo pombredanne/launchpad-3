@@ -10,20 +10,31 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-from persistent import IPersistent
-
 from lazr.restful.interfaces import IServiceRootResource
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from persistent import IPersistent
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
+from canonical.launchpad import _
 # XXX kiko 2007-02-08:
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
-    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
 
 
 __all__ = [
@@ -49,7 +60,6 @@ __all__ = [
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'ILaunchpadSearch',
-    'ILaunchpadUsage',
     'INotificationRecipientSet',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
@@ -61,14 +71,10 @@ __all__ = [
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IStructuralHeaderPresentation',
-    'IStructuralObjectPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'NotFoundError',
-    'UnexpectedFormData',
     'UnknownRecipientError',
     'UnsafeFormGetSubmissionError',
     ]
@@ -489,38 +495,6 @@ class IHasDateCreated(Interface):
     datecreated = Attribute("The date on which I was created.")
 
 
-class IStructuralHeaderPresentation(Interface):
-    """Adapter for common aspects of a structural object's presentation."""
-
-    def getIntroHeading():
-        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
-
-    def getMainHeading():
-        """can be None"""
-
-
-class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common parts of a structural object's presentation."""
-
-    def listChildren(num):
-        """List up to num children.  Return empty string for none of these"""
-
-    def countChildren():
-        """Return the total number of children."""
-
-    def listAltChildren(num):
-        """List up to num alternative children.
-
-        Return None if alt children are not supported.
-        """
-
-    def countAltChildren():
-        """Return the total number of alt children.
-
-        Will be called only if listAltChildren returns something.
-        """
-
-
 class IAppFrontPageSearchForm(Interface):
     """Schema for the app-specific front page search question forms."""
 
@@ -629,26 +603,3 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
-
-class ILaunchpadUsage(Interface):
-    """How the project uses Launchpad."""
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_blueprints = Bool(
-        title=_('This project uses blueprints'), required=True)
-    official_codehosting = Bool(
-        title=_('Code for this project is published in Bazaar branches on'
-                ' Launchpad'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this project are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this project are done in Launchpad'),
-        required=True)
-    official_anything = Bool (
-        title=_('Uses Launchpad for something'),)
-    enable_bug_expiration = Bool(
-        title=_('Expire "Incomplete" bug reports when they become inactive'),
-        required=True)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -13,15 +13,14 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
-
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
 from lp.testing import TestCaseWithFactory
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
 
 class TestDefaultSelectedSeries(TestCaseWithFactory):
     """Ensure that default selected series set from user-agent."""
@@ -166,6 +165,3 @@ class TestOneDistroSeriesOnly(TestCaseWithFactory):
         # When there is only one distro series it should always be the
         # default.
         self.failUnless(self.view.default_series == self.series[0])
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

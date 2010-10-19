@@ -238,7 +238,7 @@ A Person may be linked to an Account.
 
     >>> login('no-priv@canonical.com')
     >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.account.openid_identifier
+    >>> person.account.openid_identifiers.any().identifier
     u'no-priv_oid'
 
 
@@ -330,7 +330,7 @@ value is available.
 A Launchpad administrator may change a person's standing, and may give a
 reason for the change.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -387,7 +387,7 @@ we may have Person objects which are, in fact, teams. To find out
 whether a given object is a person or a team we can use the isTeam()
 method of IPerson or check if the object provides the ITeam interface.
 
-    >>> from canonical.launchpad.interfaces import ITeam
+    >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
     >>> ddaa.isTeam()
     False
@@ -628,31 +628,6 @@ TeamParticipation entries for themselves.
     >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
     True
 
-The inTeam method is cached to avoid unnecessary database lookups - this
-was a cause of a number of timeouts
-
-    >>> naked_lifeless = removeSecurityProxy(lifeless)
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id]
-    True
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = False
-    >>> lifeless.inTeam(vcs_imports)
-    False
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = True
-    >>> lifeless.inTeam(vcs_imports)
-    True
-
-IPerson has a method to clear it; this is used between IPerson instances
-to ensure that the cache can be kept consistent when membership changes.
-
-    >>> naked_lifeless.clearInTeamCache()
-    >>> naked_lifeless._inTeam_cache
-    {}
-
-** See lib/canonical/launchpad/doc/teammembership.txt for more
-information about team membership/participation.
-
 
 Email notifications to teams
 ............................
@@ -708,7 +683,7 @@ Private teams can be subscribed to bugs.
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
-    >>> from canonical.launchpad.database import BugSubscription
+    >>> from lp.bugs.model.bugsubscription import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
     >>> bug = bug_set.get(1)
@@ -744,7 +719,7 @@ The key concept in displaying the latest team memberships is that the
 team list is actually sorted by date joined.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
@@ -881,7 +856,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()
@@ -919,7 +894,7 @@ Searching only for Teams based on their names or email addresses:
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
 
-The Owner user is a member of the private membership team 'myteam' so
+The Owner user is a member of the private team 'myteam' so
 the previous search will include myteam in the results.
 
     >>> login('owner@canonical.com')
@@ -1169,7 +1144,7 @@ Person.languages.
 
 To add new languages we use Person.addLanguage().
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> languageset = getUtility(ILanguageSet)
     >>> carlos.addLanguage(languageset['pt_BR'])
     >>> [lang.code for lang in carlos.languages]
@@ -1214,7 +1189,7 @@ on certain criteria:
 First, Carlos does not have any completed specifications assigned to
 him:
 
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()
@@ -1292,7 +1267,7 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
@@ -1344,7 +1319,7 @@ within the context of a specific bug target, or in Launchpad in general.
 A person with bugs assigned to them in a context is considered a 'Bug
 Contributor'.
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
     >>> cprov.searchTasks(
     ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
@@ -1358,7 +1333,7 @@ contributor.
 
 We assign a bug task to Celso.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> search_params = BugTaskSearchParams(user=foobar)
     >>> search_params.setProduct(firefox)
     >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]
@@ -1372,7 +1347,7 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 

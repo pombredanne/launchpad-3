@@ -4,20 +4,27 @@
 """Unit tests for translation import queue views."""
 
 from datetime import datetime
-from pytz import timezone
-from unittest import TestLoader
 
-from zope.component import getMultiAdapter, getUtility
+from pytz import timezone
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
-
-from canonical.launchpad.layers import TranslationsLayer, setFirstLayer
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.translations.browser.translationimportqueue import escape_js_string
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
+from lp.translations.publisher import TranslationsLayer
 
 
 class TestTranslationImportQueueEntryView(TestCaseWithFactory):
@@ -207,5 +214,23 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
         self.assertEqual(name, view.initial_values['name'])
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestEscapeJSString(TestCase):
+    """Test `escape_js_string`."""
+
+    def test_escape_js_string_empty(self):
+        self.assertEqual('', escape_js_string(''))
+
+    def test_escape_js_string_plain(self):
+        self.assertEqual('foo', escape_js_string('foo'))
+
+    def test_escape_js_string_singlequote(self):
+        self.assertEqual("\\'", escape_js_string("'"))
+
+    def test_escape_js_string_doublequote(self):
+        self.assertEqual('\\"', escape_js_string('"'))
+
+    def test_escape_js_string_backslash(self):
+        self.assertEqual('\\\\', escape_js_string('\\'))
+
+    def test_escape_js_string_ampersand(self):
+        self.assertEqual('&', escape_js_string('&'))

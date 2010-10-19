@@ -141,7 +141,7 @@ the attachment contents encoded using base-64:
   <sender name="name12">Sample Person</sender>
   <date>...</date>
   <text>Added attachment</text>
-  <attachment href="http://localhost:58000/.../hello.txt">
+  <attachment href="http://bugs.launchpad.dev/bugs/1/.../+files/hello.txt">
   <type>UNSPECIFIED</type>
   <filename>hello.txt</filename>
   <title>"Hello World" attachment</title>

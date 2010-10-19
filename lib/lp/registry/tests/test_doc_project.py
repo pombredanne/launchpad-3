@@ -3,10 +3,16 @@
 
 __metaclass__ = type
 
-from zope.testing.doctestunit import DocTestSuite
+from doctest import DocTestSuite
+
 from zope.component import getUtility
-from canonical.launchpad.ftests import login, ANONYMOUS
+
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
+
 
 def setUp(test):
     test.globs['getUtility'] = getUtility

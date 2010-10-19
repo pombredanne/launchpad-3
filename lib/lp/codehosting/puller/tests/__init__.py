@@ -10,17 +10,28 @@ import shutil
 import socket
 from StringIO import StringIO
 
-from bzrlib.tests import HttpServer, TestCaseWithTransport
 from bzrlib import urlutils
+from bzrlib.tests import (
+    HttpServer,
+    TestCaseWithTransport,
+    )
 from bzrlib.tests.http_server import (
-    TestingHTTPServer, TestingThreadingHTTPServer)
+    TestingHTTPServer,
+    TestingThreadingHTTPServer,
+    )
 
-from lp.codehosting.vfs import branch_id_to_path
-from lp.codehosting.puller.worker import (
-    BranchMirrorer, PullerWorker, PullerWorkerProtocol)
-from lp.codehosting.tests.helpers import LoomTestMixin
-from lp.codehosting.vfs.branchfs import BadUrl, BranchPolicy
 from canonical.config import config
+from lp.codehosting.puller.worker import (
+    BranchMirrorer,
+    PullerWorker,
+    PullerWorkerProtocol,
+    )
+from lp.codehosting.tests.helpers import LoomTestMixin
+from lp.codehosting.vfs import branch_id_to_path
+from lp.codehosting.vfs.branchfs import (
+    BadUrl,
+    BranchPolicy,
+    )
 from lp.testing import TestCaseWithFactory
 
 

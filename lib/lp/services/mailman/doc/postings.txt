@@ -47,7 +47,7 @@ validate her alternative address.
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     get_alternative_email)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 
     >>> login('admin@canonical.com')
     >>> anne = factory.makePersonByName('Anne')
@@ -356,7 +356,7 @@ the mailing list, she will not get a copy of the message.
     >>> helpers.ensure_nonmembership('itest-one', anne)
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('admin@canonical.com')
     >>> team_one = getUtility(IPersonSet).getByName('itest-one')
     >>> anne.join(team_one)
@@ -694,7 +694,7 @@ have their posts held for moderation.
 However, a Launchpad member in good standing is allowed to post to any mailing
 list.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> login('admin@canonical.com')
     >>> bart.personal_standing = PersonalStanding.GOOD
     >>> transaction.commit()
@@ -906,71 +906,5 @@ discarded.
     >>> inject('itest-one', huge_message.as_string())
 
     >>> vette_watcher.wait_for_discard('quahog')
-    >>> print_message_summaries()
-    Number of messages: 0
-
-
-Non-ascii messages
-==================
-
-Cate joins Launchpad and posts a message containing non-ascii characters to
-the mailing list.
-
-    >>> login('admin@canonical.com')
-    >>> cate = factory.makePersonByName('Cate')
-    >>> logout()
-    >>> transaction.commit()
-
-    >>> inject('itest-one', """\
-    ... From: Cate \xa9 Person <cperson@example.org>
-    ... To: team-one@lists.launchpad.dev
-    ... Subject: \xa9 Badgers!
-    ... Message-ID: <racoon>
-    ...
-    ... Watch out for badgers! \xa9
-    ... """)
-
-However, because Cate is not a member of the mailing list, her message gets
-held for moderator approval.
-
-    >>> vette_watcher.wait_for_hold('itest-one', 'racoon')
-    >>> print_message_summaries()
-    Number of messages: 1
-    bounces@canonical.com
-        ...
-        Itest One <noreply@launchpad.net>
-        New mailing list message requiring approval for Itest One
-
-
-Non-text messages
-=================
-
-List members can send non-text messages to agitate the other list members.
-
-    >>> html_message = MIMEText('<a><img /></a>.', 'html')
-    >>> html_message['From'] = 'anne.person@example.com'
-    >>> html_message['To'] = 'itest-one@lists.launchpad.dev'
-    >>> html_message['Subject'] = "It's full of stars"
-    >>> html_message['Message-ID'] = '<loggerhead>'
-    >>> inject('itest-one', html_message.as_string())
-
-    >>> smtpd_watcher.wait_for_mbox_delivery('loggerhead')
-    >>> messages = list(smtpd)
-    >>> for message in messages:
-    ...     print message['Subject']
-    [Itest-one] It's full of stars
-    [Itest-one] It's full of stars
-
-Messages without non-empty text/plain parts from non-list members are rejected
-because launchpad does not store non-text messages for moderation.
-
-    >>> spam_message = MIMEText('<a><img /></a>.', 'html')
-    >>> spam_message['From'] = 'itest-one@lists.launchpad.dev'
-    >>> spam_message['To'] = 'itest-one@lists.launchpad.dev'
-    >>> spam_message['Subject'] = 'get drugs'
-    >>> spam_message['Message-ID'] = '<ocelot>'
-    >>> inject('itest-one', spam_message.as_string())
-
-    >>> vette_watcher.wait_for_discard('ocelot')
     >>> print_message_summaries()
     Number of messages: 0

@@ -84,6 +84,7 @@ We are able to search languages with this method.
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
+  es@test Spanish test
 
 It's case insensitive:
 
@@ -111,6 +112,7 @@ It's case insensitive:
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
+  es@test Spanish test
 
 And it even does substring searching!
 
@@ -138,6 +140,7 @@ And it even does substring searching!
   es_US Spanish (United States)
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
+  es@test Spanish test
 
 We escape special characters like '%', which is an SQL wildcard
 matching any string:
@@ -225,41 +228,6 @@ instead a dash char. This method does it automatically:
   pt-BR
 
 
-getFullCode
-===========
-
-This convenience method returns the language's code, including an
-optional variant.  No redundant country code is added; it's not done.
-
-  >>> sr = language_set.getLanguageByCode('sr')
-  >>> print sr.getFullCode()
-  sr
-
-An omitted variant can be either None or the empty string.
-
-  >>> print sr.getFullCode('')
-  sr
-
-  >>> print sr.getFullCode('Latn')
-  sr@Latn
-
-
-getFullEnglishName
-==================
-
-Use getFullEnglishName to compose a human-readable, displayable
-English name for a language including optional variant.
-
-  >>> print sr.getFullEnglishName()
-  Serbian
-
-  >>> print sr.getFullEnglishName('')
-  Serbian
-
-  >>> print sr.getFullEnglishName('Latn')
-  Serbian ("Latn" variant)
-
-
 translators
 ===========
 
@@ -281,7 +249,7 @@ have the language among their preferred languages.
   >>> translator_30.addLanguage(sr)
   >>> translator_40 = factory.makePerson(name=u'serbian-translator-karma-40')
   >>> translator_40.addLanguage(sr)
-  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.commit()
 
   # We need to fake some Karma.

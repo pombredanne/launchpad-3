@@ -66,7 +66,7 @@ the user will be warned too.
 When assigning a bug to oneself, though, the warning message is suppreseed.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login('no-priv@canonical.com')
@@ -90,7 +90,19 @@ When assigning a bug to oneself, though, the warning message is suppreseed.
 
 == Bug task assignment by regular users ==
 
-Regular users can only set themselves and their teams as assignees.
+Regular users can only set themselves and their teams as assignees if
+there is a bug supervisor established for a project.
+
+To demonstrate, let's first set a bug supervisor for the jokosher
+project used in these tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> jokosher = getUtility(IProductSet).getByName('jokosher')
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> jokosher.setBugSupervisor(foobar, foobar)
+    >>> logout()
+
 To avoid any confusion, the option to assign somebody else is only
 shown if the user has sufficient privileges to assign anybody or if
 the user is a member of at least one team. no-priv is no a member of

@@ -4,6 +4,8 @@
 """Tests of the HWDB submissions parser."""
 
 from cStringIO import StringIO
+
+
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
@@ -21,7 +23,7 @@ from zope.testing.loghandler import Handler
 from canonical.config import config
 from lp.hardwaredb.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 
 from lp.testing import TestCase, validate_mock_class
 

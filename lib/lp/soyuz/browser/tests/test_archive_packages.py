@@ -12,13 +12,15 @@ __all__ = [
     'test_suite',
     ]
 
-import unittest
-
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -84,18 +86,30 @@ class TestP3APackages(TestCaseWithFactory):
 
 
 class TestPPAPackages(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
-    def setUp(self):
-        super(TestPPAPackages, self).setUp()
-        self.joe = self.factory.makePerson(name='joe')
-        self.ppa = self.factory.makeArchive()
+    def getPackagesView(self, query_string=None):
+        ppa = self.factory.makeArchive()
+        return create_initialized_view(
+            ppa, "+packages", query_string=query_string)
 
-    def test_ppa_packages(self):
-        login_person(self.joe)
-        view = create_initialized_view(self.ppa, "+index")
+    def test_ppa_packages_menu_is_enabled(self):
+        joe = self.factory.makePerson()
+        ppa = self.factory.makeArchive()
+        login_person(joe)
+        view = create_initialized_view(ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_specified_name_filter_works(self):
+        view = self.getPackagesView('field.name_filter=blah')
+        self.assertEquals('blah', view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_omission(self):
+        view = self.getPackagesView()
+        self.assertIs(None, view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_empty_filter(self):
+        view = self.getPackagesView('field.name_filter=')
+        self.assertIs(None, view.specified_name_filter)

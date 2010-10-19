@@ -184,18 +184,22 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> login("foo.bar@canonical.com")
 
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset.get(4)
     >>> firefox_test_bug = bugset.get(3)
-    >>> firefox_test_bug.duplicateof = firefox_crashes.id
+    >>> firefox_master_bug = factory.makeBug(product=firefox)
+    >>> firefox_test_bug.markAsDuplicate(firefox_master_bug)
     >>> flush_database_updates()
 
     >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=current_user())
+    ...     duplicateof=firefox_master_bug, user=current_user())
     >>> print dups_of_bug_six.count()
     1
     >>> dups_of_bug_six[0].id
     3
 
-    >>> firefox_test_bug.duplicateof = None
+    >>> firefox_test_bug.markAsDuplicate(None)
     >>> flush_database_updates()
     >>> dups_of_bug_six = bugset.searchAsUser(
     ...     duplicateof=firefox_crashes, user=current_user())
@@ -426,11 +430,6 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> productset = getUtility(IProductSet)
-    >>> bugset = getUtility(IBugSet)
-
-    >>> firefox = productset.get(4)
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
@@ -765,7 +764,7 @@ Marking as duplicate.
 
     >>> print firefox_bug.duplicateof
     None
-    >>> firefox_bug.duplicateof = firefox_crashes
+    >>> firefox_bug.markAsDuplicate(firefox_master_bug)
 
     >>> bug_duplicateof_changed = ObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["duplicateof"])
@@ -830,39 +829,6 @@ Editing an attachment.
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
     >>> notify(attachment_changed)
-
-    >>> firefox_bug.date_last_updated > current_date_last_updated
-    True
-
-Adding a branch.
-
-    >>> from lp.code.interfaces.branchlookup import IBranchLookup
-    >>> firefox_bug.linked_branches.count()
-    0
-
-    >>> branch_one = getUtility(IBranchLookup).get(1)
-    >>> current_date_last_updated = firefox_bug.date_last_updated
-
-    >>> bug_branch = firefox_bug.linkBranch(branch_one, foobar)
-
-    >>> firefox_bug.linked_branches.count()
-    1
-    >>> firefox_bug.date_last_updated > current_date_last_updated
-    True
-
-Editing a branch.
-
-    >>> from lp.bugs.interfaces.bugbranch import IBugBranch
-
-    >>> branch_before_modification = Snapshot(
-    ...     bug_branch, providing=IBugBranch)
-
-    >>> bug_branch_changed = ObjectModifiedEvent(
-    ...     bug_branch, branch_before_modification, ["status"])
-
-    >>> current_date_last_updated = firefox_bug.date_last_updated
-
-    >>> notify(bug_branch_changed)
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -1164,8 +1130,12 @@ single shot.
 It's done in a way that we only issue two queries to fetch all this
 information, too:
 
-    >>> len(CursorWrapper.last_executed_sql) - queries
-    2
+XXX: bug=https://bugs.launchpad.net/storm/+bug/619017 means that this sometimes
+does 3 queries, depending on the precise state of the storm cache. To avoid 
+spurious failures it has been changed to tolerate this additional query.
+
+    >>> len(CursorWrapper.last_executed_sql) - queries <= 3
+    True
 
 Bugs have a special attribute, `indexed_messages` which returns the collection
 of messages, each decorated with the index of that message in its context
@@ -1274,7 +1244,7 @@ the master bug increases too.
 
     >>> dupe_affected_user = factory.makePerson(name='sheila-shakespeare')
     >>> dupe_one = factory.makeBug(owner=dupe_affected_user)
-    >>> dupe_one.duplicateof = test_bug
+    >>> dupe_one.markAsDuplicate(test_bug)
     >>> test_bug.users_affected_count_with_dupes
     3
 
@@ -1308,7 +1278,7 @@ master bug's affected count with dups increases.
 
     >>> dupe_affected_other_user = factory.makePerson(name='napoleon-bonaparte')
     >>> dupe_three = factory.makeBug(owner=dupe_affected_other_user)
-    >>> dupe_three.duplicateof = test_bug
+    >>> dupe_three.markAsDuplicate(test_bug)
     >>> test_bug.users_affected_count_with_dupes
     4
 
@@ -1317,7 +1287,7 @@ both marked as duplicates of the master bugs, the master bug's
 user_affected_count still only increments by 1 for that user.
 
     >>> dupe_two = factory.makeBug(owner=dupe_affected_user)
-    >>> dupe_two.duplicateof = test_bug
+    >>> dupe_two.markAsDuplicate(test_bug)
     >>> test_bug.users_affected_count_with_dupes
     4
 
@@ -1471,7 +1441,7 @@ returned rather than the duplicate.
 
     >>> new_bug_3 = bugs[3]
     >>> new_bug_4 = bugs[4]
-    >>> new_bug_3.duplicateof = new_bug_4
+    >>> new_bug_3.markAsDuplicate(new_bug_4)
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
     ...     bug_tasks, user=no_priv)
 
@@ -1599,7 +1569,7 @@ personIsSubscribedToDuplicate() will return True.
     >>> dupe = factory.makeBug()
     >>> subscription = dupe.subscribe(person, person)
 
-    >>> dupe.duplicateof = bug
+    >>> dupe.markAsDuplicate(bug)
 
     # Re-fetch the bug so that the fact that it's a duplicate definitely
     # registers.

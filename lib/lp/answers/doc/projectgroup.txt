@@ -24,8 +24,8 @@ Questions filed against project in a project group
 You can search for all questions filed against projects in a project using the
 project group's searchQuestions() method.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('test@canonical.com')
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
@@ -67,7 +67,7 @@ getQuestionLanguages() returns the set of languages that is used by all the
 questions in the project group's projects.
 
     # The Firefox project group has one question created in Brazilian
-    # Portuguese. 
+    # Portuguese.
     >>> print ', '.join(
     ...     sorted(language.code
     ...            for language in mozilla_project.getQuestionLanguages()))

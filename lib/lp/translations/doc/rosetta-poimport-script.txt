@@ -1,8 +1,10 @@
-=  PO import script =
+PO import script
+================
 
     >>> from lp.translations.model.potemplate import POTemplate
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue,
     ...     RosettaImportStatus)
@@ -89,7 +91,7 @@ has enough privileges for the script to run to completion.
     0
     >>> print stderr
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
-    INFO    Importing: Serbian (sr) translation of evolution-2.2 in Evolution trunk
+    INFO    Importing: Serbian (sr) ... of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
     <BLANKLINE>
     >>> transaction.commit()

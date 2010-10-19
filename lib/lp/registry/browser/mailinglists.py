@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for handling mailing lists."""
@@ -20,16 +20,23 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.registry.interfaces.mailinglist import (
-    IHeldMessageDetails, IMailingListSet, MailingListStatus)
-from lp.registry.interfaces.person import ITeam
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url)
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from lp.app.browser.tales import PersonFormatterAPI
+from lp.app.errors import UnexpectedFormData
+from lp.registry.interfaces.mailinglist import (
+    IHeldMessageDetails,
+    IMailingListSet,
+    MailingListStatus,
+    )
+from lp.registry.interfaces.person import ITeam
+from lp.services.propertycache import cachedproperty
 
 
 class ReviewForm(Interface):
@@ -231,6 +238,7 @@ class enabled_with_active_mailing_list:
     def __get__(self, obj, type=None):
         """Called by the decorator machinery to return a decorated function.
         """
+
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
             if not ITeam.providedBy(obj.context) or not obj.context.isTeam():

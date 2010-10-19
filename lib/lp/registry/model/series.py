@@ -10,11 +10,14 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from sqlobject import StringCol
 
+from sqlobject import StringCol
 from zope.interface import implements
 
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
 
 
 class SeriesMixin:

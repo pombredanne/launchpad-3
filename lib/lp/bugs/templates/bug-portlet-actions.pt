@@ -11,14 +11,15 @@
         tal:define="link context_menu/markduplicate"
         tal:condition="python: link.enabled and not
                       context.duplicateof"
+        class="sprite bug-dupe"
     >
     <a
       tal:attributes="href link/path"
-      class="menu-link-mark-dupe sprite bug-dupe">Mark as duplicate</a>
+      class="menu-link-mark-dupe">Mark as duplicate</a>
     </span>
     <tal:block
-      tal:condition="context/duplicates"
-      tal:define="number_of_dupes context/duplicates/count"
+      tal:condition="context/number_of_duplicates"
+      tal:define="number_of_dupes context/number_of_duplicates"
     >
     </tal:block>
     <tal:block
@@ -31,8 +32,7 @@
         id="change_duplicate_bug"
         title="Edit or remove linked duplicate bug"
         class="sprite edit"
-        tal:attributes="href link/url"></a>
-      <span id="mark-duplicate-text">Duplicate of
+        tal:attributes="href link/url"></a><span id="mark-duplicate-text">Duplicate of
       <a
         tal:condition="duplicateof/required:launchpad.View"
         tal:attributes="href duplicateof/fmt:url; title

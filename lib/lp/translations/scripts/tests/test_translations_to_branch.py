@@ -4,29 +4,29 @@
 """Acceptance test for the translations-export-to-branch script."""
 
 import re
-import unittest
-import transaction
-
 from textwrap import dedent
 
+from bzrlib.errors import NotBranchError
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from bzrlib.errors import NotBranchError
-
 from canonical.config import config
-
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import ZopelessAppServerLayer
-
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing import map_branch_contents, TestCaseWithFactory
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.testing import (
+    map_branch_contents,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
-
 from lp.translations.scripts.translations_to_branch import (
-    ExportTranslationsToBranch)
+    ExportTranslationsToBranch,
+    )
 
 
 class GruesomeException(Exception):
@@ -265,6 +265,19 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # fail either.
         transaction.commit()
 
+    def test_sets_bzr_id(self):
+        # The script commits to the branch under a user id that mentions
+        # the automatic translations exports as well as the Launchpad
+        # name of the branch owner.
+        self.useBzrBranches(direct_database=False)
+        exporter = ExportTranslationsToBranch(test_args=[])
+        branch, tree = self.create_branch_and_tree()
+        committer = exporter._makeDirectBranchCommit(branch)
+        committer.unlock()
+        self.assertEqual(
+            "Launchpad Translations on behalf of %s" % branch.owner.name,
+            committer.getBzrCommitterID())
+
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
@@ -305,7 +318,3 @@ class TestExportToStackedBranch(TestCaseWithFactory):
             committer.commit("x!")
         finally:
             committer.unlock()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,15 +1,15 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test top-level publication API in Soyuz."""
 
-from unittest import TestLoader
-
-from lp.soyuz.tests.test_publishing import TestNativePublishingBase
-
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
@@ -118,7 +118,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
         # source and binary PUBLISHED on disk.
         foo_dsc = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
-        self.assertEqual(open(foo_dsc).read().strip(),'Hello')
+        self.assertEqual(open(foo_dsc).read().strip(), 'Hello')
         foo_deb = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
@@ -207,8 +207,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroSeries when it is still in development, 'unreleased'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroSeries when it is still in development,
+        'unreleased'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -241,9 +242,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForStableDistroSeries(self):
         """Source publishing record lookup for a stable/released DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroSeries when it is not in development anymore, i.e.,
-        'released'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroSeries when it is not in development anymore,
+        i.e., 'released'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -276,8 +277,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroSeries(self):
         """Source publishing record lookup for a frozen DistroSeries.
 
-        Check if the ICanPublishPackages.getPendingPubliations() works properly
-        for a DistroSeries when it is in FROZEN state.
+        Check if the ICanPublishPackages.getPendingPubliations() works
+        properly for a DistroSeries when it is in FROZEN state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
@@ -313,9 +314,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroArchSeries(self):
         """Binary publishing record lookup for a unstable DistroArchSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly
-        for a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
-        'unstable'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is still in DEVELOPMENT,
+        i.e., 'unstable'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
@@ -422,6 +423,38 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             PackagePublishingPocket.RELEASE, is_careful=True,
             expected_result=[pub_published_release, pub_pending_release])
 
+    def test_publishing_disabled_distroarchseries(self):
+        # Disabled DASes will not receive new publications at all.
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+        # Make an arch-all source and some builds for it.
+        archive = self.factory.makeArchive(
+            distribution=self.ubuntutest, virtualized=False)
+        source = self.getPubSource(
+            archive=archive, architecturehintlist='all')
+        [build_i386] = source.createMissingBuilds()
+        bin_i386 = self.uploadBinaryForBuild(build_i386, 'bin-i386')
+
+        # Now make sure they have a packageupload (but no publishing
+        # records).
+        changes_file_name = '%s_%s_%s.changes' % (
+            bin_i386.name, bin_i386.version, build_i386.arch_tag)
+        pu_i386 = self.addPackageUpload(
+            build_i386.archive, build_i386.distro_arch_series.distroseries,
+            build_i386.pocket, changes_file_content='anything',
+            changes_file_name=changes_file_name,
+            upload_status=PackageUploadStatus.ACCEPTED)
+        pu_i386.addBuild(build_i386)
+
+        # Now we make hppa a disabled architecture, and then call the
+        # publish method on the packageupload.  The arch-all binary
+        # should be published only in the i386 arch, not the hppa one.
+        hppa = pu_i386.distroseries.getDistroArchSeries('hppa')
+        hppa.enabled = False
+        for pu_build in pu_i386.builds:
+            pu_build.publish()
+
+        publications = archive.getAllPublishedBinaries(name="bin-i386")
+
+        self.assertEqual(1, publications.count())
+        self.assertEqual(
+            'i386', publications[0].distroarchseries.architecturetag)

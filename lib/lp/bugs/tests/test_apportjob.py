@@ -6,30 +6,40 @@
 __metaclass__ = type
 
 import os
-import transaction
-import unittest
 
 from sqlobject import SQLObjectNotFound
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    ITemporaryStorageManager,
+    )
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.apportjob import (
-    ApportJobType, IProcessApportBlobJobSource)
-from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
+    ApportJobType,
+    IProcessApportBlobJobSource,
+    )
+from lp.bugs.model.apportjob import (
+    ApportJob,
+    ApportJobDerived,
+    )
 from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+    FileBugData,
+    FileBugDataParser,
+    )
 from lp.services.job.interfaces.job import JobStatus
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -213,24 +223,22 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.create() will create only one
         # ProcessApportBlobJob for a given BLOB, no matter how many
         # times it is called.
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        blobjobsource = getUtility(IProcessApportBlobJobSource)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
             len(current_jobs))
 
-        another_job = getUtility(IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             1, len(current_jobs),
             "There should be only one ProcessApportBlobJob. Found %s" %
@@ -242,17 +250,14 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         # IProcessApportBlobJobSource.
         job.job.start()
         job.job.complete()
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no ready ProcessApportBlobJobs. Found %s" %
             len(current_jobs))
 
-        yet_another_job = getUtility(
-            IProcessApportBlobJobSource).create(self.blob)
-        current_jobs = list(
-            getUtility(IProcessApportBlobJobSource).iterReady())
+        yet_another_job = blobjobsource.create(self.blob)
+        current_jobs = list(blobjobsource.iterReady())
         self.assertEqual(
             0, len(current_jobs),
             "There should be no new ProcessApportBlobJobs. Found %s" %
@@ -446,7 +451,3 @@ class TestTemporaryBlobStorageAddView(TestCaseWithFactory):
             view.extra_data_to_process,
             "view.extra_data_to_process should be False when there is no "
             "job.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,13 +9,11 @@ __metaclass__ = type
 
 __all__ = ['QuestionSubscription']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.launchpad.interfaces import IQuestionSubscription
-
 from canonical.database.sqlbase import SQLBase
+from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -32,5 +30,3 @@ class QuestionSubscription(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-
-

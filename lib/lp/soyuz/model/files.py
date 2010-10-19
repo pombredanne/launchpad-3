@@ -11,18 +11,22 @@ __all__ = [
     'SourcePackageReleaseFile',
     ]
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
-    IBinaryPackageFile, IBinaryPackageFileSet, ISourcePackageReleaseFile,
-    ISourcePackageReleaseFileSet)
+    IBinaryPackageFile,
+    IBinaryPackageFileSet,
+    ISourcePackageReleaseFile,
+    ISourcePackageReleaseFileSet,
+    )
 
 
 class BinaryPackageFile(SQLBase):

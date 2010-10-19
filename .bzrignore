@@ -30,9 +30,10 @@ database/sampledata/newsampledata.sql
 database/sampledata/newsampledata-dev.sql
 database/sampledata/lintdata.sql
 database/sampledata/lintdata-dev.sql
-lib/canonical/launchpad/apidoc/*.html
+lib/canonical/launchpad/apidoc/index.html
+lib/canonical/launchpad/apidoc/devel.html
+lib/canonical/launchpad/apidoc/wadl-development-devel.xml
 xxx-report.*
-lib/canonical/launchpad/apidoc/wadl-development-*.xml
 lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 lib/canonical/launchpad/icing/build/*
 lib/canonical/launchpad/icing/combo.css
@@ -56,11 +57,9 @@ lazr-js
 .bazaar
 .cache
 .subversion
-lib/canonical/buildd/launchpad-files
 .testrepository
 .memcache.pid
 ./pipes
-lib/canonical/launchpad/apidoc/wadl-development-*.xml
 tags.new
 lp-clustered.dot
 lp-clustered.sfood
@@ -68,7 +67,7 @@ lp-clustered.svg
 lp.sfood
 apidocs
 twistd.pid
-lib/canonical/launchpad/apidoc
+*.prof
 lib/canonical/launchpad-buildd_*.dsc
 lib/canonical/launchpad-buildd_*.tar.gz
 lib/canonical/launchpad-buildd_*_all.deb
@@ -76,3 +75,7 @@ lib/canonical/launchpad-buildd_*.changes
 lib/canonical/launchpad-buildd_*_source.build
 lib/canonical/launchpad-buildd_*_source.changes
 lib/canonical/buildd/debian/*
+lib/canonical/buildd/launchpad-files/*
+*.pt.py
+.project
+.pydevproject

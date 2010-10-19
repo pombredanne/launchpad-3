@@ -12,8 +12,12 @@ __all__ = [
 
 import datetime
 
-from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
-
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -22,19 +26,31 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.code.model.codeimportresult import CodeImportResult
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.enums import (
-    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
-    CodeImportReviewStatus)
+    CodeImportJobState,
+    CodeImportMachineState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
-    ICodeImportJob, ICodeImportJobSet,
-    ICodeImportJobSetPublic, ICodeImportJobWorkflow)
+    ICodeImportJob,
+    ICodeImportJobSet,
+    ICodeImportJobSetPublic,
+    ICodeImportJobWorkflow,
+    )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from lp.code.interfaces.codeimportresult import  ICodeImportResultSet
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 
 

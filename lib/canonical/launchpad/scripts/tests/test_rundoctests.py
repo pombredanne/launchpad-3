@@ -3,11 +3,11 @@
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctestunit import DocTestSuite
-
 from canonical.testing import reset_logging
+
 
 def tearDown(test):
     reset_logging()
@@ -19,7 +19,3 @@ def test_suite():
         'canonical.launchpad.scripts.logger', tearDown=tearDown
         ))
     return suite
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
-

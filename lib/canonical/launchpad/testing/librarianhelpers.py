@@ -13,7 +13,10 @@ from zope.component import getUtility
 
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.librarian.interfaces import ILibrarianClient
 
 

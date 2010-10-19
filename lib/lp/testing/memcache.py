@@ -3,8 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

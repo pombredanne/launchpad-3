@@ -37,8 +37,13 @@
         <h2>Recipe information</h2>
         <div class="two-column-list">
           <dl id="build_daily">
-            <dt>Build daily:</dt>
-            <dd tal:content="context/build_daily" />
+            <dt>Build schedule:</dt>
+            <dd tal:condition="context/build_daily">
+              Built daily
+            </dd>
+            <dd tal:condition="not:context/build_daily">
+              Built on request
+            </dd>
           </dl>
 
           <dl id="owner">
@@ -77,7 +82,7 @@
   <div class="yui-g">
     <div class="portlet">
       <h2>Build records</h2>
-        <table class="listing narrow-listing" style='margin-bottom: 1em;'>
+        <table class="listing" style='margin-bottom: 1em;'>
           <thead>
             <tr>
               <th>Status</th>

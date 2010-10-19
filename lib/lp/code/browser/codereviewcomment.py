@@ -12,24 +12,39 @@ __all__ = [
     'CodeReviewDisplayComment',
     ]
 
-from zope.app.form.browser import TextAreaWidget, DropdownWidget
-from zope.interface import Interface, implements
-from zope.schema import Text
-
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+from zope.app.form.browser import (
+    DropdownWidget,
+    TextAreaWidget,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import Text
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
-    LaunchpadView, Link)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.propertycache import cachedproperty
+
+
+class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
+    """Marker interface for displaying code review comments."""
 
 
 class CodeReviewDisplayComment:
@@ -40,7 +55,7 @@ class CodeReviewDisplayComment:
     only code in the model itself.
     """
 
-    implements(IComment)
+    implements(ICodeReviewDisplayComment)
 
     delegates(ICodeReviewComment, 'comment')
 
@@ -58,6 +73,40 @@ class CodeReviewDisplayComment:
             return 'from-superseded'
         else:
             return ''
+
+    @cachedproperty
+    def comment_author(self):
+        """The author of the comment."""
+        return self.comment.message.owner
+
+    @cachedproperty
+    def has_body(self):
+        """Is there body text?"""
+        return bool(self.body_text)
+
+    @cachedproperty
+    def body_text(self):
+        """Get the body text for the message."""
+        return self.comment.message_body
+
+    @cachedproperty
+    def comment_date(self):
+        """The date of the comment."""
+        return self.comment.message.datecreated
+
+    @cachedproperty
+    def all_attachments(self):
+        return self.comment.getAttachments()
+
+    @cachedproperty
+    def display_attachments(self):
+        # Attachments to show.
+        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
+
+    @cachedproperty
+    def other_attachments(self):
+        # Attachments to not show.
+        return self.all_attachments[1]
 
 
 class CodeReviewCommentPrimaryContext:
@@ -113,7 +162,6 @@ class DiffAttachment:
 
 class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
 
     page_title = "Code review comment"
 
@@ -122,44 +170,10 @@ class CodeReviewCommentView(LaunchpadView):
         """The decorated code review comment."""
         return CodeReviewDisplayComment(self.context)
 
-    @cachedproperty
-    def comment_author(self):
-        """The author of the comment."""
-        return self.context.message.owner
-
-    @cachedproperty
-    def has_body(self):
-        """Is there body text?"""
-        return bool(self.body_text)
-
-    @cachedproperty
-    def body_text(self):
-        """Get the body text for the message."""
-        return self.context.message_body
-
-    @cachedproperty
-    def comment_date(self):
-        """The date of the comment."""
-        return self.context.message.datecreated
-
     # Should the comment be shown in full?
     full_comment = True
     # Show comment expanders?
     show_expanders = False
-
-    @cachedproperty
-    def all_attachments(self):
-        return self.context.getAttachments()
-
-    @cachedproperty
-    def display_attachments(self):
-        # Attachments to show.
-        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
-
-    @cachedproperty
-    def other_attachments(self):
-        # Attachments to not show.
-        return self.all_attachments[1]
 
 
 class CodeReviewCommentSummary(CodeReviewCommentView):
@@ -233,7 +247,6 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             comment = ''
         return {'comment': comment}
-
 
     @property
     def is_reply(self):

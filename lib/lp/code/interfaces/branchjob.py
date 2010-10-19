@@ -28,12 +28,26 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob, IRunnableJob, IJobSource
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 
 
 class IBranchJob(Interface):

@@ -166,10 +166,12 @@
                 </td>
               </tal:has-bugtracker>
               <tal:has-no-bugtracker condition="not: item/bugtracker">
-                <td tal:condition="item/official_malone" align="center">
+                <td tal:condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                  align="center">
                     <img src="/@@/yes" title="Launchpad" />
                 </td>
-                <td tal:condition="not: item/official_malone" align="center">
+                <td tal:condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                  align="center">
                     <img src="/@@/no" title="Unknown" />
                     <a tal:condition="item/product/required:launchpad.Edit"
                        tal:attributes="href item/product_edit_url">
@@ -225,11 +227,11 @@
                  tal:content="item/upstream_bugs_delta"></a>
             </td>
             <tal:upstream-in-launchpad
-                condition="item/official_malone">
+                condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD">
                 <td colspan="4" class="good">&nbsp;</td>
             </tal:upstream-in-launchpad>
             <tal:upstream-not-in-launchpad
-                condition="not: item/official_malone">
+                condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD">
               <td tal:attributes="class string:amount ${item/watched_bugs_class}"
                   tal:content="item/watched_bugs" />
               <td tal:attributes="class string:amount ${item/watched_bugs_class}"

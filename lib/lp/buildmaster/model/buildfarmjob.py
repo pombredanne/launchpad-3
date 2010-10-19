@@ -13,30 +13,56 @@ __all__ = [
 import hashlib
 
 from lazr.delegates import delegates
-
 import pytz
-
-from storm.expr import And, Coalesce, Desc, Join, LeftJoin, Select
-from storm.locals import Bool, DateTime, Int, Reference, Storm
+from storm.expr import (
+    Coalesce,
+    Desc,
+    LeftJoin,
+    Or,
+    )
+from storm.locals import (
+    Bool,
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
-
-from zope.component import ComponentLookupError, getAdapter, getUtility
-from zope.interface import classProvides, implements
+from zope.component import (
+    ComponentLookupError,
+    getAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
-    IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    ISpecificBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
 
@@ -209,6 +235,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    failure_count = Int(name='failure_count', allow_none=False)
+
+    dependencies = None
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -245,7 +275,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         return self.date_finished - self.date_started
 
     def makeJob(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
     def jobStarted(self):
@@ -312,6 +342,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     def getSpecificJob(self):
@@ -342,6 +373,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
         return build_without_outer_proxy
 
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
+
 
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)
@@ -365,49 +400,47 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        left_join_pkg_builds = LeftJoin(
-            BuildFarmJob,
-            Join(
+        origin = [BuildFarmJob]
+        left_join_archive = [
+            LeftJoin(
                 PackageBuild,
-                Archive,
-                And(PackageBuild.archive == Archive.id)),
-            PackageBuild.build_farm_job == BuildFarmJob.id)
-
-        filtered_builds = IStore(BuildFarmJob).using(
-            left_join_pkg_builds).find(BuildFarmJob, *extra_clauses)
+                PackageBuild.build_farm_job == BuildFarmJob.id),
+            LeftJoin(
+                Archive, PackageBuild.archive == Archive.id),
+            ]
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            filtered_builds = filtered_builds.find(
-                Coalesce(Archive.private, False) == False)
+            origin.extend(left_join_archive)
+            extra_clauses.append(Coalesce(Archive.private, False) == False)
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             # Admins get to see everything.
             pass
         else:
-            # Everyone else sees a union of all public builds and the
+            # Everyone else sees all public builds and the
             # specific private builds to which they have access.
-            filtered_builds = filtered_builds.find(
-                Coalesce(Archive.private, False) == False)
+            origin.extend(left_join_archive)
+            origin.append(LeftJoin(
+                TeamParticipation,
+                TeamParticipation.teamID == Archive.ownerID))
+            extra_clauses.append(
+                Or(Coalesce(Archive.private, False) == False,
+                   TeamParticipation.person == user))
 
-            user_teams_subselect = Select(
-                TeamParticipation.teamID,
-                where=And(
-                   TeamParticipation.personID == user.id,
-                   TeamParticipation.teamID == Archive.ownerID))
-            private_builds_for_user = IStore(BuildFarmJob).find(
-                BuildFarmJob,
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                PackageBuild.archive == Archive.id,
-                Archive.private == True,
-                Archive.ownerID.is_in(user_teams_subselect),
-                *extra_clauses)
-
-            filtered_builds = filtered_builds.union(
-                private_builds_for_user)
+        filtered_builds = IStore(BuildFarmJob).using(*origin).find(
+            BuildFarmJob, *extra_clauses)
 
         filtered_builds.order_by(
             Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+        filtered_builds.config(distinct=True)
 
         return filtered_builds
 
+    def getByID(self, job_id):
+        """See `IBuildfarmJobSet`."""
+        job = IStore(BuildFarmJob).find(BuildFarmJob,
+                BuildFarmJob.id == job_id).one()
+        if job is None:
+            raise NotFoundError(job_id)
+        return job

@@ -9,7 +9,10 @@ __metaclass__ = type
 __all__ = ['TranslationFileFormat']
 
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class TranslationFileFormat(DBEnumeratedType):

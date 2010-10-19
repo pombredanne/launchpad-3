@@ -4,9 +4,10 @@
 __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod

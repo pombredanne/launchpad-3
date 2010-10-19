@@ -57,7 +57,7 @@
               <tr tal:define="series packaging/productseries;
                               product series/product;
                               package packaging/sourcepackage;
-                              translations package/getTranslationTemplates;">
+                              translations package/has_translation_templates;">
                 <td>
                   <a class="sprite package-source"
                     tal:attributes="href package/fmt:url"

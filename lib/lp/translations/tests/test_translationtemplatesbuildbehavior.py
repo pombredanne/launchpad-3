@@ -6,27 +6,29 @@
 import logging
 import os
 from StringIO import StringIO
-import transaction
-from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
-
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, ITranslationImportQueue)
+    ITranslationImportQueue,
+    RosettaImportStatus,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
 
 
 class FakeChrootContent:
@@ -36,6 +38,7 @@ class FakeChrootContent:
 
 class FakeChroot:
     """Pretend chroot."""
+
     def __init__(self, *args, **kwargs):
         """Constructor acts as a fake _getChroot."""
         self.content = FakeChrootContent()
@@ -43,6 +46,7 @@ class FakeChroot:
 
 class FakeSlave:
     """Pretend build slave."""
+
     def __init__(self, builderstatus):
         self._status = {
             'test_build_started': False,
@@ -73,6 +77,7 @@ class FakeSlave:
 
 class FakeBuilder:
     """Pretend `Builder`."""
+
     def __init__(self, slave):
         self.slave = slave
         self.cleanSlave = FakeMethod()
@@ -83,6 +88,7 @@ class FakeBuilder:
 
 class FakeBuildQueue:
     """Pretend `BuildQueue`."""
+
     def __init__(self, behavior):
         """Pretend to be a BuildQueue item for the given build behavior.
 
@@ -269,7 +275,7 @@ class TestTTBuildBehaviorTranslationsQueue(
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         self.dummy_tar = os.path.join(
-            os.path.dirname(__file__),'dummy_templates.tar.gz')
+            os.path.dirname(__file__), 'dummy_templates.tar.gz')
 
     def test_uploadTarball(self):
         # Files from the tarball end up in the import queue.
@@ -281,7 +287,7 @@ class TestTTBuildBehaviorTranslationsQueue(
         expected_templates = [
             'po/domain.pot',
             'po-other/other.pot',
-            'po-thethird/templ3.pot'
+            'po-thethird/templ3.pot',
             ]
 
         paths = [entry.path for entry in entries]
@@ -321,7 +327,7 @@ class TestTTBuildBehaviorTranslationsQueue(
         slave_status = {
             'builder_status': builder.slave.status()[0],
             'build_status': builder.slave.status()[1],
-            'build_id': builder.slave.status()[2]
+            'build_id': builder.slave.status()[2],
             }
         behavior.updateSlaveStatus(builder.slave.status(), slave_status)
         behavior.updateBuild_WAITING(queue_item, slave_status, None, logging)
@@ -330,12 +336,7 @@ class TestTTBuildBehaviorTranslationsQueue(
         expected_templates = [
             'po/domain.pot',
             'po-other/other.pot',
-            'po-thethird/templ3.pot'
+            'po-thethird/templ3.pot',
             ]
         self.assertContentEqual(
             expected_templates, [entry.path for entry in entries])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-

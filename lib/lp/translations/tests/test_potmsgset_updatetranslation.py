@@ -10,9 +10,12 @@ __metaclass__ = type
 
 __all__ = []
 
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_suite():

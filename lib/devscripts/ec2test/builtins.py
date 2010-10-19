@@ -307,7 +307,7 @@ class cmd_test(EC2Command):
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, launchpad_login=instance._launchpad_login,
-            timeout=480)
+            timeout=300)
 
         instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
@@ -321,7 +321,18 @@ class cmd_land(EC2Command):
         Option('print-commit', help="Print the full commit message."),
         Option(
             'testfix',
-            help="Include the [testfix] prefix in the commit message."),
+            help="This is a testfix (tags commit with [testfix])."),
+        Option(
+            'no-qa',
+            help="Does not require QA (tags commit with [no-qa])."),
+        Option(
+            'incremental',
+            help="Incremental to other bug fix (tags commit with [incr])."),
+        Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
         Option(
             'commit-text', short_name='s', type=str,
             help=(
@@ -355,10 +366,12 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False, attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
-                LaunchpadBranchLander, MissingReviewError)
+                LaunchpadBranchLander, MissingReviewError, MissingBugsError,
+                MissingBugsIncrementalError)
         except ImportError:
             self.outf.write(
                 "***************************************************\n\n"
@@ -395,13 +408,26 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print "--rollback option used. Ignoring --no-qa and --incremental."
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix)
+            commit_message = mp.get_commit_message(
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
                 "reviews. Get an 'Approved' vote so we can fill in the "
                 "[r=REVIEWER] section.")
+        except MissingBugsError:
+            raise BzrCommandError(
+                "Branch doesn't have linked bugs and doesn't have no-qa "
+                "option set. Use --no-qa, or link the related bugs to the "
+                "branch.")
+        except MissingBugsIncrementalError:
+            raise BzrCommandError(
+                "--incremental option requires bugs linked to the branch. "
+                "Link the bugs or remove the --incremental option.")
+
         if print_commit:
             print commit_message
             return

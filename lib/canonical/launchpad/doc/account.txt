@@ -14,7 +14,8 @@ implements the IAccountSet interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces import IAccount, IAccountSet
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
@@ -196,11 +197,11 @@ database. Only an admin can change the status.
     >>> account.status = AccountStatus.ACTIVE
     >>> login('no-priv@canonical.com')
 
-An Account has an OpenID identifier used to generate the OpenID identity
-URL.
+An Account has at least one OpenID identifier used to generate the
+OpenID identity URL.
 
-    >>> print account.openid_identifier
-    no-priv_oid
+    >>> account.openid_identifiers.any().identifier
+    u'no-priv_oid'
 
 
 Creating new accounts
@@ -273,7 +274,7 @@ Let's add a new email address to the account.
 The account is still not valid because it has no preferred email.
 Setting the email to preferred fixes this.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> email.status = EmailAddressStatus.PREFERRED
     >>> account.is_valid
     True
@@ -339,16 +340,3 @@ address, a new Person cannot be created.
 
     >>> db_policy = getUtility(IStoreSelector).pop()
 
-
-OpenID identifiers
-------------------
-
-The account is given an openid identifier. The identifier is created directly
-in the database; it not available until the account object is synced.
-
-    >>> new_account = account_set.new(
-    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD, 'OID Account',
-    ...     password=u'clear_password')
-    >>> syncUpdate(new_account)
-    >>> len(new_account.openid_identifier) == 7
-    True

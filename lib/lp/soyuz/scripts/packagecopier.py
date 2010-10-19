@@ -16,28 +16,39 @@ __all__ = [
     'update_files_privacy',
     ]
 
-import apt_pkg
 import os
 import tempfile
 
+import apt_pkg
 from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.adapters.packagelocation import build_package_location
-from lp.soyuz.interfaces.archive import ArchivePurpose, CannotCopy
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, IPublishingSet,
-    ISourcePackagePublishingHistory, active_publishing_status)
+    active_publishing_status,
+    IBinaryPackagePublishingHistory,
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
 from lp.soyuz.interfaces.queue import (
-    IPackageUpload, IPackageUploadCustom, IPackageUploadSet)
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
-from lp.soyuz.scripts.ftpmasterbase import SoyuzScript, SoyuzScriptError
+    IPackageUpload,
+    IPackageUploadCustom,
+    IPackageUploadSet,
+    )
+from lp.soyuz.enums import SourcePackageFormat
+from lp.soyuz.scripts.ftpmasterbase import (
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
-
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
 # I just don't see a clear benefit in doing that right now.

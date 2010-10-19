@@ -9,13 +9,18 @@ from unittest import TestLoader
 
 from zope.component import getUtility
 
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.testing import login, TestCaseWithFactory
-
-from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
 
 
 class PackagingUtilMixin:

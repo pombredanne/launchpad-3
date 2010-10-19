@@ -1,6 +1,8 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """Generic Python utilities.
 
 Functions, lists and so forth. Nothing here that does system calls or network
@@ -10,6 +12,7 @@ stuff.
 __metaclass__ = type
 __all__ = [
     'CachingIterator',
+    'decorate_with',
     'iter_split',
     'synchronize',
     'text_delta',
@@ -19,6 +22,7 @@ __all__ = [
 import itertools
 
 from lazr.enum import BaseItem
+from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
 
@@ -141,3 +145,13 @@ class CachingIterator:
                 break
             self.data.append(item)
             yield item
+
+
+def decorate_with(context_factory, *args, **kwargs):
+    """Create a decorator that runs decorated functions with 'context'."""
+    def decorator(function):
+        def decorated(*a, **kw):
+            with context_factory(*args, **kwargs):
+                return function(*a, **kw)
+        return mergeFunctionMetadata(function, decorated)
+    return decorator

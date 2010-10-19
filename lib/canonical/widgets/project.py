@@ -15,7 +15,7 @@ from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.interfaces import UnexpectedFormData
+from lp.app.errors import UnexpectedFormData
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 

@@ -13,17 +13,27 @@ __all__ = [
     'IPocketChroot',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-
-from lp.registry.interfaces.role import IHasOwner
-from canonical.launchpad import _
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
+from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+
 
 class IDistroArchSeries(IHasOwner):
     """DistroArchSeries Table Interface"""
@@ -73,6 +83,12 @@ class IDistroArchSeries(IHasOwner):
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
             required=False))
+    enabled = Bool(
+        title=_("Enabled"),
+        description=_(
+            "Whether or not this DistroArchSeries is enabled for build "
+            "creation and publication."),
+        required=False, readonly=False)
 
     # Joins.
     packages = Attribute('List of binary packages in this port.')

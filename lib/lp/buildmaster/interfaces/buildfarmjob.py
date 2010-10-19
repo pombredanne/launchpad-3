@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -14,18 +14,29 @@ __all__ = [
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
     'ISpecificBuildFarmJob',
-    'BuildFarmJobType',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine, Timedelta
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    )
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -37,38 +48,6 @@ class InconsistentBuildFarmJobError(Exception):
     is yet implemented. Or when adapting the BuildFarmJob to a specific
     type of build job (such as a BinaryPackageBuild) fails.
     """
-
-
-class BuildFarmJobType(DBEnumeratedType):
-    """Soyuz build farm job type.
-
-    An enumeration with the types of jobs that may be run on the Soyuz build
-    farm.
-    """
-
-    PACKAGEBUILD = DBItem(1, """
-        Binary package build
-
-        Build a source package.
-        """)
-
-    BRANCHBUILD = DBItem(2, """
-        Branch build
-
-        Build a package from a bazaar branch.
-        """)
-
-    RECIPEBRANCHBUILD = DBItem(3, """
-        Recipe branch build
-
-        Build a package from a bazaar branch and a recipe.
-        """)
-
-    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
-        Translation template build
-
-        Generate translation templates from a bazaar branch.
-        """)
 
 
 class IBuildFarmJobOld(Interface):
@@ -258,6 +237,11 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    failure_count = Int(
+        title=_("Failure Count"), required=False, readonly=True,
+        default=0,
+        description=_("Number of consecutive failures for this job."))
+
     def getSpecificJob():
         """Return the specific build job associated with this record.
 
@@ -265,9 +249,21 @@ class IBuildFarmJob(IBuildFarmJobOld):
             returned.
         """
 
+    def gotFailure():
+        """Increment the failure_count for this job."""
+
     title = exported(TextLine(title=_("Title"), required=False))
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
+
+    # This doesn't belong here.  It really belongs in IPackageBuild, but
+    # the TAL assumes it can read this directly.
+    dependencies = exported(
+        TextLine(
+            title=_('Dependencies'), required=False,
+            description=_(
+                'Debian-like dependency line that must be satisfied before '
+                'attempting to build this request.')))
 
 
 class ISpecificBuildFarmJob(IBuildFarmJob):
@@ -304,4 +300,8 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
+        """
+
+    def getByID(job_id):
+        """Look up a `IBuildFarmJob` record by id.
         """

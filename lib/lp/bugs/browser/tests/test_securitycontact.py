@@ -1,17 +1,19 @@
-# Copyright10 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for security contact views."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.form.interfaces import ConversionError
 
-from lp.testing import login, login_person, TestCaseWithFactory
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestSecurityContactEditView(TestCaseWithFactory):
@@ -148,7 +150,3 @@ class TestSecurityContactEditView(TestCaseWithFactory):
             self.product, name='+securitycontact', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(another_team, self.product.security_contact)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

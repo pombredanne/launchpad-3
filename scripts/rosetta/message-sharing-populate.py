@@ -7,9 +7,9 @@
 
 """Populate schema additions for Translations Message Sharing.
 
-This fills three new `TranslationMessage` columns: potemplate, language,
-and variant.  It also creates linking table entries connecting the
-existing `POTMsgSet`s to their `POTemplate`s.
+This fills two new `TranslationMessage` columns: potemplate, language.
+It also creates linking table entries connecting the existing `POTMsgSet`s
+to their `POTemplate`s.
 
 Since the schema additions are not in use yet, this script doesn't need
 to be careful about grouping by template, preserving any kind of order,
@@ -90,8 +90,7 @@ class PopulateTranslationMessage:
             UPDATE TranslationMessage AS Msg
             SET
                 potemplate = POFile.potemplate,
-                language = POFile.language,
-                variant = POFile.variant
+                language = POFile.language
             FROM POFile
             WHERE
                 POFile.id = Msg.pofile AND

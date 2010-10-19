@@ -11,7 +11,11 @@ from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
 
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.testing import TestCase
 
 

@@ -89,7 +89,8 @@ three members of the vcs-imports team.
     >>> len(stub.test_emails)
     3
     >>> from canonical.launchpad.helpers import get_contact_email_addresses
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> len(get_contact_email_addresses(vcs_imports))
     3
@@ -105,8 +106,9 @@ three members of the vcs-imports team.
     from
         :pserver:anonymous@cvs.example.com:/cvsroot, hello
     <BLANKLINE>
-    -- 
-    You are getting this email because you are a member of the vcs-imports team.
+    --
+    You are getting this email because you are a member of the vcs-imports
+    team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.
 
@@ -450,8 +452,7 @@ to present the import's details on the page of the branch.
     u':pserver:anonymous@cvs.example.com:/cvsroot'
 
 When you ask for an id that is not present ICodeImportSet.get() raises
-canonical.launchpad.interfaces.NotFoundError, rather than some
-internal database exception.
+lp.app.errors.NotFoundError, rather than some internal database exception.
 
     >>> code_import_set.get(-10)
     Traceback (most recent call last):

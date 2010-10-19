@@ -98,7 +98,7 @@ Create a private PPA for Celso with some binaries.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')

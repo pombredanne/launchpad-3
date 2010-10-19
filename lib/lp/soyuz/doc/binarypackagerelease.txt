@@ -17,7 +17,7 @@ Useful properties:
    >>> firefox_bin_release.name, firefox_bin_release.version
    (u'mozilla-firefox', u'0.9')
 
-   >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+   >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
    >>> warty = getUtility(IDistroSeriesSet).get(1)
    >>> warty.name
    u'warty'
@@ -103,7 +103,7 @@ Fetch brand new component, section and priority:
 
    >>> from canonical.launchpad.interfaces import (
    ...     IComponentSet, ISectionSet)
-   >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+   >>> from lp.soyuz.enums import PackagePublishingPriority
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
    >>> new_priority = PackagePublishingPriority.IMPORTANT

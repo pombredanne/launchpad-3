@@ -10,11 +10,11 @@
 __metaclass__ = type
 
 import ZConfig
+from doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 import os
 import pkg_resources
 import unittest
 
-from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
 
