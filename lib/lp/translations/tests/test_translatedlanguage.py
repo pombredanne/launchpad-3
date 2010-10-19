@@ -153,7 +153,6 @@ class TestTranslatedLanguageMixin(TestCaseWithFactory):
     def test_pofiles_slicing(self):
         # Slicing still works, and always does the same constant number
         # of queries (1).
-        # 
         translated_language = self.getTranslatedLanguage(self.language)
         pofile1 = self.addPOFile()
         pofile2 = self.addPOFile()
