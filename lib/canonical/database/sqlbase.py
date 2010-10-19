@@ -820,7 +820,7 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
         con_str_overrides.append('host=%s' % lp.dbhost)
     if dbname is None:
-        dbname = lp.dbname # Note that lp.dbname may be None.
+        dbname = lp.get_dbname() # Note that lp.dbname may be None.
     if dbname is not None:
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)

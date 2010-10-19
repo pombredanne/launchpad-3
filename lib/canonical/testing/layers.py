@@ -622,119 +622,6 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.flush_all() # Only do this in tests!
 
 
-class LibrarianLayer(BaseLayer):
-    """Provides tests access to a Librarian instance.
-
-    Calls to the Librarian will fail unless there is also a Launchpad
-    database available.
-    """
-    _reset_between_tests = True
-
-    _is_setup = False
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        cls._is_setup = True
-        if not LibrarianLayer._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests changed before LibrarianLayer "
-                    "was actually used."
-                    )
-        the_librarian = LibrarianTestSetup()
-        the_librarian.setUp()
-        LibrarianLayer._check_and_reset()
-        atexit.register(the_librarian.tearDown)
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        if not cls._is_setup:
-            return
-        cls._is_setup = False
-        if not LibrarianLayer._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests not reset before LibrarianLayer "
-                    "shutdown"
-                    )
-        LibrarianLayer._check_and_reset()
-        LibrarianTestSetup().tearDown()
-
-    @classmethod
-    @profiled
-    def _check_and_reset(cls):
-        """Raise an exception if the Librarian has been killed.
-        Reset the storage unless this has been disabled.
-        """
-        try:
-            f = urlopen(config.librarian.download_url)
-            f.read()
-        except Exception, e:
-            raise LayerIsolationError(
-                    "Librarian has been killed or has hung."
-                    "Tests should use LibrarianLayer.hide() and "
-                    "LibrarianLayer.reveal() where possible, and ensure "
-                    "the Librarian is restarted if it absolutely must be "
-                    "shutdown: " + str(e)
-                    )
-        if LibrarianLayer._reset_between_tests:
-            LibrarianTestSetup().clear()
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        LibrarianLayer._check_and_reset()
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        if LibrarianLayer._hidden:
-            LibrarianLayer.reveal()
-        LibrarianLayer._check_and_reset()
-
-    # Flag maintaining state of hide()/reveal() calls
-    _hidden = False
-
-    # Fake upload socket used when the librarian is hidden
-    _fake_upload_socket = None
-
-    @classmethod
-    @profiled
-    def hide(cls):
-        """Hide the Librarian so nothing can find it. We don't want to
-        actually shut it down because starting it up again is expensive.
-
-        We do this by altering the configuration so the Librarian client
-        looks for the Librarian server on the wrong port.
-        """
-        LibrarianLayer._hidden = True
-        if LibrarianLayer._fake_upload_socket is None:
-            # Bind to a socket, but don't listen to it.  This way we
-            # guarantee that connections to the given port will fail.
-            LibrarianLayer._fake_upload_socket = socket.socket(
-                socket.AF_INET, socket.SOCK_STREAM)
-            assert config.librarian.upload_host == 'localhost', (
-                'Can only hide librarian if it is running locally')
-            LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
-
-        host, port = LibrarianLayer._fake_upload_socket.getsockname()
-        librarian_data = dedent("""
-            [librarian]
-            upload_port: %s
-            """ % port)
-        config.push('hide_librarian', librarian_data)
-
-    @classmethod
-    @profiled
-    def reveal(cls):
-        """Reveal a hidden Librarian.
-
-        This just involves restoring the config to the original value.
-        """
-        LibrarianLayer._hidden = False
-        config.pop('hide_librarian')
-
-
 # We store a reference to the DB-API connect method here when we
 # put a proxy in its place.
 _org_connect = None
@@ -761,7 +648,19 @@ class DatabaseLayer(BaseLayer):
         cls._db_fixture = LaunchpadTestSetup(
             reset_sequences_sql=reset_sequences_sql)
         cls.force_dirty_database()
+        # Nuke any existing DB (for persistent-test-services) [though they
+        # prevent this !?]
         cls._db_fixture.tearDown()
+        # Force a db creation for unique db names - needed at layer init
+        # because appserver using layers run things at layer setup, not
+        # test setup.
+        cls._db_fixture.setUp()
+        # And take it 'down' again to be in the right state for testSetUp
+        # - note that this conflicts in principle with layers whose setUp
+        # needs the be working, but this is a conceptually cleaner starting
+        # point for addressing that mismatch.
+        cls._db_fixture.tearDown()
+
 
     @classmethod
     @profiled
@@ -883,12 +782,125 @@ class DatabaseLayer(BaseLayer):
         return cls._db_fixture.dropDb()
 
 
+class LibrarianLayer(DatabaseLayer):
+    """Provides tests access to a Librarian instance.
+
+    Calls to the Librarian will fail unless there is also a Launchpad
+    database available.
+    """
+    _reset_between_tests = True
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls._is_setup = True
+        if not LibrarianLayer._reset_between_tests:
+            raise LayerInvariantError(
+                    "_reset_between_tests changed before LibrarianLayer "
+                    "was actually used."
+                    )
+        the_librarian = LibrarianTestSetup()
+        the_librarian.setUp()
+        LibrarianLayer._check_and_reset()
+        atexit.register(the_librarian.tearDown)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls._is_setup = False
+        if not LibrarianLayer._reset_between_tests:
+            raise LayerInvariantError(
+                    "_reset_between_tests not reset before LibrarianLayer "
+                    "shutdown"
+                    )
+        LibrarianLayer._check_and_reset()
+        LibrarianTestSetup().tearDown()
+
+    @classmethod
+    @profiled
+    def _check_and_reset(cls):
+        """Raise an exception if the Librarian has been killed.
+        Reset the storage unless this has been disabled.
+        """
+        try:
+            f = urlopen(config.librarian.download_url)
+            f.read()
+        except Exception, e:
+            raise LayerIsolationError(
+                    "Librarian has been killed or has hung."
+                    "Tests should use LibrarianLayer.hide() and "
+                    "LibrarianLayer.reveal() where possible, and ensure "
+                    "the Librarian is restarted if it absolutely must be "
+                    "shutdown: " + str(e)
+                    )
+        if LibrarianLayer._reset_between_tests:
+            LibrarianTestSetup().clear()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        LibrarianLayer._check_and_reset()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        if LibrarianLayer._hidden:
+            LibrarianLayer.reveal()
+        LibrarianLayer._check_and_reset()
+
+    # Flag maintaining state of hide()/reveal() calls
+    _hidden = False
+
+    # Fake upload socket used when the librarian is hidden
+    _fake_upload_socket = None
+
+    @classmethod
+    @profiled
+    def hide(cls):
+        """Hide the Librarian so nothing can find it. We don't want to
+        actually shut it down because starting it up again is expensive.
+
+        We do this by altering the configuration so the Librarian client
+        looks for the Librarian server on the wrong port.
+        """
+        LibrarianLayer._hidden = True
+        if LibrarianLayer._fake_upload_socket is None:
+            # Bind to a socket, but don't listen to it.  This way we
+            # guarantee that connections to the given port will fail.
+            LibrarianLayer._fake_upload_socket = socket.socket(
+                socket.AF_INET, socket.SOCK_STREAM)
+            assert config.librarian.upload_host == 'localhost', (
+                'Can only hide librarian if it is running locally')
+            LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
+
+        host, port = LibrarianLayer._fake_upload_socket.getsockname()
+        librarian_data = dedent("""
+            [librarian]
+            upload_port: %s
+            """ % port)
+        config.push('hide_librarian', librarian_data)
+
+    @classmethod
+    @profiled
+    def reveal(cls):
+        """Reveal a hidden Librarian.
+
+        This just involves restoring the config to the original value.
+        """
+        LibrarianLayer._hidden = False
+        config.pop('hide_librarian')
+
+
 def test_default_timeout():
     """Don't timeout by default in tests."""
     return None
 
 
-class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -1687,9 +1699,6 @@ class LayerProcessController:
     # configs/testrunner-appserver/mail-configure.zcml
     smtp_controller = None
 
-    # The DB fixture in use
-    _db_fixture = None
-
     @classmethod
     def setUp(cls):
         cls.appserver_config = CanonicalConfig(
@@ -1824,12 +1833,6 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        # The database must be available for the app server to start.
-        cls._db_fixture = LaunchpadTestSetup()
-        # This is not torn down properly: rather the singleton nature is abused
-        # and the fixture is simply marked as being dirty.
-        # XXX: Robert Collins 2010-10-17 bug=661967
-        cls._db_fixture.setUp()
         # The app server will not start at all if the database hasn't been
         # correctly patched. The app server will make exactly this check,
         # doing it here makes the error more obvious.
