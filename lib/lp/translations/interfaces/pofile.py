@@ -168,6 +168,9 @@ class IPOFile(IRosettaStats):
         for.
         """
 
+    def hasPluralFormInformation():
+        """Do we know the plural-forms information for this `POFile`?"""
+
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 

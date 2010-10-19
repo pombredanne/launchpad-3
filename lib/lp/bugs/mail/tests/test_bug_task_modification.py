@@ -12,9 +12,9 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.launchpad.database import BugNotification
+from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.testing import TestCaseWithFactory

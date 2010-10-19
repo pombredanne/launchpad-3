@@ -245,6 +245,9 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
+from lp.soyuz.model.packagediff import (
+    PackageDiff,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -720,14 +723,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 naked_team.addMember(member, owner)
         return team
 
-    def makePoll(self, team, name, title, proposition):
+    def makePoll(self, team, name, title, proposition,
+                 poll_type=PollAlgorithm.SIMPLE):
         """Create a new poll which starts tomorrow and lasts for a week."""
         dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
         datecloses = dateopens + timedelta(days=7)
         return getUtility(IPollSet).new(
             team, name, title, proposition, dateopens, datecloses,
             PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=PollAlgorithm.SIMPLE)
+            poll_type=poll_type)
 
     def makeTranslationGroup(
         self, owner=None, name=None, title=None, summary=None, url=None):
@@ -1400,6 +1404,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
+        """Make a new bug tracker component group."""
+        if name is None:
+            name = u'default'
+        if bug_tracker is None:
+            bug_tracker = self.makeBugTracker()
+
+        component_group = bug_tracker.addRemoteComponentGroup(name)
+        return component_group
+
+    def makeBugTrackerComponent(self, name=None, component_group=None,
+                                custom=None):
+        """Make a new bug tracker component."""
+        if name is None:
+            name = u'default'
+        if component_group is None:
+            component_group = self.makeBugTrackerComponentGroup()
+        if custom is None:
+            custom = False
+        if custom:
+            component = component_group.addCustomComponent(name)
+        else:
+            component = component_group.addComponent(name)
+        return component
+
     def makeBugWatch(self, remote_bug=None, bugtracker=None, bug=None,
                      owner=None, bug_task=None):
         """Make a new bug watch."""
@@ -1794,16 +1823,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
-    def makeLanguage(self, language_code=None, name=None, pluralforms=None):
+    def makeLanguage(self, language_code=None, name=None, pluralforms=None,
+                     plural_expression=None):
         """Makes a language given the language_code and name."""
         if language_code is None:
             language_code = self.getUniqueString('lang')
         if name is None:
             name = "Language %s" % language_code
+        if plural_expression is None and pluralforms is not None:
+            # If the number of plural forms is known, the language
+            # should also have a plural expression and vice versa.
+            plural_expression = 'n %% %d' % pluralforms
 
         language_set = getUtility(ILanguageSet)
         return language_set.createLanguage(
-            language_code, name, pluralforms=pluralforms)
+            language_code, name, pluralforms=pluralforms,
+            pluralexpression=plural_expression)
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
@@ -3268,6 +3303,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             service_root="http://api.launchpad.dev:8085")
         login_person(person)
         return launchpad
+
+    def makePackageDiff(self, from_source=None, to_source=None,
+                        requester=None, status=None, date_fulfilled=None,
+                        diff_content=None):
+        """Create a new `PackageDiff`."""
+        if from_source is None:
+            from_source = self.makeSourcePackageRelease()
+        if to_source is None:
+            to_source = self.makeSourcePackageRelease()
+        if requester is None:
+            requester = self.makePerson()
+        if status is None:
+            status = PackageDiffStatus.COMPLETED
+        if date_fulfilled is None:
+            date_fulfilled = UTC_NOW
+        if diff_content is None:
+            diff_content = self.getUniqueString("packagediff")
+        lfa = self.makeLibraryFileAlias(content=diff_content)
+        return ProxyFactory(
+            PackageDiff(
+                requester=requester, from_source=from_source,
+                to_source=to_source, date_fulfilled=date_fulfilled,
+                status=status, diff_content=lfa))
 
 
 # Some factory methods return simple Python types. We don't add

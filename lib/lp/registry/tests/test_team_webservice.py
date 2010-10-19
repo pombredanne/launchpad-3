@@ -3,11 +3,12 @@
 
 __metaclass__ = type
 
+import httplib
 import unittest
 
 from lazr.restfulclient.errors import HTTPError
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     launchpadlib_for,
@@ -44,7 +45,7 @@ class TestTeamLinking(TestCaseWithFactory):
             team_one.addMember,
             person=team_two)
         self.assertIn('Cannot link person', api_error.content)
-        self.assertEqual(400, api_error.response.status)
+        self.assertEqual(httplib.FORBIDDEN, api_error.response.status)
 
 
 def test_suite():

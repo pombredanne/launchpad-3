@@ -21,7 +21,8 @@ In this case, the last message in the list, the one just added,
 is now set to be hidden.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> login('foo.bar@canonical.com')
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> message = bug_11.messages[-1]

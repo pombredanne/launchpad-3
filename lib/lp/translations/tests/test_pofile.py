@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -1898,6 +1898,31 @@ class TestPOFile(TestCaseWithFactory):
         naked_product.translationpermission = TranslationPermission.RESTRICTED
 
         self.assertFalse(self.pofile.canEditTranslations(creator))
+
+    def test_hasPluralFormInformation_bluffs_if_irrelevant(self):
+        # If the template has no messages that use plural forms, the
+        # POFile has all the relevant plural-form information regardless
+        # of whether we know the plural forms for the language.
+        language = self.factory.makeLanguage()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=False)
+        self.assertTrue(pofile.hasPluralFormInformation())
+
+    def test_hasPluralFormInformation_admits_defeat(self):
+        # If there are messages with plurals, hasPluralFormInformation
+        # needs the plural-form information for the language.
+        language = self.factory.makeLanguage()
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=True)
+        self.assertFalse(pofile.hasPluralFormInformation())
+
+    def test_hasPluralFormInformation_uses_language_info(self):
+        # hasPluralFormInformation returns True if plural forms
+        # information is available for the language.
+        language = self.factory.makeLanguage(pluralforms=5)
+        pofile, potmsgset = self.factory.makePOFileAndPOTMsgSet(
+            language.code, with_plural=True)
+        self.assertTrue(pofile.hasPluralFormInformation())
 
 
 class TestPOFileTranslationMessages(TestCaseWithFactory):

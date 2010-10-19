@@ -37,8 +37,6 @@ The view also provides more detailed information about what the user can do.
 
 The view has information about the languages plural forms:
 
-    >>> print view.has_plural_form_information
-    True
     >>> print view.number_of_plural_forms
     2
     >>> print view.plural_expression

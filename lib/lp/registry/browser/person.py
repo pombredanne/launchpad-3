@@ -53,6 +53,7 @@ __all__ = [
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
+    'PersonSubscriptionsView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
@@ -205,7 +206,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )
@@ -2189,7 +2190,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         return "Search bugs assigned to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        """Return a URL that can be usedas an href to the simple search."""
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
 
     @property
@@ -2341,6 +2342,59 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     @property
     def label(self):
         return self.getSearchPageHeading()
+
+
+class PersonSubscriptionsView(BugTaskSearchListingView):
+    """All the subscriptions for a person."""
+
+    page_title = 'Subscriptions'
+
+    def subscribedBugTasks(self):
+        """Return a BatchNavigator for distinct bug tasks to which the
+        person is subscribed."""
+        bug_tasks = self.context.searchTasks(None, user=self.user,
+            order_by='-date_last_updated',
+            status=(BugTaskStatus.NEW,
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatus.CONFIRMED,
+                    BugTaskStatus.TRIAGED,
+                    BugTaskStatus.INPROGRESS,
+                    BugTaskStatus.FIXCOMMITTED,
+                    BugTaskStatus.INVALID),
+            bug_subscriber=self.context)
+
+        sub_bug_tasks = []
+        sub_bugs = []
+
+        for task in bug_tasks:
+            if task.bug not in sub_bugs:
+                # We order the bugtasks by date_last_updated but we
+                # always display the default task for the bug. This is
+                # to avoid ordering issues in tests and also prevents
+                # user confusion (because nothing is more confusing than
+                # your subscription targets changing seemingly at
+                # random).
+                sub_bug_tasks.append(task.bug.default_bugtask)
+                sub_bugs.append(task.bug)
+        return BatchNavigator(sub_bug_tasks, self.request)
+
+    def canUnsubscribeFromBugTasks(self):
+        viewed_person = self.context
+        if self.user is None:
+            return False
+        elif viewed_person == self.user:
+            return True
+        elif (viewed_person.is_team and
+              self.user.inTeam(viewed_person)):
+            return True
+
+    def getSubscriptionsPageHeading(self):
+        """The header for the subscriptions page."""
+        return "Subscriptions for %s" % self.context.displayname
+
+    @property
+    def label(self):
+        return self.getSubscriptionsPageHeading()
 
 
 class PersonVouchersView(LaunchpadFormView):

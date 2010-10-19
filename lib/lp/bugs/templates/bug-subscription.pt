@@ -34,10 +34,9 @@
           duplicates.
         </p>
 
-        <form action="." method="POST">
+        <form action="" method="POST">
 
           <div class="field">
-
             <div>
               <div tal:content="structure view/subscription_widget">
                 <input type="radio" />
@@ -47,6 +46,9 @@
           </div>
 
           <div class="actions">
+            <input type="hidden" name="next_url"
+                   tal:condition="view/next_url | nothing"
+                   tal:attributes="value view/next_url" />
             <input tal:condition="not: view/userIsSubscribed"
                    type="submit"
                    name="subscribe"
@@ -55,7 +57,8 @@
                    type="submit"
                    name="unsubscribe"
                    value="Continue" />
-            or <a tal:attributes="href context/fmt:url">Cancel</a>
+                   or <a tal:condition="view/cancel_url | nothing"
+                         tal:attributes="href view/cancel_url">Cancel</a>
           </div>
         </form>
 

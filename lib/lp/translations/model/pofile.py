@@ -176,6 +176,24 @@ def _person_has_not_licensed_translations(person):
         return False
 
 
+def is_admin(user):
+    """Is `user` an admin or Translations admin?"""
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.rosetta_experts)
+
+
+def is_product_owner(user, potemplate):
+    """Is `user` the owner of a `Product` that `potemplate` belongs to?
+
+    A product's owners have edit rights on the product's translations.
+    """
+    productseries = potemplate.productseries
+    if productseries is None:
+        return False
+
+    return user.inTeam(productseries.product.owner)
+
+
 def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
@@ -189,12 +207,12 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
-    if is_read_only():
-        # Nothing can be edited in read-only mode.
+    if person is None:
+        # Anonymous users can't edit anything.
         return False
 
-    # If the person is None, then they cannot edit
-    if person is None:
+    if is_read_only():
+        # Nothing can be edited in read-only mode.
         return False
 
     # XXX Carlos Perello Marin 2006-02-07 bug=4814:
@@ -202,16 +220,12 @@ def _can_edit_translations(pofile, person):
     # security system.
 
     # Rosetta experts and admins can always edit translations.
-    admins = getUtility(ILaunchpadCelebrities).admin
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-    if (person.inTeam(admins) or person.inTeam(rosetta_experts)):
+    if is_admin(person):
         return True
 
     # The owner of the product is also able to edit translations.
-    if pofile.potemplate.productseries is not None:
-        product = pofile.potemplate.productseries.product
-        if person.inTeam(product.owner):
-            return True
+    if is_product_owner(person, pofile.potemplate):
+        return True
 
     # If a person has decided not to license their translations under BSD
     # license they can't edit translations.
@@ -279,6 +293,16 @@ class POFileMixIn(RosettaStats):
     def plural_forms(self):
         """See `IPOFile`."""
         return self.language.guessed_pluralforms
+
+    def hasPluralFormInformation(self):
+        """See `IPOFile`."""
+        if self.language.pluralforms is None:
+            # We have no plural information for this language.  It
+            # doesn't actually matter unless the template contains
+            # messages with plural forms.
+            return not self.potemplate.hasPluralMessage()
+        else:
+            return True
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""

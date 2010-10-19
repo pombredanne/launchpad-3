@@ -18,7 +18,7 @@ from lp.code.interfaces.linkedbranch import (
     get_linked_to_branch,
     ICanHasLinkedBranch,
     )
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     run_with_login,

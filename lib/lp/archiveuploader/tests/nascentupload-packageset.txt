@@ -8,7 +8,7 @@ In order to prepare the tests below some initialization is required.
     >>> from canonical.launchpad.interfaces import (
     ...     IArchivePermissionSet, IPackagesetSet,
     ...     IPersonSet, ISourcePackageNameSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> insecure_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')
@@ -72,7 +72,7 @@ in order to facilitate uploads.
 name16 does not have any package set based upload permissions for 'bar'
 at present.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu_archive = ubuntu.main_archive
     >>> print_permission(

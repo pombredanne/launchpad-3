@@ -11,6 +11,8 @@ import contextlib
 import datetime
 from itertools import repeat
 import logging
+import os
+import stat
 import re
 import rfc822
 import types
@@ -352,6 +354,10 @@ class ErrorReportingUtility:
             return
         filename = entry._filename
         entry.write(open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id
             request.oops = entry

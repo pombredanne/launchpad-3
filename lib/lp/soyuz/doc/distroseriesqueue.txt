@@ -123,7 +123,7 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
 
 Grab an utility:
@@ -161,7 +161,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -1026,7 +1026,7 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+   >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
    >>> cleanupLibrarianFiles()
 
 

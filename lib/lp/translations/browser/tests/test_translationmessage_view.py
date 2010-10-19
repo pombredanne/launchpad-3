@@ -1,22 +1,30 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.errors import UnexpectedFormData
+from lp.testing import (
+    anonymous_logged_in,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.translations.browser.translationmessage import (
+    CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
@@ -168,5 +176,56 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self._assertConfirmEmptyPluralPackaged(True, False, False, False)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
+    """Test `CurrentTranslationMessagePageView` and its base class."""
+
+    layer = ZopelessDatabaseLayer
+
+    def _makeView(self):
+        message = self.factory.makeTranslationMessage()
+        request = LaunchpadTestRequest()
+        view = CurrentTranslationMessagePageView(message, request)
+        view.lock_timestamp = datetime.now(pytz.utc)
+        return view
+
+    def test_extractLockTimestamp(self):
+        view = self._makeView()
+        view.request.form['lock_timestamp'] = u'2010-01-01 00:00:00 UTC'
+        self.assertEqual(
+            datetime(2010, 01, 01, tzinfo=pytz.utc),
+            view._extractLockTimestamp())
+
+    def test_extractLockTimestamp_returns_None_by_default(self):
+        view = self._makeView()
+        self.assertIs(None, view._extractLockTimestamp())
+
+    def test_extractLockTimestamp_returns_None_for_bogus_timestamp(self):
+        view = self._makeView()
+        view.request.form['lock_timestamp'] = u'Hi mom!'
+        self.assertIs(None, view._extractLockTimestamp())
+
+    def test_checkSubmitConditions_passes(self):
+        with person_logged_in(self.factory.makePerson()):
+            view = self._makeView()
+            view._checkSubmitConditions()
+
+    def test_checkSubmitConditions_requires_lock_timestamp(self):
+        with person_logged_in(self.factory.makePerson()):
+            view = self._makeView()
+            view.lock_timestamp = None
+            self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
+
+    def test_checkSubmitConditions_rejects_anonymous_request(self):
+        with anonymous_logged_in():
+            view = self._makeView()
+            self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
+
+    def test_checkSubmitConditions_rejects_license_decliners(self):
+        # Users who have declined the relicensing agreement can't post
+        # translations.
+        decliner = self.factory.makePerson()
+        ITranslationsPerson(decliner).translations_relicensing_agreement = (
+            False)
+        with person_logged_in(decliner):
+            view = self._makeView()
+            self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
