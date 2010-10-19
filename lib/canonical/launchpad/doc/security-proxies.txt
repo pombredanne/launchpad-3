@@ -11,8 +11,6 @@ First, some imports and set up::
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.person import Person
 
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
 Get a proxied and unproxied person object for the same person, and demonstrate
 working comparisons::
 
@@ -57,8 +55,3 @@ DB schema objects should be comparable correctly when proxied...
     True
     >>> hoary.status is SeriesStatus.DEVELOPMENT
     False
-
-Finally, tear down the test:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-

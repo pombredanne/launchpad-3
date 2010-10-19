@@ -250,6 +250,7 @@ The BugHeatUpdater class
 The BugHeatUpdater class is used to create bug heat calculation jobs for
 bugs with out-of-date heat.
 
+    >>> from lp.scripts.garbo import BugHeatUpdater
     >>> from canonical.launchpad.scripts import FakeLogger
     >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
 

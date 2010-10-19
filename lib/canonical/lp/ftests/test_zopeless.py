@@ -14,9 +14,11 @@ import psycopg2
 from sqlobject import StringCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
-from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing.layers import LaunchpadScriptLayer
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    )
 
 
 class MoreBeer(SQLBase):
@@ -28,6 +30,7 @@ class MoreBeer(SQLBase):
 
 
 class TestInitZopeless(unittest.TestCase):
+
     layer = LaunchpadScriptLayer
 
     def test_initZopelessTwice(self):
@@ -47,10 +50,11 @@ class TestInitZopeless(unittest.TestCase):
             # Calling initZopeless with the same arguments twice should return
             # the exact same object twice, but also emit a warning.
             try:
-                tm1 = initZopeless(dbname=PgTestSetup().dbname, dbhost='',
-                        dbuser='launchpad')
-                tm2 = initZopeless(dbname=PgTestSetup().dbname, dbhost='',
-                        dbuser='launchpad')
+                dbname = DatabaseLayer._db_fixture.dbname
+                tm1 = initZopeless(
+                    dbname=dbname, dbhost='', dbuser='launchpad')
+                tm2 = initZopeless(
+                    dbname=dbname, dbhost='', dbuser='launchpad')
                 self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
             finally:
@@ -65,10 +69,11 @@ class TestInitZopeless(unittest.TestCase):
 
 
 class TestZopeless(unittest.TestCase):
+
     layer = LaunchpadScriptLayer
 
     def setUp(self):
-        self.tm = initZopeless(dbname=PgTestSetup().dbname,
+        self.tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
                                dbuser='launchpad')
 
         c = cursor()
@@ -182,7 +187,7 @@ class TestZopeless(unittest.TestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg2.connect('dbname=' + PgTestSetup().dbname)
+        conn = psycopg2.connect('dbname=' + DatabaseLayer._db_fixture.dbname)
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "
@@ -202,7 +207,7 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> tm = initZopeless(dbname=PgTestSetup().dbname,
+    >>> tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
     ...     dbhost='', dbuser='launchpad')
     >>> isZopeless()
     True
