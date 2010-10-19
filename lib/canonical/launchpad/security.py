@@ -61,6 +61,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
@@ -655,9 +656,10 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Only the Launchpad admins need this, we are only going to use it
-        for connecting up series and distroseriess where we did not have
-        them."""
+        """Only the Launchpad admins need this, we are only going to use
+        it for connecting up series and distroseries where we did not
+        have them.
+        """
         return user.in_admin
 
 
@@ -893,7 +895,21 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     usedfor = IDistributionSourcePackage
 
     def checkAuthenticated(self, user):
-        return (user.inTeam(self.obj.distribution.owner) or
+        return (user.inTeam(self.obj.distribution.bug_supervisor) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.in_admin)
+
+
+class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
+    AuthorizationBase):
+    """Product's owner and bug supervisor can set official bug tags."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IOfficialBugTagTargetRestricted
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.bug_supervisor) or
+                user.inTeam(self.obj.owner) or
                 user.in_admin)
 
 
@@ -1929,7 +1945,7 @@ class ViewHWSubmission(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Can the user view the submission details?
 
-        Submissions that not marked private are publicly visible,
+        Submissions that are not marked private are publicly visible,
         private submissions may only be accessed by their owner and by
         admins.
         """

@@ -575,7 +575,7 @@ class BugzillaAPI(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug['alias'] != '':
+            if remote_bug.get('alias', '') != '':
                 self._bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     @ensure_no_transaction

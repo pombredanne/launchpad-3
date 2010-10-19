@@ -22,6 +22,20 @@
         />
     <browser:page
         for="*"
+        name="launchpad_form"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-form.pt"
+        />
+    <browser:page
+        for="*"
+        name="launchpad_widget_macros"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-widget-macros.pt"
+        />
+    <browser:page
+        for="*"
         name="+related-pages"
         class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
         template="../templates/navigationmenu-related-pages.pt"

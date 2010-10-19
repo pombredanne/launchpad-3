@@ -2425,7 +2425,7 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
     }
-table#packages_list tr.superseded {
+table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
     }
 ul.latest-ppa-updates li:nth-child(odd) {

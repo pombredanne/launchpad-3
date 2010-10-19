@@ -122,16 +122,6 @@ class RequestHelpers:
             'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
-def get_body_text(email):
-    """A helper to retrieve the text body of a test run mail.
-
-    :param email: An email.mime.MultiPartMime object.
-    """
-    # Stringify the utf8-encoded MIME text message part containing the
-    # test run summary.
-    return email.get_payload(0).get_payload(decode=True)
-
-
 class TestFlagFallStream(TestCase):
     """Tests for `FlagFallStream`."""
 
@@ -536,8 +526,8 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
-        self.assertEqual("foo", get_body_text(email))
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertEqual("foo", body.get_payload())
 
     def test_report_email_attachment(self):
         req = self.make_request(emails=['foo@example.com'])
@@ -779,7 +769,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
         self.assertEqual(
             logger.get_summary_contents(), body.get_payload(decode=True))
         self.assertIsInstance(attachment, MIMEApplication)
@@ -848,7 +838,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertNotEqual([], email_log)
         [tester_msg] = email_log
         self.assertEqual('foo@example.com', tester_msg['To'])
-        self.assertIn('ZeroDivisionError', get_body_text(tester_msg))
+        self.assertIn('ZeroDivisionError', str(tester_msg))
 
 
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
@@ -896,6 +886,9 @@ class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
 
 class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     """Tests for how we handle the result at the end of the test suite."""
+
+    def get_body_text(self, email):
+        return email.get_payload()[0].get_payload()
 
     def make_empty_result(self):
         return TestResult()
@@ -950,7 +943,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(message, pqm_message)
         self.assertIn(
             'SUBMITTED TO PQM:\n%s' % (message['Subject'],),
-            get_body_text(user_message))
+            self.get_body_text(user_message))
 
     def test_doesnt_submit_to_pqm_on_failure(self):
         log = []
@@ -971,7 +964,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [user_message] = log
         self.assertIn(
             '**NOT** submitted to PQM:\n%s' % (message['Subject'],),
-            get_body_text(user_message))
+            self.get_body_text(user_message))
 
     def test_email_refers_to_attached_log(self):
         log = []
@@ -982,7 +975,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         [user_message] = log
         self.assertIn(
             '(See the attached file for the complete log)\n',
-            get_body_text(user_message))
+            self.get_body_text(user_message))
 
     def test_email_body_is_format_result(self):
         # The body of the email sent to the user is the summary file.
@@ -993,11 +986,10 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         result = self.make_failing_result()
         logger.got_result(result)
         [user_message] = log
-        error_result_string = request.format_result(
-                result, logger._start_time, logger._end_time)
         self.assertEqual(
-            error_result_string,
-            get_body_text(user_message))
+            request.format_result(
+                result, logger._start_time, logger._end_time),
+            self.get_body_text(user_message).decode('quoted-printable'))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.
