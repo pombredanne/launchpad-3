@@ -252,9 +252,9 @@ def parse_control(control_filename):
 
 
 def extract_source(dsc_filename):
-    oldcwd = os.getcwd()
     # Create and move into a temporary directory
-    tmpdir = tempfile.mktemp()
+    tmpdir = tempfile.mkdtemp()
+    old_cwd = os.getcwd()
 
     # Extract the source package
     try:
@@ -266,7 +266,8 @@ def extract_source(dsc_filename):
             "'dpkg-source -x' failed for %s [return code: %s]." %
             (dsc_filename, e.result))
 
-    return (oldcwd, tmpdir)
+    os.chdir(tmpdir)
+    return (old_cwd, tmpdir)
 
 
 def cleanup_source(tmpdir, old_cwd, dsc):
