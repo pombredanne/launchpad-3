@@ -5,15 +5,23 @@
 
 import simplejson
 
+import transaction
+
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.testing import (
+    ANONYMOUS,
     person_logged_in,
+    launchpadlib_for,
     TestCaseWithFactory,
+    ws_object,
     )
 
 
@@ -87,3 +95,24 @@ class TestBranchMergeQueue(TestCaseWithFactory):
             InvalidMergeQueueConfig,
             queue.setMergeQueueConfig,
             'abc')
+
+
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestWebservice, self).setUp()
+        with person_logged_in(ANONYMOUS):
+            self.user = self.factory.makePerson()
+            transaction.commit()
+            self.launchpad = launchpadlib_for('test', self.user,
+                service_root="http://api.launchpad.dev:8085")
+
+    def test_properties(self):
+        """Test that the correct properties are exposed."""
+        db_queue = self.factory.makeBranchMergeQueue()
+        transaction.commit()
+
+        with person_logged_in(self.user):
+            queue = ws_object(self.launchpad, self.user)

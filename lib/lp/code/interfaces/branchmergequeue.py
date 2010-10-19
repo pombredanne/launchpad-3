@@ -10,6 +10,9 @@ __all__ = [
     'IBranchMergeQueueSource',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
@@ -31,6 +34,8 @@ from lp.services.fields import (
 
 class IBranchMergeQueue(Interface):
     """An interface for managing branch merges."""
+
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
