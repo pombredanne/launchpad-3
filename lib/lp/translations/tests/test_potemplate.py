@@ -505,4 +505,4 @@ class TestGetPOFilesFor(TestCaseWithFactory):
 
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
-        self.assertTrue(isinstance(pofile, DummyPOFile))
+        self.assertIsInstance(pofile, DummyPOFile)
