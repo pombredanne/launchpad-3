@@ -10,8 +10,6 @@ __all__ = [
     ]
 
 import re
-from StringIO import StringIO
-import urllib
 from urllib2 import (
     HTTPError,
     urlopen,
@@ -60,7 +58,8 @@ class BugzillaRemoteComponentScraper:
         if soup is None:
             return None
 
-        # Load products into a list since Bugzilla references them by index number
+        # Load products into a list since Bugzilla references them
+        # by index number
         products = []
         for product in soup.find(
             name='select',
@@ -113,8 +112,10 @@ class BugzillaRemoteComponentFinder:
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
         lp_bugtrackers = getUtility(IBugTrackerSet)
         if bugtracker_name is not None:
-            lp_bugtrackers = lp_bugtrackers.getByName(bugtracker_name)
-            if not lp_bugtrackers:
+            lp_bugtrackers = [
+                lp_bugtrackers.getByName(bugtracker_name),
+                ]
+            if not lp_bugtrackers or len(lp_bugtrackers) != 1:
                 self.logger.warning(
                     "Could not find specified bug tracker %s",
                     bugtracker_name)
@@ -137,7 +138,8 @@ class BugzillaRemoteComponentFinder:
                     self.logger.info("...Fetching page")
                     page_text = bz_bugtracker.getPage()
                 except HTTPError, error:
-                    self.logger.error("Error fetching %s: %s" % (url, error))
+                    self.logger.error(
+                        "Error fetching %s: %s" % (base_url, error))
                     continue
 
             self.logger.info("...Parsing html")
@@ -168,7 +170,8 @@ class BugzillaRemoteComponentFinder:
                         # or a user has configured it, so ignore it
                         del product['components'][component.name]
                     else:
-                        # Component is now missing from Bugzilla, so drop it here too
+                        # Component is now missing from Bugzilla,
+                        # so drop it here too
                         component.remove()
 
             # Remaining components in the collection need added to launchpad
@@ -182,11 +185,10 @@ class BugzillaRemoteComponentFinder:
             INSERT INTO BugTrackerComponent
             (name, component_group, is_visible, is_custom)
             VALUES %s""" % ",\n ".join(components_to_add)
+
             self.logger.warning("...Inserting components into database")
-            #print sqltext
             store = IStore(BugTrackerComponent)
             store.execute(sqltext)
             store.commit()
             store.flush()
-        self.logger.warning("...Done")
-
+            self.logger.warning("...Done")
