@@ -74,9 +74,8 @@ class TestCronscriptBase(unittest.TestCase):
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
 
-        # 'runners' commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully
-        # tear down and restore the database.
+        # 'runners' commit to the test database in subprocesses, so we need to
+        # tell the layer to fully tear down and restore the database.
         DatabaseLayer.force_dirty_database()
 
         return rc, out, err

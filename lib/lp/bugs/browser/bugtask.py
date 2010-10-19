@@ -2297,12 +2297,18 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @cachedproperty
     def bug_tracking_usage(self):
-        """Whether the context tracks bugs in launchpad.
+        """Whether the context tracks bugs in Launchpad.
 
         :returns: ServiceUsage enum value
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
+
+    @property
+    def page_title(self):
+        return "Bugs in %s" % self.context.title
+
+    label = page_title
 
     @property
     def schema(self):
@@ -2838,8 +2844,12 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return False
 
     @property
+    def should_show_bug_information(self):
+        return self.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+
+    @property
     def form_has_errors(self):
-        """Return True of the form has errors, otherwise False."""
+        """Return True if the form has errors, otherwise False."""
         return len(self.errors) > 0
 
     def validateVocabulariesAdvancedForm(self):

@@ -189,6 +189,41 @@ class ProvidesAndIsProxied(Matcher):
         return IsProxied().match(matchee)
 
 
+class DoesNotContain(Mismatch):
+
+    def __init__(self, matchee, expected):
+        """Create a DoesNotContain Mismatch.
+
+        :param matchee: the string that did not match.
+        :param expected: the string that `matchee` was expected to contain.
+        """
+        self.matchee = matchee
+        self.expected = expected
+
+    def describe(self):
+        return "'%s' does not contain '%s'." % (
+            self.matchee, self.expected)
+
+
+class Contains(Matcher):
+    """Checks whether one string contains another."""
+
+    def __init__(self, expected):
+        """Create a Contains Matcher.
+
+        :param expected: the string that matchees should contain.
+        """
+        self.expected = expected
+
+    def __str__(self):
+        return "Contains '%s'." % self.expected
+
+    def match(self, matchee):
+        if self.expected not in matchee:
+            return DoesNotContain(matchee, self.expected)
+        return None
+
+
 class IsConfiguredBatchNavigator(Matcher):
     """Check that an object is a batch navigator."""
 
