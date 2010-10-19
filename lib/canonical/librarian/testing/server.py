@@ -5,10 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'cleanupLibrarianFiles',
     'fillLibrarianFile',
     'LibrarianServerFixture',
-    'LibrarianTestSetup',
     ]
 
 import os
@@ -196,13 +194,6 @@ class LibrarianServerFixture(TacTestSetup):
         return os.path.join(self.root, 'librarian.log')
 
 
-_global_fixture = LibrarianServerFixture()
-
-def LibrarianTestSetup():
-    """Support the stateless lie."""
-    return _global_fixture
-
-
 def fillLibrarianFile(fileid, content='Fake Content'):
     """Write contents in disk for a librarian sampledata."""
     filepath = os.path.join(
@@ -214,8 +205,3 @@ def fillLibrarianFile(fileid, content='Fake Content'):
     libfile = open(filepath, 'wb')
     libfile.write(content)
     libfile.close()
-
-
-def cleanupLibrarianFiles():
-    """Remove all librarian files present in disk."""
-    _global_fixture.clear()
