@@ -533,7 +533,6 @@ class ValidPersonOrTeamVocabulary(
             public_tables = [
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-                LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
 
             # Create an inner query that will match public persons and teams
@@ -579,11 +578,8 @@ class ValidPersonOrTeamVocabulary(
                     Or(# A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
-
-                       # Or a person who has an active account and a working
-                       # email address.
-                       And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))),
+                       # Or a person who has a preferred email address.
+                       EmailAddress.status == EmailAddressStatus.PREFERRED),
                     self.extra_clause))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
@@ -596,30 +592,23 @@ class ValidPersonOrTeamVocabulary(
             # Searching for private teams that match can be easier since we
             # are only interested in teams.  Teams can have email addresses
             # but we're electing to ignore them here.
-            private_inner_select = SQL("""
-                SELECT Person.id
-                FROM Person
-                WHERE Person.fti @@ ftq(?)
-                LIMIT ?
-                """, (text, self.LIMIT))
             private_result = self.store.using(*private_tables).find(
                 Person,
                 And(
-                    Person.id.is_in(private_inner_select),
+                    SQL('Person.fti @@ ftq(?)', [text]),
                     private_query,
                     )
                 )
 
-            # The private query doesn't need to be ordered as it will be done
-            # at the end, and we need to eliminate the default ordering.
-            private_result.order_by()
+            private_result.order_by(SQL('rank(fti, ftq(?)) DESC', [text]))
+            private_result.config(limit=self.LIMIT)
 
             combined_result = public_result.union(private_result)
             # Eliminate default ordering.
             combined_result.order_by()
             # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
-            # is a work-around for .count() not working with the 'distinct'
-            # option.
+            # _get_select() is a work-around for .count() not working
+            # with the 'distinct' option.
             subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
             result = self.store.using(subselect).find((Person, exact_match))
@@ -755,8 +744,8 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
             Person.id NOT IN (
                 SELECT team FROM TeamParticipation
                 WHERE person = %d
-                ) AND Person.id != %d
-            """ % (self.team.id, self.team.id)
+                )
+            """ % self.team.id
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
