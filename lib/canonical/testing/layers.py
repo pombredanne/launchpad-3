@@ -1681,7 +1681,7 @@ class LayerProcessController:
     appserver = None
 
     # The config used by the spawned app server.
-    appserver_config = CanonicalConfig('testrunner-appserver', 'runlaunchpad')
+    appserver_config = None
 
     # The SMTP server for layer tests.  See
     # configs/testrunner-appserver/mail-configure.zcml
@@ -1689,6 +1689,13 @@ class LayerProcessController:
 
     # The DB fixture in use
     _db_fixture = None
+
+    @classmethod
+    def setUp(cls):
+        cls.appserver_config = CanonicalConfig(
+            BaseLayer.appserver_config_name, 'runlaunchpad')
+        cls.startSMTPServer()
+        cls.startAppServer()
 
     @classmethod
     @profiled
@@ -1879,8 +1886,7 @@ class AppServerLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        LayerProcessController.startSMTPServer()
-        LayerProcessController.startAppServer()
+        LayerProcessController.setUp()
 
     @classmethod
     @profiled
@@ -1906,8 +1912,7 @@ class ZopelessAppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        LayerProcessController.startSMTPServer()
-        LayerProcessController.startAppServer()
+        LayerProcessController.setUp()
 
     @classmethod
     @profiled
@@ -1933,8 +1938,7 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        LayerProcessController.startSMTPServer()
-        LayerProcessController.startAppServer()
+        LayerProcessController.setUp()
 
     @classmethod
     @profiled
