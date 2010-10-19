@@ -29,6 +29,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     )
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -69,9 +70,14 @@ def assessFailureCounts(builder, fail_notes):
 
     if builder.failure_count > build_job.failure_count:
         # The builder has failed more than the jobs it's been
-        # running, so let's disable it and re-schedule the build.
-        builder.failBuilder(fail_notes)
+        # running.
+
+        # Re-schedule the build.
         current_job.reset()
+
+        if builder.failure_count >= Builder.FAILURE_THRESHOLD:
+            # It's also gone over the threshold so let's disable it.
+            builder.failBuilder(fail_notes)
     else:
         # The job is the culprit!  Override its status to 'failed'
         # to make sure it won't get automatically dispatched again,

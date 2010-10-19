@@ -47,6 +47,7 @@ from lp.buildmaster.manager import (
     NewBuildersScanner,
     SlaveScanner,
     )
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
@@ -465,6 +466,15 @@ class TestFailureAssessments(TestCaseWithFactory):
         assessFailureCounts(self.builder, "failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
+
+    def test_builder_failing_more_than_job_but_under_fail_threshold(self):
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertTrue(self.builder.builderok)
+
 
 
 class TestNewBuilders(TrialTestCase):

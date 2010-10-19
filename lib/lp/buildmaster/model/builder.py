@@ -346,6 +346,10 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
+    # The number of times a builder can consecutively fail before we
+    # give up and mark it builderok=False.
+    FAILURE_THRESHOLD = 5
+
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
         if not safe_hasattr(self, '_current_build_behavior'):
