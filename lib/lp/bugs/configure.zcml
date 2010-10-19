@@ -395,10 +395,10 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
-                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -477,12 +477,15 @@
                     name
                     is_visible
                     is_custom
+                    distro_source_package
+                    component_group
                     "/>
             <require
                 permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>

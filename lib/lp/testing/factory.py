@@ -1393,7 +1393,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if bug_tracker is None:
             bug_tracker = self.makeBugTracker()
 
@@ -1404,7 +1404,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 custom=None):
         """Make a new bug tracker component."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if component_group is None:
             component_group = self.makeBugTrackerComponentGroup()
         if custom is None:
