@@ -10,7 +10,7 @@ To demonstrate this, a few fixed bugs must be created.
     >>> from canonical.launchpad.ftests import login, logout
     >>> import transaction
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     )

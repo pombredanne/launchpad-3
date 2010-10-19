@@ -3,7 +3,7 @@
 Launchpad models GPG keys in a GPGKey class.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.gpg (
+    >>> from lp.registry.interfaces.gpg import (
     ...     GPGKeyAlgorithm,
     ...     IGPGKeySet,
     ...     )

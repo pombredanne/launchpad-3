@@ -385,7 +385,7 @@ Search for attachments
 We can search for attachment of a specific types:
 
     >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams,
     ...     IBugTaskSet,
     ...     )

@@ -155,7 +155,7 @@ HWSubmission table.
     >>> import pytz
     >>> from StringIO import StringIO
     >>> from datetime import datetime
-    >>> from lp.hardwaredb.interfaces.hwdb (
+    >>> from lp.hardwaredb.interfaces.hwdb import (
     ...     HWSubmissionFormat,
     ...     IHWSubmissionSet,
     ...     )

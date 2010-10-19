@@ -11,7 +11,7 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.tests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
-    >>> from lp.registry.interfaces.person (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     PersonalStanding,
     ...     )

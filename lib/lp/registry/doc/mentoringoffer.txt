@@ -86,7 +86,7 @@ So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     IBugTaskSet,

@@ -13,7 +13,7 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from lp.registry.interfaces.person (
+    >>> from lp.registry.interfaces.person import (
     ...     TeamMembershipRenewalPolicy,
     ...     TeamSubscriptionPolicy,
     ...     )

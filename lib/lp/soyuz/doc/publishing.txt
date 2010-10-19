@@ -4,7 +4,7 @@ SourcePackagePublishingHistory
 
 This class provides public access to publishing records via a SQL view.
 
-    >>> from canonical.launchpad.database (
+    >>> from canonical.launchpad.database import (
     ...     BinaryPackagePublishingHistory,
     ...     SourcePackagePublishingHistory,
     ...     )
@@ -31,7 +31,7 @@ Verify if the object follows its interface contracts:
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
-    >>> from lp.soyuz.interfaces.publishing (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackagePublishingHistory,
     ...     )
@@ -300,7 +300,7 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
 Stanza generation
 =================
 
-    >>> from lp.soyuz.interfaces.publishing (
+    >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackageFilePublishing,
     ...     )

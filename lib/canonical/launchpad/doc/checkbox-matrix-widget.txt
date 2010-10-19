@@ -10,7 +10,7 @@ page.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.interfaces.product (
+    >>> from lp.registry.interfaces.product import (
     ...     IProduct,
     ...     IProductSet,
     ...     License,

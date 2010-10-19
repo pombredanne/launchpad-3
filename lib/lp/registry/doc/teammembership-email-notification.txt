@@ -27,11 +27,11 @@ for the member.
     ...     pop_notifications, print_distinct_emails, run_mail_jobs)
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     TeamMembershipRenewalPolicy,
     ...     )
-    >>> from lp.registry.interfaces.teammembership (
+    >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet,
     ...     TeamMembershipStatus,
     ...     )

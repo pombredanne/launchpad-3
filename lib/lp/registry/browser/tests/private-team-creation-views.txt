@@ -7,7 +7,7 @@ admins.
 
 Unprivileged users do not see the visibility widget.
 
-    >>> from lp.registry.interfaces.person (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     PersonVisibility,
     ...     )

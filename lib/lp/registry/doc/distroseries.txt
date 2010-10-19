@@ -23,7 +23,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.distroseries (
+    >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeries,
     ...     IDistroSeriesSet,
     ...     )

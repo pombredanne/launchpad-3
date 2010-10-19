@@ -52,7 +52,7 @@ lib/lp/translations/doc/canonical_url_examples.txt.
 
 == Persons and Teams ==
 
-    >>> from lp.registry.interfaces.codeofconduct (
+    >>> from lp.registry.interfaces.codeofconduct import (
     ...     ICodeOfConductSet,
     ...     ISignedCodeOfConductSet,
     ...     )

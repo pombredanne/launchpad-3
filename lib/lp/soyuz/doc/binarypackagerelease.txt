@@ -5,7 +5,7 @@ across build records.
 
    >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.webapp.testing import verifyObject
-   >>> from lp.soyuz.interfaces.binarypackagerelease (
+   >>> from lp.soyuz.interfaces.binarypackagerelease import (
    ...     IBinaryPackageRelease,
    ...     IBinaryPackageReleaseSet,
    ...     )

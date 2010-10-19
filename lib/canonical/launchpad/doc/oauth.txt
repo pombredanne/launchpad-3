@@ -13,7 +13,7 @@ OAuthConsumerSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     AccessLevel, OAuthPermission)
-    >>> from canonical.launchpad.interfaces.oauth (
+    >>> from canonical.launchpad.interfaces.oauth import (
     ...     IOAuthAccessToken,
     ...     IOAuthConsumer,
     ...     IOAuthConsumerSet,

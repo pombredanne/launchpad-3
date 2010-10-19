@@ -228,11 +228,11 @@ Create the katie user and register it in a team that is allowed to
 do uploads:
 
   >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-  >>> from lp.registry.interfaces.gpg (
+  >>> from lp.registry.interfaces.gpg import (
   ...     GPGKeyAlgorithm,
   ...     IGPGKeySet,
   ...     )
-  >>> from lp.registry.interfaces.person (
+  >>> from lp.registry.interfaces.person import (
   ...     IPersonSet,
   ...     PersonCreationRationale,
   ...     )

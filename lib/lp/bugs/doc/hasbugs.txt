@@ -30,7 +30,7 @@ values to have some sample data for the examples that follow.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     IBugTaskSet,

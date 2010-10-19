@@ -126,7 +126,7 @@ email address.
 If we add a new guessed email address, it will be included in the
 guessed list.
 
-    >>> from canonical.launchpad.interfaces.emailaddress (
+    >>> from canonical.launchpad.interfaces.emailaddress import (
     ...     EmailAddressStatus,
     ...     IEmailAddressSet,
     ...     )

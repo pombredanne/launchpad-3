@@ -438,7 +438,7 @@ getMessageForComment() will return an imported comment as a Launchpad
 Message. It requires a Person instance to be used as the Message's
 owner, so we'll turn Teun Vink into a Person.
 
-    >>> from lp.registry.interfaces.person (
+    >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     PersonCreationRationale,
     ...     )

@@ -41,7 +41,7 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     )

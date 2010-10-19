@@ -211,7 +211,7 @@ Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus,
     ...     IDistroBugTask,
     ...     )

@@ -4,7 +4,7 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams,
     ...     IBugTaskSet,
     ...     )
@@ -295,7 +295,7 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     )
@@ -742,7 +742,7 @@ It's possible to search for bugs with an attachment of a certain type.
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> from canonical.launchpad.interfaces.message import IMessageSet
-    >>> from lp.bugs.interfaces.bugattachment (
+    >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
     ...     IBugAttachmentSet,
     ...     )

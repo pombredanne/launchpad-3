@@ -72,7 +72,7 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus,
     ...     IDistroBugTask,
     ...     )

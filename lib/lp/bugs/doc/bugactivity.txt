@@ -23,7 +23,7 @@ are simple little functions.
     >>> from lazr.lifecycle.event import (
     ...     ObjectCreatedEvent, ObjectModifiedEvent)
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     IBugTaskSet,
     ...     IDistroBugTask,
     ...     IUpstreamBugTask,

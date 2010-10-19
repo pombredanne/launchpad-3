@@ -6,7 +6,7 @@ implementation of IBugTaskSet, allowing retrieval of any bug task in
 Launchpad. We'll use this implementation for demonstration purposes:
 
     >>> from lp.app.errors import NotFoundError
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     IBugTask,
     ...     IBugTaskSet,
     ...     )

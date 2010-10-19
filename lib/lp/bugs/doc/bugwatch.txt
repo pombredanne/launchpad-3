@@ -420,7 +420,7 @@ creating a bug task with a conjoined master.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> from lp.bugs.interfaces.bugtracker (
+    >>> from lp.bugs.interfaces.bugtracker import (
     ...     BugTrackerType,
     ...     IBugTrackerSet,
     ...     )

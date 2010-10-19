@@ -31,7 +31,7 @@ findExpirableBugTasks() requires a parameter for the minimum days old
 (min_days_old) that the bugtask has been in the unattended Incomplete
 status. It also requires specifying the user that is doing the search.
 
-    >>> from lp.bugs.interfaces.bugtask (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus,
     ...     IBugTaskSet,
     ...     )

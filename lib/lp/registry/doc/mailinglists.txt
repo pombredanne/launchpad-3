@@ -7,7 +7,7 @@ requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.mailinglist (
+    >>> from lp.registry.interfaces.mailinglist import (
     ...     IMailingList,
     ...     IMailingListSet,
     ...     )

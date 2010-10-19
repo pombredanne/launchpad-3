@@ -7,7 +7,7 @@ common external bug tracker.
 
     # Some basic imports
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.projectgroup (
+    >>> from lp.registry.interfaces.projectgroup import (
     ...     IProjectGroup,
     ...     IProjectGroupSet,
     ...     )
