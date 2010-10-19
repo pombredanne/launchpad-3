@@ -54,6 +54,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
@@ -229,8 +230,9 @@ class BranchJobDerived(BaseRunnableJob):
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.context == other.context)
+        if self.__class__ != other.__class__:
+            return False
+        return self.context == removeSecurityProxy(other).context
 
     def __ne__(self, other):
         return not (self == other)
