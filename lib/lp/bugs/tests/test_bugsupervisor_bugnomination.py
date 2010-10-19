@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from canonical.launchpad.ftests import (
     login,
+    login_person,
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -27,6 +28,7 @@ class AddNominationTestMixin:
         self.bug_supervisor = self.factory.makePerson(name='no-ordinary-user')
         self.owner = self.factory.makePerson(name='extraordinary-user')
         self.setUpTarget()
+        logout()
 
     def tearDown(self):
         logout()
@@ -35,18 +37,21 @@ class AddNominationTestMixin:
     def test_user_addNominationFor_series(self):
         # A bug may not be nominated for a series of a product with an
         # existing task by just anyone.
+        login_person(self.user)
         self.assertRaises(NominationError,
             self.bug.addNomination, self.user, self.series)
 
     def test_bugsupervisor_addNominationFor_series(self):
         # A bug may be nominated for a series of a product with an
         # exisiting task by the product's bug supervisor.
+        login_person(self.bug_supervisor)
         self.bug.addNomination(self.bug_supervisor, self.series)
         self.assertTrue(len(self.bug.getNominations()), 1)
 
     def test_owner_addNominationFor_series(self):
         # A bug may be nominated for a series of a product with an
         # exisiting task by the product's owner.
+        login_person(self.owner)
         self.bug.addNomination(self.owner, self.series)
         self.assertTrue(len(self.bug.getNominations()), 1)
 

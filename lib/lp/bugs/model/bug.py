@@ -102,6 +102,7 @@ from canonical.launchpad.interfaces.message import (
     IndexedMessage,
     )
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -1500,18 +1501,10 @@ BugMessage""" % sqlvalues(self.id))
             productseries = target
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        if (distroseries and distroseries.distribution.bug_supervisor
-            and not owner.inTeam(distroseries.distribution.bug_supervisor)
-            and not owner.inTeam(distroseries.distribution.owner)
-            and not owner.inTeam(admins)):
+        if not (check_permission("launchpad.BugSupervisor", target) or
+                check_permission("launchpad.Driver", target)):
             raise NominationError(
-                "Only bug supervisors can nominate bugs.")
-        elif (productseries and productseries.bug_supervisor and not
-              owner.inTeam(productseries.bug_supervisor)
-              and not owner.inTeam(productseries.owner)
-              and not owner.inTeam(admins)):
-            raise NominationError(
-                "Only bug supervisors can nominate bugs.")
+                "Only bug supervisors or owners can nominate bugs.")
 
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,
