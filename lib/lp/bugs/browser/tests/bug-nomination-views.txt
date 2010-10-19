@@ -56,7 +56,6 @@ Here's an example of nominating a bug for a distroseries.
 
 (Add objects to the LaunchBag that will be used by the view.)
 
-
     >>> launchbag.clear()
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
     >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
@@ -180,7 +179,7 @@ distribution's bugtasks that are nominated for this release, with a
 widget set up for accepting/declining the nomination. The widget is only
 set up if the user has permission to approve the nomination.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> login_person(nominator)
     >>> no_priv = getUtility(ILaunchBag).user
     >>> ubuntu_bug = ubuntu.createBug(CreateBugParams(

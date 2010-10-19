@@ -52,7 +52,7 @@ was nominated and the user that submitted the nomination (the "owner").
 
 Let's create another nomination, this time on a product series.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
 
@@ -174,7 +174,7 @@ as "Nominated".
 Nomination status changes have an associated workflow. For this reason,
 setting status directly is not possible.
 
-    >>> from canonical.launchpad.interfaces import BugNominationStatus
+    >>> from lp.bugs.interfaces.bugnomination import BugNominationStatus
 
     >>> nomination.status = BugNominationStatus.APPROVED
     Traceback (most recent call last):
@@ -186,7 +186,7 @@ decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
 
@@ -223,7 +223,7 @@ the target of the nomination and the status is set to APPROVED.
 For example, there are currently no bugtasks on the firefox_trunk
 productseries.
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
     >>> params = BugTaskSearchParams(user=no_privs, bug=bug_one)
     >>> found_tasks = firefox_trunk.searchTasks(params)
@@ -254,7 +254,7 @@ When a distribution bug nomination is approved, a task is created for
 each package the bug affects in that distro. For example, let's ensure
 bug #1 affects more than one Ubuntu package.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
 
@@ -620,7 +620,7 @@ The same is done if the distribution task's source package is changed.
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
 
-    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
     >>> getUtility(IBugNominationSet).get(1)
     <BugNomination at ...>
@@ -654,7 +654,7 @@ Nominating a bug for an obsolete distroseries raises a
 NominationSeriesObsoleteError. Let's make a new obsolete distroseries
 to demonstrate.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu_edgy = factory.makeDistroRelease(

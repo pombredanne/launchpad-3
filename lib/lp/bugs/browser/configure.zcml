@@ -725,7 +725,7 @@
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+subscribe"
-            class="lp.bugs.browser.bugtask.BugTaskView"
+            class="lp.bugs.browser.bugsubscription.BugSubscriptionSubscribeSelfView"
             permission="launchpad.AnyPerson"
             template="../templates/bug-subscription.pt"/>
         <browser:page
