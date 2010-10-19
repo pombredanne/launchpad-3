@@ -49,7 +49,7 @@ class FTPServer:
             self.root_dir, port=self.port, cmd='echo CLOSED')
         self.poppy.startPoppy()
 
-    def tearDown(self):
+    def cleanUp(self):
         self.poppy.killPoppy()
 
     def getTransport(self):
@@ -129,7 +129,7 @@ class SFTPServer:
         self._tac = PoppyTac(self.root_dir)
         self._tac.setUp()
 
-    def tearDown(self):
+    def cleanUp(self):
         shutil.rmtree(self._home_dir)
         os.environ['HOME'] = self._current_home
         self._tac.tearDown()
@@ -199,7 +199,7 @@ class TestPoppy(TestCaseWithFactory):
         super(TestPoppy, self).setUp()
         self.root_dir = self.makeTemporaryDirectory()
         self.server = self.server_factory(self.root_dir, self.factory)
-        self.installFixture(self.server)
+        self.useFixture(self.server)
 
     def _uploadPath(self, path):
         """Return system path of specified path inside an upload.

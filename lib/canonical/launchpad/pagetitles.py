@@ -146,8 +146,6 @@ bugbranch_delete = 'Delete bug branch link'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
 
-buglisting_default = ContextTitle("Bugs in %s")
-
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()

@@ -7,7 +7,7 @@ Test harness for tests needing a PostgreSQL backend.
 
 __metaclass__ = type
 
-import unittest
+import os
 import time
 
 import psycopg2
@@ -119,7 +119,6 @@ class CursorWrapper:
 
 _org_connect = None
 def fake_connect(*args, **kw):
-    global _org_connect
     return ConnectionWrapper(_org_connect(*args, **kw))
 
 def installFakeConnect():
@@ -136,9 +135,13 @@ def uninstallFakeConnect():
 
 
 class PgTestSetup:
+
     connections = [] # Shared
+    # Use a dynamically generated dbname:
+    dynamic = object()
 
     template = 'template1'
+    # Needs to match configs/testrunner*/*:
     dbname = 'launchpad_ftest'
     dbuser = None
     host = None
@@ -165,8 +168,13 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
-        if dbname is not None:
+        if dbname is PgTestSetup.dynamic:
+            self.dbname = self.__class__.dbname + "_" + str(os.getpid())
+        elif dbname is not None:
             self.dbname = dbname
+        else:
+            # Fallback to the class name.
+            self.dbname = self.__class__.dbname
         if dbuser is not None:
             self.dbuser = dbuser
         if host is not None:
@@ -331,30 +339,3 @@ class PgTestSetup:
         as database changes made from a subprocess.
         """
         PgTestSetup._reset_db = True
-
-
-class PgTestCase(unittest.TestCase):
-    dbname = None
-    dbuser = None
-    host = None
-    port = None
-    template = None
-    def setUp(self):
-        pg_test_setup = PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                )
-        pg_test_setup.setUp()
-        self.dbname = pg_test_setup.dbname
-        self.dbuser = pg_test_setup.dbuser
-        assert self.dbname, 'self.dbname is not set.'
-
-    def tearDown(self):
-        PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).tearDown()
-
-    def connect(self):
-        return PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).connect()
-
