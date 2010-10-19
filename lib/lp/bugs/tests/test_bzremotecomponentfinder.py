@@ -165,6 +165,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertIsNot(None, comp)
         self.assertEqual(u'Driver/Radeon', comp.name)
 
+# FIXME: This takes ~9 sec to run, but mars says new testsuites need to compete in 2
 #    def test_cronjob(self):
 #        """Runs the cron job to verify it executes without error"""
 #        import subprocess
@@ -181,7 +182,6 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 #        self.assertTrue('ERROR' not in err)
 #        self.assertTrue('CRITICAL' not in err)
 #        self.assertTrue('Exception raised' not in err)
-
 
 def test_suite():
     suite = unittest.TestSuite()
