@@ -343,6 +343,7 @@ drivers.
 First, we will show how to propose a goal, and what metadata is recorded
 when we do.
 
+ >>> user = factory.makePerson(name="james-w")
  >>> e4x = upstream_firefox.getSpecification('e4x')
  >>> onezero = upstream_firefox.getSeries('1.0')
  >>> e4x.goal is not None
@@ -351,11 +352,11 @@ when we do.
  False
  >>> e4x.date_goal_proposed is not None
  False
- >>> e4x.proposeGoal(onezero, jdub)
+ >>> e4x.proposeGoal(onezero, user)
  >>> e4x.goal is not None
  True
  >>> e4x.goal_proposer.name
- u'jdub'
+ u'james-w'
  >>> e4x.date_goal_proposed is not None
  True
  >>> e4x.goalstatus.title
