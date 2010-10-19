@@ -24,4 +24,4 @@ CREATE INDEX PersonTransferJob__minor_person__idx ON PersonTransferJob(minor_per
 CREATE INDEX PersonTransferJob__major_person__idx ON PersonTransferJob(major_person);
 CREATE INDEX QuestionJob__question__idx ON QuestionJob(question);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 25, 0);

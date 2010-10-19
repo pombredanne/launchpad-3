@@ -3418,6 +3418,11 @@ class PersonSet:
                 ''', dict(to_id=to_id, from_id=from_id,
                           name=name, new_name=new_name, product=product))
 
+    def _mergeBranchMergeQueues(self, cur, from_id, to_id):
+        cur.execute('''
+            UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
+            %(from_id)s''', dict(to_id=to_id, from_id=from_id))
+
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
         # email addresses are set to NEW, all the subscriptions must be
@@ -3903,6 +3908,9 @@ class PersonSet:
         self._mergeBranches(cur, from_id, to_id)
         skip.append(('branch', 'owner'))
 
+        self._mergeBranchMergeQueues(cur, from_id, to_id)
+        skip.append(('branchmergequeue', 'owner'))
+
         # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
         #self._mergeSourcePackageRecipes(cur, from_id, to_id))
         skip.append(('sourcepackagerecipe', 'owner'))
@@ -4059,59 +4067,6 @@ class PersonSet:
         return Person.select('''
             Person.id in (%s)
             ''' % branch_clause)
-
-    def getSubscribersForTargets(self, targets, recipients=None, level=None):
-        """See `IPersonSet`. """
-        if len(targets) == 0:
-            return set()
-        target_criteria = []
-        for target in targets:
-            # target_args is a mapping from query arguments
-            # to query values.
-            target_args = target._target_args
-            target_criteria_clauses = []
-            for key, value in target_args.items():
-                if value is not None:
-                    target_criteria_clauses.append(
-                        '%s = %s' % (key, quote(value)))
-                else:
-                    target_criteria_clauses.append(
-                        '%s IS NULL' % key)
-            if level is not None:
-                target_criteria_clauses.append('bug_notification_level >= %s'
-                    % quote(level.value))
-
-            target_criteria.append(
-                '(%s)' % ' AND '.join(target_criteria_clauses))
-
-        # Build a UNION query, since using OR slows down the query a lot.
-        subscriptions = StructuralSubscription.select(target_criteria[0])
-        for target_criterion in target_criteria[1:]:
-            subscriptions = subscriptions.union(
-                StructuralSubscription.select(target_criterion))
-
-        # Listify the result, since we want to loop over it multiple times.
-        subscriptions = list(subscriptions)
-
-        # We can't use prejoins in UNION queries, so populate the cache
-        # by getting all the subscribers.
-        subscriber_ids = [
-            subscription.subscriberID for subscription in subscriptions]
-        if len(subscriber_ids) > 0:
-            # Pull in ValidPersonCache records in addition to Person
-            # records to warm up the cache.
-            list(IStore(Person).find(
-                    (Person, ValidPersonCache),
-                    In(Person.id, subscriber_ids),
-                    ValidPersonCache.id == Person.id))
-
-        subscribers = set()
-        for subscription in subscriptions:
-            subscribers.add(subscription.subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-        return subscribers
 
     def updatePersonalStandings(self):
         """See `IPersonSet`."""

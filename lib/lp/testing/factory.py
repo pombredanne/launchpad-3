@@ -127,7 +127,6 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -720,14 +719,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 naked_team.addMember(member, owner)
         return team
 
-    def makePoll(self, team, name, title, proposition):
+    def makePoll(self, team, name, title, proposition,
+                 poll_type=PollAlgorithm.SIMPLE):
         """Create a new poll which starts tomorrow and lasts for a week."""
         dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
         datecloses = dateopens + timedelta(days=7)
         return getUtility(IPollSet).new(
             team, name, title, proposition, dateopens, datecloses,
             PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=PollAlgorithm.SIMPLE)
+            poll_type=poll_type)
 
     def makeTranslationGroup(
         self, owner=None, name=None, title=None, summary=None, url=None):
@@ -1132,16 +1132,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch,
             ubuntu_branches.teamowner)
         return branch
-
-    def makeBranchMergeQueue(self, name=None):
-        """Create a new multi branch merge queue."""
-        if name is None:
-            name = self.getUniqueString('name')
-        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
-            registrant=self.makePerson(),
-            owner=self.makePerson(),
-            name=name,
-            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
