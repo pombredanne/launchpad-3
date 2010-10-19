@@ -111,18 +111,18 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             u'alpha': {
                 'name': u'alpha',
                 'components': {
-                    u'1': {'name': u'1',},
-                    u'2': {'name': u'2',},
-                    u'3': {'name': u'3',},
+                    u'1': {'name': u'1', },
+                    u'2': {'name': u'2', },
+                    u'3': {'name': u'3', },
                     },
-                'versions': None
+                'versions': None,
                 },
             u'beta': {
                 'name': u'beta',
                 'components': {
-                    u'4': {'name': u'4',},
+                    u'4': {'name': u'4', },
                     },
-                'versions': None
+                'versions': None,
                 }
             }
         finder = BugzillaRemoteComponentFinder(
@@ -184,8 +184,6 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertTrue('ERROR' not in err)
         self.assertTrue('CRITICAL' not in err)
         self.assertTrue('Exception raised' not in err)
-        #TODO
-        #print err
 
 
 def test_suite():

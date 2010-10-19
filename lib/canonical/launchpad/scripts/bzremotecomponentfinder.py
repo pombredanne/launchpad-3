@@ -125,9 +125,10 @@ class BugzillaRemoteComponentFinder:
             if lp_bugtracker.name in self._BLACKLIST:
                 continue
 
-            self.logger.info("%s:" %(lp_bugtracker.name))
+            self.logger.info("%s: %s" %(
+                lp_bugtracker.name, lp_bugtracker.baseurl))
             bz_bugtracker = BugzillaRemoteComponentScraper(
-                base_url = "https://bugzilla.freedesktop.org")
+                base_url = lp_bugtracker.baseurl)
 
             if self.static_bugzilla_text is not None:
                 self.logger.debug("Using static bugzilla text")
@@ -138,15 +139,16 @@ class BugzillaRemoteComponentFinder:
                     self.logger.debug("...Fetching page")
                     page_text = bz_bugtracker.getPage()
                 except HTTPError, error:
-                    self.logger.error(
-                        "Error fetching %s: %s" % (base_url, error))
+                    self.logger.error("Error fetching %s: %s" % (
+                        lp_bugtracker.baseurl, error))
                     continue
 
             self.logger.debug("...Parsing html")
             bz_bugtracker.parsePage(page_text)
 
             self.logger.debug("...Storing new data to Launchpad")
-            self.storeRemoteProductsAndComponents(bz_bugtracker, lp_bugtracker)
+            self.storeRemoteProductsAndComponents(
+                bz_bugtracker, lp_bugtracker)
 
     def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
         components_to_add = []
