@@ -889,6 +889,11 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
+    def validatePPAName(proposed_name):
+        """Return if a proposed name for a PPA is valid.
+
+        :param proposed_name: A String identifying the proposed PPA name.
+        """
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
