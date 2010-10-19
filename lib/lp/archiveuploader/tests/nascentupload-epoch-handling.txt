@@ -208,6 +208,14 @@ For source uploads, Changes.version == DSC.version == SPR.version:
     >>> bar_spr.version
     u'1:1.0-9'
 
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.publishing import IPublishingSet
+    >>> getUtility(IPublishingSet).newSourcePublication(
+    ...     bar_src_upload.policy.distro.main_archive, bar_spr,
+    ...     bar_src_upload.policy.distroseries, bar_spr.component,
+    ...     bar_spr.section, PackagePublishingPocket.RELEASE)
+    <SourcePackagePublishingHistory at ...>
+
 Let's accept the source and claim 'build from accepted' to process the
 respective binary:
 
@@ -216,9 +224,6 @@ respective binary:
     >>> bar_src_queue.setAccepted()
     >>> bar_src_queue.status.name
     'ACCEPTED'
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bar_src_queue)
 
 For a binary upload we expect the same, a BinaryPackageRelease
 'version' that includes 'epoch':
