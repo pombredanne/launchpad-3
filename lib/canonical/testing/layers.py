@@ -254,7 +254,7 @@ class BaseLayer:
     @classmethod
     @profiled
     def setUp(cls):
-        # Set the default config name.
+        # Set the default appserver config instance name.
         # May be changed as required eg when running parallel tests.
         cls.appserver_config_name = 'testrunner-appserver'
         BaseLayer.isSetUp = True
