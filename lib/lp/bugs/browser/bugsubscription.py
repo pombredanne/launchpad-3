@@ -80,7 +80,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
-class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
+class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
+                                       ReturnToReferrerMixin):
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
@@ -92,7 +93,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
-        referer = self.request.getHeader('referer')
+        referer = self._return_url
         context_url = canonical_url(self.context)
 
         # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
