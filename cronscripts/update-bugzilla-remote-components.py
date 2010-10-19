@@ -38,5 +38,5 @@ if __name__ == "__main__":
 
     updater = UpdateRemoteComponentsFromBugzilla(
         "updatebugzillaremotecomponents",
-        dbuser=config.updatesourceforgeremoteproduct.dbuser)
+        dbuser=config.updatebugzillaremotecomponents.dbuser)
     updater.lock_and_run()
