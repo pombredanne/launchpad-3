@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AddBranchVisibilityTeamPolicyView',
     'RemoveBranchVisibilityTeamPolicyView',
+    'BranchVisibilityPolicyMixin',
     'BranchVisibilityPolicyView',
     ]
 
@@ -155,7 +156,15 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
-class BranchVisibilityPolicyView(LaunchpadView):
+class BranchVisibilityPolicyMixin:
+    """Mixin class providing visibility rules."""
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
+
+
+class BranchVisibilityPolicyView(LaunchpadView,
+                                 BranchVisibilityPolicyMixin):
     """Simple view for displaying branch visibility policies."""
 
     @property
@@ -166,10 +175,6 @@ class BranchVisibilityPolicyView(LaunchpadView):
     @cachedproperty
     def items(self):
         return self.context.getBranchVisibilityTeamPolicies()
-
-    @property
-    def base_visibility_rule(self):
-        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):

@@ -429,47 +429,49 @@ class TestPersonBranchesPage(BrowserTestCase):
         self.assertIs(None, branches)
 
 
-class TestProjectGroupBranchesPage(BrowserTestCase):
-    """Test for the project group branches page.
-
-    This is the default page shown for a person on the code subdomain.
-    """
+class TestProjectGroupBranchesPage(TestCaseWithFactory):
+    """Test for the project group branches page."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        BrowserTestCase.setUp(self)
-        self.project = self.factory.makeProject(owner=self.user)
+        TestCaseWithFactory.setUp(self)
+        self.project = self.factory.makeProject()
 
     def test_project_with_no_branch_visibility_rule(self):
-        browser = self.getUserBrowser(
-            canonical_url(self.project, rootsite='code'))
-        privacy_portlet = find_tag_by_id(browser.contents, 'privacy-portlet')
+        view = create_initialized_view(self.project,
+                                       name="+branches",
+                                       rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy-portlet')
         text = extract_text(privacy_portlet)
-        expected = ("By default, new branches you create for projects in .* "
-                    "are Public initially. Individual "
-                    "projects may override this setting.")
+        expected = """
+            By default, new branches you create for projects in .* are Public
+            initially. Individual projects may override this setting."""
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected, text)
 
     def test_project_with_private_branch_visibility_rule(self):
         self.project.setBranchVisibilityTeamPolicy(
             None, BranchVisibilityRule.FORBIDDEN)
-        browser = self.getUserBrowser(
-            canonical_url(self.project, rootsite='code'))
-        privacy_portlet = find_tag_by_id(browser.contents, 'privacy-portlet')
+        view = create_initialized_view(self.project,
+                                       name="+branches",
+                                       rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy-portlet')
         text = extract_text(privacy_portlet)
-        expected = ("By default, new branches you create for projects in .* "
-                    "are Forbidden initially. Individual "
-                    "projects may override this setting.")
+        expected = """
+            By default, new branches you create for projects in .* are
+            Forbidden initially. Individual projects may override this
+            setting."""
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected, text)
 
     def _testBranchVisibilityLink(self, user):
-        browser = self.getUserBrowser(
-            url=canonical_url(self.project, rootsite='code'),
-            user=user)
-        action_portlet = find_tag_by_id(browser.contents, 'action-portlet')
+        login_person(user)
+        view = create_initialized_view(self.project,
+                                       name="+branches",
+                                       rootsite='code',
+                                       principal=user)
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
         text = extract_text(action_portlet)
         expected = '.*Define branch visibility.*'
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -489,9 +491,10 @@ class TestProjectGroupBranchesPage(BrowserTestCase):
 
     def test_branch_visibility_link_non_admin(self):
         # A non-admin will not see the action portlet.
-        browser = self.getUserBrowser(
-            url=canonical_url(self.project, rootsite='code'))
-        action_portlet = find_tag_by_id(browser.contents, 'action-portlet')
+        view = create_initialized_view(self.project,
+                                       name="+branches",
+                                       rootsite='code')
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
         self.assertIs(None, action_portlet)
 
 
