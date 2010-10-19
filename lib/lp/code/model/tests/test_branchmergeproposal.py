@@ -69,7 +69,7 @@ from lp.code.model.branchmergeproposal import (
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     CreateMergeProposalJob,
-    MergeProposalCreatedJob,
+    MergeProposalNeedsReviewEmailJob,
     UpdatePreviewDiffJob,
     )
 from lp.code.tests.helpers import add_revision_to_branch
@@ -1255,7 +1255,7 @@ class TestBranchMergeProposalDeletion(TestCaseWithFactory):
     def test_deleteProposal_deletes_job(self):
         """Deleting a branch merge proposal deletes all related jobs."""
         proposal = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(proposal)
+        job = MergeProposalNeedsReviewEmailJob.create(proposal)
         job.context.sync()
         job_id = job.context.id
         login_person(proposal.registrant)
