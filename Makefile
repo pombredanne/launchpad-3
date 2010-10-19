@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
