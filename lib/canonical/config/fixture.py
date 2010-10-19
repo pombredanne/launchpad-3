@@ -16,6 +16,7 @@ __all__ = [
 
 import os.path
 import shutil
+from textwrap import dedent
 
 from fixtures import Fixture
 
@@ -24,6 +25,12 @@ from canonical.config import config
 
 class ConfigFixture(Fixture):
     """Create a unique launchpad config."""
+
+    _extend_str = dedent("""\
+        [meta]
+        extends: ../%s/launchpad-lazr.conf
+        
+        """)
 
     def __init__(self, instance_name, copy_from_instance):
         """Create a ConfigFixture.
@@ -44,10 +51,7 @@ class ConfigFixture(Fixture):
         for basename in os.listdir(source):
             if basename == 'launchpad-lazr.conf':
                 with open(root + '/launchpad-lazr.conf', 'wb') as out:
-                    out.write("""[meta]
-extends: ../%s/launchpad-lazr.conf
-
-""" % self.copy_from_instance)
+                    out.write(self._extend_str % self.copy_from_instance)
                 continue
             with open(source + '/' + basename, 'rb') as input:
                 with open(root + '/' + basename, 'wb') as out:
