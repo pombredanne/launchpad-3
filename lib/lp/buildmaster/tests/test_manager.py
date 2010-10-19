@@ -484,6 +484,13 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
+    def test_builder_failing_with_no_attached_job(self):
+        self.buildqueue.reset()
+        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+
+        assessFailureCounts(self.builder, "failnotes")
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
 
 
 class TestNewBuilders(TrialTestCase):

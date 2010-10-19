@@ -57,9 +57,12 @@ def assessFailureCounts(builder, fail_notes):
     # builder.currentjob hides a complicated query, don't run it twice.
     # See bug 623281.
     current_job = builder.currentjob
-    build_job = current_job.specific_job.build
+    if current_job is None:
+        job_failure_count = 0
+    else:
+        job_failure_count = current_job.specific_job.build.failure_count
 
-    if builder.failure_count == build_job.failure_count:
+    if builder.failure_count == job_failure_count and current_job is not None:
         # If the failure count for the builder is the same as the
         # failure count for the job being built, then we cannot
         # tell whether the job or the builder is at fault. The  best
@@ -68,12 +71,13 @@ def assessFailureCounts(builder, fail_notes):
         current_job.reset()
         return
 
-    if builder.failure_count > build_job.failure_count:
+    if builder.failure_count > job_failure_count:
         # The builder has failed more than the jobs it's been
         # running.
 
-        # Re-schedule the build.
-        current_job.reset()
+        # Re-schedule the build if there is one.
+        if current_job is not None:
+            current_job.reset()
 
         if builder.failure_count >= Builder.FAILURE_THRESHOLD:
             # It's also gone over the threshold so let's disable it.
@@ -84,6 +88,7 @@ def assessFailureCounts(builder, fail_notes):
         # and remove the buildqueue request.  The failure should
         # have already caused any relevant slave data to be stored
         # on the build record so don't worry about that here.
+        build_job = current_job.specific_job.build
         build_job.status = BuildStatus.FAILEDTOBUILD
         builder.currentjob.destroySelf()
 
