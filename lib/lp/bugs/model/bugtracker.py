@@ -86,10 +86,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
-from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 def normalise_leading_slashes(rest):
@@ -257,35 +253,6 @@ class BugTrackerComponentGroup(Storm):
         component = BugTrackerComponent()
         component.name = component_name
         component.component_group = self
-
-        store = IStore(BugTrackerComponent)
-        store.add(component)
-        store.flush()
-
-        return component
-
-    def getComponent(self, component_name):
-        """Retrieves a component by the given name.
-
-        None is returned if there is no component by that name in the
-        group.
-        """
-
-        if component_name is None:
-            return None
-        else:
-            return Store.of(self).find(
-                BugTrackerComponent,
-                (BugTrackerComponent.name == component_name)).one()
-
-    def addCustomComponent(self, component_name):
-        """Adds a component locally that isn't synced from a remote tracker
-        """
-
-        component = BugTrackerComponent()
-        component.name = component_name
-        component.component_group = self
-        component.is_custom = True
 
         store = IStore(BugTrackerComponent)
         store.add(component)
@@ -864,5 +831,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-
-
