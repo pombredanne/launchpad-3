@@ -239,8 +239,8 @@ class CanonicalConfig:
                 </configure>""" % self.config_dir
         loader.close()
 
-    def root_launchpad_url(self, facet='mainsite', ensureSlash=False):
-        """Return the correct root url for the given facet."""
+    def appserver_root_url(self, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
         root_url = str(getattr(self.vhost, facet).rooturl)
         if not ensureSlash:
             return root_url.rstrip('/')

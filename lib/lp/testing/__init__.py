@@ -734,8 +734,7 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        from canonical.testing import getRootLaunchpadUrl
-        self.client.open(url=getRootLaunchpadUrl())
+        self.client.open(url=self.layer.appserver_root_url())
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -747,15 +746,16 @@ class YUIUnitTestCase(WindmillTestCase):
 
     def initialize(self, test_path):
         self.test_path = test_path
-        #This goes here to prevent circular import issues
-        from canonical.testing import getRootLaunchpadUrl
-        _view_name = u'%s/+yui-unittest/' % getRootLaunchpadUrl()
-        self.yui_runner_url = _view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(id='complete')
         response = client.commands.getPageText()

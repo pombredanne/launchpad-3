@@ -254,6 +254,9 @@ class BaseLayer:
     @classmethod
     @profiled
     def setUp(cls):
+        # Set the default config name.
+        # May be changed as required eg when running parallel tests.
+        cls.appserver_config_name = 'testrunner-appserver'
         BaseLayer.isSetUp = True
         BaseLayer.persist_test_services = (
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
@@ -466,11 +469,16 @@ class BaseLayer:
             del frame # As per no-leak stack inspection in Python reference.
 
     @classmethod
-    def getAppServerConfig(cls):
+    def appserver_config(cls):
         """Return a config suitable for AppServer tests."""
-        # XXX wallyworld 2010-10-18
-        # use BaseLayer.appserver_config_name when available
-        return CanonicalConfig('testrunner-appserver')
+        return CanonicalConfig(cls.appserver_config_name)
+
+    @classmethod
+    def appserver_root_url(cls, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
+        return cls.appserver_config().appserver_root_url(
+                facet, ensureSlash)
+
 
 class MemcachedLayer(BaseLayer):
     """Provides tests access to a memcached.
@@ -1941,8 +1949,7 @@ class BaseWindmillLayer(AppServerLayer):
         # Patch the config to provide the port number and not use https.
         sites = (
             (('vhost.%s' % sitename,
-            'rooturl: %s/' % getattr(BaseLayer.getAppServerConfig().vhost,
-                                    sitename).rooturl)
+            'rooturl: %s/' % cls.appserver_root_url(sitename))
             for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
                             'code', 'testopenid', 'translations']))
         for site in sites:

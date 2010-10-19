@@ -11,8 +11,6 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
-    'getAppServerConfig'
-    'getRootLaunchpadUrl',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -66,14 +64,6 @@ def reset_logging():
     Logging(Runner()).global_setup()
 
 
-def getAppServerConfig():
-    """Return a config suitable for AppServer tests."""
-    return BaseLayer.getAppServerConfig()
-
-
-def getRootLaunchpadUrl(facet='mainsite', ensureSlash=False):
-    """Return the correct root url for the given facet."""
-    return getAppServerConfig().root_launchpad_url(facet, ensureSlash)
 
 # This import registers the 'doctest' Unicode codec.
 import canonical.testing.doctestcodec

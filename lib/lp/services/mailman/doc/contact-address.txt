@@ -22,8 +22,8 @@ The team is set as the project's answer contact.
 
     >>> from canonical.launchpad.testing.pages import strip_label
 
-    >>> from canonical.testing import getRootLaunchpadUrl
-    >>> root_url = getRootLaunchpadUrl()
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('%s/~itest-one/+contactaddress' % root_url)
     >>> browser.getControl('The Launchpad mailing list').selected = True
@@ -35,7 +35,7 @@ The team is set as the project's answer contact.
     >>> [strip_label(label) for label in control.displayValue]
     ['The Launchpad mailing list for this team...]
 
-    >>> answers_url = getRootLaunchpadUrl('answers')
+    >>> answers_url = BaseLayer.appserver_root_url('answers')
     >>> browser.open(
     ...     '%s/firefox/+answer-contact' % answers_url)
     >>> browser.getControl(name='field.answer_contact_teams').displayValue = [

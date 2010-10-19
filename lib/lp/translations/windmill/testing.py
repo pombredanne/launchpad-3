@@ -15,5 +15,8 @@ from canonical.testing.layers import BaseWindmillLayer
 class TranslationsWindmillLayer(BaseWindmillLayer):
     """Layer for Translations Windmill tests."""
 
-    from canonical.testing import getRootLaunchpadUrl
-    base_url = getRootLaunchpadUrl('translations')
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url('translations')
+        super(TranslationsWindmillLayer, cls).setUp()
+
