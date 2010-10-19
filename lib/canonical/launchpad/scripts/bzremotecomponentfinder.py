@@ -102,14 +102,22 @@ class BugzillaRemoteComponentFinder:
         u"mozilla.org",
         ]
 
-    def __init__(self, txn, logger=None, static_bugzilla_text=None):
-        self.txn = txn
+    def __init__(self, logger=None, static_bugzilla_text=None):
+        """Instantiates object, without performing any parsing.
+
+        :param logger: A logger object such as QuietFakeLogger or FakeLogger
+        :param static_bugzilla_text: Instead of retrieving the remote
+         web page for a bug tracker, act as if this static text was
+         returned.  This is intended for testing purposes to avoid
+         needing to make remote web connections.
+        """
         self.logger = logger
         if logger is None:
             self.logger = default_log
         self.static_bugzilla_text = static_bugzilla_text
 
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
+        """"""
         lp_bugtrackers = getUtility(IBugTrackerSet)
         if bugtracker_name is not None:
             lp_bugtrackers = [

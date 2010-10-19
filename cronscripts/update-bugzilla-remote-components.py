@@ -25,7 +25,6 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
     def main(self):
         start_time = time.time()
         finder = BugzillaRemoteComponentFinder(
-            self.txn,
             self.logger)
         finder.getRemoteProductsAndComponents(
             bugtracker_name=self.options.bugtracker)

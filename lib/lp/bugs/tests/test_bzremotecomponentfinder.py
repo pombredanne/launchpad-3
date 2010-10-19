@@ -12,7 +12,6 @@ import unittest
 import transaction
 
 from canonical.testing import DatabaseFunctionalLayer
-from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import (
     login,
     )
@@ -126,7 +125,6 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
                 }
             }
         finder = BugzillaRemoteComponentFinder(
-            txn=LaunchpadZopelessLayer.txn,
             logger=QuietFakeLogger())
         finder.storeRemoteProductsAndComponents(
             bz_bugtracker, lp_bugtracker)
@@ -154,7 +152,6 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
         page_text = read_test_file("bugzilla-fdo-advanced-query.html")
         finder = BugzillaRemoteComponentFinder(
-            txn=LaunchpadZopelessLayer.txn,
             logger=QuietFakeLogger(),
             static_bugzilla_text=page_text)
         finder.getRemoteProductsAndComponents(bugtracker_name="fdo-example")
@@ -168,22 +165,22 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertIsNot(None, comp)
         self.assertEqual(u'Driver/Radeon', comp.name)
 
-    def test_cronjob(self):
-        """Runs the cron job to verify it executes without error"""
-        import subprocess
-        process = subprocess.Popen(
-            ['cronscripts/update-sourceforge-remote-products.py', '-v'],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        (out, err) = process.communicate()
-
-        self.assertEqual(out, '')
-        self.assertEqual(process.returncode, 0)
-        self.assertTrue('Creating lockfile' in err)
-        self.assertTrue('Removing lock file' in err)
-        self.assertTrue('ERROR' not in err)
-        self.assertTrue('CRITICAL' not in err)
-        self.assertTrue('Exception raised' not in err)
+#    def test_cronjob(self):
+#        """Runs the cron job to verify it executes without error"""
+#        import subprocess
+#        process = subprocess.Popen(
+#            ['cronscripts/update-sourceforge-remote-products.py', '-v'],
+#            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+#            stderr=subprocess.PIPE)
+#        (out, err) = process.communicate()
+#
+#        self.assertEqual(out, '')
+#        self.assertEqual(process.returncode, 0)
+#        self.assertTrue('Creating lockfile' in err)
+#        self.assertTrue('Removing lock file' in err)
+#        self.assertTrue('ERROR' not in err)
+#        self.assertTrue('CRITICAL' not in err)
+#        self.assertTrue('Exception raised' not in err)
 
 
 def test_suite():
