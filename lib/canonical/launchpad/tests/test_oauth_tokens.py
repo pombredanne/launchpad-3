@@ -66,20 +66,20 @@ class TestConsumerSet(TestOAuth):
     def test_interface(self):
         verifyObject(IOAuthConsumerSet, self.consumers)
 
-    def test_create_customer(self):
+    def test_new(self):
         consumer = self.consumers.new(
             self.factory.getUniqueString("oauthconsumerkey"))
         verifyObject(IOAuthConsumer, consumer)
 
-    def test_retrieve_customer(self):
-        self.assertEqual(
-            self.consumers.getByKey(self.consumer.key), self.consumer)
-
-    def test_cant_create_duplicate_customer(self):
+    def test_new_wont_create_duplicate_consumer(self):
         self.assertRaises(
             AssertionError, self.consumers.new, key=self.consumer.key)
 
-    def test_get_nonexistent_consumer_returns_none(self):
+    def test_getByKey(self):
+        self.assertEqual(
+            self.consumers.getByKey(self.consumer.key), self.consumer)
+
+    def test_getByKey_returns_none_for_nonexistent_consumer(self):
         # There is no consumer called "oauthconsumerkey-nonexistent".
         nonexistent_key = self.factory.getUniqueString(
             "oauthconsumerkey-nonexistent")
@@ -94,18 +94,18 @@ class TestRequestTokenSet(TestOAuth):
         super(TestRequestTokenSet, self).setUp()
         self.tokens = getUtility(IOAuthRequestTokenSet)
 
-    def test_get_token_by_key(self):
+    def test_getByKey(self):
         token = self.consumer.newRequestToken()
         self.assertEquals(token, self.tokens.getByKey(token.key))
 
-    def test_get_token_by_unused_key_returns_none(self):
+    def test_getByKey_returns_none_for_unused_key(self):
         self.assertEquals(None, self.tokens.getByKey("no-such-token"))
 
 
 class TestRequestTokens(TestOAuth):
     """Tests for OAuth request token objects."""
 
-    def test_new_token(self):
+    def test_newRequestToken(self):
         request_token = self.consumer.newRequestToken()
         verifyObject(IOAuthRequestToken, request_token)
 
@@ -131,18 +131,18 @@ class TestRequestTokens(TestOAuth):
         self.assertEqual(None, request_token.date_expires)
         self.assertEqual(None, request_token.context)
 
-    def test_get_token_for_consumer(self):
+    def test_getRequestToken(self):
         token_1 = self.consumer.newRequestToken()
         token_2 = self.consumer.getRequestToken(token_1.key)
         self.assertEqual(token_1, token_2)
 
-    def test_get_token_for_wrong_consumer_returns_none(self):
+    def test_getRequestToken_for_wrong_consumer_returns_none(self):
         token_1 = self.consumer.newRequestToken()
         consumer_2 = self.factory.makeOAuthConsumer()
         self.assertEquals(
             None, consumer_2.getRequestToken(token_1.key))
 
-    def test_get_token_for_nonexistent_key_returns_none(self):
+    def test_getRequestToken_for_nonexistent_key_returns_none(self):
         self.assertEquals(
             None, self.consumer.getRequestToken("no-such-token"))
 
@@ -271,6 +271,8 @@ class TestAccessTokens(TestOAuth):
         return request_token, access_token
 
     def test_exchange_request_token_for_access_token(self):
+        # Make sure the basic exchange of request token for access
+        # token works.
         request_token, access_token = (
             self._exchange_request_token_for_access_token())
         verifyObject(IOAuthAccessToken, access_token)
@@ -292,7 +294,9 @@ class TestAccessTokens(TestOAuth):
         self.assertEquals(None, access_token.context)
         self.assertEquals(None, access_token.date_expires)
 
-    def test_access_token_inheritance(self):
+    def test_access_token_field_inheritance(self):
+        # Make sure that specific fields like context and expiration
+        # date are passed down from request token to access token.
         context = self.factory.makeProduct()
         request_token = self.consumer.newRequestToken()
         request_token.review(
