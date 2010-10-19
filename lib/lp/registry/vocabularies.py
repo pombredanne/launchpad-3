@@ -580,7 +580,7 @@ class ValidPersonOrTeamVocabulary(
                        Not(Person.teamowner == None),
                        # Or a person who has a preferred email address.
                        EmailAddress.status == EmailAddressStatus.PREFERRED),
-                    self.extra_clause))
+                    ))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -611,7 +611,9 @@ class ValidPersonOrTeamVocabulary(
             # with the 'distinct' option.
             subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
-            result = self.store.using(subselect).find((Person, exact_match))
+            result = self.store.using(subselect).find(
+                (Person, exact_match),
+                self.extra_clause)
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
