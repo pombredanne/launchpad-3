@@ -8,56 +8,15 @@ import _pythonpath
 
 import time
 
-from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     )
 
-# TODO:
-#  - Set up logging
-#  - Write tests
-#    + Examine ./lib/lp/registry/tests/sfremoteproductfinder.py
-#    + Examine ./lib/lp/bugs/doc/sourceforge-remote-products.txt
-#    + When running in test mode, use pre-saved html pages
-#    + Make a lplib script to get all bugzillas, and then test them locally
-#
-#    * Retrieval of url fails with 500 error when getting page
-#    * 
-
-launchpad_components = {
-    'libglx': {
-        'name': 'libglx',
-        'is_visible': True,
-        'is_custom': False,
-        },
-    'DRM/ObsoleteDriver': {
-        'name': 'DRM/ObsoleteDriver',
-        'is_visible': True,
-        'is_custom': False,
-        },
-    'DRM/other': {
-        'name': 'DRM/other',
-        'is_visible': False,
-        'is_custom': False,
-        },
-    'DRM/fglrx': {
-        'name': 'DRM/fglrx',
-        'is_visible': True,
-        'is_custom': True,
-        },
-    'deleted-custom-component': {
-        'name': 'deleted-custom-component',
-        'is_visible': False,
-        'is_custom': True,
-        }
-    }
 
 class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
 
     def add_my_options(self):
-        # TODO: Make sure options are getting captured into current object
-        # TODO: Implement support for these options
         self.parser.add_option(
             "-b", "--bugtracker", dest="bugtracker",
             help="Update only the bug tracker with this name in launchpad")
@@ -76,8 +35,7 @@ class UpdateRemoteComponentsFromBugzilla(LaunchpadCronScript):
 
 if __name__ == "__main__":
 
-    # TODO: Probably need to establish it as its own dbuser in security.cfg
     updater = UpdateRemoteComponentsFromBugzilla(
-        "updateremotecomponent",
-        dbuser="checkwatches")
+        "updatebugzillaremotecomponents",
+        dbuser="updatebugzillaremotecomponents")
     updater.lock_and_run()
