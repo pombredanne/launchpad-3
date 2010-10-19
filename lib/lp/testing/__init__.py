@@ -325,20 +325,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         transaction.commit()
         self.layer.switchDbUser(dbuser)
 
-    def installFixture(self, fixture):
-        """Install 'fixture', an object that has a `setUp` and `tearDown`.
-
-        `installFixture` will run 'fixture.setUp' and schedule
-        'fixture.tearDown' to be run during the test's tear down (using
-        `addCleanup`).
-
-        :param fixture: Any object that has a `setUp` and `tearDown` method.
-        :return: `fixture`.
-        """
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
-        return fixture
-
     def __str__(self):
         """The string representation of a test is its id.
 
@@ -441,6 +427,16 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
+
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
 
@@ -501,7 +497,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
-        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
 
     @adapter(ErrorReportEvent)
@@ -685,16 +681,6 @@ class BrowserTestCase(TestCaseWithFactory):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
-
-    def assertTextMatchesExpressionIgnoreWhitespace(self,
-                                                    regular_expression_txt,
-                                                    text):
-        def normalise_whitespace(text):
-            return ' '.join(text.split())
-        pattern = re.compile(
-            normalise_whitespace(regular_expression_txt), re.S)
-        self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)), text)
 
     def getViewBrowser(self, context, view_name=None, no_login=False):
         login(ANONYMOUS)

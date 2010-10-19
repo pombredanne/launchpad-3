@@ -721,14 +721,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 naked_team.addMember(member, owner)
         return team
 
-    def makePoll(self, team, name, title, proposition):
+    def makePoll(self, team, name, title, proposition,
+                 poll_type=PollAlgorithm.SIMPLE):
         """Create a new poll which starts tomorrow and lasts for a week."""
         dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
         datecloses = dateopens + timedelta(days=7)
         return getUtility(IPollSet).new(
             team, name, title, proposition, dateopens, datecloses,
             PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=PollAlgorithm.SIMPLE)
+            poll_type=poll_type)
 
     def makeTranslationGroup(
         self, owner=None, name=None, title=None, summary=None, url=None):

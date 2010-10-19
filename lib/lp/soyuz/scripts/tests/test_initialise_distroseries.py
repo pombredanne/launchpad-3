@@ -19,7 +19,10 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -155,9 +158,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             child.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
-    def _full_initialise(self, arches=(), rebuild=False):
+    def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
         child = self.factory.makeDistroSeries(parent_series=self.parent)
-        ids = InitialiseDistroSeries(child, arches, rebuild)
+        ids = InitialiseDistroSeries(child, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
         return child
@@ -230,6 +233,33 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
 
+    def test_copy_limit_packagesets(self):
+        # If a parent series has packagesets, we can decide which ones we
+        # want to copy
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages = ('udev', 'chromium', 'libc6')
+        for pkg in packages:
+            test1.addSources(pkg)
+        child = self._full_initialise(packagesets=('test1',))
+        child_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=child)
+        self.assertEqual(test1.description, child_test1.description)
+        self.assertRaises(
+            NoSuchPackageSet, getUtility(IPackagesetSet).getByName,
+                u'test2', distroseries=child)
+        parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
+        child_srcs = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        self.assertEqual(parent_srcs, child_srcs)
+        child.updatePackageCount()
+        self.assertEqual(child.sourcecount, len(packages))
+        self.assertEqual(child.binarycount, 2) # Chromium is FTBFS
+
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True
         self.parent.updatePackageCount()
@@ -242,26 +272,46 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), self.parent.sourcecount)
 
-    def test_do_not_copy_disabled_dases(self):
-        # DASes that are disabled in the parent will not be copied
-        i386 = self.factory.makeProcessorFamily()
-        ppc = self.factory.makeProcessorFamily()
-        parent = self.factory.makeDistroSeries()
-        i386_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=i386)
-        ppc_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=ppc)
-        ppc_das.enabled = False
-        parent.nominatedarchindep = i386_das
-        foobuntu = self._create_distroseries(parent)
-        ids = InitialiseDistroSeries(foobuntu)
-        ids.check()
-        ids.initialise()
+    def test_limit_packagesets_rebuild_and_one_das(self):
+        # We can limit the source packages copied, and only builds
+        # for the copied source will be created
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent.owner,
+            distroseries=self.parent)
+        packages = ('udev', 'chromium')
+        for pkg in packages:
+            test1.addSources(pkg)
+        self.factory.makeDistroArchSeries(distroseries=self.parent)
+        child = self._full_initialise(
+            arches=[self.parent_das.architecturetag],
+            packagesets=('test1',), rebuild=True)
+        child.updatePackageCount()
+        builds = child.getBuildRecords(
+            build_state=BuildStatus.NEEDSBUILD,
+            pocket=PackagePublishingPocket.RELEASE)
+        self.assertEqual(child.sourcecount, len(packages))
+        self.assertEqual(child.binarycount, 0)
+        self.assertEqual(builds.count(), len(packages))
         das = list(IStore(DistroArchSeries).find(
-            DistroArchSeries, distroseries = foobuntu))
+            DistroArchSeries, distroseries = child))
         self.assertEqual(len(das), 1)
         self.assertEqual(
-            das[0].architecturetag, i386_das.architecturetag)
+            das[0].architecturetag, self.parent_das.architecturetag)
+
+    def test_do_not_copy_disabled_dases(self):
+        # DASes that are disabled in the parent will not be copied
+        ppc_das = self.factory.makeDistroArchSeries(
+            distroseries=self.parent)
+        ppc_das.enabled = False
+        child = self._full_initialise()
+        das = list(IStore(DistroArchSeries).find(
+            DistroArchSeries, distroseries = child))
+        self.assertEqual(len(das), 1)
+        self.assertEqual(
+            das[0].architecturetag, self.parent_das.architecturetag)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool

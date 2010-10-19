@@ -907,7 +907,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def getScannerData(self):
         """See `IBranch`."""
         columns = (
-            BranchRevision.sequence, Revision.revision_id)
+            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -915,7 +915,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for sequence, revision_id in rows:
+        for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)

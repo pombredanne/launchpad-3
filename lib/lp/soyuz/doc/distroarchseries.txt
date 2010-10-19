@@ -9,7 +9,7 @@ Distro Arch Series
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from lp.registry.interfaces.distribution import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
    >>> hoary = ubuntu.getSeries('hoary')
 
@@ -335,7 +335,7 @@ Let's activate ppa support for hoary/hppa and check if
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
-There is also `DistroSeries.enabled_architectures` which returns a
+There is also `DistroSeries.buildable_architectures` which returns a
 `ResultSet` containing only the `DistroArchSeries` with available
 chroots tarballs (the ones for which we can build packages).
 
@@ -343,14 +343,14 @@ In the sampledata, none of the hoary architectures have chroot
 tarballs. Once it is available the corresponding architecture is
 returned.
 
-    >>> hoary.enabled_architectures.count()
+    >>> hoary.buildable_architectures.count()
     0
 
     # Create a chroot tarball for hoary/hppa.
     >>> chroot = factory.makeLibraryFileAlias()
     >>> unused = hoary.getDistroArchSeries('hppa').addOrUpdateChroot(chroot)
 
-    >>> print_architectures(hoary.enabled_architectures)
+    >>> print_architectures(hoary.buildable_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
 
 The architecture also has a 'chroot_url' attribute directly referencing
@@ -367,13 +367,13 @@ If there is no chroot, chroot_url will be None.
     >>> print hoary.getDistroArchSeries('i386').chroot_url
     None
 
-`DistroSeries.enabled_architectures` results are ordered
+`DistroSeries.buildable_architectures` results are ordered
 alphabetically by 'architecturetag'.
 
     # Create a chroot tarball for hoary/i386.
     >>> unused = hoary.getDistroArchSeries('i386').addOrUpdateChroot(chroot)
 
-    >>> print_architectures(hoary.enabled_architectures)
+    >>> print_architectures(hoary.buildable_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
