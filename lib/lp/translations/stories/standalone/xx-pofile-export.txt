@@ -1,4 +1,5 @@
-= Exporting Single PO Files through the Web =
+Exporting Single PO Files through the Web
+=========================================
 
 Not logged in users can't access the +export page.
 
