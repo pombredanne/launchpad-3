@@ -330,12 +330,13 @@ class TestSlaveScannerScan(TrialTestCase):
         # failure counts are persisted.
         self.layer.txn.commit()
 
-        # startCycle() calls scan() which is our fake one that throws an
+        # singleCycle() calls scan() which is our fake one that throws an
         # exception.
         d = scanner.singleCycle()
 
         # Failure counts should be updated, and the assessment method
-        # should have been called.
+        # should have been called.  The actual behaviour is tested below
+        # in TestFailureAssessments.
         def got_scan(ignored):
             self.assertEqual(expected_builder_count, builder.failure_count)
             self.assertEqual(
@@ -366,6 +367,23 @@ class TestSlaveScannerScan(TrialTestCase):
         self._assertFailureCounting(
             builder_count=0, job_count=1, expected_builder_count=1,
             expected_job_count=2)
+
+    def test_scanFailed_handles_lack_of_a_job_on_the_builder(self):
+        def failing_scan():
+            return defer.fail(Exception("fake exception"))
+        scanner = self._getScanner()
+        scanner.scan = failing_scan
+        builder = getUtility(IBuilderSet)[scanner.builder_name]
+        builder.failure_count = Builder.FAILURE_THRESHOLD
+        builder.currentjob.reset()
+        self.layer.txn.commit()
+
+        d = scanner.singleCycle()
+
+        def scan_finished(ignored):
+            self.assertFalse(builder.builderok)
+
+        return d.addCallback(scan_finished)
 
     def test_fail_to_resume_slave_resets_job(self):
         # If an attempt to resume and dispatch a slave fails, it should
