@@ -130,22 +130,22 @@ class BugzillaRemoteComponentFinder:
                 base_url = "https://bugzilla.freedesktop.org")
 
             if self.static_bugzilla_text is not None:
-                self.logger.info("Using static bugzilla text")
+                self.logger.debug("Using static bugzilla text")
                 page_text = self.static_bugzilla_text
 
             else:
                 try:
-                    self.logger.info("...Fetching page")
+                    self.logger.debug("...Fetching page")
                     page_text = bz_bugtracker.getPage()
                 except HTTPError, error:
                     self.logger.error(
                         "Error fetching %s: %s" % (base_url, error))
                     continue
 
-            self.logger.info("...Parsing html")
+            self.logger.debug("...Parsing html")
             bz_bugtracker.parsePage(page_text)
 
-            self.logger.info("...Storing new data to Launchpad")
+            self.logger.debug("...Storing new data to Launchpad")
             self.storeRemoteProductsAndComponents(bz_bugtracker, lp_bugtracker)
 
     def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
@@ -186,9 +186,9 @@ class BugzillaRemoteComponentFinder:
             (name, component_group, is_visible, is_custom)
             VALUES %s""" % ",\n ".join(components_to_add)
 
-            self.logger.warning("...Inserting components into database")
+            self.logger.debug("...Inserting components into database")
             store = IStore(BugTrackerComponent)
             store.execute(sqltext)
             store.commit()
             store.flush()
-            self.logger.warning("...Done")
+            self.logger.debug("...Done")
