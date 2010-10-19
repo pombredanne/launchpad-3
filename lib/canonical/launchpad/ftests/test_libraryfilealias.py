@@ -17,7 +17,7 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestLibraryFileAlias(unittest.TestCase):

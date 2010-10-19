@@ -10,11 +10,10 @@ __metaclass__ = type
 __all__ = [
     'BlueprintNotificationLevel',
     'BugNotificationLevel',
-    'DeleteSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget',
-    'UserCannotSubscribePerson',
+    'IStructuralSubscriptionTargetHelper',
     ]
 
 from lazr.enum import (
@@ -32,9 +31,11 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -128,6 +129,14 @@ class IStructuralSubscription(Interface):
         required=True, readonly=True,
         title=_("The structure to which this subscription belongs.")))
 
+    bug_filters = CollectionField(
+        title=_('List of bug filters that narrow this subscription.'),
+        readonly=True, required=False,
+        value_type=Reference(schema=Interface))
+
+    def newBugFilter():
+        """Returns a new `BugSubscriptionFilter` for this subscription."""
+
 
 class IStructuralSubscriptionTargetRead(Interface):
     """A Launchpad Structure allowing users to subscribe to it.
@@ -190,6 +199,9 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
+
+    def getSubscriptionsForBugTask(bug, level):
+        """Return subscriptions for a given `IBugTask` at `level`."""
 
 
 class IStructuralSubscriptionTargetWrite(Interface):
@@ -260,21 +272,31 @@ class IStructuralSubscriptionTarget(IStructuralSubscriptionTargetRead,
     export_as_webservice_entry()
 
 
+class IStructuralSubscriptionTargetHelper(Interface):
+    """Provides information on subscribable objects."""
+
+    target = Attribute("The target.")
+
+    target_parent = Attribute(
+        "The target's parent, or None if one doesn't exist.")
+
+    target_type_display = Attribute(
+        "The type of the target, for display.")
+
+    target_arguments = Attribute(
+        "A dict of arguments that can be used as arguments to the "
+        "structural subscription constructor.")
+
+    pillar = Attribute(
+        "The pillar most closely corresponding to the context.")
+
+    join = Attribute(
+        "A Storm join to get the `IStructuralSubscription`s relating "
+        "to the context.")
+
+
 class IStructuralSubscriptionForm(Interface):
     """Schema for the structural subscription form."""
     subscribe_me = Bool(
         title=u"I want to receive these notifications by e-mail.",
         required=False)
-
-
-class DeleteSubscriptionError(Exception):
-    """Delete Subscription Error.
-
-    Raised when an error occurred trying to delete a
-    structural subscription."""
-    webservice_error(400)
-
-
-class UserCannotSubscribePerson(Exception):
-    """User does not have permission to subscribe the person or team."""
-    webservice_error(401)

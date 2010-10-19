@@ -166,13 +166,13 @@ See distroseries-publishing-lookups.txt for more information.
 canUploadToPocket method helps us to decide if an upload is allowed or
 not, according the distroseries status and the upload target pocket.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> hoary = ubuntu['hoary']
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> warty.status.name
     'CURRENT'
@@ -902,7 +902,7 @@ informational.
     >>> distroset = getUtility(IDistributionSet)
     >>> kubuntu = distroset.getByName("kubuntu")
     >>> krunch = kubuntu.getSeries("krunch")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 

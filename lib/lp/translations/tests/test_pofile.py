@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )

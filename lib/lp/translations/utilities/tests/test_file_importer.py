@@ -12,13 +12,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakelibrarian import FakeLibrarian
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,

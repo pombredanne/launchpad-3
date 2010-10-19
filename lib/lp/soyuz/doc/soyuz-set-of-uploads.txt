@@ -59,7 +59,8 @@ librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> ZecaTestSetup().setUp()
+  >>> zeca = ZecaTestSetup()
+  >>> zeca.setUp()
 
 Import public keyring into current LPDB.
 
@@ -90,7 +91,7 @@ for the ubuntutest distribution.
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 
-  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> from canonical.librarian.testing.server import fillLibrarianFile
   >>> fillLibrarianFile(54)
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
@@ -118,7 +119,7 @@ And then we need a way to process the uploads from the queue
   >>> from lp.testing.logger import MockLogger
   >>> from lp.soyuz.scripts.soyuz_process_upload import (
   ...     ProcessUpload)
-  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> def process_uploads(upload_policy, series, loglevel):
   ...     """Simulate process-upload.py script run.
   ...
@@ -148,7 +149,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -304,7 +305,7 @@ to a different 'bar_1.0.orig.tar.gz'.
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> name16.displayname = "Foo B. Bar"
   >>> syncUpdate(name16)
@@ -370,7 +371,7 @@ created with the binary package name.
   >>> simulate_upload('bar_1.0-6', upload_policy='sync')
   >>> simulate_upload('bar_1.0-6_binary', is_new=True)
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
   >>> spn_set = getUtility(ISourcePackageNameSet)
   >>> assert spn_set.queryByName('bar-bin') is None
 
@@ -468,7 +469,7 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import SeriesStatus
+  >>> from lp.registry.interfaces.series import SeriesStatus
   >>> breezy.status = SeriesStatus.CURRENT
   >>> LaunchpadZopelessLayer.txn.commit()
 
@@ -754,5 +755,5 @@ everything up.
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
 
-  >>> ZecaTestSetup().tearDown()
+  >>> zeca.tearDown()
 

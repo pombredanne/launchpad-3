@@ -62,8 +62,8 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
-from lp.registry.interfaces.person import NameAlreadyTaken
+from canonical.testing.layers import PageTestLayer
+from lp.registry.errors import NameAlreadyTaken
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,
@@ -329,7 +329,7 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
+    buttons = main.findAll(
         'input', {'name': 'field.%s' % name})
     for button in buttons:
         if button.parent.name == 'label':
@@ -848,7 +848,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -910,20 +910,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
-    # Add unnumbered tests to the suite individually.
+    suite = unittest.TestSuite()
     checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    # Add unnumbered tests to the suite individually.
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

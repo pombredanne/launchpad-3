@@ -38,7 +38,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -518,7 +518,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             except bzr_errors.NoSuchRevision:
                 revno = None
             if existing is not None:
-                branch.removeBranchRevisions([existing.revision.revision_id])
+                branchrevision = IMasterStore(branch).find(
+                    BranchRevision, BranchRevision.id == existing.id)
+                branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):

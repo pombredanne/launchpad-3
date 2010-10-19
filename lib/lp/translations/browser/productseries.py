@@ -37,8 +37,10 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.enums import service_uses_launchpad
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.propertycache import cachedproperty
@@ -327,6 +329,10 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                 "Upload failed because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
 
 class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     """A view to show a series with translations."""
@@ -409,6 +415,20 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     def single_potemplate(self):
         """Does this ProductSeries have exactly one POTemplate."""
         return self.context.potemplate_count == 1
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.Edit", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):

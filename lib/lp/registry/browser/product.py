@@ -123,7 +123,7 @@ from canonical.launchpad.webapp.launchpadform import (
     safe_action,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -158,7 +158,6 @@ from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser import BaseRdfView
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
-from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
@@ -458,9 +457,7 @@ class ProductInvolvementView(PillarView):
         # Add the branch configuration in separately.
         set_branch = series_menu['set_branch']
         set_branch.text = 'Configure project branch'
-        set_branch.summary = "Specify the location of this projects code."
-        set_branch.configured = (
-            )
+        set_branch.summary = "Specify the location of this project's code."
         config_list.append(
             dict(link=set_branch,
                  configured=config_statuses['configure_codehosting']))
@@ -469,11 +466,8 @@ class ProductInvolvementView(PillarView):
     @property
     def registration_completeness(self):
         """The percent complete for registration."""
-        configured = 0
         config_statuses = self.configuration_states
-        for key, value in config_statuses.items():
-            if value:
-                configured += 1
+        configured = sum(1 for val in config_statuses.values() if val)
         scale = 100
         done = int(float(configured) / len(config_statuses) * scale)
         undone = scale - done
@@ -964,7 +958,7 @@ class ProductDownloadFileMixin:
 
 
 class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin, UsesLaunchpadMixin):
+                  ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -1396,9 +1390,9 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
     def setUpFields(self):
         super(ProductConfigureBase, self).setUpFields()
         if self.usage_fieldname is not None:
-            # The usage fields are shared among pillars. But when referring to
-            # an individual object in Launchpad it is better to call it by its
-            # real name, i.e. 'project' instead of 'pillar'.
+            # The usage fields are shared among pillars.  But when referring
+            # to an individual object in Launchpad it is better to call it by
+            # its real name, i.e. 'project' instead of 'pillar'.
             usage_field = self.form_fields.get(self.usage_fieldname)
             if usage_field:
                 usage_field.custom_widget = CustomWidgetFactory(
@@ -1426,21 +1420,21 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
 class ProductConfigureBlueprintsView(ProductConfigureBase):
     """View class to configure the Launchpad Blueprints for a project."""
 
-    label = "Configure Blueprints"
+    label = "Configure blueprints"
     usage_fieldname = 'blueprints_usage'
 
 
 class ProductConfigureTranslationsView(ProductConfigureBase):
     """View class to configure the Launchpad Translations for a project."""
 
-    label = "Configure Translations"
+    label = "Configure translations"
     usage_fieldname = 'translations_usage'
 
 
 class ProductConfigureAnswersView(ProductConfigureBase):
     """View class to configure the Launchpad Answers for a project."""
 
-    label = "Configure Answers"
+    label = "Configure answers"
     usage_fieldname = 'answers_usage'
 
 

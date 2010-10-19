@@ -13,7 +13,7 @@ and BugWatch instances with which to work.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, CreateBugParams, IBugMessageSet,
     ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 

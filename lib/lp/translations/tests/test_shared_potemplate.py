@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.app.enums import ServiceUsage

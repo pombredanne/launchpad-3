@@ -84,3 +84,16 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
+
+    def test_addComment(self):
+        # Comments can be added via the API
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        result = ws_diff.addComment(comment='Hey there')
+
+        self.assertEqual('Hey there', result['body_text'])
+        self.assertTrue(
+            result['resource_type_link'].endswith(
+                '#distro_series_difference_comment'))

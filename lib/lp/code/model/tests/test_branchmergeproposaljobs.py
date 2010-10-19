@@ -23,7 +23,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

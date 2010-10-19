@@ -58,7 +58,7 @@ the private bug, because admins can see all bugs.
     >>> browser.getControl("Continue").click()
 
     >>> browser.url
-    'http://launchpad.dev/ubuntu/+source/evolution/+bug/...'
+    'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/...'
     >>> "You have been unsubscribed" in browser.contents
     True
 

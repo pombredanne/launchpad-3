@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 from difflib import unified_diff
+import transaction
 from unittest import (
     TestCase,
     TestLoader,
@@ -18,7 +19,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,11 +29,11 @@ from canonical.launchpad.ftests import (
     login,
     syncUpdate,
     )
-from canonical.launchpad.interfaces import IPrivacy
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

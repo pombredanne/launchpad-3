@@ -13,7 +13,7 @@ from canonical.launchpad.webapp.menu import (
     MenuBase,
     )
 from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     login,
