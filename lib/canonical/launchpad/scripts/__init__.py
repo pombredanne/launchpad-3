@@ -176,7 +176,7 @@ def db_options(parser):
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,
-            type="string", dest="dbname", default=config.database.dbname,
+            type="string", dest="dbname", default=config.database.rw_main_master,
             help="PostgreSQL database to connect to."
             )
 
