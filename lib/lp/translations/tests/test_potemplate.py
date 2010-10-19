@@ -499,6 +499,10 @@ class TestGetPOFilesFor(TestCaseWithFactory):
     def test_get_pofiles_for_untranslated_template(self):
         # If there is no POFile for a template in a language,
         # get_pofiles_for makes up a DummyPOFile.
+
+        # Avoid circular imports.
+        from lp.translations.model.pofile import DummyPOFile
+
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
         self.assertTrue(isinstance(pofile, DummyPOFile))
