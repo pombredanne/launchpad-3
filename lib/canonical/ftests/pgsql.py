@@ -170,12 +170,26 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
-        self._dynamic_name = False
         if dbname is PgTestSetup.dynamic:
             if os.environ.get('LP_TEST_INSTANCE'):
                 self.dbname = "%s_%s" % (
                     self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
-                self._dynamic_name = True
+                # Stash the name we use in the config if a writable config is
+                # available.
+                # Avoid circular imports
+                from canonical.testing.layers import BaseLayer
+                section = """[database]
+rw_main_master: dbname=%s
+rw_main_slave:  dbname=%s
+
+""" % (self.dbname, self.dbname)
+                if BaseLayer.config is not None:
+                    BaseLayer.config.add_section(section)
+                if BaseLayer.appserver_config is not None:
+                    BaseLayer.appserver_config.add_section(section)
+            if config.instance_name in (
+                BaseLayer.config_name, BaseLayer.appserver_config_name):
+                config.reloadConfig()
             else:
                 # Fallback to the class name.
                 self.dbname = self.__class__.dbname
@@ -218,23 +232,6 @@ class PgTestSetup:
         '''
         # This is now done globally in test.py
         #installFakeConnect()
-        if self._dynamic_name:
-            # Stash the name we use in the config if a writable config is
-            # available.
-            # Avoid circular imports
-            from canonical.testing.layers import BaseLayer
-            section = """[database]
-rw_main_master: dbname=%s
-rw_main_slave:  dbname=%s
-
-""" % (self.dbname, self.dbname)
-            if BaseLayer.config is not None:
-                BaseLayer.config.add_section(section)
-            if BaseLayer.appserver_config is not None:
-                BaseLayer.appserver_config.add_section(section)
-            if config.instance_name in (
-                BaseLayer.config_name, BaseLayer.appserver_config_name):
-                config.reloadConfig()
         if (self.template, self.dbname) != PgTestSetup._last_db:
             PgTestSetup._reset_db = True
         if not PgTestSetup._reset_db:
