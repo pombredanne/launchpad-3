@@ -21,8 +21,9 @@ from paste.wsgilib import catch_errors
 from canonical.config import config
 import lp.codehosting
 
-LISTEN_HOST = '0.0.0.0'
-LISTEN_PORT = 8080
+
+LISTEN_HOST = config.codebrowse.listen_host
+LISTEN_PORT = config.codebrowse.port
 THREADPOOL_WORKERS = 10
 
 
