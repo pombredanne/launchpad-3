@@ -1326,4 +1326,11 @@
             permission="zope.Public"/>
     </facet>
 
+
+    <browser:url
+        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+        attribute_to_parent="owner"
+        path_expression="string:+merge-queues/${name}"
+        rootsite="code" />
+
 </configure>

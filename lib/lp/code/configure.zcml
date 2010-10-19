@@ -22,6 +22,11 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="code" />
 
+  <!-- Branch Merge Queues -->
+  <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
+    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue" />
+  </class>
+
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require
