@@ -822,6 +822,9 @@
                 name="+portlet-details"
                 template="../templates/bugtracker-portlet-details.pt"/>
             <browser:page
+                name="+portlet-components"
+                template="../templates/bugtracker-portlet-components.pt"/>
+            <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
             <browser:page
