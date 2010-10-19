@@ -36,11 +36,13 @@ from canonical.testing.layers import (
     LaunchpadScriptLayer,
     TwistedLaunchpadZopelessLayer,
     TwistedLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
+    assessFailureCounts,
     BuilddManager,
     NewBuildersScanner,
     SlaveScanner,
@@ -53,7 +55,7 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.testing import TestCase as LaunchpadTestCase
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
@@ -438,6 +440,24 @@ class TestBuilddManager(TrialTestCase):
         self.assertNotEqual(0, manager.new_builders_scanner.scan.call_count)
 
 
+class TestFailureAssessments(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_equal_failures_reset_job(self):
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeSourcePackageRecipeBuild()
+        buildqueue = build.queueBuild()
+        buildqueue.markAsBuilding(builder)
+
+        builder.gotFailure()
+        builder.getCurrentBuildFarmJob().gotFailure()
+
+        assessFailureCounts(builder, "notes")
+        self.assertIs(None, builder.currentjob)
+        self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
+
+
 class TestNewBuilders(TrialTestCase):
     """Test detecting of new builders."""
 
@@ -539,7 +559,7 @@ def is_file_growing(filepath, poll_interval=1, poll_repeat=10):
     return False
 
 
-class TestBuilddManagerScript(LaunchpadTestCase):
+class TestBuilddManagerScript(TestCaseWithFactory):
 
     layer = LaunchpadScriptLayer
 
