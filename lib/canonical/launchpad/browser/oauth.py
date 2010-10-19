@@ -9,7 +9,13 @@ __all__ = [
     'OAuthTokenAuthorizedView',
     'lookup_oauth_context']
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from lazr.restful import HTTPResource
+import pytz
 import simplejson
 from zope.component import getUtility
 from zope.formlib.form import (
@@ -339,18 +345,21 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         self.token_context = context
 
     def reviewToken(self, permission, duration):
-        self.token.review(self.user, permission, self.token_context)
+        duration_seconds = TemporaryIntegrations.DURATION.get(duration)
+        if duration_seconds is not None:
+            duration_delta = timedelta(seconds=duration_seconds)
+            expiration_date = (
+                datetime.now(pytz.timezone('UTC')) + duration_delta)
+        else:
+            expiration_date = None
+        self.token.review(self.user, permission, self.token_context,
+                          date_expires=expiration_date)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
         else:
-            if duration is not None:
-                append = "&oauth_duration=%s" % duration
-            else:
-                append = ''
             self.next_url = (
-                '+token-authorized?oauth_token=%s%s' % (
-                    self.token.key, append))
+                '+token-authorized?oauth_token=%s' % self.token.key)
 
 
 def lookup_oauth_context(context):
