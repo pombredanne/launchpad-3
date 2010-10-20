@@ -1,3 +1,9 @@
+launchpad-buildd (72~1) hardy-cat; urgency=low
+
+  * break out readyservice.py from tachandler.py. LP#663828
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 20 Oct 2010 13:03:23 -0600
+
 launchpad-buildd (71) hardy-cat; urgency=low
 
   * Detect ppa hosts for build recipes.  LP#662664
