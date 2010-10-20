@@ -180,7 +180,6 @@
             tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/picker.js"></script>
-
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
     <script type="text/javascript"
@@ -311,7 +310,7 @@
     LPS.use('lp.app.links',
       function(Y) {
         Y.on('load', function(e) {
-            Y.lp.app.links.check_branch_links();
+            Y.lp.app.links.check_valid_lp_links();
         }, window);
     });
   </script>
