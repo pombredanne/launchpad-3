@@ -12,7 +12,10 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_parameters,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -69,7 +72,7 @@ class IBranchMergeQueue(Interface):
 
     configuration = exported(
         TextLine(
-            title=_('Configuration'), required=False,
+            title=_('Configuration'), required=False, readonly=True,
             description=_(
                 "A JSON string of configuration values.")))
 
@@ -86,6 +89,10 @@ class IBranchMergeQueue(Interface):
             readonly=True,
             value_type=Reference(Interface)))
 
+    @mutator_for(configuration)
+    @operation_parameters(
+        config=TextLine(title=_("A JSON string of configuration values.")))
+    @export_write_operation()
     def setMergeQueueConfig(config):
         """Set the JSON string configuration of the merge queue.
 

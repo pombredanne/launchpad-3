@@ -135,3 +135,19 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(queue.configuration, configuration)
         self.assertEqual(queue.date_created, db_queue.date_created)
         self.assertEqual(len(queue.branches), 2)
+
+    def test_set_configuration(self):
+        """Test the mutator for setting configuration."""
+        with person_logged_in(ANONYMOUS):
+            db_queue = self.factory.makeBranchMergeQueue()
+            launchpad = launchpadlib_for('test', db_queue.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        queue = ws_object(launchpad, db_queue)
+        queue.configuration = configuration
+        queue.lp_save()
+
+        queue2 = ws_object(launchpad, db_queue)
+        self.assertEqual(queue2.configuration, configuration)
