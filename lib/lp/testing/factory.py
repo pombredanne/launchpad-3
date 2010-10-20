@@ -1098,16 +1098,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
-    def makeBranchMergeQueue(self):
+    def makeBranchMergeQueue(self, registrant=None, owner=None):
         """Create a BranchMergeQueue."""
         name = unicode(self.getUniqueString('queue'))
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
         description = unicode(self.getUniqueString('queue-description'))
         configuration = unicode(simplejson.dumps({
             self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = BranchMergeQueue.new(
-            name, owner, owner, description, configuration)
+            name, registrant, owner, description, configuration)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
