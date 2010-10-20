@@ -663,7 +663,7 @@ class TestOpenIDRealm(TestCaseWithFactory):
         # At this point browser.contents contains a hidden form which would've
         # been auto-submitted if we had in-browser JS support, but since we
         # don't we can easily inspect what's in the form.
-        self.assertEquals('%s/'
+        self.assertEquals('%s'
                           % self.layer.appserver_root_url(ensureSlash=True),
                           browser.getControl(name='openid.realm').value)
 
