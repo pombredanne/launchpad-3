@@ -85,7 +85,8 @@ class IBranchMergeQueue(Interface):
     branches = exported(
         CollectionField(
             title=_('Dependent Branches'),
-            description=_('A collection of branches that this queue manages.'),
+            description=_(
+                'A collection of branches that this queue manages.'),
             readonly=True,
             value_type=Reference(Interface)))
 

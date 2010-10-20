@@ -1019,9 +1019,9 @@ class IBranchEdit(Interface):
         is set, the branch gets moved into the junk namespace of the branch
         owner.
 
-        :raise: `BranchTargetError` if both project and source_package are set,
-          or if either the project or source_package fail to be adapted to an
-          IBranchTarget.
+        :raise: `BranchTargetError` if both project and source_package are
+          set, or if either the project or source_package fail to be
+          adapted to an IBranchTarget.
         """
 
     def requestUpgrade():
@@ -1079,8 +1079,8 @@ class IMergeQueueable(Interface):
             TextLine(
                 title=_('Name'), required=True, readonly=True,
                 description=_(
-                    "A JSON string of configuration values to send to a branch"
-                    "merge robot.")))
+                    "A JSON string of configuration values to send to a "
+                    "branch merge robot.")))
 
     @mutator_for(merge_queue)
     @operation_parameters(
