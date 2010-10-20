@@ -23,7 +23,8 @@ from lp.testing import (
     )
 
 
-class SearchTestBase(object):
+class SearchTestBase:
+    """A mixin class with tests useful for all targets and search variants."""
 
     layer = DatabaseFunctionalLayer
 
@@ -161,7 +162,7 @@ class ProductSeriesTarget(BugTargetTestBase):
 
 
 class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
-    """Use a project  group as the bug target."""
+    """Use a project group as the bug target."""
 
     def setUp(self):
         super(ProjectGroupTarget, self).setUp()
@@ -239,7 +240,7 @@ class MilestoneTarget(BugTargetTestBase):
 
 
 class DistributionTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
-    """Use a dirstibution as the bug target."""
+    """Use a distribution as the bug target."""
 
     def setUp(self):
         super(DistributionTarget, self).setUp()
@@ -362,7 +363,7 @@ class NoPreloadBugtaskTargets:
 
 
 class QueryBugIDs:
-    """Do not preload bug targets during a BugTaskSet.search() query."""
+    """Search bug IDs."""
 
     def setUp(self):
         super(QueryBugIDs, self).setUp()
@@ -377,17 +378,21 @@ class QueryBugIDs:
 
 def test_suite():
     module = sys.modules[__name__]
-    for bug_targetsearch_type_class in (
+    for bug_target_search_type_class in (
         PreloadBugtaskTargets, NoPreloadBugtaskTargets, QueryBugIDs):
         for target_mixin in bug_targets_mixins:
             class_name = 'Test%s%s' % (
-                bug_targetsearch_type_class.__name__,
+                bug_target_search_type_class.__name__,
                 target_mixin.__name__)
+            # Dynamically build a test class from the target mixin class,
+            # from the search type mixin class, from the mixin class
+            # having all tests and from a unit test base class.
             test_class = classobj(
                 class_name,
-                (target_mixin, bug_targetsearch_type_class, SearchTestBase,
+                (target_mixin, bug_target_search_type_class, SearchTestBase,
                  TestCaseWithFactory),
                 {})
+            # Add the new unit test class to the module.
             module.__dict__[class_name] = test_class
     suite = unittest.TestSuite()
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
