@@ -235,17 +235,15 @@ class LibrarianTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
 
-    def testUploadsFail(self):
+    def testUploadsSucceed(self):
         # This layer is not particularly useful by itself, as the Librarian
         # cannot function correctly as there is no database setup.
         # We can test this using remoteAddFile (it does not need the CA
         # loaded)
         client = LibrarianClient()
         data = 'This is a test'
-        self.failUnlessRaises(
-                UploadFailed, client.remoteAddFile,
-                'foo.txt', len(data), StringIO(data), 'text/plain'
-                )
+        client.remoteAddFile(
+            'foo.txt', len(data), StringIO(data), 'text/plain')
 
 
 class LibrarianNoResetTestCase(testtools.TestCase):
