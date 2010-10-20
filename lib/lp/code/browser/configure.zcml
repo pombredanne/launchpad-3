@@ -974,12 +974,6 @@
       permission="zope.Public"
       name="+portlet-product-codestatistics"
       template="../templates/product-portlet-codestatistics.pt"/>
-   <browser:page
-      for="lp.registry.interfaces.product.IProduct"
-      class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
-      permission="zope.Public"
-      name="+portlet-product-codestatistics-content"
-      template="../templates/product-portlet-codestatistics-content.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.code.publisher.CodeLayer"

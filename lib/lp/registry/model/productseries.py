@@ -200,7 +200,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             service_uses_launchpad(self.codehosting_usage) or
             service_uses_launchpad(self.bug_tracking_usage))
 
-
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
@@ -450,6 +449,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
+
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
 
     def getRelease(self, version):
         for release in self.releases:

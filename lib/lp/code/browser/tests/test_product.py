@@ -26,15 +26,20 @@ from lp.code.enums import (
     BranchVisibilityRule,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.publisher import CodeLayer
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
     login_person,
+    logout,
     TestCaseWithFactory,
     time_counter,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class ProductTestBase(TestCaseWithFactory):
@@ -157,6 +162,27 @@ class TestProductCodeIndexView(ProductTestBase):
 class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
     """Tests for the product code page, especially the usage messasges."""
 
+    def test_external_imported(self):
+        # A product with an imported development focus branch should say so,
+        # and should display the upstream information along with the LP info.
+        product = self.factory.makeProduct()
+        code_import = self.factory.makeProductCodeImport(
+            svn_branch_url='http://svn.example.org/branch')
+        login_person(product.owner)
+        product.development_focus.branch = code_import.branch
+        logout()
+        self.assertEqual(ServiceUsage.EXTERNAL, product.codehosting_usage)
+        browser = self.getUserBrowser(canonical_url(product, rootsite='code'))
+        login(ANONYMOUS)
+        content = find_tag_by_id(browser.contents, 'external')
+        text = extract_text(content)
+        expected = ("%(product_title)s hosts its code at %(branch_url)s. "
+            "Launchpad imports the master branch and you can create "
+            "branches from it." % dict(
+                product_title=product.title,
+                branch_url=code_import.url))
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
     def test_external_mirrored(self):
         # A mirrored branch says code is hosted externally, and displays
         # upstream data.
@@ -229,7 +255,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login(ANONYMOUS)
         text = extract_text(find_tag_by_id(
             browser.contents, 'branch-count-summary'))
-        expected = "1 Active  branch owned by 1 person.*"
+        expected = ("%s has 1 active branch owned by 1"
+                    " person." % product.displayname)
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
         # The code page does not set robots to noindex, nofollow.
@@ -314,6 +341,22 @@ class TestProductBranchesViewPortlets(ProductTestBase, BrowserTestCase):
         expected = ("New branches you create for %(name)s are public "
                     "initially.*" % dict(name=product.displayname))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+
+class TestCanConfigureBranches(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_cannot_configure_branches_product_no_edit_permission(self):
+        product = self.factory.makeProduct()
+        view = create_view(product, '+branches', layer=CodeLayer)
+        self.assertEqual(False, view.can_configure_branches())
+
+    def test_can_configure_branches_product_with_edit_permission(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        view = create_view(product, '+branches', layer=CodeLayer)
+        self.assertEqual(True, view.can_configure_branches())
 
 
 def test_suite():

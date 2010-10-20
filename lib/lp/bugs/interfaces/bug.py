@@ -493,6 +493,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         from duplicates.
         """
 
+    def getStructuralSubscribers(recipients=None, level=None):
+        """Return `IPerson`s subscribed to this bug's targets.
+
+        This takes into account bug subscription filters.
+        """
+
     def getSubscriptionsFromDuplicates():
         """Return IBugSubscriptions subscribed from dupes of this bug."""
 
@@ -501,9 +507,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def getSubscribersForPerson(person):
         """Find the persons or teams by which person is subscribed.
-        
+
         This call should be quite cheap to make and performs a single query.
-        
+
         :return: An IResultSet.
         """
 

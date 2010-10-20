@@ -62,12 +62,12 @@ Below the branch counts in the main content, there is a paragraph that lists
 the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
-    >>> print_tag_with_id(browser.contents, 'merge-counts')
-    3 Active reviews
+    >>> print_tag_with_id(browser.contents, 'active-review-count')
+    Fooix has 3 active reviews...
 
 The 'active reviews' text links to the active reviews page.
 
-    >>> browser.getLink('Active reviews').click()
+    >>> browser.getLink('active reviews').click()
     >>> print browser.title
     Active code reviews for Fooix...
 

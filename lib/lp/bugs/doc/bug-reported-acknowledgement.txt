@@ -69,7 +69,7 @@ access.
 The security proxies also prevent unprivileged users from editing the
 message.
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
 
     >>> def check_access(user, context):
     ...     if IPerson.providedBy(user):

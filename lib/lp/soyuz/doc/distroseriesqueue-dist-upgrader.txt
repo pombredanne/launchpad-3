@@ -275,7 +275,7 @@ files in the respective PPA location.
   >>> from lp.registry.interfaces.person import IPersonSet
   >>> from lp.soyuz.enums import ArchivePurpose
   >>> from lp.soyuz.interfaces.archive import IArchiveSet
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+  >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin
