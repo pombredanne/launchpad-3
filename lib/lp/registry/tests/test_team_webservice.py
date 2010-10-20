@@ -1,9 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the # GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import httplib
-import unittest
 
 from lazr.restfulclient.errors import HTTPError
 
@@ -53,7 +53,7 @@ class TestTeamLinking(TestCaseWithFactory):
 
 
 class TestTeamJoining(TestCaseWithFactory):
-    
+
     layer = DatabaseFunctionalLayer
 
     def test_restricted_rejects_membership(self):
@@ -79,7 +79,7 @@ class TestTeamJoining(TestCaseWithFactory):
         login_person(self.team.teamowner)
         self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
         logout()
-        
+
         launchpad = launchpadlib_for("test", self.person)
         test_person = launchpad.people['test-person']
         test_team = launchpad.people['test-team']
