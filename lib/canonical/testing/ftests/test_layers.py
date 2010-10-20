@@ -236,8 +236,8 @@ class LibrarianTestCase(BaseTestCase):
     want_librarian_running = True
 
     def testUploadsSucceed(self):
-        # This layer is not particularly useful by itself, as the Librarian
-        # cannot function correctly as there is no database setup.
+        # This layer is able to be used on its own as it depends on
+        # DatabaseLayer.
         # We can test this using remoteAddFile (it does not need the CA
         # loaded)
         client = LibrarianClient()
