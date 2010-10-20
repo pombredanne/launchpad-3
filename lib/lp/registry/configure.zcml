@@ -488,7 +488,7 @@
                 addAnswerContact
                 removeAnswerContact"/>
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.BugSupervisor"
             set_attributes="
                 bug_reported_acknowledgement
                 bug_reporting_guidelines"/>

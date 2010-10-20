@@ -331,7 +331,7 @@ class BaseLayer:
                     if thread not in BaseLayer._threads and thread.isAlive()]
 
         if BaseLayer.disable_thread_check:
-            new_threads = new_live_threads()
+            new_threads = None
         else:
             for loop in range(0,100):
                 # Check for tests that leave live threads around early.
