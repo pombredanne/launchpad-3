@@ -184,7 +184,8 @@ class BugzillaRemoteComponentFinder:
                         # so drop it here too
                         component.remove()
 
-            # Remaining components in the collection need added to launchpad
+            # The remaining components in the collection will need to be
+            # added to launchpad.  Record them for now.
             for component in product['components'].values():
                 components_to_add.append(
                     "('%s', %d, 'True', 'False')" %(
