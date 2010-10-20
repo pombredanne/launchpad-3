@@ -978,7 +978,9 @@ class PersonBaseBranchListingView(BranchListingView):
 
     @property
     def show_action_menu(self):
-        return self.user.inTeam(self.context)
+        if self.user is not None:
+            return self.user.inTeam(self.context)
+        return False
 
     @property
     def show_junk_directions(self):
