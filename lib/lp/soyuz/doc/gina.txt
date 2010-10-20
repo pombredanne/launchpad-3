@@ -480,7 +480,7 @@ run.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
