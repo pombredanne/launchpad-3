@@ -473,7 +473,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
     layer = DatabaseLayer
 
     def tearDown(self):
-        super(LayerProcessController, self).tearDown()
+        super(LayerProcessControllerTestCase, self).tearDown()
         # Stop both servers.  It's okay if they aren't running.
         LayerProcessController.stopSMTPServer()
         LayerProcessController.stopAppServer()
