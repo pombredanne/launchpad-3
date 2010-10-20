@@ -1135,6 +1135,22 @@ permissions also elicits an error message:
     Only owners, drivers and bug supervisors may assign milestones.
     ...
 
+Sample person must be a bug supervisor for Ubuntu and Evolution to be able to
+nominate bugs for a release.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>>
+    >>> login(ADMIN_EMAIL)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     "test@canonical.com")
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = sample_person
+    >>> logout()
+
     >>> login('test@canonical.com')
 
 Like the web UI, we can assign a bug to nobody.
@@ -1331,6 +1347,13 @@ nomination is automatically approved.
 If the user doesn't have permission to approve the nomination, no series
 bug task will be created, only a nomination. A general product bugtask
 will be created if one doesn't exist.
+
+    >>> login(ADMIN_EMAIL)
+    >>> no_priv = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
+    >>> evolution = getUtility(IProductSet).getByName("evolution")
+    >>> evolution = removeSecurityProxy(evolution)
+    >>> evolution.bug_supervisor = no_priv
+    >>> logout()
 
     >>> login('no-priv@canonical.com')
     >>> bug = new_firefox_bug()

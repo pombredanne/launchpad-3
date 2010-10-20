@@ -631,8 +631,14 @@ Initially there are no nominations.
     total_size: 0
     ---
 
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
+    >>> debuntu = removeSecurityProxy(debuntu)
+    >>> debuntu.bug_supervisor = john
+    >>> fooix = removeSecurityProxy(fooix)
+    >>> fooix.bug_supervisor = john
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
