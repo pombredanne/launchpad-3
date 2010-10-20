@@ -24,6 +24,13 @@
           structure context/menu:overview/remove_packaging/fmt:icon " />
       </span>
     </dd>
+    <tal:upstream-version
+      define="release series/getLatestRelease">
+      <dd tal:condition="release">
+        Lastest version:
+        <tal:version replace="release/version"/>
+      </dd>
+    </tal:upstream-version>
   </dl>
 
   <style>

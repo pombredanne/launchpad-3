@@ -6,7 +6,7 @@ into a team.  The script takes the name of the person to be converted into a
 team and the name of the team owner as arguments.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> matsubara = getUtility(IPersonSet).getByName('matsubara')
     >>> matsubara.isTeam()
     False

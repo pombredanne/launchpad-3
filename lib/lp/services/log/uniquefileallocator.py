@@ -12,8 +12,8 @@ __metaclass__ = type
 import datetime
 import errno
 import os.path
+import stat
 import threading
-import time
 
 import pytz
 
@@ -27,7 +27,7 @@ epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 
 class UniqueFileAllocator:
     """Assign unique file names to logs being written from an app/script.
-    
+
     UniqueFileAllocator causes logs written from one process to be uniquely
     named. It is not safe for use in multiple processes with the same output
     root - each process must have a unique output root.
@@ -90,8 +90,8 @@ class UniqueFileAllocator:
         if the logging application is restarted.
 
         This method is not thread safe, and only intended to be called
-        from the constructor (but it is called from other places in integration
-        tests).
+        from the constructor (but it is called from other places in
+        integration tests).
         """
         return self._findHighestSerialFilename(directory)[0]
 
@@ -105,7 +105,8 @@ class UniqueFileAllocator:
         output_dir = self.output_dir(time)
         second_in_day = time.hour * 3600 + time.minute * 60 + time.second
         return os.path.join(
-            output_dir, '%05d.%s%s' % (second_in_day, log_subtype, log_serial))
+            output_dir, '%05d.%s%s' % (
+            second_in_day, log_subtype, log_serial))
 
     def get_log_infix(self):
         """Return the current log infix to use in ids and file names."""
@@ -114,8 +115,8 @@ class UniqueFileAllocator:
     def newId(self, now=None):
         """Returns an (id, filename) pair for use by the caller.
 
-        The ID is composed of a short string to identify the Launchpad instance
-        followed by an ID that is unique for the day.
+        The ID is composed of a short string to identify the Launchpad
+        instance followed by an ID that is unique for the day.
 
         The filename is composed of the zero padded second in the day
         followed by the ID.  This ensures that reports are in date order when
@@ -163,12 +164,17 @@ class UniqueFileAllocator:
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
+                # Make sure the directory permission is set to: rwxr-xr-x
+                permission = (
+                    stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP |
+                    stat.S_IROTH | stat.S_IXOTH)
+                os.chmod(result, permission)
                 # TODO: Note that only one process can do this safely: its not
-                # cross-process safe, and also not entirely threadsafe: another
-                # thread that has a new log and hasn't written it could then
-                # use that serial number. We should either make it really safe,
-                # or remove the contention entirely and log uniquely per thread
-                # of execution.
+                # cross-process safe, and also not entirely threadsafe:
+                # another # thread that has a new log and hasn't written it
+                # could then use that serial number. We should either make it
+                # really safe, or remove the contention entirely and log
+                # uniquely per thread of execution.
                 self._last_serial = self._findHighestSerial(result)
             finally:
                 self._lock.release()
@@ -178,7 +184,7 @@ class UniqueFileAllocator:
         """Append a string to the log subtype in filenames and log ids.
 
         :param token: a string to append..
-            Scripts that run multiple processes can use this to create a unique
-            identifier for each process.
+            Scripts that run multiple processes can use this to create a
+            unique identifier for each process.
         """
         self._log_token = token

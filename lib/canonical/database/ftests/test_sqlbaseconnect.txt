@@ -19,7 +19,7 @@ Ensure that canonical.database.sqlbase connects as we expect.
 Specifying the user connects as that user.
 
     >>> do_connect(user=config.launchpad_session.dbuser)
-    Connected as session to launchpad_ftest in read committed isolation.
+    Connected as session to ... in read committed isolation.
 
 Specifying the database name connects to that database.
 
@@ -31,5 +31,5 @@ Specifying the isolation level works too.
     >>> do_connect(
     ...     user=config.launchpad.dbuser,
     ...     isolation=ISOLATION_LEVEL_SERIALIZABLE)
-    Connected as launchpad_main to launchpad_ftest in serializable isolation.
+    Connected as launchpad_main to ... in serializable isolation.
 

@@ -120,8 +120,7 @@ class DeathRow:
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
             SourcePackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM sourcepackagepublishinghistory as spph,
-                  sourcepackagerelease as spr
+              SELECT 1 FROM sourcepackagepublishinghistory as spph
               WHERE
                   SourcePackagePublishingHistory.sourcepackagerelease =
                       spph.sourcepackagerelease AND
@@ -136,8 +135,7 @@ class DeathRow:
             BinaryPackagePublishingHistory.scheduleddeletiondate < %s AND
             BinaryPackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM binarypackagepublishinghistory as bpph,
-                  binarypackagerelease as bpr
+              SELECT 1 FROM binarypackagepublishinghistory as bpph
               WHERE
                   BinaryPackagePublishingHistory.binarypackagerelease =
                       bpph.binarypackagerelease AND
