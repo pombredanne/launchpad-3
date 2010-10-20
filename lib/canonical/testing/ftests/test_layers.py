@@ -472,6 +472,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
     def test_stopAppServer(self):
         # Test that stopping the app server kills the process and remove the
         # PID file.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         pid = LayerProcessController.appserver.pid
         pid_file = pidfile_path('launchpad',
@@ -485,6 +486,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
     def test_postTestInvariants(self):
         # A LayerIsolationError should be raised if the app server dies in the
         # middle of a test.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         pid = LayerProcessController.appserver.pid
         os.kill(pid, signal.SIGTERM)
@@ -494,6 +496,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
 
     def test_postTestInvariants_dbIsReset(self):
         # The database should be reset by the test invariants.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         LayerProcessController.postTestInvariants()
         # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
