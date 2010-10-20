@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import os
+from textwrap import dedent
 
 from testtools import TestCase
 
@@ -48,9 +49,12 @@ class TestConfigFixture(TestCase):
                 self.assertEqual(old, new)
             confpath = 'configs/testtestconfig/launchpad-lazr.conf'
             lazr_config = open(confpath, 'rb').read()
-            self.assertEqual("""[meta]
-extends: ../testrunner/launchpad-lazr.conf
+            self.assertEqual(
+                dedent("""\
+                [meta]
+                extends: ../testrunner/launchpad-lazr.conf
 
-""", lazr_config)
+                """),
+                lazr_config)
         finally:
             fixture.cleanUp()

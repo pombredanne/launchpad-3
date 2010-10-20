@@ -299,8 +299,7 @@ class BaseLayer:
             # test run, or from the parent test process if the current
             # layer is being run in a subprocess. No need to be polite
             # about killing memcached - just do it quickly.
-            if not BaseLayer.persist_test_services:
-                kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
+            kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             config_name = 'testrunner_%s' % test_instance
             cls.make_config(config_name, 'testrunner', 'config')
             app_config_name = 'testrunner-appserver_%s' % test_instance
@@ -1706,9 +1705,14 @@ class LayerProcessController:
     smtp_controller = None
 
     @classmethod
-    def setUp(cls):
+    def _setConfig(cls):
+        """Stash a config for use."""
         cls.appserver_config = CanonicalConfig(
             BaseLayer.appserver_config_name, 'runlaunchpad')
+
+    @classmethod
+    def setUp(cls):
+        cls._setConfig()
         cls.startSMTPServer()
         cls.startAppServer()
 
