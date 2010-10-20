@@ -11,8 +11,9 @@ calling IBug.addNomination.
     >>> from lp.bugs.model.bugnomination import BugNomination
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugnomination import IBugNomination
-    >>> from canonical.launchpad.interfaces import (IDistributionSet,
-    ...     IPersonSet, IProductSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.testing.sampledata import (ADMIN_EMAIL)
     >>> login(ADMIN_EMAIL)
     >>> nominator = factory.makePerson(name='nominator')

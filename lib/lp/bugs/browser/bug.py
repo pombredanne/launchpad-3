@@ -274,7 +274,8 @@ class BugContextMenu(ContextMenu):
         if check_permission("launchpad.Driver", target):
             text = "Target to release"
             return Link('+nominate', text, icon='milestone')
-        elif check_permission("launchpad.BugSupervisor", target):
+        elif (check_permission("launchpad.BugSupervisor", target) or
+            check_permission("launchpad.View", target)):
             text = 'Nominate for release'
             return Link('+nominate', text, icon='milestone')
         else:
