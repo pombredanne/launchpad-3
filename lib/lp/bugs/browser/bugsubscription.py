@@ -87,7 +87,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
 
     @property
     def field_names(self):
-        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+        if self._use_advanced_features:
             return ['bug_notification_level']
         else:
             return []
@@ -130,6 +130,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
         self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
+    @cachedproperty
+    def _use_advanced_features(self):
+        """Return True if advanced subscriptions features are enabled."""
+        return features.getFeatureFlag(
+            'malone.advanced-subscriptions.enabled')
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpFields()
@@ -165,7 +171,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
             vocabulary=subscription_vocabulary, required=True,
             default=default_subscription_value)
 
-        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+        if self._use_advanced_features:
             # We need to pop the bug_notification_level field out of
             # form_fields so that we can put the subscription_field first in
             # the list. formlib.form.Fields doesn't have an insert() method.
@@ -184,7 +190,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView):
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
-        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+        if self._use_advanced_features:
             if (not self.user_is_subscribed and
                 self._subscriber_count_for_current_user == 0):
                 # We hide the subscription widget if the user isn't
