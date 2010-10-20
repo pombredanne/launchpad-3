@@ -6,7 +6,8 @@ A bug can be nominated for a product series.
     >>> nominater = factory.makePerson(name='nominater',
     ...     password='g00dpassword')
     >>> widget = factory.makeProduct(name='widget',
-    ...     official_malone = True)
+    ...     official_malone = True,
+    ...     bug_supervisor=nominater)
     >>> series = factory.makeProductSeries(product=widget,
     ...     name='beta')
     >>> bug = factory.makeBug(product=widget)
