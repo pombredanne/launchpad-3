@@ -4,9 +4,9 @@ Team pages
 Home page
 ---------
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getMultiAdapter
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> person_set = getUtility(IPersonSet)
 
 On a team home page, we show up to the latest five members who were approved

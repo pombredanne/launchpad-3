@@ -15,9 +15,9 @@ Creating a hosted branch
 
 Hosted branches use Launchpad as their primary location.
 
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.code.enums import BranchType
     >>> from zope.component import getUtility
+    >>> from lp.code.enums import BranchType
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login(ANONYMOUS)
     >>> redfish = getUtility(IProductSet).getByName('redfish')
     >>> branch = factory.makeProductBranch(

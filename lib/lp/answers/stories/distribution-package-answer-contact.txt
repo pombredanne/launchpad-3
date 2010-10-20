@@ -7,10 +7,10 @@ contacts as well as the distribution answer contacts.
     # Register a Sample Person as an answer contact for the distribution.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> # Answer contacts must speak a language
