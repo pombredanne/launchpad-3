@@ -315,7 +315,7 @@ class IProjectGroupPublic(
     def getProduct(name):
         """Get a product with name `name`."""
 
-    def getConfigurableProducts(self):
+    def getConfigurableProducts():
         """Get all products that can be edited by user."""
 
     def translatables():
