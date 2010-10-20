@@ -101,18 +101,12 @@ class TestWebservice(TestCaseWithFactory):
 
     layer = AppServerLayer
 
-    def setUp(self):
-        super(TestWebservice, self).setUp()
-        with person_logged_in(ANONYMOUS):
-            self.user = self.factory.makePerson()
-            transaction.commit()
-            self.launchpad = launchpadlib_for('test', self.user,
-                service_root="http://api.launchpad.dev:8085")
-
     def test_properties(self):
         """Test that the correct properties are exposed."""
-        db_queue = self.factory.makeBranchMergeQueue()
-        transaction.commit()
+        with person_logged_in(ANONYMOUS):
+            db_queue = self.factory.makeBranchMergeQueue()
+            launchpad = launchpadlib_for('test', db_queue.owner,
+                service_root="http://api.launchpad.dev:8085")
+            transaction.commit()
 
-        with person_logged_in(self.user):
-            queue = ws_object(self.launchpad, self.user)
+        queue = ws_object(launchpad, db_queue)

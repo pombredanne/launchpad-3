@@ -896,6 +896,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
+    def getMergeQueue(name):
+        """Return the person's merge queue with the given name."""
+
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
     def getArchiveSubscriptionURLs(requester):

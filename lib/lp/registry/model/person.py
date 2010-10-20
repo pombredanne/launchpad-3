@@ -2661,6 +2661,13 @@ class Person(
             SourcePackageRecipe, SourcePackageRecipe.owner == self,
             SourcePackageRecipe.name == name).one()
 
+    def getMergeQueue(self, name):
+        from lp.code.model.branchmergequeue import BranchMergeQueue
+        return Store.of(self).find(
+            BranchMergeQueue,
+            BranchMergeQueue.owner == self,
+            BranchMergeQueue.name == name).one()
+
     def isUploader(self, distribution):
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
