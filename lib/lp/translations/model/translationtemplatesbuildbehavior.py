@@ -82,6 +82,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return None
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         return slave.getFile(slave_filename).read()
 
     def _uploadTarball(self, branch, tarball, logger):
@@ -121,6 +123,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         if build_status == 'OK':
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
+            # XXX 2010-10-18 bug=662631
+            # Change this to do non-blocking IO.
             tarball = self._readTarball(queue_item, filemap, logger)
 
             if tarball is None:
@@ -131,7 +135,5 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
-        # XXX: bigjools 2010-09-24: This call is not necessary, the build
-        # manager will restart the virtual machine.
         d = queue_item.builder.cleanSlave()
         return d.addCallback(lambda ignored: queue_item.destroySelf())

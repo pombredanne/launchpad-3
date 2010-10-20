@@ -569,6 +569,8 @@ class Builder(SQLBase):
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
         try:
+            # XXX 2010-10-18 bug=662631
+            # Change this to do non-blocking IO.
             slave_file = self.slave.getFile(file_sha1)
             copy_and_close(slave_file, out_file)
             # If the requested file is the 'buildlog' compress it using gzip

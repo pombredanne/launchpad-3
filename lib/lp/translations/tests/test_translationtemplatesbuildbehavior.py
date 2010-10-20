@@ -304,6 +304,8 @@ class TestTranslationTemplatesBuildBehavior(
         def got_dispatch((status, info)):
             dummy_tar = os.path.join(
                 os.path.dirname(__file__),'dummy_templates.tar.gz')
+            # XXX 2010-10-18 bug=662631
+            # Change this to do non-blocking IO.
             builder.slave.getFile = lambda sum: open(dummy_tar)
             builder.slave.filemap = {
                 'translation-templates.tar.gz': 'foo'}

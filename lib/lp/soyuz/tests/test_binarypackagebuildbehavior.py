@@ -432,6 +432,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         old_tmps = sorted(os.listdir('/tmp'))
 
         # Grabbing logs should not leave new files in /tmp (bug #172798)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         logfile_lfa_id = self.build.getLogFromSlave(self.build)
         logfile_lfa = getUtility(ILibraryFileAliasSet)[logfile_lfa_id]
         new_tmps = sorted(os.listdir('/tmp'))
