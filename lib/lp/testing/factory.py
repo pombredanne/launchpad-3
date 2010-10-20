@@ -1099,7 +1099,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return namespace.createBranch(branch_type, name, creator)
 
     def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
-                             description=None):
+                             description=None, configuration=None):
         """Create a BranchMergeQueue."""
         if name is None:
             name = unicode(self.getUniqueString('queue'))
@@ -1109,8 +1109,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         if description is None:
             description = unicode(self.getUniqueString('queue-description'))
-        configuration = unicode(simplejson.dumps({
-            self.getUniqueString('key'): self.getUniqueString('value')}))
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({
+                self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = BranchMergeQueue.new(
             name, registrant, owner, description, configuration)

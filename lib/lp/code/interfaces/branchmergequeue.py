@@ -67,15 +67,17 @@ class IBranchMergeQueue(Interface):
             description=_(
                 'A short description of the purpose of this merge queue.')))
 
-    configuration = TextLine(
-        title=_('Configuration'), required=False,
-        description=_(
-            "A JSON string of configuration values."))
+    configuration = exported(
+        TextLine(
+            title=_('Configuration'), required=False,
+            description=_(
+                "A JSON string of configuration values.")))
 
-    date_created = Datetime(
-        title=_('Date Created'),
-        required=True,
-        readonly=True)
+    date_created = exported(
+        Datetime(
+            title=_('Date Created'),
+            required=True,
+            readonly=True))
 
     branches = CollectionField(
         title=_('Dependent Branches'),

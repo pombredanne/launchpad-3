@@ -104,10 +104,15 @@ class TestWebservice(TestCaseWithFactory):
     def test_properties(self):
         """Test that the correct properties are exposed."""
         with person_logged_in(ANONYMOUS):
+            name = u'teh-queue'
+            description = u'Oh hai! I are a queues'
+            configuration = unicode(simplejson.dumps({'test': 'make check'}))
+
             queuer = self.factory.makePerson()
             db_queue = self.factory.makeBranchMergeQueue(
-                registrant=queuer, owner=queuer, name=u'teh-queue',
-                description=u'Oh hai! I are a queues')
+                registrant=queuer, owner=queuer, name=name,
+                description=description,
+                configuration=configuration)
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
             transaction.commit()
@@ -117,5 +122,7 @@ class TestWebservice(TestCaseWithFactory):
 
         self.assertEqual(queue.registrant, queuer)
         self.assertEqual(queue.owner, queuer)
-        self.assertEqual(queue.name, 'teh-queue')
-        self.assertEqual(queue.description, 'Oh hai! I are a queues')
+        self.assertEqual(queue.name, name)
+        self.assertEqual(queue.description, description)
+        self.assertEqual(queue.configuration, configuration)
+        self.assertEqual(queue.date_created, db_queue.date_created)
