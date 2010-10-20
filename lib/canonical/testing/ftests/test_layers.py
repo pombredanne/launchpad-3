@@ -232,6 +232,7 @@ class MemcachedTestCase(BaseTestCase):
 class LibrarianTestCase(BaseTestCase):
     layer = LibrarianLayer
 
+    want_launchpad_database = True
     want_librarian_running = True
 
     def testUploadsFail(self):
