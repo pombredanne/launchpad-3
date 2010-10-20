@@ -1677,8 +1677,17 @@ class LayerProcessController:
     # configs/testrunner-appserver/mail-configure.zcml
     smtp_controller = None
 
-    # The DB fixture in use
-    _db_fixture = None
+    @classmethod
+    def _setConfig(cls):
+        """Stash a config for use."""
+        cls.appserver_config = CanonicalConfig(
+            BaseLayer.appserver_config_name, 'runlaunchpad')
+
+    @classmethod
+    def setUp(cls):
+        cls._setConfig()
+        cls.startSMTPServer()
+        cls.startAppServer()
 
     @classmethod
     @profiled
