@@ -51,9 +51,6 @@ def get_builder(name):
 
 def assessFailureCounts(builder, fail_notes):
     """View builder/job failure_count and work out which needs to die.  """
-    # XXX: completely lacks tests
-    # XXX: Change behaviour to allow for more builder failures.
-
     # builder.currentjob hides a complicated query, don't run it twice.
     # See bug 623281.
     current_job = builder.currentjob
@@ -79,6 +76,10 @@ def assessFailureCounts(builder, fail_notes):
         if current_job is not None:
             current_job.reset()
 
+        # We are a little more tolerant with failing builders than
+        # failing jobs because sometimes they get unresponsive due to
+        # human error, flaky networks etc.  We expect the builder to get
+        # better, whereas jobs are very unlikely to get better.
         if builder.failure_count >= Builder.FAILURE_THRESHOLD:
             # It's also gone over the threshold so let's disable it.
             builder.failBuilder(fail_notes)
@@ -363,6 +364,7 @@ class BuilddManager(service.Service):
 
     def stopService(self):
         """Callback for when we need to shut down."""
+        # XXX: lacks unit tests
         # All the SlaveScanner objects need to be halted gracefully.
         deferreds = [slave.stopping_deferred for slave in self.builder_slaves]
         deferreds.append(self.new_builders_scanner.stopping_deferred)
