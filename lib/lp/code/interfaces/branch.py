@@ -990,18 +990,6 @@ class IBranchEditableAttributes(Interface):
             required=False, readonly=True,
             vocabulary=ControlFormat))
 
-    merge_queue = Reference(
-        title=_('Branch Merge Queue'),
-        schema=IBranchMergeQueue, required=False, readonly=True,
-        description=_(
-            "The branch merge queue that manages merges for this branch."))
-
-    merge_queue_config = TextLine(
-            title=_('Name'), required=True, constraint=branch_name_validator,
-            description=_(
-                "A JSON string of configuration values to send to a branch"
-                "merge robot."))
-
 
 class IBranchEdit(Interface):
     """IBranch attributes that require launchpad.Edit permission."""
@@ -1075,6 +1063,30 @@ class IBranchEdit(Interface):
         :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
+
+class IMergeQueueable(Interface):
+    """An interface for branches that can be queued."""
+
+    merge_queue = exported(
+        Reference(
+            title=_('Branch Merge Queue'),
+            schema=IBranchMergeQueue, required=False, readonly=True,
+            description=_(
+                "The branch merge queue that manages merges for this "
+                "branch.")))
+
+    merge_queue_config = exported(
+            TextLine(
+                title=_('Name'), required=True, readonly=True,
+                description=_(
+                    "A JSON string of configuration values to send to a branch"
+                    "merge robot.")))
+
+    @mutator_for(merge_queue)
+    @operation_parameters(
+        queue=Reference(title=_('Branch Merge Queue'),
+              schema=IBranchMergeQueue))
+    @export_write_operation()
     def addToQueue(queue):
         """Add this branch to a specified queue.
 
@@ -1083,6 +1095,10 @@ class IBranchEdit(Interface):
         :param queue: The branch merge queue that will manage the branch.
         """
 
+    @mutator_for(merge_queue_config)
+    @operation_parameters(
+        config=TextLine(title=_("A JSON string of config values.")))
+    @export_write_operation()
     def setMergeQueueConfig(config):
         """Set the merge_queue_config property.
 
@@ -1094,7 +1110,7 @@ class IBranchEdit(Interface):
 
 
 class IBranch(IBranchPublic, IBranchView, IBranchEdit,
-              IBranchEditableAttributes, IBranchAnyone):
+              IBranchEditableAttributes, IBranchAnyone, IMergeQueueable):
     """A Bazaar branch."""
 
     # Mark branches as exported entries for the Launchpad API.

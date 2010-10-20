@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -118,6 +119,7 @@ from lp.services.osutils import override_environ
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
+    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -126,6 +128,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     time_counter,
+    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.model.translationtemplatesbuildjob import (
@@ -2742,6 +2745,46 @@ class TestMergeQueue(TestCaseWithFactory):
                 InvalidMergeQueueConfig,
                 branch.setMergeQueueConfig,
                 config)
+
+
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_set_merge_queue(self):
+        """Test that the merge queue can be set properly."""
+        with person_logged_in(ANONYMOUS):
+            db_queue = self.factory.makeBranchMergeQueue()
+            db_branch = self.factory.makeBranch()
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        branch = ws_object(launchpad, db_branch)
+        queue = ws_object(launchpad, db_queue)
+        branch.merge_queue = queue
+        branch.lp_save()
+
+        branch2 = ws_object(launchpad, db_branch)
+        self.assertEqual(branch2.merge_queue, queue)
+
+    def test_set_configuration(self):
+        """Test the mutator for setting configuration."""
+        with person_logged_in(ANONYMOUS):
+            db_branch = self.factory.makeBranch()
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        branch = ws_object(launchpad, db_branch)
+        branch.merge_queue_config = configuration
+        branch.lp_save()
+
+        branch2 = ws_object(launchpad, db_branch)
+        self.assertEqual(branch2.merge_queue_config, configuration)
 
 
 def test_suite():

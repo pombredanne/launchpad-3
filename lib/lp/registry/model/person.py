@@ -2666,7 +2666,7 @@ class Person(
         return Store.of(self).find(
             BranchMergeQueue,
             BranchMergeQueue.owner == self,
-            BranchMergeQueue.name == name).one()
+            BranchMergeQueue.name == unicode(name)).one()
 
     def isUploader(self, distribution):
         """See `IPerson`."""
