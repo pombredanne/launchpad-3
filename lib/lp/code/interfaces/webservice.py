@@ -36,3 +36,4 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 
 
+IBranchMergeQueue['branches'].value_type.schema = IBranch

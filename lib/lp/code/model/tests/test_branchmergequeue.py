@@ -113,12 +113,20 @@ class TestWebservice(TestCaseWithFactory):
                 registrant=queuer, owner=queuer, name=name,
                 description=description,
                 configuration=configuration)
+            branch1 = self.factory.makeBranch()
+            with person_logged_in(branch1.owner):
+                branch1.addToQueue(db_queue)
+            branch2 = self.factory.makeBranch()
+            with person_logged_in(branch2.owner):
+                branch2.addToQueue(db_queue)
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
             transaction.commit()
 
         queuer = ws_object(launchpad, queuer)
         queue = ws_object(launchpad, db_queue)
+        branch1 = ws_object(launchpad, branch1)
+        branch2 = ws_object(launchpad, branch2)
 
         self.assertEqual(queue.registrant, queuer)
         self.assertEqual(queue.owner, queuer)
@@ -126,3 +134,4 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(queue.description, description)
         self.assertEqual(queue.configuration, configuration)
         self.assertEqual(queue.date_created, db_queue.date_created)
+        self.assertEqual(len(queue.branches), 2)

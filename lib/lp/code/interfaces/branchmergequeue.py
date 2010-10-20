@@ -79,11 +79,12 @@ class IBranchMergeQueue(Interface):
             required=True,
             readonly=True))
 
-    branches = CollectionField(
-        title=_('Dependent Branches'),
-        description=_('A collection of branches that this queue manages.'),
-        readonly=True,
-        value_type=Reference(Interface))
+    branches = exported(
+        CollectionField(
+            title=_('Dependent Branches'),
+            description=_('A collection of branches that this queue manages.'),
+            readonly=True,
+            value_type=Reference(Interface)))
 
     def setMergeQueueConfig(config):
         """Set the JSON string configuration of the merge queue.
