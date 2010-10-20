@@ -10,7 +10,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import TestCaseWithFactory
 
@@ -18,7 +18,7 @@ from lp.testing import TestCaseWithFactory
 class TestValidTeamMemberVocabulary(TestCaseWithFactory):
     """Test that the ValidTeamMemberVocabulary behaves as expected."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def searchVocabulary(self, team, text):
         vocabulary_registry = getVocabularyRegistry()
