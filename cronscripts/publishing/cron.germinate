@@ -127,17 +127,25 @@ echo " done."
 
 mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
 
-# now generate the Supported extra overrides for all supported distros
-for supported_suite in `$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`; do
+# Now generate the Supported extra overrides for all supported distros.
+SUITES=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py supported`
+for supported_suite in $SUITES; do
     echo -n "Running maintenance-check for $supported_suite... "
-    if $MAINTAINCE_CHECK $supported_suite > "$MISCROOT/more-extra.override.$supported_suite.main.supported" 2> _maintenance-check.$supported_suite.stderr; then
-
-        # make sure the more-extra.override file exists
-        touch "$MISCROOT/more-extra.override.$supported_suite.main"
-        # remove old "Supporte" info from extra overrides
-        sed /"^.* Supported"/d "$MISCROOT/more-extra.override.$supported_suite.main" > "$MISCROOT/more-extra.override.$supported_suite.main.new"
-        cat "$MISCROOT/more-extra.override.$supported_suite.main.supported" >> "$MISCROOT/more-extra.override.$supported_suite.main.new"
-        mv "$MISCROOT/more-extra.override.$supported_suite.main.new" "$MISCROOT/more-extra.override.$supported_suite.main"
+    # The support timeframe information is stored here
+    SUPPORTED="$MISCROOT/more-extra.override.$supported_suite.main.supported"
+    # This is the target override file that contains germinate plus support info
+    TARGET="$MISCROOT/more-extra.override.$supported_suite.main"
+    # Debug/Log information 
+    LOG="_maintenance-check.$supported_suite.stderr"
+    if $MAINTAINCE_CHECK $supported_suite > $SUPPORTED 2> $LOG; then
+        # The target file may be missing on the server and the script should
+        # not fail if that is the case.
+        touch $TARGET
+        # Remove old "Supported" info from extra-overrides as it may be 
+        # stale now and we replace it with fresh content below.
+        sed /"^.* Supported"/d $TARGET > ${TARGET}.new
+        cat $SUPPORTED >> ${TARGET}.new
+        mv ${TARGET}.new $TARGET
     fi
     echo " done"
 done
