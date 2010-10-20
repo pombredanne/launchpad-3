@@ -52,7 +52,7 @@
 
              <p>
                Allow <strong tal:content="token/consumer/integrated_desktop_name">hostname</strong>
-               to Access my Launchpad Account:
+               to access my Launchpad account:
              </p>
              <p class="subordinate">
                <tal:actions
@@ -61,8 +61,11 @@
                </tal:actions>
              </p>
 
-            <p><input
-               tal:replace="structure view/unauthorized_action/render" /></p>
+            <p>or</p>
+            <p class="subordinate">
+              <input
+                 tal:replace="structure view/unauthorized_action/render" />
+            </p>
 
             <input type="hidden" name="allow_permission"
               value="DESKTOP_INTEGRATION" />

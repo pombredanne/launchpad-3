@@ -250,7 +250,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             allow_action = [
                 action for action in self.actions
                 if action.name == desktop_permission.name][0]
-            allow_action.label = "Until I Disable it"
+            allow_action.label = "Until I Disable It"
             actions.append(allow_action)
 
             # Bring in all of the temporary integration actions.
@@ -261,7 +261,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
             # Fionally, customize the "deny" message.
             label = (
-                "Do not Allow &quot;%s&quot; to Access my Launchpad Account.")
+                "Do Not Allow &quot;%s&quot; to Access my Launchpad Account.")
             deny_action = [
                 action for action in self.actions
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]

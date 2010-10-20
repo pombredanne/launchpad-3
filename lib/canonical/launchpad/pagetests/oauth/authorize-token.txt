@@ -304,7 +304,8 @@ desktop.
     now. You can always try again later.
     Even if you decide to give mycomputer access to your Launchpad
     account, you can change your mind later.
-    Allow mycomputer to Access my Launchpad Account:
+    Allow mycomputer to access my Launchpad account:
+    or
     See all applications authorized to access Launchpad on your behalf.
 
 The only time the 'Desktop Integration' permission shows up in the
@@ -314,19 +315,19 @@ up anyway.)
 
     >>> allow_desktop = 'allow_permission=DESKTOP_INTEGRATION'
     >>> print_access_levels_for(allow_desktop)
-    Until I Disable it
+    Until I Disable It
     For One Hour
     For One Day
     For One Week
-    Do not Allow "mycomputer" to Access my Launchpad Account.
+    Do Not Allow "mycomputer" to Access my Launchpad Account.
 
     >>> print_access_levels_for(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Until I Disable it
+    Until I Disable It
     For One Hour
     For One Day
     For One Week
-    Do not Allow "mycomputer" to Access my Launchpad Account.
+    Do Not Allow "mycomputer" to Access my Launchpad Account.
 
 A desktop may not request a level of access other than
 DESKTOP_INTEGRATION, since the whole point is to have a permission
@@ -390,7 +391,7 @@ integration desired.
 If the client chooses a permanent desktop integration, the request
 token is approved and has no expiration date.
 
-    >>> token = integrate_desktop("Until I Disable it")
+    >>> token = integrate_desktop("Until I Disable It")
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
     The Ubuntu desktop called mycomputer now has access to your
@@ -475,7 +476,7 @@ If the client declines integration, the request token is reviewed but
 cannot be exchanged for an access token.
 
     >>> token = integrate_desktop(
-    ...     """Do not Allow "mycomputer" to Access my Launchpad Account.""")
+    ...     """Do Not Allow "mycomputer" to Access my Launchpad Account.""")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     You decided against desktop integration
