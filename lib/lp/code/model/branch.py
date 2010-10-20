@@ -83,7 +83,10 @@ from lp.code.errors import (
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
     )
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
+from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
+    NewBranchMergeProposalEvent,
+    )
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -434,6 +437,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 reviewer, registrant, review_type, _notify_listeners=False)
 
         notify(NewBranchMergeProposalEvent(bmp))
+        notify(BranchMergeProposalNeedsReviewEvent(bmp))
+
         return bmp
 
     def _createMergeProposal(

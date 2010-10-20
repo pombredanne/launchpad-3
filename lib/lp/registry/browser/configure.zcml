@@ -494,7 +494,7 @@
         template="../templates/distributionsourcepackage-changelog.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        permission="launchpad.Edit"
+        permission="launchpad.BugSupervisor"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
