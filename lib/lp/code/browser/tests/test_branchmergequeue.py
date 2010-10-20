@@ -19,7 +19,7 @@ from lp.testing import (
     )
 
 
-class TestBranchMergeQueueIndex(BrowserTestCase):
+class TestBranchMergeQueue(BrowserTestCase):
     """Test the Branch Merge Queue index page."""
 
     layer = DatabaseFunctionalLayer
