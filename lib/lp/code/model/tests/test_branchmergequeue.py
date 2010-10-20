@@ -104,9 +104,15 @@ class TestWebservice(TestCaseWithFactory):
     def test_properties(self):
         """Test that the correct properties are exposed."""
         with person_logged_in(ANONYMOUS):
-            db_queue = self.factory.makeBranchMergeQueue()
+            queuer = self.factory.makePerson()
+            db_queue = self.factory.makeBranchMergeQueue(
+                registrant=queuer, owner=queuer)
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
             transaction.commit()
 
+        queuer = ws_object(launchpad, queuer)
         queue = ws_object(launchpad, db_queue)
+
+        self.assertEqual(queue.registrant, queuer)
+        self.assertEqual(queue.owner, queuer)

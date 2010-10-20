@@ -12,6 +12,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
+    exported,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -39,16 +40,18 @@ class IBranchMergeQueue(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
 
-    registrant = PublicPersonChoice(
-        title=_("The user that registered the branch."),
-        required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("The user that registered the branch."),
+            required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
 
-    owner = PersonChoice(
-        title=_('Owner'),
-        required=True, readonly=True,
-        vocabulary='UserTeamsParticipationPlusSelf',
-        description=_("The owner of the merge queue."))
+    owner = exported(
+        PersonChoice(
+            title=_('Owner'),
+            required=True, readonly=True,
+            vocabulary='UserTeamsParticipationPlusSelf',
+            description=_("The owner of the merge queue.")))
 
     name = TextLine(
         title=_('Name'), required=True,
