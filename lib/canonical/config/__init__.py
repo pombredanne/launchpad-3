@@ -156,6 +156,16 @@ class CanonicalConfig:
         self._invalidateConfig()
         self._getConfig()
 
+    def isTestRunner(self):
+        """Return true if the current config is a 'testrunner' config.
+
+        That is, if it is the testrunner config, or a unique variation of it,
+        but not if its the testrunner-appserver, development or production
+        config.
+        """
+        return (self.instance_name == 'testrunner' or
+                self.instance_name.startswith('testrunner_'))
+
     @property
     def process_name(self):
         """Return or set the current process's name to select a conf.
