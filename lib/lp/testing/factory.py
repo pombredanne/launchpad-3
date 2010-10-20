@@ -1114,7 +1114,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = BranchMergeQueue.new(
-            name, registrant, owner, description, configuration)
+            name, owner, registrant, description, configuration)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
