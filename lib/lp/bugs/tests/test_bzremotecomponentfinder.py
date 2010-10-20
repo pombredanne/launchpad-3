@@ -82,12 +82,12 @@ class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
     def test_parse_page(self):
         """Verify parsing a static html bugzilla page"""
         self.scraper = BugzillaRemoteComponentScraper(
-            base_url="http://bugzilla.sample.com")
-        page_text = read_test_file("bugzilla-fdo-advanced-query.html")
+            base_url="http://bugs.wine.org")
+        page_text = read_test_file("bugzilla-wine-advanced-query.html")
         self.scraper.parsePage(page_text)
-        self.assertTrue(u'xorg' in self.scraper.products)
-        xorg = self.scraper.products['xorg']
-        self.assertTrue(u'Driver/Radeon' in xorg['components'])
+        self.assertTrue(u'Wine' in self.scraper.products)
+        xorg = self.scraper.products['Wine']
+        self.assertTrue(u'ole' in xorg['components'])
 
 
 class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
