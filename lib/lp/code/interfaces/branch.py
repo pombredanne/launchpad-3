@@ -1076,11 +1076,11 @@ class IMergeQueueable(Interface):
                 "branch.")))
 
     merge_queue_config = exported(
-            TextLine(
-                title=_('Name'), required=True, readonly=True,
-                description=_(
-                    "A JSON string of configuration values to send to a "
-                    "branch merge robot.")))
+        TextLine(
+            title=_('Name'), required=True, readonly=True,
+            description=_(
+                "A JSON string of configuration values to send to a "
+                "branch merge robot.")))
 
     @mutator_for(merge_queue)
     @operation_parameters(
