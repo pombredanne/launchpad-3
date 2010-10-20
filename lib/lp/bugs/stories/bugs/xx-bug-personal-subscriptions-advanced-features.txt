@@ -22,6 +22,21 @@ option to subscribe to the bug at a given BugNotificationLevel.
     >>> logout()
     >>> user_browser.open(
     ...     canonical_url(bug.default_bugtask, view_name='+subscribe'))
-    >>> print user_browser.getControl(
+    >>> bug_notification_level_control = user_browser.getControl(
     ...     name='field.bug_notification_level')
-    <ListControl...type='radio'>
+    >>> for control in bug_notification_level_control.controls:
+    ...     print control.optionValue
+    NOTHING
+    LIFECYCLE
+    METADATA
+    COMMENTS
+
+The user can now subscribe to the bug at any of the given notification
+levels. In this case, they want to subscribe to just metadata updates:
+
+    >>> bug_notification_level_control.getControl('Details').click()
+    >>> user_browser.getControl('Continue').click()
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    You have been subscribed to this bug.
