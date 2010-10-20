@@ -46,13 +46,18 @@ class FeatureFixture(Fixture):
         self.addCleanup(
             rule_source.setAllRules, rule_source.getAllRulesAsTuples())
 
+        # Create a list of the new rules. Note that rules with a None
+        # value are quietly dropped, since you can't assign None as a
+        # feature flag value (it would come out as u'None') and setting
+        # a flag to None essentially means turning it off anyway.
         new_rules = [
             Rule(
                 flag=flag_name,
                 scope='default',
                 priority=999,
                 value=unicode(value))
-            for flag_name, value in self.desired_features.iteritems()]
+            for flag_name, value in self.desired_features.iteritems()
+                if value is not None]
 
         rule_source.setAllRules(new_rules)
 
