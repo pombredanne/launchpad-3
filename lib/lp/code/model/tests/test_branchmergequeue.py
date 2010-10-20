@@ -3,6 +3,8 @@
 
 """Unit tests for methods of BranchMergeQueue."""
 
+from __future__ import with_statement
+
 import simplejson
 
 from canonical.launchpad.interfaces.lpstorm import IStore
