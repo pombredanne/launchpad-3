@@ -9,21 +9,29 @@
   <body>
 
     <metal:side fill-slot="side"
-                tal:define="context_menu context/menu:context">
-      <div id="branch-portlet"
-           tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
-        <div id="privacy-portlet"
-             tal:define="base_vis_rule view/base_visibility_rule;
-                         are_private not:base_vis_rule/enumvalue:PUBLIC"
-             tal:attributes="class python: are_private and 'first portlet private' or 'first portlet public'">
+                tal:define="context_menu context/menu:context"
+                tal:condition="not:
+                context/codehosting_usage/enumvalue:UNKNOWN">
+      <div id="privacy"
+           tal:define="priv not:view/base_visibility_rule/enumvalue:PUBLIC"
+           tal:attributes="class python: priv and 'first portlet private' or 'first portlet public'">
+        <p id="default-policy">
+          Inherited branch visibility for all projects in
+          <strong tal:content="context/displayname">Project</strong> is
+          <strong tal:content="view/base_visibility_rule/title">Public</strong>.
+        </p>
 
-          <p id="privacy-text">
-            By default, new branches you create for projects in <tal:name replace="context/displayname"/>
-            are <strong tal:content="view/base_visibility_rule/title">Public</strong>
-            initially.  Individual projects may override this setting.
-          </p>
-
-        </div>
+        <tal:has-policies condition="view/team_policies">
+          <p>Except for the following teams:</p>
+          <ul id="team-policies">
+            <li tal:repeat="item view/team_policies">
+              <tal:team replace="structure item/team/fmt:link:mainsite"
+                        condition="item/team">Team Name</tal:team>:
+              <tal:team condition="not: item/team">Everyone</tal:team>
+              <tal:policy replace="item/rule/title">Public</tal:policy>
+            </li>
+          </ul>
+        </tal:has-policies>
       </div>
 
       <div id="action-portlet"

@@ -39,6 +39,8 @@ from lp.code.enums import (
     BranchVisibilityRule,
     TeamBranchVisibilityRule,
     )
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )
@@ -162,6 +164,15 @@ class BranchVisibilityPolicyMixin:
     def base_visibility_rule(self):
         return self.context.getBaseBranchVisibilityRule()
 
+    @property
+    def team_policies(self):
+        """The policy items that have a valid team."""
+        return [item for item in self.items if item.team is not None]
+
+    @cachedproperty
+    def items(self):
+        return self.context.getBranchVisibilityTeamPolicies()
+
 
 class BranchVisibilityPolicyView(LaunchpadView,
                                  BranchVisibilityPolicyMixin):
@@ -172,10 +183,6 @@ class BranchVisibilityPolicyView(LaunchpadView,
         name = self.context.displayname
         return 'Set branch visibility policy for %s' % name
 
-    @cachedproperty
-    def items(self):
-        return self.context.getBranchVisibilityTeamPolicies()
-
     @property
     def can_remove_items(self):
         """You cannot remove items if using inherited policy or
@@ -183,8 +190,3 @@ class BranchVisibilityPolicyView(LaunchpadView,
         """
         return (len(self.items) > 0 and
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
-
-    @property
-    def team_policies(self):
-        """The policy items that have a valid team."""
-        return [item for item in self.items if item.team is not None]

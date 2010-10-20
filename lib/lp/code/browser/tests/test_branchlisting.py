@@ -442,11 +442,11 @@ class TestProjectGroupBranchesPage(TestCaseWithFactory):
         view = create_initialized_view(self.project,
                                        name="+branches",
                                        rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy-portlet')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
         text = extract_text(privacy_portlet)
         expected = """
-            By default, new branches you create for projects in .* are Public
-            initially. Individual projects may override this setting."""
+            Inherited branch visibility for all projects in .* is Public.
+            """
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected, text)
 
@@ -456,12 +456,11 @@ class TestProjectGroupBranchesPage(TestCaseWithFactory):
         view = create_initialized_view(self.project,
                                        name="+branches",
                                        rootsite='code')
-        privacy_portlet = find_tag_by_id(view(), 'privacy-portlet')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
         text = extract_text(privacy_portlet)
         expected = """
-            By default, new branches you create for projects in .* are
-            Forbidden initially. Individual projects may override this
-            setting."""
+            Inherited branch visibility for all projects in .* is Forbidden.
+            """
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected, text)
 
