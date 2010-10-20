@@ -522,10 +522,6 @@ class ValidPersonOrTeamVocabulary(
             # TeamParticipation table, which is very expensive.  The search
             # for private teams does need that table but the number of private
             # teams is very small so the cost is not great.
-            valid_email_statuses = (
-                EmailAddressStatus.VALIDATED,
-                EmailAddressStatus.PREFERRED,
-                )
 
             # First search for public persons and teams that match the text.
             public_tables = [
@@ -562,10 +558,15 @@ class ValidPersonOrTeamVocabulary(
                     FROM Person, EmailAddress
                     WHERE EmailAddress.person = Person.id
                         AND lower(email) LIKE ? || '%%'
+                        AND EmailAddress.status IN (?, ?)
                     ) AS public_subquery
                 ORDER BY rank DESC
                 LIMIT ?
-                """, (text, text, text, text, text, self.LIMIT))
+                """, (text, text, text, text, text,
+                      EmailAddressStatus.VALIDATED.value,
+                      EmailAddressStatus.PREFERRED.value,
+                      self.LIMIT))
+
 
             public_result = self.store.using(*public_tables).find(
                 Person,
