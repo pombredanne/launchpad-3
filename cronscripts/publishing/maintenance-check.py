@@ -300,9 +300,9 @@ if __name__ == "__main__":
         try:
             structure = get_structure(name, distro)
         except urllib2.HTTPError:
-            logging.error("can't get structure '%s'" % name)
+            logging.error("Can not get structure for '%s'." % name)
             continue
-    
+
         # get dicts of pkgname -> support timeframe string
         support_timeframe = SUPPORT_TIMEFRAME
         if lts_supported and distro in LTS_RELEASES:
