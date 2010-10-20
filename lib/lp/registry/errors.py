@@ -119,4 +119,4 @@ class TeamMembershipTransitionError(ValueError):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
-    webservice_error(httplib.FORBIDDEN)
+    webservice_error(httplib.BAD_REQUEST)

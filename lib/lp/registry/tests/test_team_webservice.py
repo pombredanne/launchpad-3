@@ -1,5 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2010 Canonical Ltd.  This software is licensed under the # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -9,9 +8,14 @@ import unittest
 from lazr.restfulclient.errors import HTTPError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.testing import (
     launchpadlib_for,
+    login_person,
+    logout,
     TestCaseWithFactory,
     )
 
@@ -48,5 +52,36 @@ class TestTeamLinking(TestCaseWithFactory):
         self.assertEqual(httplib.FORBIDDEN, api_error.response.status)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestTeamJoining(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
+
+    def test_restricted_rejects_membership(self):
+        self.person = self.factory.makePerson(name='test-person')
+        self.team = self.factory.makeTeam(name='test-team')
+        login_person(self.team.teamowner)
+        self.team.subscriptionpolicy = TeamSubscriptionPolicy.RESTRICTED
+        logout()
+
+        launchpad = launchpadlib_for("test", self.person)
+        person = launchpad.people['test-person']
+        api_error = self.assertRaises(
+            HTTPError,
+            person.join,
+            team='test-team')
+        self.assertEqual(httplib.BAD_REQUEST, api_error.response.status)
+
+    def test_open_accepts_membership(self):
+        # Calling person.join with a team that has an open membership
+        # subscription policy should add that that user to the team.
+        self.person = self.factory.makePerson(name='test-person')
+        self.team = self.factory.makeTeam(name='test-team')
+        login_person(self.team.teamowner)
+        self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        logout()
+        
+        launchpad = launchpadlib_for("test", self.person)
+        test_person = launchpad.people['test-person']
+        test_team = launchpad.people['test-team']
+        test_person.join(team=test_team.self_link)
+        self.assertEqual(1, self.person.team_memberships.count())
