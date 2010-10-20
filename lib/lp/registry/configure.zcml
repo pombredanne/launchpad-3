@@ -409,52 +409,52 @@
 
         <allow
             attributes="
-                distribution
-                development_version
-                sourcepackagename
-                name
-                displayname
-                title
-                summary
-                distro
-                get_distroseries_packages
-                subscribers
-                currentrelease
-                releases
-                publishing_history
-                current_publishing_records
-                bug_reporting_guidelines
-                bug_reported_acknowledgement
-                latest_overall_publication
-                __getitem__
-                getVersion
                 __eq__
+                __getitem__
                 __ne__
-                bugtasks
-                searchTasks
-                open_bugtasks
-                closed_bugtasks
-                critical_bugtasks
-                high_bugtasks
-                inprogress_bugtasks
-                unassigned_bugtasks
-                new_bugtasks
+                _getOfficialTagClause
                 all_bugtasks
-                has_bugtasks
-                getUsedBugTags
-                getUsedBugTagsWithOpenCounts
+                bug_count
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
                 bugtargetdisplayname
                 bugtargetname
+                bugtasks
+                closed_bugtasks
+                critical_bugtasks
+                current_publishing_records
+                currentrelease
+                development_version
+                displayname
+                distribution
+                distro
+                findRelatedArchivePublications
+                findRelatedArchives
                 getBugCounts
-                bug_count
-                total_bug_heat
                 getPersonsByEmail
                 getReleasesAndPublishingHistory
-                upstream_product
-                _getOfficialTagClause
+                getUsedBugTags
+                getUsedBugTagsWithOpenCounts
+                getVersion
+                get_distroseries_packages
+                has_bugtasks
+                high_bugtasks
+                inprogress_bugtasks
+                latest_overall_publication
+                name
+                new_bugtasks
                 official_bug_tags
-                findRelatedArchives
-                findRelatedArchivePublications"/>
+                open_bugtasks
+                publishing_history
+                releases
+                searchTasks
+                sourcepackagename
+                subscribers
+                summary
+                title
+                total_bug_heat
+                unassigned_bugtasks
+                upstream_product"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="createBug"/>
@@ -488,7 +488,7 @@
                 addAnswerContact
                 removeAnswerContact"/>
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.BugSupervisor"
             set_attributes="
                 bug_reported_acknowledgement
                 bug_reporting_guidelines"/>
@@ -1130,21 +1130,44 @@
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="bug_reporting_guidelines
-                            bug_reported_acknowledgement bugtracker
-                            commercial_subscription description
-                            development_focus displayname downloadurl
-                            driver enable_bug_expiration
-                            freshmeatproject homepage_content
-                            homepageurl icon license_info licenses
-                            logo mugshot official_answers
-                            official_blueprints official_bug_tags
-                            official_codehosting official_malone owner
-                            programminglang project
-                            redeemSubscriptionVoucher releaseroot
-                            remote_product screenshotsurl
-                            security_contact sourceforgeproject
-                            summary title wikiurl"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtracker
+                commercial_subscription
+                description
+                development_focus
+                displayname
+                downloadurl
+                driver
+                enable_bug_expiration
+                freshmeatproject
+                homepage_content
+                homepageurl
+                icon
+                license_info
+                licenses
+                logo
+                mugshot
+                official_answers
+                official_blueprints
+                official_codehosting
+                official_malone
+                owner
+                programminglang
+                project
+                redeemSubscriptionVoucher
+                releaseroot
+                remote_product
+                screenshotsurl
+                security_contact
+                sourceforgeproject
+                summary
+                title
+                wikiurl"/>
+        <require
+            permission="launchpad.BugSupervisor"
+            set_attributes="official_bug_tags"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1438,12 +1461,27 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                displayname title summary description driver
-                members owner security_contact mirror_admin homepage_content
-                icon logo mugshot enable_bug_expiration
-                bug_reporting_guidelines bug_reported_acknowledgement
-                official_blueprints official_malone
-                official_rosetta official_answers official_bug_tags"/>
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                description
+                displayname
+                driver
+                enable_bug_expiration
+                homepage_content
+                icon
+                logo
+                members
+                mirror_admin
+                mugshot
+                official_answers
+                official_blueprints
+                official_bug_tags
+                official_malone
+                official_rosetta
+                owner
+                security_contact
+                summary
+                title"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="
