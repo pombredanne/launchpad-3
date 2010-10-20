@@ -14,7 +14,6 @@ import os
 import time
 import unittest
 
-from lp.testing import TestCase
 from bzrlib.lsprof import BzrProfiler
 from zope.app.publication.interfaces import EndRequestEvent
 from zope.component import getSiteManager
@@ -26,7 +25,11 @@ from canonical.launchpad.webapp.errorlog import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
+from canonical.testing import layers
 from lp.services.profile import profile
+from lp.services.features.testing import FeatureFixture
+from lp.testing import TestCase
+
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -43,6 +46,8 @@ EXAMPLE_HTML = EXAMPLE_HTML_START + EXAMPLE_HTML_END
 
 class BaseTest(TestCase):
 
+    layer = layers.DatabaseFunctionalLayer
+
     def _get_request(self, path='/'):
         """Return a test request for the given path."""
         return LaunchpadTestRequest(PATH_INFO=path)
@@ -58,13 +63,19 @@ class BaseTest(TestCase):
                 getattr(profile._profilers, name, None), None,
                 'Profiler state (%s) is dirty; %s.' % (name, message))
 
+    def turnOnProfiling(self):
+        """Turn on the request_profiling feature flag."""
+        self.useFixture(FeatureFixture({'request_profiling': 'on'}))
+
+    def turnOffProfiling(self):
+        """Turn off the request_profiling feature flag."""
+        self.useFixture(FeatureFixture({'request_profiling': None}))
+
     def pushProfilingConfig(
-        self, profiling_allowed='False', profile_all_requests='False',
-        memory_profile_log=''):
+        self, profile_all_requests='False', memory_profile_log=''):
         """This is a convenience for setting profile configs."""
         self.pushConfig(
             'profiling',
-            profiling_allowed=profiling_allowed,
             profile_all_requests=profile_all_requests,
             memory_profile_log=memory_profile_log)
 
@@ -86,11 +97,12 @@ class TestRequestStartHandler(BaseTest):
                 delattr(profile._profilers, name)
         TestCase.tearDown(self)
 
-    def test_config_stops_profiling(self):
-        """The ``profiling_allowed`` configuration should disable all
+    def test_feature_flag_stops_profiling(self):
+        """The ``request_profiling`` feature flag should disable all
         profiling, even if it is requested"""
+        self.turnOffProfiling()
         self.pushProfilingConfig(
-            profiling_allowed='False', profile_all_requests='True',
+            profile_all_requests='True',
             memory_profile_log='.')
         profile.start_request(self._get_start_event('/++profile++show,log'))
         self.assertCleanProfilerState('config was ignored')
@@ -98,7 +110,7 @@ class TestRequestStartHandler(BaseTest):
     def test_optional_profiling_without_marked_request_has_no_profile(self):
         """Even if profiling is allowed, it does not happen with a normal
         request."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         profile.start_request(self._get_start_event('/'))
         self.assertEqual(profile._profilers.actions, set())
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
@@ -108,7 +120,7 @@ class TestRequestStartHandler(BaseTest):
     def test_optional_profiling_with_show_request_starts_profiling(self):
         """If profiling is allowed and a request with the "show" marker
         URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         profile.start_request(self._get_start_event('/++profile++show/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -119,7 +131,7 @@ class TestRequestStartHandler(BaseTest):
     def test_optional_profiling_with_log_request_starts_profiling(self):
         """If profiling is allowed and a request with the "log" marker
         URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         profile.start_request(self._get_start_event('/++profile++log/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -130,7 +142,7 @@ class TestRequestStartHandler(BaseTest):
     def test_optional_profiling_with_combined_request_starts_profiling(self):
         """If profiling is allowed and a request with the "log" and
         "show" marker URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         profile.start_request(self._get_start_event('/++profile++log,show/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -141,7 +153,7 @@ class TestRequestStartHandler(BaseTest):
     def test_optional_profiling_with_reversed_request_starts_profiling(self):
         """If profiling is allowed and a request with the "show" and
         "log" marker URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         # The fact that this is reversed from the previous request is the only
         # difference from the previous test.  Also, it doesn't have a
         # trailing slash. :-P
@@ -154,8 +166,8 @@ class TestRequestStartHandler(BaseTest):
 
     def test_forced_profiling_registers_action(self):
         """profile_all_requests should register as a log action"""
-        self.pushProfilingConfig(
-            profiling_allowed='True', profile_all_requests='True')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(profile_all_requests='True')
         profile.start_request(self._get_start_event('/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -167,7 +179,7 @@ class TestRequestStartHandler(BaseTest):
         """If profiling is allowed and a request with the marker URL segment
         is made incorrectly, profiling does not start and help is an action.
         """
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertIs(
@@ -179,8 +191,8 @@ class TestRequestStartHandler(BaseTest):
         """If profiling is forced and a request with the marker URL segment
         is made incorrectly, profiling starts and help is an action.
         """
-        self.pushProfilingConfig(
-            profiling_allowed='True', profile_all_requests='True')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(profile_all_requests='True')
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIs(
@@ -189,8 +201,8 @@ class TestRequestStartHandler(BaseTest):
         self.assertEquals(profile._profilers.actions, set(('help', 'log')))
 
     def test_memory_profile_start(self):
-        self.pushProfilingConfig(
-            profiling_allowed='True', memory_profile_log='.')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(memory_profile_log='.')
         profile.start_request(self._get_start_event('/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
@@ -198,8 +210,8 @@ class TestRequestStartHandler(BaseTest):
         self.assertEqual(profile._profilers.actions, set())
 
     def test_combo_memory_and_profile_start(self):
-        self.pushProfilingConfig(
-            profiling_allowed='True', memory_profile_log='.')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(memory_profile_log='.')
         profile.start_request(self._get_start_event('/++profile++show/'))
         self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
         self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
@@ -267,10 +279,11 @@ class TestRequestEndHandler(BaseTest):
     #########################################################################
     # Tests
     def test_config_stops_profiling(self):
-        """The ``profiling_allowed`` configuration should disable all
+        """The ``request_profiling`` feature should disable all
         profiling, even if it is requested"""
+        self.turnOffProfiling()
         self.pushProfilingConfig(
-            profiling_allowed='False', profile_all_requests='True',
+            profile_all_requests='True',
             memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/++profile++show,log')
         self.assertIs(getattr(request, 'oops', None), None)
@@ -282,7 +295,7 @@ class TestRequestEndHandler(BaseTest):
     def test_optional_profiling_without_marked_request_has_no_profile(self):
         """Even if profiling is allowed, it does not happen with a normal
         request."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/')
         self.assertIs(getattr(request, 'oops', None), None)
         self.assertEqual(self.getAddedResponse(request), '')
@@ -293,7 +306,7 @@ class TestRequestEndHandler(BaseTest):
     def test_optional_profiling_with_show_request_profiles(self):
         """If profiling is allowed and a request with the "show" marker
         URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++show/')
         self.assertIsInstance(request.oops, ErrorReport)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
@@ -304,7 +317,7 @@ class TestRequestEndHandler(BaseTest):
     def test_optional_profiling_with_log_request_profiles(self):
         """If profiling is allowed and a request with the "log" marker
         URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++log/')
         self.assertIsInstance(request.oops, ErrorReport)
         response = self.getAddedResponse(request)
@@ -319,7 +332,7 @@ class TestRequestEndHandler(BaseTest):
     def test_optional_profiling_with_combined_request_profiles(self):
         """If profiling is allowed and a request with the "log" and
         "show" marker URL segment is made, profiling starts."""
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++log,show')
         self.assertIsInstance(request.oops, ErrorReport)
         response = self.getAddedResponse(request)
@@ -333,8 +346,8 @@ class TestRequestEndHandler(BaseTest):
 
     def test_forced_profiling_logs(self):
         """profile_all_requests should register as a log action"""
-        self.pushProfilingConfig(
-            profiling_allowed='True', profile_all_requests='True')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(profile_all_requests='True')
         request = self.endRequest('/')
         self.assertIsInstance(request.oops, ErrorReport)
         response = self.getAddedResponse(request)
@@ -351,7 +364,7 @@ class TestRequestEndHandler(BaseTest):
         """If profiling is allowed and a request with the marker URL segment
         is made incorrectly, profiling does not start and help is an action.
         """
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++')
         self.assertIs(getattr(request, 'oops', None), None)
         response = self.getAddedResponse(request)
@@ -365,8 +378,8 @@ class TestRequestEndHandler(BaseTest):
         """If profiling is forced and a request with the marker URL segment
         is made incorrectly, profiling starts and help is an action.
         """
-        self.pushProfilingConfig(
-            profiling_allowed='True', profile_all_requests='True')
+        self.turnOnProfiling()
+        self.pushProfilingConfig(profile_all_requests='True')
         request = self.endRequest('/++profile++')
         self.assertIsInstance(request.oops, ErrorReport)
         response = self.getAddedResponse(request)
@@ -382,9 +395,8 @@ class TestRequestEndHandler(BaseTest):
 
     def test_memory_profile(self):
         "Does the memory profile work?"
-        self.pushProfilingConfig(
-            profiling_allowed='True',
-            memory_profile_log=self.memory_profile_log)
+        self.turnOnProfiling()
+        self.pushProfilingConfig(memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/')
         self.assertIs(getattr(request, 'oops', None), None)
         self.assertEqual(self.getAddedResponse(request), '')
@@ -400,9 +412,8 @@ class TestRequestEndHandler(BaseTest):
 
     def test_memory_profile_with_non_defaults(self):
         "Does the memory profile work with an oops and pageid?"
-        self.pushProfilingConfig(
-            profiling_allowed='True',
-            memory_profile_log=self.memory_profile_log)
+        self.turnOnProfiling()
+        self.pushProfilingConfig(memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/++profile++show/no-such-file',
                                   KeyError(), pageid='Foo')
         log = self.getMemoryLog()
@@ -413,9 +424,8 @@ class TestRequestEndHandler(BaseTest):
         self.assertCleanProfilerState()
 
     def test_combo_memory_and_profile(self):
-        self.pushProfilingConfig(
-            profiling_allowed='True',
-            memory_profile_log=self.memory_profile_log)
+        self.turnOnProfiling()
+        self.pushProfilingConfig(memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/++profile++show/')
         self.assertIsInstance(request.oops, ErrorReport)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
@@ -424,7 +434,7 @@ class TestRequestEndHandler(BaseTest):
         self.assertCleanProfilerState()
 
     def test_profiling_oops_is_informational(self):
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++show/')
         response = self.getAddedResponse(request)
         self.assertIsInstance(request.oops, ErrorReport)
@@ -433,7 +443,7 @@ class TestRequestEndHandler(BaseTest):
         self.assertCleanProfilerState()
 
     def test_real_oops_trumps_profiling_oops(self):
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++show/no-such-file',
                                   KeyError('foo'))
         self.assertIsInstance(request.oops, ErrorReport)
@@ -444,7 +454,7 @@ class TestRequestEndHandler(BaseTest):
         self.assertCleanProfilerState()
 
     def test_oopsid_is_in_profile_filename(self):
-        self.pushProfilingConfig(profiling_allowed='True')
+        self.turnOnProfiling()
         request = self.endRequest('/++profile++log/')
         self.assertIn("-" + request.oopsid + "-", self.getProfilePaths()[0])
         self.assertCleanProfilerState()
