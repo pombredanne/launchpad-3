@@ -53,17 +53,19 @@ class IBranchMergeQueue(Interface):
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("The owner of the merge queue.")))
 
-    name = TextLine(
-        title=_('Name'), required=True,
-        description=_(
-            "Keep very short, unique, and descriptive, because it will "
-            "be used in URLs.  "
-            "Examples: main, devel, release-1.0, gnome-vfs."))
+    name = exported(
+        TextLine(
+            title=_('Name'), required=True,
+            description=_(
+                "Keep very short, unique, and descriptive, because it will "
+                "be used in URLs.  "
+                "Examples: main, devel, release-1.0, gnome-vfs.")))
 
-    description = Text(
-        title=_('Description'), required=False,
-        description=_(
-            'A short description of the purpose of this merge queue.'))
+    description = exported(
+        Text(
+            title=_('Description'), required=False,
+            description=_(
+                'A short description of the purpose of this merge queue.')))
 
     configuration = TextLine(
         title=_('Configuration'), required=False,

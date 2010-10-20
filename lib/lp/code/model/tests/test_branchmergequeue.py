@@ -106,7 +106,8 @@ class TestWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             queuer = self.factory.makePerson()
             db_queue = self.factory.makeBranchMergeQueue(
-                registrant=queuer, owner=queuer)
+                registrant=queuer, owner=queuer, name=u'teh-queue',
+                description=u'Oh hai! I are a queues')
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
             transaction.commit()
@@ -116,3 +117,5 @@ class TestWebservice(TestCaseWithFactory):
 
         self.assertEqual(queue.registrant, queuer)
         self.assertEqual(queue.owner, queuer)
+        self.assertEqual(queue.name, 'teh-queue')
+        self.assertEqual(queue.description, 'Oh hai! I are a queues')
