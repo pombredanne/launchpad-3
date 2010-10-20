@@ -292,18 +292,19 @@ desktop.
     >>> print extract_text(
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
-    Integrating mycomputer into your Launchpad account
+    Confirm Computer Access
     The Ubuntu desktop called mycomputer wants access to your
-    Launchpad account. If you allow the integration, all applications
-    running on mycomputer will have read-write access to your
-    Launchpad account, including to your private data.
+    Launchpad account. If you allow this, every application running on
+    mycomputer will have read-write access to your Launchpad account,
+    including to your private data.
     If you're using a public computer, if mycomputer is not the
     computer you're using right now, or if something just doesn't feel
-    right about this situation, you should choose "No, thanks, I don't
-    trust 'mycomputer'", or close this window now. You can always try
-    again later.
-    Even if you decide to allow the integration, you can change your
-    mind later.
+    right about this situation, you should choose "Do Not Allow
+    'mycomputer' to Access my Launchpad Account", or close this window
+    now. You can always try again later.
+    Even if you decide to give mycomputer access to your Launchpad
+    account, you can change your mind later.
+    Allow mycomputer to Access my Launchpad Account:
     See all applications authorized to access Launchpad on your behalf.
 
 The only time the 'Desktop Integration' permission shows up in the
@@ -313,19 +314,19 @@ up anyway.)
 
     >>> allow_desktop = 'allow_permission=DESKTOP_INTEGRATION'
     >>> print_access_levels_for(allow_desktop)
-    Permanently integrate "mycomputer" into my Launchpad account.
-    I'd like to try the integration for one hour.
-    I'd like to try the integration for one day.
-    I'd like to try the integration for one week.
-    No, thanks, I don't trust "mycomputer".
+    Until I Disable it
+    For One Hour
+    For One Day
+    For One Week
+    Do not Allow "mycomputer" to Access my Launchpad Account.
 
     >>> print_access_levels_for(
     ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
-    Permanently integrate "mycomputer" into my Launchpad account.
-    I'd like to try the integration for one hour.
-    I'd like to try the integration for one day.
-    I'd like to try the integration for one week.
-    No, thanks, I don't trust "mycomputer".
+    Until I Disable it
+    For One Hour
+    For One Day
+    For One Week
+    Do not Allow "mycomputer" to Access my Launchpad Account.
 
 A desktop may not request a level of access other than
 DESKTOP_INTEGRATION, since the whole point is to have a permission
@@ -389,8 +390,7 @@ integration desired.
 If the client chooses a permanent desktop integration, the request
 token is approved and has no expiration date.
 
-    >>> token = integrate_desktop(
-    ...     'Permanently integrate "mycomputer" into my Launchpad account.')
+    >>> token = integrate_desktop("Until I Disable it")
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
     The Ubuntu desktop called mycomputer now has access to your
@@ -411,8 +411,7 @@ If you allow integration for a limited time, the request token is
 reviewed and given an expiration date. Here, we authorize a token for
 one hour.
 
-    >>> token = integrate_desktop(
-    ...     "I'd like to try the integration for one hour.")
+    >>> token = integrate_desktop("For One Hour")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
@@ -440,8 +439,7 @@ enforce.
 
 Here we authorize a token for one day.
 
-    >>> token = integrate_desktop(
-    ...     "I'd like to try the integration for one day.")
+    >>> token = integrate_desktop("For One Day")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
@@ -456,8 +454,7 @@ Here we authorize a token for one day.
 Here, we authorize a token for a week. The expiration time is given as
 a date.
 
-    >>> token = integrate_desktop(
-    ...     "I'd like to try the integration for one week.")
+    >>> token = integrate_desktop("For One Week")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
@@ -478,7 +475,7 @@ If the client declines integration, the request token is reviewed but
 cannot be exchanged for an access token.
 
     >>> token = integrate_desktop(
-    ...     """No, thanks, I don't trust "mycomputer".""")
+    ...     """Do not Allow "mycomputer" to Access my Launchpad Account.""")
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     You decided against desktop integration
