@@ -40,5 +40,6 @@ If there are not any branches, a relevant message is shown.
     Code : the Test Project
     >>> message = find_tag_by_id(browser.contents, 'no-branchtable')
     >>> print extract_text(message)
-    None of the Test Project's
-    projects are using Launchpad to host their code.
+    Launchpad does not know where any of
+    the Test Project's
+    projects host their code.
