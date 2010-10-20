@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 import cgi
-from datetime import datetime
 import threading
 import xmlrpclib
 
@@ -1277,10 +1276,9 @@ class WebServicePublication(WebServicePublicationMixin,
             token.checkNonceAndTimestamp(nonce, timestamp)
         except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
-        now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)
-        elif token.date_expires is not None and token.date_expires <= now:
+        elif token.is_expired:
             raise Unauthorized('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
             raise Unauthorized('Invalid signature.')

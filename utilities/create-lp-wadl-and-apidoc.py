@@ -10,6 +10,7 @@ Example:
     % LPCONFIG=development bin/py utilities/create-lp-wadl-and-apidoc.py \\
       "lib/canonical/launchpad/apidoc/wadl-development-%(version)s.xml"
 """
+import _pythonpath # Not lint, actually needed.
 
 import optparse
 import os
@@ -65,11 +66,13 @@ def main(path_template, force=False):
         if (not os.path.exists(html_filename) or force):
             print "Writing apidoc for version %s to %s" % (
                 version, html_filename)
-            write(html_filename, generate_html(wadl_filename))
+            write(html_filename, generate_html(wadl_filename,
+                suppress_stderr=False))
         else:
             print "Skipping already present HTML file:", html_filename
 
     return 0
+
 
 def parse_args(args):
     usage = "usage: %prog [options] PATH_TEMPLATE"
@@ -83,6 +86,7 @@ def parse_args(args):
         parser.error("A path template is required.")
 
     return options, args
+
 
 if __name__ == '__main__':
     options, args = parse_args(sys.argv)
