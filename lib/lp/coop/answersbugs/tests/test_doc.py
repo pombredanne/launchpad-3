@@ -19,13 +19,6 @@ from canonical.launchpad.ftests.test_system_documentation import (
     uploaderSetUp,
     uploadQueueSetUp,
     )
-from canonical.launchpad.interfaces import (
-    CreateBugParams,
-    IBugTaskSet,
-    IDistributionSet,
-    ILanguageSet,
-    IPersonSet,
-    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -36,7 +29,12 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.interfaces.bug import CreateBugParams
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.testing import build_test_suite
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.mail_helpers import pop_notifications
 
 

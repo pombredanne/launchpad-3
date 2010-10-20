@@ -9,12 +9,10 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
-    ILanguageSet,
-    ILaunchBag,
-    IPerson,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 

@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,

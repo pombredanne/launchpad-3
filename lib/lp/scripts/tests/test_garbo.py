@@ -32,13 +32,8 @@ from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.scripts.garbo import (
-    DailyDatabaseGarbageCollector,
-    HourlyDatabaseGarbageCollector,
-    OpenIDConsumerAssociationPruner,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -70,6 +65,11 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
+    )
+from lp.scripts.garbo import (
+    DailyDatabaseGarbageCollector,
+    HourlyDatabaseGarbageCollector,
+    OpenIDConsumerAssociationPruner,
     )
 from lp.services.job.model.job import Job
 from lp.testing import (

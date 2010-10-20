@@ -25,12 +25,12 @@ import os
 import gpgme
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
-    IGPGHandler,
     IGPGKeySet,
-    IPersonSet,
     )
+from lp.registry.interfaces.person import IPersonSet
 
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')

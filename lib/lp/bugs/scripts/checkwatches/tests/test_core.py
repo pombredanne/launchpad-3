@@ -15,20 +15,20 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
-    BugTaskStatus,
-    BugTrackerType,
-    IBugSet,
-    IBugTaskSet,
-    ILaunchpadCelebrities,
-    IPersonSet,
-    IProductSet,
-    IQuestionSet,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
     CheckWatchesErrorUtility,
@@ -45,6 +45,8 @@ from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport,
     TestExternalBugTracker,
     )
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,

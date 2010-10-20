@@ -23,7 +23,7 @@ from zope.session.interfaces import (
     ISession,
     )
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
