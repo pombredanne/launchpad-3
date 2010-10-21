@@ -891,7 +891,7 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.BugSupervisor'
     usedfor = IDistributionSourcePackage
 
     def checkAuthenticated(self, user):

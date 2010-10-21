@@ -233,10 +233,11 @@ relevant listings:
 Patches also appear as badges in bug listings.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IMessageSet, IPersonSet)
     >>> from zope.component import getUtility
     >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import transaction
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(IPersonSet).getByName("name16")

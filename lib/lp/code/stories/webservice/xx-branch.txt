@@ -11,8 +11,8 @@ the things on Launchpad.
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import BranchLifecycleStatus, BranchType
-    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
+    >>> from lp.code.interfaces.branch import IBranch
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python

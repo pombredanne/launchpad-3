@@ -1,6 +1,6 @@
 = Bug Nomination =
 
-Any logged-in user can nominate a bug to be fixed in a specific
+A bug supervisor can nominate a bug to be fixed in a specific
 distribution or product series. Nominations are created by
 calling IBug.addNomination.
 
@@ -8,9 +8,9 @@ calling IBug.addNomination.
     >>> from zope.interface.verify import verifyClass
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.ftests import login_person
-    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet

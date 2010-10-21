@@ -116,8 +116,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 

@@ -6,10 +6,14 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding)
+    >>> from lp.registry.interfaces.person import (
+    ...     IHasStanding,
+    ...     IPerson,
+    ...     IPersonSet,
+    ...     )
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
 
@@ -79,8 +83,8 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
@@ -136,8 +140,8 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from canonical.launchpad.database.account import Account
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
     >>> account.activate(
     ...     "Activated by doc test.",
@@ -437,8 +441,8 @@ is raised.
 PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -1042,8 +1046,9 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IProjectGroup, IProduct)
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
@@ -1267,8 +1272,8 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
 

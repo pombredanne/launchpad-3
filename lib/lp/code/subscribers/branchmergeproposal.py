@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.interfaces.branchmergeproposal import (
-    IMergeProposalCreatedJobSource,
+    IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJobSource,
     IUpdatePreviewDiffJobSource,
@@ -27,7 +27,16 @@ def merge_proposal_created(merge_proposal, event):
     Also create a job to email the subscribers about the new proposal.
     """
     getUtility(IUpdatePreviewDiffJobSource).create(merge_proposal)
-    getUtility(IMergeProposalCreatedJobSource).create(merge_proposal)
+
+
+def merge_proposal_needs_review(merge_proposal, event):
+    """A new merge proposal needs a review.
+
+    This event is raised when the proposal moves from work in progress to
+    needs review.
+    """
+    getUtility(IMergeProposalNeedsReviewEmailJobSource).create(
+        merge_proposal)
 
 
 def merge_proposal_modified(merge_proposal, event):
