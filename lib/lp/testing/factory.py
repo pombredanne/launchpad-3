@@ -1849,7 +1849,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None):
+                         members=None, title=None, aliases=None,
+                         bug_supervisor=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -1869,6 +1870,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members, owner)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
+        if bug_supervisor is not None:
+            naked_distro = removeSecurityProxy(distro)
+            naked_distro.bug_supervisor = bug_supervisor
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,

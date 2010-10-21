@@ -58,8 +58,8 @@ And will also handle versions which contain the string 'rc'.
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
-    >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.tests.externalbugtracker import TestBugzilla
     >>> gnome_bugzilla = (
     ...     getUtility(IBugTrackerSet).getByName('gnome-bugzilla'))
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
@@ -430,8 +430,9 @@ update:
 
 Let's add a handful of watches:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)

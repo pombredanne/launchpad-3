@@ -59,8 +59,8 @@ and we need a way to build test versions.
 Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
-    >>> from lp.services.mailman import runmailman
     >>> from canonical.testing.layers import LayerProcessController
+    >>> from lp.services.mailman import runmailman
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()

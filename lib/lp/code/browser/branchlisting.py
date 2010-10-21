@@ -977,6 +977,16 @@ class PersonBaseBranchListingView(BranchListingView):
     """Base class used for different person listing views."""
 
     @property
+    def show_action_menu(self):
+        if self.user is not None:
+            return self.user.inTeam(self.context)
+        return False
+
+    @property
+    def show_junk_directions(self):
+        return self.user == self.context
+
+    @property
     def initial_values(self):
         values = super(PersonBaseBranchListingView, self).initial_values
         values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
@@ -1671,6 +1681,7 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
     """A base view used for other person-product branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+    show_action_menu = False
 
     @property
     def person(self):
