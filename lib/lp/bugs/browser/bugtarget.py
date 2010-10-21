@@ -182,9 +182,6 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
     custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
     custom_widget('remote_product', GhostWidget)
 
-    def __init__(self, context, request):
-        ProductConfigureBase.__init__(self, context, request)
-
     @property
     def field_names(self):
         """Return the list of field names to display."""
