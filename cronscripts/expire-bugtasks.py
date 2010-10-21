@@ -47,7 +47,8 @@ class ExpireBugTasks(LaunchpadCronScript):
             # Avoid circular import.
             from lp.registry.interfaces.distribution import IDistributionSet
             target = getUtility(IDistributionSet).getByName('ubuntu')
-        janitor = BugJanitor(log=self.logger, target=target)
+        janitor = BugJanitor(
+            log=self.logger, target=target, limit=self.options.limit)
         janitor.expireBugTasks(self.txn)
 
 

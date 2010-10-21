@@ -36,7 +36,8 @@ class BugJanitor:
     must use Malone for bug tracking.
     """
 
-    def __init__(self, days_before_expiration=None, log=None, target=None):
+    def __init__(self, days_before_expiration=None, log=None, target=None,
+                 limit=None):
         """Create a new BugJanitor.
 
         :days_before_expiration: Days of inactivity before a question is
@@ -44,6 +45,7 @@ class BugJanitor:
         :log: A logger instance to use for logging. Defaults to the default
             logger.
         :target: The target for expiring bugs.
+        :limit: Expire no more than limit bugtasks.
         """
 
         if days_before_expiration is None:
@@ -54,6 +56,7 @@ class BugJanitor:
         self.days_before_expiration = days_before_expiration
         self.log = log
         self.target = target
+        self.limit = limit
 
         self.janitor = getUtility(ILaunchpadCelebrities).janitor
 
@@ -76,7 +79,7 @@ class BugJanitor:
             bugtask_set = getUtility(IBugTaskSet)
             incomplete_bugtasks = bugtask_set.findExpirableBugTasks(
                 self.days_before_expiration, user=self.janitor,
-                target=self.target)
+                target=self.target, limit=self.limit)
             self.log.info(
                 'Found %d bugtasks to expire.' % incomplete_bugtasks.count())
             for bugtask in incomplete_bugtasks:
