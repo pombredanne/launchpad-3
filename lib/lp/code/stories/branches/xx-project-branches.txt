@@ -38,6 +38,8 @@ If there are not any branches, a relevant message is shown.
     >>> browser.open('http://code.launchpad.dev/aaa')
     >>> print browser.title
     Code : the Test Project
-    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+    >>> message = find_tag_by_id(browser.contents, 'no-branchtable')
     >>> print extract_text(message)
-    There are no branches registered for the Test Project in Launchpad...
+    Launchpad does not know where any of
+    the Test Project's
+    projects host their code.

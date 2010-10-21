@@ -13,11 +13,11 @@ We need to get a POTMsgSet object to perform this test.
     >>> from zope.component import getUtility
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
 
     >>> potemplate = factory.makePOTemplate()
     >>> potmsgset = factory.makePOTMsgSet(

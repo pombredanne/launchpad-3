@@ -339,8 +339,7 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IWeaklyAuthenticatedPrincipal)
+    >>> from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
     >>> from zope.interface import directlyProvides, directlyProvidedBy
     >>> from zope.security.management import queryInteraction
     >>> participations = queryInteraction().participations
@@ -1222,8 +1221,8 @@ If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
     >>> from canonical.config import config
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     # The script's default user doesn't have permission to change the driver.
     >>> commit()
@@ -1648,8 +1647,8 @@ The user is a bug supervisors of the upstream product
 The user is a package bug supervisor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ISourcePackageNameSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -2880,8 +2879,8 @@ we'll create a new bug on firefox and link it to a remote bug.
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugWatchSet, IProductSet)
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')

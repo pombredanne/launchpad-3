@@ -10,8 +10,11 @@ page.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProduct, IProductSet, License)
+    >>> from lp.registry.interfaces.product import (
+    ...     IProduct,
+    ...     IProductSet,
+    ...     License,
+    ...     )
     >>> product = getUtility(IProductSet).get(1)
     >>> licenses_field = IProduct['licenses'].bind(product)
     >>> vtype = licenses_field.value_type

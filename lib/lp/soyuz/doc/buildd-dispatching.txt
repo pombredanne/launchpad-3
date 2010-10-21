@@ -18,8 +18,8 @@ Setup the test builder:
 
 Setup a suitable chroot for Hoary i386:
 
-    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from StringIO import StringIO
+    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> librarian_client = getUtility(ILibrarianClient)
 
     >>> content = 'anything'
