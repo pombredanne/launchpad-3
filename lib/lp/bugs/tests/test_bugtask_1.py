@@ -116,9 +116,11 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
     def tearDownBugsElsewhereTests(self):
         """Resets the modified bugtasks to their original statuses."""
         self.firefox_upstream.transitionToStatus(
-            self.old_firefox_status, getUtility(ILaunchBag).user)
+            self.old_firefox_status,
+            self.firefox_upstream.target.bug_supervisor)
         self.thunderbird_upstream.transitionToStatus(
-            self.old_thunderbird_status, getUtility(ILaunchBag).user)
+            self.old_thunderbird_status,
+            self.firefox_upstream.target.bug_supervisor)
         flush_database_updates()
 
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
