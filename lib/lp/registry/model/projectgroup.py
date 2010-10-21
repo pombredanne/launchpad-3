@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
@@ -174,6 +175,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
 
+    def getConfigurableProducts(self):
+        return [product for product in self.products
+                if check_permission('launchpad.Edit', product)]
+                    
     @property
     def drivers(self):
         """See `IHasDrivers`."""
@@ -206,9 +211,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # XXX j.c.sackett 2010-08-30 bug=627631: Once data migration has
         # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
+        # check for the translations_usage, not official_rosetta.  At that
+        # time it should also be converted to a Storm query and the issue with
+        # has_translatables resolved.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -220,7 +227,15 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def has_translatable(self):
         """See `IProjectGroup`."""
+        # XXX: BradCrittenden 2010-10-12 bug=659078: The test should be
+        # converted to use is_empty but the implementation in storm's
+        # sqlobject wrapper is broken.
+        # return not self.translatables().is_empty()
         return self.translatables().count() != 0
+
+    def has_branches(self):
+        """ See `IProjectGroup`."""
+        return not self.getBranches().is_empty()
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """

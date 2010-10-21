@@ -269,8 +269,8 @@ The zcml processor `browser:navigation` registers navigation classes.
 Once registered, we can look the navigation up using getMultiAdapter().
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> navigation = getMultiAdapter(
     ...     (thingset, LaunchpadTestRequest()), IBrowserPublisher, name='')
 

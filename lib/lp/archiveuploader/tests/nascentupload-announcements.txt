@@ -52,8 +52,9 @@ For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     SeriesStatus, IDistributionSet, ILibraryFileAliasSet)
+  >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.series import SeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = SeriesStatus.DEVELOPMENT
@@ -249,10 +250,10 @@ changes file is enclosed as an attachment.
 
 A PPA upload will contain the X-Launchpad-PPA header.
 
-  >>> from lp.soyuz.enums import ArchivePurpose
-  >>> from lp.soyuz.interfaces.archive import IArchiveSet
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> name16 = getUtility(IPersonSet).getByName('name16')

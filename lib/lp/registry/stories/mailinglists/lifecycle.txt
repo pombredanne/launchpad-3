@@ -316,8 +316,8 @@ to delete the archives of an INACTIVE list, this must be done manually.
     >>> team = mailinglists_helper.new_team('aardvarks')
     >>> logout()
 
-    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def print_list_state(team_name='aardvarks'):
     ...     login('foo.bar@canonical.com')
     ...     mailing_list = getUtility(IMailingListSet).get(team_name)

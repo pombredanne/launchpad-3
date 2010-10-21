@@ -3,10 +3,10 @@
 The base class for BugChanges doesn't actually implement anything.
 
     >>> import pytz
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from datetime import datetime
     >>> from lp.bugs.adapters.bugchange import BugChangeBase
     >>> from lp.bugs.interfaces.bugchange import IBugChange
-    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
