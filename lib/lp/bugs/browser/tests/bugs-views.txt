@@ -37,7 +37,7 @@ in the future.
     >>> len(bug_eight.bugtasks)
     1
     >>> bug_eight.bugtasks[0].transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED, bug_eight.bugtasks[0].distribution.owner)
     >>> def fix_bug(bug_id, bugtask_index=0):
     ...     bugtask = getUtility(IBugSet).get(bug_id).bugtasks[bugtask_index]
     ...     bugtask.transitionToStatus(

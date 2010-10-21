@@ -101,7 +101,7 @@ Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.INVALID, bugtask.target.owner)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
