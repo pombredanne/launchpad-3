@@ -53,6 +53,11 @@
       </div>
     </tal:show_configuration>
 
+    <div id="show-hide-configs"
+      tal:attributes="class
+        python: 'collapsible collapsed'
+          if view.registration_done
+          else 'collapsible'">
     <table style="width: 100%; padding-top: 1em"
            tal:condition="view/configuration_links"
            id="configuration_links">
@@ -69,6 +74,6 @@
         </tr>
       </tal:item>
     </table>
-
+    </div>
   </tal:editor>
 </div>
