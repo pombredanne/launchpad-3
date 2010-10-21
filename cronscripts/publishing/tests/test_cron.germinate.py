@@ -6,13 +6,6 @@
 
 __metaclass__ = type
 
-# mvo: I would love to use this, but it appears doing this import 
-#      requires python-psycopg2, python-storm, python-transaction,
-#      python-lazr.restful and now "windmill" that is not packaged
-#      at this point I give up and let someone else with a proper
-#      LP environment fix this
-#from canonical.testing.layers import DatabaseFunctionalLayer
-
 # mvo: I would love to use this, but it complains about a missing
 #      import for "fixtures" and I can not find a package that
 #      provides this module
@@ -34,7 +27,7 @@ class TestCronGerminate(TestCase):
     DISTS = ["hardy", "lucid", "maverick"]
     COMPONENTS = ["main", "restricted", "universe", "multiverse"]
     ARCHES = ["i386", "amd64", "armel", "powerpc"]
-    BASEPATH = os.path.dirname(__file__)
+    BASEPATH = os.path.abspath(os.path.dirname(__file__))
 
     def setUp(self):
         # Setup a temp archive directory and populate it with the right
