@@ -1,5 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2010 Canonical Ltd.  This software is licensed under the # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
 
@@ -12,6 +11,7 @@ import pytz
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import ProductLicenseMixin
 from lp.registry.interfaces.product import License
 from lp.testing import (
@@ -101,6 +101,57 @@ class TestProductLicenseMixin(TestCaseWithFactory):
         result = self.view._formatDate(now)
         self.assertEqual('2005-06-15', result)
 
+
+class TestProductConfiguration(TestCaseWithFactory):
+    """Tests the configuration links and helpers."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductConfiguration, self).setUp()
+        self.product = self.factory.makeProduct()
+
+    def _configure_all_services(self, product):
+        # Sets all the service usage enums for a product. 
+        # This doesn't set them all to LAUNCHPAD because a service should
+        # be considered configured as long as they're not UNKNOWN.
+        naked_product = removeSecurityProxy(product)
+
+        #codehosting_usage
+        branch = self.factory.makeProductBranch(product=product)
+        product_series = self.factory.makeProductSeries(
+            product=product,
+            branch=branch)
+        naked_product.development_focus = product_series
+
+        #bug_tracking_usage
+        bugtracker = self.factory.makeBugTracker()
+        naked_product.bugtracker = bugtracker
+
+        #translations_usage
+        naked_product.translations_usage = ServiceUsage.LAUNCHPAD
+
+        #answers_usage
+        naked_product.answers_usage = ServiceUsage.EXTERNAL
+
+    def test_registration_not_done(self):
+        # The registration done property on the product index view
+        # tells you if all the configuration work is done, based on
+        # usage enums.
+
+        # At least one usage enum is unknown, so registration done is false.
+        self.assertEqual(
+            self.product.codehosting_usage,
+            ServiceUsage.UNKNOWN)
+        view = create_view(self.product, '+get-involved')
+        self.assertFalse(view.registration_done)
+
+        # Once all services are configured, the 
+        self._configure_all_services(self.product)
+        view = create_view(self.product, '+get-involved')
+        self.assertTrue(view.registration_done)
+            
+    
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
