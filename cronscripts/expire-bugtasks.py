@@ -15,6 +15,8 @@ __metaclass__ = type
 
 import _pythonpath
 
+from zope.component import getUtility
+
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bugexpire import BugJanitor
@@ -40,7 +42,12 @@ class ExpireBugTasks(LaunchpadCronScript):
 
     def main(self):
         """Run the BugJanitor."""
-        janitor = BugJanitor(log=self.logger)
+        target = None
+        if self.options.ubuntu:
+            # Avoid circular import.
+            from lp.registry.interfaces.distribution import IDistributionSet
+            target = getUtility(IDistributionSet).getByName('ubuntu')
+        janitor = BugJanitor(log=self.logger, target=target)
         janitor.expireBugTasks(self.txn)
 
 
