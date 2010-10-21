@@ -31,7 +31,7 @@ from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
@@ -1919,7 +1919,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.assertEquals(1, len(self.oopses))
-        self.layer.txn.commit()
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(builder, build.builder)

@@ -4,14 +4,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'distribution_from_distributionsourcepackage',
     'DistributionSourcePackageBreadcrumb',
+    'DistributionSourcePackageChangelogView',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageView',
-    'DistributionSourcePackageChangelogView',
     'DistributionSourcePackagePublishingHistoryView',
+    'DistributionSourcePackageView',
     ]
 
 from datetime import datetime
@@ -20,12 +21,17 @@ import operator
 
 from lazr.delegates import delegates
 import pytz
-from zope.component import getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 from zope.interface import (
+    implementer,
     implements,
     Interface,
     )
 
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     action,
@@ -44,6 +50,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.browser.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
@@ -88,13 +95,21 @@ class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
         return {'displayname': displayname}
 
 
+@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+    implements(IBreadcrumb)
 
     @property
     def text(self):
         return smartquote('"%s" package') % (
             self.context.sourcepackagename.name)
+
+
+@adapter(IDistributionSourcePackage)
+@implementer(IServiceUsage)
+def distribution_from_distributionsourcepackage(dsp):
+    return dsp.distribution
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
@@ -112,7 +127,7 @@ class DistributionSourcePackageLinksMixin:
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def edit(self):
         """Edit the details of this source package."""
         # This is titled "Edit bug reporting guidelines" because that

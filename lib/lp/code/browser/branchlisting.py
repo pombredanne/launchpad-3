@@ -406,7 +406,8 @@ class BranchListingItemsMixin:
     @cachedproperty
     def official_package_links_map(self):
         """Return a map from branch id to a list of package links."""
-        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+        query_optimiser = self._query_optimiser
+        links = query_optimiser.getOfficialSourcePackageLinksForBranches(
             self._visible_branch_ids)
         result = {}
         for link in links:
@@ -976,6 +977,16 @@ class PersonBaseBranchListingView(BranchListingView):
     """Base class used for different person listing views."""
 
     @property
+    def show_action_menu(self):
+        if self.user is not None:
+            return self.user.inTeam(self.context)
+        return False
+
+    @property
+    def show_junk_directions(self):
+        return self.user == self.context
+
+    @property
     def initial_values(self):
         values = super(PersonBaseBranchListingView, self).initial_values
         values['sort_by'] = BranchListingSort.MOST_RECENTLY_CHANGED_FIRST
@@ -1179,6 +1190,10 @@ class ProductBranchListingView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
+
+    def can_configure_branches(self):
+        """Whether or not the user can configure branches."""
+        return check_permission("launchpad.Edit", self.context)
 
 
 class ProductBranchStatisticsView(BranchCountSummaryView,
@@ -1666,6 +1681,7 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
     """A base view used for other person-product branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+    show_action_menu = False
 
     @property
     def person(self):

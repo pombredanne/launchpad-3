@@ -19,5 +19,5 @@ Marks all existing translation credits as translated.
 After altering the database from a separate process, we must tell the
 test setup that the database is dirty in spite of appearances.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> DatabaseLayer.force_dirty_database()

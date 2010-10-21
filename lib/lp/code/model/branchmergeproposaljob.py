@@ -24,6 +24,7 @@ __all__ = [
     'CreateMergeProposalJob',
     'GenerateIncrementalDiffJob',
     'MergeProposalCreatedJob',
+    'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
     'UpdatePreviewDiffJob',
@@ -89,8 +90,8 @@ from lp.code.interfaces.branchmergeproposal import (
     ICreateMergeProposalJobSource,
     IGenerateIncrementalDiffJob,
     IGenerateIncrementalDiffJobSource,
-    IMergeProposalCreatedJob,
-    IMergeProposalCreatedJobSource,
+    IMergeProposalNeedsReviewEmailJob,
+    IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJob,
@@ -118,11 +119,10 @@ from lp.services.mail.sendmail import format_address_for_person
 class BranchMergeProposalJobType(DBEnumeratedType):
     """Values that ICodeImportJob.state can take."""
 
-    MERGE_PROPOSAL_CREATED = DBItem(0, """
-        Merge proposal created
+    MERGE_PROPOSAL_NEEDS_REVIEW = DBItem(0, """
+        Merge proposal needs review
 
-        This job generates the review diff for a BranchMergeProposal if
-        needed, then sends mail to all interested parties.
+        This job sends mail to all interested parties about the proposal.
         """)
 
     UPDATE_PREVIEW_DIFF = DBItem(1, """
@@ -305,17 +305,17 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return vars
 
 
-class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
-    """See `IMergeProposalCreatedJob`."""
+class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
+    """See `IMergeProposalNeedsReviewEmailJob`."""
 
-    implements(IMergeProposalCreatedJob)
+    implements(IMergeProposalNeedsReviewEmailJob)
 
-    classProvides(IMergeProposalCreatedJobSource)
+    classProvides(IMergeProposalNeedsReviewEmailJobSource)
 
-    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
+    class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
 
     def run(self):
-        """See `IMergeProposalCreatedJob`."""
+        """See `IMergeProposalNeedsReviewEmailJob`."""
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
@@ -719,8 +719,8 @@ class BranchMergeProposalJobFactory:
     """Construct a derived merge proposal job for a BranchMergeProposalJob."""
 
     job_classes = {
-        BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED:
-            MergeProposalCreatedJob,
+        BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW:
+            MergeProposalNeedsReviewEmailJob,
         BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF:
             UpdatePreviewDiffJob,
         BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL:

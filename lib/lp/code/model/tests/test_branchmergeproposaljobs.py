@@ -23,7 +23,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -35,7 +35,7 @@ from lp.code.interfaces.branchmergeproposal import (
     ICodeReviewCommentEmailJobSource,
     IGenerateIncrementalDiffJob,
     IGenerateIncrementalDiffJobSource,
-    IMergeProposalCreatedJob,
+    IMergeProposalNeedsReviewEmailJob,
     IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
     IReviewRequestedEmailJob,
@@ -49,7 +49,7 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJobType,
     CodeReviewCommentEmailJob,
     GenerateIncrementalDiffJob,
-    MergeProposalCreatedJob,
+    MergeProposalNeedsReviewEmailJob,
     MergeProposalUpdatedEmailJob,
     ReviewRequestedEmailJob,
     UpdatePreviewDiffJob,
@@ -71,7 +71,7 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
         """BranchMergeProposalJob implements expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = BranchMergeProposalJob(
-            bmp, BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED, {})
+            bmp, BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW, {})
         job.sync()
         verifyObject(IBranchMergeProposalJob, job)
 
@@ -90,30 +90,30 @@ class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
         SQLObjectNotFound is raised.
         """
         bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
         transaction.commit()
         self.assertRaises(
             AttributeError, BranchMergeProposalJobDerived.get, job.id)
         self.assertRaises(SQLObjectNotFound, UpdatePreviewDiffJob.get, job.id)
         self.assertRaises(
-            SQLObjectNotFound, MergeProposalCreatedJob.get, job.id + 1)
-        self.assertEqual(job, MergeProposalCreatedJob.get(job.id))
+            SQLObjectNotFound, MergeProposalNeedsReviewEmailJob.get, job.id + 1)
+        self.assertEqual(job, MergeProposalNeedsReviewEmailJob.get(job.id))
 
 
-class TestMergeProposalCreatedJob(TestCaseWithFactory):
+class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def test_providesInterface(self):
-        """MergeProposalCreatedJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
-        verifyObject(IMergeProposalCreatedJob, job)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
+        verifyObject(IMergeProposalNeedsReviewEmailJob, job)
         verifyObject(IBranchMergeProposalJob, job)
 
     def test_getOperationDescription(self):
         bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
         self.assertTrue(
             job.getOperationDescription().startswith(
                 'notifying people about the proposal to merge'))
@@ -138,7 +138,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         """MergeProposalCreationJob.run sends an email."""
         self.useBzrBranches(direct_database=True)
         bmp = self.createProposalWithEmptyBranches()
-        job = MergeProposalCreatedJob.create(bmp)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
         self.assertEqual([], pop_notifications())
         job.run()
         self.assertEqual(2, len(pop_notifications()))
@@ -146,7 +146,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
     def test_getOopsMailController(self):
         """The registrant is notified about merge proposal creation issues."""
         bmp = self.factory.makeBranchMergeProposal()
-        job = MergeProposalCreatedJob.create(bmp)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
         ctrl = job.getOopsMailController('1234')
         self.assertEqual([bmp.registrant.preferredemail.email], ctrl.to_addrs)
         message = (
@@ -166,7 +166,7 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
             tree.commit('Initial commit')
         self.createBzrBranch(bmp.source_branch, tree.branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        job = MergeProposalCreatedJob.create(bmp)
+        job = MergeProposalNeedsReviewEmailJob.create(bmp)
         transaction.commit()
         self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         job.run()
@@ -181,7 +181,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_providesInterface(self):
-        """MergeProposalCreatedJob provides the expected interfaces."""
+        """MergeProposalNeedsReviewEmailJob provides the expected interfaces."""
         bmp = self.factory.makeBranchMergeProposal()
         job = UpdatePreviewDiffJob.create(bmp)
         verifyObject(IUpdatePreviewDiffJob, job)
@@ -409,7 +409,7 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         update_diff.complete()
         [job] = self.job_source.iterReady()
         self.assertEqual(job.branch_merge_proposal, bmp)
-        self.assertIsInstance(job, MergeProposalCreatedJob)
+        self.assertIsInstance(job, MergeProposalNeedsReviewEmailJob)
 
     def completePendingJobs(self):
         # Mark all current pending jobs as complete
@@ -491,7 +491,7 @@ class TestReviewRequestedEmailJob(TestCaseWithFactory):
         verifyObject(IReviewRequestedEmailJobSource, ReviewRequestedEmailJob)
 
     def test_providesInterface(self):
-        """MergeProposalCreatedJob provides the expected interfaces."""
+        """ReviewRequestedEmailJob provides the expected interfaces."""
         request = self.factory.makeCodeReviewVoteReference()
         job = ReviewRequestedEmailJob.create(request)
         verifyObject(IReviewRequestedEmailJob, job)

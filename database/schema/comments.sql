@@ -353,7 +353,8 @@ COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as regi
 COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
 COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
 COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
-COMMENT ON COLUMN BugTrackerComponent.distro_source_package IS 'A link to the source package in a distribution that corresponds to this component.  This can be undefined if no link has been established yet.';
+COMMENT ON COLUMN BugTrackerComponent.distribution IS 'Link to the distribution for the associated source package.  This can be NULL if no ling has been established.';
+COMMENT ON COLUMN BugTrackerComponent.source_package_name IS 'The text name of the source package in a distribution that corresponds to this component.  This can be NULL if no link has been established yet.';
 
 -- BugTrackerComponentGroup
 
@@ -1290,6 +1291,22 @@ COMMENT ON COLUMN PersonNotification.body IS 'The textual body of the notificati
 COMMENT ON COLUMN PersonNotification.subject IS 'The subject of the mail to be sent.';
 COMMENT ON COLUMN PersonNotification.date_emailed IS 'When this notification was emailed to the relevant people.';
 
+-- PersonTransferJob
+
+COMMENT ON TABLE PersonTransferJob IS 'Contains references to jobs for adding team members or merging person entries.';
+COMMENT ON COLUMN PersonTransferJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN PersonTransferJob.job_type IS 'The type of job, like add-member notification or merge persons.';
+COMMENT ON COLUMN PersonTransferJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN PersonTransferJob.minor_person IS 'The person that is being added is a new member or being merged into another person.';
+COMMENT ON COLUMN PersonTransferJob.major_person IS 'The team receiving a new member or the person that another person is merged into.';
+
+-- QuestionJob
+
+COMMENT ON TABLE QuestionJob IS 'Contains references to jobs regarding questions.';
+COMMENT ON COLUMN QuestionJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN QuestionJob.job_type IS 'The type of job, such as new-answer-notification.';
+COMMENT ON COLUMN QuestionJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN QuestionJob.question IS 'The newly added question message.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';

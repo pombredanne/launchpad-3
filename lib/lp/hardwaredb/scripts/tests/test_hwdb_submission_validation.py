@@ -15,7 +15,7 @@ from unittest import (
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
 
 

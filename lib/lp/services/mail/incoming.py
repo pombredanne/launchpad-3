@@ -55,9 +55,11 @@ from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
-# followed by a # '\n', and all '\n' that are not preceded by a '\r'.
+# followed by a '\n', and all '\n' that are not preceded by a '\r'.
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
+# Match trailing whitespace.
+trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
@@ -73,6 +75,8 @@ def canonicalise_line_endings(text):
     """
     if non_canonicalised_line_endings.search(text):
         text = non_canonicalised_line_endings.sub('\r\n', text)
+    if trailing_whitespace.search(text):
+        text = trailing_whitespace.sub('', text)
     return text
 
 
@@ -149,7 +153,7 @@ def _authenticateDkim(signed_message):
             % (signing_domain, from_domain))
         return False
     if not _isDkimDomainTrusted(signing_domain):
-        log.warning("valid DKIM signature from untrusted domain %s" 
+        log.warning("valid DKIM signature from untrusted domain %s"
             % (signing_domain,))
         return False
     return True
@@ -325,7 +329,7 @@ def handleMail(trans=transaction):
                     mail = signed_message_from_string(raw_mail)
                 except email.Errors.MessageError, error:
                     mailbox.delete(mail_id)
-                    log = logging.getLogger('canonical.launchpad.mail')
+                    log = logging.getLogger('lp.services.mail')
                     log.warn(
                         "Couldn't convert email to email.Message: %s" % (
                             file_alias_url, ),
@@ -338,8 +342,7 @@ def handleMail(trans=transaction):
                 if mail['Return-Path'] == '<>':
                     _handle_error(
                         "Message had an empty Return-Path.",
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
                 if mail.get_content_type() == 'multipart/report':
                     # Mails with a content type of multipart/report are
@@ -351,8 +354,7 @@ def handleMail(trans=transaction):
                 if 'precedence' in mail:
                     _handle_error(
                         "Got a message with a precedence header.",
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
 
                 try:
@@ -366,14 +368,21 @@ def handleMail(trans=transaction):
                         file_alias_url, notify=False)
                     continue
 
-                # Extract the domain the mail was sent to. Mails sent to
-                # Launchpad should have an X-Original-To header, but
-                # it has an incorrect address.
-                # Process all addresses found as a fall back.
-                cc = mail.get_all('cc') or []
-                to = mail.get_all('to') or []
-                names_addresses = getaddresses(to + cc)
-                addresses = [addr for name, addr in names_addresses]
+                # Extract the domain the mail was sent to.  Mails sent to
+                # Launchpad should have an X-Launchpad-Original-To header.
+                if 'X-Launchpad-Original-To' in mail:
+                    addresses = [mail['X-Launchpad-Original-To']]
+                else:
+                    log = logging.getLogger('lp.services.mail')
+                    log.warn(
+                        "No X-Launchpad-Original-To header was present "
+                        "in email: %s" %
+                         file_alias_url)
+                    # Process all addresses found as a fall back.
+                    cc = mail.get_all('cc') or []
+                    to = mail.get_all('to') or []
+                    names_addresses = getaddresses(to + cc)
+                    addresses = [addr for name, addr in names_addresses]
 
                 try:
                     do_paranoid_envelope_to_validation(addresses)
@@ -400,8 +409,7 @@ def handleMail(trans=transaction):
                 if principal is None and not handler.allow_unknown_users:
                     _handle_error(
                         'Unknown user: %s ' % mail['From'],
-                        file_alias_url, notify=False
-                        )
+                        file_alias_url, notify=False)
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)

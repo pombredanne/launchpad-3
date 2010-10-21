@@ -23,7 +23,7 @@ from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
     datadir,

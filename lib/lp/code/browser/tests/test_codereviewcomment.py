@@ -11,7 +11,7 @@ import unittest
 
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.codereviewcomment import (
     CodeReviewDisplayComment,
     ICodeReviewDisplayComment,

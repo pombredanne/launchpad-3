@@ -20,6 +20,8 @@ from zope.security.proxy import ProxyFactory
 from lp.testing import TestCase
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import (
+    Contains,
+    DoesNotContain,
     DoesNotCorrectlyProvide,
     DoesNotProvide,
     DoesNotStartWith,
@@ -255,5 +257,38 @@ class StartsWithTests(TestCase):
 
     def test_mismatch_sets_expected(self):
         matcher = StartsWith("bar")
+        mismatch = matcher.match("foo")
+        self.assertEqual("bar", mismatch.expected)
+
+
+class DoesNotContainTests(TestCase):
+
+    def test_describe(self):
+        mismatch = DoesNotContain("foo", "bar")
+        self.assertEqual(
+            "'foo' does not contain 'bar'.", mismatch.describe())
+
+
+class ContainsTests(TestCase):
+
+    def test_str(self):
+        matcher = Contains("bar")
+        self.assertEqual("Contains 'bar'.", str(matcher))
+
+    def test_match(self):
+        matcher = Contains("bar")
+        self.assertIs(None, matcher.match("foo bar baz"))
+
+    def test_mismatch_returns_does_not_start_with(self):
+        matcher = Contains("bar")
+        self.assertIsInstance(matcher.match("foo"), DoesNotContain)
+
+    def test_mismatch_sets_matchee(self):
+        matcher = Contains("bar")
+        mismatch = matcher.match("foo")
+        self.assertEqual("foo", mismatch.matchee)
+
+    def test_mismatch_sets_expected(self):
+        matcher = Contains("bar")
         mismatch = matcher.match("foo")
         self.assertEqual("bar", mismatch.expected)

@@ -37,14 +37,12 @@ If there are not any branches, a helpful message is shown.
     ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
     >>> print extract_text(summary)
-    Launchpad does not know where The Gnome Panel Applets hosts its code.
-    There are no branches for Gnome Applets in Launchpad.  You can change this by:
-    activating code hosting directly on Launchpad. (read more)
-    asking Launchpad to mirror a Bazaar branch hosted elsewhere. (read more)
-    asking Launchpad to import code from Git, Subversion, or CVS into a
-      Bazaar branch. (read more)
-    Getting started with code hosting in Launchpad.
-
+    Launchpad does not know where The Gnome Panel Applets
+    hosts its code.
+    There are no branches for Gnome Applets
+    in Launchpad.
+    Getting started
+    with code hosting in Launchpad.
 
     If there are Bazaar branches of Gnome Applets in a publicly
       accessible location, Launchpad can act as a mirror of the branch
@@ -54,13 +52,10 @@ If there are not any branches, a helpful message is shown.
     Launchpad can import code from CVS, Subversion, Mercurial or Git
       into Bazaar branches. Read more...
 
-The 'Read more' links go to the help wiki.
+The 'Help' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
-    https://help.launchpad.net/Code/UploadingABranch
-    https://help.launchpad.net/Code/MirroredBranches
-    https://help.launchpad.net/VcsImports
     https://help.launchpad.net/Code
 
 
@@ -93,9 +88,16 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    You can get a copy of the development focus branch using the
-    command:
-       bzr branch lp://dev/evolution
+    The Evolution Groupware Application hosts its code
+    externally.
+    You can learn more at the project's
+    web page.
+    Launchpad imports the master branch and you can create branches from
+    it.
+    You can
+    get a copy of the development focus branch
+    using the command:
+    bzr branch lp://dev/evolution
 
     >>> links = summary.findAll('a')
 
@@ -250,6 +252,7 @@ The statistics portlet
 The text that is shown giving a summary of the number of branches
 shows correct singular and plural forms.
 
+    >>> from lp.testing import normalize_whitespace
     >>> def get_stats_portlet(browser):
     ...     return find_tag_by_id(
     ...         browser.contents,
@@ -260,13 +263,11 @@ shows correct singular and plural forms.
     ...     if portlet is None:
     ...         print 'None'
     ...     else:
-    ...         print extract_text(portlet)
+    ...         print normalize_whitespace(extract_text(portlet))
 
     >>> setup_code_hosting('gnome-terminal')
     >>> print_portlet('gnome-terminal')
-    0 Active reviews
-    9 Active branches owned by 2 people and 2 teams
-    0 Commits in the last month
+    GNOME Terminal has 9 active branches owned by 2 people and 2 teams. There were 0 commits in the last month.
 
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
@@ -275,23 +276,17 @@ shows correct singular and plural forms.
     >>> logout()
     >>> setup_code_hosting('fooix')
     >>> print_portlet('fooix')
-    0 Active reviews
-    2 Active branches owned by 2 people
-    0 Commits in the last month
+    Fooix has 2 active branches owned by 2 people. There were 0 commits in the last month.
 
     >>> print_portlet('evolution')
-    0 Active reviews
-    3 Active branches owned by 1 person and 1 team
-    0 Commits in the last month
+    Evolution has 3 active branches owned by 1 person and 1 team. There were 0 commits in the last month.
 
     >>> login(ANONYMOUS)
     >>> dinky = factory.makeProduct('dinky')
     >>> logout()
     >>> setup_code_hosting('dinky')
     >>> print_portlet('dinky')
-    0 Active reviews
-    1 Active branch owned by 1 person
-    0 Commits in the last month
+    Dinky has 1 active branch owned by 1 person. There were 0 commits in the last month.
 
 
 Product has Branches, but none initially visible

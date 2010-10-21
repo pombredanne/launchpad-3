@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     IPerson,
     )
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
@@ -319,7 +319,3 @@ def test_suite():
     suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(TestEmailPeople))
     return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
-

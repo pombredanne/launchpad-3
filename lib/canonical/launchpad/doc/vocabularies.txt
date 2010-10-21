@@ -75,7 +75,7 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
@@ -130,7 +130,7 @@ Firefox has the following series:
 Now, if we look at bug one, we can see that it hasn't been targeted
 for any Firefox series yet:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:

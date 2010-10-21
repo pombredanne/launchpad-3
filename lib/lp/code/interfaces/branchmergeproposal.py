@@ -19,8 +19,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IGenerateIncrementalDiffJob',
     'IGenerateIncrementalDiffJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
+    'IMergeProposalNeedsReviewEmailJob',
+    'IMergeProposalNeedsReviewEmailJobSource',
     'IMergeProposalUpdatedEmailJob',
     'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
@@ -87,6 +87,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
+    ITwistedJobSource,
     )
 
 
@@ -553,7 +554,7 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
-class IBranchMergeProposalJobSource(IJobSource):
+class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 
@@ -638,15 +639,15 @@ class ICreateMergeProposalJobSource(IJobSource):
         """Return a CreateMergeProposalJob for this message."""
 
 
-class IMergeProposalCreatedJob(IRunnableJob):
-    """Interface for review diffs."""
+class IMergeProposalNeedsReviewEmailJob(IRunnableJob):
+    """Email about a merge proposal needing a review.."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class IMergeProposalNeedsReviewEmailJobSource(Interface):
+    """Interface for acquiring MergeProposalNeedsReviewEmailJobs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a needs review email job for the specified proposal."""
 
 
 class IUpdatePreviewDiffJob(IRunnableJob):
