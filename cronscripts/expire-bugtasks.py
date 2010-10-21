@@ -30,6 +30,14 @@ class ExpireBugTasks(LaunchpadCronScript):
     usage = "usage: %prog [options]"
     description =  '    %s' % __doc__
 
+    def add_my_options(self):
+        self.parser.add_option('-u', '--ubuntu', action='store_true',
+                               dest='ubuntu', default=False,
+                               help='Only expire Ubuntu bug tasks.')
+        self.parser.add_option('-l', '--limit', action='store', dest='limit',
+                               type='int', metavar='NUMBER', default=None,
+                               help='Limit expiry to NUMBER of bug tasks.')
+
     def main(self):
         """Run the BugJanitor."""
         janitor = BugJanitor(log=self.logger)
