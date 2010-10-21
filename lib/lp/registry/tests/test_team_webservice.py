@@ -5,6 +5,8 @@ __metaclass__ = type
 
 import httplib
 
+from zope.security.proxy import removeSecurityProxy
+
 from lazr.restfulclient.errors import HTTPError
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -57,6 +59,8 @@ class TestTeamJoining(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_restricted_rejects_membership(self):
+        # Calling person.join with a team that has a restricted membership
+        # subscription policy should raise an HTTP error with BAD_REQUEST
         self.person = self.factory.makePerson(name='test-person')
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
@@ -84,4 +88,9 @@ class TestTeamJoining(TestCaseWithFactory):
         test_person = launchpad.people['test-person']
         test_team = launchpad.people['test-team']
         test_person.join(team=test_team.self_link)
-        self.assertEqual(1, self.person.team_memberships.count())
+        login_person(self.team.teamowner)
+        self.assertEqual(
+            ['test-team'],
+            [membership.team.name
+                for membership in self.person.team_memberships])
+        logout()
