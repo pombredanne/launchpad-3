@@ -252,6 +252,11 @@ class IProductSeriesPublic(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
 
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
+
     def getRelease(version):
         """Get the release in this series that has the specified version.
         Return None is there is no such release.

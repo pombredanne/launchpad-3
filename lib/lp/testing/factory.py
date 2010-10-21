@@ -36,6 +36,7 @@ from itertools import count
 from operator import isSequenceType
 import os
 from random import randint
+import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -79,6 +80,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -91,6 +93,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
@@ -146,6 +149,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -1096,6 +1100,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
+    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
+                             description=None, configuration=None):
+        """Create a BranchMergeQueue."""
+        if name is None:
+            name = unicode(self.getUniqueString('queue'))
+        if owner is None:
+            owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
+        if description is None:
+            description = unicode(self.getUniqueString('queue-description'))
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({
+                self.getUniqueString('key'): self.getUniqueString('value')}))
+
+        queue = BranchMergeQueue.new(
+            name, registrant, owner, description, configuration)
+        return queue
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
@@ -1299,8 +1322,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None):
-        revision = self.makeRevision(rev_id=revision_id)
+    def makeBranchRevision(self, branch, revision_id, sequence=None,
+                           parent_ids=None):
+        revision = self.makeRevision(
+            rev_id=revision_id, parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
@@ -1832,22 +1857,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             filename, len(content), StringIO(content), content_type,
             expires=expires, restricted=restricted)
         return library_file_alias
-
-    def makePackageDiff(self, from_spr=None, to_spr=None):
-        """Make a completed package diff."""
-        if from_spr is None:
-            from_spr = self.makeSourcePackageRelease()
-        if to_spr is None:
-            to_spr = self.makeSourcePackageRelease()
-
-        diff = from_spr.requestDiffTo(
-            from_spr.creator, to_spr)
-
-        naked_diff = removeSecurityProxy(diff)
-        naked_diff.status = PackageDiffStatus.COMPLETED
-        naked_diff.diff_content = self.makeLibraryFileAlias()
-        naked_diff.date_fulfilled = UTC_NOW
-        return diff
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          members=None, title=None, aliases=None):
@@ -3164,6 +3173,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 requester=requester, from_source=from_source,
                 to_source=to_source, date_fulfilled=date_fulfilled,
                 status=status, diff_content=lfa))
+
+    # Factory methods for OAuth tokens.
+    def makeOAuthConsumer(self, key=None, secret=None):
+        if key is None:
+            key = self.getUniqueString("oauthconsumerkey")
+        if secret is None:
+            secret = ''
+        return getUtility(IOAuthConsumerSet).new(key, secret)
+
+    def makeOAuthRequestToken(
+        self, consumer=None, date_created=None, reviewed_by=None,
+        access_level=OAuthPermission.READ_PUBLIC):
+        """Create a (possibly reviewed) OAuth request token."""
+        if consumer is None:
+            consumer = self.makeOAuthConsumer()
+        token = consumer.newRequestToken()
+
+        if reviewed_by is not None:
+            # Review the token before modifying the date_created,
+            # since the date_created can be used to simulate an
+            # expired token.
+            token.review(reviewed_by, access_level)
+
+        if date_created is not None:
+            unwrapped_token = removeSecurityProxy(token)
+            unwrapped_token.date_created = date_created
+        return token
 
 
 # Some factory methods return simple Python types. We don't add

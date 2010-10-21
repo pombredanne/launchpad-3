@@ -14,6 +14,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import simplejson
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
@@ -32,6 +33,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -66,6 +68,7 @@ from lp.code.errors import (
     BranchTargetError,
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
+    InvalidMergeQueueConfig,
     )
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -116,6 +119,7 @@ from lp.services.osutils import override_environ
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
+    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -124,6 +128,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     time_counter,
+    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.model.translationtemplatesbuildjob import (
@@ -2702,6 +2707,84 @@ class TestGetBzrBranch(TestCaseWithFactory):
         db_stacked, stacked_tree = self.create_branch_and_tree()
         stacked_tree.branch.set_stacked_on_url(branch.base)
         self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
+
+
+class TestMergeQueue(TestCaseWithFactory):
+    """Tests for branch merge queue functionality in branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_addToQueue(self):
+        """Test Branch.addToQueue."""
+        branch = self.factory.makeBranch()
+        queue = self.factory.makeBranchMergeQueue()
+        with person_logged_in(branch.owner):
+            branch.addToQueue(queue)
+
+        self.assertEqual(branch.merge_queue, queue)
+
+    def test_setMergeQueueConfig(self):
+        """Test Branch.setMergeQueueConfig."""
+        branch = self.factory.makeBranch()
+        config = simplejson.dumps({
+            'path': '/',
+            'test': 'make test',})
+
+        with person_logged_in(branch.owner):
+            branch.setMergeQueueConfig(config)
+
+        self.assertEqual(branch.merge_queue_config, config)
+
+    def test_setMergeQueueConfig_invalid(self):
+        """Test that invalid JSON strings aren't added to the database."""
+        branch = self.factory.makeBranch()
+        config = 'abc'
+
+        with person_logged_in(branch.owner):
+            self.assertRaises(
+                InvalidMergeQueueConfig,
+                branch.setMergeQueueConfig,
+                config)
+
+
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_set_merge_queue(self):
+        """Test that the merge queue can be set properly."""
+        with person_logged_in(ANONYMOUS):
+            db_queue = self.factory.makeBranchMergeQueue()
+            db_branch = self.factory.makeBranch()
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        branch = ws_object(launchpad, db_branch)
+        queue = ws_object(launchpad, db_queue)
+        branch.merge_queue = queue
+        branch.lp_save()
+
+        branch2 = ws_object(launchpad, db_branch)
+        self.assertEqual(branch2.merge_queue, queue)
+
+    def test_set_configuration(self):
+        """Test the mutator for setting configuration."""
+        with person_logged_in(ANONYMOUS):
+            db_branch = self.factory.makeBranch()
+            launchpad = launchpadlib_for('test', db_branch.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        branch = ws_object(launchpad, db_branch)
+        branch.merge_queue_config = configuration
+        branch.lp_save()
+
+        branch2 = ws_object(launchpad, db_branch)
+        self.assertEqual(branch2.merge_queue_config, configuration)
 
 
 def test_suite():
