@@ -7,7 +7,7 @@ from textwrap import dedent
 import unittest
 
 from canonical.launchpad.database.message import MessageSet
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
@@ -83,7 +83,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Re: Message subject', reply.message.subject)
 
     def test_createNoParentComment(self):
-        comment = self.bmp.createComment(
+        self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',

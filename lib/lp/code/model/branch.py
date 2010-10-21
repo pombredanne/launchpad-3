@@ -83,7 +83,10 @@ from lp.code.errors import (
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
     )
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
+from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
+    NewBranchMergeProposalEvent,
+    )
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -434,6 +437,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 reviewer, registrant, review_type, _notify_listeners=False)
 
         notify(NewBranchMergeProposalEvent(bmp))
+        notify(BranchMergeProposalNeedsReviewEvent(bmp))
+
         return bmp
 
     def _createMergeProposal(
@@ -919,7 +924,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     def getScannerData(self):
         """See `IBranch`."""
         columns = (
-            BranchRevision.sequence, Revision.revision_id)
+            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -927,7 +932,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for sequence, revision_id in rows:
+        for branch_revision_id, sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)

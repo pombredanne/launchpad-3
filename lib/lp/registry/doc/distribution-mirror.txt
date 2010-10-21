@@ -139,7 +139,7 @@ We also have a property which returns all unofficial mirrors.
 It's possible to retrieve a mirror by its name:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IDistributionMirror
+    >>> from lp.registry.interfaces.distributionmirror import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
     True
@@ -807,7 +807,7 @@ Verify that the view is a DistributionMirrorsView:
 We want to make sure that the view._sum_throughput method knows about all
 the possible mirror speeds.
 
-  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> from lp.registry.interfaces.distributionmirror import MirrorSpeed
   >>> class MockMirror:
   ...     speed = None
   >>> mirrors = []

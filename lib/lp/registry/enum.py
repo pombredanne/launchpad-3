@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'PersonTransferJobType',
     'BugNotificationLevel',
     'DistroSeriesDifferenceStatus',
     'DistroSeriesDifferenceType',
@@ -82,6 +83,7 @@ class DistroSeriesDifferenceStatus(DBEnumeratedType):
         This difference has been resolved and versions are now equal.
         """)
 
+
 class DistroSeriesDifferenceType(DBEnumeratedType):
     """Distribution series difference type."""
 
@@ -103,4 +105,14 @@ class DistroSeriesDifferenceType(DBEnumeratedType):
         Different versions
 
         This package is present in both series with different versions.
+        """)
+
+
+class PersonTransferJobType(DBEnumeratedType):
+    """Values that IPersonTransferJob.job_type can take."""
+
+    MEMBERSHIP_NOTIFICATION = DBItem(0, """
+        Add-member notification
+
+        Notify affected users of new team membership.
         """)
