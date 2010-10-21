@@ -349,6 +349,7 @@ class BaseLayer:
                     gc.collect()
                 else:
                     break
+            new_threads = new_live_threads()
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop
