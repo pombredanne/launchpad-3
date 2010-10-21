@@ -29,7 +29,7 @@ class BranchMergeQueueView(LaunchpadView):
 
     @property
     def page_title(self):
-        return "%(queue_name)s queue owned by %(name)s's" % {
+        return "%(queue_name)s queue owned by %(name)s" % {
             'name': self.context.owner.displayname,
             'queue_name': self.context.name}
 
