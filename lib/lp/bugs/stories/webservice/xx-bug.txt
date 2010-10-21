@@ -1493,6 +1493,15 @@ It can also be used to find bugs modified since a certain date.
     total_size: 0
     ---
 
+It can also be used to find bug tasks created since a certain date.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/ubuntu', 'searchTasks',
+    ...     created_since=u'2012-01-01T00:00:00+00:00').jsonBody())
+    start: 0
+    total_size: 0
+    ---
+
 It is possible to search for bugs targeted to a milestone within a
 project group.
 

@@ -1942,6 +1942,11 @@ class BugTaskSet:
                 "Bug.date_last_updated > %s" % (
                     sqlvalues(params.modified_since,)))
 
+        if params.created_since:
+            extra_clauses.append(
+                "BugTask.datecreated > %s" % (
+                    sqlvalues(params.created_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
