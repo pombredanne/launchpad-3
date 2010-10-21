@@ -108,7 +108,6 @@ class Times:
         self.request_times = []
         self.sql_statements = []
         self.sql_times = []
-        self.ticks = []
         self.histogram_width = int(1.5*timeout)
 
     def add(self, request):
@@ -120,8 +119,6 @@ class Times:
             self.sql_statements.append(request.sql_statements)
         if request.sql_seconds is not None:
             self.sql_times.append(request.sql_seconds)
-        if request.ticks is not None:
-            self.ticks.append(request.ticks)
 
     _stats = None
 
@@ -491,7 +488,6 @@ def parse_extension_record(request, args):
     elif prefix == 't':
         if len(args) != 4:
             raise MalformedLine("Wrong number of arguments %s" % (args,))
-        request.ticks = int(args[1])
         request.sql_statements = int(args[2])
         request.sql_seconds = float(args[3]) / 1000
     else:
