@@ -411,11 +411,7 @@ class ProductInvolvementView(PillarView):
         all_links = involved_menu.keys()
         # The register blueprints link should not be shown since its use is
         # not encouraged.
-        try:
-            all_links.remove('register_blueprint')
-        except ValueError:
-            # With lazy link rendering, menu may not have a blueprint link.
-            pass
+        all_links.remove('register_blueprint')
         return all_links
 
     @cachedproperty

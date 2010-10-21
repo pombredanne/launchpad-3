@@ -107,9 +107,8 @@ class MenuLinksDict(dict):
         if not link_name in self._all_link_names:
             raise KeyError(link_name)
 
-        if link_name in self.keys():
-            link = dict.__getitem__(self, link_name)
-        else:
+        link = dict.get(self, link_name, None)
+        if link is None:
             if link_name in self._extra_link_names:
                 link = getattr(self._menu, link_name, None)
             else:
@@ -130,6 +129,9 @@ class MenuLinksDict(dict):
 
     def values(self):
         return [self[key] for key in self._all_link_names]
+
+    def keys(self):
+        return self._all_link_names
 
     def iterkeys(self):
         return iter(self._all_link_names)
