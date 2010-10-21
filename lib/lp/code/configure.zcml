@@ -22,6 +22,11 @@
       provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
       name="code" />
 
+  <!-- Branch Merge Queues -->
+  <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
+    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue" />
+  </class>
+
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require
@@ -437,18 +442,18 @@
                    lp.code.interfaces.branch.IBranchAnyone
                    lp.code.interfaces.branch.IBranchEditableAttributes
                    lp.code.interfaces.branch.IBranchPublic
-                   lp.code.interfaces.branch.IBranchView
-                   "/>
+                   lp.code.interfaces.branch.IBranchView"
+        attributes="merge_queue merge_queue_config"/>
     <require
         permission="launchpad.Edit"
         interface="lp.code.interfaces.branch.IBranchEdit"
         set_schema="lp.code.interfaces.branch.IBranchEditableAttributes"
-        attributes="setPrivate"
+        attributes="setPrivate addToQueue setMergeQueueConfig"
         set_attributes="branch_format control_format repository_format
                         branch_type
                         last_scanned last_scanned_id
                         last_mirrored last_mirrored_id next_mirror_time
-                        revision_count merge_queue mirror_failures
+                        revision_count mirror_failures
                         stacked_on mirror_status_message"/>
     <require
         permission="launchpad.AnyPerson"

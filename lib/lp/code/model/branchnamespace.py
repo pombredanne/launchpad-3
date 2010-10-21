@@ -27,7 +27,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
-    BranchMergeControlStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     BranchVisibilityRule,

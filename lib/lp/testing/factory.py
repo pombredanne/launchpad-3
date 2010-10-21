@@ -36,6 +36,7 @@ from itertools import count
 from operator import isSequenceType
 import os
 from random import randint
+import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -148,6 +149,7 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
+from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -1097,6 +1099,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = owner
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
+
+    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
+                             description=None, configuration=None):
+        """Create a BranchMergeQueue."""
+        if name is None:
+            name = unicode(self.getUniqueString('queue'))
+        if owner is None:
+            owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
+        if description is None:
+            description = unicode(self.getUniqueString('queue-description'))
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({
+                self.getUniqueString('key'): self.getUniqueString('value')}))
+
+        queue = BranchMergeQueue.new(
+            name, registrant, owner, description, configuration)
+        return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
