@@ -18,8 +18,6 @@ from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -30,7 +28,6 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action,
     canonical_url,
-    custom_widget,
     LaunchpadFormView,
     LaunchpadView,
     )
@@ -39,7 +36,6 @@ from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -140,6 +136,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         self._subscriber_count_for_current_user = 0
         self._redirecting_to_bug_list = False
+        super(BugSubscriptionSubscribeSelfView, self).initialize()
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -240,14 +237,18 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         subscription_person = self.widgets['subscription'].getInputValue()
         if (not self.user_is_subscribed and
             (subscription_person == self.user)):
-            self._handleSubscribe()
+            if self._use_advanced_features:
+                bug_notification_level = data['bug_notification_level']
+            else:
+                bug_notification_level = None
+            self._handleSubscribe(bug_notification_level)
         else:
             self._handleUnsubscribe(subscription_person)
         self.request.response.redirect(self.next_url)
 
-    def _handleSubscribe(self):
+    def _handleSubscribe(self, level=None):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user, self.user)
+        self.context.bug.subscribe(self.user, self.user, level=level)
         self.request.response.addNotification(
             "You have been subscribed to this bug.")
 
