@@ -17,8 +17,13 @@ and a timestamp, the code will raise a NonceAlreadyUsed exception.
 
 Here's a quick demonstration of the behavior.
 
+   >>> login('foo.bar@canonical.com')
+   >>> access_token = factory.makeOAuthAccessToken()
+   >>> logout()
+
 - We can use a nonce.
 
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthNonce
     >>> import time
     >>> now = time.time() - 1
     >>> nonce1 = access_token.checkNonceAndTimestamp('boo', now)
