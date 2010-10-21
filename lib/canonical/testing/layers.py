@@ -801,6 +801,8 @@ class LibrarianLayer(DatabaseLayer):
                     )
         cls.librarian_fixture = LibrarianServerFixture()
         cls.librarian_fixture.setUp()
+        BaseLayer.config.add_section(cls.librarian_fixture.service_config)
+        config.reloadConfig()
         cls._check_and_reset()
         atexit.register(cls.librarian_fixture.tearDown)
 
