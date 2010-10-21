@@ -1020,7 +1020,7 @@ As will attribute access:
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
