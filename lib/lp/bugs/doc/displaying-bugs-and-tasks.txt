@@ -162,7 +162,7 @@ This code also works for null bug tasks:
 Lastly, some cleanup:
 
   >>> test_task.transitionToStatus(
-  ...   ORIGINAL_STATUS, getUtility(ILaunchBag).user)
+  ...   ORIGINAL_STATUS, test_task.distribution.owner)
   >>> test_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 
