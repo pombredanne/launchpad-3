@@ -65,6 +65,13 @@ DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
                                  ("netbook",  False),
                                ]
 
+# Names of the distribution releases that are not supported by this
+# tool. All later versions are supported.
+UNSUPPORTED_DISTRO_RELEASED = ["dapper", "edgy", "feisty", "gutsy", "hardy", 
+                               "intrepid", "jaunty", "karmic"]
+
+
+
 # germinate output base directory
 BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 
@@ -275,7 +282,7 @@ if __name__ == "__main__":
     # init
     if len(args) > 0:
         distro = args[0]
-        if distro[0] < 'l':
+        if distro in UNSUPPORTED_DISTRO_RELEASED:
             logging.error("only lucid or later is supported")
             sys.exit(1)
     else:
