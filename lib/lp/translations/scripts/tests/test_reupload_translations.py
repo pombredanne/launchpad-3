@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.model.sourcepackagerelease import (
     _filter_ubuntu_translation_file,

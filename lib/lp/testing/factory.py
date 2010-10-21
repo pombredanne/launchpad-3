@@ -82,6 +82,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -94,6 +95,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
@@ -723,14 +725,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 naked_team.addMember(member, owner)
         return team
 
-    def makePoll(self, team, name, title, proposition):
+    def makePoll(self, team, name, title, proposition,
+                 poll_type=PollAlgorithm.SIMPLE):
         """Create a new poll which starts tomorrow and lasts for a week."""
         dateopens = datetime.now(pytz.UTC) + timedelta(days=1)
         datecloses = dateopens + timedelta(days=7)
         return getUtility(IPollSet).new(
             team, name, title, proposition, dateopens, datecloses,
             PollSecrecy.SECRET, allowspoilt=True,
-            poll_type=PollAlgorithm.SIMPLE)
+            poll_type=poll_type)
 
     def makeTranslationGroup(
         self, owner=None, name=None, title=None, summary=None, url=None):
@@ -1341,15 +1344,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
-                           revision_date=None, parents=None):
-        if parents is None:
-            parent_ids = []
-        else:
-            parent_ids = [revision.revision_id for revision in parents]
+    def makeBranchRevision(self, branch, revision_id, sequence=None,
+                           parent_ids=None):
         revision = self.makeRevision(
-            rev_id=revision_id, revision_date=revision_date,
-            parent_ids=parent_ids)
+            rev_id=revision_id, parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
@@ -3198,6 +3196,33 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 requester=requester, from_source=from_source,
                 to_source=to_source, date_fulfilled=date_fulfilled,
                 status=status, diff_content=lfa))
+
+    # Factory methods for OAuth tokens.
+    def makeOAuthConsumer(self, key=None, secret=None):
+        if key is None:
+            key = self.getUniqueString("oauthconsumerkey")
+        if secret is None:
+            secret = ''
+        return getUtility(IOAuthConsumerSet).new(key, secret)
+
+    def makeOAuthRequestToken(
+        self, consumer=None, date_created=None, reviewed_by=None,
+        access_level=OAuthPermission.READ_PUBLIC):
+        """Create a (possibly reviewed) OAuth request token."""
+        if consumer is None:
+            consumer = self.makeOAuthConsumer()
+        token = consumer.newRequestToken()
+
+        if reviewed_by is not None:
+            # Review the token before modifying the date_created,
+            # since the date_created can be used to simulate an
+            # expired token.
+            token.review(reviewed_by, access_level)
+
+        if date_created is not None:
+            unwrapped_token = removeSecurityProxy(token)
+            unwrapped_token.date_created = date_created
+        return token
 
 
 # Some factory methods return simple Python types. We don't add

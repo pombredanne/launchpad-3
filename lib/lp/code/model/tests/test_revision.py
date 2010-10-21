@@ -28,13 +28,13 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchLifecycleStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
