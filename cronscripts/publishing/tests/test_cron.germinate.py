@@ -58,14 +58,25 @@ class TestCronGerminate(TestCase):
             os.makedirs(directory)
 
     def create_directory_list_if_missing(self, directory_list):
-        """Create the given directory if it does not exist."""
+        """Create the given directories from the list if they does not exist."""
         for directory in directory_list:
             self.create_directory_if_missing(directory)
 
     def create_gzip_file(self, filepath, content=""):
-            gz = gzip.GzipFile(filepath, "w")
-            gz.write(content)
-            gz.close()
+        """Create a gziped file in the given path with the given content.
+           If not content is given a empty file is created.
+        """
+        gz = gzip.GzipFile(filepath, "w")
+        gz.write(content)
+        gz.close()
+
+    def create_file(self, filepath, content=""):
+        """Create a file in the given path with the given content.
+           If not content is given a empty file is created.
+        """
+        f=open(filepath, "w")
+        f.write(content)
+        f.close()
 
     def setup_mock_archive_environment(self):
         """Creates a mock archive environment and populate
@@ -136,10 +147,10 @@ class TestCronGerminate(TestCase):
         # Create mock override data files that include the canary string
         # so that we can test later if it is still there.
         for dist in self.DISTS:
-            f=open(os.path.join(self.ubuntu_misc_dir, 
-                                "more-extra.override.%s.main" % dist), "w")
-            f.write(canary)
-            f.close()
+            self.create_file(
+                os.path.join(self.ubuntu_misc_dir, "more-extra.override.%s.main" % dist),
+                canary)
+                             
 
         # Run cron.germinate in the fake environment.
         cron_germinate_path = os.path.join(
