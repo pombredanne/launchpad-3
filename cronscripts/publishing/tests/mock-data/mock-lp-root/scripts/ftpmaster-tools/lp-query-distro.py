@@ -19,6 +19,6 @@ if __name__ == "__main__":
         if distro == "development":
                 print "natty"
         elif distro == "supported":
-                print "hardy lucid maverick"
+                print "hardy jaunty karmic lucid maverick"
         else:
                 error_and_exit()
