@@ -1,4 +1,4 @@
-launchpad-buildd (72~1) hardy-cat; urgency=low
+launchpad-buildd (72) hardy-cat; urgency=low
 
   * break out readyservice.py from tachandler.py. LP#663828
 
