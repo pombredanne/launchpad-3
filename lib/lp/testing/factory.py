@@ -1259,10 +1259,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if parent is None:
                 parents = []
             else:
-                parents = [parent]
+                parent_ids = [parent.id]
             branch_revision = self.makeBranchRevision(
                 source_branch, sequence=sequence,
-                revision_date=self.getUniqueDate(), parents=parents)
+                revision_date=self.getUniqueDate(), parent_ids=parent_ids)
             return branch_revision.revision
         if old_revision is None:
             old_revision = make_revision()
