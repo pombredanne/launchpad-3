@@ -897,7 +897,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
-        if not new_status:
+        if not new_status or user is None:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
