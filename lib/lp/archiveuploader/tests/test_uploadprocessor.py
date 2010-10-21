@@ -166,6 +166,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
+
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
@@ -175,6 +176,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 policy.archive = build.archive
             policy.setOptions(self.options)
             return policy
+
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails, self.options.builds,
@@ -266,7 +268,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             queue_entry=None):
         """Queue one of our test uploads.
 
-        upload_name is the name of the test upload directory. If there 
+        upload_name is the name of the test upload directory. If there
         is no explicit queue entry name specified, it is also
         the name of the queue entry directory we create.
         relative_path is the path to create inside the upload, eg
@@ -1203,7 +1205,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         error_report.write(fp)
         error_text = fp.getvalue()
         self.assertTrue(
-            "Unable to find mandatory field 'Files' in the changes file" in error_text)
+            "Unable to find mandatory field 'Files' "
+            "in the changes file" in error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1272,6 +1275,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         contents = [
             "Invalid upload path (1/ubuntu) for this policy (insecure)"]
         self.assertEmail(contents=contents, recipients=[])
+
 
     # Uploads that are new should have the component overridden
     # such that:
@@ -1970,7 +1974,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
-            distroseries=self.breezy, archive=archive, requester=archive.owner)
+            distroseries=self.breezy, archive=archive,
+            requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
         bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
@@ -2038,4 +2043,5 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_invalid_jobid(self):
         self.assertRaises(
-            ValueError, parse_build_upload_leaf_name, "aaba-a42-PACKAGEBUILD-abc")
+            ValueError, parse_build_upload_leaf_name,
+            "aaba-a42-PACKAGEBUILD-abc")

@@ -267,7 +267,8 @@ class TestGarbo(TestCaseWithFactory):
         machine = self.factory.makeCodeImportMachine()
         requester = self.factory.makePerson()
         # Create 6 code import events for this machine, 3 on each side of 30
-        # days. Use the event set to the extra event data rows get created too.
+        # days. Use the event set to the extra event data rows get created
+        # too.
         event_set = getUtility(ICodeImportEventSet)
         for age in (35, 33, 31, 29, 27, 15):
             event_set.newOnline(

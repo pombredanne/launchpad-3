@@ -29,8 +29,8 @@ def test_open_and_resolved_statuses(self):
         ['UNKNOWN']
     """
 
+
 def test_suite():
     suite = DocTestSuite(
         optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
     return suite
-

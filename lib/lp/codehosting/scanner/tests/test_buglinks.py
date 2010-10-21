@@ -34,14 +34,15 @@ from lp.testing import (
 class RevisionPropertyParsing(TestCase):
     """Tests for parsing the bugs revision property.
 
-    The bugs revision property holds information about Launchpad bugs which are
-    affected by a revision. A given revision may affect multiple bugs in
-    different ways. A revision may indicate work has begin on a bug, or that it
-    constitutes a fix for a bug.
+    The bugs revision property holds information about Launchpad bugs which
+    are affected by a revision. A given revision may affect multiple bugs in
+    different ways. A revision may indicate work has begin on a bug, or that
+    it constitutes a fix for a bug.
 
-    The bugs property is formatted as a newline-separated list of entries. Each
-    entry is of the form '<bug_id> <status>', where '<bug_id>' is the URL for a
-    page that describes the bug, and status is one of 'fixed' or 'inprogress'.
+    The bugs property is formatted as a newline-separated list of entries.
+    Each entry is of the form '<bug_id> <status>', where '<bug_id>' is the URL
+    for a page that describes the bug, and status is one of 'fixed' or
+    'inprogress'.
 
     In general, the parser skips over any lines with errors.
 
@@ -127,8 +128,8 @@ class TestBugLinking(BzrSyncTestCase):
         self.bug1.addTask(self.bug1.owner, distro)
         self.bug2 = self.factory.makeBug()
         self.new_db_branch = self.factory.makeAnyBranch()
-        removeSecurityProxy(distro).max_bug_heat = 0;
-        removeSecurityProxy(dsp).max_bug_heat = 0;
+        removeSecurityProxy(distro).max_bug_heat = 0
+        removeSecurityProxy(dsp).max_bug_heat = 0
         self.layer.txn.commit()
 
     def getBugURL(self, bug):

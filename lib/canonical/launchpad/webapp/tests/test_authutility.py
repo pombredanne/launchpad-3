@@ -63,6 +63,7 @@ class DummyPasswordEncryptor(object):
 
 
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
+
     def setUp(self):
         PlacelessSetup.setUp(self)
         ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())

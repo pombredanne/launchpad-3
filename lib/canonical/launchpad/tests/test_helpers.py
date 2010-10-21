@@ -43,10 +43,11 @@ def make_test_tarball_1():
             '# Yowza!',
         'uberfrob-0.1/blah/po/la':
             'la la',
-        'uberfrob-0.1/uberfrob.py' :
+        'uberfrob-0.1/uberfrob.py':
             'import sys\n'
-            'print "Frob!"\n'
-    })
+            'print "Frob!"\n',
+        })
+
 
 def make_test_tarball_2():
     r'''
@@ -87,11 +88,13 @@ def make_test_tarball_2():
         'test/es.po': po,
     })
 
+
 def test_join_lines():
     r"""
     >>> helpers.join_lines('foo', 'bar', 'baz')
     'foo\nbar\nbaz\n'
     """
+
 
 def test_shortest():
     """
@@ -103,6 +106,7 @@ def test_shortest():
 
 
 class DummyLanguage:
+
     def __init__(self, code, pluralforms):
         self.code = code
         self.pluralforms = pluralforms
@@ -113,10 +117,10 @@ class DummyLanguageSet:
     implements(ILanguageSet)
 
     _languages = {
-        'ja' : DummyLanguage('ja', 1),
-        'es' : DummyLanguage('es', 2),
-        'fr' : DummyLanguage('fr', 3),
-        'cy' : DummyLanguage('cy', None),
+        'ja': DummyLanguage('ja', 1),
+        'es': DummyLanguage('es', 2),
+        'fr': DummyLanguage('fr', 3),
+        'cy': DummyLanguage('cy', None),
         }
 
     def __getitem__(self, key):
@@ -132,14 +136,16 @@ class DummyPerson:
 
         self.languages = [all_languages[code] for code in self.codes]
 
-dummyPerson = DummyPerson(('es',))
 
+dummyPerson = DummyPerson(('es',))
 dummyNoLanguagePerson = DummyPerson(())
 
 
 class DummyResponse:
+
     def redirect(self, url):
         pass
+
 
 class DummyRequest:
     implements(IBrowserRequest)
@@ -152,20 +158,24 @@ class DummyRequest:
     def get(self, key, default):
         raise key
 
+
 def adaptRequestToLanguages(request):
     return DummyRequestLanguages()
 
 
 class DummyRequestLanguages:
+
     def getPreferredLanguages(self):
         return [DummyLanguage('ja', 1),
             DummyLanguage('es', 2),
-            DummyLanguage('fr', 3),]
+            DummyLanguage('fr', 3),
+            ]
 
     def getLocalLanguages(self):
         return [DummyLanguage('da', 4),
             DummyLanguage('as', 5),
-            DummyLanguage('sr', 6),]
+            DummyLanguage('sr', 6),
+            ]
 
 
 class DummyLaunchBag:
@@ -189,9 +199,13 @@ def test_preferred_or_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestPreferredLanguages,
+    ...     adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
@@ -205,9 +219,14 @@ def test_preferred_or_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag,
+    ...     DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestPreferredLanguages,
+    ...     adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)

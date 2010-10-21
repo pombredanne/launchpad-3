@@ -182,7 +182,7 @@ class LayerDatabasePolicyTestCase(TestCase):
 
     def test_FeedsLayer_uses_SlaveDatabasePolicy(self):
         """FeedsRequest should use the SlaveDatabasePolicy since they
-        are read-only in nature. Also we don't want to send session cookies 
+        are read-only in nature. Also we don't want to send session cookies
         over them.
         """
         request = LaunchpadTestRequest(

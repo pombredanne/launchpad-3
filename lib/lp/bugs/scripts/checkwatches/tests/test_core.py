@@ -55,6 +55,7 @@ from lp.testing import (
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):
     """None of the remote bugs have products."""
+
     def getProductsForRemoteBugs(self, remote_bug_ids):
         return {}
 
@@ -212,7 +213,10 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
                 "Unexpected last OOPS value: %s" % last_oops.value)
 
     def test_suggest_batch_size(self):
-        class RemoteSystem: pass
+
+        class RemoteSystem:
+            pass
+
         remote_system = RemoteSystem()
         # When the batch_size is None, suggest_batch_size() will set
         # it accordingly.
@@ -300,9 +304,11 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
 class TestSchedulerBase:
 
     def test_args_and_kwargs(self):
+
         def func(name, aptitude):
             self.failUnlessEqual("Robin Hood", name)
             self.failUnlessEqual("Riding through the glen", aptitude)
+
         # Positional args specified when adding a job are passed to
         # the job function at run time.
         self.scheduler.schedule(
@@ -456,14 +462,12 @@ class TestTwistedThreadSchedulerInPlace(
             ["getRemoteStatus(bug_id=u'butterscotch-1')",
              "getRemoteStatus(bug_id=u'butterscotch-2')",
              "getRemoteStatus(bug_id=u'butterscotch-3')"],
-            output_file.output['butterscotch']
-            )
+            output_file.output['butterscotch'])
         self.assertEqual(
             ["getRemoteStatus(bug_id=u'strawberry-1')",
              "getRemoteStatus(bug_id=u'strawberry-2')",
              "getRemoteStatus(bug_id=u'strawberry-3')"],
-            output_file.output['strawberry']
-            )
+            output_file.output['strawberry'])
 
 
 def test_suite():

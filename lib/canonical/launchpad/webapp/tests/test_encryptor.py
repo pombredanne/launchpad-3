@@ -30,8 +30,7 @@ class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
         self.failIfEqual(encrypted1, encrypted2)
         salt = encrypted1[20:]
         v = binascii.b2a_base64(
-            hashlib.sha1('motorhead' + salt).digest() + salt
-            )[:-1]
+            hashlib.sha1('motorhead' + salt).digest() + salt)[:-1]
         return (v == encrypted1)
 
     def test_validate(self):
@@ -67,6 +66,3 @@ class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
 def test_suite():
     t = unittest.makeSuite(TestSSHADigestEncryptor)
     return unittest.TestSuite((t,))
-
-if __name__=='__main__':
-    main(defaultTest='test_suite')

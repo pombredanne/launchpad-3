@@ -29,9 +29,11 @@ foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 
 class LogCollector(logging.Handler):
+
     def __init__(self):
         logging.Handler.__init__(self)
         self.records = []
+
     def emit(self, record):
         self.records.append(self.format(record))
 

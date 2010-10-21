@@ -39,6 +39,7 @@ class TestAnnotations(unittest.TestCase):
         self.assertEquals(all_annotations['Product']['2']['soyuz.message'],
                           'a message on a product')
 
+
 def test_suite():
     suite = unittest.TestSuite()
     # XXX daniels 2004-12-14:
@@ -47,4 +48,3 @@ def test_suite():
     #     tests: the rdb transaction is closed too early.
     ##suite.addTest(unittest.makeSuite(TestAnnotations))
     return suite
-
