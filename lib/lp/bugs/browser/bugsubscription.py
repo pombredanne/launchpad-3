@@ -115,7 +115,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         return next_url
 
     cancel_url = next_url
-    _redirecting_to_bug_list = False
 
     @cachedproperty
     def _subscribers_for_current_user(self):
@@ -136,6 +135,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """Return True if advanced subscriptions features are enabled."""
         return features.getFeatureFlag(
             'malone.advanced-subscriptions.enabled')
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        self._subscriber_count_for_current_user = 0
+        self._redirecting_to_bug_list = False
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
