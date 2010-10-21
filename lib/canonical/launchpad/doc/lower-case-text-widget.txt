@@ -7,9 +7,9 @@ error message when the user inputs an upper case string, a
 LowerCaseTextWidget can be used to automatically convert the input to
 lower case:
 
-  >>> from canonical.launchpad.interfaces import IBug
-  >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
+  >>> from lp.bugs.interfaces.bug import IBug
   >>> field = IBug['description']
   >>> request = LaunchpadTestRequest(form={'field.description':'Foo'})
   >>> widget = LowerCaseTextWidget(field, request)

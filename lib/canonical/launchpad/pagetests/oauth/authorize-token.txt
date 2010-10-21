@@ -5,8 +5,8 @@ Launchpad's +authorize-token page in order for the user to authenticate
 and authorize or not the consumer to act on his behalf.
 
     # Create a new request token.
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -39,32 +39,29 @@ it involves OpenID, which would complicate this test quite a bit.)
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
     See all applications authorized to access Launchpad on your behalf.
 
 This page contains one submit button for each item of OAuthPermission,
-except for 'Grant Permissions', which must be specifically requested.
+except for 'Desktop Integration', which must be specifically requested.
 
-    >>> browser.getControl('No Access')
-    <SubmitControl...
-    >>> browser.getControl('Read Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Change Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Read Anything')
-    <SubmitControl...
-    >>> browser.getControl('Change Anything')
-    <SubmitControl...
+    >>> def print_access_levels(main_content):
+    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
+    ...     for action in actions:
+    ...         print action['value']
 
-    >>> browser.getControl('Grant Permissions')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Grant Permissions'
+    >>> print_access_levels(main_content)
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
 
-    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> len(actions) == len(OAuthPermission.items) - 1
     True
 
@@ -74,57 +71,53 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def print_access_levels(allow_permission):
+    >>> def authorize_token_main_content(allow_permission):
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
-    ...     main_content = find_tag_by_id(browser.contents, 'maincontent')
-    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
-    ...     for action in actions:
-    ...         print action['value']
+    ...     return find_tag_by_id(browser.contents, 'maincontent')
 
-    >>> print_access_levels(
+    >>> def print_access_levels_for(allow_permission):
+    ...     main_content = authorize_token_main_content(allow_permission)
+    ...     print_access_levels(main_content)
+
+    >>> print_access_levels_for(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
     No Access
     Change Non-Private Data
     Change Anything
 
-The only time the 'Grant Permissions' permission shows up in this list
-is if the client specifically requests it, and no other
-permission. (Also requesting UNAUTHORIZED is okay--it will show up
-anyway.)
-
-    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS&allow_permission=UNAUTHORIZED')
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     'allow_permission=WRITE_PUBLIC&allow_permission=GRANT_PERMISSIONS')
-    No Access
-    Change Non-Private Data
-
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
-access levels, except for GRANT_PERMISSIONS.
+access levels, except for DESKTOP_INTEGRATION.
 
-    >>> print_access_levels('')
+    >>> print_access_levels_for('')
     No Access
     Read Non-Private Data
     Change Non-Private Data
     Read Anything
     Change Anything
 
-    >>> print_access_levels('allow_permission=UNAUTHORIZED')
+    >>> print_access_levels_for('allow_permission=UNAUTHORIZED')
     No Access
     Read Non-Private Data
     Change Non-Private Data
     Read Anything
     Change Anything
+
+An application may not request the DESKTOP_INTEGRATION access level
+unless its consumer key matches a certain pattern. (Successful desktop
+integration has its own section, below.)
+
+    >>> allow_permission = "allow_permission=DESKTOP_INTEGRATION"
+    >>> browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s&%s"
+    ...         % (urlencode(params), allow_permission))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Consumer "foobar123451432" asked for desktop
+    integration, but didn't say what kind of desktop it is, or name
+    the computer being integrated.
 
 An application may also specify a context, so that the access granted
 by the user is restricted to things related to that context.
@@ -136,6 +129,7 @@ by the user is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application...wants to access things related to Mozilla Firefox...
 
 A client other than a web browser may request a JSON representation of
@@ -263,3 +257,95 @@ another window/tab so there's no need to worry.
     This request for accessing Launchpad on your behalf has been
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
+
+Desktop integration
+===================
+
+The test case given above shows how to integrate a single application
+or website into Launchpad. But it's also possible to integrate an
+entire desktop environment into Launchpad.
+
+The desktop integration option is only available for OAuth consumers
+that say what kind of desktop they are (eg. Ubuntu) and give a name
+that a user can identify with their computer (eg. the hostname). Here,
+we'll create such a token.
+
+    >>> login('salgado@ubuntu.com')
+    >>> desktop_key = "System-wide: Ubuntu desktop (mycomputer)"
+    >>> consumer = getUtility(IOAuthConsumerSet).new(desktop_key)
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+When a desktop tries to integrate with Launchpad, the user gets a
+special warning about giving access to every program running on their
+desktop.
+
+    >>> params = dict(oauth_token=token.key)
+    >>> print extract_text(
+    ...     authorize_token_main_content(
+    ...         'allow_permission=DESKTOP_INTEGRATION'))
+    Integrating mycomputer into your Launchpad account
+    The Ubuntu desktop called mycomputer wants access to your
+    Launchpad account. If you allow the integration, all applications
+    running on mycomputer will have read-write access to your
+    Launchpad account, including to your private data.
+    If you're using a public computer, if mycomputer is not the
+    computer you're using right now, or if something just doesn't feel
+    right about this situation, you should choose "No, thanks, I don't
+    trust 'mycomputer'", or close this window now. You can always try
+    again later.
+    Even if you decide to allow the integration, you can change your
+    mind later.
+    See all applications authorized to access Launchpad on your behalf.
+
+
+The only time the 'Desktop Integration' permission shows up in the
+list of permissions is if the client specifically requests it, and no
+other permission. (Also requesting UNAUTHORIZED is okay--it will show
+up anyway.)
+
+    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
+    Give all programs running on "mycomputer" access to my Launchpad account.
+    No, thanks, I don't trust "mycomputer".
+
+    >>> print_access_levels_for(
+    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
+    Give all programs running on "mycomputer" access to my Launchpad account.
+    No, thanks, I don't trust "mycomputer".
+
+A desktop may not request a level of access other than
+DESKTOP_INTEGRATION, since the whole point is to have a permission
+level that specifically applies across the entire desktop.
+
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Anything") not supported for desktop-wide use.
+
+    >>> print_access_levels_for(
+    ...     'allow_permission=WRITE_PUBLIC&allow_permission=DESKTOP_INTEGRATION')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Non-Private Data") not supported for desktop-wide use.
+
+You can't specify a callback URL when authorizing a desktop-wide
+token, since callback URLs should only be used when integrating
+websites into Launchpad.
+
+    >>> params['oauth_callback'] = 'http://launchpad.dev/bzr'
+    >>> print_access_levels_for('allow_permission=DESKTOP_INTEGRATION')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.
+
+This is true even if the desktop token isn't asking for the
+DESKTOP_INTEGRATION permission.
+
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.

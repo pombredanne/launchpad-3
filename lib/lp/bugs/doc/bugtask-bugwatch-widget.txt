@@ -8,7 +8,7 @@ the Debian task in bug 1
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
+    >>> from lp.bugs.interfaces.bug import IBugSet, IBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch_field = IBugTask['bugwatch']
     >>> debian_task = bug_one.bugtasks[2]
@@ -19,8 +19,8 @@ the Debian task in bug 1
 
 Now we can create a widget using a test request:
 
-    >>> from canonical.widgets.bugtask import BugTaskBugWatchWidget
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.widgets.bugtask import BugTaskBugWatchWidget
     >>> request = LaunchpadTestRequest()
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)

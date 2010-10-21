@@ -94,8 +94,8 @@ Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (

@@ -20,16 +20,27 @@ import psycopg2
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lazr.pidfile import pidfile_path
 from canonical.testing.layers import (
-    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
-    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
+    AppServerLayer,
+    BaseLayer,
+    DatabaseLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadLayer,
+    LaunchpadScriptLayer,
+    LaunchpadTestSetup,
+    LaunchpadZopelessLayer,
+    LayerInvariantError,
+    LayerIsolationError,
+    LayerProcessController,
+    LibrarianLayer,
+    MemcachedLayer,
+    ZopelessLayer,
+    )
 from lp.services.memcache.client import memcache_client_factory
 
 class BaseTestCase(unittest.TestCase):
@@ -123,22 +134,13 @@ class BaseTestCase(unittest.TestCase):
                     )
 
     def testLaunchpadDbAvailable(self):
-        try:
-            con = DatabaseLayer.connect()
-            cur = con.cursor()
-            cur.execute("SELECT id FROM Person LIMIT 1")
-            if cur.fetchone() is not None:
-                self.failUnless(
-                        self.want_launchpad_database,
-                        'Launchpad database should not be available.'
-                        )
-                return
-        except psycopg2.Error:
-            pass
-        self.failIf(
-                self.want_launchpad_database,
-                'Launchpad database should be available but is not.'
-                )
+        if not self.want_launchpad_database:
+            self.assertEqual(None, DatabaseLayer._db_fixture)
+            return
+        con = DatabaseLayer.connect()
+        cur = con.cursor()
+        cur.execute("SELECT id FROM Person LIMIT 1")
+        self.assertNotEqual(None, cur.fetchone())
 
     def testMemcachedWorking(self):
         client = MemcachedLayer.client or memcache_client_factory()
@@ -424,6 +426,9 @@ class LayerProcessControllerTestCase(unittest.TestCase):
         # The database should be reset by the test invariants.
         LayerProcessController.startAppServer()
         LayerProcessController.postTestInvariants()
+        # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
+        # a flag that it *needs* a reset, which is actually quite different;
+        # the lack of a teardown will leak daabases.
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 

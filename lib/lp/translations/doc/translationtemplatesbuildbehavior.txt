@@ -22,8 +22,8 @@ Set up build environment.  Clear out the build queue.
     >>> fixture = BuilddSlaveTestSetup()
     >>> fixture.setUp()
 
-    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from StringIO import StringIO
+    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
     >>> from canonical.launchpad.interfaces.launchpad import (
