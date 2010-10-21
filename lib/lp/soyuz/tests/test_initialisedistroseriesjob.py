@@ -4,13 +4,15 @@
 import os
 import subprocess
 import sys
-import transaction
-from canonical.config import config 
-from canonical.testing import LaunchpadZopelessLayer
+
 from storm.exceptions import IntegrityError
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
@@ -23,6 +25,7 @@ from lp.soyuz.model.initialisedistroseriesjob import (
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import Contains
 
 
 class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
@@ -55,14 +58,14 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         # If there's already a InitialiseDistroSeriesJob for a
         # DistroSeries, InitialiseDistroSeriesJob.create() won't create
         # a new one.
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries)
         transaction.commit()
 
         # There will now be one job in the queue.
         self.assertEqual(1, self._getJobCount())
 
-        new_job = getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries)
 
         # This is less than ideal
@@ -105,6 +108,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf)
         lf = self.factory.makeLibraryFileAlias()
+        # Since the LFA needs to be in the librarian, commit.
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
         parent_das.supports_virtualized = True
@@ -136,9 +140,8 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         test1.addSources('udev')
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries(parent_series=parent)
-        
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-                child)
+
+        getUtility(IInitialiseDistroSeriesJobSource).create(child)
         # Make sure everything hits the database, as the next bit is
         # out-of-process
         transaction.commit()
@@ -150,9 +153,9 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0)
-        self.assertTrue(
-            "INFO    Ran 1 InitialiseDistroSeriesJob jobs." in (
-                stderr.split('\n')))
+        self.assertThat(
+                stderr.split('\n'), Contains(
+                    "INFO    Ran 1 InitialiseDistroSeriesJob jobs."))
         # Storm assumes all changes are made in-process
         Store.of(child).invalidate()
         # The child distroseries is now initialised
