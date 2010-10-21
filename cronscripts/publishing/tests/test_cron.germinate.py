@@ -57,6 +57,16 @@ class TestCronGerminate(TestCase):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+    def create_directory_list_if_missing(self, directory_list):
+        """Create the given directory if it does not exist."""
+        for directory in directory_list:
+            self.create_directory_if_missing(directory)
+
+    def create_gzip_file(self, filepath, content=""):
+            gz = gzip.GzipFile(filepath, "w")
+            gz.write(content)
+            gz.close()
+
     def setup_mock_archive_environment(self):
         """Creates a mock archive environment and populate
            it with the subdirectories that germinate will expect.
@@ -66,9 +76,9 @@ class TestCronGerminate(TestCase):
         ubuntu_misc_dir = os.path.join(archive_dir, "ubuntu-misc")
         ubuntu_germinate_dir = os.path.join(archive_dir, "ubuntu-germinate")
         ubuntu_dists_dir = os.path.join(archive_dir, "ubuntu", "dists")
-        for directory in [archive_dir, ubuntu_misc_dir,
-                          ubuntu_germinate_dir, ubuntu_dists_dir]:
-            self.create_directory_if_missing(directory)
+        self.create_directory_list_if_missing(
+            [archive_dir, ubuntu_misc_dir, ubuntu_germinate_dir,
+             ubuntu_dists_dir])
         return archive_dir
 
     def populate_mock_archive_environment(self, archive_dir, components_list,
@@ -81,8 +91,7 @@ class TestCronGerminate(TestCase):
             targetdir = os.path.join(archive_dir,
                                      "ubuntu/dists/%s/%s/source" % (current_devel_distro, component))
             self.create_directory_if_missing(targetdir)
-            gz = gzip.GzipFile(os.path.join(targetdir, "Sources.gz"), "w")
-            gz.close()
+            self.create_gzip_file(os.path.join(targetdir, "Sources.gz"))
             
             # Create the environment for the binary packages.
             for arch in arches_list:
@@ -91,8 +100,26 @@ class TestCronGerminate(TestCase):
                         self.archive_dir,
                         "ubuntu/dists/%s/%s/%s/binary-%s" % (current_devel_distro, component, subpath, arch))
                     self.create_directory_if_missing(targetdir)
-                    gz = gzip.GzipFile(os.path.join(targetdir, "Packages.gz"), "w")
-                    gz.close()
+                    self.create_gzip_file(os.path.join(targetdir, "Packages.gz"))
+
+    def create_fake_environment(self, basepath, archive_dir):
+        """Create a fake process envirionment based on os.environ that
+           sets TEST_ARCHIVEROOT, TEST_LAUNCHPADROOT and modifies PATH
+           to point to the mock lp-bin directory.
+        """
+        fake_environ = copy.copy(os.environ)
+        fake_environ["TEST_ARCHIVEROOT"] = os.path.abspath(
+            os.path.join(archive_dir, "ubuntu"))
+        fake_environ["TEST_LAUNCHPADROOT"] = os.path.abspath(
+            os.path.join(basepath, "mock-data/mock-lp-root"))
+        # Set the PATH in the fake environment so that our mock germinate
+        # is used. We could use the real germinate as well, but that will
+        # slow down the tests a lot and its also not interessting for this
+        # test as we do not use any of the germinate information.
+        fake_environ["PATH"] = "%s:%s" % (
+            os.path.abspath(os.path.join(basepath, "mock-data/mock-bin")),
+            os.environ["PATH"])
+        return fake_environ
 
     def test_maintenance_update(self):
         """Test the maintenance-check.py porition of the soyuz cron.germinate
@@ -105,18 +132,7 @@ class TestCronGerminate(TestCase):
         # mucked around.
         canary = "abrowser Task mock\n"
         # Build fake environment based on the real one.
-        fake_environ = copy.copy(os.environ)
-        fake_environ["TEST_ARCHIVEROOT"] = os.path.abspath(
-            os.path.join(self.archive_dir, "ubuntu"))
-        fake_environ["TEST_LAUNCHPADROOT"] = os.path.abspath(
-            os.path.join(self.BASEPATH, "mock-data/mock-lp-root"))
-        # Set the PATH in the fake environment so that our mock germinate
-        # is used. We could use the real germinate as well, but that will
-        # slow down the tests a lot and its also not interessting for this
-        # test as we do not use any of the germinate information.
-        fake_environ["PATH"] = "%s:%s" % (
-            os.path.abspath(os.path.join(self.BASEPATH, "mock-data/mock-bin")),
-            os.environ["PATH"])
+        fake_environ = self.create_fake_environment(self.BASEPATH, self.archive_dir)
         # Create mock override data files that include the canary string
         # so that we can test later if it is still there.
         for dist in self.DISTS:
