@@ -36,6 +36,7 @@ from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.enum import BugNotificationLevel
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -81,6 +82,18 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
+
+    # A mapping of BugNotificationLevel values to descriptions to be
+    # shown on the +subscribe page.
+    _bug_notification_level_descriptions = {
+        BugNotificationLevel.LIFECYCLE: (
+            "The bug is fixed or re-opened."),
+        BugNotificationLevel.METADATA: (
+            "Any change is made to this bug, other than a new comment "
+            "being added."),
+        BugNotificationLevel.COMMENTS: (
+            "A change is made to this bug or a new comment is added."),
+        }
 
     @property
     def field_names(self):
@@ -138,6 +151,30 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self._redirecting_to_bug_list = False
         super(BugSubscriptionSubscribeSelfView, self).initialize()
 
+    @property
+    def _bug_notification_level_field(self):
+        """Return a custom form field for bug_notification_level."""
+        # We rebuild the items that we show in the field so that the
+        # labels shown are human readable and specific to the +subscribe
+        # form. The BugNotificationLevel descriptions are too generic.
+        bug_notification_level_terms = [
+            SimpleTerm(
+                level, level.name,
+                self._bug_notification_level_descriptions[level])
+            # We reorder the items so that COMMENTS comes first. We also
+            # drop the NOTHING option since it just makes the UI
+            # confusing.
+            for level in sorted(BugNotificationLevel.items, reverse=True)
+                if level != BugNotificationLevel.NOTHING
+            ]
+        bug_notification_vocabulary = SimpleVocabulary(
+            bug_notification_level_terms)
+        bug_notification_level_field = Choice(
+            __name__='bug_notification_level', title=_("Tell me when"),
+            vocabulary=bug_notification_vocabulary, required=True,
+            default=BugNotificationLevel.COMMENTS)
+        return bug_notification_level_field
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpFields()
@@ -173,14 +210,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             default=default_subscription_value)
 
         if self._use_advanced_features:
-            # We need to pop the bug_notification_level field out of
-            # form_fields so that we can put the subscription_field first in
-            # the list. formlib.form.Fields doesn't have an insert() method.
-            bug_notification_level_field = self.form_fields.select(
-                'bug_notification_level')
             self.form_fields = self.form_fields.omit('bug_notification_level')
             self.form_fields += formlib.form.Fields(subscription_field)
-            self.form_fields += bug_notification_level_field
+            self.form_fields += formlib.form.Fields(
+                self._bug_notification_level_field)
             self.form_fields['bug_notification_level'].custom_widget = (
                 CustomWidgetFactory(RadioWidget))
         else:
