@@ -1257,7 +1257,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         def make_revision(parent=None):
             sequence = source_branch.revision_history.count() + 1
             if parent is None:
-                parents = []
+                parents_ids = []
             else:
                 parent_ids = [parent.id]
             branch_revision = self.makeBranchRevision(
