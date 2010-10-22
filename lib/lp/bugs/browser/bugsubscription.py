@@ -151,7 +151,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self._redirecting_to_bug_list = False
         super(BugSubscriptionSubscribeSelfView, self).initialize()
 
-    @property
+    @cachedproperty
     def _bug_notification_level_field(self):
         """Return a custom form field for bug_notification_level."""
         # We rebuild the items that we show in the field so that the
