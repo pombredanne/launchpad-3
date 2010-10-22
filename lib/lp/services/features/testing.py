@@ -10,7 +10,7 @@ __all__ = ['active_features']
 from fixtures import Fixture
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import Rule, StormFeatureRuleSource
+from lp.services.features.rulesource import StormFeatureRuleSource
 
 
 class FeatureFixture(Fixture):
@@ -51,11 +51,10 @@ class FeatureFixture(Fixture):
         # feature flag value (it would come out as u'None') and setting
         # a flag to None essentially means turning it off anyway.
         new_rules = [
-            Rule(
-                flag=flag_name,
-                scope='default',
-                priority=999,
-                value=unicode(value))
+            (flag_name,         # Flag name
+             'default',         # Scope
+             999,               # Priority
+             unicode(value))    # Flag value
             for flag_name, value in self.desired_features.iteritems()
                 if value is not None]
 
@@ -66,4 +65,3 @@ class FeatureFixture(Fixture):
         controller = FeatureController(lambda _: True, rule_source)
         per_thread.features = controller
         self.addCleanup(setattr, per_thread, 'features', original_controller)
-
