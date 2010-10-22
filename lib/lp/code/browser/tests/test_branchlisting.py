@@ -44,6 +44,7 @@ from lp.registry.model.product import Product
 from lp.testing import (
     BrowserTestCase,
     login_person,
+    normalize_whitespace,
     person_logged_in,
     TestCase,
     TestCaseWithFactory,
@@ -419,6 +420,38 @@ class TestPersonBranchesPage(BrowserTestCase):
         # Since there are no teams with branches that the user can see, the
         # portlet isn't shown.
         self.assertIs(None, branches)
+
+
+class TestProjectBranchListing(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectBranchListing, self).setUp()
+        self.project = self.factory.makeProject()
+        self.product = self.factory.makeProduct(project=self.project)
+
+    def test_no_branches_gets_message_not_listing(self):
+        # If there are no product branches on the project's products, then
+        # the view shows the no code hosting message instead of a listing.
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        displayname = self.project.displayname
+        expected_text = normalize_whitespace(
+                            ("Launchpad does not know where any of %s's "
+                             "projects host their code." % displayname))
+        no_branch_div = find_tag_by_id(browser.contents, "no-branchtable")
+        text = normalize_whitespace(extract_text(no_branch_div))
+        self.assertEqual(expected_text, text)
+
+    def test_branches_get_listing(self):
+        # If a product has a branch, then the project view has a branch
+        # listing.
+        branch = self.factory.makeProductBranch(product=self.product)
+        browser = self.getUserBrowser(
+            canonical_url(self.project, rootsite='code'))
+        table = find_tag_by_id(browser.contents, "branchtable")
+        self.assertIsNot(None, table)
 
 
 def test_suite():

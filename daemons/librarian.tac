@@ -12,7 +12,7 @@ from twisted.application import service, strports
 from twisted.web import server
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
@@ -38,7 +38,7 @@ application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(librarianService)
+readyservice.ReadyService().setServiceParent(librarianService)
 
 def setUpListener(uploadPort, webPort, restricted):
     """Set up a librarian listener on the given ports.

@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
@@ -31,7 +32,11 @@ from storm.expr import (
     Or,
     Select,
     )
-from storm.locals import AutoReload
+from storm.locals import (
+    AutoReload,
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -70,7 +75,6 @@ from lp.code.bzr import (
     )
 from lp.code.enums import (
     BranchLifecycleStatus,
-    BranchMergeControlStatus,
     BranchMergeProposalStatus,
     BranchType,
     )
@@ -82,8 +86,12 @@ from lp.code.errors import (
     BranchTypeError,
     CannotDeleteBranch,
     InvalidBranchMergeProposal,
+    InvalidMergeQueueConfig,
     )
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
+from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
+    NewBranchMergeProposalEvent,
+    )
 from lp.code.interfaces.branch import (
     BzrIdentityMixin,
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -434,6 +442,9 @@ class Branch(SQLBase, BzrIdentityMixin):
                 reviewer, registrant, review_type, _notify_listeners=False)
 
         notify(NewBranchMergeProposalEvent(bmp))
+        if needs_review:
+            notify(BranchMergeProposalNeedsReviewEvent(bmp))
+
         return bmp
 
     def _createMergeProposal(
@@ -474,14 +485,6 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         store = Store.of(self)
         return store.find(Branch, Branch.stacked_on == self)
-
-    def getMergeQueue(self):
-        """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
-            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
@@ -1140,6 +1143,23 @@ class Branch(SQLBase, BzrIdentityMixin):
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
         return SourcePackageRecipeData.findRecipes(self)
+
+    merge_queue_id = Int(name='merge_queue', allow_none=True)
+    merge_queue = Reference(merge_queue_id, 'BranchMergeQueue.id')
+
+    merge_queue_config = StringCol(dbName='merge_queue_config')
+
+    def addToQueue(self, queue):
+        """See `IBranchEdit`."""
+        self.merge_queue = queue
+
+    def setMergeQueueConfig(self, config):
+        """See `IBranchEdit`."""
+        try:
+            simplejson.loads(config)
+            self.merge_queue_config = config
+        except ValueError: # The json string is invalid
+            raise InvalidMergeQueueConfig
 
 
 class DeletionOperation:

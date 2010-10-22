@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
@@ -174,6 +175,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
 
+    def getConfigurableProducts(self):
+        return [product for product in self.products
+                if check_permission('launchpad.Edit', product)]
+                    
     @property
     def drivers(self):
         """See `IHasDrivers`."""
@@ -227,6 +232,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sqlobject wrapper is broken.
         # return not self.translatables().is_empty()
         return self.translatables().count() != 0
+
+    def has_branches(self):
+        """ See `IProjectGroup`."""
+        return not self.getBranches().is_empty()
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
