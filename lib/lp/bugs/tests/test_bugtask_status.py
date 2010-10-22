@@ -148,6 +148,34 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             False)
 
 
+class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
+    """Tests for bug reporter status transitions."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskStatusTransitionForReporter, self).setUp()
+        self.task = self.factory.makeBugTask()
+        self.reporter = self.task.bug.owner
+
+    def test_privileged_user_can_unset_fix_released_status(self):
+        # The bug reporter can transition away from Fix Released.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.reporter):
+            self.task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter)
+            self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
+
+    def test_reporter_canTransitionToStatus(self):
+        # The bug reporter can transition away from Fix Released, so
+        # canTransitionToStatus should always return True.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter),
+            True)
+
+
 class TestBugTaskStatusTransitionForPrivilegedUserBase:
     """Base class used to test privileged users and status transitions."""
 
