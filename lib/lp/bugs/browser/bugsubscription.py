@@ -101,7 +101,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         # far as referrers are concerned so that we can handle privacy
         # issues properly.
         ignored_referrer_urls = (
-            'localhost', self.request.getURL(),  context_url)
+            'localhost', self.request.getURL(), context_url)
         if referer and referer not in ignored_referrer_urls:
             next_url = referer
         elif self._redirecting_to_bug_list:
@@ -141,7 +141,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpFields()
-        bug = self.context.bug
         if self.user is None:
             return
 
@@ -193,20 +192,19 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         if self._use_advanced_features:
-            if (not self.user_is_subscribed and
-                self._subscriber_count_for_current_user == 0):
-                # We hide the subscription widget if the user isn't
-                # subscribed, since we know who the subscriber is and we
-                # don't need to present them with a single radio button.
-                self.widgets['subscription'].visible = False
-            elif (not self.user_is_subscribed and
-                self._subscriber_count_for_current_user > 0):
-                # We show the subscription widget when the user is
-                # subscribed via a team, because they can either
-                # subscribe theirself or unsubscribe their team.
-                self.widgets['subscription'].visible = True
-            else:
+            if self.user_is_subscribed:
                 self.widgets['bug_notification_level'].visible = False
+            else:
+                if self._subscriber_count_for_current_user == 0:
+                    # We hide the subscription widget if the user isn't
+                    # subscribed, since we know who the subscriber is and we
+                    # don't need to present them with a single radio button.
+                    self.widgets['subscription'].visible = False
+                else:
+                    # We show the subscription widget when the user is
+                    # subscribed via a team, because they can either
+                    # subscribe theirself or unsubscribe their team.
+                    self.widgets['subscription'].visible = True
 
     @cachedproperty
     def user_is_subscribed(self):
