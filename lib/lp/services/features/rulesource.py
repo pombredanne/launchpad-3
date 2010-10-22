@@ -12,7 +12,6 @@ __all__ = [
 __metaclass__ = type
 
 import re
-from collections import namedtuple
 
 from storm.locals import Desc
 
