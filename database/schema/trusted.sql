@@ -1814,3 +1814,22 @@ LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
 'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        return match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions.';
