@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 aanonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -128,6 +128,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -147,7 +148,6 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
-from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -1113,7 +1113,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             configuration = unicode(simplejson.dumps({
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
-        queue = BranchMergeQueue.new(
+        queue = getUtility(IBranchMergeQueueSource).new(
             name, registrant, owner, description, configuration)
         return queue
 

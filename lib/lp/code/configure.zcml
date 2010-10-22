@@ -23,6 +23,13 @@
       name="code" />
 
   <!-- Branch Merge Queues -->
+  <securedutility
+     component="lp.code.model.branchmergequeue.BranchMergeQueue"
+     provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource">
+    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource"/>
+
+  </securedutility>
+
   <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
     <require permission="zope.Public"
              attributes="registrant owner name description configuration
