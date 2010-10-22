@@ -6,4 +6,4 @@ CREATE INDEX productseries_name_sort
 ON ProductSeries
 USING btree (version_sort_key(name));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 26, 0);
