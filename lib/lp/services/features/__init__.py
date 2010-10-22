@@ -137,7 +137,9 @@ Setting flags in your tests
 ===========================
 
 lp.services.features.testing contains a fixture that can help you temporarily
-set feature flags during a test run.
+set feature flags during a test run.  All existing flags will be removed and
+the new flag values set.  The old flags are restored when the fixture is
+cleaned up.
 
 The lp.testing.TestCase class has built-in support for test fixtures.  To
 set a flag for the duration of a test::
