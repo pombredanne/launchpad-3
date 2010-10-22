@@ -69,8 +69,9 @@ from canonical.widgets import (
     DelimitedListWidget,
     LaunchpadRadioWidget,
     )
-from canonical.widgets.bugtask import BugTaskSourcePackageNameWidget
-from canonical.widgets.popup import VocabularyPickerWidget
+from canonical.widgets.bugtask import (
+    UbuntuSourcePackageNameWidget,
+    )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
@@ -79,6 +80,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerComponent,
     IBugTrackerComponentGroup,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
@@ -464,43 +466,13 @@ class BugTrackerNavigation(Navigation):
         return self.context.getRemoteComponentGroup(name)
 
 
-#TODO: This should be moved into lib/canonical/widgets
-class BugTrackerComponentSourcePackageNameWidget(VocabularyPickerWidget):
-    def getDistribution(self):
-        """Get the distribution used for package validation.
-       
-        The package name has be to published in the returned distribution.
-        """
-        field = self.context
-        distribution = field.context.distribution
-        if distribution is None:
-            distribution = GetUtility(IDistributionSet).getByName("ubuntu")
-        return distribution
-
-    def _toFieldValue(self, input):
-        if not input:
-            return self.context.missing_value
-
-        distribution = self.getDistribution()
-
-        try:
-            source, binary = distribution.guessPackageNames(input)
-        except NotFoundError:
-            try:
-                return self.convertTokensToValues([input])[0]
-            except InvalidValue:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-        return source
-
-
 class BugTrackerEditComponentView(LaunchpadEditFormView):
 
     schema = IBugTrackerComponent
-
-    # How does this get the data filled back in?
-    custom_widget('sourcepackagename', BugTrackerComponentSourcePackageNameWidget)
+    custom_widget('sourcepackagename',
+                  UbuntuSourcePackageNameWidget)
+    #edit_form = ViewPageTemplateFile(
+    #    '../templates/bugtask-component-edit-form.pt')
 
     @property
     def page_title(self):
@@ -508,17 +480,15 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
             u'Link a distribution source package to the %s component'
             % self.context.name)
 
-    @cachedproperty
+    @property
     def field_names(self):
         field_names = [
-            'sourcepackagename'
+            'sourcepackagename',
             ]
         return field_names
 
-    def setUpFields(self):
-        super(BugTrackerEditComponentView, self).setUpFields()
-        #self.form_fields['distro_source_package'].custom_widget = CustomWidgetFactory(
-        #    BugTrackerComponentSourcePackageNameWidget)
+    #def setUpFields(self):
+    #    super(BugTrackerEditComponentView, self).setUpFields()
 
     def setUpWidgets(self, context=None):
         for field in self.form_fields:
@@ -546,8 +516,32 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
 
         return field_values
 
-    # TODO: Store value (needs an apply button)
+    def updateContextFromData(self, data, context=None):
+        """TODO"""
+        if context is None:
+            context = self.context
+        component = context
 
+        sourcepackagename = self.request.form.get(
+            self.widgets['sourcepackagename'].name)
+        
+        distro_name = self.widgets['sourcepackagename'].distribution_name
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+        pkg = distribution.getSourcePackage(sourcepackagename)
+        #pkg = self.widgets['sourcepackagename']
+        component.distro_source_package = pkg
+        self.request.response.addNotification(
+            "%s:%s is now linked to the %s source package in %s" %(
+                component.component_group.name, component.name,
+                sourcepackagename, distro_name))
+
+    @action('Save Changes', name='save')
+    def save_action(self, action, data):
+        """Update the component with the form data."""
+        self.updateContextFromData(data)
+
+        self.next_url = canonical_url(
+            self.context.component_group.bug_tracker)
 
 class BugTrackerComponentGroupNavigation(Navigation):
 

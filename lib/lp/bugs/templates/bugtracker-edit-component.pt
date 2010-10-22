@@ -7,7 +7,7 @@
   i18n:domain="malone">
 
   <div metal:fill-slot="main">
-    <h1>Link <span tal:replace="context/name"/> component '<span tal:replace="context/name"/>'</h1>
+    <h1>Link <span tal:replace="context/component_group/name"/> component '<span tal:replace="context/name"/>'</h1>
     <div metal:use-macro="context/@@launchpad_form/form">
       <p>Configure component</p>
     </div>

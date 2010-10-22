@@ -15,10 +15,12 @@
       <ul tal:define="components component_group/components">
         <li tal:repeat="component components">
           <span tal:replace="component/name" />
-          <a class="sprite edit"
-             tal:condition="component/distro_source_package"
-             tal:replace="structure component/distro_source_package/display_name"/>
           &nbsp;
+          <span tal:condition="component/distro_source_package">
+            <a class="sprite edit"
+               tal:attributes="href string:${context/fmt:url}/+components/${component_group/name}/${component/name}/+edit">
+               <span tal:replace="structure component/distro_source_package/name"/></a>
+          </span>
           <a class="sprite add"
              tal:condition="not: component/distro_source_package"
              tal:attributes="href string:${context/fmt:url}/+components/${component_group/name}/${component/name}/+edit"></a>
