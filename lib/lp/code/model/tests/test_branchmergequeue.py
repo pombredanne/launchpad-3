@@ -7,8 +7,6 @@ from __future__ import with_statement
 
 import simplejson
 
-import transaction
-
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
