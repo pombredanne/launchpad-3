@@ -156,10 +156,8 @@ class Times:
         # good based on eyeballing things so far - once we're down in the 2-3
         # second range for everything we may want to revisit.
         stats.ninetyninth_percentile_time = stats.mean + stats.std*3
-        capped_times = (min(a_time, self.histogram_width) for a_time in
-            self.request_times)
-        array = numpy.fromiter(capped_times, numpy.float32,
-            len(self.request_times))
+        # Clip in-place.
+        numpy.clip(array, 0, self.histogram_width, out=array)
         histogram = numpy.histogram(
             array, normed=True,
             range=(0, self.histogram_width), bins=self.histogram_width)
