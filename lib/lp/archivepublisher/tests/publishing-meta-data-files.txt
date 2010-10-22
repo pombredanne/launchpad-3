@@ -11,12 +11,12 @@ PackageUploadCustom object for a meta-data upload:
 
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
+    >>> from cStringIO import StringIO
     >>> from lp.archiveuploader.tests import mock_logger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.enums import PackageUploadCustomFormat
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
     >>> from lp.soyuz.model.queue import PackageUploadCustom
-    >>> from cStringIO import StringIO
 
     >>> bat = getUtility(IDistributionSet)['ubuntutest']['breezy-autotest']
     >>> ppa = factory.makeArchive(distribution=bat.distribution)

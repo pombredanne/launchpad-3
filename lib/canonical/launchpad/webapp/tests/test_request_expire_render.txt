@@ -12,8 +12,8 @@ After a timeout has happened, we can no longer do any more db queries,
 since get_request_remaining_seconds will raise. However, if the user is logged
 in, a query will be issued to render the "Logged in as No Privileges Person".
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
+    >>> from textwrap import dedent
     >>> test_data = dedent("""
     ...     [database]
     ...     db_statement_timeout: 10000

@@ -59,8 +59,9 @@ slash or not:
 Watches of Email Address bugtrackers are slightly different: the `url`
 property is always the same as the bugtracker baseurl property.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugTrackerSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> bugtrackerset = getUtility(IBugTrackerSet)
 
     >>> email_bugtracker = bugtrackerset['email']
@@ -267,8 +268,8 @@ we can confirm that an event is indeed fired off.
     ...         print "%s => %s" % (old_bugtask.importance.title,
     ...             bugtask.importance.title)
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> event_listener = TestEventListener(
     ...     IBugTask, IObjectModifiedEvent, print_bugtask_modified)
 
@@ -417,9 +418,13 @@ creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugTaskSet,
-    ...     IBugTrackerSet, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtracker import (
+    ...     BugTrackerType,
+    ...     IBugTrackerSet,
+    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -462,8 +467,8 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestRoundup)
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
@@ -550,8 +555,8 @@ If the watch is rescheduled, can_be_rescheduled will be False, since the
 next_check time for the watch will be in the past (or in this case is
 now) and therefore it will be checked with the next checkwatches run.
 
-    >>> from pytz import utc
     >>> from datetime import datetime
+    >>> from pytz import utc
     >>> schedulable_watch.next_check = datetime.now(utc)
     >>> schedulable_watch.can_be_rescheduled
     False

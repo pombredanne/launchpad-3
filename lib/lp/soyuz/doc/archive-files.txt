@@ -37,8 +37,8 @@ Create a test source publication.
 
 When the file exists, the corresponding `ILibraryFileAlias` is returned.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> result = cprov.archive.getFileByName('test-pkg_1.0.dsc')
 

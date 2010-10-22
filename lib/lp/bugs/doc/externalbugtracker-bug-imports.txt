@@ -24,8 +24,8 @@ methods.
     ...     def getBugTargetName(self, remote_bug):
     ...         return self._bugs[remote_bug]['package']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
@@ -45,8 +45,8 @@ IBugTracker in Launchpad, and the bug target, in which the bug should be
 imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',

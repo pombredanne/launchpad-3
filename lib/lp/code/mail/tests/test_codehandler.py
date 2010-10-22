@@ -64,7 +64,7 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
     BranchMergeProposalJobType,
     CreateMergeProposalJob,
-    MergeProposalCreatedJob,
+    MergeProposalNeedsReviewEmailJob,
     )
 from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_lp_server
@@ -567,7 +567,7 @@ class TestCodeHandler(TestCaseWithFactory):
         messages = pop_notifications()
         self.assertEqual(0, len(messages))
         # Only a job created.
-        runner = JobRunner.fromReady(MergeProposalCreatedJob)
+        runner = JobRunner.fromReady(MergeProposalNeedsReviewEmailJob)
         self.assertEqual(1, len(list(runner.jobs)))
         transaction.commit()
 

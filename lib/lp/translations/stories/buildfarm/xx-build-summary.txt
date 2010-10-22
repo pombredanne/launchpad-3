@@ -141,9 +141,9 @@ build history.
 
     >>> login(ANONYMOUS)
     >>> from datetime import datetime, timedelta
-    >>> from pytz import utc
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.buildmaster.enums import BuildStatus
+    >>> from pytz import utc
     >>> naked_job = removeSecurityProxy(build.build_farm_job)
     >>> naked_job.builder = builder
     >>> naked_job.date_started = datetime(2010, 9, 14, 8, 0, tzinfo=utc)
