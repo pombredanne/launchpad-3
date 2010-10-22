@@ -886,7 +886,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             rejection_message.splitlines())
 
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [PPA cprov] bar_1.0-1_source.changes rejected",
             "Could not find person or team named 'boing'",
             "https://help.launchpad.net/Packaging/PPA#Uploading",
             "If you don't understand why your files were rejected please "
@@ -1253,7 +1253,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # An email communicating the rejection and the reason why it was
         # rejected is sent to the uploaders.
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [PPA name16] bar_1.0-1_source.changes rejected",
             "Rejected:",
             "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "

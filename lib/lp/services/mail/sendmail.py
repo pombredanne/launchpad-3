@@ -421,7 +421,7 @@ def sendmail(message, to_addrs=None, bulk=True):
         # should be fine.
         # TODO: Store a timeline action for zopeless mail.
 
-        if config.instance_name == 'testrunner':
+        if config.isTestRunner():
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
