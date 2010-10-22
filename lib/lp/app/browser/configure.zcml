@@ -99,11 +99,10 @@
       permission="zope.Public" />
 
   <browser:page
-    for="*"
-    name="+check-links"
-    class="lp.app.browser.linkchecker.LinkCheckerAPI"
-    permission="zope.Public"
-    />
+      for="*"
+      name="+check-links"
+      class="lp.app.browser.linkchecker.LinkCheckerAPI"
+      permission="zope.Public"/>
 
   <!-- TALES namespaces. -->
 

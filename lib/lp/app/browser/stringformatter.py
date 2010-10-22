@@ -276,9 +276,8 @@ class FormattersAPI:
             url = '/+branch/%s' % path
             # Mark the links with a 'branch-short-link' class so they can be
             # harvested and validated when the page is rendered.
-            return '<a href="%s" class="%s">%s</a>%s' % (
+            return '<a href="%s" class="branch-short-link">%s</a>%s' % (
                 cgi.escape(url, quote=True),
-                "branch-short-link",
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
         elif match.group("clbug") is not None:

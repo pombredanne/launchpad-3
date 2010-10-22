@@ -3,21 +3,27 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.component._api import getUtility
-
-from lp.code.interfaces.branchlookup import IBranchLookup
-
 __metaclass__ = type
-
 __all__ = [
     'LinkCheckerAPI',
     ]
 
 import simplejson
+from zope.component import getUtility
+
+from lp.app.errors import NotFoundError
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.registry.interfaces.product import InvalidProductName
 
 
 class LinkCheckerAPI:
-    """ Validates Launchpad shortcut links.
+    """Validates Launchpad shortcut links.
 
     This class provides the endpoint of an Ajax call to .../+check-links.
     When invoked with a collection of links harvested from a page, it will
@@ -51,7 +57,7 @@ class LinkCheckerAPI:
         for link_type in links_to_check:
             links = links_to_check[link_type]
             invalid_links = self.link_checkers[link_type](links)
-            result['invalid_'+link_type]=invalid_links
+            result['invalid_'+link_type] = invalid_links
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result)
@@ -64,6 +70,8 @@ class LinkCheckerAPI:
             path = link.strip('/')[len('+branch/'):]
             try:
                 branch_lookup.getByLPPath(path)
-            except:
+            except (CannotHaveLinkedBranch, InvalidNamespace,
+                    InvalidProductName, NoLinkedBranch, NoSuchBranch,
+                    NotFoundError):
                 invalid_links.append(link)
         return invalid_links

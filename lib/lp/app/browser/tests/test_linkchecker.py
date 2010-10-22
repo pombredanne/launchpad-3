@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 from random import shuffle
-import simplejson
 
+import simplejson
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -48,7 +48,11 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
             ]
 
     def invoke_branch_link_checker(
-        self, valid_branch_urls=dict(), invalid_branch_urls=dict()):
+        self, valid_branch_urls=None, invalid_branch_urls=None):
+        if valid_branch_urls is None:
+            valid_branch_urls = {}
+        if invalid_branch_urls is None:
+            invalid_branch_urls = {}
 
         branch_urls = list(valid_branch_urls)
         branch_urls.extend(invalid_branch_urls)
