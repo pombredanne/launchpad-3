@@ -21,6 +21,7 @@ from zope.interface import (
     )
 
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,
@@ -69,6 +70,8 @@ class BranchMergeQueue(Storm):
     def new(cls, name, owner, registrant, description=None,
             configuration=None):
         """See `IBranchMergeQueueSource`."""
+        store = IMasterStore(BranchMergeQueue)
+
         queue = cls()
         queue.name = name
         queue.owner = owner
@@ -76,4 +79,5 @@ class BranchMergeQueue(Storm):
         queue.description = description
         queue.configuration = configuration
 
+        store.add(queue)
         return queue
