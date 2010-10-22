@@ -18,12 +18,12 @@
           &nbsp;
           <span tal:condition="component/distro_source_package">
             <a class="sprite edit"
-               tal:attributes="href string:${context/fmt:url}/+components/${component_group/name}/${component/name}/+edit">
+               tal:attributes="href string:${context/fmt:url}/+components/${component_group/id}/${component/id}/+edit">
                <span tal:replace="structure component/distro_source_package/name"/></a>
           </span>
           <a class="sprite add"
              tal:condition="not: component/distro_source_package"
-             tal:attributes="href string:${context/fmt:url}/+components/${component_group/name}/${component/name}/+edit"></a>
+             tal:attributes="href string:${context/fmt:url}/+components/${component_group/id}/${component/id}/+edit"></a>
         </li>
         <li tal:condition="not: components">
           <i>This bug tracker has no components for this group</i>

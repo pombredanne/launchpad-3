@@ -382,6 +382,12 @@ class IBugTracker(Interface):
         :param component_group_name: Name of the component group to retrieve.
         """
 
+    def getRemoteComponentGroupById(component_group_id):
+        """Retrieve a given component group by its database id
+
+        :param component_group_id: Id of the component group to retrieve.
+        """
+
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.

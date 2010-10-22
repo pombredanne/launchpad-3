@@ -462,8 +462,9 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
     @stepthrough("+components")
-    def component_groups(self, name):
-        return self.context.getRemoteComponentGroup(name)
+    def component_groups(self, id):
+        # TODO: Need to navigate by id or something
+        return self.context.getRemoteComponentGroup(id)
 
 
 class BugTrackerEditComponentView(LaunchpadEditFormView):
@@ -547,8 +548,8 @@ class BugTrackerComponentGroupNavigation(Navigation):
 
     usedfor = IBugTrackerComponentGroup
 
-    def traverse(self, name):
-        return self.context.getComponent(name)
+    def traverse(self, id):
+        return self.context.getComponent(id)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):

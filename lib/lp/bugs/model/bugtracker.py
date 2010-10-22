@@ -269,6 +269,12 @@ class BugTrackerComponentGroup(Storm):
 
         if component_name is None:
             return None
+        elif component_name.isdigit():
+            component_id = int(component_name)
+            return Store.of(self).find(
+                BugTrackerComponent,
+                BugTrackerComponent.id == component_id,
+                BugTrackerComponent.component_group == self.id).one()
         else:
             return Store.of(self).find(
                 BugTrackerComponent,
@@ -672,9 +678,15 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        component_group = store.find(
-            BugTrackerComponentGroup,
-            name = component_group_name).one()
+        if component_group_name.isdigit():
+            component_group_id = int(component_group_name)
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                id = component_group_id).one()
+        else:
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                name = component_group_name).one()
         return component_group
 
 
