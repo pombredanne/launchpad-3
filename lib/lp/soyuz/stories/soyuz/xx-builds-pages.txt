@@ -486,9 +486,9 @@ processed, the upload 'status' is shown in parentheses after the build
 link.
 
     # Create testing source publications.
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
     >>> test_publisher = SoyuzTestPublisher()
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

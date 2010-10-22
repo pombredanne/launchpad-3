@@ -79,6 +79,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -91,6 +92,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
@@ -1310,8 +1312,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None):
-        revision = self.makeRevision(rev_id=revision_id)
+    def makeBranchRevision(self, branch, revision_id, sequence=None,
+                           parent_ids=None):
+        revision = self.makeRevision(
+            rev_id=revision_id, parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
@@ -1844,24 +1848,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
-    def makePackageDiff(self, from_spr=None, to_spr=None):
-        """Make a completed package diff."""
-        if from_spr is None:
-            from_spr = self.makeSourcePackageRelease()
-        if to_spr is None:
-            to_spr = self.makeSourcePackageRelease()
-
-        diff = from_spr.requestDiffTo(
-            from_spr.creator, to_spr)
-
-        naked_diff = removeSecurityProxy(diff)
-        naked_diff.status = PackageDiffStatus.COMPLETED
-        naked_diff.diff_content = self.makeLibraryFileAlias()
-        naked_diff.date_fulfilled = UTC_NOW
-        return diff
-
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None):
+                         members=None, title=None, aliases=None,
+                         bug_supervisor=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -1881,6 +1870,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members, owner)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
+        if bug_supervisor is not None:
+            naked_distro = removeSecurityProxy(distro)
+            naked_distro.bug_supervisor = bug_supervisor
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
@@ -3175,6 +3167,42 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 requester=requester, from_source=from_source,
                 to_source=to_source, date_fulfilled=date_fulfilled,
                 status=status, diff_content=lfa))
+
+    # Factory methods for OAuth tokens.
+    def makeOAuthConsumer(self, key=None, secret=None):
+        if key is None:
+            key = self.getUniqueString("oauthconsumerkey")
+        if secret is None:
+            secret = ''
+        return getUtility(IOAuthConsumerSet).new(key, secret)
+
+    def makeOAuthRequestToken(self, consumer=None, date_created=None,
+                              reviewed_by=None,
+                              access_level=OAuthPermission.READ_PUBLIC):
+        """Create a (possibly reviewed) OAuth request token."""
+        if consumer is None:
+            consumer = self.makeOAuthConsumer()
+        token = consumer.newRequestToken()
+
+        if reviewed_by is not None:
+            # Review the token before modifying the date_created,
+            # since the date_created can be used to simulate an
+            # expired token.
+            token.review(reviewed_by, access_level)
+
+        if date_created is not None:
+            unwrapped_token = removeSecurityProxy(token)
+            unwrapped_token.date_created = date_created
+        return token
+
+    def makeOAuthAccessToken(self, consumer=None, owner=None,
+                             access_level=OAuthPermission.READ_PUBLIC):
+        """Create an OAuth access token."""
+        if owner is None:
+            owner = self.makePerson()
+        request_token = self.makeOAuthRequestToken(
+            consumer, reviewed_by=owner, access_level=access_level)
+        return request_token.createAccessToken()
 
 
 # Some factory methods return simple Python types. We don't add

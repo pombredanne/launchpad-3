@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 import threading
-import unittest
 
 from canonical.testing.layers import (
     BaseLayer,

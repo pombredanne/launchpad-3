@@ -315,7 +315,6 @@ rw_main_slave:  dbname=%s
                 con = psycopg2.connect(self._connectionString(self.template))
             except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
-                    print x
                     return
                 raise
             try:

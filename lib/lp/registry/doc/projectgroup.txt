@@ -6,9 +6,11 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectGroupSet, IProjectGroup)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.projectgroup import (
+    ...     IProjectGroup,
+    ...     IProjectGroupSet,
+    ...     )
     >>> projectset = getUtility(IProjectGroupSet)
 
 
@@ -331,10 +333,21 @@ to handle translations.
     >>> import transaction
     >>> transaction.abort()
 
+A project group with no translatable products is shown by
+'has_translatables' being false.
+
+    >>> product = factory.makeProduct()
+    >>> project_group = factory.makeProject()
+    >>> product.project = project_group
+    >>> project_group.has_translatable()
+    False
+
 GNOME Project is a good example that has translations.
 It has one translatable product.
 
     >>> gnome = getUtility(IProjectGroupSet)['gnome']
+    >>> gnome.has_translatable()
+    True
     >>> translatables = gnome.translatables()
     >>> translatables.count()
     1

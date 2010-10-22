@@ -116,8 +116,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
@@ -631,8 +631,14 @@ Initially there are no nominations.
     total_size: 0
     ---
 
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
+    >>> debuntu = removeSecurityProxy(debuntu)
+    >>> debuntu.bug_supervisor = john
+    >>> fooix = removeSecurityProxy(fooix)
+    >>> fooix.bug_supervisor = john
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
