@@ -131,6 +131,38 @@ Debugging feature usage
 The flags active during a page request, and the scopes that were looked
 up are visible in the comment at the bottom of every standard Launchpad
 page.
+
+
+Setting flags in your tests
+===========================
+
+lp.services.features.testing contains a fixture that can help you temporarily
+set feature flags during a test run.
+
+The lp.testing.TestCase class has built-in support for test fixtures.  To
+set a flag for the duration of a test::
+
+    from lp.services.features.testing import FeatureFixture
+
+    def setUp(self):
+        self.useFixture(FeatureFixture({'myflag', 'on'}))
+
+
+You can also use the fixture as a context manager::
+
+    with FeatureFixture({'myflag': 'on'}):
+        ...
+
+
+You can call the fixture's setUp() and cleanUp() methods for doctests and
+other environments that have no explicit setup and teardown::
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture({'my-doctest-flag': 'on'})
+    >>> fixture.setUp()
+    ...
+    >>> fixture.cleanUp()
+
 """
 
 import threading
