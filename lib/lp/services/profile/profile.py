@@ -30,15 +30,12 @@ from canonical.mem import (
     memory,
     resident,
     )
-from lp.services import features
 
 
 class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
-# This variable holds all of the data about an active profile run for the
-# duration of the request.
 _profilers = threading.local()
 
 
@@ -49,13 +46,8 @@ def start_request(event):
     If profiling is enabled, start a profiler for this thread. If memory
     profiling is requested, save the VSS and RSS.
     """
-    if features.getFeatureFlag('request_profiling'):
-        # Set a flag so that the end_request hook knows that is has some work
-        # to do.
-        _profilers.active = True
-    else:
+    if not config.profiling.profiling_allowed:
         return
-
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
         actions.add('log')
@@ -79,7 +71,7 @@ template = PageTemplateFile(
 @adapter(IEndRequestEvent)
 def end_request(event):
     """If profiling is turned on, save profile data for the request."""
-    if not getattr(_profilers, 'active', False):
+    if not config.profiling.profiling_allowed:
         return
     try:
         actions = _profilers.actions
