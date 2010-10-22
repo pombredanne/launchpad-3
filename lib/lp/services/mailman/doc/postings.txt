@@ -344,8 +344,8 @@ the mailing list, she will not get a copy of the message.
 
     # Reset Anne's MessageApproval so that she'll no longer be pre-approved to
     # post to this mailing list.
-    >>> from lp.registry.model.mailinglist import MessageApproval
     >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.registry.model.mailinglist import MessageApproval
     >>> approvals = MessageApproval.select("""
     ...     MessageApproval.posted_by = %s
     ...     """ % sqlvalues(anne))
@@ -845,8 +845,8 @@ moderator approval.
     >>> config.mailman.soft_max_size
     40000
 
-    >>> from email.mime.multipart import MIMEMultipart
     >>> from email.mime.application import MIMEApplication
+    >>> from email.mime.multipart import MIMEMultipart
     >>> from email.mime.text import MIMEText
 
     >>> big_message = MIMEMultipart()

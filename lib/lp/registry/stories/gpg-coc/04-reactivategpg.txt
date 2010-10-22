@@ -31,8 +31,8 @@ Now he'll request his key to be reactivated.
 Get the token from the body of the email sent.
 
     >>> import email, re
-    >>> from lp.services.mail import stub
     >>> from canonical.launchpad.ftests import decrypt_content
+    >>> from lp.services.mail import stub
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_msg)
     >>> cipher_body = msg.get_payload(decode=1)

@@ -255,7 +255,8 @@ class TestProductCodeIndexServiceUsages(ProductTestBase, BrowserTestCase):
         login(ANONYMOUS)
         text = extract_text(find_tag_by_id(
             browser.contents, 'branch-count-summary'))
-        expected = "1 Active  branch owned by 1 person.*"
+        expected = ("%s has 1 active branch owned by 1"
+                    " person." % product.displayname)
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
         # The code page does not set robots to noindex, nofollow.

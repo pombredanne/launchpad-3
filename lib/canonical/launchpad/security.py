@@ -892,7 +892,7 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.BugSupervisor'
     usedfor = IDistributionSourcePackage
 
     def checkAuthenticated(self, user):
@@ -911,6 +911,30 @@ class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.bug_supervisor) or
                 user.inTeam(self.obj.owner) or
+                user.in_admin)
+
+
+class NominateBugForProductSeries(AuthorizationBase):
+    """Product's owners and bug supervisors can add bug nominations."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.product.bug_supervisor) or
+                user.inTeam(self.obj.product.owner) or
+                user.in_admin)
+
+
+class NominateBugForDistroSeries(AuthorizationBase):
+    """Distro's owners and bug supervisors can add bug nominations."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.distribution.bug_supervisor) or
+                user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
 

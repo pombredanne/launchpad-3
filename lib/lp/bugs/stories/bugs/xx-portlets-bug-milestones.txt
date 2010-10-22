@@ -55,8 +55,8 @@ Bug 4 has a Firefox bugtask, which can be used once a milestone is selected.
     >>> print ff_bugtask.bug.id
     4
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.milestone import IMilestoneSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ff_milestone = getUtility(IMilestoneSet).getByNameAndProduct(
     ...     "1.0", firefox)

@@ -37,8 +37,8 @@ Milestone defines several menus.
 The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
 for use with inline presentation of milestones.
 
-    >>> from canonical.lazr.canonicalurl import nearest_adapter
     >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
 
     >>> view = create_view(milestone, name='+productseries-table-row')
     >>> nearest_adapter(view, INavigationMenu, name='overview')
@@ -330,8 +330,8 @@ Persons with launchpad.Edit permissions for milestones may edit them.
 The MilestoneEditView is responsible for controlling the fields that the
 user may edit.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login_person(firefox.owner)

@@ -301,8 +301,8 @@ project admin does not see the link for configuring other branches.
 
 A new series is added.
 
-    >>> from lp.registry.model.product import Product
     >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.registry.model.product import Product
     >>> login('foo.bar@canonical.com')
     >>> evolution = Product.byName('evolution')
     >>> series = factory.makeProductSeries(
