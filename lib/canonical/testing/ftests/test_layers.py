@@ -75,9 +75,8 @@ class BaseLayerIsolator(Fixture):
             env_value = ''
         else:
             env_value = None
-        self.useFixture(
-            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES',
-            env_value))
+        self.useFixture(EnvironmentVariableFixture(
+            'LP_PERSISTENT_TEST_SERVICES', env_value))
         self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
 
 
@@ -305,8 +304,10 @@ class LibrarianLayerTest(testtools.TestCase, TestWithFixtures):
                     restricted_download_port,
                     config.librarian.restricted_download_port)
                 self.assertTrue(os.path.exists(active_root))
-            # This needs more sophistication in the config system (it needs to
-            # affect configs on disk and other perhaps other processes
+            # This needs more sophistication in the config system (tearDown on
+            # the layer needs to pop the config fragment off of disk - and
+            # perhaps notify other processes that its done this. So for now we
+            # leave the new config in place).
             # self.assertEqual(default_root, config.librarian_server.root)
             # The working dir has to have been deleted.
             self.assertFalse(os.path.exists(active_root))

@@ -142,7 +142,7 @@ class LibrarianServerFixture(TacTestSetup):
             self.restricted_upload_port = \
                 config.librarian.restricted_upload_port
             return
-        chunks = self.logChunks()
+        chunks = self.getLogChunks()
         # A typical startup: upload, download, restricted up, restricted down.
         #2010-10-20 14:28:21+0530 [-] Log opened.
         #2010-10-20 14:28:21+0530 [-] twistd 10.1.0 (/usr/bin/python 2.6.5) starting up.
@@ -195,7 +195,8 @@ class LibrarianServerFixture(TacTestSetup):
         try:
             return os.path.join(self.root, 'librarian.pid')
         except AttributeError:
-            # Not setup and using dynamic config: tachandler reads this early.
+            # An attempt to read the pidfile before this fixture was setUp,
+            # with dynamic configuration.
             return '/tmp/unused/'
 
     @property
@@ -206,10 +207,11 @@ class LibrarianServerFixture(TacTestSetup):
         try:
             return os.path.join(self.root, 'librarian.log')
         except AttributeError:
-            # Not setup and using dynamic config: tachandler reads this early.
+            # An attempt to read the pidfile before this fixture was setUp,
+            # with dynamic configuration.
             return '/tmp/unused/'
 
-    def logChunks(self):
+    def getLogChunks(self):
         """Get a list with the contents of the librarian log in it."""
         return open(self.logfile, 'rb').readlines()
 

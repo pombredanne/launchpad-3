@@ -56,8 +56,7 @@ class TestLibrarianServerFixture(TestCase):
                 self.assertNotEqual(
                     config.librarian.restricted_upload_port,
                     fixture.restricted_upload_port)
-                # And it exposes a config fragment
-                # (Which is not activated by it.
+                # And it exposes a config fragment (but it is not activated).
                 expected_config = dedent("""\
                     [librarian_server]
                     root: %s
@@ -82,10 +81,10 @@ class TestLibrarianServerFixture(TestCase):
                 self.attachLibrarianLog(fixture)
                 raise
 
-    def test_logChunks(self):
+    def test_getLogChunks(self):
         fixture = LibrarianServerFixture()
         with fixture:
-            chunks = fixture.logChunks()
+            chunks = fixture.getLogChunks()
             self.assertIsInstance(chunks, list)
         found_started = False
         for chunk in chunks:
@@ -95,7 +94,6 @@ class TestLibrarianServerFixture(TestCase):
 
     def test_smoke_test(self):
         # Avoid indefinite hangs:
-        import socket
         self.addCleanup(socket.setdefaulttimeout, socket.getdefaulttimeout())
         socket.setdefaulttimeout(1)
         fixture = LibrarianServerFixture()
@@ -107,9 +105,9 @@ class TestLibrarianServerFixture(TestCase):
                 config.librarian.restricted_download_host,
                 fixture.restricted_download_port)
             # Both download ports work:
-            self.assertTrue('Copyright' in urlopen(librarian_url).read())
-            self.assertTrue(
-                'Copyright' in urlopen(restricted_librarian_url).read())
+            self.assertIn('Copyright', urlopen(librarian_url).read())
+            self.assertIn(
+                'Copyright', urlopen(restricted_librarian_url).read())
             os.path.isdir(fixture.root)
         # Ports are closed on cleanUp.
         self.assertRaises(IOError, urlopen, librarian_url)
@@ -120,4 +118,4 @@ class TestLibrarianServerFixture(TestCase):
             librarian_url = "http://%s:%d" % (
                 config.librarian.download_host,
                 fixture.download_port)
-            self.assertTrue('Copyright' in urlopen(librarian_url).read())
+            self.assertIn('Copyright', urlopen(librarian_url).read())
