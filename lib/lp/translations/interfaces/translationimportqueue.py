@@ -189,7 +189,7 @@ class IHasTranslationImports(Interface):
         import_status=Choice(
             title=_("Status"),
             description=_("Show only entries with this status"),
-            values=RosettaImportStatus.items,
+            vocabulary=RosettaImportStatus,
             required=False),
         file_extension=TextLine(
             title=_("Filename extension"),
@@ -287,7 +287,7 @@ class ITranslationImportQueueEntry(Interface):
     status = exported(
         Choice(
             title=_("The status of the import."),
-            values=RosettaImportStatus.items,
+            vocabulary=RosettaImportStatus,
             required=True,
             readonly=True))
 
