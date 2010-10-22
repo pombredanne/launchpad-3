@@ -25,13 +25,23 @@
         display: None
       }
     </style>
-   
+
     <noscript>
       <style type="text/css">
         div.collapsible, div.collapsed {display: block;}
       </style>
     </noscript>
- 
+
+        <script type="text/javascript"
+                tal:content="string:
+          YUI().use('lp.registry.pillar', function(Y) {
+              Y.on('load',
+                  function(e) {
+                      Y.lp.registry.pillar.activate_collapsible_div();
+                  },
+                  window);
+          });
+        "/>
   </tal:head-epilogue>
 </head>
 
