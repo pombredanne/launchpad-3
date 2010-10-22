@@ -10,6 +10,7 @@ __all__ = [
     'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
+    'BugTrackerEditComponentView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
     'BugTrackerSetBreadcrumb',
@@ -22,6 +23,7 @@ __all__ = [
 
 from itertools import chain
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -67,11 +69,14 @@ from canonical.widgets import (
     DelimitedListWidget,
     LaunchpadRadioWidget,
     )
+from canonical.widgets.bugtask import BugTaskSourcePackageNameWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
     IBugTrackerSet,
     IRemoteBug,
+    IBugTrackerComponent,
     IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
@@ -457,6 +462,91 @@ class BugTrackerNavigation(Navigation):
     @stepthrough("+components")
     def component_groups(self, name):
         return self.context.getRemoteComponentGroup(name)
+
+
+#TODO: This should be moved into lib/canonical/widgets
+class BugTrackerComponentSourcePackageNameWidget(VocabularyPickerWidget):
+    def getDistribution(self):
+        """Get the distribution used for package validation.
+       
+        The package name has be to published in the returned distribution.
+        """
+        field = self.context
+        distribution = field.context.distribution
+        if distribution is None:
+            distribution = GetUtility(IDistributionSet).getByName("ubuntu")
+        return distribution
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        distribution = self.getDistribution()
+
+        try:
+            source, binary = distribution.guessPackageNames(input)
+        except NotFoundError:
+            try:
+                return self.convertTokensToValues([input])[0]
+            except InvalidValue:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        return source
+
+
+class BugTrackerEditComponentView(LaunchpadEditFormView):
+
+    schema = IBugTrackerComponent
+
+    # How does this get the data filled back in?
+    custom_widget('sourcepackagename', BugTrackerComponentSourcePackageNameWidget)
+
+    @property
+    def page_title(self):
+        return smartquote(
+            u'Link a distribution source package to the %s component'
+            % self.context.name)
+
+    @cachedproperty
+    def field_names(self):
+        field_names = [
+            'sourcepackagename'
+            ]
+        return field_names
+
+    def setUpFields(self):
+        super(BugTrackerEditComponentView, self).setUpFields()
+        #self.form_fields['distro_source_package'].custom_widget = CustomWidgetFactory(
+        #    BugTrackerComponentSourcePackageNameWidget)
+
+    def setUpWidgets(self, context=None):
+        for field in self.form_fields:
+            if (field.custom_widget is None and
+                field.__name__ in self.custom_widgets):
+                field.custom_widget = self.custom_widgets[field.__name__]
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context, self.request,
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        field_values = {}
+        for name in self.field_names:
+            if name == 'sourcepackagename':
+                pkg = self.context.distro_source_package
+                if pkg is not None:
+                    field_values['sourcepackagename'] = pkg.name
+                else:
+                    field_values['sourcepackagename'] = ""
+            else:
+                field_values[name] = getattr(self.context, name)
+
+        return field_values
+
+    # TODO: Store value (needs an apply button)
 
 
 class BugTrackerComponentGroupNavigation(Navigation):
