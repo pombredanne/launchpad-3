@@ -3176,9 +3176,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             secret = ''
         return getUtility(IOAuthConsumerSet).new(key, secret)
 
-    def makeOAuthRequestToken(
-        self, consumer=None, date_created=None, reviewed_by=None,
-        access_level=OAuthPermission.READ_PUBLIC):
+    def makeOAuthRequestToken(self, consumer=None, date_created=None,
+                              reviewed_by=None,
+                              access_level=OAuthPermission.READ_PUBLIC):
         """Create a (possibly reviewed) OAuth request token."""
         if consumer is None:
             consumer = self.makeOAuthConsumer()
@@ -3194,6 +3194,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unwrapped_token = removeSecurityProxy(token)
             unwrapped_token.date_created = date_created
         return token
+
+    def makeOAuthAccessToken(self, consumer=None, owner=None,
+                             access_level=OAuthPermission.READ_PUBLIC):
+        """Create an OAuth access token."""
+        if owner is None:
+            owner = self.makePerson()
+        request_token = self.makeOAuthRequestToken(
+            consumer, reviewed_by=owner, access_level=access_level)
+        return request_token.createAccessToken()
 
 
 # Some factory methods return simple Python types. We don't add
