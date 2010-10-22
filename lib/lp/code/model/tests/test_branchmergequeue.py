@@ -123,7 +123,6 @@ class TestWebservice(TestCaseWithFactory):
                 branch2.addToQueue(db_queue)
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
-            transaction.commit()
 
         queuer = ws_object(launchpad, queuer)
         queue = ws_object(launchpad, db_queue)
