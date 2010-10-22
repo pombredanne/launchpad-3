@@ -15,7 +15,7 @@
       <div id="privacy"
            tal:define="priv not:view/base_visibility_rule/enumvalue:PUBLIC"
            tal:attributes="class python: priv and 'first portlet private' or 'first portlet public'">
-        <p id="default-policy">
+        <p id="default-policy" style="margin-bottom: 0;">
           Inherited branch visibility for all projects in
           <strong tal:content="context/displayname">Project</strong> is
           <strong tal:content="view/base_visibility_rule/title">Public</strong>.
