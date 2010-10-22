@@ -463,17 +463,20 @@ class BugTrackerNavigation(Navigation):
 
     @stepthrough("+components")
     def component_groups(self, id):
-        # TODO: Need to navigate by id or something
+        # Navigate by id (component group name should work too)
         return self.context.getRemoteComponentGroup(id)
 
 
 class BugTrackerEditComponentView(LaunchpadEditFormView):
+    """Provides editing form for setting source packages for components.
+
+    In this class we assume that bug tracker components are always
+    linked to source packages in the Ubuntu distribution.
+    """
 
     schema = IBugTrackerComponent
     custom_widget('sourcepackagename',
                   UbuntuSourcePackageNameWidget)
-    #edit_form = ViewPageTemplateFile(
-    #    '../templates/bugtask-component-edit-form.pt')
 
     @property
     def page_title(self):
@@ -487,9 +490,6 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
             'sourcepackagename',
             ]
         return field_names
-
-    #def setUpFields(self):
-    #    super(BugTrackerEditComponentView, self).setUpFields()
 
     def setUpWidgets(self, context=None):
         for field in self.form_fields:
@@ -518,7 +518,12 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         return field_values
 
     def updateContextFromData(self, data, context=None):
-        """TODO"""
+        """Link component to specified distro source package.
+
+        Get the user-provided source package name from the form widget,
+        look it up in Ubuntu to retrieve the distro_source_package
+        object, and link it to this component.
+        """
         if context is None:
             context = self.context
         component = context
@@ -529,7 +534,6 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         distro_name = self.widgets['sourcepackagename'].distribution_name
         distribution = getUtility(IDistributionSet).getByName(distro_name)
         pkg = distribution.getSourcePackage(sourcepackagename)
-        #pkg = self.widgets['sourcepackagename']
         component.distro_source_package = pkg
         self.request.response.addNotification(
             "%s:%s is now linked to the %s source package in %s" %(
@@ -543,6 +547,7 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
 
         self.next_url = canonical_url(
             self.context.component_group.bug_tracker)
+
 
 class BugTrackerComponentGroupNavigation(Navigation):
 
