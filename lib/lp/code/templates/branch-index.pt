@@ -36,15 +36,18 @@
               'lp.code.branch.subscription', function(Y) {
 
         Y.on('load', function(e) {
-            var subscription_portlet = new Y.lp.code.branch.subscription.SubscriptionWidget({
-                contentBox: '#portlet-subscribers'
-            });
-            subscription_portlet.render();
+            var logged_in = LP.client.links['me'] !== undefined;
 
-            Y.lp.code.branch.status.connect_status(${view/status_config});
+            if (logged_in) {
+                var subscription_portlet = new Y.lp.code.branch.subscription.SubscriptionWidget({
+                    contentBox: '#portlet-subscribers'
+                });
+                subscription_portlet.render();
+
+                Y.lp.code.branch.status.connect_status(${view/status_config});
+            }
             Y.lp.code.branchmergeproposal.diff.connect_diff_links();
-            },
-            window);
+        }, window);
     });
   "/>
 </metal:block>

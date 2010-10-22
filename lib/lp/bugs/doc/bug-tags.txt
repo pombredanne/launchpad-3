@@ -67,9 +67,9 @@ Let's correct the spelling mistake we did and delete one of the tags:
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from lp.bugs.interfaces.bug import IBug
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.bug import BugTagsWidget
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
     >>> request = LaunchpadTestRequest()
@@ -178,9 +178,9 @@ A LargeBugTagsWidget is rendered as a <textarea>,
 
 We can search for bugs with some specific tag.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet)
     >>> from canonical.launchpad.searchbuilder import all
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> svg_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(tag=all(u'svg'), user=None))

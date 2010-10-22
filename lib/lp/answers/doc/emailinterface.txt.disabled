@@ -98,17 +98,17 @@ possibilities for the user.
     # be the question owner and Sample Person who will play the role of
     # answer contact. Foo Bar is used to change the status of the
     # question.
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']

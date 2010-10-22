@@ -127,7 +127,7 @@ class DistributionSourcePackageLinksMixin:
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def edit(self):
         """Edit the details of this source package."""
         # This is titled "Edit bug reporting guidelines" because that

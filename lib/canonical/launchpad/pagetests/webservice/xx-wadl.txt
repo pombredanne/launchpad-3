@@ -61,8 +61,8 @@ is generated from scratch.
 
 Unlike the test strings we used earlier, this is a valid WADL file.
 
-    >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> from canonical.lazr.xml import XMLValidator
+    >>> from lazr.restful import WADL_SCHEMA_FILE
     >>> wadl_schema = XMLValidator(WADL_SCHEMA_FILE)
 
     # We need to replace the nbsp entity, because the validator

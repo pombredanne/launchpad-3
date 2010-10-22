@@ -13,12 +13,12 @@ test too much.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from lp.registry.model.karma import KarmaCategory
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.karma import IKarmaCacheManager
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.model.karma import KarmaCategory
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer

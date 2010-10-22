@@ -76,8 +76,8 @@ object has a canonical url derived from its place in the hierarchy.
     # objects. This function does most of the work, but views must be
     # assigned to the _last_obj_traversed attribute.
 
-    >>> from canonical.lazr.testing.menus import make_fake_request
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.lazr.testing.menus import make_fake_request
 
     >>> root = Root('', None)
     >>> cookbook = Cookbook('joy-of-cooking', root)
@@ -932,8 +932,8 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     >>> from zope.traversing.adapters import DefaultTraversable
     >>> from zope.traversing.interfaces import IPathAdapter, ITraversable
     >>> from canonical.launchpad.ftests import test_tales
-    >>> from lp.app.browser.tales import MenuAPI
     >>> from canonical.lazr.testing.menus import summarise_tal_links
+    >>> from lp.app.browser.tales import MenuAPI
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
     # approximates what is done by the code:
