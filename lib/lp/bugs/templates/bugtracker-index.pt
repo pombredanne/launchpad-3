@@ -34,9 +34,7 @@
     <div class="yui-g">
       <div class="first yui-u">
         <div tal:replace="structure context/@@+portlet-details" />
-        <div tal:condition="server/edge">
-          <div tal:replace="structure context/@@+portlet-components" />
-        </div>
+        <div tal:replace="structure context/@@+portlet-components" />
       </div>
       <div class="yui-u">
         <div tal:replace="structure context/@@+portlet-projects" />
