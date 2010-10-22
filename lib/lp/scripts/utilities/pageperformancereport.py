@@ -81,7 +81,6 @@ class Stats:
     mean = 0 # Mean time per hit.
     median = 0 # Median time per hit.
     std = 0 # Standard deviation per hit.
-    var = 0 # Variance per hit.
     ninetyninth_percentile_time = 0
     histogram = None # # Request times histogram.
 
@@ -89,7 +88,6 @@ class Stats:
     mean_sqltime = 0 # Mean time spend waiting for SQL to process.
     median_sqltime = 0 # Median time spend waiting for SQL to process.
     std_sqltime = 0 # Standard deviation of SQL time.
-    var_sqltime = 0 # Variance of SQL time
 
     total_sqlstatements = 0 # Total number of SQL statements issued.
     mean_sqlstatements = 0
@@ -149,7 +147,6 @@ class Times:
         stats.mean = numpy.mean(array)
         stats.median = numpy.median(array)
         stats.std = numpy.std(array)
-        stats.var = numpy.var(array)
         # This is an approximation which may not be true: we don't know if we
         # have a std distribution or not. We could just find the 99th
         # percentile by counting. Shock. Horror; however this appears pretty
@@ -169,7 +166,6 @@ class Times:
         stats.mean_sqltime = numpy.mean(array)
         stats.median_sqltime = numpy.median(array)
         stats.std_sqltime = numpy.std(array)
-        stats.var_sqltime = numpy.var(array)
 
         # SQL query count.
         array = numpy.asarray(self.sql_statements, numpy.int)
@@ -177,7 +173,6 @@ class Times:
         stats.mean_sqlstatements = numpy.mean(array)
         stats.median_sqlstatements = numpy.median(array)
         stats.std_sqlstatements = numpy.std(array)
-        stats.var_sqlstatements = numpy.var(array)
 
         # Cache for next invocation.
         self._stats = stats
@@ -569,20 +564,17 @@ def html_report(
 
             <th class="clickable">Mean Time (secs)</th>
             <th class="clickable">Time Standard Deviation</th>
-            <th class="clickable">Time Variance</th>
             <th class="clickable">Median Time (secs)</th>
             <th class="sorttable_nosort">Time Distribution</th>
 
             <th class="clickable">Total SQL Time (secs)</th>
             <th class="clickable">Mean SQL Time (secs)</th>
             <th class="clickable">SQL Time Standard Deviation</th>
-            <th class="clickable">SQL Time Variance</th>
             <th class="clickable">Median SQL Time (secs)</th>
 
             <th class="clickable">Total SQL Statements</th>
             <th class="clickable">Mean SQL Statements</th>
             <th class="clickable">SQL Statement Standard Deviation</th>
-            <th class="clickable">SQL Statement Variance</th>
             <th class="clickable">Median SQL Statements</th>
 
             </tr>
@@ -605,7 +597,6 @@ def html_report(
             <td class="numeric 99pc_under">%.2f</td>
             <td class="numeric mean_time">%.2f</td>
             <td class="numeric std_time">%.2f</td>
-            <td class="numeric var_time">%.2f</td>
             <td class="numeric median_time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
@@ -613,26 +604,23 @@ def html_report(
             <td class="numeric total_sqltime">%.2f</td>
             <td class="numeric mean_sqltime">%.2f</td>
             <td class="numeric std_sqltime">%.2f</td>
-            <td class="numeric var_sqltime">%.2f</td>
             <td class="numeric median_sqltime">%.2f</td>
 
             <td class="numeric total_sqlstatements">%d</td>
             <td class="numeric mean_sqlstatements">%.2f</td>
             <td class="numeric std_sqlstatements">%.2f</td>
-            <td class="numeric var_sqlstatements">%.2f</td>
             <td class="numeric median_sqlstatements">%.2f</td>
             </tr>
             """ % (
                 html_title,
                 stats.total_hits, stats.total_time,
                 stats.ninetyninth_percentile_time,
-                stats.mean, stats.std, stats.var, stats.median,
+                stats.mean, stats.std, stats.median,
                 len(histograms) - 1,
                 stats.total_sqltime, stats.mean_sqltime,
-                stats.std_sqltime, stats.var_sqltime, stats.median_sqltime,
+                stats.std_sqltime, stats.median_sqltime,
                 stats.total_sqlstatements, stats.mean_sqlstatements,
-                stats.std_sqlstatements, stats.var_sqlstatements,
-                stats.median_sqlstatements))
+                stats.std_sqlstatements, stats.median_sqlstatements))
 
     # Table of contents
     print >> outf, '<ol>'
