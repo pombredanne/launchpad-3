@@ -521,6 +521,10 @@ class IBugTrackerComponent(Interface):
             title=_('Name'),
             description=_("The name of a software component "
                           "as shown in Launchpad.")))
+    sourcepackagename = Choice(
+        title=_("Package"), required=False, vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
     distro_source_package = exported(
         Reference(
