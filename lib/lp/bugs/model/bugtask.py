@@ -891,12 +891,13 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == celebrities.janitor.id):
             return True
         else:
-            return (self.status is not BugTaskStatus.WONTFIX and
-                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+            return (self.status not in (
+                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
+                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
-        if not new_status:
+        if not new_status or user is None:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
