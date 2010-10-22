@@ -45,7 +45,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.unsubscribe(bug.owner, bug.owner)
 
-        for level in BugNotificationLevel.items:
+        # We don't display BugNotificationLevel.NOTHING as an option.
+        # This is tested below.
+        displayed_levels = [
+            level for level in BugNotificationLevel.items
+            if level != BugNotificationLevel.NOTHING]
+        for level in displayed_levels:
             person = self.factory.makePerson()
             with person_logged_in(person):
                 harness = LaunchpadFormHarness(
@@ -63,3 +68,24 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 "Bug notification level of subscription should be %s, is "
                 "actually %s." % (
                     level.name, subscription.bug_notification_level.name))
+
+    def test_bug_notification_level_nothing_is_invalid(self):
+        # BugNotificationLevel.NOTHING isn't considered valid when
+        # someone is trying to subscribe.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            level = BugNotificationLevel.NOTHING
+            harness = LaunchpadFormHarness(
+                bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+            form_data = {
+                'field.subscription': person.name,
+                'field.bug_notification_level': level.name,
+                }
+            harness.submit('continue', form_data)
+            self.assertTrue(harness.hasErrors())
+            self.assertEqual(
+                'Invalid value',
+                harness.getFieldError('bug_notification_level'),
+                "The view should treat BugNotificationLevel.NOTHING as an "
+                "invalid value.")
