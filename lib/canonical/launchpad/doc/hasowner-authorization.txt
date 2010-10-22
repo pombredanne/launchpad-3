@@ -5,8 +5,8 @@ itself or a Launchpad admin.
 
     # First we define a class which only provides IHasOwner.
     >>> from zope.interface import implements
-    >>> from lp.registry.interfaces.role import IHasOwner
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.role import IHasOwner
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> class FooObject:
     ...     implements(IHasOwner)
@@ -15,8 +15,8 @@ itself or a Launchpad admin.
 Salgado is the owner of any FooObject we create, so he can edit it.
 
     >>> foo = FooObject()
-    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
     >>> from zope.component import queryAdapter
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
     >>> authorization = queryAdapter(foo, IAuthorization, 'launchpad.Edit')
     >>> print authorization.checkAccountAuthenticated(salgado.account)
     True
