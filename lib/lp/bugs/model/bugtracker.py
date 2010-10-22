@@ -815,8 +815,8 @@ class BugTrackerComponentGroup(Storm):
         else:
             return Store.of(self).find(
                 BugTrackerComponent,
-                (BugTrackerComponent.name == component_name and
-                 BugTrackerComponent.component_group == self.id)).one()
+                BugTrackerComponent.name == component_name,
+                BugTrackerComponent.component_group == self.id).one()
 
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker
