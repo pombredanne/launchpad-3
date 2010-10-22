@@ -66,4 +66,3 @@ class FeatureFixture(Fixture):
         controller = FeatureController(lambda _: True, rule_source)
         per_thread.features = controller
         self.addCleanup(setattr, per_thread, 'features', original_controller)
-
