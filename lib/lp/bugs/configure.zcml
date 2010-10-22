@@ -369,7 +369,6 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
-                    component_groups
                     contactdetails
                     getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
