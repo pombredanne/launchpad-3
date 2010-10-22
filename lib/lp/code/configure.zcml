@@ -24,7 +24,12 @@
 
   <!-- Branch Merge Queues -->
   <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue" />
+    <require permission="zope.Public"
+             attributes="registrant owner name description configuration
+                         date_created branches" />
+    <require permission="launchpad.Edit"
+             attributes="setMergeQueueConfig"
+             set_attributes="owner name description configuration" />
   </class>
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
