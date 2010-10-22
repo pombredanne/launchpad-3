@@ -124,6 +124,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         store.add(package_build)
         return package_build
 
+    def destroySelf(self):
+        build_farm_job = self.build_farm_job
+        store = Store.of(self)
+        store.remove(self)
+        store.remove(build_farm_job)
+
     @property
     def current_component(self):
         """See `IPackageBuild`."""
