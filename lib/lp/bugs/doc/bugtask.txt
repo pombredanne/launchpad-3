@@ -41,8 +41,10 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -105,8 +107,8 @@ The created bugtasks are guaranteed to implement the correct interface.
 
 == Bug Task Targets ==
 
-    >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
     >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+    >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
 
 The "target" of an IBugTask can be one of the items in the following
 list.
@@ -165,8 +167,8 @@ list.
 
   * a distroseries sourcepackage
 
-    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
@@ -825,8 +827,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from lp.bugs.interfaces.bug import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 

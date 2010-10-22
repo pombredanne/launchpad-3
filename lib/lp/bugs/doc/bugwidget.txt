@@ -3,8 +3,8 @@
 The BugWidget converts string bug ids to the corresponding bug object.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.fields import BugField
     >>> from canonical.widgets.bug import BugWidget
+    >>> from lp.services.fields import BugField
     >>> bug_field = BugField(__name__='bug', title=u'Bug')
     >>> request = LaunchpadTestRequest(form={'field.bug': '1'})
     >>> bug_widget = BugWidget(bug_field, request)

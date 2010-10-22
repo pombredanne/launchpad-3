@@ -39,8 +39,9 @@ are not included in the report.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugSet, ILaunchBag)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> login("foo.bar@canonical.com")
 

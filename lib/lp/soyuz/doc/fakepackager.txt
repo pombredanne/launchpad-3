@@ -234,9 +234,9 @@ enable uploads for it.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
