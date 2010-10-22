@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -24,9 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
-    ANONYMOUS,
     import_secret_test_key,
-    login,
     syncUpdate,
     )
 from canonical.launchpad.interfaces.launchpad import IPrivacy
@@ -77,7 +77,10 @@ from lp.code.tests.helpers import add_revision_to_branch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.factory import (
@@ -676,8 +679,10 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
-    def test_notifyOnCreate(self):
-        """Ensure that a notification is emitted on creation"""
+    def test_notifyOnCreate_needs_review(self):
+        # When a merge proposal is created needing review, the
+        # BranchMergeProposalNeedsReviewEvent is raised as well as the usual
+        # NewBranchMergeProposalEvent.
         source_branch = self.factory.makeProductBranch()
         target_branch = self.factory.makeProductBranch(
             product=source_branch.product)
@@ -685,8 +690,47 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         result, events = self.assertNotifies(
             [NewBranchMergeProposalEvent,
              BranchMergeProposalNeedsReviewEvent],
+            source_branch.addLandingTarget, registrant, target_branch,
+            needs_review=True)
+        self.assertEqual(result, events[0].object)
+
+    def test_notifyOnCreate_work_in_progress(self):
+        # When a merge proposal is created as work in progress, the
+        # BranchMergeProposalNeedsReviewEvent is not raised.
+        source_branch = self.factory.makeProductBranch()
+        target_branch = self.factory.makeProductBranch(
+            product=source_branch.product)
+        registrant = self.factory.makePerson()
+        result, events = self.assertNotifies(
+            [NewBranchMergeProposalEvent],
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, events[0].object)
+
+    def test_needs_review_from_work_in_progress(self):
+        # Transitioning from work in progress to needs review raises the
+        # BranchMergeProposalNeedsReviewEvent event.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        with person_logged_in(bmp.registrant):
+            self.assertNotifies(
+                [BranchMergeProposalNeedsReviewEvent],
+                bmp.setStatus, BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_needs_review_no_op(self):
+        # Calling needs review when in needs review does not notify.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with person_logged_in(bmp.registrant):
+            self.assertNoNotification(
+                bmp.setStatus, BranchMergeProposalStatus.NEEDS_REVIEW)
+
+    def test_needs_review_from_approved(self):
+        # Calling needs review when approved does not notify either.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        with person_logged_in(bmp.registrant):
+            self.assertNoNotification(
+                bmp.setStatus, BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_getNotificationRecipients(self):
         """Ensure that recipients can be added/removed with subscribe"""

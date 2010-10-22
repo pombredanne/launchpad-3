@@ -160,8 +160,8 @@ distroarchseries:
 
 Check that the source package was correctly imported:
 
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from canonical.launchpad.database import BinaryPackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                        version="1:1.5-4ubuntu1.2")

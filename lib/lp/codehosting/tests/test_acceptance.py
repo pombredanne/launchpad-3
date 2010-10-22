@@ -8,6 +8,9 @@ __metaclass__ = type
 import atexit
 import os
 import re
+import signal
+import subprocess
+import sys
 import unittest
 import xmlrpclib
 
@@ -51,9 +54,58 @@ from lp.registry.model.product import Product
 from lp.testing import TestCaseWithFactory
 
 
+class ForkingServerForTests(object):
+    """Map starting/stopping a LPForkingService with setUp() and tearDown()."""
+
+    def __init__(self):
+        self.process = None
+        self.socket_path = None
+
+    def setUp(self):
+        bzr_path = get_bzr_path()
+        BZR_PLUGIN_PATH = get_BZR_PLUGIN_PATH_for_subprocess()
+        env = os.environ.copy()
+        env['BZR_PLUGIN_PATH'] = BZR_PLUGIN_PATH
+        # TODO: We probably want to use a random disk path for
+        #       forking_daemon_socket, but we need to update config so that the
+        #       CodeHosting service can find it.
+        #       The main problem is that CodeHostingTac seems to start a tac
+        #       server directly from the disk configs, and doesn't use the
+        #       in-memory config. So we can't just override the memory
+        #       settings, we have to somehow pass it a new config-on-disk to
+        #       use.
+        self.socket_path = config.codehosting.forking_daemon_socket
+        process = subprocess.Popen(
+            [sys.executable, bzr_path, 'launchpad-forking-service',
+             '--path', self.socket_path,
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        self.process = process
+        # Wait for it to indicate it is running
+        # The first line should be "Preloading" indicating it is ready
+        preloading_line = process.stderr.readline()
+        # The next line is the "Listening on socket" line
+        socket_line = process.stderr.readline()
+        # Now it is ready
+
+    def tearDown(self):
+        # SIGTERM is the graceful exit request, potentially we could wait a bit
+        # and send something stronger?
+        if self.process is not None and self.process.poll() is None:
+            os.kill(self.process.pid, signal.SIGTERM)
+            self.process.wait()
+            self.process = None
+        # We want to make sure the socket path has been cleaned up, so that
+        # future runs can work correctly
+        if os.path.exists(self.socket_path):
+            # Should there be a warning/error here?
+            os.remove(self.socket_path)
+
+
+
 class SSHServerLayer(ZopelessAppServerLayer):
 
     _tac_handler = None
+    _forker_service = None
 
     @classmethod
     def getTacHandler(cls):
@@ -64,18 +116,27 @@ class SSHServerLayer(ZopelessAppServerLayer):
         return cls._tac_handler
 
     @classmethod
+    def getForker(cls):
+        if cls._forker_service is None:
+            cls._forker_service = ForkingServerForTests()
+        return cls._forker_service
+
+    @classmethod
     @profiled
     def setUp(cls):
         tac_handler = SSHServerLayer.getTacHandler()
         tac_handler.setUp()
         SSHServerLayer._reset()
         atexit.register(tac_handler.tearDown)
+        forker = SSHServerLayer.getForker()
+        forker.setUp()
 
     @classmethod
     @profiled
     def tearDown(cls):
         SSHServerLayer._reset()
         SSHServerLayer.getTacHandler().tearDown()
+        SSHServerLayer.getForker().tearDown()
 
     @classmethod
     @profiled

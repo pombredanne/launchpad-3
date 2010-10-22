@@ -734,35 +734,35 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addAttachment
+                    addChange
                     addChangeNotification
                     addCommentNotification
+                    addNomination
+                    addTask
                     addWatch
-                    removeWatch
+                    convertToQuestion
+                    expireNotifications
+                    findCvesInText
+                    linkAttachment
+                    linkBranch
                     linkCVE
                     linkCVEAndReturnNothing
-                    unlinkCVE
-                    findCvesInText
-                    newMessage
+                    linkHWSubmission
                     linkMessage
-                    addAttachment
-                    unsubscribeFromDupes
-                    subscribe
-                    unsubscribe
-                    addNomination
-                    expireNotifications
-                    setStatus
+                    markAsDuplicate
+                    markUserAffected
+                    newMessage
+                    removeWatch
                     setPrivate
                     setSecurityRelated
-                    convertToQuestion
-                    markUserAffected
-                    addTask
-                    addChange
-                    markAsDuplicate
-                    linkHWSubmission
-                    unlinkHWSubmission
-                    linkBranch
+                    setStatus
+                    subscribe
                     unlinkBranch
-                    linkAttachment
+                    unlinkCVE
+                    unlinkHWSubmission
+                    unsubscribe
+                    unsubscribeFromDupes
                     updateHeat"
                 set_attributes="
                     activity initial_message
