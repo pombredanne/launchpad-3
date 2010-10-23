@@ -9,14 +9,19 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.searchbuilder import any
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    )
 
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -26,7 +31,7 @@ from lp.testing import (
 class SearchTestBase:
     """A mixin class with tests useful for all targets and search variants."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(SearchTestBase, self).setUp()
@@ -40,7 +45,7 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(self.bugtasks)
         self.assertEqual(expected, search_result)
 
-    def test_private_bug_not_in_search_result_for_anonymous(self):
+    def test_private_bug_in_search_result(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
@@ -49,26 +54,146 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(self.bugtasks)[:-1]
         self.assertEqual(expected, search_result)
 
-    def test_private_bug_not_in_search_result_for_regular_user(self):
         # Private bugs are not included in search results for ordinary users.
-        with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
         search_result = self.runSearch(params)
         expected = self.resultValuesForBugtasks(self.bugtasks)[:-1]
         self.assertEqual(expected, search_result)
 
-    def test_private_bug_in_search_result_for_subscribed_user(self):
-        # Private bugs are included in search results for ordinary users
-        # which are subscribed to the bug.
+        # If the user is subscribed to the bug, it is included in the
+        # search result.
         user = self.factory.makePerson()
         with person_logged_in(self.owner):
-            self.bugtasks[-1].bug.setPrivate(True, self.owner)
             self.bugtasks[-1].bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
         search_result = self.runSearch(params)
         expected = self.resultValuesForBugtasks(self.bugtasks)
+        self.assertEqual(expected, search_result)
+
+        # Private bugs are included in search results for admins.
+        admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        params = self.getBugTaskSearchParams(user=admin)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks)
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_bug_reporter(self):
+        # Search results can be limited to bugs filed by a given person.
+        bugtask = self.bugtasks[0]
+        reporter = bugtask.bug.owner
+        params = self.getBugTaskSearchParams(
+            user=None, bug_reporter=reporter)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks([bugtask])
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_bug_commenter(self):
+        # Search results can be limited to bugs having a comment from a
+        # given person.
+        # Note that this does not include the bug description (which is
+        # stored as the first comment of a bug.) Hence, if we let the
+        # reporter of our first test bug comment on the second test bug,
+        # a search for bugs having comments from this person retruns only
+        # the second bug.
+        commenter = self.bugtasks[0].bug.owner
+        expected = self.bugtasks[1]
+        with person_logged_in(commenter):
+            expected.bug.newMessage(owner=commenter, content='a comment')
+        params = self.getBugTaskSearchParams(
+            user=None, bug_commenter=commenter)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks([expected])
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_person_affected_by_bug(self):
+        # Search results can be limited to bugs which affect a given person.
+        affected_user = self.factory.makePerson()
+        expected = self.bugtasks[0]
+        with person_logged_in(affected_user):
+            expected.bug.markUserAffected(affected_user)
+        params = self.getBugTaskSearchParams(
+            user=None, affected_user=affected_user)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks([expected])
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_bugtask_assignee(self):
+        # Search results can be limited to bugtask assigned to a given
+        # person.
+        assignee = self.factory.makePerson()
+        expected = self.bugtasks[0]
+        with person_logged_in(assignee):
+            expected.transitionToAssignee(assignee)
+        params = self.getBugTaskSearchParams(user=None, assignee=assignee)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks([expected])
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_bug_subscriber(self):
+        # Search results can be limited to bugs to which a given person
+        # is subscribed.
+        subscriber = self.factory.makePerson()
+        expected = self.bugtasks[0]
+        with person_logged_in(subscriber):
+            expected.bug.subscribe(subscriber, subscribed_by=subscriber)
+        params = self.getBugTaskSearchParams(user=None, subscriber=subscriber)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks([expected])
+        self.assertEqual(expected, search_result)
+
+    def test_search_by_bug_attachment(self):
+        # Search results can be limited to bugs having attachments of
+        # a given type.
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.addAttachment(
+                owner=self.owner, data='filedata', comment='a comment',
+                filename='file1.txt', is_patch=False)
+            self.bugtasks[1].bug.addAttachment(
+                owner=self.owner, data='filedata', comment='a comment',
+                filename='file1.txt', is_patch=True)
+        # We can search for bugs with non-patch attachments...
+        params = self.getBugTaskSearchParams(
+            user=None, attachmenttype=BugAttachmentType.UNSPECIFIED)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+        # ... for bugs with patches...
+        params = self.getBugTaskSearchParams(
+            user=None, attachmenttype=BugAttachmentType.PATCH)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
+        self.assertEqual(expected, search_result)
+        # and for bugs with patches or attachments
+        params = self.getBugTaskSearchParams(
+            user=None, attachmenttype=any(
+                BugAttachmentType.PATCH,
+                BugAttachmentType.UNSPECIFIED))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
+        self.assertEqual(expected, search_result)
+
+
+class ProductAndDistributionTests:
+    """Tests which are useful for distributions and products."""
+
+    def makeSeries(self):
+        """Return a series for the main bug target of this class."""
+        raise NotImplementedError
+
+    def test_search_by_bug_nomination(self):
+        # Search results can be limited to bugs nominated to a given
+        # series.
+        series1 = self.makeSeries()
+        series2 = self.makeSeries()
+        nominator = self.factory.makePerson()
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.addNomination(nominator, series1)
+            self.bugtasks[1].bug.addNomination(nominator, series2)
+        params = self.getBugTaskSearchParams(
+            user=None, nominated_for=series1)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
         self.assertEqual(expected, search_result)
 
 
@@ -123,7 +248,8 @@ class BugTargetWithBugSuperVisor:
             self.searchtarget.setBugSupervisor(supervisor, self.owner)
 
 
-class ProductTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
+class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
+                    BugTargetWithBugSuperVisor):
     """Use a product as the bug target."""
 
     def setUp(self):
@@ -140,6 +266,10 @@ class ProductTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
         params = BugTaskSearchParams(*args, **kw)
         params.setProduct(self.searchtarget)
         return params
+
+    def makeSeries(self):
+        """See `ProductAndDistributionTests`."""
+        return self.factory.makeProductSeries(product=self.searchtarget)
 
 
 class ProductSeriesTarget(BugTargetTestBase):
@@ -239,7 +369,8 @@ class MilestoneTarget(BugTargetTestBase):
                 bugtask.transitionToMilestone(self.searchtarget, self.owner)
 
 
-class DistributionTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
+class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
+                         BugTargetWithBugSuperVisor):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -256,6 +387,10 @@ class DistributionTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
         params = BugTaskSearchParams(*args, **kw)
         params.setDistribution(self.searchtarget)
         return params
+
+    def makeSeries(self):
+        """See `ProductAndDistributionTests`."""
+        return self.factory.makeDistroSeries(distribution=self.searchtarget)
 
 
 class DistroseriesTarget(BugTargetTestBase):

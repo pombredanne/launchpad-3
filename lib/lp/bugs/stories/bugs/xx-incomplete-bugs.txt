@@ -234,6 +234,16 @@ Debian does not use launchpad to track bugs, so its incomplete bugs
 cannot expire. No Privileges Person sets a Debian bug to Incomplete,
 and does not see the expiration notice.
 
+In order for this to work, the bug cannot be FIXRELEASED, which
+it is by default.  So we set the bug back to NEW.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> login('foo.bar@canonical.com')
+    >>> bug_8 = getUtility(IBugSet).get(8)
+    >>> bug_8.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.NEW, bug_8.bugtasks[0].distribution.owner)
+    >>> logout()
+
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8')
     >>> user_browser.getControl('Status').value = ['Incomplete']
