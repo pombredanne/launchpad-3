@@ -26,13 +26,11 @@ from zope.app.testing import ztapi
 from zope.component import getUtility
 import zope.testing.cleanup
 
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet,
-    IPersonSet,
-    )
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing._login import (
     login,
     logout,
