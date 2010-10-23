@@ -25,11 +25,7 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
 
         self.bug_tracker = self.factory.makeBugTracker()
         self.comp_group = self.factory.makeBugTrackerComponentGroup(
-            u'alpha',
-            self.bug_tracker)
-        self.component = self.factory.makeBugTrackerComponent(
-            u'Example',
-            self.comp_group)
+            u'alpha', self.bug_tracker)
 
     def _makeForm(self, sourcepackage):
         if sourcepackage is None:
@@ -42,8 +38,10 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
             }
 
     def test_view_attributes(self):
+        component = self.factory.makeBugTrackerComponent(
+            u'Example', self.comp_group)
         view = create_initialized_view(
-            self.component, name='+edit')
+            component, name='+edit')
         label = 'Link a distribution source package to the Example component'
         self.assertEqual(label, view.label)
         self.assertEqual(label, view.page_title)
@@ -51,23 +49,39 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         self.assertEqual(fields, view.field_names)
 
     def test_linking(self):
-        form = self._makeForm(self.owner)
+        component = self.factory.makeBugTrackerComponent(
+            u'Example', self.comp_group)
+        package = self.factory.makeDistributionSourcePackage()
+        self.assertIs(None, component.distro_source_package)
+
+        form = self._makeForm(component)
         view = create_initialized_view(
-            self.product, name='+securitycontact', form=form)
+            component, name='+edit', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.product.security_contact, self.owner)
+
+        self.assertEqual(component.distro_source_package, package)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         expected = (
             "Test:Example is now linked to the foobar source package in Ubuntu")
         self.assertEqual(expected, notifications.pop().message)
-        
+
     def test_cannot_doublelink_sourcepackages(self):
         # Two components try linking to same package
-        form = self._makeForm(self.owner)
+        component_a = self.factory.makeBugTrackerComponent(
+            u'a', self.comp_group)
+        component_b = self.factory.makeBugTrackerComponent(
+            u'b', self.comp_group)
+        package = self.factory.makeDistributionSourcePackage()
+
+        form = self._makeForm(component_a)
+        self.assertEqual(component_a.distro_source_package, package)
+
+        form = self._makeForm(component_b)
+        self.assertIs(None, component_b.distro_source_package)
         self.assertEqual(1, len(view.errors))
         expected = (
-            "foobar is already linked to an upstream bugtracker component")
+            " is already linked to an upstream bugtracker component")
         self.assertEqual(expected, view.errors.pop())
 
 def test_suite():
