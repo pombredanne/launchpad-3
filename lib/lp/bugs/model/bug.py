@@ -938,12 +938,12 @@ BugMessage""" % sqlvalues(self.id))
             # (person X is in the team X)
             TeamParticipation.person == person.id,
             # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""TeamParticipation.team = BugSubscription.person"""),
             # Join in the Person rows we want
             # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.edge.launchpad.net/storm/+bug/627137
+            # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
             ).order_by(Person.name),
@@ -1665,7 +1665,7 @@ BugMessage""" % sqlvalues(self.id))
                 self.date_made_private = None
 
             # XXX: This should be a bulk update. RBC 20100827
-            # bug=https://bugs.edge.launchpad.net/storm/+bug/625071
+            # bug=https://bugs.launchpad.net/storm/+bug/625071
             for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 

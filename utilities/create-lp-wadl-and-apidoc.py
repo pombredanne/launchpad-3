@@ -7,7 +7,7 @@
 
 Usage hint:
 
-% LPCONFIG="edge" utilities/create-lp-wadl.py launchpad-%(version)s.wadl
+% LPCONFIG="lpnet" utilities/create-lp-wadl.py launchpad-%(version)s.wadl
 """
 
 import _pythonpath

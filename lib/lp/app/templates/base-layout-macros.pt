@@ -427,7 +427,7 @@
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        (<a href="https://code.edge.launchpad.net/~launchpad-pqm/launchpad/stable/"
+        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
              >get the code</a>)
       </span>
     </div>
@@ -439,16 +439,6 @@
     <tal:site_message tal:content="structure site_message">
       This site is running pre-release code.
     </tal:site_message>
-    <tal:edge_only condition="is_edge">
-      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-         tal:condition="not:request/isRedirectInhibited">
-        Disable edge redirect.
-      </a>
-      <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-         tal:condition="request/isRedirectInhibited">
-        Enable edge redirect.
-      </a>
-    </tal:edge_only>
   </div>
 </metal:site-message>
 

@@ -31,25 +31,6 @@
           <tal:oops replace="structure view/oops_id_text" />)
         </p>
 
-        <div id="redirect_notice" style="display:none"
-             class="informational message">
-          <p>You are using beta features which means it is possible this problem
-          is specific to the beta program. You can disable beta features
-          as a temporary measure to see if it fixes the problem. </p>
-          <p><button onclick="setBetaRedirect(false)">Disable redirection
-          for 2 hours</button></p>
-        </div>
-        <tal:comment condition="nothing">
-          Can't use the 'is_edge' global because we don't use our page
-          macros here.
-        </tal:comment>
-        <script type="text/javascript">
-          if (document.location.hostname.match('edge.')) {
-            redirect_notice_div = document.getElementById('redirect_notice');
-            redirect_notice_div.style.display = "block";
-          };
-        </script>
-
         <tal:traceback replace="structure view/maybeShowTraceback" />
 
         <div class="related">
