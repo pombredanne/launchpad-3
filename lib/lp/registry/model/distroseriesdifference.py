@@ -41,7 +41,8 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.model.distroseriesdifferencecomment import (
-    DistroSeriesDifferenceComment)
+    DistroSeriesDifferenceComment,
+    )
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
