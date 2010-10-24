@@ -5,19 +5,11 @@ import unittest
 import transaction
 
 from canonical.launchpad.windmill.testing import (
-    constants,
-    lpuser,
-    )
+    constants, lpuser,)
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.service_usage_helpers import set_service_usage
 
-#       set_service_usage(
-#           self.product.name,
-#           codehosting_usage="EXTERNAL",
-#           bug_tracking_usage="LAUNCHPAD",
-#           answers_usage="EXTERNAL",
-#           translations_usage="NOT_APPLICABLE")
 
 class TestProductHiddenConfiguration(WindmillTestCase):
 
@@ -43,26 +35,54 @@ class TestProductHiddenConfiguration(WindmillTestCase):
 
         client.open(url=u'http://launchpad.dev:8085/hidden-configs')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        lpuser.FOO_BAR.ensure_login(client)
+        # We can only safe use this class selector in this test b/c there's
+        # only one collapsible element on this page.
         client.asserts.assertNotProperty(
-            id='configuration_links',    
-            validator='className|collapsed')
+            classname='collapseWrapper',    
+            validator='className|lazr-closed')
+
+        # When the Show link is clicked when it's open, it closes it.
+        client.click(link=u"Show configuration links")
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.asserts.assertProperty(
+            classname='collapseWrapper',    
+            validator='className|lazr-closed')
         
 
+    def test_configured_starts_collapsed(self):
+        """Test the Configuration links on a product.
 
-def _test_expander(client):
-    extra_opts_form = u"//div[@id='show-hide-configs']/div"
-    form_closed = u"%s[@class='collapsed']" % extra_opts_form
-    form_opened = u"%s[@class='expanded']" % extra_opts_form
+        This test ensures that, with Javascript enabled, the configuration
+        links start closed on a fully configured project, and show all
+        configuration links when opened.
 
-    # The collapsible area is collapsed and doesn't display.
-    client.asserts.assertNode(xpath=form_closed)
+        Additionally, on a not fully configured project, it starts by showing
+        the links, and can be closed.
+        """
+        set_service_usage(
+            self.product.name,
+            codehosting_usage="EXTERNAL",
+            bug_tracking_usage="LAUNCHPAD",
+            answers_usage="EXTERNAL",
+            translations_usage="NOT_APPLICABLE")
+        transaction.commit()
 
-    # Click to expand the extra options form.
-    client.click(link=u'Extra options')
+        client = self.client
 
-    # The collapsible area is expanded and does display.
-    client.asserts.assertNode(xpath=form_opened)
+        client.open(url=u'http://launchpad.dev:8085/hidden-configs')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.FOO_BAR.ensure_login(client)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.asserts.assertProperty(
+            classname='collapseWrapper',    
+            validator='className|lazr-closed')
+
+        client.click(link=u"Show configuration links")
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.asserts.assertProperty(
+            classname='collapseWrapper',    
+            validator='className|lazr-open')
 
 
 def test_suite():
