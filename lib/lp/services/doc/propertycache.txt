@@ -25,6 +25,11 @@ The property cache can be obtained with `get_property_cache()`.
 
     >>> cache = get_property_cache(foo)
 
+Calling `get_property_cache()` on a cache returns the cache:
+
+    >>> get_property_cache(cache) is cache
+    True
+
 Caches provide the `IPropertyCache` interface.
 
     >>> IPropertyCache.providedBy(cache)

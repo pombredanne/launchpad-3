@@ -19,17 +19,10 @@ __all__ = [
 
 from functools import partial
 
-from zope.component import (
-    adapter,
-    adapts,
-    getGlobalSiteManager,
-    )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
-from zope.schema import Object
 from zope.security.proxy import removeSecurityProxy
 
 
@@ -57,19 +50,6 @@ class IPropertyCache(Interface):
         """Iterate over the cached names."""
 
 
-class IPropertyCacheManager(Interface):
-
-    cache = Object(IPropertyCache)
-
-    def clear():
-        """Empty the cache."""
-
-
-# Register adapters with the global site manager so that they work even when
-# ZCML has not been executed.
-registerAdapter = getGlobalSiteManager().registerAdapter
-
-
 class DefaultPropertyCache:
     """A simple cache."""
 
@@ -91,56 +71,22 @@ class DefaultPropertyCache:
         return iter(self.__dict__)
 
 
-@adapter(Interface)
-@implementer(IPropertyCache)
-def get_default_cache(target):
-    """Adapter to obtain a `DefaultPropertyCache` for any object."""
-    naked_target = removeSecurityProxy(target)
-    try:
-        return naked_target._property_cache
-    except AttributeError:
-        naked_target._property_cache = DefaultPropertyCache()
-        return naked_target._property_cache
-
-registerAdapter(get_default_cache)
-
-
-class PropertyCacheManager:
-    """A simple `IPropertyCacheManager`.
-
-    Should work for any `IPropertyCache` instance.
-    """
-
-    implements(IPropertyCacheManager)
-    adapts(Interface)
-
-    def __init__(self, target):
-        self.cache = IPropertyCache(target)
-
-    def clear(self):
-        """See `IPropertyCacheManager`."""
-        for name in list(self.cache):
-            delattr(self.cache, name)
-
-registerAdapter(PropertyCacheManager)
+def get_property_cache(target):
+    """Obtain a `DefaultPropertyCache` for any object."""
+    if IPropertyCache.providedBy(target):
+        return target
+    else:
+        naked_target = removeSecurityProxy(target)
+        try:
+            return naked_target._property_cache
+        except AttributeError:
+            naked_target._property_cache = DefaultPropertyCache()
+            return naked_target._property_cache
 
 
-class DefaultPropertyCacheManager:
-    """A `IPropertyCacheManager` specifically for `DefaultPropertyCache`.
-
-    The implementation of `clear` is more efficient.
-    """
-
-    implements(IPropertyCacheManager)
-    adapts(DefaultPropertyCache)
-
-    def __init__(self, cache):
-        self.cache = cache
-
-    def clear(self):
-        self.cache.__dict__.clear()
-
-registerAdapter(DefaultPropertyCacheManager)
+def clear_property_cache(target):
+    """Clear the property cache."""
+    get_property_cache(target).__dict__.clear()
 
 
 class CachedProperty:
@@ -165,7 +111,7 @@ class CachedProperty:
     def __get__(self, instance, cls):
         if instance is None:
             return self
-        cache = IPropertyCache(instance)
+        cache = get_property_cache(instance)
         try:
             return getattr(cache, self.name)
         except AttributeError:
@@ -188,11 +134,12 @@ def cachedproperty(name_or_function):
         return CachedProperty(name=name, populate=populate)
 
 
-get_property_cache = get_default_cache
+class IPropertyCacheManager:
+    # XXX: GavinPanella 2010-09-02 bug=628762: This is a transitional change
+    # while propertycache moves away from adaptors altogether.
 
-def clear_property_cache(target):
-    if IPropertyCache.providedBy(target):
-        cache = target
-    else:
-        cache = get_property_cache(target)
-    cache.__dict__.clear()
+    def __init__(self, target):
+        self.target = target
+
+    def clear(self):
+        clear_property_cache(self.target)
