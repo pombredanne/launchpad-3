@@ -108,7 +108,7 @@ from lp.services.mail import stub
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
