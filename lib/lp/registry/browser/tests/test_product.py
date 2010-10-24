@@ -19,6 +19,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import create_view
 
 
@@ -146,8 +147,12 @@ class TestProductConfiguration(TestCaseWithFactory):
         view = create_view(self.product, '+get-involved')
         self.assertFalse(view.registration_done)
 
-        # Once all services are configured, the 
-        self._configure_all_services(self.product)
+        set_service_usage(
+            self.product.name,
+            codehosting_usage="EXTERNAL",
+            bug_tracking_usage="LAUNCHPAD",
+            answers_usage="EXTERNAL",
+            translations_usage="NOT_APPLICABLE")
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
             
