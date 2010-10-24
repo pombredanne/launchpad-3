@@ -13,7 +13,6 @@ __all__ = [
     'cachedproperty',
     'clear_property_cache',
     'get_property_cache',
-    'IPropertyCache',
     ]
 
 from functools import partial
