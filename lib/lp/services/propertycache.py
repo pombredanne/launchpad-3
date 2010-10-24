@@ -14,7 +14,6 @@ __all__ = [
     'clear_property_cache',
     'get_property_cache',
     'IPropertyCache',
-    'IPropertyCacheManager',
     ]
 
 from functools import partial
@@ -132,14 +131,3 @@ def cachedproperty(name_or_function):
         name = name_or_function.__name__
         populate = name_or_function
         return CachedProperty(name=name, populate=populate)
-
-
-class IPropertyCacheManager:
-    # XXX: GavinPanella 2010-09-02 bug=628762: This is a transitional change
-    # while propertycache moves away from adaptors altogether.
-
-    def __init__(self, target):
-        self.target = target
-
-    def clear(self):
-        clear_property_cache(self.target)

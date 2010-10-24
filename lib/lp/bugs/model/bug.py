@@ -189,8 +189,8 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
+    clear_property_cache,
     IPropertyCache,
-    IPropertyCacheManager,
     )
 
 
@@ -741,7 +741,7 @@ BugMessage""" % sqlvalues(self.id))
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         # Drop cached subscription info.
-        IPropertyCacheManager(self).clear()
+        clear_property_cache(self)
         if person is None:
             person = unsubscribed_by
 
