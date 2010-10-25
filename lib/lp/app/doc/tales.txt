@@ -113,8 +113,8 @@ Then distribution main archives (primary, partner and debug).
 
 And finally Copy archives.
 
-    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> copy = getUtility(IArchiveSet).new(
     ...     owner=mark, purpose=ArchivePurpose.COPY,
     ...     distribution=ubuntu, name='rebuild')
@@ -197,8 +197,8 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from lp.buildmaster.enums import BuildStatus
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
@@ -1181,8 +1181,8 @@ Test the 'fmt:' namespace where the context is a dict.
 
 Test the 'fmt:url' namespace for canonical urls.
 
-    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> from zope.interface import implements
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> class ObjectThatHasUrl:
     ...     implements(ICanonicalUrlData)
     ...     path = 'bonobo/saki'

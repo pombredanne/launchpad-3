@@ -49,10 +49,10 @@ Add a file alias to the productrelease.
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
-    >>> from datetime import datetime
-    >>> from pytz import UTC
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
+    >>> from datetime import datetime
+    >>> from pytz import UTC
     >>> def add_release_file(release, file_content, name, description,
     ...                      date_uploaded=None):
     ...     user = getUtility(ILaunchBag).user
@@ -132,8 +132,8 @@ The deleted release file will no longer appear in ProductRelease.files.
 
 Deleting files via a GET method is not allowed.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET'},
     ...     form={'delete_files': 'Delete Files'})

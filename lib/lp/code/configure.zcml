@@ -23,8 +23,20 @@
       name="code" />
 
   <!-- Branch Merge Queues -->
+  <securedutility
+     component="lp.code.model.branchmergequeue.BranchMergeQueue"
+     provides="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource">
+    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueueSource"/>
+
+  </securedutility>
+
   <class class="lp.code.model.branchmergequeue.BranchMergeQueue">
-    <allow interface="lp.code.interfaces.branchmergequeue.IBranchMergeQueue" />
+    <require permission="zope.Public"
+             attributes="registrant owner name description configuration
+                         date_created branches" />
+    <require permission="launchpad.Edit"
+             attributes="setMergeQueueConfig"
+             set_attributes="owner name description configuration" />
   </class>
 
   <class class="lp.code.model.codereviewvote.CodeReviewVoteReference">
@@ -277,14 +289,14 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
   </securedutility>
 
-  <class class="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob">
+  <class class="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJob"/>
   </class>
   <securedutility
-      component="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob"
-      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource">
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource"/>
+      component="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob"
+      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource"/>
   </securedutility>
 
   <securedutility
@@ -339,6 +351,10 @@
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
+  <subscriber
+      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
+           lp.code.interfaces.event.IBranchMergeProposalNeedsReviewEvent"
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_needs_review"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"

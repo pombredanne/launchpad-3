@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerAddView',
     'BugTrackerBreadcrumb',
+    'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -27,7 +28,6 @@ from zope.formlib import form
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
-from zope.security.interfaces import Unauthorized
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
@@ -51,6 +51,7 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     redirection,
+    stepthrough,
     structured,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -71,6 +72,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerSet,
     IRemoteBug,
+    IBugTrackerComponentGroup,
     )
 from lp.services.propertycache import cachedproperty
 
@@ -443,6 +445,18 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
+
+    @stepthrough("+components")
+    def component_groups(self, name):
+        return self.context.getRemoteComponentGroup(name)
+
+
+class BugTrackerComponentGroupNavigation(Navigation):
+
+    usedfor = IBugTrackerComponentGroup
+
+    def traverse(self, name):
+        return self.context.getComponent(name)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):

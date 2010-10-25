@@ -2342,9 +2342,11 @@ Foo Bar.
 Instead of passing a seqence of bug IDs, we can also specify one or
 more bug tags.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet)
     >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
 
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> bugtasks = bugtask_set.search(

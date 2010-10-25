@@ -17,8 +17,33 @@
              tal:condition="link/enabled"
              tal:content="structure link/render" />
       </div>
-
-      <tal:branchlisting content="structure branches/@@+branch-listing" />
+      <tal:no-branches
+        condition="not:context/has_branches">
+        <div id="no-branchtable">
+          <p>
+            <strong>Launchpad does not know where any of
+            <tal:project replace="context/displayname"/>'s
+            projects host their code.</strong>
+          </p>
+          <div tal:define="products context/getConfigurableProducts">
+          <p id="projectgroup-products"
+             tal:condition="products">
+            You can set up code hosting for the following projects that
+            are part of <tal:project replace="context/displayname"/>.
+          </p>
+            <ul id="product-list" tal:repeat="product products">
+              <li>
+                <a tal:attributes="href product/@@+code-index/configure_codehosting/fmt:url"
+                   tal:content="product/title" />
+              </li>  
+            </ul>
+        </div>
+        </div>
+      </tal:no-branches>
+      <tal:has-branches
+        condition="context/has_branches">
+        <tal:branchlisting content="structure branches/@@+branch-listing" />
+      </tal:has-branches>
     </div>
 
   </body>

@@ -13,9 +13,9 @@ export from.
     >>> from lp.bugs.externalbugtracker import Mantis
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> alsa_mantis = Mantis('http://example.com/')
 
     >>> verifyObject(IExternalBugTracker, alsa_mantis)
@@ -80,8 +80,8 @@ And have our special Mantis instance process them:
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(

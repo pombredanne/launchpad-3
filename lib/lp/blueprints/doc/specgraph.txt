@@ -256,8 +256,8 @@ tag when the render() method is called.
     >>> from zope.component import getMultiAdapter
     >>> from lp.blueprints.browser.specification import (
     ...     SpecificationTreeImageTag)
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
