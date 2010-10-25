@@ -31,13 +31,14 @@ path = config.librarian_server.root
 if config.librarian_server.upstream_host:
     upstreamHost = config.librarian_server.upstream_host
     upstreamPort = config.librarian_server.upstream_port
-    reactor.callWhenRunning(
-        log.msg,
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg,
         'Using upstream librarian http://%s:%d' %
         (upstreamHost, upstreamPort))
 else:
     upstreamHost = upstreamPort = None
-    reactor.callWhenRunning(log.msg, 'Not using upstream librarian')
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg, 'Not using upstream librarian')
 
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
