@@ -126,8 +126,3 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.publication import get_request_and_publication
-
-
-# XXX: GavinPanella 2010-10-24 bug=628762: Transitional change to allow this
-# branch to run against an unmodified shipit.
-IPropertyCache = get_property_cache
