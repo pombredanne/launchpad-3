@@ -161,6 +161,7 @@ from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
     get_bug_privacy_filter,
+    get_structural_subscribers,
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
@@ -176,9 +177,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import (
     Person,
@@ -986,8 +984,8 @@ BugMessage""" % sqlvalues(self.id))
 
         # Structural subscribers.
         also_notified_subscribers.update(
-            self.getStructuralSubscribers(
-                recipients=recipients, level=level))
+            get_structural_subscribers(
+                self.bugtasks, recipients=recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -998,58 +996,6 @@ BugMessage""" % sqlvalues(self.id))
         return sorted(
             (also_notified_subscribers - direct_subscribers),
             key=lambda x: removeSecurityProxy(x).displayname)
-
-    def getStructuralSubscribers(self, recipients=None, level=None):
-        """See `IBug`. """
-        query_arguments = []
-        for bugtask in self.bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-
-        if len(query_arguments) == 0:
-            return EmptyResultSet()
-
-        if level is None:
-            # If level is not specified, default to NOTHING so that all
-            # subscriptions are found. XXX: Perhaps this should go in
-            # getSubscriptionsForBugTask()?
-            level = BugNotificationLevel.NOTHING
-
-        # Build the query.
-        union = lambda left, right: left.union(right)
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, level)
-            for target, bugtask in query_arguments)
-        subscriptions = reduce(union, queries)
-
-        # Pull all the subscriptions in.
-        subscriptions = list(subscriptions)
-
-        # Prepare a query for the subscribers.
-        subscribers = Store.of(self).find(
-            Person, Person.id.is_in(
-                subscription.subscriberID
-                for subscription in subscriptions))
-
-        if recipients is not None:
-            # We need to process subscriptions, so pull all the subscribes
-            # into the cache, then update recipients with the subscriptions.
-            subscribers = list(subscribers)
-            for subscription in subscriptions:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-
-        return subscribers
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,

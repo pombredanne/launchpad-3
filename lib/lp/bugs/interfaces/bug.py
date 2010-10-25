@@ -493,12 +493,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         from duplicates.
         """
 
-    def getStructuralSubscribers(recipients=None, level=None):
-        """Return `IPerson`s subscribed to this bug's targets.
-
-        This takes into account bug subscription filters.
-        """
-
     def getSubscriptionsFromDuplicates():
         """Return IBugSubscriptions subscribed from dupes of this bug."""
 
