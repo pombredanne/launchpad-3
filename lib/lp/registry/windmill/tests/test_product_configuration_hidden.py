@@ -45,7 +45,7 @@ class TestProductHiddenConfiguration(WindmillTestCase):
             validator='className|lazr-closed')
 
         # When the Show link is clicked when it's open, it closes it.
-        client.click(link=u"Show configuration links")
+        client.click(link=u"Configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
             classname='collapseWrapper',
@@ -79,7 +79,7 @@ class TestProductHiddenConfiguration(WindmillTestCase):
             classname='collapseWrapper',
             validator='className|lazr-closed')
 
-        client.click(link=u"Show configuration links")
+        client.click(link=u"Configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
             classname='collapseWrapper',
