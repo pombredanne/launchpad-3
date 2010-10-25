@@ -2842,10 +2842,6 @@ class BugTaskSet:
 
     def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
         """See `IBugTaskSet`."""
-        # getStructuralSubscribers() is called from various sites, but needs
-        # bugtasks without security proxies.
-        bugtasks = [removeSecurityProxy(bugtask) for bugtask in bugtasks]
-
         query_arguments = []
         for bugtask in bugtasks:
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
@@ -2870,7 +2866,9 @@ class BugTaskSet:
             level = BugNotificationLevel.NOTHING
 
         # Build the query.
-        union = lambda left, right: left.union(right)
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
         queries = (
             target.getSubscriptionsForBugTask(bugtask, level)
             for target, bugtask in query_arguments)
