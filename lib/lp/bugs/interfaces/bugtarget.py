@@ -165,6 +165,11 @@ search_tasks_params_for_api_1_0 = {
             u"Search for bugs that have been modified since the given "
             "date."),
         required=False),
+    "created_since": Datetime(
+        title=_(
+            u"Search for bugs that have been created since the given "
+            "date."),
+        required=False),
     }
 search_tasks_params_for_api_devel = search_tasks_params_for_api_1_0.copy()
 search_tasks_params_for_api_devel["omit_targeted"] = copy_field(
@@ -226,7 +231,8 @@ class IHasBugs(Interface):
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    structural_subscriber=None, modified_since=None):
+                    structural_subscriber=None, modified_since=None,
+                    created_since=None):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object

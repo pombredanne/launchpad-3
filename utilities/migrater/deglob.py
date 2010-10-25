@@ -228,8 +228,39 @@ def normalize_all_doctest_imports():
             print "    %(lineno)4s: %(text)s" % line
 
 
+def update_multi_python_globs_to_interfaces():
+    root = 'lib'
+    types = r'tests'
+    pattern = r'from canonical\.launchpad\.interfaces import'
+    substitution = True
+    for summary in find_matches(
+        root, types, pattern, substitution=substitution,
+        extract_match=multiline_extract_match):
+        print "\n%(file_path)s" % summary
+        for line in summary['lines']:
+            print "    %(lineno)4s: %(text)s" % line
+
+
+def update_python_globs_to_interfaces():
+    root = 'lib'
+    types = r'tests'
+    globs = r'from \bcanonical\.launchpad\.interfaces import (\w+)$'
+    interfaces = get_interfaces(types=types, globs=globs)
+    interface_modules = get_interface_modules(interfaces)
+    glob_interface = r'\b(from canonical\.launchpad\.interfaces import %s)\b'
+    for interface, module_ in interface_modules.items():
+        pattern = glob_interface % interface
+        substitution = 'from %s import %s' % (module_, interface)
+        for summary in find_matches(
+            root, types, pattern, substitution=substitution):
+            print "\n%(file_path)s" % summary
+            for line in summary['lines']:
+                print "    %(lineno)4s: %(text)s" % line
+
+
 def main():
-    normalize_all_doctest_imports()
+    update_multi_python_globs_to_interfaces()
+    update_python_globs_to_interfaces()
 
 
 if __name__ == '__main__':

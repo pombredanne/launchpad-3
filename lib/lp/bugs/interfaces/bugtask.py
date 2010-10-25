@@ -1128,22 +1128,22 @@ class BugTaskSearchParams:
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
-                 statusexplanation=None, attachmenttype=None,
-                 orderby=None, omit_dupes=False, subscriber=None,
-                 component=None, pending_bugwatch_elsewhere=False,
-                 resolved_upstream=False, open_upstream=False,
-                 has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False, date_closed=None,
-                 affected_user=None, affects_me=False, hardware_bus=None,
-                 hardware_vendor_id=None, hardware_product_id=None,
-                 hardware_driver_name=None, hardware_driver_package_name=None,
+                 attachmenttype=None, orderby=None, omit_dupes=False,
+                 subscriber=None, component=None,
+                 pending_bugwatch_elsewhere=False, resolved_upstream=False,
+                 open_upstream=False, has_no_upstream_bugtask=False, tag=None,
+                 has_cve=False, bug_supervisor=None, bug_reporter=None,
+                 nominated_for=None, bug_commenter=None, omit_targeted=False,
+                 date_closed=None, affected_user=None, affects_me=False,
+                 hardware_bus=None, hardware_vendor_id=None,
+                 hardware_product_id=None, hardware_driver_name=None,
+                 hardware_driver_package_name=None,
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, structural_subscriber=None,
-                 modified_since=None):
+                 modified_since=None, created_since=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1154,7 +1154,6 @@ class BugTaskSearchParams:
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
         self.owner = owner
-        self.statusexplanation = statusexplanation
         self.attachmenttype = attachmenttype
         self.user = user
         self.orderby = orderby
@@ -1189,6 +1188,7 @@ class BugTaskSearchParams:
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
         self.modified_since = None
+        self.created_since = None
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1261,7 +1261,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None, modified_since=None):
+                       structural_subscriber=None, modified_since=None,
+                       created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1281,7 +1282,6 @@ class BugTaskSearchParams:
             from lp.bugs.interfaces.bugattachment import (
                 BugAttachmentType)
             search_params.attachmenttype = BugAttachmentType.PATCH
-            search_params.has_patch = has_patch
         search_params.has_cve = has_cve
         if zope_isinstance(tags, (list, tuple)):
             if len(tags) > 0:
@@ -1331,6 +1331,7 @@ class BugTaskSearchParams:
         search_params.linked_branches=linked_branches
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
+        search_params.created_since = created_since
 
         return search_params
 

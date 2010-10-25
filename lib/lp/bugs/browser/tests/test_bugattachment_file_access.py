@@ -14,25 +14,23 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser.librarian import (
-    StreamOrRedirectLibraryFileAliasView,
     SafeStreamOrRedirectLibraryFileAliasView,
+    StreamOrRedirectLibraryFileAliasView,
     )
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.bugs.browser.bugattachment import (
-    BugAttachmentFileNavigation,
-    )
+from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
+import lp.services.features
+from lp.services.features.flags import NullFeatureController
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-import lp.services.features
-from lp.services.features.flags import NullFeatureController
 
 
 class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
