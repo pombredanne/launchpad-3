@@ -104,13 +104,12 @@ The cache can be cleared with `clear_property_cache()`.
     >>> list(cache)
     []
 
-The property cache for an object can be cleared by passing in the
-object to `clear_property_cache()`.
+For convenience, the property cache for an object can also be cleared
+by passing the object itself into `clear_property_cache()`.
 
     >>> cache.bar = 123
-    >>> cache.baz = 456
-    >>> sorted(cache)
-    ['bar', 'baz']
+    >>> list(cache)
+    ['bar']
 
     >>> clear_property_cache(foo)
     >>> list(cache)
