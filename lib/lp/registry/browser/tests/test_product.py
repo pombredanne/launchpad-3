@@ -113,29 +113,6 @@ class TestProductConfiguration(TestCaseWithFactory):
         super(TestProductConfiguration, self).setUp()
         self.product = self.factory.makeProduct()
 
-    def _configure_all_services(self, product):
-        # Sets all the service usage enums for a product.
-        # This doesn't set them all to LAUNCHPAD because a service should
-        # be considered configured as long as they're not UNKNOWN.
-        naked_product = removeSecurityProxy(product)
-
-        #codehosting_usage
-        branch = self.factory.makeProductBranch(product=product)
-        product_series = self.factory.makeProductSeries(
-            product=product,
-            branch=branch)
-        naked_product.development_focus = product_series
-
-        #bug_tracking_usage
-        bugtracker = self.factory.makeBugTracker()
-        naked_product.bugtracker = bugtracker
-
-        #translations_usage
-        naked_product.translations_usage = ServiceUsage.LAUNCHPAD
-
-        #answers_usage
-        naked_product.answers_usage = ServiceUsage.EXTERNAL
-
     def test_registration_not_done(self):
         # The registration done property on the product index view
         # tells you if all the configuration work is done, based on
