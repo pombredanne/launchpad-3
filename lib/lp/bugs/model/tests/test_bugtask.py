@@ -63,7 +63,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import (
+    is_security_proxied_or_harmless,
+    LaunchpadObjectFactory,
+    )
 from lp.testing.matchers import StartsWith
 
 
@@ -1296,12 +1299,19 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product)
         return product, bug
 
+    def getStructuralSubscribers(self, bugtasks, *args, **kwargs):
+        # Call IBugTaskSet.getStructuralSubscribers() and check that the
+        # result is security proxied.
+        result = getUtility(IBugTaskSet).getStructuralSubscribers(
+            bugtasks, *args, **kwargs)
+        self.assertTrue(is_security_proxied_or_harmless(result))
+        return result
+
     def test_getStructuralSubscribers_no_subscribers(self):
         # If there are no subscribers for any of the bug's targets then no
         # subscribers will be returned by getStructuralSubscribers().
         product, bug = self.make_product_with_bug()
-        bug_task_set = getUtility(IBugTaskSet)
-        subscribers = bug_task_set.getStructuralSubscribers(bug.bugtasks)
+        subscribers = self.getStructuralSubscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
         self.assertEqual([], list(subscribers))
 
@@ -1311,10 +1321,9 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
-        bug_task_set = getUtility(IBugTaskSet)
         self.assertEqual(
             [subscriber], list(
-                bug_task_set.getStructuralSubscribers(bug.bugtasks)))
+                self.getStructuralSubscribers(bug.bugtasks)))
 
     def test_getStructuralSubscribers_multiple_targets(self):
         # Subscribers for any of the bug's targets are returned.
@@ -1332,8 +1341,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product1)
         bug.addTask(actor, product2)
 
-        bug_task_set = getUtility(IBugTaskSet)
-        subscribers = bug_task_set.getStructuralSubscribers(bug.bugtasks)
+        subscribers = self.getStructuralSubscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
         self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
 
@@ -1345,8 +1353,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
         recipients = BugNotificationRecipients()
-        bug_task_set = getUtility(IBugTaskSet)
-        subscribers = bug_task_set.getStructuralSubscribers(
+        subscribers = self.getStructuralSubscribers(
             bug.bugtasks, recipients=recipients)
         # The return value is a list only when populating recipients.
         self.assertIsInstance(subscribers, list)
@@ -1365,15 +1372,14 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         product, bug = self.make_product_with_bug()
         subscription = product.addBugSubscription(subscriber, subscriber)
         subscription.bug_notification_level = BugNotificationLevel.METADATA
-        bug_task_set = getUtility(IBugTaskSet)
         self.assertEqual(
             [subscriber], list(
-                bug_task_set.getStructuralSubscribers(
+                self.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.METADATA)))
         subscription.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [], list(
-                bug_task_set.getStructuralSubscribers(
+                self.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
 
 
