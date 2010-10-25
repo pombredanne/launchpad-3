@@ -189,8 +189,8 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
-    IPropertyCacheManager,
+    clear_property_cache,
+    get_property_cache,
     )
 
 
@@ -483,7 +483,7 @@ class Bug(SQLBase):
             for message in messages:
                 if message.id not in chunk_map:
                     continue
-                cache = IPropertyCache(message)
+                cache = get_property_cache(message)
                 cache.text_contents = Message.chunks_text(
                     chunk_map[message.id])
         def eager_load(rows, slice_info):
@@ -741,7 +741,7 @@ BugMessage""" % sqlvalues(self.id))
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
         # Drop cached subscription info.
-        IPropertyCacheManager(self).clear()
+        clear_property_cache(self)
         if person is None:
             person = unsubscribed_by
 
@@ -763,7 +763,7 @@ BugMessage""" % sqlvalues(self.id))
                 # disabled see the change.
                 store.flush()
                 self.updateHeat()
-                del IPropertyCache(self)._known_viewers
+                del get_property_cache(self)._known_viewers
                 return
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
@@ -1426,7 +1426,7 @@ BugMessage""" % sqlvalues(self.id))
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
-        IPropertyCache(self)._question_from_bug = question
+        get_property_cache(self)._question_from_bug = question
 
         notify(BugBecameQuestionEvent(self, question, person))
         return question
@@ -1761,7 +1761,7 @@ BugMessage""" % sqlvalues(self.id))
         # and insert the new ones.
         new_tags = set([tag.lower() for tag in tags])
         old_tags = set(self.tags)
-        del IPropertyCache(self)._cached_tags
+        del get_property_cache(self)._cached_tags
         added_tags = new_tags.difference(old_tags)
         removed_tags = old_tags.difference(new_tags)
         for removed_tag in removed_tags:
@@ -2012,7 +2012,7 @@ BugMessage""" % sqlvalues(self.id))
             # will be found without a query when dereferenced.
             indexed_message = message_to_indexed.get(attachment._messageID)
             if indexed_message is not None:
-                IPropertyCache(attachment).message = indexed_message
+                get_property_cache(attachment).message = indexed_message
             return attachment
         rawresults = self._attachments_query()
         return DecoratedResultSet(rawresults, set_indexed_message)
