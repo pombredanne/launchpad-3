@@ -13,7 +13,10 @@ import os.path
 import re
 import subprocess
 from textwrap import dedent
+import sqlite3
+import tempfile
 import time
+import warnings
 
 import numpy
 import simplejson as json
@@ -24,6 +27,9 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
 
+# We don't care about conversion to nan, they are expected.
+warnings.filterwarnings(
+    'ignore', '.*converting a masked element to nan.', UserWarning)
 
 class Request(zc.zservertracelog.tracereport.Request):
     url = None
@@ -52,19 +58,14 @@ class Category:
 
     Requests belong to a Category if the URL matches a regular expression.
     """
-    def __init__(self, title, regexp, timeout):
+    def __init__(self, title, regexp):
         self.title = title
         self.regexp = regexp
         self._compiled_regexp = re.compile(regexp, re.I | re.X)
-        self.times = Times(timeout)
 
-    def add(self, request):
-        """Add a request to a Category if it belongs.
-
-        Does nothing if the request does not belong in this Category.
-        """
-        if self._compiled_regexp.search(request.url) is not None:
-            self.times.add(request)
+    def match(self, request):
+        """Return true when the request match this category."""
+        return self._compiled_regexp.search(request.url) is not None
 
     def __cmp__(self, other):
         return cmp(self.title.lower(), other.title.lower())
@@ -93,37 +94,11 @@ class Stats:
     mean_sqlstatements = 0
     median_sqlstatements = 0
     std_sqlstatements = 0
-    var_sqlstatements = 0
 
-empty_stats = Stats() # Singleton.
+    def __init__(self, times, timeout):
+        """Compute the stats based on times.
 
-
-class Times:
-    """Collection of request times."""
-    def __init__(self, timeout):
-        self.total_hits = 0
-        self.total_time = 0
-        self.request_times = []
-        self.sql_statements = []
-        self.sql_times = []
-        self.histogram_width = int(1.5*timeout)
-
-    def add(self, request):
-        """Add the application time from the request to the collection."""
-        self.total_hits += 1
-        self.total_time += request.app_seconds
-        self.request_times.append(request.app_seconds)
-        if request.sql_statements is not None:
-            self.sql_statements.append(request.sql_statements)
-        if request.sql_seconds is not None:
-            self.sql_times.append(request.sql_seconds)
-
-    _stats = None
-
-    def stats(self):
-        """Generate statistics about our request times.
-
-        Returns a `Stats` instance.
+        Times is a list of (app_time, sql_statements, sql_times).
 
         The histogram is a list of request counts per 1 second bucket.
         ie. histogram[0] contains the number of requests taking between 0 and
@@ -131,62 +106,204 @@ class Times:
         1 and 2 seconds etc. histogram is None if there are no requests in
         this Category.
         """
-        if not self.total_hits:
-            return empty_stats
+        if not times:
+            return
 
-        if self._stats is not None:
-            return self._stats
+        self.total_hits = len(times)
 
-        stats = Stats()
+        # Ignore missing values (-1) in computation.
+        times_array = numpy.ma.masked_values(
+            numpy.asarray(times, dtype=numpy.float32), -1.)
 
-        stats.total_hits = self.total_hits
+        self.total_time, self.total_sqlstatements, self.total_sqltime = (
+            times_array.sum(axis=0))
 
-        # Time stats
-        array = numpy.asarray(self.request_times, numpy.float32)
-        stats.total_time = numpy.sum(array)
-        stats.mean = numpy.mean(array)
-        stats.median = numpy.median(array)
-        stats.std = numpy.std(array)
+        self.mean, self.mean_sqlstatements, self.mean_sqltime = (
+            times_array.mean(axis=0))
+
+        # We need to explicitely cast the masked array to float32
+        # when computing median() or std() because the implementation
+        # is buggy for masked array of object.
+        self.median, self.median_sqlstatements, self.median_sqltime = (
+            numpy.median(times_array, axis=0))
+
+        self.std, self.std_sqlstatements, self.std_sqltime = (
+            numpy.std(times_array, axis=0))
+
         # This is an approximation which may not be true: we don't know if we
         # have a std distribution or not. We could just find the 99th
         # percentile by counting. Shock. Horror; however this appears pretty
         # good based on eyeballing things so far - once we're down in the 2-3
         # second range for everything we may want to revisit.
-        stats.ninetyninth_percentile_time = stats.mean + stats.std*3
-        # Clip in-place.
-        numpy.clip(array, 0, self.histogram_width, out=array)
+        self.ninetyninth_percentile_time = self.mean + self.std*3
+
+        histogram_width = int(timeout*1.5)
+        histogram_times = numpy.clip(times_array[:,0], 0, histogram_width)
         histogram = numpy.histogram(
-            array, normed=True,
-            range=(0, self.histogram_width), bins=self.histogram_width)
-        stats.histogram = zip(histogram[1], histogram[0])
+            histogram_times, normed=True, range=(0, histogram_width),
+            bins=histogram_width)
+        self.histogram = zip(histogram[1], histogram[0])
 
-        # SQL time stats.
-        array = numpy.asarray(self.sql_times, numpy.float32)
-        stats.total_sqltime = numpy.sum(array)
-        stats.mean_sqltime = numpy.mean(array)
-        stats.median_sqltime = numpy.median(array)
-        stats.std_sqltime = numpy.std(array)
 
-        # SQL query count.
-        array = numpy.asarray(self.sql_statements, numpy.int)
-        stats.total_sqlstatements = int(numpy.sum(array))
-        stats.mean_sqlstatements = numpy.mean(array)
-        stats.median_sqlstatements = numpy.median(array)
-        stats.std_sqlstatements = numpy.std(array)
+class SQLiteRequestTimes:
+    """SQLite-based request times computation."""
 
-        # Cache for next invocation.
-        self._stats = stats
-        return stats
+    def __init__(self, categories, options):
+        if options.db_file is None:
+            fd, self.filename = tempfile.mkstemp(suffix='.db', prefix='ppr')
+            os.close(fd)
+        else:
+            self.filename = options.db_file
+        self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
+        log.debug('Using request database %s' % self.filename)
+        # Some speed optimization.
+        self.con.execute('PRAGMA synchronous = off')
+        self.con.execute('PRAGMA journal_mode = off')
 
-    def __str__(self):
-        results = self.stats()
-        total, mean, median, std, histogram = results
-        hstr = " ".join("%2d" % v for v in histogram)
-        return "%2.2f %2.2f %2.2f %s" % (
-            total, mean, median, std, hstr)
+        self.categories = categories
+        self.store_all_request = options.pageids or options.top_urls
+        self.timeout = options.timeout
+        self.cur = self.con.cursor()
 
-    def __cmp__(self, b):
-        return cmp(self.total_time, b.total_time)
+        # Create the tables, ignore errors about them being already present.
+        try:
+            self.cur.execute('''
+                CREATE TABLE category_request (
+                    category INTEGER,
+                    time REAL,
+                    sql_statements INTEGER,
+                    sql_time REAL)
+                    ''');
+        except sqlite3.OperationalError, e:
+            if 'already exists' in str(e):
+                pass
+            else:
+                raise
+
+        if self.store_all_request:
+            try:
+                self.cur.execute('''
+                    CREATE TABLE request (
+                        pageid TEXT,
+                        url TEXT,
+                        time REAL,
+                        sql_statements INTEGER,
+                        sql_time REAL)
+                        ''');
+            except sqlite3.OperationalError, e:
+                if 'already exists' in str(e):
+                    pass
+                else:
+                    raise
+
+    def add_request(self, request):
+        """Add a request to the cache."""
+        sql_statements = request.sql_statements
+        sql_seconds = request.sql_seconds
+
+        # Store missing value as -1, as it makes dealing with those
+        # easier with numpy.
+        if sql_statements is None:
+            sql_statements = -1
+        if sql_seconds is None:
+            sql_seconds = -1
+        for idx, category in enumerate(self.categories):
+            if category.match(request):
+                self.con.execute(
+                    "INSERT INTO category_request VALUES (?,?,?,?)",
+                    (idx, request.app_seconds, sql_statements, sql_seconds))
+
+        if self.store_all_request:
+            pageid = request.pageid or 'Unknown'
+            self.con.execute(
+                "INSERT INTO request VALUES (?,?,?,?,?)", 
+                (pageid, request.url, request.app_seconds, sql_statements,
+                    sql_seconds))
+
+    def commit(self):
+        """Call commit on the underlying connection."""
+        self.con.commit()
+
+    def get_category_times(self):
+        """Return the times for each category."""
+        category_query = 'SELECT * FROM category_request ORDER BY category'
+
+        empty_stats = Stats([], 0)
+        categories = dict(self.get_times(category_query))
+        return [
+            (category, categories.get(idx, empty_stats))
+            for idx, category in enumerate(self.categories)]
+
+    def get_top_urls_times(self, top_n):
+        """Return the times for the Top URL by total time"""
+        top_url_query = '''
+            SELECT url, time, sql_statements, sql_time
+            FROM request WHERE url IN (
+                SELECT url FROM (SELECT url, sum(time) FROM request
+                    GROUP BY url
+                    ORDER BY sum(time) DESC
+                    LIMIT %d))
+            ORDER BY url
+        ''' % top_n
+        # Sort the result by total time
+        return sorted(
+            self.get_times(top_url_query), key=lambda x: x[1].total_time,
+            reverse=True)
+
+    def get_pageid_times(self):
+        """Return the times for the pageids."""
+        pageid_query = '''
+            SELECT pageid, time, sql_statements, sql_time
+            FROM request
+            ORDER BY pageid
+        '''
+        return self.get_times(pageid_query)
+
+    def get_times(self, query):
+        """Return a list of key, stats based on the query.
+
+        The query should return rows of the form:
+            [key, app_time, sql_statements, sql_times]
+
+        And should be sorted on key.
+        """
+        times = []
+        current_key = None
+        results = []
+        self.cur.execute(query)
+        while True:
+            rows = self.cur.fetchmany()
+            if len(rows) == 0:
+                break
+            for row in rows:
+                # We are encountering a new group...
+                if row[0] != current_key:
+                    # Compute the stats of the previous group
+                    if current_key != None:
+                        results.append(
+                            (current_key, Stats(times, self.timeout)))
+                    # Initialize the new group.
+                    current_key = row[0]
+                    times = []
+
+                times.append(row[1:])
+        # Compute the stats of the last group
+        if current_key != None:
+            results.append((current_key, Stats(times, self.timeout)))
+
+        return results
+
+    def close(self, remove=False):
+        """Close the SQLite connection.
+
+        :param remove: If true, the DB file will be removed.
+        """
+        self.con.close()
+        if remove:
+            log.debug('Deleting request database.')
+            os.unlink(self.filename)
+        else:
+            log.debug('Keeping request database %s.' % self.filename)
 
 
 def main():
@@ -225,13 +342,17 @@ def main():
         # Default to 12: the staging timeout.
         default=12, type="int",
         help="The configured timeout value : determines high risk page ids.")
+    parser.add_option(
+        "--db-file", dest="db_file",
+        default=None, metavar="FILE",
+        help="Do not parse the records, generate reports from the DB file.")
 
     options, args = parser.parse_args()
 
     if not os.path.isdir(options.directory):
         parser.error("Directory %s does not exist" % options.directory)
 
-    if len(args) == 0:
+    if len(args) == 0 and options.db_file is None:
         parser.error("At least one zserver tracelog file must be provided")
 
     if options.from_ts is not None and options.until_ts is not None:
@@ -256,7 +377,7 @@ def main():
     for option in script_config.options('categories'):
         regexp = script_config.get('categories', option)
         try:
-            categories.append(Category(option, regexp, options.timeout))
+            categories.append(Category(option, regexp))
         except sre_constants.error, x:
             log.fatal("Unable to compile regexp %r (%s)" % (regexp, x))
             return 1
@@ -265,18 +386,23 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    pageid_times = {}
-    url_times = {}
+    times = SQLiteRequestTimes(categories, options)
 
-    parse(args, categories, pageid_times, url_times, options)
+    if len(args) > 0:
+        parse(args, times, options)
+        times.commit()
 
-    # Truncate the URL times to the top N.
+    log.debug('Generating category statistics...')
+    category_times = times.get_category_times()
+
+    pageid_times = []
+    url_times= []
     if options.top_urls:
-        sorted_urls = sorted(
-            ((times, url) for url, times in url_times.items()
-                if times.total_hits > 0), reverse=True)
-        url_times = [(url, times)
-            for times, url in sorted_urls[:options.top_urls]]
+        log.debug('Generating top %d urls statistics...' % options.top_urls)
+        url_times = times.get_top_urls_times(options.top_urls)
+    if options.pageids:
+        log.debug('Generating pageid statistics...')
+        pageid_times = times.get_pageid_times()
 
     def _report_filename(filename):
         return os.path.join(options.directory, filename)
@@ -285,7 +411,7 @@ def main():
     if options.categories:
         report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), categories, None, None)
+        html_report(open(report_filename, 'w'), category_times, None, None)
 
     # Pageid only report.
     if options.pageids:
@@ -303,7 +429,8 @@ def main():
     if options.categories and options.pageids:
         report_filename = _report_filename('combined.html')
         html_report(
-            open(report_filename, 'w'), categories, pageid_times, url_times)
+            open(report_filename, 'w'),
+            category_times, pageid_times, url_times)
 
     # Report of likely timeout candidates
     report_filename = _report_filename('timeout-candidates.html')
@@ -312,6 +439,7 @@ def main():
         open(report_filename, 'w'), None, pageid_times, None,
         options.timeout - 2)
 
+    times.close(options.db_file is None)
     return 0
 
 
@@ -353,7 +481,7 @@ def parse_timestamp(ts_string):
         *(int(elem) for elem in match.groups() if elem is not None))
 
 
-def parse(tracefiles, categories, pageid_times, url_times, options):
+def parse(tracefiles, times, options):
     requests = {}
     total_requests = 0
     for tracefile in tracefiles:
@@ -434,35 +562,7 @@ def parse(tracefiles, categories, pageid_times, url_times, options):
                         log.debug("Parsed %d requests", total_requests)
 
                     # Add the request to any matching categories.
-                    if options.categories:
-                        for category in categories:
-                            category.add(request)
-
-                    # Add the request to the times for that pageid.
-                    if options.pageids:
-                        pageid = request.pageid
-                        try:
-                            times = pageid_times[pageid]
-                        except KeyError:
-                            times = Times(options.timeout)
-                            pageid_times[pageid] = times
-                        times.add(request)
-
-                    # Add the request to the times for that URL.
-                    if options.top_urls:
-                        url = request.url
-                        # Hack to remove opstats from top N report. This
-                        # should go into a config file if we end up with
-                        # more pages that need to be ignored because
-                        # they are just noise.
-                        if not (url is None or url.endswith('+opstats')):
-                            try:
-                                times = url_times[url]
-                            except KeyError:
-                                times = Times(options.timeout)
-                                url_times[url] = times
-                            times.add(request)
-
+                    times.add_request(request)
                 else:
                     raise MalformedLine('Unknown record type %s', record_type)
             except MalformedLine, x:
@@ -489,12 +589,12 @@ def parse_extension_record(request, args):
 
 
 def html_report(
-    outf, categories, pageid_times, url_times,
+    outf, category_times, pageid_times, url_times,
     ninetyninth_percentile_threshold=None):
     """Write an html report to outf.
 
     :param outf: A file object to write the report to.
-    :param categories: Categories to report.
+    :param category_times: The time statistics for categories.
     :param pageid_times: The time statistics for pageids.
     :param url_times: The time statistics for the top XXX urls.
     :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
@@ -586,8 +686,7 @@ def html_report(
     # Store our generated histograms to output Javascript later.
     histograms = []
 
-    def handle_times(html_title, times):
-        stats = times.stats()
+    def handle_times(html_title, stats):
         histograms.append(stats.histogram)
         print >> outf, dedent("""\
             <tr>
@@ -606,7 +705,7 @@ def html_report(
             <td class="numeric std_sqltime">%.2f</td>
             <td class="numeric median_sqltime">%.2f</td>
 
-            <td class="numeric total_sqlstatements">%d</td>
+            <td class="numeric total_sqlstatements">%.f</td>
             <td class="numeric mean_sqlstatements">%.2f</td>
             <td class="numeric std_sqlstatements">%.2f</td>
             <td class="numeric median_sqlstatements">%.2f</td>
@@ -624,7 +723,7 @@ def html_report(
 
     # Table of contents
     print >> outf, '<ol>'
-    if categories:
+    if category_times:
         print >> outf, '<li><a href="#catrep">Category Report</a></li>'
     if pageid_times:
         print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
@@ -632,22 +731,21 @@ def html_report(
         print >> outf, '<li><a href="#topurlrep">Top URL Report</a></li>'
     print >> outf, '</ol>'
 
-    if categories:
+    if category_times:
         print >> outf, '<h2 id="catrep">Category Report</h2>'
         print >> outf, table_header
-        for category in categories:
+        for category, times in category_times:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
                 html_quote(category.title), html_quote(category.regexp))
-            handle_times(html_title, category.times)
+            handle_times(html_title, times)
         print >> outf, table_footer
 
     if pageid_times:
         print >> outf, '<h2 id="pageidrep">Pageid Report</h2>'
         print >> outf, table_header
-        for pageid, times in sorted(pageid_times.items()):
-            pageid = pageid or 'None'
+        for pageid, times in pageid_times:
             if (ninetyninth_percentile_threshold is not None and
-                (times.stats().ninetyninth_percentile_time <
+                (times.ninetyninth_percentile_time <
                 ninetyninth_percentile_threshold)):
                 continue
             handle_times(html_quote(pageid), times)
