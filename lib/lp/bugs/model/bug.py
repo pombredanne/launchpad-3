@@ -1487,7 +1487,6 @@ BugMessage""" % sqlvalues(self.id))
             assert IProductSeries.providedBy(target)
             productseries = target
 
-        admins = getUtility(ILaunchpadCelebrities).admin
         if not (check_permission("launchpad.BugSupervisor", target) or
                 check_permission("launchpad.Driver", target)):
             raise NominationError(
