@@ -11,7 +11,6 @@ from lazr.lifecycle.snapshot import Snapshot
 from storm.store import ResultSet
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -1295,9 +1294,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
     def make_product_with_bug(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
-        # getStructuralSubscribers() is intended for use only in model code,
-        # and will not work if the bugtasks passed in are security proxied.
-        return product, removeSecurityProxy(bug)
+        return product, bug
 
     def test_getStructuralSubscribers_no_subscribers(self):
         # If there are no subscribers for any of the bug's targets then no
@@ -1334,10 +1331,6 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
 
         bug = self.factory.makeBug(product=product1)
         bug.addTask(actor, product2)
-
-        # getStructuralSubscribers() is intended for use only in model code,
-        # and will not work if the bugtasks passed in are security proxied.
-        bug = removeSecurityProxy(bug)
 
         bug_task_set = getUtility(IBugTaskSet)
         subscribers = bug_task_set.getStructuralSubscribers(bug.bugtasks)
