@@ -24,6 +24,7 @@ from lp.soyuz.model.initialisedistroseriesjob import (
     InitialiseDistroSeriesJob,
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import Contains
 
@@ -101,7 +102,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
 
-    def test_cronscript(self):
+    def test_job(self):
         pf = self.factory.makeProcessorFamily()
         pf.addProcessor('x86', '', '')
         parent = self.factory.makeDistroSeries()
@@ -113,26 +114,13 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent_das.addOrUpdateChroot(lf)
         parent_das.supports_virtualized = True
         parent.nominatedarchindep = parent_das
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
         packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
         for package in packages.keys():
-            spn = self.factory.makeSourcePackageName(package)
-            spph = self.factory.makeSourcePackagePublishingHistory(
-                sourcepackagename=spn, version=packages[package],
-                distroseries=parent,
-                pocket=PackagePublishingPocket.RELEASE,
-                status=PackagePublishingStatus.PUBLISHED)
-            bpn = self.factory.makeBinaryPackageName(package)
-            build = self.factory.makeBinaryPackageBuild(
-                source_package_release=spph.sourcepackagerelease,
-                distroarchseries=parent_das,
-                status=BuildStatus.FULLYBUILT)
-            bpr = self.factory.makeBinaryPackageRelease(
-                binarypackagename=bpn, build=build,
-                version=packages[package])
-            self.factory.makeBinaryPackagePublishingHistory(
-                binarypackagerelease=bpr,
-                distroarchseries=parent_das,
-                pocket=PackagePublishingPocket.RELEASE,
+            publisher.getPubBinaries(
+                distroseries=parent, binaryname=package,
+                version=packages[package],
                 status=PackagePublishingStatus.PUBLISHED)
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', parent.owner,
@@ -141,11 +129,16 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries(parent_series=parent)
 
-        getUtility(IInitialiseDistroSeriesJobSource).create(child)
-        # Make sure everything hits the database, as the next bit is
-        # out-of-process
         transaction.commit()
+        self.layer.switchDbUser('initialisedistroseries')
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
 
+        job.run()
+        child.updatePackageCount()
+        self.assertEqual(parent.sourcecount, child.sourcecount)
+        self.assertEqual(parent.binarycount, child.binarycount)
+
+    def test_cronscript(self):
         script = os.path.join(
             config.root, 'cronscripts', 'initialise_distro_series.py')
         args = [sys.executable, script, '-v']
@@ -153,12 +146,3 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0)
-        self.assertThat(
-                stderr.split('\n'), Contains(
-                    "INFO    Ran 1 InitialiseDistroSeriesJob jobs."))
-        # Storm assumes all changes are made in-process
-        Store.of(child).invalidate()
-        # The child distroseries is now initialised
-        child.updatePackageCount()
-        self.assertEqual(parent.sourcecount, child.sourcecount)
-        self.assertEqual(parent.binarycount, child.binarycount)
