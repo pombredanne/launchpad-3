@@ -84,17 +84,20 @@ class TestBranchMergeQueue(TestCaseWithFactory):
         config = unicode(simplejson.dumps({
             'test': 'make test'}))
 
-        queue.setMergeQueueConfig(config)
+        with person_logged_in(queue.owner):
+            queue.setMergeQueueConfig(config)
 
         self.assertEqual(queue.configuration, config)
 
     def test_setMergeQueueConfig_invalid_json(self):
         """Test that invalid json can't be set as the config."""
         queue = self.factory.makeBranchMergeQueue()
-        self.assertRaises(
-            InvalidMergeQueueConfig,
-            queue.setMergeQueueConfig,
-            'abc')
+
+        with person_logged_in(queue.owner):
+            self.assertRaises(
+                InvalidMergeQueueConfig,
+                queue.setMergeQueueConfig,
+                'abc')
 
 
 class TestWebservice(TestCaseWithFactory):
