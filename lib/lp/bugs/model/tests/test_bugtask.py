@@ -1297,13 +1297,17 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def make_product_with_bug(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        # get_structural_subscribers() is intended for use only in model code,
+        # and will not work if the bugtasks passed in are security proxied.
+        return product, removeSecurityProxy(bug)
+
     def test_get_structural_subscribers_no_subscribers(self):
         # If there are no subscribers for any of the bug's targets then no
         # subscribers will be returned by get_structural_subscribers().
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        # This is model code; it does not expect to run through proxies.
-        bug = removeSecurityProxy(bug)
+        product, bug = self.make_product_with_bug()
         subscribers = get_structural_subscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
         self.assertEqual([], list(subscribers))
@@ -1312,11 +1316,8 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # Subscribers for any of the bug's targets are returned.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
-        product = self.factory.makeProduct()
+        product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=product)
-        # This is model code; it does not expect to run through proxies.
-        bug = removeSecurityProxy(bug)
         self.assertEqual(
             [subscriber], list(get_structural_subscribers(bug.bugtasks)))
 
@@ -1334,9 +1335,11 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         product2.addBugSubscription(subscriber2, subscriber2)
 
         bug = self.factory.makeBug(product=product1)
-        # This is model code; it does not expect to run through proxies.
-        bug = removeSecurityProxy(bug)
         bug.addTask(actor, product2)
+
+        # get_structural_subscribers() is intended for use only in model code,
+        # and will not work if the bugtasks passed in are security proxied.
+        bug = removeSecurityProxy(bug)
 
         subscribers = get_structural_subscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
@@ -1347,11 +1350,8 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # methods on a BugNotificationRecipients object.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
-        product = self.factory.makeProduct()
+        product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
-        bug = self.factory.makeBug(product=product)
-        # This is model code; it does not expect to run through proxies.
-        bug = removeSecurityProxy(bug)
         recipients = BugNotificationRecipients()
         subscribers = get_structural_subscribers(
             bug.bugtasks, recipients=recipients)
@@ -1369,12 +1369,9 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # get_structural_subscribers() respects the given level.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
-        product = self.factory.makeProduct()
+        product, bug = self.make_product_with_bug()
         subscription = product.addBugSubscription(subscriber, subscriber)
         subscription.bug_notification_level = BugNotificationLevel.METADATA
-        bug = self.factory.makeBug(product=product)
-        # This is model code; it does not expect to run through proxies.
-        bug = removeSecurityProxy(bug)
         self.assertEqual(
             [subscriber], list(
                 get_structural_subscribers(
