@@ -1,10 +1,12 @@
-= Team pages =
+Team pages
+==========
 
-== Home page ==
+Home page
+---------
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
     >>> from zope.component import getMultiAdapter
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> person_set = getUtility(IPersonSet)
 
 On a team home page, we show up to the latest five members who were approved
@@ -65,7 +67,8 @@ Posting malformed data to the team home page raises an error.
     form fields.
 
 
-== +map-portlet ==
++map-portlet
+------------
 
 The team profile page contain the location portlet that shows a map.
 
@@ -90,7 +93,8 @@ user to 'false' to indicate that small maps are not wanted.
     >>> team_view = create_initialized_view(
     ...     ubuntu_team, '+index', cookie=cookie)
 
-== +map ==
++map
+----
 
 A team's +map page will show a map with markers on the location of all
 members of that team.  That page also lists the local times of members.
@@ -192,7 +196,8 @@ the scale of a map.
     min_lng: -46...
 
 
-== Contacting the team ==
+Contacting the team
+-------------------
 
 Logged in users can contact any other Launchpad user through a 'Contact this
 user' feature (see person-pages.txt).  Similarly, a logged in user can contact
@@ -213,7 +218,8 @@ because bart is not a member of the team.
     Contact this team's owner
 
 
-== Mugshots ==
+Mugshots
+--------
 
 The mugshots for all members of a team can be seen on the +mugshots
 page.  The display of mugshots is batched.
@@ -240,7 +246,8 @@ page.  The display of mugshots is batched.
     <Person at ... mark (Mark Shuttleworth)>
 
 
-== Privacy and visibility ==
+Privacy and visibility
+----------------------
 
 Team visibility is used on the page to indicate privacy.  GuadaMen is a public
 team.
@@ -266,7 +273,8 @@ Private teams are indicated as private.
     >>> print view.visibility_portlet_class
     portlet private
 
-== +add-my-teams ==
++add-my-teams
+-------------
 
 This page lists the teams that you administer and can add as a member
 to the current team. Private teams cannot be added as members to another

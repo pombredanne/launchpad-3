@@ -442,7 +442,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 reviewer, registrant, review_type, _notify_listeners=False)
 
         notify(NewBranchMergeProposalEvent(bmp))
-        notify(BranchMergeProposalNeedsReviewEvent(bmp))
+        if needs_review:
+            notify(BranchMergeProposalNeedsReviewEvent(bmp))
 
         return bmp
 

@@ -31,7 +31,7 @@ class TestBugCommenting(WindmillTestCase):
         client = self.client
         lpuser.NO_PRIV.ensure_login(client)
 
-        client.open(url='http://bugs.launchpad.dev:8085/bugs/1')
+        client.open(url='%s/bugs/1' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
         client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
 

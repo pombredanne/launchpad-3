@@ -9,8 +9,8 @@ notifications.
 When subscribers subscribe to branches, they can specify what level of
 notification they would like to receive.
 
-    >>> from difflib import unified_diff
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from difflib import unified_diff
     >>> from lp.code.enums import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
@@ -101,7 +101,7 @@ is created.  When those jobs are run, the email is sent from the registrant.
     ...     displayname="Eric", email="eric@example.com")
     >>> # To avoid needing to access branches, pre-populate diffs.
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch)
+    ...     registrant, target_branch, needs_review=True)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> # Fake the update preview diff as done.
     >>> bmp.next_preview_diff_job.start()
@@ -156,7 +156,8 @@ in the email.
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch,
-    ...     description=initial_comment, review_requests=reviewers)
+    ...     description=initial_comment, review_requests=reviewers,
+    ...     needs_review=True)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> # Fake the update preview diff as done.
     >>> bmp.next_preview_diff_job.start()

@@ -11,10 +11,10 @@ We need to insert some dependent fake data before continuing.
     >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
-    >>> from lp.registry.model.gpgkey import GPGKey
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
@@ -92,9 +92,9 @@ publication to play with first.
     ...     SoyuzTestPublisher)
     >>> stp = SoyuzTestPublisher()
     >>> stp.prepareBreezyAutotest()
+    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty_series = ubuntu.getSeries('warty')
     >>> cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
@@ -221,8 +221,8 @@ Create a private PPA for Celso with some binaries.
     >>> login("foo.bar@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
     >>> from lp.soyuz.enums import (

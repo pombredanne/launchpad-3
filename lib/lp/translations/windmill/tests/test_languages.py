@@ -53,7 +53,7 @@ class LanguagesFilterTest(WindmillTestCase):
         French, because neither its name nor language code contain 'de'.
         """
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/+languages'
+        start_url = '%s/+languages' % TranslationsWindmillLayer.base_url
         # Go to the languages page
         self.client.open(url=start_url)
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)

@@ -60,8 +60,8 @@ interface is configured to require the launchpad.View permission. The
 AccessBranch authorization class is used to authorize users for the
 combination of the launchpad.View permission and the IBranch interface.
 
-    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
     >>> from zope.component import getAdapter
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
     >>> getAdapter(branch, IAuthorization, name='launchpad.View')
     <canonical.launchpad.security.AccessBranch ...>
 

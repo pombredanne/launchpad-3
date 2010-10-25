@@ -117,7 +117,7 @@ The team administrator will receive a notification of the held message.
     <BLANKLINE>
         Subject: An unsubscribed post
         Author name: Anne Person
-        Author url: http://launchpad.dev:8085/~anne
+        Author url: http://launchpad.dev:.../~anne
         Date: ...
         Message-ID: <caribou>
     <BLANKLINE>
@@ -128,7 +128,7 @@ The team administrator will receive a notification of the held message.
     <BLANKLINE>
     To review all messages pending approval, visit:
     <BLANKLINE>
-        http://launchpad.dev:8085/~itest-one/+mailinglist-moderate
+        http://launchpad.dev:.../~itest-one/+mailinglist-moderate
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -153,9 +153,10 @@ The team administrator can accept, decline or discard this posting.  By
 declining the message, Launchpad forgets about it, while Mailman sends a
 rejection notice to Anne.
 
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Ccaribou%3E').value = [
     ...     'reject']
     >>> browser.getControl('Moderate').click()
@@ -226,13 +227,12 @@ discards it.  No rejection notice is sent to Anne.
     <BLANKLINE>
         Subject: Wanna buy something?
         Author name: Anne Person
-        Author url: http://launchpad.dev:8085/~anne
+        Author url: http://launchpad.dev:.../~anne
         Date: ...
         Message-ID: <donkey>
     ...
 
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Cdonkey%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
@@ -273,7 +273,7 @@ This time, her message is on topic and is accepted.
     <BLANKLINE>
         Subject: Another unsubscribed post
         Author name: Anne Person
-        Author url: http://launchpad.dev:8085/~anne
+        Author url: http://launchpad.dev:.../~anne
         Date: ...
         Message-ID: <elephant>
     ...
@@ -290,8 +290,7 @@ This time, her message is on topic and is accepted.
     Hi, I am still not yet a member of this team's list.
     <BLANKLINE>
 
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Celephant%3E').value = [
     ...     'approve']
     >>> browser.getControl('Moderate').click()
@@ -344,8 +343,8 @@ the mailing list, she will not get a copy of the message.
 
     # Reset Anne's MessageApproval so that she'll no longer be pre-approved to
     # post to this mailing list.
-    >>> from lp.registry.model.mailinglist import MessageApproval
     >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.registry.model.mailinglist import MessageApproval
     >>> approvals = MessageApproval.select("""
     ...     MessageApproval.posted_by = %s
     ...     """ % sqlvalues(anne))
@@ -603,15 +602,14 @@ Because she is not a team member, her message is held for moderation.
     ...
         Subject: A non-team member post
         Author name: Anne Person
-        Author url: http://launchpad.dev:8085/~anne
+        Author url: http://launchpad.dev:.../~anne
         Date: ...
         Message-ID: <horse>
     ...
 
 The team administrator discards the message.
 
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Chorse%3E').value = [
     ...     'discard']
     >>> browser.getControl('Moderate').click()
@@ -774,8 +772,7 @@ But a person in poor standing will have their messages held for approval.
 Should a non-team member's held post be approved, they are then allowed to
 post to just that mailing list without further approval required.
 
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Cmongoose%3E').value = ['approve']
     >>> browser.getControl('Moderate').click()
     >>> smtpd_watcher.wait_for_mbox_delivery('mongoose')
@@ -845,8 +842,8 @@ moderator approval.
     >>> config.mailman.soft_max_size
     40000
 
-    >>> from email.mime.multipart import MIMEMultipart
     >>> from email.mime.application import MIMEApplication
+    >>> from email.mime.multipart import MIMEMultipart
     >>> from email.mime.text import MIMEText
 
     >>> big_message = MIMEMultipart()
@@ -870,8 +867,7 @@ moderator approval.
 
 Once this message is approved, it is posted through to the mailing list.
 
-    >>> browser.open(
-    ...     'http://launchpad.dev:8085/~itest-one/+mailinglist-moderate')
+    >>> browser.open('%s/~itest-one/+mailinglist-moderate' % root_url)
     >>> browser.getControl(name='field.%3Cpuma%3E').value = ['approve']
     >>> browser.getControl('Moderate').click()
     >>> smtpd_watcher.wait_for_mbox_delivery('puma')

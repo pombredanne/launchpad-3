@@ -33,7 +33,10 @@ from email.utils import (
     make_msgid,
     )
 from itertools import count
-from operator import isSequenceType
+from operator import (
+    isMappingType,
+    isSequenceType,
+    )
 import os
 from random import randint
 import simplejson
@@ -240,17 +243,13 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet,
-    )
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import (
-    PackageDiff,
-    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -1859,7 +1858,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None):
+                         members=None, title=None, aliases=None,
+                         bug_supervisor=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -1879,6 +1879,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members, owner)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
+        if bug_supervisor is not None:
+            naked_distro = removeSecurityProxy(distro)
+            naked_distro.bug_supervisor = bug_supervisor
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
@@ -3146,8 +3149,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None):
         if person is None:
             person = self.makePerson()
+        from canonical.testing import BaseLayer
         launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
+            service_root=BaseLayer.appserver_root_url("api"))
         login_person(person)
         return launchpad
 
@@ -3182,9 +3186,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             secret = ''
         return getUtility(IOAuthConsumerSet).new(key, secret)
 
-    def makeOAuthRequestToken(
-        self, consumer=None, date_created=None, reviewed_by=None,
-        access_level=OAuthPermission.READ_PUBLIC):
+    def makeOAuthRequestToken(self, consumer=None, date_created=None,
+                              reviewed_by=None,
+                              access_level=OAuthPermission.READ_PUBLIC):
         """Create a (possibly reviewed) OAuth request token."""
         if consumer is None:
             consumer = self.makeOAuthConsumer()
@@ -3201,13 +3205,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             unwrapped_token.date_created = date_created
         return token
 
+    def makeOAuthAccessToken(self, consumer=None, owner=None,
+                             access_level=OAuthPermission.READ_PUBLIC):
+        """Create an OAuth access token."""
+        if owner is None:
+            owner = self.makePerson()
+        request_token = self.makeOAuthRequestToken(
+            consumer, reviewed_by=owner, access_level=access_level)
+        return request_token.createAccessToken()
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
-unwrapped_types = (
-    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode)
+unwrapped_types = frozenset((
+        BaseRecipeBranch,
+        DSCFile,
+        InstanceType,
+        MergeDirective2,
+        Message,
+        datetime,
+        int,
+        str,
+        unicode,
+        ))
 
 
 def is_security_proxied_or_harmless(obj):
@@ -3218,11 +3239,15 @@ def is_security_proxied_or_harmless(obj):
         return True
     if type(obj) in unwrapped_types:
         return True
-    if isSequenceType(obj):
-        for element in obj:
-            if not is_security_proxied_or_harmless(element):
-                return False
-        return True
+    if isSequenceType(obj) or isinstance(obj, (set, frozenset)):
+        return all(
+            is_security_proxied_or_harmless(element)
+            for element in obj)
+    if isMappingType(obj):
+        return all(
+            (is_security_proxied_or_harmless(key) and
+             is_security_proxied_or_harmless(obj[key]))
+            for key in obj)
     return False
 
 
