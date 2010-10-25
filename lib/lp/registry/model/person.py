@@ -189,6 +189,7 @@ from lp.bugs.model.bugtask import (
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
+    HasMergeQueuesMixin,
     HasRequestedReviewsMixin,
     )
 from lp.registry.errors import NameAlreadyTaken
@@ -339,7 +340,8 @@ def validate_person_visibility(person, attr, value):
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasMergeQueuesMixin,
+    HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)

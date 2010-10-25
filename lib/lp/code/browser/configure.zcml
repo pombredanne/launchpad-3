@@ -1318,6 +1318,16 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.mergequeuelisting.PersonMergeQueueListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+merge-queues"
+            template="../templates/mergequeue-listing.pt"/>
+
     </facet>
 
     <browser:url

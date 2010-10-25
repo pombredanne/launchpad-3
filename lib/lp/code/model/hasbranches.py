@@ -8,6 +8,7 @@ __all__ = [
     'HasBranchesMixin',
     'HasCodeImportsMixin',
     'HasMergeProposalsMixin',
+    'HasMergeQueuesMixin',
     'HasRequestedReviewsMixin',
     ]
 
@@ -18,6 +19,9 @@ from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
     IBranchCollection,
+    )
+from lp.code.interfaces.branchmergequeuecollection import (
+    IBranchMergeQueueCollection,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 
@@ -51,6 +55,15 @@ class HasMergeProposalsMixin:
 
         collection = IBranchCollection(self).visibleByUser(visible_by_user)
         return collection.getMergeProposals(status)
+
+
+class HasMergeQueuesMixin:
+    """A mixin implementation for `IHasMergeQueues`."""
+
+    def getMergeQueues(self):
+        """See `IHasMergeQueues`."""
+        collection = IBranchMergeQueueCollection(self)
+        return collection.getMergeQueues()
 
 
 class HasRequestedReviewsMixin:

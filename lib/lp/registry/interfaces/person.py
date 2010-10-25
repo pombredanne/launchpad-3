@@ -112,6 +112,7 @@ from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
+    IHasMergeQueues,
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
@@ -508,7 +509,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasMergeQueues):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)

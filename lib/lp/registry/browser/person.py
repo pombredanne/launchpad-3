@@ -240,6 +240,7 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.buildmaster.enums import BuildStatus
+from lp.code.browser.mergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -1024,7 +1025,7 @@ class PersonMenuMixin(CommonMenuLinks):
 
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
-                         HasRecipesMenuMixin):
+                         HasRecipesMenuMixin, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -1035,7 +1036,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary', 'view_recipes']
+             'related_software_summary', 'view_recipes', 'view_merge_queues']
 
     def related_software_summary(self):
         target = '+related-software'

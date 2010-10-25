@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'IHasBranches',
     'IHasCodeImports',
+    'IHasMergeQueues',
     'IHasMergeProposals',
     'IHasRequestedReviews',
     ]
@@ -96,6 +97,12 @@ class IHasMergeProposals(Interface):
         :returns: A list of `IBranchMergeProposal`.
         """
 
+
+class IHasMergeQueues(Interface):
+    """An object that has merge queues."""
+
+    def getMergeQueues():
+        """Returns all merge queues associated with the object."""
 
 class IHasRequestedReviews(Interface):
     """IPersons can have reviews requested of them in merge proposals.
