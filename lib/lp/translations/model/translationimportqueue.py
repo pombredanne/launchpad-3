@@ -1284,8 +1284,7 @@ class TranslationImportQueue:
         importer = getUtility(ITranslationImporter)
         template_patterns = "(%s)" % ' OR '.join([
             "path LIKE ('%%' || %s)" % quote_like(suffix)
-            for suffix in importer.template_suffixes
-            ])
+            for suffix in importer.template_suffixes])
 
         store = self._getSlaveStore()
         result = store.execute("""
@@ -1445,6 +1444,7 @@ class HasTranslationImportsMixin:
             extensions = None
         else:
             extensions = [file_extension]
-        translation_import_queue = TranslationImportQueue()
+        translation_import_queue = getUtility(ITranslationImportQueue)
         return translation_import_queue.getAllEntries(
-            self, import_status=import_status, file_extensions=extensions)
+            target=self, import_status=import_status,
+            file_extensions=extensions)

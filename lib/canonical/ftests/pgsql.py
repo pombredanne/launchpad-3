@@ -169,7 +169,12 @@ class PgTestSetup:
         if template is not None:
             self.template = template
         if dbname is PgTestSetup.dynamic:
-            self.dbname = self.__class__.dbname + "_" + str(os.getpid())
+            if os.environ.get('LP_TEST_INSTANCE'):
+                self.dbname = "%s_%s" % (
+                    self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
+            else:
+                # Fallback to the class name.
+                self.dbname = self.__class__.dbname
         elif dbname is not None:
             self.dbname = dbname
         else:
@@ -269,7 +274,6 @@ class PgTestSetup:
         ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
-            PgTestSetup._reset_db = True
         #uninstallFakeConnect()
 
     def connect(self):
@@ -329,6 +333,8 @@ class PgTestSetup:
                     cur.execute('VACUUM pg_catalog.pg_shdepend')
             finally:
                 con.close()
+        # Any further setUp's must make a new DB.
+        PgTestSetup._reset_db = True
 
     def force_dirty_database(self):
         """flag the database as being dirty

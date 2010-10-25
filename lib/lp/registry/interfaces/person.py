@@ -26,7 +26,6 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'InvalidName',
-    'JoinNotAllowed',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
@@ -2144,10 +2143,6 @@ class ISoftwareCenterAgentAPI(Interface):
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
-
-
-class JoinNotAllowed(Exception):
-    """User is not allowed to join a given team."""
 
 
 class ImmutableVisibilityError(Exception):

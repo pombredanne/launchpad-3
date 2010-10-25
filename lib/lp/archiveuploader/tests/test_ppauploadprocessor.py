@@ -19,10 +19,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import Component
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities,
-    ILibraryFileAliasSet,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.tests.test_uploadprocessor import (
@@ -38,12 +36,8 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.queue import (
-    NonBuildableSourceUploadError,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -886,7 +880,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             rejection_message.splitlines())
 
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [PPA cprov] bar_1.0-1_source.changes rejected",
             "Could not find person or team named 'boing'",
             "https://help.launchpad.net/Packaging/PPA#Uploading",
             "If you don't understand why your files were rejected please "
@@ -1253,7 +1247,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # An email communicating the rejection and the reason why it was
         # rejected is sent to the uploaders.
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
+            "Subject: [PPA name16] bar_1.0-1_source.changes rejected",
             "Rejected:",
             "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "

@@ -28,6 +28,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJob,
     IBranchMergeProposalJobSource,
@@ -326,9 +327,9 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         jobs = self.job_source.iterReady()
         self.assertEqual(0, len(jobs))
 
-    def makeBranchMergeProposal(self):
+    def makeBranchMergeProposal(self, set_state=None):
         # Make a merge proposal that would have a ready update diff job.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(set_state=set_state)
         self.factory.makeRevisionsForBranch(bmp.source_branch)
         self.factory.makeRevisionsForBranch(bmp.target_branch)
         return bmp
@@ -337,7 +338,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         # Once the update preview diff job has finished running, then
         # iterReady returns the next job for the merge proposal, which is in
         # this case the initial email job.
-        bmp = self.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         [update_diff] = self.job_source.iterReady()
         update_diff.start()
         update_diff.complete()

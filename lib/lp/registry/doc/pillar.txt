@@ -5,9 +5,10 @@ to unambiguously refer to it. This allows us to make email interfaces
 easier to use and to shorten some of our URLs. Currently, the objects that
 share their name namespace are Product, ProjectGroup and Distribution.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPillarNameSet, IProduct, IProjectGroup, IDistribution
-    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.pillar import IPillarNameSet
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
     >>> pillar_set = getUtility(IPillarNameSet)
 
     >>> 'ubuntu' in pillar_set
@@ -231,8 +232,8 @@ Note that inactive products and projects won't be included in the results.
 PillarName objects have a pillar attribute that returns the object referenced
 by that pillar name
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> from lp.registry.model.pillar import PillarName
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

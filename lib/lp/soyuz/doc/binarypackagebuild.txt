@@ -224,8 +224,8 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
@@ -328,8 +328,8 @@ Invoke createBinaryPackageRelease with all required arguments.
     ...     section=section, priority=priority, installedsize=installedsize,
     ...     architecturespecific=architecturespecific)
 
-    >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
     True
 
@@ -489,8 +489,8 @@ First we'll define a helper to print the build summary:
 The build set class furthermore provides a mechanism to load build-related
 data from the database for a given set of builds:
 
-    >>> from storm.expr import In
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from storm.expr import In
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
