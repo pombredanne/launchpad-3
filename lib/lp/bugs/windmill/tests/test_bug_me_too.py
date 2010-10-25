@@ -57,7 +57,7 @@ class TestMeToo(WindmillTestCase):
 
         # Open bug 11 and wait for it to finish loading.
         client.open(
-            url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
+            url=u'%s/jokosher/+bug/11/+index' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.SAMPLE_PERSON.ensure_login(client)
 

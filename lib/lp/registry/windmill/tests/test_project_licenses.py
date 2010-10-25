@@ -23,7 +23,8 @@ class TestProjectLicenses(WindmillTestCase):
         """Test the dynamic aspects of the project license picker."""
         # The firefox project is as good as any.
         lpuser.SAMPLE_PERSON.ensure_login(self.client)
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/+edit')
+        self.client.open(url=u'%s/firefox/+edit'
+                        % RegistryWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=u'20000')
 
         # The Recommended table is visible.
@@ -126,7 +127,8 @@ class TestProjectLicenses(WindmillTestCase):
         self.client.click(id='field.actions.change')
         self.client.waits.forPageLoad(timeout=u'20000')
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/+edit')
+        self.client.open(url=u'%s/firefox/+edit'
+                        % RegistryWindmillLayer.base_url)
         self.client.waits.forPageLoad(timeout=u'20000')
 
         self.client.asserts.assertProperty(
