@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.interface.verify import verifyObject
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
@@ -26,6 +26,11 @@ class HasTranslationTemplatesTestMixin:
 
     def createTranslationTemplate(self, name, priority=0):
         """Attaches a template to appropriate container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createTranslationFile(self, name, priority=0):
+        """Attaches a pofile to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
@@ -156,6 +161,13 @@ class HasTranslationTemplatesTestMixin:
         self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_translation_files(self):
+        # has_translations_files should only return true if the object has
+        # pofiles.
+        self.assertFalse(self.container.has_translation_files)
+        self.createTranslationFile("one")
+        self.assertTrue(self.container.has_translation_files)
+
     def test_getTranslationTemplateFormats(self):
         # Check that translation_template_formats works properly.
 
@@ -202,6 +214,13 @@ class TestProductSeriesHasTranslationTemplates(
         potemplate.priority = priority
         return potemplate
 
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
+
     def setUp(self):
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
@@ -219,6 +238,13 @@ class TestSourcePackageHasTranslationTemplates(
             sourcepackagename=self.container.sourcepackagename)
         potemplate.priority = priority
         return potemplate
+
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
 
     def setUp(self):
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
@@ -239,6 +265,13 @@ class TestDistroSeriesHasTranslationTemplates(
             sourcepackagename=sourcepackage.sourcepackagename)
         potemplate.priority = priority
         return potemplate
+
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
 
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()

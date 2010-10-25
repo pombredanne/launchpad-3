@@ -5,10 +5,10 @@ Responsibility for security-related bugs, are modelled in Launchpad with
 a "security contact" on a Distribution or a Product.
 
     >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 
     >>> personset = getUtility(IPersonSet)
     >>> productset = getUtility(IProductSet)
@@ -40,7 +40,8 @@ When creating a bug, use the security_related flag to indicate that the
 bug is a security vulnerability, and the security contact should be
 subscribed to the bug, even when it's marked private.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag, CreateBugParams
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> params = CreateBugParams(
@@ -69,7 +70,7 @@ Shuttleworth are both subscribed to the bug.
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> params = CreateBugParams(
@@ -154,7 +155,7 @@ security contact of the new product to be subscribed.
 
 We'll set lifeless as the security_contact for evolution.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 (Make the bug public to ensure the security contact will get
 subscribed.)
@@ -224,7 +225,7 @@ thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
@@ -279,10 +280,10 @@ subscribed when moving it to the new project.
 When a bug becomes security-related, the security contacts for the pillars it
 affects are subscribed to it.
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> product = factory.makeProduct()
     >>> product.security_contact = factory.makePerson(

@@ -11,7 +11,7 @@ an event listener to demonstrate this.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
@@ -27,10 +27,19 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
-    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchBag,
+    ...     IOpenLaunchBag,
+    ...     )
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> login("foo.bar@canonical.com")
@@ -325,7 +334,7 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
 If we subscribe Foo Bar, 'Unsubscribe' is shown.
 
     >>> bug_one.subscribe(foo_bar, foo_bar)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
     'Unsubscribe'
@@ -340,7 +349,7 @@ still say 'Unsubscribe':
     >>> foo_bar.inTeam(launchpad_team)
     True
     >>> bug_one.subscribe(launchpad_team, launchpad_team)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
     'Unsubscribe'
@@ -416,7 +425,7 @@ can't know if the user is subscribed or not.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
-        <BugSubscription...>
+        <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> bug_two.markAsDuplicate(bug_three)
     >>> syncUpdate(bug_two)
@@ -444,7 +453,8 @@ bugtargetdisplayname. Approved nominations are not included in the
 returned results, because an approved nomination will have created a
 task anyway.
 
-    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
 
     >>> def get_object_type(task_or_nomination):
     ...     if IBugTask.providedBy(task_or_nomination):
@@ -472,12 +482,26 @@ task anyway.
     bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu series and see how
-the list changes.
+After creating bug supervisors for Ubuntu and Firefox Let's nominate the bug
+for upstream and an Ubuntu series and see how the list changes.
 
-(Login as an unprivileged user to be able to nominate.)
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>>
+    >>> login(ADMIN_EMAIL)
+    >>> nominator = factory.makePerson(name='nominator')
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = nominator
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = nominator
+    >>> logout()
 
-    >>> login("no-priv@canonical.com")
+(Login as a bug supervisor to be able to nominate.)
+
+    >>> login_person(nominator)
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getSeries("warty")
@@ -619,7 +643,7 @@ and the bug will have been edited.
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 
@@ -688,106 +712,6 @@ should exist.
     True
     >>> bn_set[-1].message.text_contents
     u'** Tags added: new-tag'
-
-
-= Visibility of Imported DebBugs Comments =
-
-Comments imported from the DebBugs bug tracker are not displayed in the
-user interface by default.
-
-A config option, malone.comment_syncing_team, controls which team should
-be able to see imported comments. We can demonstrate these using the
-standard BugTaskView for bug 15, which has a debian bug watch and
-imported comments.
-
-    >>> from zope.component import getUtility
-    >>> from lp.bugs.browser.bugtask import BugTaskView
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.webapp.servers import (
-    ...     LaunchpadTestRequest)
-    >>> bug = getUtility(IBugSet).get(15)
-
-For anonymous users, the comments returned which have been imported from
-a bug watch will have a can_be_shown property of False.
-
-    >>> login(ANONYMOUS)
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> print view.user
-    None
-    >>> for comment in view.visible_oldest_comments_for_display:
-    ...     comment.can_be_shown
-    False
-    False
-    False
-    False
-    False
-    False
-
-The same is true for people not in the comment syncing team.
-
-    >>> from canonical.config import config
-    >>> syncing_team = getUtility(IPersonSet).getByName(
-    ...     config.malone.comment_syncing_team)
-    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> no_priv.inTeam(syncing_team)
-    False
-
-    >>> login('no-priv@canonical.com')
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> view.user.name
-    u'no-priv'
-    >>> for comment in view.visible_oldest_comments_for_display:
-    ...     comment.can_be_shown
-    False
-    False
-    False
-    False
-    False
-    False
-
-People in the team get to see the comments.
-
-    >>> login('foo.bar@canonical.com')
-    >>> ignored = syncing_team.addMember(no_priv, no_priv)
-
-    >>> login('no-priv@canonical.com')
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> view.user.name
-    u'no-priv'
-    >>> for comment in view.visible_oldest_comments_for_display:
-    ...     comment.can_be_shown
-    True
-    True
-    True
-    True
-    True
-    True
-
-However, if we set the comment_syncing_team config option to None, the
-imported comments for bug 15 will be displayable, even for anonymous
-users.
-
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [malone]
-    ...     comment_syncing_team: None
-    ...     """)
-    >>> config.push('test_data', test_data)
-
-    >>> login(ANONYMOUS)
-    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
-    >>> print view.user
-    None
-    >>> for comment in view.visible_oldest_comments_for_display:
-    ...     comment.can_be_shown
-    True
-    True
-    True
-    True
-    True
-    True
-
-    >>> test_config_data = config.pop('test_data')
 
 
 == Displaying BugActivity interleaved with comments ==

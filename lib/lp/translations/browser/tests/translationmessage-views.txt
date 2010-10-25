@@ -7,9 +7,9 @@ ITranslationMessage object.
     >>> from lp.translations.model.pofile import POFile
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from lp.translations.publisher import TranslationsLayer
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.publisher import TranslationsLayer
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
 that we are going to edit.
@@ -154,9 +154,9 @@ We will use this helper function to simplify the test:
 
     # This is just an easy way to get different messages for all
     # available options to test.
-    >>> from sqlobject import SQLObjectNotFound
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.translations.model.pomsgid import POMsgID
+    >>> from sqlobject import SQLObjectNotFound
     >>> def changeMsgID(new_msgid):
     ...     potmsgset = removeSecurityProxy(subview.context.potmsgset)
     ...     try:

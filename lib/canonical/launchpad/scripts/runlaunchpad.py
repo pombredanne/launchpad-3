@@ -7,16 +7,18 @@ __metaclass__ = type
 __all__ = ['start_launchpad']
 
 
-import atexit
+from contextlib import nested
 import os
 import signal
 import subprocess
 import sys
 
+import fixtures
 from zope.app.server.main import main
 
 from canonical.config import config
 from lp.services.mailman import runmailman
+from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.testing import googletestservice
 from canonical.lazr.pidfile import (
     make_pidfile,
@@ -28,19 +30,24 @@ def make_abspath(path):
     return os.path.abspath(os.path.join(config.root, *path.split('/')))
 
 
-TWISTD_SCRIPT = make_abspath('bin/twistd')
-
-
-class Service(object):
+class Service(fixtures.Fixture):
 
     @property
     def should_launch(self):
-        """Return true if this service should be launched."""
+        """Return true if this service should be launched by default."""
         return False
 
     def launch(self):
-        """Launch the service, but do not block."""
+        """Run the service in a thread or external process.
+        
+        May block long enough to kick it off, but must return control to
+        the caller without waiting for it to shutdown.
+        """
         raise NotImplementedError
+
+    def setUp(self):
+        super(Service, self).setUp()
+        self.launch()
 
 
 class TacFile(Service):
@@ -56,8 +63,7 @@ class TacFile(Service):
         :param pre_launch: A callable that is called before the launch
             process.
         """
-        # No point calling super's __init__.
-        # pylint: disable-msg=W0231
+        super(TacFile, self).__init__()
         self.name = name
         self.tac_filename = tac_filename
         self.section_name = section_name
@@ -80,10 +86,6 @@ class TacFile(Service):
         return config[self.section_name].logfile
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.
-        if not self.should_launch:
-            return
-
         self.pre_launch()
 
         pidfile = pidfile_path(self.name)
@@ -91,7 +93,7 @@ class TacFile(Service):
         tacfile = make_abspath(self.tac_filename)
 
         args = [
-            TWISTD_SCRIPT,
+            tachandler.twistd_script,
             "--no_save",
             "--nodaemon",
             "--python", tacfile,
@@ -109,15 +111,8 @@ class TacFile(Service):
         # ability to cycle the log files by sending a signal to the twisted
         # process.
         process = subprocess.Popen(args, stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        # I've left this off - we still check at termination and we can
-        # avoid the startup delay. -- StuartBishop 20050525
-        #time.sleep(1)
-        #if process.poll() != None:
-        #    raise RuntimeError(
-        #        "%s did not start: %d"
-        #        % (self.name, process.returncode))
-        stop_at_exit(process)
 
 
 class MailmanService(Service):
@@ -127,11 +122,8 @@ class MailmanService(Service):
         return config.mailman.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.  Also, don't attempt to
-        # shut it down at exit.
-        if self.should_launch:
-            runmailman.start_mailman()
-            atexit.register(runmailman.stop_mailman)
+        runmailman.start_mailman()
+        self.addCleanup(runmailman.stop_mailman)
 
 
 class CodebrowseService(Service):
@@ -144,8 +136,8 @@ class CodebrowseService(Service):
         process = subprocess.Popen(
             ['make', 'run_codebrowse'],
             stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        stop_at_exit(process)
 
 
 class GoogleWebService(Service):
@@ -155,9 +147,7 @@ class GoogleWebService(Service):
         return config.google_test_service.launch
 
     def launch(self):
-        if self.should_launch:
-            process = googletestservice.start_as_process()
-            stop_at_exit(process)
+        self.addCleanup(stop_process, googletestservice.start_as_process())
 
 
 class MemcachedService(Service):
@@ -180,23 +170,64 @@ class MemcachedService(Service):
         else:
             cmd.append('-v')
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
         process.stdin.close()
-        stop_at_exit(process)
 
 
-def stop_at_exit(process):
-    """Create and register an atexit hook for killing a process.
+class ForkingSessionService(Service):
+    """A lp-forking-service for handling codehosting access."""
 
-    The hook will BLOCK until the process dies.
+    # TODO: The "sftp" (aka codehosting) server depends fairly heavily on this
+    #       service. It would seem reasonable to make one always start if the
+    #       other one is started. Though this might be a way to "FeatureFlag"
+    #       whether this is active or not.
+    @property
+    def should_launch(self):
+        return (config.codehosting.launch and
+                config.codehosting.use_forking_daemon)
+
+    @property
+    def logfile(self):
+        """Return the log file to use.
+
+        Default to the value of the configuration key logfile.
+        """
+        return config.codehosting.forker_logfile
+
+    def launch(self):
+        # Following the logic in TacFile. Specifically, if you configure sftp
+        # to not run (and thus bzr+ssh) then we don't want to run the forking
+        # service.
+        if not self.should_launch:
+            return
+        from lp.codehosting import get_bzr_path
+        command = [config.root + '/bin/py', get_bzr_path(),
+                   'launchpad-forking-service',
+                   '--path', config.codehosting.forking_daemon_socket,
+                  ]
+        env = dict(os.environ)
+        env['BZR_PLUGIN_PATH'] = config.root + '/bzrplugins'
+        logfile = self.logfile
+        if logfile == '-':
+            # This process uses a different logging infrastructure from the
+            # rest of the Launchpad code. As such, it cannot trivially use '-'
+            # as the logfile. So we just ignore this setting.
+            pass
+        else:
+            env['BZR_LOG'] = logfile
+        process = subprocess.Popen(command, env=env, stdin=subprocess.PIPE)
+        self.addCleanup(stop_process, process)
+        process.stdin.close()
+
+
+def stop_process(process):
+    """kill process and BLOCK until process dies.
 
     :param process: An instance of subprocess.Popen.
     """
-
-    def stop_process():
-        if process.poll() is None:
-            os.kill(process.pid, signal.SIGTERM)
-            process.wait()
-    atexit.register(stop_process)
+    if process.poll() is None:
+        os.kill(process.pid, signal.SIGTERM)
+        process.wait()
 
 
 def prepare_for_librarian():
@@ -208,6 +239,7 @@ SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
                          'librarian_server', prepare_for_librarian),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
+    'forker': ForkingSessionService(),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
@@ -273,26 +305,24 @@ def start_launchpad(argv=list(sys.argv)):
     services, argv = split_out_runlaunchpad_arguments(argv[1:])
     argv = process_config_arguments(argv)
     services = get_services_to_run(services)
-    for service in services:
-        service.launch()
-
-    # Store our process id somewhere
-    make_pidfile('launchpad')
-
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
 
-    if config.launchpad.launch:
-        main(argv)
-    else:
-        # We just need the foreground process to sit around forever waiting
-        # for the signal to shut everything down.  Normally, Zope itself would
-        # be this master process, but we're not starting that up, so we need
-        # to do something else.
-        try:
-            signal.pause()
-        except KeyboardInterrupt:
-            pass
+    with nested(*services):
+        # Store our process id somewhere
+        make_pidfile('launchpad')
+
+        if config.launchpad.launch:
+            main(argv)
+        else:
+            # We just need the foreground process to sit around forever waiting
+            # for the signal to shut everything down.  Normally, Zope itself would
+            # be this master process, but we're not starting that up, so we need
+            # to do something else.
+            try:
+                signal.pause()
+            except KeyboardInterrupt:
+                pass
 
 
 def start_librarian():
@@ -303,7 +333,7 @@ def start_librarian():
     prepare_for_librarian()
     pidfile = pidfile_path('librarian')
     cmd = [
-        TWISTD_SCRIPT,
+        tachandler.twistd_script,
         "--python", 'daemons/librarian.tac',
         "--pidfile", pidfile,
         "--prefix", 'Librarian',

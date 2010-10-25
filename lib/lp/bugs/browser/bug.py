@@ -273,10 +273,13 @@ class BugContextMenu(ContextMenu):
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
             text = "Target to release"
-        else:
+            return Link('+nominate', text, icon='milestone')
+        elif (check_permission("launchpad.BugSupervisor", target) or
+            self.user is None):
             text = 'Nominate for release'
-
-        return Link('+nominate', text, icon='milestone')
+            return Link('+nominate', text, icon='milestone')
+        else:
+            return Link('+nominate', '', enabled=False, icon='milestone')
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
@@ -455,10 +458,10 @@ class BugViewMixin:
         """
         if IBug.providedBy(self.context):
             dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
+            return set(sub.person for sub in dupe_subs)
         elif IBugTask.providedBy(self.context):
             dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
+            return set(sub.person for sub in dupe_subs)
         else:
             raise NotImplementedError(
                 'duplicate_subscribers is not implemented for %s' % self)

@@ -53,6 +53,7 @@ __all__ = [
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
     'PersonSubscribedBugTaskSearchListingView',
+    'PersonSubscriptionsView',
     'PersonView',
     'PersonVouchersView',
     'RedirectToEditLanguagesView',
@@ -205,7 +206,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import (
+from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     PersonFormatterAPI,
     )
@@ -242,6 +243,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.browser import BaseRdfView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.mailinglists import enabled_with_active_mailing_list
 from lp.registry.browser.menu import (
@@ -1611,28 +1613,15 @@ class PersonWithKeysAndPreferredEmail:
         self.preferredemail = email
 
 
-class PersonRdfView:
+class PersonRdfView(BaseRdfView):
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-rdf.pt')
 
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('content-type',
-                                        'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                            self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return self.context.name
 
 
 class PersonRdfContentsView:
@@ -1648,30 +1637,6 @@ class PersonRdfContentsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def buildMemberData(self):
-        members = []
-        members_by_id = {}
-        raw_members = list(self.context.allmembers)
-        if not raw_members:
-            # Empty teams have nothing to offer.
-            return []
-        personset = getUtility(IPersonSet)
-        personset.cacheBrandingForPeople(raw_members)
-        for member in raw_members:
-            decorated_member = PersonWithKeysAndPreferredEmail(member)
-            members.append(decorated_member)
-            members_by_id[member.id] = decorated_member
-        sshkeyset = getUtility(ISSHKeySet)
-        gpgkeyset = getUtility(IGPGKeySet)
-        emailset = getUtility(IEmailAddressSet)
-        for key in sshkeyset.getByPeople(members):
-            members_by_id[key.personID].addSSHKey(key)
-        for key in gpgkeyset.getGPGKeysForPeople(members):
-            members_by_id[key.ownerID].addGPGKey(key)
-        for email in emailset.getPreferredEmailForPeople(members):
-            members_by_id[email.person.id].setPreferredEmail(email)
-        return members
 
     def __call__(self):
         """Render RDF output.
@@ -2225,7 +2190,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         return "Search bugs assigned to %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        """Return a URL that can be usedas an href to the simple search."""
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context, view_name="+assignedbugs")
 
     @property
@@ -2377,6 +2342,59 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     @property
     def label(self):
         return self.getSearchPageHeading()
+
+
+class PersonSubscriptionsView(BugTaskSearchListingView):
+    """All the subscriptions for a person."""
+
+    page_title = 'Subscriptions'
+
+    def subscribedBugTasks(self):
+        """Return a BatchNavigator for distinct bug tasks to which the
+        person is subscribed."""
+        bug_tasks = self.context.searchTasks(None, user=self.user,
+            order_by='-date_last_updated',
+            status=(BugTaskStatus.NEW,
+                    BugTaskStatus.INCOMPLETE,
+                    BugTaskStatus.CONFIRMED,
+                    BugTaskStatus.TRIAGED,
+                    BugTaskStatus.INPROGRESS,
+                    BugTaskStatus.FIXCOMMITTED,
+                    BugTaskStatus.INVALID),
+            bug_subscriber=self.context)
+
+        sub_bug_tasks = []
+        sub_bugs = []
+
+        for task in bug_tasks:
+            if task.bug not in sub_bugs:
+                # We order the bugtasks by date_last_updated but we
+                # always display the default task for the bug. This is
+                # to avoid ordering issues in tests and also prevents
+                # user confusion (because nothing is more confusing than
+                # your subscription targets changing seemingly at
+                # random).
+                sub_bug_tasks.append(task.bug.default_bugtask)
+                sub_bugs.append(task.bug)
+        return BatchNavigator(sub_bug_tasks, self.request)
+
+    def canUnsubscribeFromBugTasks(self):
+        viewed_person = self.context
+        if self.user is None:
+            return False
+        elif viewed_person == self.user:
+            return True
+        elif (viewed_person.is_team and
+              self.user.inTeam(viewed_person)):
+            return True
+
+    def getSubscriptionsPageHeading(self):
+        """The header for the subscriptions page."""
+        return "Subscriptions for %s" % self.context.displayname
+
+    @property
+    def label(self):
+        return self.getSubscriptionsPageHeading()
 
 
 class PersonVouchersView(LaunchpadFormView):

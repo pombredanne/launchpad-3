@@ -160,7 +160,7 @@ basically checking we pass the right arguments to it.
     >>> content = open(changesfile_path).read()
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
@@ -234,9 +234,9 @@ enable uploads for it.
 
     >>> from lp.soyuz.model.component import (
     ...     ComponentSelection)
-    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
@@ -301,7 +301,7 @@ allow unsigned uploads.
 Since we are using Foo Bar's GPG key to sign packages, in order to test
 PPA uploads we will create a PPA for it.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> print foobar.archive
     None

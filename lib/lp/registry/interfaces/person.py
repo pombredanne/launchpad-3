@@ -26,13 +26,10 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'InvalidName',
-    'JoinNotAllowed',
-    'NameAlreadyTaken',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
-    'PrivatePersonLinkageError',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
@@ -40,7 +37,6 @@ __all__ = [
     'validate_person',
     'validate_public_person',
     ]
-
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -64,7 +60,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -119,6 +114,7 @@ from lp.code.interfaces.hasbranches import (
     IHasRequestedReviews,
     )
 from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
@@ -156,10 +152,6 @@ from lp.services.worlddata.interfaces.language import ILanguage
 PRIVATE_TEAM_PREFIX = 'private-'
 
 
-class PrivatePersonLinkageError(ValueError):
-    """An attempt was made to link a private person/team to something."""
-
-
 @block_implicit_flushes
 def validate_person_common(obj, attr, value, validate_func):
     """Validate the person using the supplied function."""
@@ -168,8 +160,7 @@ def validate_person_common(obj, attr, value, validate_func):
     assert isinstance(value, (int, long)), (
         "Expected int for Person foreign key reference, got %r" % type(value))
 
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
+    # Importing here to avoid a cyclic import.
     from lp.registry.model.person import Person
     person = Person.get(value)
     if not validate_func(person):
@@ -2014,17 +2005,6 @@ class IPersonSet(Interface):
             specified product are returned.
         """
 
-    def getSubscribersForTargets(targets, recipients=None):
-        """Return the set of subscribers for `targets`.
-
-        :param targets: The sequence of targets for which to get the
-                        subscribers.
-        :param recipients: An optional instance of
-                           `BugNotificationRecipients`.
-                           If present, all found subscribers will be
-                           added to it.
-        """
-
     def updatePersonalStandings():
         """Update the personal standings of some people.
 
@@ -2165,21 +2145,12 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
 
 
-class JoinNotAllowed(Exception):
-    """User is not allowed to join a given team."""
-
-
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
 
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
-
-
-class NameAlreadyTaken(Exception):
-    """The name given for a person is already in use by other person."""
-    webservice_error(409)
 
 
 class NoSuchPerson(NameLookupFailed):

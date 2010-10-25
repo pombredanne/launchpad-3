@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchMirrorMixin',
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
@@ -104,6 +105,7 @@ from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -145,6 +147,9 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 
 
 def quote(text):
@@ -236,6 +241,16 @@ class BranchNavigation(Navigation):
     def traverse_code_import(self):
         """Traverses to the `ICodeImport` for the branch."""
         return self.context.code_import
+
+    @stepthrough("+translation-templates-build")
+    def traverse_translation_templates_build(self, id_string):
+        """Traverses to a `TranslationTemplatesBuild`."""
+        try:
+            buildfarmjob_id = int(id_string)
+        except ValueError:
+            raise NotFoundError(id_string)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        return source.getByBuildFarmJob(buildfarmjob_id)
 
 
 class BranchEditMenu(NavigationMenu):
@@ -374,7 +389,39 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
 
-class BranchView(LaunchpadView, FeedsMixin):
+class BranchMirrorMixin:
+    """Provide mirror_location property.
+
+    Requires self.branch to be set by the class using this mixin.
+    """
+
+    @property
+    def mirror_location(self):
+        """Check the mirror location to see if it is a private one."""
+        branch = self.branch
+
+        # If the user has edit permissions, then show the actual location.
+        if check_permission('launchpad.Edit', branch):
+            return branch.url
+
+        # XXX: Tim Penhey, 2008-05-30
+        # Instead of a configuration hack we should support the users
+        # specifying whether or not they want the mirror location
+        # hidden or not.  Given that this is a database patch,
+        # it isn't going to happen today.
+        # See bug 235916
+        hosts = config.codehosting.private_mirror_hosts.split(',')
+        private_mirror_hosts = [name.strip() for name in hosts]
+
+        uri = URI(branch.url)
+        for private_host in private_mirror_hosts:
+            if uri.underDomain(private_host):
+                return '<private server>'
+
+        return branch.url
+
+
+class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -387,6 +434,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     label = page_title
 
     def initialize(self):
+        self.branch = self.context
         self.notices = []
         # Replace our context with a decorated branch, if it is not already
         # decorated.
@@ -584,31 +632,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         assert url
         # https starts with http too!
         return url.startswith("http")
-
-    @property
-    def mirror_location(self):
-        """Check the mirror location to see if it is a private one."""
-        branch = self.context
-
-        # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
-            return branch.url
-
-        # XXX: Tim Penhey, 2008-05-30
-        # Instead of a configuration hack we should support the users
-        # specifying whether or not they want the mirror location
-        # hidden or not.  Given that this is a database patch,
-        # it isn't going to happen today.
-        # See bug 235916
-        hosts = config.codehosting.private_mirror_hosts.split(',')
-        private_mirror_hosts = [name.strip() for name in hosts]
-
-        uri = URI(branch.url)
-        for private_host in private_mirror_hosts:
-            if uri.underDomain(private_host):
-                return '<private server>'
-
-        return branch.url
 
     @property
     def show_merge_links(self):

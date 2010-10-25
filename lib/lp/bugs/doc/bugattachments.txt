@@ -10,8 +10,10 @@ Let's look at a bug that has no attachments:
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugAttachment, IBugSet, IMessageSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
     >>> bug_one.attachments.count()
@@ -233,7 +235,7 @@ If the request contains no attachment description the filename should be used.
 Since the ObjectCreatedEvent was generated, a notification about the
 attachment was added.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
     ** Attachment added: "RA.txt"
@@ -382,8 +384,11 @@ Search for attachments
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugattachment import BugAttachmentType
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
@@ -477,7 +482,7 @@ The libraryfile of this bug attachment is marked as "deleted".
 Deleting an attachment causes a notification to be sent. It's worth
 noting that the notification still includes the URL to the attachment.
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> latest_notification.is_comment

@@ -6,16 +6,12 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from contextlib import nested
 from doctest import DocTestSuite
 import unittest
 
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+from testtools.matchers import LessThan
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -23,6 +19,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -30,15 +27,17 @@ from canonical.launchpad.testing.systemdocs import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
-    BugTaskView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
@@ -46,6 +45,7 @@ from lp.testing.sampledata import (
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestBugTaskView(TestCaseWithFactory):
@@ -62,23 +62,24 @@ class TestBugTaskView(TestCaseWithFactory):
 
     def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
-        bugtask = self.factory.makeBugTask()
+        task = self.factory.makeBugTask()
         person_no_teams = self.factory.makePerson(password='test')
         person_with_teams = self.factory.makePerson(password='test')
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
-        url = canonical_url(bugtask)
+        url = canonical_url(task)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, person_no_teams)
-        # This may seem large: it is; there is easily another 30% fat in there.
-        self.assertThat(recorder, HasQueryCount(LessThan(64)))
+        # This may seem large: it is; there is easily another 30% fat in
+        # there.
+        self.assertThat(recorder, HasQueryCount(LessThan(62)))
         count_with_no_teams = recorder.count
         # count with many teams
-        self.invalidate_caches(bugtask)
+        self.invalidate_caches(task)
         self.getUserBrowser(url, person_with_teams)
         # Allow an increase of one because storm bug 619017 causes additional
         # queries, revalidating things unnecessarily. An increase which is
@@ -421,6 +422,106 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         self.assertEqual(
             'ValidAssignee',
             view.form_fields['assignee'].field.vocabularyName)
+
+
+class TestProjectGroupBugs(TestCaseWithFactory):
+    """Test the bugs overview page for Project Groups."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupBugs, self).setUp()
+        self.owner = self.factory.makePerson(name='bob')
+        self.projectgroup = self.factory.makeProject(name='container',
+                                                     owner=self.owner)
+
+    def makeSubordinateProduct(self, tracks_bugs_in_lp):
+        """Create a new product and add it to the project group."""
+        product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
+        with person_logged_in(product.owner):
+            product.project = self.projectgroup
+
+    def test_empty_project_group(self):
+        # An empty project group does not use Launchpad for bugs.
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.projectgroup.hasProducts())
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_not_using_launchpad(self):
+        # A project group with all subordinates not using Launchpad
+        # will itself be marked as not using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_using_launchpad(self):
+        # A project group with one subordinate using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+    def test_project_group_with_mixed_subordinates(self):
+        # A project group with one or more subordinates using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+    def test_project_group_has_no_portlets_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will not have
+        # bug portlets.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertFalse(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIs(None, report_a_bug)
+
+    def test_project_group_has_portlets_link_if_using_LP(self):
+        # A project group that has projects using Launchpad will have a
+        # portlets.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertTrue(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIsNot(None, report_a_bug)
+
+    def test_project_group_has_help_link_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        self.assertIsNot(None, help_link)
+
+    def test_project_group_has_no_help_link_if_using_LP(self):
+        # A project group that has no projects using Launchpad will not have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        print help_link
+        self.assertIs(None, help_link)
 
 
 def test_suite():

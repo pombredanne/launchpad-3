@@ -17,7 +17,7 @@ from twisted.web.xmlrpc import Proxy
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
@@ -100,4 +100,4 @@ svc = SSHService(
 svc.setServiceParent(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(application)
+readyservice.ReadyService().setServiceParent(application)

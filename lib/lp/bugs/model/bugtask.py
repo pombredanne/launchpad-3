@@ -891,12 +891,13 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == celebrities.janitor.id):
             return True
         else:
-            return (self.status is not BugTaskStatus.WONTFIX and
-                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+            return (self.status not in (
+                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
+                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
-        if not new_status:
+        if not new_status or user is None:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
@@ -1942,6 +1943,11 @@ class BugTaskSet:
                 "Bug.date_last_updated > %s" % (
                     sqlvalues(params.modified_since,)))
 
+        if params.created_since:
+            extra_clauses.append(
+                "BugTask.datecreated > %s" % (
+                    sqlvalues(params.created_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
@@ -2159,8 +2165,8 @@ class BugTaskSet:
             tables.append(BugAffectsPerson)
         if params.hardware_owner_is_subscribed_to_bug:
             bug_link_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
-                    BugSubscription.bugID == Bug.id))
+                And(BugSubscription.person_id == HWSubmission.ownerID,
+                    BugSubscription.bug_id == Bug.id))
             tables.append(BugSubscription)
         if params.hardware_is_linked_to_bug:
             bug_link_clauses.append(

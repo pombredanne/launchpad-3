@@ -33,6 +33,19 @@ message.
     There are no branches related to Daniel Silverstone in Launchpad today.
 
 
+Junk branches
+=============
+
+On the user's own code page, they will see directions on pushing a branch.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'junk-branch-directions'))
+    You can push (upload) personal branches
+    (those not related to a project) with the following command:
+    bzr push lp:~name12/+junk/BRANCHNAME
+
+
 Owned Branches
 ==============
 
@@ -99,9 +112,11 @@ The summary is shown.
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    1 owned branch, 1 registered branch, 1 subscribed branch
-    0 active reviews or unmerged proposals
+    >>> print_tag_with_id(eric_browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    1 registered branch
+    1 subscribed branch
+    0 active reviews
 
 Now we'll create another branch, and unsubscribe the owner from it.
 
@@ -111,6 +126,9 @@ Now we'll create another branch, and unsubscribe the owner from it.
     >>> logout()
 
     >>> eric_browser.open('http://code.launchpad.dev/~eric')
-    >>> print_tag_with_id(eric_browser.contents, 'page-summary')
-    2 owned branches, 2 registered branches, 1 subscribed branch
-    0 active reviews or unmerged proposals
+    >>> print_tag_with_id(
+    ...     eric_browser.contents, 'portlet-person-codesummary')
+    2 owned branches
+    2 registered branches
+    1 subscribed branch
+    0 active reviews

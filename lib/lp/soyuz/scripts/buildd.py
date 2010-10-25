@@ -130,7 +130,7 @@ class QueueBuilder(LaunchpadCronScript):
                 % distroseries.name)
             return
 
-        architectures_available = list(distroseries.enabled_architectures)
+        architectures_available = list(distroseries.buildable_architectures)
         if not architectures_available:
             self.logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
@@ -274,37 +274,3 @@ class RetryDepwait(LaunchpadCronScript):
         if not self.options.dryrun:
             self.logger.info('Commiting the transaction.')
             self.txn.commit()
-
-
-# XXX: JonathanLange 2010-09-22 bug=645046: This is the old slave
-# scanner. Julian says it's not running on production. We should either delete
-# it or update it to use the async apis.
-class SlaveScanner(LaunchpadCronScript):
-
-    def main(self):
-        if self.args:
-            raise LaunchpadScriptFailure(
-                "Unhandled arguments %s" % repr(self.args))
-
-        builder_set = getUtility(IBuilderSet)
-        builder_set.pollBuilders(self.logger, self.txn)
-
-        self.logger.info("Dispatching Jobs.")
-
-        for builder in builder_set:
-            self.logger.info("Processing: %s" % builder.name)
-            # XXX cprov 2007-11-09: we don't support manual dispatching
-            # yet. Once we support it this clause should be removed.
-            if builder.manual:
-                self.logger.warn('builder is in manual state. Ignored.')
-                continue
-            if not builder.is_available:
-                self.logger.warn('builder is not available. Ignored.')
-                continue
-
-            candidate = builder.findAndStartJob()
-            if candidate is None:
-                continue
-            self.txn.commit()
-
-        self.logger.info("Slave Scan Process Finished.")

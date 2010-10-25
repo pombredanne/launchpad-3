@@ -14,8 +14,8 @@ transaction should be retrieved.
 
 We check for sent mails in some places, so load the stub mailer:
 
-    >>> from lp.services.mail import stub
     >>> from canonical.database.sqlbase import commit
+    >>> from lp.services.mail import stub
 
 And create a utility function to make tests easier to read.
 
@@ -460,7 +460,7 @@ files. For the record, the procedure creates files with the
 
 The log was compressed and directly transferred to Librarian.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
 
     >>> print logfile.filename
@@ -539,7 +539,7 @@ Remove build upload results root
 
 Retrieve a known DistroArchSeries
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
     >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 
@@ -635,8 +635,8 @@ need to tweak the status of the current publication directly, as a
 permissive database user.
 
     >>> from canonical.config import config
-    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> spr = build.source_package_release
     >>> pub = removeSecurityProxy(build).current_source_publication

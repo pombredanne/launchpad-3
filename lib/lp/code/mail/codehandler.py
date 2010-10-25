@@ -24,6 +24,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
@@ -209,7 +210,7 @@ class UpdateStatusEmailCommand(CodeReviewEmailCommand):
                         command_name=self.name,
                         arguments='approved, rejected',
                         example_argument='approved'))
-        except UserNotBranchReviewer:
+        except (UserNotBranchReviewer, Unauthorized):
             raise EmailProcessingError(
                 get_error_message(
                     'user-not-reviewer.txt',

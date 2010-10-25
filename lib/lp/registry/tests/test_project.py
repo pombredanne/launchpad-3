@@ -5,20 +5,17 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
 from lazr.restfulclient.errors import ClientError
+from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing import (
-    LaunchpadFunctionalLayer,
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
-    celebrity_logged_in,
     launchpadlib_for,
     TestCaseWithFactory,
     )
@@ -111,6 +108,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
 
 
 class TestLaunchpadlibAPI(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):

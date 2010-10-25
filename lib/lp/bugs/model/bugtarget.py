@@ -93,7 +93,7 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None):
+                    modified_since=None, created_since=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -332,7 +332,7 @@ class HasBugHeatMixin:
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
+    This class is intended to be used as a mixin for the classes
     Distribution, Product and ProjectGroup, which can define official
     bug tags.
 

@@ -11,6 +11,8 @@ import contextlib
 import datetime
 from itertools import repeat
 import logging
+import os
+import stat
 import re
 import rfc822
 import types
@@ -31,7 +33,6 @@ from canonical.launchpad import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
-    get_request_start_time,
     soft_timeout_expired,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -353,6 +354,10 @@ class ErrorReportingUtility:
             return
         filename = entry._filename
         entry.write(open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id
             request.oops = entry
@@ -457,7 +462,7 @@ class ErrorReportingUtility:
         duration = get_request_duration()
         # In principle the timeline is per-request, but see bug=623199 -
         # at this point the request is optional, but get_request_timeline
-        # does not care; when it starts caring, we will always have a 
+        # does not care; when it starts caring, we will always have a
         # request object (or some annotations containing object).
         # RBC 20100901
         timeline = get_request_timeline(request)
@@ -517,8 +522,10 @@ class ErrorReportingUtility:
         """Add an oops message to be included in oopses from this context."""
         key = self._oops_message_key_iter.next()
         self._oops_messages[key] = message
-        yield
-        del self._oops_messages[key]
+        try:
+            yield
+        finally:
+            del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

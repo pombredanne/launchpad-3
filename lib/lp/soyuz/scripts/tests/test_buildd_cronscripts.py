@@ -20,7 +20,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadLayer,
     LaunchpadZopelessLayer,
@@ -60,11 +60,6 @@ class TestCronscriptBase(unittest.TestCase):
             extra_args = []
         return self.runCronscript("buildd-queue-builder.py", extra_args)
 
-    def runBuilddSlaveScanner(self, extra_args=None):
-        if extra_args is None:
-            extra_args = []
-        return self.runCronscript("buildd-slave-scanner.py", extra_args)
-
     def runBuilddRetryDepwait(self, extra_args=None):
         if extra_args is None:
             extra_args = []
@@ -79,21 +74,11 @@ class TestCronscriptBase(unittest.TestCase):
         rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
 
-        # 'runners' commit to the launchpad_ftest database in
-        # subprocesses, so we need to tell the layer to fully
-        # tear down and restore the database.
+        # 'runners' commit to the test database in subprocesses, so we need to
+        # tell the layer to fully tear down and restore the database.
         DatabaseLayer.force_dirty_database()
 
         return rc, out, err
-
-
-class TestSlaveScanner(TestCronscriptBase):
-    """Test SlaveScanner buildd script class."""
-    layer = LaunchpadLayer
-
-    def testRunSlaveScanner(self):
-        """Check if buildd-slave-scanner runs without errors."""
-        self.assertRuns(runner=self.runBuilddSlaveScanner)
 
 
 class TestQueueBuilder(TestCronscriptBase):

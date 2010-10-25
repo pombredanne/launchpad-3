@@ -29,7 +29,7 @@ Create a distribution series and an arch series for dapper:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")
@@ -160,8 +160,8 @@ distroarchseries:
 
 Check that the source package was correctly imported:
 
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from canonical.launchpad.database import BinaryPackageName
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                        version="1:1.5-4ubuntu1.2")

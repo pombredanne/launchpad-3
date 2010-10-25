@@ -16,7 +16,7 @@ from canonical.launchpad.searchbuilder import (
     all,
     any,
     )
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -907,6 +907,42 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task1 = self.factory.makeBugTask(target=target)
         default_result = target.searchTasks(None)
         self.assertEqual([task1], list(default_result))
+
+    def test_created_since_excludes_earlier_bugtasks(self):
+        # When we search for bug tasks that have been created since a certain
+        # time, tasks for bugs that have not been created since then are
+        # excluded.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        date = task.datecreated + timedelta(days=1)
+        result = target.searchTasks(None, created_since=date)
+        self.assertEqual([], list(result))
+
+    def test_created_since_includes_later_bugtasks(self):
+        # When we search for bug tasks that have been created since a certain
+        # time, tasks for bugs that have been created since then are
+        # included.
+        target = self.makeBugTarget()
+        self.login()
+        task = self.factory.makeBugTask(target=target)
+        date = task.datecreated - timedelta(days=1)
+        result = target.searchTasks(None, created_since=date)
+        self.assertEqual([task], list(result))
+
+    def test_created_since_includes_later_bugtasks_excludes_earlier(self):
+        # When we search for bugs that have been created since a certain
+        # time, tasks for bugs that have been created since then are
+        # included, tasks that have not are excluded.
+        target = self.makeBugTarget()
+        self.login()
+        task1 = self.factory.makeBugTask(target=target)
+        date = task1.datecreated
+        task1.datecreated -= timedelta(days=1)
+        task2 = self.factory.makeBugTask(target=target)
+        task2.datecreated += timedelta(days=1)
+        result = target.searchTasks(None, created_since=date)
+        self.assertEqual([task2], list(result))
 
 
 def test_suite():

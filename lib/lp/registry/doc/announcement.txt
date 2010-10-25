@@ -13,8 +13,10 @@ after publishing, and they can be deleted, permanently.
     >>> import pytz
     >>> NOW = datetime.utcnow().replace(tzinfo=pytz.utc)
     >>> FUTURE = NOW + timedelta(days=10)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAnnouncementSet, IDistributionSet, IProductSet, IProjectGroupSet)
+    >>> from lp.registry.interfaces.announcement import IAnnouncementSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> announcements = getUtility(IAnnouncementSet)
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
     >>> apache = getUtility(IProjectGroupSet).getByName('apache')
@@ -30,7 +32,7 @@ For the moment, this is only available to beta testers.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
     >>> ignored = beta.addMember(mark, mark)
     >>> from canonical.database.sqlbase import flush_database_updates
