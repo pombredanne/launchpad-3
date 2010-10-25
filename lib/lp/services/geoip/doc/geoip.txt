@@ -95,6 +95,8 @@ same South African IP address.
     -33...
     >>> geoip_request.longitude
     18...
+    >>> geoip_request.time_zone
+    'Africa/Johannesburg'
 
 If the request had an originating IP address, though, it'd be used when
 we adapted it into an IGeoIPRecord.
@@ -106,3 +108,5 @@ we adapted it into an IGeoIPRecord.
     -23...
     >>> geoip_request.longitude
     -45...
+    >>> geoip_request.time_zone in ('Brazil/Acre', 'America/Sao_Paulo')
+    True
