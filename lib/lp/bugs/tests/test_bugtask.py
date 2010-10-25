@@ -25,6 +25,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.hardwaredb.interfaces.hwdb import (
@@ -32,7 +34,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWDeviceSet,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -943,6 +948,19 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.datecreated += timedelta(days=1)
         result = target.searchTasks(None, created_since=date)
         self.assertEqual([task2], list(result))
+
+
+class TestBugTaskStatuses(TestCase):
+
+    def test_open_and_resolved_statuses(self):
+        """
+        There are constants that are used to define which statuses are for
+        resolved bugs (`RESOLVED_BUGTASK_STATUSES`), and which are for
+        unresolved bugs (`UNRESOLVED_BUGTASK_STATUSES`). The two constants
+        include all statuses defined in BugTaskStatus, except for Unknown.
+        """
+        self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
 def test_suite():
