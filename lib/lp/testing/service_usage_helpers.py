@@ -4,7 +4,6 @@
 """Helper functions dealing with IServiceUsage."""
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
@@ -53,5 +52,4 @@ def set_service_usage(pillar_name, **kw):
                 pillar.development_focus = product_series
         else:
             setattr(pillar, attr, service_usage)
-    #transaction.commit()
     logout()

@@ -1,4 +1,5 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the # GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
 
@@ -113,7 +114,7 @@ class TestProductConfiguration(TestCaseWithFactory):
         self.product = self.factory.makeProduct()
 
     def _configure_all_services(self, product):
-        # Sets all the service usage enums for a product. 
+        # Sets all the service usage enums for a product.
         # This doesn't set them all to LAUNCHPAD because a service should
         # be considered configured as long as they're not UNKNOWN.
         naked_product = removeSecurityProxy(product)
@@ -155,8 +156,7 @@ class TestProductConfiguration(TestCaseWithFactory):
             translations_usage="NOT_APPLICABLE")
         view = create_view(self.product, '+get-involved')
         self.assertTrue(view.registration_done)
-            
-    
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -478,6 +478,7 @@ class ProductInvolvementView(PillarView):
         """A boolean indicating that the services are fully configured."""
         return (self.registration_completeness['done'] == 100)
 
+
 class ProductNavigationMenu(NavigationMenu):
 
     usedfor = IProduct

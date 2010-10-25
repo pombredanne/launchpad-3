@@ -5,7 +5,9 @@ import unittest
 import transaction
 
 from canonical.launchpad.windmill.testing import (
-    constants, lpuser,)
+    constants,
+    lpuser,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.service_usage_helpers import set_service_usage
@@ -39,16 +41,15 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         # We can only safe use this class selector in this test b/c there's
         # only one collapsible element on this page.
         client.asserts.assertNotProperty(
-            classname='collapseWrapper',    
+            classname='collapseWrapper',
             validator='className|lazr-closed')
 
         # When the Show link is clicked when it's open, it closes it.
         client.click(link=u"Show configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
-            classname='collapseWrapper',    
+            classname='collapseWrapper',
             validator='className|lazr-closed')
-        
 
     def test_configured_starts_collapsed(self):
         """Test the Configuration links on a product.
@@ -75,13 +76,13 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         lpuser.FOO_BAR.ensure_login(client)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
-            classname='collapseWrapper',    
+            classname='collapseWrapper',
             validator='className|lazr-closed')
 
         client.click(link=u"Show configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
-            classname='collapseWrapper',    
+            classname='collapseWrapper',
             validator='className|lazr-open')
 
 
