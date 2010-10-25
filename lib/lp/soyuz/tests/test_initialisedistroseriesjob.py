@@ -129,9 +129,11 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries(parent_series=parent)
 
+        # Make sure everything hits the database, switching db users
+        # aborts.
         transaction.commit()
-        self.layer.switchDbUser('initialisedistroseries')
         job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        self.layer.switchDbUser('initialisedistroseries')
 
         job.run()
         child.updatePackageCount()
