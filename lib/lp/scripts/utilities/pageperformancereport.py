@@ -121,9 +121,6 @@ class Stats:
         self.mean, self.mean_sqlstatements, self.mean_sqltime = (
             times_array.mean(axis=0))
 
-        # We need to explicitely cast the masked array to float32
-        # when computing median() or std() because the implementation
-        # is buggy for masked array of object.
         self.median, self.median_sqlstatements, self.median_sqltime = (
             numpy.median(times_array, axis=0))
 
