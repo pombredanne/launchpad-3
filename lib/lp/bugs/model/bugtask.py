@@ -17,6 +17,7 @@ __all__ = [
     'bugtask_sort_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
+    'get_structural_subscribers',
     'search_value_to_where_condition',
     ]
 
@@ -127,6 +128,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -155,6 +157,9 @@ from lp.registry.interfaces.productseries import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import IPropertyCache
@@ -259,6 +264,62 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
              'of these parameter has to be empty: %s'
                 %(context.name, ", ".join(relevant_fields))))
     return search_params
+
+
+def get_structural_subscribers(bugtasks, recipients=None, level=None):
+    """Return `IPerson`s subscribed to the given bug tasks.
+
+    This takes into account bug subscription filters.
+    """
+    query_arguments = []
+    for bugtask in bugtasks:
+        if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+            query_arguments.append((bugtask.target, bugtask))
+            if bugtask.target.parent_subscription_target is not None:
+                query_arguments.append(
+                    (bugtask.target.parent_subscription_target, bugtask))
+        if ISourcePackage.providedBy(bugtask.target):
+            # Distribution series bug tasks with a package have the source
+            # package set as their target, so we add the distroseries
+            # explicitly to the set of subscription targets.
+            query_arguments.append((bugtask.distroseries, bugtask))
+        if bugtask.milestone is not None:
+            query_arguments.append((bugtask.milestone, bugtask))
+
+    if len(query_arguments) == 0:
+        return EmptyResultSet()
+
+    if level is None:
+        # If level is not specified, default to NOTHING so that all
+        # subscriptions are found.
+        level = BugNotificationLevel.NOTHING
+
+    # Build the query.
+    union = lambda left, right: left.union(right)
+    queries = (
+        target.getSubscriptionsForBugTask(bugtask, level)
+        for target, bugtask in query_arguments)
+    subscriptions = reduce(union, queries)
+
+    # Pull all the subscriptions in.
+    subscriptions = list(subscriptions)
+
+    # Prepare a query for the subscribers.
+    from lp.registry.model.person import Person
+    subscribers = IStore(Person).find(
+        Person, Person.id.is_in(
+            subscription.subscriberID
+            for subscription in subscriptions))
+
+    if recipients is not None:
+        # We need to process subscriptions, so pull all the subscribes into
+        # the cache, then update recipients with the subscriptions.
+        subscribers = list(subscribers)
+        for subscription in subscriptions:
+            recipients.addStructuralSubscriber(
+                subscription.subscriber, subscription.target)
+
+    return subscribers
 
 
 class BugTaskDelta:
