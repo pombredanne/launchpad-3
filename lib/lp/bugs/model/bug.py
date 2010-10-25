@@ -161,7 +161,6 @@ from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
     get_bug_privacy_filter,
-    get_structural_subscribers,
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
@@ -984,7 +983,7 @@ BugMessage""" % sqlvalues(self.id))
 
         # Structural subscribers.
         also_notified_subscribers.update(
-            get_structural_subscribers(
+            getUtility(IBugTaskSet).getStructuralSubscribers(
                 self.bugtasks, recipients=recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect

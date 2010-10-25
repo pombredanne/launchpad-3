@@ -11,6 +11,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from storm.store import ResultSet
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -37,10 +38,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.bugs.model.bugtask import (
-    build_tag_search_clause,
-    get_structural_subscribers,
-    )
+from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
     sync_bugtasks,
@@ -68,7 +66,6 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import StartsWith
-from zope.security.proxy import removeSecurityProxy
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -1300,28 +1297,31 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
     def make_product_with_bug(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
-        # get_structural_subscribers() is intended for use only in model code,
+        # getStructuralSubscribers() is intended for use only in model code,
         # and will not work if the bugtasks passed in are security proxied.
         return product, removeSecurityProxy(bug)
 
-    def test_get_structural_subscribers_no_subscribers(self):
+    def test_getStructuralSubscribers_no_subscribers(self):
         # If there are no subscribers for any of the bug's targets then no
-        # subscribers will be returned by get_structural_subscribers().
+        # subscribers will be returned by getStructuralSubscribers().
         product, bug = self.make_product_with_bug()
-        subscribers = get_structural_subscribers(bug.bugtasks)
+        bug_task_set = getUtility(IBugTaskSet)
+        subscribers = bug_task_set.getStructuralSubscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
         self.assertEqual([], list(subscribers))
 
-    def test_get_structural_subscribers_single_target(self):
+    def test_getStructuralSubscribers_single_target(self):
         # Subscribers for any of the bug's targets are returned.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
+        bug_task_set = getUtility(IBugTaskSet)
         self.assertEqual(
-            [subscriber], list(get_structural_subscribers(bug.bugtasks)))
+            [subscriber], list(
+                bug_task_set.getStructuralSubscribers(bug.bugtasks)))
 
-    def test_get_structural_subscribers_multiple_targets(self):
+    def test_getStructuralSubscribers_multiple_targets(self):
         # Subscribers for any of the bug's targets are returned.
         actor = self.factory.makePerson()
         login_person(actor)
@@ -1337,23 +1337,25 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product1)
         bug.addTask(actor, product2)
 
-        # get_structural_subscribers() is intended for use only in model code,
+        # getStructuralSubscribers() is intended for use only in model code,
         # and will not work if the bugtasks passed in are security proxied.
         bug = removeSecurityProxy(bug)
 
-        subscribers = get_structural_subscribers(bug.bugtasks)
+        bug_task_set = getUtility(IBugTaskSet)
+        subscribers = bug_task_set.getStructuralSubscribers(bug.bugtasks)
         self.assertIsInstance(subscribers, ResultSet)
         self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
 
-    def test_get_structural_subscribers_recipients(self):
-        # If provided, get_structural_subscribers() calls the appropriate
+    def test_getStructuralSubscribers_recipients(self):
+        # If provided, getStructuralSubscribers() calls the appropriate
         # methods on a BugNotificationRecipients object.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         product.addBugSubscription(subscriber, subscriber)
         recipients = BugNotificationRecipients()
-        subscribers = get_structural_subscribers(
+        bug_task_set = getUtility(IBugTaskSet)
+        subscribers = bug_task_set.getStructuralSubscribers(
             bug.bugtasks, recipients=recipients)
         # The return value is a list only when populating recipients.
         self.assertIsInstance(subscribers, list)
@@ -1365,21 +1367,22 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
                 u"you are subscribed to "))
         self.assertThat(header, StartsWith(u"Subscriber "))
 
-    def test_get_structural_subscribers_level(self):
-        # get_structural_subscribers() respects the given level.
+    def test_getStructuralSubscribers_level(self):
+        # getStructuralSubscribers() respects the given level.
         subscriber = self.factory.makePerson()
         login_person(subscriber)
         product, bug = self.make_product_with_bug()
         subscription = product.addBugSubscription(subscriber, subscriber)
         subscription.bug_notification_level = BugNotificationLevel.METADATA
+        bug_task_set = getUtility(IBugTaskSet)
         self.assertEqual(
             [subscriber], list(
-                get_structural_subscribers(
+                bug_task_set.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.METADATA)))
         subscription.bug_notification_level = BugNotificationLevel.METADATA
         self.assertEqual(
             [], list(
-                get_structural_subscribers(
+                bug_task_set.getStructuralSubscribers(
                     bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
 
 

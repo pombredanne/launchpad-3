@@ -1524,6 +1524,12 @@ class IBugTaskSet(Interface):
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
 
+    def getStructuralSubscribers(bugtasks, recipients=None, level=None):
+        """Return `IPerson`s subscribed to the given bug tasks.
+
+        This takes into account bug subscription filters.
+        """
+
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
