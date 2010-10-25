@@ -2881,7 +2881,7 @@ class BugTaskSet:
         from lp.registry.model.person import Person
         subscribers = IStore(Person).find(
             Person, Person.id.is_in(
-                subscription.subscriberID
+                removeSecurityProxy(subscription).subscriberID
                 for subscription in subscriptions))
 
         if recipients is not None:
