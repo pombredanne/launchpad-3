@@ -86,34 +86,6 @@ A target's parent can be retrieved using the
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.registry.enum import BugNotificationLevel
-    >>> from lp.registry.interfaces.structuralsubscription import BlueprintNotificationLevel
-    >>> from lp.bugs.mail.bugnotificationrecipients import (
-    ...     BugNotificationRecipients)
-
-We define some utility functions for printing out bug subscriptions and
-the recipients for the notifications they generate.
-
-    >>> def print_bug_subscribers(bug_subscribers):
-    ...     subscriber_names = sorted(subscriber.name
-    ...                               for subscriber in bug_subscribers)
-    ...     for name in subscriber_names:
-    ...         print name
-    >>> def print_bug_subscriptions(bug_subscriptions):
-    ...     for subscription in bug_subscriptions:
-    ...         print subscription.subscriber.name
-    >>> def print_bug_recipients(recipients):
-    ...     for recipient in recipients:
-    ...         reason = recipients.getReason(recipient)
-    ...         print '%s "%s"' % (recipient.name, reason[1])
-
-Sample person has a subscription to Ubuntu and to the Evolution package
-in Ubuntu. We set the bug notification level for both subscriptions.
-
-    >>> ubuntu_sub.bug_notification_level = BugNotificationLevel.COMMENTS
-    >>> evolution_sub.bug_notification_level = BugNotificationLevel.COMMENTS
-
 
 Target type display
 ===================

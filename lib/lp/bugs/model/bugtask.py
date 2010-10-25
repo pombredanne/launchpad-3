@@ -1957,7 +1957,7 @@ class BugTaskSet:
         query = " AND ".join(extra_clauses)
 
         if not decorators:
-            decorator = lambda x:x
+            decorator = lambda x: x
         else:
             def decorator(obj):
                 for decor in decorators:

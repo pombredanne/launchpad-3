@@ -931,8 +931,9 @@ BugMessage""" % sqlvalues(self.id))
             # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
             # hack; it does not seem to be possible to express DISTINCT ON
             # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) 0 AS ignore"),
-             # return people and subscribptions
+            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
+                 "0 AS ignore"),
+             # Return people and subscriptions
              Person, BugSubscription),
             # For this bug or its duplicates
             Or(

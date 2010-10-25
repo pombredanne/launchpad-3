@@ -916,7 +916,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual(2, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
         # distorting what we're testing.
-        _ = IPerson(person.account, None)
+        IPerson(person.account, None)
         # One query and only one should be issued to get the tasks, bugs and
         # allow access to getConjoinedMaster attribute - an attribute that
         # triggers a permission check (nb: id does not trigger such a check)
@@ -1027,8 +1027,6 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Add a watch to a Debian bug for bug #2, and mark the task Fix
         # Released.
         bug_two = bugset.get(2)
-        current_user = getUtility(ILaunchBag).user
-        bugtaskset = getUtility(IBugTaskSet)
         bugwatchset = getUtility(IBugWatchSet)
 
         # Get a debbugs watch.
