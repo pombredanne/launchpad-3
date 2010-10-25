@@ -191,7 +191,10 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.errors import NameAlreadyTaken
+from lp.registry.errors import (
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -217,7 +220,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    JoinNotAllowed,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,

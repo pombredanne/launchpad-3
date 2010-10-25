@@ -73,6 +73,15 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
                 UserCannotEditBugTaskStatus, self.task.transitionToStatus,
                 BugTaskStatus.CONFIRMED, self.user)
 
+    def test_user_cannot_unset_fix_released_status(self):
+        # A regular user should not be able to transition a bug away
+        # from Fix Released.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.user):
+            self.assertRaises(
+                UserCannotEditBugTaskStatus, self.task.transitionToStatus,
+                BugTaskStatus.FIXRELEASED, self.user)
+
     def test_user_canTransitionToStatus(self):
         # Regular user cannot transition to BUG_SUPERVISOR_BUGTASK_STATUSES,
         # but can transition to any other status.
@@ -124,6 +133,15 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
         # A regular user cannot transition away from Won't Fix,
         # so canTransitionToStatus should return False.
         removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.user),
+            False)
+
+    def test_user_canTransitionToStatus_from_fixreleased(self):
+        # A regular user cannot transition away from Fix Released,
+        # so canTransitionToStatus should return False.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.NEW, self.user),
@@ -188,6 +206,13 @@ class TestBugTaskStatusTransitionForPrivilegedUserBase:
             self.task.transitionToStatus(BugTaskStatus.CONFIRMED, self.person)
             self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
 
+    def test_privileged_user_can_unset_wont_fix_released(self):
+        # Privileged users can transition away from Fix Released.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.person):
+            self.task.transitionToStatus(BugTaskStatus.CONFIRMED, self.person)
+            self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
+
     def test_privileged_user_canTransitionToStatus(self):
         # Privileged users (like owner or bug supervisor) should
         # be able to set any status, so canTransitionToStatus should
@@ -241,6 +266,15 @@ class TestBugTaskStatusTransitionForPrivilegedUserBase:
         # A privileged user can transition away from Won't Fix, so
         # canTransitionToStatus should return True.
         removeSecurityProxy(self.task).status = BugTaskStatus.WONTFIX
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.NEW, self.person),
+            True)
+
+    def test_privileged_user_canTransitionToStatus_from_fixreleased(self):
+        # A privileged user can transition away from Fix Released, so
+        # canTransitionToStatus should return True.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
         self.assertEqual(
             self.task.canTransitionToStatus(
                 BugTaskStatus.NEW, self.person),

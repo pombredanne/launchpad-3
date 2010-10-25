@@ -33,7 +33,10 @@ from email.utils import (
     make_msgid,
     )
 from itertools import count
-from operator import isSequenceType
+from operator import (
+    isMappingType,
+    isSequenceType,
+    )
 import os
 from random import randint
 from StringIO import StringIO
@@ -239,17 +242,13 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet,
-    )
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import (
-    PackageDiff,
-    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -3208,9 +3207,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
-unwrapped_types = (
-    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode)
+unwrapped_types = frozenset((
+        BaseRecipeBranch,
+        DSCFile,
+        InstanceType,
+        MergeDirective2,
+        Message,
+        datetime,
+        int,
+        str,
+        unicode,
+        ))
 
 
 def is_security_proxied_or_harmless(obj):
@@ -3221,11 +3228,15 @@ def is_security_proxied_or_harmless(obj):
         return True
     if type(obj) in unwrapped_types:
         return True
-    if isSequenceType(obj):
-        for element in obj:
-            if not is_security_proxied_or_harmless(element):
-                return False
-        return True
+    if isSequenceType(obj) or isinstance(obj, (set, frozenset)):
+        return all(
+            is_security_proxied_or_harmless(element)
+            for element in obj)
+    if isMappingType(obj):
+        return all(
+            (is_security_proxied_or_harmless(key) and
+             is_security_proxied_or_harmless(obj[key]))
+            for key in obj)
     return False
 
 
