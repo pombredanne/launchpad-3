@@ -22,7 +22,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet

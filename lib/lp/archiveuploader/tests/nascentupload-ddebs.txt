@@ -11,7 +11,7 @@ for obtaining extra information about crashes in the corresponding
 feature.
 
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)

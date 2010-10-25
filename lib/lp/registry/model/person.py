@@ -191,7 +191,10 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.errors import NameAlreadyTaken
+from lp.registry.errors import (
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -217,7 +220,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    JoinNotAllowed,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -4059,59 +4061,6 @@ class PersonSet:
         return Person.select('''
             Person.id in (%s)
             ''' % branch_clause)
-
-    def getSubscribersForTargets(self, targets, recipients=None, level=None):
-        """See `IPersonSet`. """
-        if len(targets) == 0:
-            return set()
-        target_criteria = []
-        for target in targets:
-            # target_args is a mapping from query arguments
-            # to query values.
-            target_args = target._target_args
-            target_criteria_clauses = []
-            for key, value in target_args.items():
-                if value is not None:
-                    target_criteria_clauses.append(
-                        '%s = %s' % (key, quote(value)))
-                else:
-                    target_criteria_clauses.append(
-                        '%s IS NULL' % key)
-            if level is not None:
-                target_criteria_clauses.append('bug_notification_level >= %s'
-                    % quote(level.value))
-
-            target_criteria.append(
-                '(%s)' % ' AND '.join(target_criteria_clauses))
-
-        # Build a UNION query, since using OR slows down the query a lot.
-        subscriptions = StructuralSubscription.select(target_criteria[0])
-        for target_criterion in target_criteria[1:]:
-            subscriptions = subscriptions.union(
-                StructuralSubscription.select(target_criterion))
-
-        # Listify the result, since we want to loop over it multiple times.
-        subscriptions = list(subscriptions)
-
-        # We can't use prejoins in UNION queries, so populate the cache
-        # by getting all the subscribers.
-        subscriber_ids = [
-            subscription.subscriberID for subscription in subscriptions]
-        if len(subscriber_ids) > 0:
-            # Pull in ValidPersonCache records in addition to Person
-            # records to warm up the cache.
-            list(IStore(Person).find(
-                    (Person, ValidPersonCache),
-                    In(Person.id, subscriber_ids),
-                    ValidPersonCache.id == Person.id))
-
-        subscribers = set()
-        for subscription in subscriptions:
-            subscribers.add(subscription.subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-        return subscribers
 
     def updatePersonalStandings(self):
         """See `IPersonSet`."""

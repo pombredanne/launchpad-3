@@ -67,6 +67,11 @@
     access_level="write" />
 
   <permission
+    id="launchpad.BugSupervisor"
+    title="The role of managing bugs and bug rules for a product."
+    access_level="write" />
+
+  <permission
     id="launchpad.Owner"
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />

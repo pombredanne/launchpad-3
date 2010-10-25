@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,

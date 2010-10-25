@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -44,8 +44,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         self._builder.slave.cacheFile(logger, chroot)
         cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = {'arch_tag': self._getDistroArchSeries().architecturetag}
-        args.update(self.buildfarmjob.metadata)
+        args = {
+            'arch_tag': self._getDistroArchSeries().architecturetag,
+            'branch_url': self.buildfarmjob.branch.composePublicURL(),
+            }
 
         filemap = {}
 

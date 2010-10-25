@@ -26,8 +26,8 @@ time remaining before the request should time out.
 The timeout to use is the number of seconds remaining before
 db_statement_timeout is expired.
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
+    >>> from textwrap import dedent
     >>> config.push('timeout', dedent('''\
     ... [database]
     ... db_statement_timeout = 10000'''))
@@ -88,9 +88,9 @@ periods. For more information on feature flags see lp.services.features.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features import per_thread
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features.webapp import ScopesFromRequest
 
 Install the feature flag to increase the timeout value.
 

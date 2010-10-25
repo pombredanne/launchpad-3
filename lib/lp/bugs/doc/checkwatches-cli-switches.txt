@@ -29,7 +29,7 @@ external connections.
 If a bug tracker is disabled checkwatches won't try to update it.
 
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
@@ -87,8 +87,8 @@ demonstrate this.
 
     >>> import pytz
     >>> from datetime import datetime
-    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

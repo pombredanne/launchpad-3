@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 import cgi
-from datetime import datetime
 import threading
 import xmlrpclib
 
@@ -526,7 +525,27 @@ def get_query_string_params(request):
     return decoded_qs
 
 
-class BasicLaunchpadRequest:
+class LaunchpadBrowserRequestMixin:
+    """Provides methods used for both API and web browser requests."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
+    @property
+    def is_ajax(self):
+        """See `IBasicLaunchpadRequest`."""
+        return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
+
+
+class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
@@ -581,24 +600,8 @@ class BasicLaunchpadRequest:
         return get_query_string_params(self)
 
 
-class LaunchpadBrowserRequestMixin:
-    """A mixin for classes that share some method implementations."""
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        if rootsite is not None:
-            assert rootsite in allvhosts.configs, (
-                "rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())))
-            root_url = allvhosts.configs[rootsite].rooturl
-        else:
-            root_url = self.getApplicationURL() + '/'
-        return root_url
-
-
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest,
-                              LaunchpadBrowserRequestMixin):
+                              NotificationRequest, ErrorReportRequest):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
@@ -1269,10 +1272,9 @@ class WebServicePublication(WebServicePublicationMixin,
             token.checkNonceAndTimestamp(nonce, timestamp)
         except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
-        now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)
-        elif token.date_expires is not None and token.date_expires <= now:
+        elif token.is_expired:
             raise Unauthorized('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
             raise Unauthorized('Invalid signature.')
@@ -1366,7 +1368,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
+                          ErrorReportRequest):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):

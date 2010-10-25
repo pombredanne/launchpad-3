@@ -45,8 +45,8 @@ Members of the beta team aren't redirected to the beta site on API call.
     >>> config.push('beta_data', beta_data)
 
     >>> from lp.testing import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> beta_admin = getUtility(IPersonSet).getByEmail(
@@ -102,7 +102,7 @@ consumer keys.
 
     >>> from canonical.launchpad.testing.pages import (
     ...     LaunchpadWebServiceCaller)
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
     >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
     >>> response = caller.get(root)

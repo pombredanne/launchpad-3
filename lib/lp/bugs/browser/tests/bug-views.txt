@@ -11,7 +11,7 @@ an event listener to demonstrate this.
 
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
     >>> on_created_listener = TestEventListener(
@@ -27,10 +27,19 @@ name, that information is recorded in the description, and the first
 comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
-    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     ILaunchBag,
+    ...     IOpenLaunchBag,
+    ...     )
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> launchbag = getUtility(IOpenLaunchBag)
     >>> login("foo.bar@canonical.com")
@@ -444,7 +453,8 @@ bugtargetdisplayname. Approved nominations are not included in the
 returned results, because an approved nomination will have created a
 task anyway.
 
-    >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
 
     >>> def get_object_type(task_or_nomination):
     ...     if IBugTask.providedBy(task_or_nomination):
@@ -472,12 +482,26 @@ task anyway.
     bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu series and see how
-the list changes.
+After creating bug supervisors for Ubuntu and Firefox Let's nominate the bug
+for upstream and an Ubuntu series and see how the list changes.
 
-(Login as an unprivileged user to be able to nominate.)
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>>
+    >>> login(ADMIN_EMAIL)
+    >>> nominator = factory.makePerson(name='nominator')
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = nominator
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = nominator
+    >>> logout()
 
-    >>> login("no-priv@canonical.com")
+(Login as a bug supervisor to be able to nominate.)
+
+    >>> login_person(nominator)
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getSeries("warty")

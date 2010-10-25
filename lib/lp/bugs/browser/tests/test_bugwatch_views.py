@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.testing import login, login_person, TestCaseWithFactory
 from lp.testing.sampledata import ADMIN_EMAIL
