@@ -1417,10 +1417,13 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         """
         if reviewer is None:
             reviewer = self.factory.makePerson()
-        merge_proposal = self.factory.makeBranchMergeProposal(
-            registrant=registrant, reviewer=reviewer,
-            review_type=review_type)
+        if registrant is None:
+            registrant = self.factory.makePerson()
+        merge_proposal = make_merge_proposal_without_reviewers(
+            factory=self.factory, registrant=registrant)
         login_person(merge_proposal.source_branch.owner)
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer, registrant=registrant, review_type=review_type)
         return merge_proposal, reviewer
 
     def test_pending_review_registrant(self):
@@ -1448,7 +1451,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_nominate_creates_reference(self):
         # A new vote reference is created when a reviewer is nominated.
         merge_proposal, reviewer = self.makeProposalWithReviewer(
-            review_type='General')
+            review_type='general')
         self.assertOneReviewPending(merge_proposal, reviewer, 'general')
 
     def test_nominate_with_None_review_type(self):
@@ -1585,7 +1588,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     def test_vote_by_nominated_reuses_reference(self):
         """A comment with a vote for a nominated reviewer alters reference."""
         reviewer = self.factory.makePerson()
-        merge_proposal = self.factory.makeBranchMergeProposal(
+        merge_proposal, ignore = self.makeProposalWithReviewer(
             reviewer=reviewer, review_type='general')
         login(merge_proposal.source_branch.owner.preferredemail.email)
         comment = merge_proposal.createComment(
@@ -1605,7 +1608,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # A person in a team claims a team review of the same type.
         reviewer = self.factory.makePerson()
         team = self.factory.makeTeam(owner=reviewer)
-        merge_proposal = self.factory.makeBranchMergeProposal(
+        merge_proposal, ignore = self.makeProposalWithReviewer(
             reviewer=team, review_type='general')
         login(merge_proposal.source_branch.owner.preferredemail.email)
         [vote] = list(merge_proposal.votes)
