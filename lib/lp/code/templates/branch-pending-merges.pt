@@ -46,6 +46,21 @@
       tal:condition="link/enabled"
       tal:replace="structure link/render"
       />
+
+
+    <div tal:condition="not: context/merge_queue">
+      This branch is not managed by a queue.
+      <div
+        tal:define="link context_menu/link_queue"
+        tal:condition="link/enabled"
+        tal:content="structure link/render"
+        />
+      <div
+        tal:define="link context_menu/create_queue"
+        tal:condition="link/enabled"
+        tal:content="structure link/render"
+        />
+    </div>
   </div>
 
 </div>

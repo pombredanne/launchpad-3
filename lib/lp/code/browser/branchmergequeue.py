@@ -10,8 +10,21 @@ __all__ = [
     'BranchMergeQueueView',
     ]
 
-from canonical.launchpad.webapp import ContextMenu, LaunchpadView
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
+from zope.interface import Interface
+
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    ContextMenu,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
+from lp.code.interfaces.branchmergequeue import (
+    IBranchMergeQueue,
+    IBranchMergeQueueSource,
+    )
 
 
 class BranchMergeQueueContextMenu(ContextMenu):
@@ -34,3 +47,33 @@ class BranchMergeQueueView(LaunchpadView):
             'queue_name': self.context.name}
 
     label = page_title
+
+
+class BranchMergeQueueAddView(LaunchpadFormView):
+
+    title = label = 'Create a new branch merge queue'
+
+    class schema(Interface):
+        name = copy_field(IBranchMergeQueue['name'], readonly=False)
+        owner = copy_field(IBranchMergeQueue['owner'], readonly=False)
+        description = copy_field(IBranchMergeQueue['description'],
+            readonly=False)
+
+    def initialize(self):
+        super(BranchMergeQueueAddView, self).initialize()
+
+    @property
+    def initial_values(self):
+        return {}
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @action('Create Queue', name='create')
+    def request_action(self, action, data):
+        merge_queue = getUtility(IBranchMergeQueueSource).new(
+            data['name'], data['owner'], self.user, data['description'])
+        self.context.addToQueue(merge_queue)
+
+        self.next_url = canonical_url(merge_queue)

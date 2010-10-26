@@ -67,10 +67,15 @@ class BranchMergeQueue(Storm):
             raise InvalidMergeQueueConfig
 
     @classmethod
-    def new(cls, name, owner, registrant, description=None,
+    def new(cls, name, owner, registrant, description,
             configuration=None):
         """See `IBranchMergeQueueSource`."""
         store = IMasterStore(BranchMergeQueue)
+
+        if description is None:
+            description = description
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({}))
 
         queue = cls()
         queue.name = name

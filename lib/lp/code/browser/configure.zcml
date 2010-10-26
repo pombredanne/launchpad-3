@@ -1342,6 +1342,14 @@
             name="+index"
             template="../templates/branchmergequeue-index.pt"
             permission="zope.Public" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
+            name="+create-queue"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.Edit" />
+
     </facet>
 
 </configure>
