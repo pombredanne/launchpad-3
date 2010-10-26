@@ -488,7 +488,7 @@
                 addAnswerContact
                 removeAnswerContact"/>
         <require
-            permission="launchpad.Edit"
+            permission="launchpad.BugSupervisor"
             set_attributes="
                 bug_reported_acknowledgement
                 bug_reporting_guidelines"/>
@@ -1475,13 +1475,16 @@
                 mugshot
                 official_answers
                 official_blueprints
-                official_bug_tags
                 official_malone
                 official_rosetta
                 owner
                 security_contact
                 summary
                 title"/>
+        <require
+            permission="launchpad.BugSupervisor"
+            set_attributes="
+                official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="

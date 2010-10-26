@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 import cgi
-from datetime import datetime
 import threading
 import xmlrpclib
 
@@ -620,10 +619,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
-
-    def isRedirectInhibited(self):
-        """Returns True if edge redirection has been inhibited."""
-        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     @cachedproperty
     def form_ng(self):
@@ -1277,10 +1272,9 @@ class WebServicePublication(WebServicePublicationMixin,
             token.checkNonceAndTimestamp(nonce, timestamp)
         except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
             raise Unauthorized('Invalid nonce/timestamp: %s' % e)
-        now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)
-        elif token.date_expires is not None and token.date_expires <= now:
+        elif token.is_expired:
             raise Unauthorized('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
             raise Unauthorized('Invalid signature.')

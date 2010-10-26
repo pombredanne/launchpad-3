@@ -88,7 +88,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import IPropertyCache
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -1839,7 +1839,7 @@ class ArchiveSet:
                 signing_key = owner.archive.signing_key
             else:
                 # owner.archive is a cached property and we've just cached it.
-                del IPropertyCache(owner).archive
+                del get_property_cache(owner).archive
 
         new_archive = Archive(
             owner=owner, distribution=distribution, name=name,

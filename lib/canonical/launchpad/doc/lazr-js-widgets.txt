@@ -82,9 +82,9 @@ InlineEditPickerWidget
 The InlineEditPickerWidget can be used for any interface attribute that
 has a vocabulary defined for it.
 
-    >>> from canonical.widgets.lazrjs import InlineEditPickerWidget
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugTask, IBugTaskSet
+    >>> from canonical.widgets.lazrjs import InlineEditPickerWidget
+    >>> from lp.bugs.interfaces.bugtask import IBugTask, IBugTaskSet
     >>> bugtask = getUtility(IBugTaskSet).get(2)
     >>> def create_inline_edit_picker_widget():
     ...     view = create_initialized_view(bugtask, '+index')

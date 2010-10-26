@@ -87,8 +87,8 @@ demonstrate this.
 
     >>> import pytz
     >>> from datetime import datetime
-    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')

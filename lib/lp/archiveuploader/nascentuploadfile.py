@@ -50,8 +50,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
+    PackagePublishingStatus,
     PackageUploadCustomFormat,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -781,11 +781,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
     #   Database relationship methods
     #
     def findSourcePackageRelease(self):
-        """Return the respective ISourcePackagRelease for this binary upload.
+        """Return the respective ISourcePackageRelease for this binary upload.
 
-        It inspect publication in the targeted DistroSeries and also the
-        ACCEPTED queue for sources matching stored
-        (source_name, source_version).
+        It inspect publication in the targeted DistroSeries.
 
         It raises UploadError if the source was not found.
 
@@ -793,43 +791,19 @@ class BaseBinaryUploadFile(PackageUploadFile):
         mixed_uploads (source + binary) we do not have the source stored
         in DB yet (see verifySourcepackagerelease).
         """
+        assert self.source_name is not None
+        assert self.source_version is not None
         distroseries = self.policy.distroseries
         spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
 
-        sourcepackagerelease = None
-        if spphs:
-            # We know there's only going to be one release because
-            # version is unique.
-            assert spphs.count() == 1, "Duplicated ancestry"
-            sourcepackagerelease = spphs[0].sourcepackagerelease
-        else:
-            # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
-            # special condition, not really used in production. We should
-            # remove the support for this use case.
-            self.logger.debug(
-                "No source published, checking the ACCEPTED queue")
-
-            queue_candidates = distroseries.getQueueItems(
-                status=PackageUploadStatus.ACCEPTED,
-                name=self.source_name, version=self.source_version,
-                archive=self.policy.archive, exact_match=True)
-
-            for queue_item in queue_candidates:
-                if queue_item.sources.count():
-                    sourcepackagerelease = queue_item.sourcepackagerelease
-
-        if sourcepackagerelease is None:
-            # At this point, we can't really do much more to try
-            # building this package. If we look in the NEW queue it is
-            # possible that multiple versions of the package exist there
-            # and we know how bad that can be. Time to give up!
+        if spphs.count() == 0:
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
 
-        return sourcepackagerelease
+        return spphs[0].sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""

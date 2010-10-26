@@ -97,7 +97,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         This implementation is a little fuzzy and will return specs for URLs
         that, for example, don't have the host name right.  This seems
         unlikely to cause confusion in practice, and being too anal probably
-        would be confusing (e.g. not accepting edge URLs on lpnet).
+        would be confusing (e.g. not accepting production URLs on staging).
         """
         scheme, netloc, path, params, args, fragment = urlparse(url)
         if not scheme or not netloc:

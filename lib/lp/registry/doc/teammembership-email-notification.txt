@@ -27,10 +27,14 @@ for the member.
     ...     pop_notifications, print_distinct_emails, run_mail_jobs)
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     TeamMembershipRenewalPolicy,
+    ...     )
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet,
+    ...     TeamMembershipStatus,
+    ...     )
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> mark = personset.getByName('mark')
@@ -616,7 +620,7 @@ is automatically renewed.
     >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
     >>> flush_database_updates()
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> membershipset.handleMembershipsExpiringToday(
     ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
     >>> flush_database_updates()

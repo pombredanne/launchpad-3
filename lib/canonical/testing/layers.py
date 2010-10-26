@@ -35,6 +35,7 @@ __all__ = [
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
+    'LaunchpadTestSetup',
     'LaunchpadZopelessLayer',
     'LayerInvariantError',
     'LayerIsolationError',
@@ -56,6 +57,7 @@ import errno
 import gc
 import logging
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -63,12 +65,12 @@ import sys
 import tempfile
 import threading
 import time
-
 from cProfile import Profile
 from textwrap import dedent
 from unittest import TestCase, TestResult
 from urllib import urlopen
 
+from fixtures import Fixture
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -92,9 +94,14 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
+from canonical.config.fixture import (
+    ConfigFixture,
+    ConfigUseFixture,
+    )
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import (
@@ -251,29 +258,68 @@ class BaseLayer:
     # LP_PERSISTENT_TEST_SERVICES environment variable.
     persist_test_services = False
 
+    # Things we need to cleanup.
+    fixture = None
+
+    # The config names that are generated for this layer
+    config_name = None
+    appserver_config_name = None
+
+    @classmethod
+    def make_config(cls, config_name, clone_from):
+        """Create a temporary config and link it into the layer cleanup."""
+        cfg_fixture = ConfigFixture(config_name, clone_from)
+        cls.fixture.addCleanup(cfg_fixture.cleanUp)
+        cfg_fixture.setUp()
+
     @classmethod
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        cls.fixture = Fixture()
+        cls.fixture.setUp()
+        cls.fixture.addCleanup(setattr, cls, 'fixture', None)
         BaseLayer.persist_test_services = (
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
-        # Kill any Memcached or Librarian left running from a previous
-        # test run, or from the parent test process if the current
-        # layer is being run in a subprocess. No need to be polite
-        # about killing memcached - just do it quickly.
+        # We can only do unique test allocation and parallelisation if
+        # LP_PERSISTENT_TEST_SERVICES is off.
         if not BaseLayer.persist_test_services:
+            test_instance = str(os.getpid())
+            os.environ['LP_TEST_INSTANCE'] = test_instance
+            cls.fixture.addCleanup(os.environ.pop, 'LP_TEST_INSTANCE', '')
+            # Kill any Memcached or Librarian left running from a previous
+            # test run, or from the parent test process if the current
+            # layer is being run in a subprocess. No need to be polite
+            # about killing memcached - just do it quickly.
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
+            config_name = 'testrunner_%s' % test_instance
+            cls.make_config(config_name, 'testrunner')
+            app_config_name = 'testrunner-appserver_%s' % test_instance
+            cls.make_config(app_config_name, 'testrunner-appserver')
+        else:
+            config_name = 'testrunner'
+            app_config_name = 'testrunner-appserver'
+        cls.config_name = config_name
+        cls.fixture.addCleanup(setattr, cls, 'config_name', None)
+        cls.appserver_config_name = app_config_name
+        cls.fixture.addCleanup(setattr, cls, 'appserver_config_name', None)
+        use_fixture = ConfigUseFixture(config_name)
+        cls.fixture.addCleanup(use_fixture.cleanUp)
+        use_fixture.setUp()
         # Kill any database left lying around from a previous test run.
+        db_fixture = LaunchpadTestSetup()
         try:
-            DatabaseLayer.connect().close()
+            db_fixture.connect().close()
         except psycopg2.Error:
+            # We assume this means 'no test database exists.'
             pass
         else:
-            DatabaseLayer._dropDb()
+            db_fixture.dropDb()
 
     @classmethod
     @profiled
     def tearDown(cls):
+        cls.fixture.cleanUp()
         BaseLayer.isSetUp = False
 
     @classmethod
@@ -327,7 +373,7 @@ class BaseLayer:
                     if thread not in BaseLayer._threads and thread.isAlive()]
 
         if BaseLayer.disable_thread_check:
-            new_threads = new_live_threads()
+            new_threads = None
         else:
             for loop in range(0,100):
                 # Check for tests that leave live threads around early.
@@ -345,6 +391,7 @@ class BaseLayer:
                     gc.collect()
                 else:
                     break
+            new_threads = new_live_threads()
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop
@@ -693,19 +740,19 @@ class DatabaseLayer(BaseLayer):
     _reset_between_tests = True
 
     _is_setup = False
+    _db_fixture = None
 
     @classmethod
     @profiled
     def setUp(cls):
         cls._is_setup = True
-        DatabaseLayer.force_dirty_database()
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+        # Read the sequences we'll need from the test template database.
+        reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
+        cls._db_fixture = LaunchpadTestSetup(
+            reset_sequences_sql=reset_sequences_sql)
+        cls.force_dirty_database()
+        cls._db_fixture.tearDown()
 
     @classmethod
     @profiled
@@ -716,32 +763,22 @@ class DatabaseLayer(BaseLayer):
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
         # in test_layers.py
-        DatabaseLayer.force_dirty_database()
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
-        DatabaseLayer._reset_sequences_sql = None
+        cls.force_dirty_database()
+        cls._db_fixture.tearDown()
+        cls._db_fixture = None
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup(
-                reset_sequences_sql=DatabaseLayer._reset_sequences_sql
-                ).setUp()
+        if cls._reset_between_tests:
+            cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
         attempts = 60
         for count in range(0, attempts):
             try:
-                DatabaseLayer.connect().close()
+                cls.connect().close()
             except psycopg2.Error:
                 if count == attempts - 1:
                     raise
@@ -749,24 +786,20 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.installMockDb()
+        if cls.use_mockdb is True:
+            cls.installMockDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if DatabaseLayer.use_mockdb is True:
-            DatabaseLayer.uninstallMockDb()
+        if cls.use_mockdb is True:
+            cls.uninstallMockDb()
 
         # Ensure that the database is connectable
-        DatabaseLayer.connect().close()
+        cls.connect().close()
 
-        # Imported here to avoid circular import issues. This
-        # functionality should be migrated into this module at some
-        # point. -- StuartBishop 20060712
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().tearDown()
+        if cls._reset_between_tests:
+            cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
         from canonical.launchpad.webapp.adapter import StoreSelector
@@ -781,7 +814,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def installMockDb(cls):
-        assert DatabaseLayer.mockdb_mode is None, 'mock db already installed'
+        assert cls.mockdb_mode is None, 'mock db already installed'
 
         from canonical.testing.mockdb import (
                 script_filename, ScriptRecorder, ScriptPlayer,
@@ -795,32 +828,32 @@ class DatabaseLayer(BaseLayer):
         # mock db script.
         filename = script_filename(test_key)
         if os.path.exists(filename):
-            DatabaseLayer.mockdb_mode = 'replay'
-            DatabaseLayer.script = ScriptPlayer(test_key)
+            cls.mockdb_mode = 'replay'
+            cls.script = ScriptPlayer(test_key)
         else:
-            DatabaseLayer.mockdb_mode = 'record'
-            DatabaseLayer.script = ScriptRecorder(test_key)
+            cls.mockdb_mode = 'record'
+            cls.script = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg2.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
-            return DatabaseLayer.script.connect(_org_connect, *args, **kw)
+            return cls.script.connect(_org_connect, *args, **kw)
         psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
-        if DatabaseLayer.mockdb_mode is None:
+        if cls.mockdb_mode is None:
             return # Already uninstalled
 
         # Store results if we are recording
-        if DatabaseLayer.mockdb_mode == 'record':
-            DatabaseLayer.script.store()
-            assert os.path.exists(DatabaseLayer.script.script_filename), (
+        if cls.mockdb_mode == 'record':
+            cls.script.store()
+            assert os.path.exists(cls.script.script_filename), (
                     "Stored results but no script on disk.")
 
-        DatabaseLayer.mockdb_mode = None
+        cls.mockdb_mode = None
         global _org_connect
         psycopg2.connect = _org_connect
         _org_connect = None
@@ -828,20 +861,17 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def force_dirty_database(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().force_dirty_database()
+        cls._db_fixture.force_dirty_database()
 
     @classmethod
     @profiled
     def connect(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().connect()
+        return cls._db_fixture.connect()
 
     @classmethod
     @profiled
     def _dropDb(cls):
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        return LaunchpadTestSetup().dropDb()
+        return cls._db_fixture.dropDb()
 
 
 def test_default_timeout():
@@ -1378,6 +1408,11 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         reconnect_stores(database_config_section=database_config_section)
 
 
+class LaunchpadTestSetup(PgTestSetup):
+    template = 'launchpad_ftest_template'
+    dbuser = 'launchpad'
+
+
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
@@ -1644,6 +1679,18 @@ class LayerProcessController:
     smtp_controller = None
 
     @classmethod
+    def _setConfig(cls):
+        """Stash a config for use."""
+        cls.appserver_config = CanonicalConfig(
+            BaseLayer.appserver_config_name, 'runlaunchpad')
+
+    @classmethod
+    def setUp(cls):
+        cls._setConfig()
+        cls.startSMTPServer()
+        cls.startAppServer()
+
+    @classmethod
     @profiled
     def startSMTPServer(cls):
         """Start the SMTP server if it hasn't already been started."""
@@ -1770,9 +1817,12 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
-        LaunchpadTestSetup().setUp()
+        cls._db_fixture = LaunchpadTestSetup()
+        # This is not torn down properly: rather the singleton nature is abused
+        # and the fixture is simply marked as being dirty.
+        # XXX: Robert Collins 2010-10-17 bug=661967
+        cls._db_fixture.setUp()
         # The app server will not start at all if the database hasn't been
         # correctly patched. The app server will make exactly this check,
         # doing it here makes the error more obvious.

@@ -8,7 +8,7 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.interfaces import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
