@@ -1826,10 +1826,13 @@ $$
     [version] = args
 
     def substitute_filled_numbers(match):
-        return match.group(0).zfill(5)
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1].
+        return '~' + match.group(0).zfill(5)
 
     return re.sub(u'\d+', substitute_filled_numbers, version)
 $$;
 
 COMMENT ON FUNCTION version_sort_key(text) IS
-'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions.';
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';
