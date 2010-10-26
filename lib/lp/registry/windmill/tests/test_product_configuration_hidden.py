@@ -47,7 +47,7 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         client.click(link=u"Configuration links")
         client.waits.forElement(
             classname="collapseWrapper lazr-closed",
-            timeout=constants.PAGE_LOAD)
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-closed')
@@ -68,7 +68,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         client.open(url=u'http://launchpad.dev:8085/hidden-configs')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.FOO_BAR.ensure_login(client)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(
+            classname='collapseWrapper lazr-closed',
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-closed')
@@ -76,7 +78,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         # When the "Configuration links" link is clicked and the actual links are
         # hidden, the collapsible wrapper opens, showing the links.
         client.click(link=u"Configuration links")
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forPageLoad(
+            classname='lazr-open',
+            timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-open')
