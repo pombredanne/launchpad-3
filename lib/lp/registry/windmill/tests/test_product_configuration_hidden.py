@@ -14,6 +14,10 @@ from lp.testing.service_usage_helpers import set_service_usage
 
 
 class TestProductHiddenConfiguration(WindmillTestCase):
+   """Test the Configuration links show/hide controls on products.
+   
+   Controls only work with javascript enabled.
+   """
 
     layer = RegistryWindmillLayer
     suite_name = "Product configuration links hidden"
@@ -24,27 +28,22 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         transaction.commit()
 
     def test_not_fully_configured_starts_shown(self):
-        """Test the Configuration links on a product.
-
-        This test ensures that, with Javascript enabled, the configuration
-        links start closed on a fully configured project, and show all
-        configuration links when opened.
-
-        Additionally, on a not fully configured project, it starts by showing
-        the links, and can be closed.
-        """
+        # A product that is not fully configured displays the links on
+        # page load, but they can be hidden.
         client = self.client
 
         client.open(url=u'http://launchpad.dev:8085/hidden-configs')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.FOO_BAR.ensure_login(client)
-        # We can only safe use this class selector in this test b/c there's
+
+        # We can only safely use this class selector in this test b/c there's
         # only one collapsible element on this page.
         client.asserts.assertNotProperty(
             classname='collapseWrapper',
             validator='className|lazr-closed')
 
-        # When the Show link is clicked when it's open, it closes it.
+        # When the "Configuration links" link is clicked and the actual links are
+        # shown, the collapsible wrapper collapses, hiding the links.
         client.click(link=u"Configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
@@ -52,15 +51,8 @@ class TestProductHiddenConfiguration(WindmillTestCase):
             validator='className|lazr-closed')
 
     def test_configured_starts_collapsed(self):
-        """Test the Configuration links on a product.
-
-        This test ensures that, with Javascript enabled, the configuration
-        links start closed on a fully configured project, and show all
-        configuration links when opened.
-
-        Additionally, on a not fully configured project, it starts by showing
-        the links, and can be closed.
-        """
+        # A product that is fully configured hides the links on page
+        # load, but they can be hidden.
         set_service_usage(
             self.product.name,
             codehosting_usage="EXTERNAL",
@@ -79,6 +71,8 @@ class TestProductHiddenConfiguration(WindmillTestCase):
             classname='collapseWrapper',
             validator='className|lazr-closed')
 
+        # When the "Configuration links" link is clicked and the actual links are
+        # hidden, the collapsible wrapper opens, showing the links.
         client.click(link=u"Configuration links")
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
