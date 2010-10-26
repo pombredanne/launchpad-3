@@ -16,9 +16,6 @@
     <div tal:define="link menu/addbranch"
          tal:condition="link/enabled"
          tal:content="structure link/render" />
-    <div tal:define="link menu/view_merge_queues"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
   </div>
 
   <tal:summary replace="structure context/@@+codesummary"/>

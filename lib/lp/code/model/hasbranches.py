@@ -24,6 +24,7 @@ from lp.code.interfaces.branchmergequeuecollection import (
     IBranchMergeQueueCollection,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.services.propertycache import cachedproperty
 
 
 class HasBranchesMixin:
@@ -60,6 +61,7 @@ class HasMergeProposalsMixin:
 class HasMergeQueuesMixin:
     """A mixin implementation for `IHasMergeQueues`."""
 
+    @cachedproperty
     def getMergeQueues(self):
         """See `IHasMergeQueues`."""
         collection = IBranchMergeQueueCollection(self)

@@ -99,10 +99,11 @@ class IHasMergeProposals(Interface):
 
 
 class IHasMergeQueues(Interface):
-    """An object that has merge queues."""
+    """An object provides access to merge queues of a person."""
 
     def getMergeQueues():
-        """Returns all merge queues associated with the object."""
+        """Returns all merge queues."""
+
 
 class IHasRequestedReviews(Interface):
     """IPersons can have reviews requested of them in merge proposals.

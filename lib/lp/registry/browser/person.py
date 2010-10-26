@@ -240,7 +240,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.code.browser.mergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -548,7 +547,6 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_merge_queue(self, name):
         """Traverse to this person's merge queues."""
         return self.context.getMergeQueue(name)
-
 
 class TeamNavigation(PersonNavigation):
 
@@ -1025,7 +1023,7 @@ class PersonMenuMixin(CommonMenuLinks):
 
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
-                         HasRecipesMenuMixin, HasMergeQueuesMenuMixin):
+                         HasRecipesMenuMixin):
 
     usedfor = IPerson
     facet = 'overview'
@@ -1036,7 +1034,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
              'codesofconduct', 'karma', 'administer', 'administer_account',
              'projects', 'activate_ppa', 'maintained',
              'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary', 'view_recipes', 'view_merge_queues']
+             'related_software_summary', 'view_recipes']
 
     def related_software_summary(self):
         target = '+related-software'

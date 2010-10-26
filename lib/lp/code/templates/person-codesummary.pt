@@ -32,5 +32,11 @@
           tal:content="structure menu/active_reviews/render"
           />
     </tr>
+    <tr id="mergequeue-counts">
+      <td class="code-count" tal:content="menu/mergequeue_count">5</td>
+      <td tal:condition="menu"
+          tal:content="structure menu/mergequeues/render"
+          />
+    </tr>
   </table>
 </div>

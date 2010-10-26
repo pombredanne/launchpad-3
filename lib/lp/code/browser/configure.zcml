@@ -1326,7 +1326,7 @@
             permission="zope.Public"
             facet="branches"
             name="+merge-queues"
-            template="../templates/mergequeue-listing.pt"/>
+            template="../templates/branchmergequeue-listing.pt"/>
 
     </facet>
 

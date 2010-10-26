@@ -87,7 +87,7 @@ class GenericBranchMergeQueueCollection:
         return self._merge_queue_filter_expressions
 
     def getMergeQueues(self):
-        """See `IBranchCollection`."""
+        """See `IBranchMergeQueueCollection`."""
         tables = [BranchMergeQueue] + self._tables.values()
         expressions = self._getMergeQueueExpressions()
         return self.store.using(*tables).find(BranchMergeQueue, *expressions)
