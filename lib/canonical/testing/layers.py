@@ -580,6 +580,8 @@ class LibrarianLayer(BaseLayer):
 
     _is_setup = False
 
+    _atexit_call = None
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -611,6 +613,7 @@ class LibrarianLayer(BaseLayer):
         atexit._exithandlers = [
             handler for handler in atexit._exithandlers
             if handler[0] != cls._atexit_call]
+        cls._atexit_call = None
 
     @classmethod
     @profiled
