@@ -361,31 +361,18 @@ class POTMsgSet(SQLBase):
             query = ["(NOT %s)" % in_use_clause]
         query.append('TranslationMessage.language = %s' % sqlvalues(language))
 
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated
-        # to check for the translations_usage, not official_rosetta.
         query.append('''
             potmsgset IN (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
                     TranslationTemplateItem.potmsgset = POTMsgSet.id
-                JOIN POTemplate ON
-                    TranslationTemplateItem.potemplate = POTemplate.id
-                LEFT JOIN ProductSeries ON
-                    POTemplate.productseries = ProductSeries.id
-                LEFT JOIN Product ON
-                    ProductSeries.product = Product.id
-                LEFT JOIN DistroSeries ON
-                    POTemplate.distroseries = DistroSeries.id
-                LEFT JOIN Distribution ON
-                    DistroSeries.distribution = Distribution.id
+                JOIN SuggestivePOTemplate ON
+                    TranslationTemplateItem.potemplate =
+                        SuggestivePOTemplate.id
                 WHERE
                     POTMsgSet.id <> %s AND
-                    msgid_singular = %s AND
-                    POTemplate.iscurrent AND
-                    (Product.official_rosetta OR
-                        Distribution.official_rosetta)
+                    msgid_singular = %s
             )''' % sqlvalues(self, self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
