@@ -14,6 +14,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 
+from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -173,6 +174,66 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(self.bugtasks[:2])
         self.assertEqual(expected, search_result)
 
+    def setUpSearchTests(self):
+        # Set text fields indexed by Bug.fti, BugTask.fti or
+        # MessageChunk.fti to values we can search for.
+        for bugtask, number in zip(self.bugtasks, ('one', 'two', 'three')):
+            commenter = self.bugtasks[0].bug.owner
+            with person_logged_in(commenter):
+                bugtask.statusexplanation = 'status explanation %s' % number
+                bugtask.bug.title = 'bug title %s' % number
+                bugtask.bug.newMessage(
+                    owner=commenter, content='comment %s' % number)
+
+    def test_fulltext_search(self):
+        # Full text searches find text indexed by Bug.fti...
+        self.setUpSearchTests()
+        params = self.getBugTaskSearchParams(user=None, searchtext='one title')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+        # ... by BugTask.fti ...
+        params = self.getBugTaskSearchParams(
+            user=None, searchtext='one explanation')
+        search_result = self.runSearch(params)
+        self.assertEqual(expected, search_result)
+        # ...and by MessageChunk.fti
+        params = self.getBugTaskSearchParams(
+            user=None, searchtext='one comment')
+        search_result = self.runSearch(params)
+        self.assertEqual(expected, search_result)
+
+    def test_fast_fulltext_search(self):
+        # Fast full text searches find text indexed by Bug.fti...
+        self.setUpSearchTests()
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='one title')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+        # ... but not text indexed by BugTask.fti ...
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='one explanation')
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+        # ..or by MessageChunk.fti
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='one comment')
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+
+    def test_has_no_upstream_bugtask(self):
+        # Search results can be limited to bugtasks of bugs that do
+        # not have a related upstream task.
+        #
+        bug = self.makeBugWithOneTarget()
+
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks)
+        self.assertEqual(expected, search_result)
+
 
 class ProductAndDistributionTests:
     """Tests which are useful for distributions and products."""
@@ -203,6 +264,7 @@ class BugTargetTestBase:
     def makeBugTasks(self, bugtarget):
         self.bugtasks = []
         with person_logged_in(self.owner):
+            assert(bug.default_bugtask.target == bugtarget)
             self.bugtasks.append(
                 self.factory.makeBugTask(target=bugtarget))
             self.bugtasks[-1].importance = BugTaskImportance.HIGH
@@ -323,6 +385,8 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
 
             product = self.factory.makeProduct(owner=self.owner)
             product.project = self.searchtarget
+            self.bugtasks.append(
+                self.factory.makeBugTask(target=product))
             self.bugtasks[-1].importance = BugTaskImportance.LOW
             self.bugtasks[-1].transitionToStatus(
             BugTaskStatus.NEW, self.owner)
