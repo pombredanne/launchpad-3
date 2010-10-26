@@ -3,8 +3,6 @@
 
 """Model tests for the DistroSeriesDifference class."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest

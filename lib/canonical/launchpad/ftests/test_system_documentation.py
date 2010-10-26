@@ -7,8 +7,6 @@ lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
 
-from __future__ import with_statement
-
 import logging
 import os
 import unittest

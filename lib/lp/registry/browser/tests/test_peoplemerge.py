@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the peoplemerge browser module."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from zope.component import getUtility

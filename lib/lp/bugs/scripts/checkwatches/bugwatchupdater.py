@@ -3,8 +3,6 @@
 
 """Classes and logic for the checkwatches BugWatchUpdater."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'BugWatchUpdater',

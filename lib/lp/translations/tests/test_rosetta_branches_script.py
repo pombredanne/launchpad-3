@@ -7,8 +7,6 @@ This would normally be done in a doctest but TestCaseWithFactory has all the
 provisions to handle Bazaar branches.
 """
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from unittest import TestLoader

@@ -3,9 +3,6 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
