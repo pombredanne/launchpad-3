@@ -2742,13 +2742,8 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
-    def createNewPPA(self, name=None, displayname=None, description=None,
-                     acceptance=False):
+    def createNewPPA(self, name=None, displayname=None, description=None):
         """See `IPerson`."""
-        if not acceptance:
-            raise PPACreationError(
-                "You must accept the PPA Terms of Service to enable a "
-                "PPA.")
         errors = Archive.validatePPA(self, name)
         if errors:
             raise PPACreationError(errors)

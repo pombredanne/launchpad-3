@@ -1241,21 +1241,18 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
-        description=TextLine(required=False),
-        acceptance=Bool(required=True))
-    @operation_returns_entry(Interface) # Really IArchive.
-    @export_write_operation()
-    def createNewPPA(name=None, displayname=None, description=None,
-                     acceptance=False):
+        description=TextLine(required=False))
+    @export_factory_operation(Interface, []) # Really IArchive.
+    def createNewPPA(name=None, displayname=None, description=None):
         """Create a new PPA.
 
         :param name: A string with the name of the new PPA to create. If
-        not specified, defaults to 'ppa'.
+            not specified, defaults to 'ppa'.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
-        :param acceptance: If the PPA terms of service are acceptable.
+        :raises: `PPACreationError` if an error is encountered
 
-        :returns: a PPA `IArchive` record.
+        :return: a PPA `IArchive` record.
         """
 
 
@@ -2184,6 +2181,7 @@ class PPACreationError(Exception):
     """Raised when there is an issue creating a new PPA for a person
     or team."""
 
+    webservice_error = 400 # Bad Request
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [

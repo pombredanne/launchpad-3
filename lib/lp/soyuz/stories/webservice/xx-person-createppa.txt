@@ -12,9 +12,12 @@
   >>> ppa_owner_webservice = webservice_for_person(
   ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
 
-  >>> new_ppa = ppa_owner_webservice.named_post(
+  >>> print ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createNewPPA', {}, name=None,
   ...     displayname='My shiny new PPA', description='Shinyness!',
-  ...     acceptance=True).jsonBody()
-  >>> print new_ppa['self_link']
-  http://api.launchpad.dev/.../+archive/ppa
+  ...     )
+  HTTP/1.1 201 Created
+  Status: 201
+  ...
+  Location: http://api.launchpad.dev/.../+archive/ppa
+  ...

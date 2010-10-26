@@ -19,35 +19,30 @@ class TestCreateNewPPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_no_acceptance(self):
-        person = self.factory.makePerson()
-        self.assertRaisesWithContent(
-            PPACreationError, 'You must accept the PPA Terms of Service '
-            'to enable a PPA.', person.createNewPPA)
-
     def test_open_team_cannot_create(self):
         team = self.factory.makeTeam()
         removeSecurityProxy(team).subscriptionpolicy = (
             TeamSubscriptionPolicy.OPEN)
         self.assertRaisesWithContent(
             PPACreationError, 'Open teams can not have PPAs.',
-            team.createNewPPA, None, None, None, True)
+            team.createNewPPA, None, None, None)
 
     def test_create_distribution_name(self):
         person = self.factory.makePerson()
         self.assertRaisesWithContent(
             PPACreationError, 'Archives cannot have the same name as '
             'its distribution.', person.createNewPPA,
-            'ubuntu', None, None, True)
+            'ubuntu', None, None)
 
     def test_create_two_ppas(self):
         person = self.factory.makePerson()
-        person.createNewPPA(acceptance=True)
+        person.createNewPPA()
         self.assertRaisesWithContent(
             PPACreationError, "You already have a PPA named 'ppa'.",
-            person.createNewPPA, None, None, None, True)
+            person.createNewPPA, None, None, None)
 
     def test_create_ppa(self):
         person = self.factory.makePerson()
-        ppa = person.createNewPPA(acceptance=True)
+        ppa = person.createNewPPA()
+        print type(ppa)
         self.assertEqual(ppa.name, 'ppa')
