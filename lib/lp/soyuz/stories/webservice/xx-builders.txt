@@ -5,9 +5,9 @@ Builders
 The webservice exposes a top-level collection called "builders" which
 contains all the registered builders in the Launchpad build farm.
 
-    >>> launchpad = launchpadlib_for(
+    >>> nopriv_launchpad = launchpadlib_for(
     ...     'builders test', 'no-priv', version='devel')
-    >>> builders = launchpad.builders
+    >>> builders = nopriv_launchpad.builders
 
 Iterating over the collection is possible:
 
@@ -17,7 +17,7 @@ Iterating over the collection is possible:
     http://api.launchpad.dev/devel/builders/frog
 
 An individual builder can be retrieved by name by using the getByName()
-method on "builders":
+operation on "builders":
 
     >>> bob = builders.getByName(name="bob")
 
@@ -47,7 +47,7 @@ If an authorized person (usually a member of the buildd-admins team)
 wishes to amend some property of a builder, the usual webservice 'lp_save'
 operation is used.
 
-Our "bob" builder was retrieved using the no-priv user, and he does not
+Our "bob" builder was retrieved using the no-priv user, and no-priv does not
 have permission to save changes:
 
     >>> print bob.active
@@ -60,9 +60,9 @@ have permission to save changes:
 
 'cprov', who is a buildd-admin, is able to change the data:
 
-    >>> launchpad = launchpadlib_for(
+    >>> cprov_launchpad = launchpadlib_for(
     ...     'builders test', 'cprov', version='devel')
-    >>> bob = launchpad.builders.getByName(name="bob")
+    >>> bob = cprov_launchpad.builders.getByName(name="bob")
     >>> bob.active = False
     >>> bob.lp_save()
 
