@@ -90,7 +90,7 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+# as of 2009-09-16.  See https://bugs.launchpad.net/bugs/425113.
 from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
 from zope.component import (

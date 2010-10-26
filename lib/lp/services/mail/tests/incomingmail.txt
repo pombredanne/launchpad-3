@@ -119,7 +119,7 @@ a link to the original message.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-... in the description.
     ...
     From: Sample Person <test@canonical.com>
@@ -256,7 +256,7 @@ to the user, citing the OOPS ID, with the original message attached.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-...TEMAIL... in the description.
     ...
     From: Foo Bar <foo.bar@canonical.com>
@@ -301,7 +301,7 @@ reporting in the web interface, are not ignored in the email interface.
     Apologies for the inconvenience.
     <BLANKLINE>
     If this is blocking your work, please file a question at
-    https://answers.edge.launchpad.net/launchpad/+addquestion
+    https://answers.launchpad.net/launchpad/+addquestion
     and include the error ID OOPS-...TEMAIL... in the description.
     ...
     From: Foo Bar <foo.bar@canonical.com>

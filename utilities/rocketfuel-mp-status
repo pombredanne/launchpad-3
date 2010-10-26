@@ -6,7 +6,7 @@ from launchpadlib.launchpad import Launchpad
 import os
 import sys
 
-launchpad = Launchpad.login_with('rocketfuel-mp-status', 'edge')
+launchpad = Launchpad.login_with('rocketfuel-mp-status', 'production')
 trunk = commands.getoutput(
     '. ~/.rocketfuel-env.sh && echo $LP_TRUNK_NAME')
 projpath = commands.getoutput(
