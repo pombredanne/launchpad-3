@@ -3,8 +3,6 @@
 
 """Unit tests for BranchView."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (
@@ -22,7 +20,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

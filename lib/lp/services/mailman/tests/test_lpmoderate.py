@@ -2,15 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the lpmoderate monekypatches"""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = []
 
 from Mailman import Errors
 from Mailman.Handlers import LPModerate
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
 
 

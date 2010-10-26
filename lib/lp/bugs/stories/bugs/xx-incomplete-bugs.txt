@@ -104,11 +104,11 @@ bug has not yet been expired, a different message will be displayed,
 detailing the amount of time that has passed since the bug's expiration
 date. We alter the date_last_updated field of bug 11 to demonstrate this.
 
-    >>> from datetime import timedelta
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import timedelta
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
 
     >>> bug_11 = getUtility(IBugSet).get(11)
@@ -233,6 +233,16 @@ Jokosher's bug page.
 Debian does not use launchpad to track bugs, so its incomplete bugs
 cannot expire. No Privileges Person sets a Debian bug to Incomplete,
 and does not see the expiration notice.
+
+In order for this to work, the bug cannot be FIXRELEASED, which
+it is by default.  So we set the bug back to NEW.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> login('foo.bar@canonical.com')
+    >>> bug_8 = getUtility(IBugSet).get(8)
+    >>> bug_8.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.NEW, bug_8.bugtasks[0].distribution.owner)
+    >>> logout()
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8')

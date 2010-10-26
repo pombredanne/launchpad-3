@@ -13,8 +13,10 @@ suggestions in Spanish.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     >>> login('foo.bar@canonical.com')
@@ -24,6 +26,10 @@ suggestions in Spanish.
     >>> ubuntu_spanish_reviewer = getUtility(ITranslatorSet).new(
     ...     translationgroup=ubuntu.translationgroup, language=spanish,
     ...     translator=carlos)
+
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+
     >>> logout()
 
 Let's add a new suggestion as a person without privileges.

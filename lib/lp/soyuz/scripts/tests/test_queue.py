@@ -3,8 +3,6 @@
 
 """queue tool base class tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'upload_bar_source',
@@ -32,12 +30,12 @@ from canonical.launchpad.database import (
     PackageUploadBuild,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.ftests.harness import (
+from canonical.librarian.testing.server import (
     cleanupLibrarianFiles,
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer, 
     LaunchpadZopelessLayer,
     )

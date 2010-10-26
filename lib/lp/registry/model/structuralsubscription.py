@@ -6,7 +6,16 @@ __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
 from sqlobject import ForeignKey
-from zope.component import getUtility
+from storm.expr import (
+    And,
+    LeftJoin,
+    Or,
+    )
+from storm.store import Store
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -17,7 +26,19 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterimportance import (
+    BugSubscriptionFilterImportance,
+    )
+from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterStatus,
+    )
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.errors import (
+    DeleteSubscriptionError,
+    UserCannotSubscribePerson,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -33,11 +54,11 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel,
-    DeleteSubscriptionError,
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
-    UserCannotSubscribePerson,
+    IStructuralSubscriptionTargetHelper,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class StructuralSubscription(SQLBase):
@@ -115,9 +136,159 @@ class StructuralSubscription(SQLBase):
         else:
             raise AssertionError('StructuralSubscription has no target.')
 
+    @property
+    def bug_filters(self):
+        """See `IStructuralSubscription`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.structural_subscription == self)
+
+    def newBugFilter(self):
+        """See `IStructuralSubscription`."""
+        bug_filter = BugSubscriptionFilter()
+        bug_filter.structural_subscription = self
+        return bug_filter
+
+
+class DistroSeriesTargetHelper:
+    """A helper for `IDistroSeries`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistroSeries)
+
+    target_type_display = 'distribution series'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.distribution
+        self.target_arguments = {"distroseries": target}
+        self.pillar = target.distribution
+        self.join = (StructuralSubscription.distroseries == target)
+
+
+class ProjectGroupTargetHelper:
+    """A helper for `IProjectGroup`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProjectGroup)
+
+    target_type_display = 'project group'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = None
+        self.target_arguments = {"project": target}
+        self.pillar = target
+        self.join = (StructuralSubscription.project == target)
+
+
+class DistributionSourcePackageTargetHelper:
+    """A helper for `IDistributionSourcePackage`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistributionSourcePackage)
+
+    target_type_display = 'package'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.distribution
+        self.target_arguments = {
+            "distribution": target.distribution,
+            "sourcepackagename": target.sourcepackagename,
+            }
+        self.pillar = target.distribution
+        self.join = And(
+            StructuralSubscription.distributionID == (
+                target.distribution.id),
+            StructuralSubscription.sourcepackagenameID == (
+                target.sourcepackagename.id))
+
+
+class MilestoneTargetHelper:
+    """A helper for `IMilestone`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IMilestone)
+
+    target_type_display = 'milestone'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.target
+        self.target_arguments = {"milestone": target}
+        self.pillar = target.target
+        self.join = (StructuralSubscription.milestone == target)
+
+
+class ProductTargetHelper:
+    """A helper for `IProduct`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProduct)
+
+    target_type_display = 'project'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.project
+        self.target_arguments = {"product": target}
+        self.pillar = target
+        self.join = (StructuralSubscription.product == target)
+
+
+class ProductSeriesTargetHelper:
+    """A helper for `IProductSeries`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IProductSeries)
+
+    target_type_display = 'project series'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = target.product
+        self.target_arguments = {"productseries": target}
+        self.pillar = target.product
+        self.join = (StructuralSubscription.productseries == target)
+
+
+class DistributionTargetHelper:
+    """A helper for `IDistribution`s."""
+
+    implements(IStructuralSubscriptionTargetHelper)
+    adapts(IDistribution)
+
+    target_type_display = 'distribution'
+
+    def __init__(self, target):
+        self.target = target
+        self.target_parent = None
+        self.target_arguments = {
+            "distribution": target,
+            "sourcepackagename": None,
+            }
+        self.pillar = target
+        self.join = And(
+            StructuralSubscription.distributionID == target.id,
+            StructuralSubscription.sourcepackagenameID == None)
+
 
 class StructuralSubscriptionTargetMixin:
     """Mixin class for implementing `IStructuralSubscriptionTarget`."""
+
+    @cachedproperty
+    def __helper(self):
+        """A `IStructuralSubscriptionTargetHelper` for this object.
+
+        Eventually this helper object could become *the* way to work with
+        structural subscriptions. For now it just provides a few bits that
+        vary with the context.
+
+        It is cached in a pseudo-private variable because this is a mixin
+        class.
+        """
+        return IStructuralSubscriptionTargetHelper(self)
 
     @property
     def _target_args(self):
@@ -126,27 +297,20 @@ class StructuralSubscriptionTargetMixin:
         Return a dictionary with the arguments representing this
         target in a call to the structural subscription constructor.
         """
-        args = {}
-        if IDistributionSourcePackage.providedBy(self):
-            args['distribution'] = self.distribution
-            args['sourcepackagename'] = self.sourcepackagename
-        elif IProduct.providedBy(self):
-            args['product'] = self
-        elif IProjectGroup.providedBy(self):
-            args['project'] = self
-        elif IDistribution.providedBy(self):
-            args['distribution'] = self
-            args['sourcepackagename'] = None
-        elif IMilestone.providedBy(self):
-            args['milestone'] = self
-        elif IProductSeries.providedBy(self):
-            args['productseries'] = self
-        elif IDistroSeries.providedBy(self):
-            args['distroseries'] = self
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.')
-        return args
+        return self.__helper.target_arguments
+
+    @property
+    def parent_subscription_target(self):
+        """See `IStructuralSubscriptionTarget`."""
+        parent = self.__helper.target_parent
+        assert (parent is None or
+                IStructuralSubscriptionTarget.providedBy(parent))
+        return parent
+
+    @property
+    def target_type_display(self):
+        """See `IStructuralSubscriptionTarget`."""
+        return self.__helper.target_type_display
 
     def userCanAlterSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
@@ -266,106 +430,29 @@ class StructuralSubscriptionTargetMixin:
                          min_blueprint_notification_level=
                          BlueprintNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
-        target_clause_parts = []
-        for key, value in self._target_args.items():
+        clauses = [
+            "StructuralSubscription.subscriber = Person.id",
+            "StructuralSubscription.bug_notification_level "
+            ">= %s" % quote(min_bug_notification_level),
+            "StructuralSubscription.blueprint_notification_level "
+            ">= %s" % quote(min_blueprint_notification_level),
+            ]
+        for key, value in self._target_args.iteritems():
             if value is None:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s IS NULL " % (key, ))
+                clauses.append(
+                    "StructuralSubscription.%s IS NULL" % (key,))
             else:
-                target_clause_parts.append(
-                    "StructuralSubscription.%s = %s " % (key, quote(value)))
-        target_clause = " AND ".join(target_clause_parts)
-        query = target_clause + """
-            AND StructuralSubscription.subscriber = Person.id
-            """
-        all_subscriptions = StructuralSubscription.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        subscriptions = [sub for sub
-                         in all_subscriptions
-                         if ((sub.bug_notification_level >=
-                             min_bug_notification_level) and
-                             (sub.blueprint_notification_level >=
-                              min_blueprint_notification_level))]
-        return subscriptions
-
-    def getBugNotificationsRecipients(self, recipients=None, level=None):
-        """See `IStructuralSubscriptionTarget`."""
-        subscribers = set()
-        if level is None:
-            subscriptions = self.bug_subscriptions
-        else:
-            subscriptions = self.getSubscriptions(
-                min_bug_notification_level=level)
-        for subscription in subscriptions:
-            if (level is not None and
-                subscription.bug_notification_level < level):
-                continue
-            subscriber = subscription.subscriber
-            subscribers.add(subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscriber, self)
-        parent = self.parent_subscription_target
-        if parent is not None:
-            subscribers.update(
-                parent.getBugNotificationsRecipients(recipients, level))
-        return subscribers
+                clauses.append(
+                    "StructuralSubscription.%s = %s" % (key, quote(value)))
+        query = " AND ".join(clauses)
+        return StructuralSubscription.select(
+            query, orderBy='Person.displayname', clauseTables=['Person'])
 
     @property
     def bug_subscriptions(self):
         """See `IStructuralSubscriptionTarget`."""
         return self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA)
-
-    @property
-    def parent_subscription_target(self):
-        """See `IStructuralSubscriptionTarget`."""
-        # Some structures have a related structure which can be thought
-        # of as their parent. A package is related to a distribution,
-        # a product is related to a project, etc'...
-        # This method determines whether the target has a parent,
-        # returning it if it exists.
-        if IDistributionSourcePackage.providedBy(self):
-            parent = self.distribution
-        elif IProduct.providedBy(self):
-            parent = self.project
-        elif IProductSeries.providedBy(self):
-            parent = self.product
-        elif IDistroSeries.providedBy(self):
-            parent = self.distribution
-        elif IMilestone.providedBy(self):
-            parent = self.target
-        else:
-            parent = None
-        # We only want to return the parent if it's
-        # an `IStructuralSubscriptionTarget`.
-        if IStructuralSubscriptionTarget.providedBy(parent):
-            return parent
-        else:
-            return None
-
-    @property
-    def target_type_display(self):
-        """See `IStructuralSubscriptionTarget`."""
-        if IDistributionSourcePackage.providedBy(self):
-            return 'package'
-        elif IProduct.providedBy(self):
-            return 'project'
-        elif IProjectGroup.providedBy(self):
-            return 'project group'
-        elif IDistribution.providedBy(self):
-            return 'distribution'
-        elif IMilestone.providedBy(self):
-            return 'milestone'
-        elif IProductSeries.providedBy(self):
-            return 'project series'
-        elif IDistroSeries.providedBy(self):
-            return 'distribution series'
-        else:
-            raise AssertionError(
-                '%s is not a valid structural subscription target.', self)
 
     def userHasBugSubscriptions(self, user):
         """See `IStructuralSubscriptionTarget`."""
@@ -378,3 +465,53 @@ class StructuralSubscriptionTargetMixin:
                     # The user has a bug subscription
                     return True
         return False
+
+    def getSubscriptionsForBugTask(self, bugtask, level):
+        """See `IStructuralSubscriptionTarget`."""
+        origin = [
+            StructuralSubscription,
+            LeftJoin(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.structural_subscription_id == (
+                    StructuralSubscription.id)),
+            LeftJoin(
+                BugSubscriptionFilterStatus,
+                BugSubscriptionFilterStatus.filter_id == (
+                    BugSubscriptionFilter.id)),
+            LeftJoin(
+                BugSubscriptionFilterImportance,
+                BugSubscriptionFilterImportance.filter_id == (
+                    BugSubscriptionFilter.id)),
+            ]
+
+        if len(bugtask.bug.tags) == 0:
+            tag_conditions = [
+                BugSubscriptionFilter.include_any_tags == False,
+                ]
+        else:
+            tag_conditions = [
+                BugSubscriptionFilter.exclude_any_tags == False,
+                ]
+
+        conditions = [
+            StructuralSubscription.bug_notification_level >= level,
+            Or(
+                # There's no filter or ...
+                BugSubscriptionFilter.id == None,
+                # There is a filter and ...
+                And(
+                    # There's no status filter, or there is a status filter
+                    # and and it matches.
+                    Or(BugSubscriptionFilterStatus.id == None,
+                       BugSubscriptionFilterStatus.status == bugtask.status),
+                    # There's no importance filter, or there is an importance
+                    # filter and it matches.
+                    Or(BugSubscriptionFilterImportance.id == None,
+                       BugSubscriptionFilterImportance.importance == (
+                            bugtask.importance)),
+                    # Any number of conditions relating to tags.
+                    *tag_conditions)),
+            ]
+
+        return Store.of(self.__helper.pillar).using(*origin).find(
+            StructuralSubscription, self.__helper.join, *conditions)

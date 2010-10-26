@@ -1,17 +1,15 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+from storm.store import Store
 from testtools.matchers import LessThan
 import transaction
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
@@ -43,15 +41,17 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.errors import (
+    NameAlreadyTaken,
+    PrivatePersonLinkageError,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
     IPersonSet,
-    NameAlreadyTaken,
     PersonCreationRationale,
     PersonVisibility,
-    PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import KarmaCategory

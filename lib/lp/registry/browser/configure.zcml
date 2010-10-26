@@ -166,6 +166,31 @@
         class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        path_expression="string:+difference/${source_package_name/name}"
+        rootsite="mainsite"
+        attribute_to_parent="derived_series"/>
+    <browser:page
+        name="+listing-distroseries-extra"
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        class="lp.registry.browser.distroseriesdifference.DistroSeriesDifferenceView"
+        template="../templates/distroseriesdifference-listing-extra.pt"
+        permission="zope.Public"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
+        name="+listing-distroseries-extra"/>
+    <browser:navigation
+        module="lp.registry.browser.distroseriesdifference"
+        classes="DistroSeriesDifferenceNavigation"/>
+    <browser:url
+        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
+        path_expression="string:comments/${id}"
+        attribute_to_parent="distro_series_difference"
+        rootsite="mainsite"/>
+    <adapter
+      factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
+      name="lazr.restful.EntryResource" />
     <browser:menus
         classes="
             DistroSeriesFacets
@@ -231,26 +256,18 @@
                 template="../templates/signedcodeofconduct-index.pt"
                 name="+index"/>
         </browser:pages>
-        <browser:editform
+        <browser:page
             name="+activate"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductActiveView"
-            label="Activate code of conduct signature"
-            fields="admincomment"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-activate.pt">
-                </browser:editform>
-        <browser:editform
+            template="../../app/templates/generic-edit.pt" />
+        <browser:page
             name="+deactivate"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductDeactiveView"
-            label="Deactivate code of conduct signature"
-            fields="admincomment"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-deactivate.pt">
-                </browser:editform>
+            template="../../app/templates/generic-edit.pt" />
         <browser:url
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
             path_expression="string:console"
@@ -273,16 +290,12 @@
             permission="launchpad.Admin"
             template="../templates/codeofconduct-admin.pt"
             name="+index"/>
-        <browser:addform
+        <browser:page
             name="+new"
             for="lp.registry.interfaces.codeofconduct.ISignedCodeOfConductSet"
-            schema="lp.registry.interfaces.codeofconduct.ISignedCodeOfConduct"
-            label="Register a code of conduct signature"
-            fields="owner"
             class="lp.registry.browser.codeofconduct.SignedCodeOfConductAckView"
             permission="launchpad.Admin"
-            template="../templates/signedcodeofconduct-acknowledge.pt">
-                </browser:addform>
+            template="../../app/templates/generic-edit.pt" />
     </facet>
     <browser:url
         for="lp.registry.interfaces.irc.IIrcID"
@@ -481,7 +494,7 @@
         template="../templates/distributionsourcepackage-changelog.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        permission="launchpad.Edit"
+        permission="launchpad.BugSupervisor"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
@@ -625,17 +638,11 @@
                 name="+portlet-options"
                 template="../templates/poll-portlet-options.pt"/>
         </browser:pages>
-        <browser:pages
+        <browser:page
+            name="+vote"
             for="lp.registry.interfaces.poll.IPoll"
             permission="launchpad.AnyPerson"
-            class="lp.registry.browser.poll.PollVoteView">
-            <browser:page
-                name="+vote-simple"
-                template="../templates/poll-vote-simple.pt"/>
-            <browser:page
-                name="+vote-condorcet"
-                template="../templates/poll-vote-condorcet.pt"/>
-        </browser:pages>
+            class="lp.registry.browser.poll.PollVoteView"/>
         <browser:page
             name="+edit"
             for="lp.registry.interfaces.poll.IPoll"
@@ -1053,6 +1060,12 @@
             class="lp.registry.browser.team.TeamHierarchyView"
             name="+teamhierarchy"
             template="../templates/person-teamhierarchy.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonSubscriptionsView"
+            name="+subscriptions"
+            template="../templates/person-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"

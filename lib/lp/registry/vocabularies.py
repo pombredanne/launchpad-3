@@ -94,11 +94,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -109,7 +107,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
@@ -118,6 +115,7 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
@@ -524,16 +522,11 @@ class ValidPersonOrTeamVocabulary(
             # TeamParticipation table, which is very expensive.  The search
             # for private teams does need that table but the number of private
             # teams is very small so the cost is not great.
-            valid_email_statuses = (
-                EmailAddressStatus.VALIDATED,
-                EmailAddressStatus.PREFERRED,
-                )
 
             # First search for public persons and teams that match the text.
             public_tables = [
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-                LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
 
             # Create an inner query that will match public persons and teams
@@ -565,10 +558,15 @@ class ValidPersonOrTeamVocabulary(
                     FROM Person, EmailAddress
                     WHERE EmailAddress.person = Person.id
                         AND lower(email) LIKE ? || '%%'
+                        AND EmailAddress.status IN (?, ?)
                     ) AS public_subquery
                 ORDER BY rank DESC
                 LIMIT ?
-                """, (text, text, text, text, text, self.LIMIT))
+                """, (text, text, text, text, text,
+                      EmailAddressStatus.VALIDATED.value,
+                      EmailAddressStatus.PREFERRED.value,
+                      self.LIMIT))
+
 
             public_result = self.store.using(*public_tables).find(
                 Person,
@@ -579,12 +577,9 @@ class ValidPersonOrTeamVocabulary(
                     Or(# A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
-
-                       # Or a person who has an active account and a working
-                       # email address.
-                       And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))),
-                    self.extra_clause))
+                       # Or a person who has a preferred email address.
+                       EmailAddress.status == EmailAddressStatus.PREFERRED),
+                    ))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -596,33 +591,28 @@ class ValidPersonOrTeamVocabulary(
             # Searching for private teams that match can be easier since we
             # are only interested in teams.  Teams can have email addresses
             # but we're electing to ignore them here.
-            private_inner_select = SQL("""
-                SELECT Person.id
-                FROM Person
-                WHERE Person.fti @@ ftq(?)
-                LIMIT ?
-                """, (text, self.LIMIT))
             private_result = self.store.using(*private_tables).find(
                 Person,
                 And(
-                    Person.id.is_in(private_inner_select),
+                    SQL('Person.fti @@ ftq(?)', [text]),
                     private_query,
                     )
                 )
 
-            # The private query doesn't need to be ordered as it will be done
-            # at the end, and we need to eliminate the default ordering.
-            private_result.order_by()
+            private_result.order_by(SQL('rank(fti, ftq(?)) DESC', [text]))
+            private_result.config(limit=self.LIMIT)
 
             combined_result = public_result.union(private_result)
             # Eliminate default ordering.
             combined_result.order_by()
             # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
-            # is a work-around for .count() not working with the 'distinct'
-            # option.
+            # _get_select() is a work-around for .count() not working
+            # with the 'distinct' option.
             subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
-            result = self.store.using(subselect).find((Person, exact_match))
+            result = self.store.using(subselect).find(
+                (Person, exact_match),
+                self.extra_clause)
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
@@ -755,8 +745,8 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
             Person.id NOT IN (
                 SELECT team FROM TeamParticipation
                 WHERE person = %d
-                ) AND Person.id != %d
-            """ % (self.team.id, self.team.id)
+                )
+            """ % self.team.id
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):

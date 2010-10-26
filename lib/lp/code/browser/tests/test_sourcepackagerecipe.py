@@ -4,8 +4,6 @@
 
 """Tests for the source package recipe view classes and templates."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 
@@ -27,7 +25,7 @@ from canonical.launchpad.testing.pages import (
     find_tags_by_class,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )

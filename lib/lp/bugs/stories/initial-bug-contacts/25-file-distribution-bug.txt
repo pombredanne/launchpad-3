@@ -24,7 +24,7 @@ subscriber), mark, the distro bug supervisor kamion, and foobar, who is
 subscribed to the distribution.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):
@@ -43,7 +43,7 @@ subscribed to the distribution.
 When filing a security bug, only the bug reporter and registrant are explicitly
 Cc'd, because the Ubuntu distribution does not have a security contact.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

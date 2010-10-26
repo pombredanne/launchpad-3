@@ -883,9 +883,14 @@ class PackageUpload(SQLBase):
 
         body = message.template % message.__dict__
 
+        subject = "%s rejected" % self.changesfile.filename
+        if self.isPPA():
+            subject = "[PPA %s] %s" % (
+                get_ppa_reference(self.archive), subject)
+
         self._sendMail(
-            recipients, "%s rejected" % self.changesfile.filename,
-            body, dry_run, changesfile_content=changesfile_content,
+            recipients, subject, body, dry_run,
+            changesfile_content=changesfile_content,
             attach_changes=attach_changes)
 
     def _sendSuccessNotification(
@@ -1442,20 +1447,30 @@ class PackageUploadBuild(SQLBase):
         build_archtag = self.build.distro_arch_series.architecturetag
         # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
-        target_dar = self.packageupload.distroseries[build_archtag]
+        target_das = self.packageupload.distroseries[build_archtag]
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_dar.distroseries.distribution.name,
-            target_dar.distroseries.name,
+            target_das.distroseries.distribution.name,
+            target_das.distroseries.name,
             build_archtag))
-        # And get the other distroarchseriess
-        other_dars = set(self.packageupload.distroseries.architectures)
-        other_dars = other_dars - set([target_dar])
+
+        # Get the other enabled distroarchseries for this
+        # distroseries.  If the binary is architecture independent then
+        # we need to publish it in all of those too.
+
+        # XXX Julian 2010-09-28 bug=649859
+        # This logic is duplicated in
+        # PackagePublishingSet.copyBinariesTo() and should be
+        # refactored.
+        other_das = set(
+            arch for arch in self.packageupload.distroseries.architectures
+            if arch.enabled)
+        other_das = other_das - set([target_das])
         # First up, publish everything in this build into that dar.
         published_binaries = []
         for binary in self.build.binarypackages:
-            target_dars = set([target_dar])
+            target_dars = set([target_das])
             if not binary.architecturespecific:
-                target_dars = target_dars.union(other_dars)
+                target_dars = target_dars.union(other_das)
                 debug(logger, "... %s/%s (Arch Independent)" % (
                     binary.binarypackagename.name,
                     binary.version))

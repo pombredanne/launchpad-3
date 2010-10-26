@@ -3,8 +3,6 @@
 
 """Tests for the `base` module."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from contextlib import contextmanager
@@ -18,7 +16,7 @@ from canonical.launchpad.webapp.interaction import (
     endInteraction,
     queryInteraction,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.isolation import (
     is_transaction_in_progress,
     TransactionInProgress,

@@ -3,8 +3,6 @@
 
 """Test RecipeBuildBehavior."""
 
-from __future__ import with_statement
-
 # pylint: disable-msg=F0401
 
 __metaclass__ = type
@@ -17,7 +15,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import BufferLogger
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     TwistedLaunchpadZopelessLayer,
     )

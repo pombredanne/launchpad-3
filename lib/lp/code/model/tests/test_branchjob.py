@@ -3,8 +3,6 @@
 
 """Tests for BranchJobs."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import datetime
@@ -38,7 +36,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )

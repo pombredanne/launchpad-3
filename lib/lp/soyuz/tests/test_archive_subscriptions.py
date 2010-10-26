@@ -3,11 +3,9 @@
 
 """Test Archive features."""
 
-from __future__ import with_statement
-
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     celebrity_logged_in,

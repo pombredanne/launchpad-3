@@ -3,8 +3,6 @@
 
 """Tests for the archive uploader."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 __all__ = [
@@ -22,7 +20,7 @@ import traceback
 
 from zope.component import getGlobalSiteManager
 
-from canonical.librarian.ftests.harness import fillLibrarianFile
+from canonical.librarian.testing.server import fillLibrarianFile
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
     findPolicyByName,

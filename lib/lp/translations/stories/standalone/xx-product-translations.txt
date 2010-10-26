@@ -121,15 +121,9 @@ options, either.
     gnomebaker translates its messages.
 
 Finally, if a product states that is not officially using Launchpad
-Translations...
+Translations it doesn't show any translation template:
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
-    >>> content = find_tag_by_id(anon_browser.contents, 'uses')
-    >>> print extract_text(content)
-    Does not use Launchpad for development.
-
-... it doesn't show any translation template:
-
     >>> anon_browser.getLink('Translations').click()
     >>> print anon_browser.title
     Translations : NetApplet
@@ -242,4 +236,6 @@ Instead a notice is displayed that the product has no translations.
 
     >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
     >>> print extract_text(notice)
+    Getting started with translating your project in Launchpad
+    Configure translations
     There are no translations for this project.

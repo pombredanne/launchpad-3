@@ -14,7 +14,7 @@ TESTOPTS=
 SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
-LPCONFIG=development
+LPCONFIG?=development
 
 JSFLAGS=
 ICING=lib/canonical/launchpad/icing
@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
@@ -238,7 +238,7 @@ start-gdb: check_schema inplace stop support_files
 
 run_all: check_schema inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -252,8 +252,7 @@ stop_codebrowse:
 
 run_codehosting: check_schema inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
-
+	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian

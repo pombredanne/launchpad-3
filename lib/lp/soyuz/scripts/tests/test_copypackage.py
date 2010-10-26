@@ -17,8 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import BufferLogger
-from canonical.librarian.ftests.harness import fillLibrarianFile
-from canonical.testing import (
+from canonical.librarian.testing.server import fillLibrarianFile
+from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -975,6 +975,44 @@ class DoDirectCopyTestCase(TestCaseWithFactory):
              'foo-bin 666 in hoary-test amd64',
              'foo-bin 666 in hoary-test i386',
              ],
+            [copy.displayname for copy in copies])
+
+    def test_copying_arch_indep_binaries_with_disabled_arches(self):
+        # When copying an arch-indep binary to a new series, we must not
+        # copy it into architectures that are disabled.
+
+        # Make a new arch-all source and binary in breezy-autotest:
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='all')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        # Now make a new distroseries with two architectures, one of
+        # which is disabled.
+        nobby = self.factory.makeDistroSeries(
+            distribution=self.test_publisher.ubuntutest, name='nobby')
+        i386_pf = self.factory.makeProcessorFamily(name='my_i386')
+        nobby_i386 = self.factory.makeDistroArchSeries(
+            distroseries=nobby, architecturetag='i386',
+            processorfamily=i386_pf)
+        hppa_pf = self.factory.makeProcessorFamily(name='my_hppa')
+        nobby_hppa = self.factory.makeDistroArchSeries(
+            distroseries=nobby, architecturetag='hppa',
+            processorfamily=hppa_pf)
+        nobby_hppa.enabled = False
+        nobby.nominatedarchindep = nobby_i386
+        self.test_publisher.addFakeChroots(nobby)
+
+        # Now we can copy the package with binaries.
+        copies = _do_direct_copy(
+            source, source.archive, nobby, source.pocket, True)
+
+        # The binary should not be published for hppa.
+        self.assertEquals(
+            [u'foo 666 in nobby',
+             u'foo-bin 666 in nobby i386',],
             [copy.displayname for copy in copies])
 
 

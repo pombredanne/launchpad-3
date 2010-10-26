@@ -19,8 +19,8 @@ able to:
 Import the bunch of required database classes:
 
     >>> from lp.buildmaster.model.buildqueue import BuildQueue
-    >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     >>> from lp.soyuz.model.distroarchseries import (
@@ -128,7 +128,7 @@ Store current status of the database:
 We will create a group of source publications that represent the
 exact circumstances we want to test below.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from canonical.database.sqlbase import commit

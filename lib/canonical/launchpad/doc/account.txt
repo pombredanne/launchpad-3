@@ -14,7 +14,8 @@ implements the IAccountSet interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from lp.registry.interfaces.person import IPerson
-    >>> from canonical.launchpad.interfaces import IAccount, IAccountSet
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
 
     >>> account_set = getUtility(IAccountSet)
     >>> verifyObject(IAccountSet, account_set)
@@ -125,8 +126,10 @@ email address.
 If we add a new guessed email address, it will be included in the
 guessed list.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus,
+    ...     IEmailAddressSet,
+    ...     )
     >>> email = getUtility(IEmailAddressSet).new(
     ...     "guessed-email@example.com", account=account,
     ...     status=EmailAddressStatus.NEW)
@@ -273,7 +276,7 @@ Let's add a new email address to the account.
 The account is still not valid because it has no preferred email.
 Setting the email to preferred fixes this.
 
-    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     >>> email.status = EmailAddressStatus.PREFERRED
     >>> account.is_valid
     True
@@ -293,8 +296,8 @@ Launchpad accounts with an attached Person.
 
     # We need to change database policy here again, as the SSO Server cannot
     # modify tables in the lpmain replication set.
-    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> from lp.registry.interfaces.person import PersonCreationRationale

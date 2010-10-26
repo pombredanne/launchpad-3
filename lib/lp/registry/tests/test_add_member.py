@@ -3,11 +3,9 @@
 
 """Test team membership changes."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.teammembership import CyclicalTeamMembershipError
 from lp.testing import (
     person_logged_in,

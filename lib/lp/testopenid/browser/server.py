@@ -62,7 +62,7 @@ from lp.services.openid.browser.openiddiscovery import (
     )
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.testopenid.interfaces.server import (
     get_server_url,
@@ -168,7 +168,7 @@ class OpenIDMixin:
     def restoreRequestFromSession(self):
         """Get the OpenIDRequest from our session."""
         session = self.getSession()
-        cache = IPropertyCache(self)
+        cache = get_property_cache(self)
         try:
             cache.openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
         except KeyError:

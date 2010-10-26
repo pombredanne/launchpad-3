@@ -3,8 +3,6 @@
 
 """Unit tests for the private MailingList API."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = []
 
@@ -12,7 +10,7 @@ __all__ = []
 import transaction
 
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.tests.mailinglists_helper import new_team
 from lp.registry.xmlrpc.mailinglist import (
     BYUSER,
