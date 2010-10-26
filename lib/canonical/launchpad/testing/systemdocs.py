@@ -209,7 +209,6 @@ def setGlobs(test):
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
     test.globs['oauth_access_token_for'] = oauth_access_token_for

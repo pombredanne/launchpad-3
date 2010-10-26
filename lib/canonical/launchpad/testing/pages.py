@@ -811,7 +811,6 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 

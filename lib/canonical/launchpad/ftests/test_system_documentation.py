@@ -356,8 +356,6 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            # 'icky way of running doctests with __future__ imports
-            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
