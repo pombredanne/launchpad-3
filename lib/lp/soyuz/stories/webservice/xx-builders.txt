@@ -6,7 +6,7 @@ The webservice exposes a top-level collection called "builders" which
 contains all the registered builders in the Launchpad build farm.
 
     >>> launchpad = launchpadlib_for(
-    ...     'builders test', 'salgado', version='devel')
+    ...     'builders test', 'no-priv', version='devel')
     >>> builders = launchpad.builders
 
 Iterating over the collection is possible:
@@ -38,4 +38,31 @@ Each builder has a number of properties exposed:
     url
     virtualized
     vm_host
+
+
+Changing builder properties
+===========================
+
+If an authorized person (usually a member of the buildd-admins team)
+wishes to amend some property of a builder, the usual webservice 'lp_save'
+operation is used.
+
+Our "bob" builder was retrieved using the no-priv user, and he does not
+have permission to save changes:
+
+    >>> print bob.active
+    True
+    >>> bob.active = False
+    >>> bob.lp_save()
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+'cprov', who is a buildd-admin, is able to change the data:
+
+    >>> launchpad = launchpadlib_for(
+    ...     'builders test', 'cprov', version='devel')
+    >>> bob = launchpad.builders.getByName(name="bob")
+    >>> bob.active = False
+    >>> bob.lp_save()
 
