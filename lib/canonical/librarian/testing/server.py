@@ -136,18 +136,6 @@ class LibrarianServerFixture(TacTestSetup):
             return
         TacTestSetup.cleanUp(self)
 
-    def tearDownOnExit(self):
-        """Tell the librarian to shut down when Python exits."""
-        def tear_down():
-            # This is cleanUp(), but without the deprecation warning.  If
-            # Python provided a way of cancelling atexit calls, then we would
-            # just cancel the call on tearDown rather than silencing the
-            # DeprecationWarning.
-            if self._persistent_servers():
-                return
-            TacTestSetup.cleanUp(self)
-        atexit.register(tear_down)
-
     def clear(self):
         """Clear all files from the Librarian"""
         # Make this smarter if our tests create huge numbers of files

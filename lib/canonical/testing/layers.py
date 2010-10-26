@@ -591,8 +591,8 @@ class LibrarianLayer(BaseLayer):
                     )
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
-        the_librarian.tearDownOnExit()
         LibrarianLayer._check_and_reset()
+        cls._atexit_call = atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -607,6 +607,10 @@ class LibrarianLayer(BaseLayer):
                     )
         LibrarianLayer._check_and_reset()
         LibrarianTestSetup().tearDown()
+        # Remove the atexit handler, since we've already done the work.
+        atexit._exithandlers = [
+            handler for handler in atexit._exithandlers
+            if handler[0] != cls._atexit_call]
 
     @classmethod
     @profiled
