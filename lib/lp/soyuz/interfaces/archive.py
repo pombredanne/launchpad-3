@@ -889,7 +889,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getPackageDownloadTotal(bpr):
         """Get the total download count for a given package."""
 
-    def validatePPAName(person, proposed_name):
+    def validatePPA(person, proposed_name):
         """Return if a proposed name for a PPA is valid.
 
         :param person: A Person identifying the requestor.

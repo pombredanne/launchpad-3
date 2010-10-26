@@ -1,0 +1,20 @@
+= Creating a PPA =
+
+  >>> from lp.testing.sampledata import ADMIN_EMAIL
+  >>> login(ADMIN_EMAIL)
+  >>> owner = factory.makePerson()
+  >>> url = "/~%s" % owner.name
+  >>> logout()
+  >>> ppa_owner = webservice.get(url).jsonBody()
+
+  >>> from canonical.launchpad.testing.pages import webservice_for_person
+  >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+  >>> ppa_owner_webservice = webservice_for_person(
+  ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+  >>> new_ppa = ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createNewPPA', {}, name=None,
+  ...     displayname='My shiny new PPA', description='Shinyness!',
+  ...     acceptance=True).jsonBody()
+  >>> print new_ppa['self_link']
+  http://api.launchpad.dev/.../+archive/ppa

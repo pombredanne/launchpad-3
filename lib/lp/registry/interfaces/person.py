@@ -27,6 +27,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -1237,6 +1238,26 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :return: a PPA `IArchive` record corresponding to the name.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False),
+        acceptance=Bool(required=True))
+    @operation_returns_entry(Interface) # Really IArchive.
+    @export_write_operation()
+    def createNewPPA(name=None, displayname=None, description=None,
+                     acceptance=False):
+        """Create a new PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+        not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :param acceptance: If the PPA terms of service are acceptable.
+
+        :returns: a PPA `IArchive` record.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -2157,6 +2178,11 @@ class NoSuchPerson(NameLookupFailed):
     """Raised when we try to look up an IPerson that doesn't exist."""
 
     _message_prefix = "No such person"
+
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA for a person
+    or team."""
 
 
 # Fix value_type.schema of IPersonViewRestricted attributes.

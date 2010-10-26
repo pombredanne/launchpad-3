@@ -220,6 +220,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -2740,6 +2741,23 @@ class Person(
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+
+    def createNewPPA(self, name=None, displayname=None, description=None,
+                     acceptance=False):
+        """See `IPerson`."""
+        if not acceptance:
+            raise PPACreationError(
+                "You must accept the PPA Terms of Service to enable a "
+                "PPA.")
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

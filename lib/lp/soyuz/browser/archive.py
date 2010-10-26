@@ -1814,9 +1814,9 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = Archive.validatePPAName(self.context, proposed_name)
+        errors = Archive.validatePPA(self.context, proposed_name)
         if errors is not None:
-            self.setFieldError('name', errors)
+            self.addError(errors)
 
         if default_ppa is None and not data.get('accepted'):
             self.setFieldError(
