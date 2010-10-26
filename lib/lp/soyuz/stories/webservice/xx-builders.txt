@@ -1,0 +1,41 @@
+========
+Builders
+========
+
+The webservice exposes a top-level collection called "builders" which
+contains all the registered builders in the Launchpad build farm.
+
+    >>> launchpad = launchpadlib_for(
+    ...     'builders test', 'salgado', version='devel')
+    >>> builders = launchpad.builders
+
+Iterating over the collection is possible:
+
+    >>> for builder in builders:
+    ...     print builder
+    http://api.launchpad.dev/devel/builders/bob
+    http://api.launchpad.dev/devel/builders/frog
+
+An individual builder can be retrieved by name by using the getByName()
+method on "builders":
+
+    >>> bob = builders.getByName(name="bob")
+
+Each builder has a number of properties exposed:
+
+    >>> for attribute in bob.lp_attributes:
+    ...     print attribute
+    self_link
+    ...
+    active
+    builderok
+    description
+    failnotes
+    failure_count
+    manual
+    name
+    title
+    url
+    virtualized
+    vm_host
+
