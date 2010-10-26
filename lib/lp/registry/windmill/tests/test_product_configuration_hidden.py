@@ -14,10 +14,10 @@ from lp.testing.service_usage_helpers import set_service_usage
 
 
 class TestProductHiddenConfiguration(WindmillTestCase):
-   """Test the Configuration links show/hide controls on products.
-   
-   Controls only work with javascript enabled.
-   """
+    """Test the Configuration links show/hide controls on products.
+
+    Controls only work with javascript enabled.
+    """
 
     layer = RegistryWindmillLayer
     suite_name = "Product configuration links hidden"
@@ -45,7 +45,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         # When the "Configuration links" link is clicked and the actual links are
         # shown, the collapsible wrapper collapses, hiding the links.
         client.click(link=u"Configuration links")
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(
+            classname="collapseWrapper lazr-closed",
+            timeout=constants.PAGE_LOAD)
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-closed')
