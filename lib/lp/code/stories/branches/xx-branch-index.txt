@@ -4,13 +4,13 @@ Branch Details
 Imports used later in the document:
 
     >>> import pytz
-    >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import datetime
     >>> from lp.code.enums import BranchType
     >>> from lp.code.bzr import BranchFormat, RepositoryFormat
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 Modifying/creating test data for this test case.
 

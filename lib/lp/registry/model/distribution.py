@@ -129,6 +129,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.pocket import suffixpocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.announcement import MakesAnnouncements
@@ -150,7 +151,7 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -918,8 +919,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getDistroSeriesAndPocket(self, distroseries_name):
         """See `IDistribution`."""
-        from lp.archivepublisher.publishing import suffixpocket
-
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
         # Sort it longest string first.
@@ -1442,19 +1441,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
-        Person.id = Archive.owner AND
-        Person.id = ValidPersonOrTeamCache.id
+        Archive.owner = ValidPersonOrTeamCache.id
         """ % sqlvalues(ArchivePurpose.PPA, self)]
 
-        clauseTables = ['Person', 'ValidPersonOrTeamCache']
-        orderBy = ['Person.name']
+        clauseTables = ['ValidPersonOrTeamCache']
+        orderBy = ['Archive.displayname']
 
         if not show_inactive:
             active_statuses = (PackagePublishingStatus.PUBLISHED,
                                PackagePublishingStatus.PENDING)
             clauses.append("""
             Archive.id IN (
-                SELECT DISTINCT archive FROM SourcepackagePublishingHistory
+                SELECT archive FROM SourcepackagePublishingHistory
                 WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 
@@ -1754,7 +1752,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
-        del IPropertyCache(self).series
+        del get_property_cache(self).series
 
         return series
 

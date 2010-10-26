@@ -428,12 +428,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
-    def subscribe(person, subscribed_by, suppress_notify=True):
+    def subscribe(person, subscribed_by, suppress_notify=True, level=None):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
         :param suppress_notify: a flag to suppress notify call.
+        :param level: The BugNotificationLevel for the new subscription.
         :return: an `IBugSubscription`.
         """
 
@@ -470,13 +471,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
-    def getDirectSubscribers():
+    def getDirectSubscribers(recipients=None, level=None):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
         """
 
-    def getIndirectSubscribers():
+    def getIndirectSubscribers(recipients=None, level=None):
         """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
@@ -499,9 +500,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def getSubscribersForPerson(person):
         """Find the persons or teams by which person is subscribed.
-        
+
         This call should be quite cheap to make and performs a single query.
-        
+
         :return: An IResultSet.
         """
 

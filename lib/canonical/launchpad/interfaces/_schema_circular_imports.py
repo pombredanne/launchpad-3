@@ -46,7 +46,11 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugtracker import (
+    IBugTracker,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
@@ -119,6 +123,10 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    IHasTranslationImports,
+    ITranslationImportQueueEntry,
     )
 
 
@@ -371,6 +379,8 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -435,6 +445,11 @@ patch_reference_property(IBugTask, 'owner', IPerson)
 # IBugWatch
 patch_reference_property(IBugWatch, 'owner', IPerson)
 
+# IHasTranslationImports
+patch_collection_return_type(
+    IHasTranslationImports, 'getTranslationImportQueueEntries',
+    ITranslationImportQueueEntry)
+
 # IIndexedMessage
 patch_reference_property(IIndexedMessage, 'inside', IBugTask)
 
@@ -460,6 +475,17 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_collection_return_type(
+    IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+
+## IBugTrackerComponent
+patch_reference_property(
+    IBugTrackerComponent, "distro_source_package",
+    IDistributionSourcePackage)
 
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
@@ -474,7 +500,7 @@ patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IPerson
 patch_collection_return_type(
-        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
+    IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)

@@ -12,8 +12,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.functional import XMLRPCTestTransport
-from canonical.launchpad.interfaces import IPrivateApplication
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (

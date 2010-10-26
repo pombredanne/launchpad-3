@@ -3,7 +3,7 @@
 `IArchive` provides a method that looks up files involved in the context
 archive, getFileByName()
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 The given filename is looked up in the context corresponding to its
@@ -37,8 +37,8 @@ Create a test source publication.
 
 When the file exists, the corresponding `ILibraryFileAlias` is returned.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> result = cprov.archive.getFileByName('test-pkg_1.0.dsc')
 

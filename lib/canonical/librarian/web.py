@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from urlparse import urlparse
 
+from twisted.python import log
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
@@ -52,6 +53,8 @@ class LibraryFileResource(resource.Resource):
         try:
             aliasID = int(name)
         except ValueError:
+            log.msg(
+                "404: alias is not an int: %r" % (name,))
             return fourOhFour
 
         return LibraryFileAliasResource(self.storage, aliasID,
@@ -76,6 +79,8 @@ class LibraryFileAliasResource(resource.Resource):
             try:
                 self.aliasID = int(filename)
             except ValueError:
+                log.msg(
+                    "404 (old URL): alias is not an int: %r" % (name,))
                 return fourOhFour
             filename = request.postpath[0]
 
@@ -95,6 +100,9 @@ class LibraryFileAliasResource(resource.Resource):
                 netloc = netloc[:netloc.find(':')]
             expected_hostname = 'i%d.restricted.%s' % (self.aliasID, netloc)
             if expected_hostname != hostname:
+                log.msg(
+                    '404: expected_hostname != hostname: %r != %r' %
+                    (expected_hostname, hostname))
                 return fourOhFour
 
         token = request.args.get('token', [None])[0]
@@ -128,6 +136,9 @@ class LibraryFileAliasResource(resource.Resource):
         # a crude form of access control (stuff we care about can have
         # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
+            log.msg(
+                "404: dbfilename.encode('utf-8') != filename: %r != %r"
+                % (dbfilename.encode('utf-8'), filename))
             return fourOhFour
 
         if not restricted:

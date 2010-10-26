@@ -26,7 +26,6 @@ __all__ = [
     'ITeamReassignment',
     'ImmutableVisibilityError',
     'InvalidName',
-    'JoinNotAllowed',
     'NoSuchPerson',
     'PersonCreationRationale',
     'PersonVisibility',
@@ -895,6 +894,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     @export_read_operation()
     def getRecipe(name):
         """Return the person's recipe with the given name."""
+
+    def getMergeQueue(name):
+        """Return the person's merge queue with the given name."""
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
@@ -2006,17 +2008,6 @@ class IPersonSet(Interface):
             specified product are returned.
         """
 
-    def getSubscribersForTargets(targets, recipients=None):
-        """Return the set of subscribers for `targets`.
-
-        :param targets: The sequence of targets for which to get the
-                        subscribers.
-        :param recipients: An optional instance of
-                           `BugNotificationRecipients`.
-                           If present, all found subscribers will be
-                           added to it.
-        """
-
     def updatePersonalStandings():
         """Update the personal standings of some people.
 
@@ -2155,10 +2146,6 @@ class ISoftwareCenterAgentAPI(Interface):
 
 class ISoftwareCenterAgentApplication(ILaunchpadApplication):
     """XMLRPC application root for ISoftwareCenterAgentAPI."""
-
-
-class JoinNotAllowed(Exception):
-    """User is not allowed to join a given team."""
 
 
 class ImmutableVisibilityError(Exception):

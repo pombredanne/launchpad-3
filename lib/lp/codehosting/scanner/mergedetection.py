@@ -78,7 +78,7 @@ def auto_merge_branches(scan_completed):
     determine which other branches this branch has been merged into.
     """
     db_branch = scan_completed.db_branch
-    bzr_ancestry = scan_completed.bzr_ancestry
+    new_ancestry = scan_completed.new_ancestry
     logger = scan_completed.logger
 
     # XXX: JonathanLange 2009-05-05 spec=package-branches: Yet another thing
@@ -112,7 +112,7 @@ def auto_merge_branches(scan_completed):
             # If the tip revisions are the same, then it is the same
             # branch, not one merged into the other.
             pass
-        elif last_scanned in bzr_ancestry:
+        elif last_scanned in new_ancestry:
             merge_detected(logger, branch, db_branch)
 
 
@@ -140,7 +140,7 @@ def find_merged_revno(merge_sorted, tip_rev_id):
 def auto_merge_proposals(scan_completed):
     """Detect merged proposals."""
     db_branch = scan_completed.db_branch
-    bzr_ancestry = scan_completed.bzr_ancestry
+    new_ancestry = scan_completed.new_ancestry
     logger = scan_completed.logger
 
     # Check landing candidates in non-terminal states to see if their tip
@@ -159,7 +159,7 @@ def auto_merge_proposals(scan_completed):
             scan_completed.bzr_branch.iter_merge_sorted_revisions())
     for proposal in db_branch.landing_candidates:
         tip_rev_id = proposal.source_branch.last_scanned_id
-        if tip_rev_id in bzr_ancestry:
+        if tip_rev_id in new_ancestry:
             merged_revno = find_merged_revno(merge_sorted, tip_rev_id)
             # Remember so we can find the merged revision number.
             merge_detected(

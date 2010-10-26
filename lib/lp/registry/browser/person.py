@@ -206,10 +206,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from lp.app.browser.tales import (
-    DateTimeFormatterAPI,
-    PersonFormatterAPI,
-    )
 from canonical.lazr.utils import smartquote
 from canonical.widgets import (
     LaunchpadDropdownWidget,
@@ -226,6 +222,10 @@ from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    PersonFormatterAPI,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -311,7 +311,7 @@ from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
@@ -542,6 +542,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_recipe(self, name):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
+
+    @stepthrough('+merge-queues')
+    def traverse_merge_queue(self, name):
+        """Traverse to this person's merge queues."""
+        return self.context.getMergeQueue(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -5736,7 +5741,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        del IPropertyCache(self)._all_recipients
+        del get_property_cache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.

@@ -28,9 +28,13 @@ be sent. We'll start by importing some things we'll need for the
 examples that follow:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IEmailAddressSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> from lp.bugs.adapters.bugdelta import BugDelta
+    >>> from lp.bugs.interfaces.bug import (
+    ...     IBugDelta,
+    ...     IBugSet,
+    ...     )
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 = Filing a bug =
 
@@ -280,10 +284,13 @@ text representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugTaskDelta, IBugTaskSet)
-    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IBugTaskDelta,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> example_bug_task = factory.makeBugTask()
     >>> example_delta = BugTaskDelta(example_bug_task)
     >>> verifyObject(IBugTaskDelta, example_delta)
@@ -456,7 +463,7 @@ The Launchpad Janitor celebrity isn't a real user, and shouldn't be
 sending mail. Notifications from the janitor are sent with the address
 of the bug itself.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> lp_janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> get_bugmail_from_address(lp_janitor, bug_four)
     'Launchpad Bug Tracker <4@bugs.launchpad.net>'

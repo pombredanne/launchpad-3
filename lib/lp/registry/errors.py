@@ -4,20 +4,21 @@
 __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
-    'PrivatePersonLinkageError',
-    'NameAlreadyTaken',
-    'NoSuchDistroSeries',
-    'UserCannotChangeMembershipSilently',
-    'NoSuchSourcePackageName',
     'NotADerivedSeriesError',
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
+    'DeleteSubscriptionError',
+    'JoinNotAllowed',
     'MirrorNotOfficial',
     'MirrorHasNoHTTPURL',
     'MirrorNotProbed',
-    'DeleteSubscriptionError',
-    'UserCannotSubscribePerson',
+    'NameAlreadyTaken',
+    'NoSuchDistroSeries',
+    'NoSuchSourcePackageName',
+    'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
+    'UserCannotChangeMembershipSilently',
+    'UserCannotSubscribePerson',
     ]
 
 import httplib
@@ -127,4 +128,9 @@ class TeamMembershipTransitionError(ValueError):
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
     """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
     webservice_error(httplib.BAD_REQUEST)

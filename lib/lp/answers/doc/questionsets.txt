@@ -177,10 +177,10 @@ Initially, no projects are returned.
 
 Then some recent questions are created on a number of projects.
 
+    >>> from lp.answers.testing import QuestionFactory
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.answers.testing import QuestionFactory
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
