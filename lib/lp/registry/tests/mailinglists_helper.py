@@ -266,7 +266,7 @@ class MailmanStub:
         for status in (PostedMessageStatus.APPROVAL_PENDING,
                        PostedMessageStatus.REJECTION_PENDING,
                        PostedMessageStatus.DISCARD_PENDING):
-            message_set.acknowledgeMessagesWithStats(status)
+            message_set.acknowledgeMessagesWithStatus(status)
 
 
 mailman = MailmanStub()

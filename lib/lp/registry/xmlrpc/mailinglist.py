@@ -278,5 +278,5 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             held_messages = message_set.getHeldMessagesWithStatus(status)
             for message_id, team_name in held_messages:
                 response[message_id] = (team_name, disposition)
-            message_set.acknowledgeMessagesWithStats(status)
+            message_set.acknowledgeMessagesWithStatus(status)
         return response

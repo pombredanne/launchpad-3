@@ -808,7 +808,7 @@ class IMessageApprovalSet(Interface):
         :rtype: sequence of MessageApproval
         """
 
-    def acknowledgeMessagesWithStats(status):
+    def acknowledgeMessagesWithStatus(status):
         """Acknowledge all the MessageApprovals with the matching status.
 
         This changes the statuses APPROVAL_PENDING to APPROVED,

@@ -898,7 +898,7 @@ class MessageApprovalSet:
             MessageApproval.mailing_list == MailingList.id,
             MailingList.team == Person.id)
 
-    def acknowledgeMessagesWithStats(self, status):
+    def acknowledgeMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
         transitions = {
             PostedMessageStatus.APPROVAL_PENDING:
