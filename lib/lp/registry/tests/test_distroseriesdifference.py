@@ -26,7 +26,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
@@ -419,7 +419,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff.source_pub
         ds_diff.parent_source_pub
 
-        cache = IPropertyCacheManager(ds_diff).cache
+        cache = get_property_cache(ds_diff)
 
         self.assertContentEqual(
             ['source_pub', 'parent_source_pub'], cache)
