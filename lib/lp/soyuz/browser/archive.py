@@ -150,6 +150,7 @@ from lp.soyuz.interfaces.publishing import (
     inactive_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -1813,7 +1814,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        errors = getUtility(IArchive).validatePPAName(proposed_name)
+        errors = Archive.validatePPAName(self.context, proposed_name)
         if errors is not None:
             self.setFieldError('name', errors)
 

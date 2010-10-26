@@ -1701,6 +1701,19 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
+    
+    @classmethod
+    def validatePPAName(self, person, proposed_name):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            return (
+                "Archives cannot have the same name as its distribution.")
+        try:
+            person.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            return None
+        else:
+            return "You already have a PPA named '%s'." % proposed_name
 
 
 class ArchiveSet:
@@ -2139,16 +2152,3 @@ class ArchiveSet:
             )
 
         return results.order_by(SourcePackagePublishingHistory.id)
-    
-    @classmethod
-    def validatePPAName(self, proposed_name):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        if proposed_name is not None and proposed_name == ubuntu.name:
-            return (
-                "Archives cannot have the same name as its distribution.")
-        try:
-            self.getPPAByName(proposed_name)
-        except NoSuchPPA:
-            return None
-        else:
-            return "You already have a PPA named '%s'." % proposed_name
