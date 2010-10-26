@@ -15,6 +15,7 @@ import subprocess
 from textwrap import dedent
 import sqlite3
 import tempfile
+import textwrap
 import time
 import warnings
 
@@ -111,9 +112,7 @@ class Stats:
 
         self.total_hits = len(times)
 
-        # Ignore missing values (-1) in computation.
-        times_array = numpy.ma.masked_values(
-            numpy.asarray(times, dtype=numpy.float32), -1.)
+        times_array = numpy.ma.masked_object(times, None)
 
         self.total_time, self.total_sqlstatements, self.total_sqltime = (
             times_array.sum(axis=0))
@@ -124,8 +123,9 @@ class Stats:
         self.median, self.median_sqlstatements, self.median_sqltime = (
             numpy.median(times_array, axis=0))
 
-        self.std, self.std_sqlstatements, self.std_sqltime = (
-            numpy.std(times_array, axis=0))
+        self.std = numpy.std(times_array[:,0].compressed())
+        self.std_sqlstatements = numpy.std(times_array[:,1].compressed())
+        self.std_sqltime = numpy.std(times_array[:,2].compressed())
 
         # This is an approximation which may not be true: we don't know if we
         # have a std distribution or not. We could just find the 99th
@@ -141,6 +141,20 @@ class Stats:
             bins=histogram_width)
         self.histogram = zip(histogram[1], histogram[0])
 
+    def text(self):
+        """Return a textual version of the stats."""
+        return textwrap.dedent("""
+        <Stats for %d requests:
+            Time:     total=%.2f; mean=%.2f; median=%.2f; std=%.2f
+            SQL time: total=%.2f; mean=%.2f; median=%.2f; std=%.2f
+            SQL stmt: total=%.f;  mean=%.2f; median=%.f; std=%.2f
+            >""" % (
+                self.total_hits, self.total_time, self.mean, self.median,
+                self.std, self.total_sqltime, self.mean_sqltime,
+                self.median_sqltime, self.std_sqltime,
+                self.total_sqlstatements, self.mean_sqlstatements,
+                self.median_sqlstatements, self.std_sqlstatements))
+
 
 class SQLiteRequestTimes:
     """SQLite-based request times computation."""
@@ -154,6 +168,7 @@ class SQLiteRequestTimes:
         self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
         log.debug('Using request database %s' % self.filename)
         # Some speed optimization.
+        self.con.execute('PRAGMA cache_size = 400000') # ~400M
         self.con.execute('PRAGMA synchronous = off')
         self.con.execute('PRAGMA journal_mode = off')
 
@@ -198,7 +213,6 @@ class SQLiteRequestTimes:
         # Histogram has a bin per second up to 1.5 our timeout.
         for x in range(int(self.timeout*1.5)):
             self.cur.execute('INSERT INTO histogram VALUES (?)', (x,))
-
 
     def add_request(self, request):
         """Add a request to the cache."""
