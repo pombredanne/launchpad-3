@@ -19,8 +19,6 @@
        which you should guard closely. Both are standard text files that make up a digital signature.
     </p>
 
-    <p><a href="https://help.ubuntu.com/community/GnuPrivacyGuardHowto" target="_blank">Read more about OpenPGP keys &gt;</a></p>
-
     <p>
       In Launchpad, you can use your OpenPGP key to identify yourself when using the bug
       tracker's email interface, when uploading distribution packages and when signing a code
@@ -31,15 +29,15 @@
 
     <p>
       The easiest way to generate a new OpenPGP key in Ubuntu is to use the
-      <em>Passwords and Encryption Keys</em> tool.
+      <em>Passwords and Encryption Keys</em> tool. If you are using Ubuntu
+      10.04 or an earlier version, it is located at
+      <em>Applications &gt; Accessories &gt; Passwords and Encryption Keys</em>.
+      In Ubuntu 10.10 and later versions, it is located at
+      <em>System &gt; Preferences &gt; Passwords and Encryption Keys</em>.
     </p>
 
     <p>
       <strong>Step 1:</strong> open <em>Passwords and Encryption Keys</em>.
-      <br />If you are using Ubuntu 10.04 or an earlier version, it is
-      located in <em>Applications &gt; Accessories</em>.
-      In Ubuntu 10.10 and later versions, it is located in
-      <em>System &gt; Preferences</em>.
     </p>
 
     <p>
@@ -82,43 +80,12 @@
       Launchpad</a>!
     </p>
 
-    <h3>Using the gpg command</h3>
-
-    <p><strong>Step 1:</strong> Open a terminal and type:</p>
-
-    <p><code>gpg --list-keys</code></p>
-
-    <p><strong>Step 2:</strong> You'll see a list of OpenPGP keys in your system, including the one you've just created, which look something like this:</p>
-
-    <p><code>pub  1024D/12345678 2007-01-26<br />
-             uid  Geoffrey Hayes (My OpenPGP key) &lt;geoffrey@bungle.com&gt;<br />
-             sub  2048g/9ABCDEF1 2007-01-26</code></p>
-
-    <p>In the example above, <code>1024D/12345678</code> is the key's public id. We need the second part, i.e. <code>12345678</code>. Copy that part of your key's public id.</p>
-
-    <p><strong>Step 3:</strong> Enter:</p>
-
-    <p><code>gpg --send-keys --keyserver keyserver.ubuntu.com 12345678</code></p>
-
-    <p><strong>Note:</strong> Replace <em>12345678</em> with the public key id you copied in the step 2.</p>
-
-    <p>If successful, GPG will display a message similar to:</p>
-
-    <p><code>gpg: sending key 12345678 to hkp server keyserver.ubuntu.com</code></p>
-
-    <p>
-      If you get a timeout message, you can try again after a few minutes.
-      You must consult the GPG manuals if you get other kinds of errors.
-    </p>
-
     <h2>Renewing your key</h2>
 
     <p>
-      You may have set your key to expire, or added signers to your key.
-      You can update your key and republish it.
+      You may have set your key to expire. You can update your key and
+      republish it.
     </p>
-
-    <h3>Using <em>Passwords and Encryption Keys</em></h3>
 
     <p>
       <strong>Step 1:</strong> Open <em>Passwords and Encryption Keys</em>
@@ -138,26 +105,17 @@
       See the <em>Publishing your key</em> section above.
     </p>
 
-    <h3>Using the gpg command</h3>
+    <h2>More about GPG</h2>
 
     <p>
-      Find your public key id as described in the first two steps described in
-      the <em>Publishing your key</em> section above for gpg command.
-      Replace <em>12345678</em> in the following instruction with your public
-      key id.
-    </p>
-
-    <p>
-      <strong>Step 3:</strong>  Enter:
-      <code>
-      <br />gpg --edit-key 12345678
-      <br />command&gt; expire (renew your existing)
-      <br />command&gt; 1y (1 year)
-      <br />command&gt; quit
-      <br />command&gt; yes
-      </code>
-    </p>
-
+      <a href="https://help.launchpad.net/YourAccount/ImportingYourPGPKey"
+        target="_blank">Launchpad Help &gt;</a>
+      has more information about using OpenPGP with Launchpad and provides
+      examples using the GPG command found on most Linux distributions.
+      Read the
+      <a href="https://help.ubuntu.com/community/GnuPrivacyGuardHowto"
+        target="_blank">Ubuntu community's guide to OpenPGP keys &gt;</a>
+      to learn about how to other uses.
     </p>
   </body>
 </html>
