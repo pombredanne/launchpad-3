@@ -78,9 +78,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         # When the "Configuration links" link is clicked and the actual links are
         # hidden, the collapsible wrapper opens, showing the links.
         client.click(link=u"Configuration links")
-        client.waits.forPageLoad(
-            classname='lazr-open',
-            timeout=constants.PAGE_LOAD)
+        client.waits.forElement(
+            classname="lazr-open",
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-open')
