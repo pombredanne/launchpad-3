@@ -8,13 +8,13 @@ __metaclass__ = type
 import os
 import unittest
 
-from zope.app.publisher.browser import getDefaultViewName
+from zope.publisher.defaultview import getDefaultViewName
 
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
-from canonical.launchpad.webapp.tales import IMainTemplateFile
+from lp.app.browser.tales import IMainTemplateFile
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,

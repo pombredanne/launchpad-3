@@ -54,8 +54,8 @@ Let's see what we call 'sane':
 Now for each parsed element we can build an IPackageRelationship:
 
   >>> from canonical.launchpad.browser import PackageRelationship
+  >>> from canonical.launchpad.interfaces.packagerelationship import IPackageRelationship
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationship
 
   >>> name, version, operator = parsed_relationships[1]
   >>> fake_url = 'http://host/path'

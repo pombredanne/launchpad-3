@@ -9,11 +9,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
 class TestPersonRepresentation(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):

@@ -12,7 +12,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import DatabaseLayer, LaunchpadZopelessLayer
 from lp.services.testing import build_test_suite
 
 
@@ -22,9 +22,14 @@ special = {
     'script-monitoring.txt': LayeredDocFileSuite(
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadZopelessLayer
+            layer=LaunchpadZopelessLayer,
+            ),
+    'launchpad-scripts.txt': LayeredDocFileSuite(
+            '../doc/launchpad-scripts.txt',
+            layer=DatabaseLayer,
             ),
 }
+
 
 def test_suite():
     return build_test_suite(here, special)

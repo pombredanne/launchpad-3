@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-
+from itertools import groupby
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -61,6 +61,7 @@ from lp.code.errors import (
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
     BranchMergeProposalStatusChangeEvent,
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
@@ -412,6 +413,11 @@ class BranchMergeProposal(SQLBase):
         # review state.
         if _date_requested is None:
             _date_requested = UTC_NOW
+        # If we are going from work in progress to needs review, then reset
+        # the root message id and trigger a job to send out the email.
+        if self.queue_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.root_message_id = None
+            notify(BranchMergeProposalNeedsReviewEvent(self))
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
@@ -776,6 +782,40 @@ class BranchMergeProposal(SQLBase):
         # the storm store.
         Store.of(self).flush()
         return self.preview_diff
+
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getNewerRevisions(self):
+        start_date = self.date_review_requested
+        if start_date is None:
+            start_date = self.date_created
+        return self.source_branch.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+
+    def getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        resultset = self._getNewerRevisions()
+        # Work out the start of the review.
+        branch_revisions = (
+            branch_revision for branch_revision, revision, revision_author
+            in resultset)
+        # Now group by date created.
+        return groupby(branch_revisions, lambda r: r.revision.date_created)
 
 
 class BranchMergeProposalGetter:

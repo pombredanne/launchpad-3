@@ -179,9 +179,9 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/picker.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/app/mapping.js"></script>
-    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/bugs/bugtracker_overlay.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/distroseriesdifferences_details.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
     <script type="text/javascript"
@@ -287,14 +287,6 @@
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
   </tal:needs_json>
-  <tal:needs-gmap2 condition="request/needs_gmap2">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
-    <script type="text/javascript"
-            tal:condition="not: devmode"
-            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
-  </tal:needs-gmap2>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
@@ -425,8 +417,10 @@
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/Feedback"
-        >Contact Launchpad Support</a>
+      <a tal:condition="not: view/user|nothing"
+        href="/feedback">Contact Launchpad Support</a>
+      <a tal:condition="view/user|nothing"
+        href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>

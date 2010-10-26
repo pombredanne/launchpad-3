@@ -28,15 +28,16 @@ We'll start by adding some attachments to the bug:
     ...      "bug-patch.diff", is_patch=True, content_type='text/plain',
     ...      description="a patch")
 
-Next, we'll cycle through all statuses so the dates are present:
+Next, we'll cycle through all statuses so the dates are present (to
+toggle away from Fix Released we must be the target owner):
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> t0 = bug.bugtasks[0]
     >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
     >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
     >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
     >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
-    >>> t0.transitionToStatus(BugTaskStatus.NEW, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.NEW, t0.target.owner)
     >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
     >>> logout()
     >>> flush_database_updates()

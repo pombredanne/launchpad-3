@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -48,6 +48,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -120,7 +121,7 @@ class IProductSeriesEditRestricted(Interface):
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationTemplates):
+    IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -248,17 +249,13 @@ class IProductSeriesPublic(
         schema=IBranch,
         required=False,
         description=_(
-            "A Bazaar branch to commit translation snapshots to. "
-            "Leave blank to disable."))
-
-    translations_branch = ReferenceChoice(
-        title=_("Translations export branch"),
-        vocabulary='HostedBranchRestrictedOnOwner',
-        schema=IBranch,
-        required=False,
-        description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

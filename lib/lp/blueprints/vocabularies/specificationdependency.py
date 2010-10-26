@@ -4,7 +4,12 @@
 """The vocabularies relating to dependencies of specifications."""
 
 __metaclass__ = type
-__all__ = ['SpecificationDepCandidatesVocabulary']
+__all__ = [
+    'SpecificationDepCandidatesVocabulary',
+    'SpecificationDependenciesVocabulary',
+    ]
+
+from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -19,12 +24,14 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
+    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 
 from lp.blueprints.interfaces.specification import SpecificationFilter
 from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.pillar import IPillarNameSet
+
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
@@ -158,3 +165,14 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def __contains__(self, obj):
         return self._is_valid_candidate(obj)
 
+
+class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+    """List specifications on which the current specification depends."""
+
+    _table = Specification
+    _orderBy = 'title'
+
+    def __iter__(self):
+        for spec in sorted(
+            self.context.dependencies, key=attrgetter('title')):
+            yield SimpleTerm(spec, spec.name, spec.title)

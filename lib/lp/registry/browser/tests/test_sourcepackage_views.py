@@ -11,7 +11,7 @@ import urllib
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.sourcepackage import get_register_upstream_url
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
@@ -61,7 +61,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
 
     def test_get_register_upstream_url_summary(self):
         test_publisher = SoyuzTestPublisher()
-        test_data = test_publisher.makeSourcePackageWithBinaryPackageRelease()
+        test_data = test_publisher.makeSourcePackageSummaryData()
         source_package_name = (
             test_data['source_package'].sourcepackagename.name)
         distroseries_id = test_data['distroseries'].id

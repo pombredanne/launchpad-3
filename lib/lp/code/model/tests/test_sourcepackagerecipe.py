@@ -53,6 +53,7 @@ from lp.code.model.sourcepackagerecipe import (
     SourcePackageRecipe,
     )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
+from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob,
@@ -240,7 +241,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe_text = textwrap.dedent(recipe_text)
         with person_logged_in(sp_recipe.owner):
             self.assertRaises(
-                ForbiddenInstructionError, sp_recipe.setRecipeText, recipe_text)
+                ForbiddenInstructionError, sp_recipe.setRecipeText,
+                recipe_text)
         self.assertEquals(
             old_branches, list(sp_recipe.getReferencedBranches()))
 
@@ -251,11 +253,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.makeSourcePackageRecipeFromBuilderRecipe(builder_recipe)
 
     def test_reject_newer_formats(self):
-        builder_recipe = self.factory.makeRecipe()
-        builder_recipe.format = 0.4
-        self.assertRaises(
-            TooNewRecipeFormat,
-            self.factory.makeSourcePackageRecipe, recipe=str(builder_recipe))
+        with recipe_parser_newest_version(145.115):
+            builder_recipe = self.factory.makeRecipe()
+            builder_recipe.format = 145.115
+            self.assertRaises(
+                TooNewRecipeFormat,
+                self.factory.makeSourcePackageRecipe,
+                recipe=str(builder_recipe))
 
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -471,6 +475,19 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             recipe.destroySelf()
         # Show no database constraints were violated
         Store.of(recipe).flush()
+
+    def test_destroySelf_clears_release(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        release = self.factory.makeSourcePackageRelease(
+            source_package_recipe_build=build)
+        self.assertEqual(build, release.source_package_recipe_build)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        self.assertIs(None, release.source_package_recipe_build)
+        transaction.commit()
 
     def test_findStaleDailyBuilds(self):
         # Stale recipe not built daily.

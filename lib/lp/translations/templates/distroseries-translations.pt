@@ -4,14 +4,17 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only">
 
+  <head>
+  <div metal:fill-slot="head_epilogue">
+    <metal:translations-js
+      use-macro="context/@@+translations-macros/translations-js" />
+    <metal:languages-table-js
+      use-macro="context/@@+translations-macros/languages-table-js" />
+    <meta tal:condition="not:context/translations_usage/enumvalue:LAUNCHPAD"
+          name="robots" content="noindex,nofollow" />
+  </div>
+  </head>
   <body>
-
-    <div metal:fill-slot="head_epilogue">
-      <metal:translations-js
-        use-macro="context/@@+translations-macros/translations-js" />
-      <metal:languages-table-js
-        use-macro="context/@@+translations-macros/languages-table-js" />
-    </div>
 
     <div metal:fill-slot="main">
       <div class="translation-help-links">
@@ -21,8 +24,13 @@
         </a>
         <div></div><!-- to clear-up all floats -->
       </div>
-      <div class="top-portlet"
-           id="translation-focus"
+      <div class="top-portlet">
+        <tal:not-using-launchpad
+          condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+          <tal:message
+            replace="structure context/@@+portlet-not-using-launchpad"/>
+        </tal:not-using-launchpad>
+      <div id="translation-focus"
            tal:condition="context/distribution/translation_focus">
         <p tal:condition="not:view/is_translation_focus">
           Launchpad currently recommends translating
@@ -39,14 +47,16 @@
           </tal:distro>.
         </p>
       </div>
-      <div class="yui-g">
+      </div>
+
+      <div tal:condition="view/show_page_content" class="yui-g">
         <div class="yui-u first">
           <div class="portlet">
             <h3>Permissions</h3>
             <p>
               <tal:permissions replace="
-                  structure
-                  context/distribution/@@+portlet-translation-groups-and-permission"/>
+                structure
+                context/distribution/@@+portlet-translation-groups-and-permission"/>
             </p>
           </div>
         </div>
@@ -130,7 +140,7 @@
           </div>
         </div>
       </div>
-
+      <tal:show-page-content condition="view/show_page_content">
       <tal:stats condition="view/distroserieslanguages">
         <div class="yui-b top-portlet">
           <h2>Translation statistics</h2>
@@ -140,7 +150,7 @@
           </div>
         </div>
       </tal:stats>
+      </tal:show-page-content>
     </div>
   </body>
 </html>
-

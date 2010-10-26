@@ -6,7 +6,7 @@
 
 __metaclass__ = type
 
-import datetime
+import logging
 import os
 import re
 import sys
@@ -47,7 +47,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import (
     config,
     DatabaseConfig,
-    dbconfig,
     )
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import (
@@ -67,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
+from lp.services import features
 from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
@@ -82,8 +82,6 @@ __all__ = [
     'get_request_start_time',
     'get_request_duration',
     'get_store_name',
-    'hard_timeout_expired',
-    'launchpad_default_timeout',
     'soft_timeout_expired',
     'StoreSelector',
     ]
@@ -173,7 +171,7 @@ def set_request_started(
     if request_statements is not None:
         # Specify a specific sequence object for the timeline.
         set_request_timeline(request, Timeline(request_statements))
-    else: 
+    else:
         # Ensure a timeline is created, so that time offset for actions is
         # reasonable.
         set_request_timeline(request, Timeline())
@@ -182,13 +180,16 @@ def set_request_started(
     if txn is not None:
         _local.commit_logger = CommitLogger(txn)
         txn.registerSynch(_local.commit_logger)
+    set_permit_timeout_from_features(False)
+
 
 def clear_request_started():
     """Clear the request timer.  This function should be called when
     the request completes.
     """
     if getattr(_local, 'request_start_time', None) is None:
-        warnings.warn('clear_request_started() called outside of a request')
+        warnings.warn('clear_request_started() called outside of a request',
+            stacklevel=2)
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
@@ -257,10 +258,50 @@ def get_request_duration(now=None):
     return now - starttime
 
 
+def set_permit_timeout_from_features(enabled):
+    """Control request timeouts being obtained from the 'hard_timeout' flag.
+
+    Until we've fully setup a page to render - routed the request to the right
+    object, setup a participation etc, feature flags cannot be completely used;
+    and because doing feature flag lookups will trigger DB access, attempting
+    to do a DB lookup will cause a nested DB lookup (the one being done, and
+    the flags lookup). To resolve all of this, timeouts start as a config file
+    only setting, and are then overridden once the request is ready to execute.
+
+    :param enabled: If True permit looking up request timeouts in feature
+        flags.
+    """
+    _local._permit_feature_timeout = enabled
+
+
+def _get_request_timeout(timeout=None):
+    """Get the timeout value in ms for the current request.
+
+    :param timeout: A custom timeout in ms.
+    :return None or a time in ms representing the budget to grant the request.
+    """
+    if not getattr(_local, 'enable_timeout', True):
+        return None
+    if timeout is None:
+        timeout = config.database.db_statement_timeout
+        if getattr(_local, '_permit_feature_timeout', False):
+            set_permit_timeout_from_features(False)
+            try:
+                timeout_str = features.getFeatureFlag('hard_timeout')
+            finally:
+                set_permit_timeout_from_features(True)
+            if timeout_str:
+                try:
+                    timeout = float(timeout_str)
+                except ValueError:
+                    logging.error('invalid hard timeout flag %r', timeout_str)
+    return timeout
+
+
 def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     """Return how many seconds are remaining in the current request budget.
 
-    If timouts are disabled, None is returned. 
+    If timeouts are disabled, None is returned.
 
     :param no_exception: If True, do not raise an error if the request
         is out of time. Instead return a float e.g. -2.0 for 2 seconds over
@@ -269,10 +310,7 @@ def get_request_remaining_seconds(no_exception=False, now=None, timeout=None):
     :param timeout: A custom timeout in ms.
     :return: None or a float representing the remaining time budget.
     """
-    if not getattr(_local, 'enable_timeout', True):
-        return None
-    if timeout is None:
-        timeout = config.database.db_statement_timeout
+    timeout = _get_request_timeout(timeout=timeout)
     if not timeout:
         return None
     duration = get_request_duration(now)
@@ -548,6 +586,8 @@ class LaunchpadStatementTracer:
 
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
+        self._debug_sql_bind_values = bool(
+            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
@@ -556,7 +596,12 @@ class LaunchpadStatementTracer:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
         if self._debug_sql or self._debug_sql_extra:
-            sys.stderr.write(statement + "\n")
+            stmt_to_log = statement
+            if self._debug_sql_bind_values:
+                from storm.database import Connection
+                param_strings = Connection.to_database(params)
+                stmt_to_log = statement % tuple(param_strings)
+            sys.stderr.write(stmt_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread

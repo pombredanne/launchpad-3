@@ -182,12 +182,48 @@ development focus series has a branch.
     >>> print view.codehosting_usage.name
     LAUNCHPAD
 
+    >>> from lp.code.enums import BranchType
+    >>> remote = factory.makeProduct()
+    >>> branch = factory.makeProductBranch(product=remote,
+    ...                                    branch_type=BranchType.REMOTE)
+    >>> remote.official_codehosting
+    False
+    >>> view = create_view(remote, '+get-involved')
+    >>> print view.codehosting_usage.name
+    UNKNOWN
+
+
 Project groups cannot make links to register a branch, so
 official_codehosting is always false.
 
     >>> view = create_view(project_group, '+get-involved')
     >>> print view.codehosting_usage.name
     NOT_APPLICABLE
+
+Project groups ignore products translations_usage setting if none of the
+products are fully configured as translatable.
+
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> project_group.has_translatable()
+    False
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> print view.translations_usage.name
+    UNKNOWN
+
+If a product is translatable, translations is enabled in the involvment menu.
+
+    >>> series = factory.makeProductSeries(product=product)
+    >>> pot = factory.makePOTemplateAndPOFiles(
+    ...     productseries=series,
+    ...     language_codes=['es'])
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> project_group.has_translatable()
+    True
+
+    >>> view = create_view(project_group, '+get-involved')
+    >>> print view.translations_usage.name
+    LAUNCHPAD
 
 DistroSeries can use this view. The distribution is used to set the links.
 
@@ -219,8 +255,8 @@ Involvement links
 
 The pillar involvement view uses the InvolvedMenu when rendering links.
 
+    >>> from lp.app.browser.tales import MenuAPI
     >>> from operator import attrgetter
-    >>> from canonical.launchpad.webapp.tales import MenuAPI
 
 The menu when viewed from a product page.
 
@@ -235,8 +271,8 @@ The menu when viewed from a product page.
     http://code.launchpad.dev/bread/+addbranch
     http://blueprints.launchpad.dev/bread/+addspec
 
-    >>> from lp.testing.menu import check_menu_links
     >>> from lp.registry.browser.pillar import InvolvedMenu
+    >>> from lp.testing.menu import check_menu_links
     >>> check_menu_links(InvolvedMenu(product))
     True
 

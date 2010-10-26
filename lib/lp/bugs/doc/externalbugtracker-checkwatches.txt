@@ -20,7 +20,7 @@ for a particular bugtracker.
     >>> from lp.bugs.externalbugtracker import (
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.scripts import log
-    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
 
 get_external_bugtracker supports five external bug tracker types:
 
@@ -35,7 +35,7 @@ get_external_bugtracker supports five external bug tracker types:
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> for bugtracker_type in bugtracker_types:
     ...     bugtracker = new_bugtracker(bugtracker_type)

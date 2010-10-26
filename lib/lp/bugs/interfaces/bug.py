@@ -70,6 +70,7 @@ from canonical.launchpad.validators.attachment import (
     )
 from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import (
@@ -80,6 +81,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
@@ -243,7 +245,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
              required=False, default=False, readonly=True))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
-    activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    activity = exported(
+        CollectionField(
+            title=_('Log of activity that has occurred on this bug.'),
+            value_type=Reference(schema=IBugActivity),
+            readonly=True))
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = exported(
@@ -269,6 +275,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_('CVE entries related to this bug.'),
             value_type=Reference(schema=ICve),
             readonly=True))
+    has_cves = Bool(title=u"True if the bug has cve entries.")
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
         doNotSnapshot(CollectionField(
@@ -406,6 +413,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     latest_patch = Attribute("The most recent patch of this bug.")
 
+    official_tags = Attribute("The official bug tags relevant to this bug.")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
@@ -420,12 +429,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         person=Reference(IPerson, title=_('Person'), required=True))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
-    def subscribe(person, subscribed_by, suppress_notify=True):
+    def subscribe(person, subscribed_by, suppress_notify=True, level=None):
         """Subscribe `person` to the bug.
 
         :param person: the subscriber.
         :param subscribed_by: the person who created the subscription.
         :param suppress_notify: a flag to suppress notify call.
+        :param level: The BugNotificationLevel for the new subscription.
         :return: an `IBugSubscription`.
         """
 
@@ -462,13 +472,13 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
-    def getDirectSubscribers():
+    def getDirectSubscribers(recipients=None, level=None):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
         """
 
-    def getIndirectSubscribers():
+    def getIndirectSubscribers(recipients=None, level=None):
         """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
@@ -483,6 +493,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         from duplicates.
         """
 
+    def getStructuralSubscribers(recipients=None, level=None):
+        """Return `IPerson`s subscribed to this bug's targets.
+
+        This takes into account bug subscription filters.
+        """
+
     def getSubscriptionsFromDuplicates():
         """Return IBugSubscriptions subscribed from dupes of this bug."""
 
@@ -491,9 +507,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     def getSubscribersForPerson(person):
         """Find the persons or teams by which person is subscribed.
-        
+
         This call should be quite cheap to make and performs a single query.
-        
+
         :return: An IResultSet.
         """
 

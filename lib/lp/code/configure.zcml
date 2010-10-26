@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -183,19 +183,19 @@
   </securedutility>
   <securedutility
       class="canonical.launchpad.systemhomes.BazaarApplication"
-      provides="canonical.launchpad.interfaces.IBazaarApplication">
-    <allow interface="canonical.launchpad.interfaces.IBazaarApplication"/>
+      provides="canonical.launchpad.interfaces.launchpad.IBazaarApplication">
+    <allow interface="canonical.launchpad.interfaces.launchpad.IBazaarApplication"/>
   </securedutility>
 
   <!-- pages for the bazaar application -->
 
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
       class="canonical.launchpad.xmlrpc.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
-      for="canonical.launchpad.interfaces.IBazaarApplication"
+      for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
       interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
       class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
       permission="zope.Public"/>
@@ -236,8 +236,10 @@
                     votes
                     all_comments
                     related_bugs
+                    revision_end_date
                     isMergable
                     getComment
+                    getRevisionsSinceReviewStart
                     getNotificationRecipients
                     getVoteReference
                     isValidTransition
@@ -278,7 +280,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
+    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility
@@ -287,14 +289,14 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJobSource"/>
   </securedutility>
 
-  <class class="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob">
+  <class class="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob"/>
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJob"/>
   </class>
   <securedutility
-      component="lp.code.model.branchmergeproposaljob.MergeProposalCreatedJob"
-      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource">
-    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalCreatedJobSource"/>
+      component="lp.code.model.branchmergeproposaljob.MergeProposalNeedsReviewEmailJob"
+      provides="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IMergeProposalNeedsReviewEmailJobSource"/>
   </securedutility>
 
   <securedutility
@@ -349,6 +351,10 @@
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lp.code.interfaces.event.INewBranchMergeProposalEvent"
       handler="lp.code.subscribers.branchmergeproposal.merge_proposal_created"/>
+  <subscriber
+      for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
+           lp.code.interfaces.event.IBranchMergeProposalNeedsReviewEvent"
+      handler="lp.code.subscribers.branchmergeproposal.merge_proposal_needs_review"/>
   <subscriber
       for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal
            lazr.lifecycle.interfaces.IObjectModifiedEvent"

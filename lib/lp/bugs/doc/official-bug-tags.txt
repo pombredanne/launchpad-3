@@ -3,8 +3,8 @@
 Distributions and products can define official bug tags.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> from lp.bugs.model.bugtarget import OfficialBugTag
@@ -169,7 +169,7 @@ But only writable for users with edit permissions.
     >>> ubuntu.official_bug_tags = [u'foo', u'bar']
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution 'Ubuntu' (ubuntu)>, 'official_bug_tags', 'launchpad.Edit')
+    Unauthorized: (<Distribution 'Ubuntu' (ubuntu)>, 'official_bug_tags', 'launchpad.BugSupervisor')
 
 The same is available for products.
 
@@ -208,7 +208,7 @@ Product series gets the tags of the parent product.
 Project group gets the union of all the tags available for its products.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> thunderbird.official_bug_tags = [u'baz']
     >>> logout()

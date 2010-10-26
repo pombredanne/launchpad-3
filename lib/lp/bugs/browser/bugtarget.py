@@ -80,7 +80,7 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
+from lp.app.browser.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
@@ -588,7 +588,8 @@ class FileBugViewBase(LaunchpadFormView):
                 bug.linkAttachment(
                     owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
-                    comment=attachment_comment)
+                    comment=attachment_comment,
+                    send_notifications=False)
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
                         cgi.escape(attachment['file_alias'].filename))
@@ -1383,7 +1384,7 @@ class BugTargetBugTagsView(LaunchpadView):
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
-                check_permission('launchpad.Edit', self.context))
+                check_permission('launchpad.BugSupervisor', self.context))
 
 
 class OfficialBugTagsManageView(LaunchpadEditFormView):

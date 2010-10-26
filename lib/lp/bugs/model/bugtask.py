@@ -43,7 +43,10 @@ from storm.expr import (
     Or,
     SQL,
     )
-from storm.store import EmptyResultSet
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from storm.zope.interfaces import (
     IResultSet,
     ISQLObjectResultSet,
@@ -399,6 +402,7 @@ class NullBugTask(BugTaskMixin):
                  sourcepackagename=None, distribution=None,
                  distroseries=None):
         """Initialize a NullBugTask."""
+        self.id = None
         self.bug = bug
         self.product = product
         self.productseries = productseries
@@ -756,11 +760,11 @@ class BugTask(SQLBase, BugTaskMixin):
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
-            assert self.product.development_focus is not None, (
+            assert self.product.development_focusID is not None, (
                 'A product should always have a development series.')
-            devel_focus = self.product.development_focus
+            devel_focusID = self.product.development_focusID
             for bugtask in bugtasks:
-                if bugtask.productseries == devel_focus:
+                if bugtask.productseriesID == devel_focusID:
                     conjoined_master = bugtask
                     break
 
@@ -887,12 +891,13 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == celebrities.janitor.id):
             return True
         else:
-            return (self.status is not BugTaskStatus.WONTFIX and
-                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+            return (self.status not in (
+                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
+                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
-        if not new_status:
+        if not new_status or user is None:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
@@ -1938,6 +1943,11 @@ class BugTaskSet:
                 "Bug.date_last_updated > %s" % (
                     sqlvalues(params.modified_since,)))
 
+        if params.created_since:
+            extra_clauses.append(
+                "BugTask.datecreated > %s" % (
+                    sqlvalues(params.created_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
@@ -2155,8 +2165,8 @@ class BugTaskSet:
             tables.append(BugAffectsPerson)
         if params.hardware_owner_is_subscribed_to_bug:
             bug_link_clauses.append(
-                And(BugSubscription.personID == HWSubmission.ownerID,
-                    BugSubscription.bugID == Bug.id))
+                And(BugSubscription.person_id == HWSubmission.ownerID,
+                    BugSubscription.bug_id == Bug.id))
             tables.append(BugSubscription)
         if params.hardware_is_linked_to_bug:
             bug_link_clauses.append(
@@ -2367,7 +2377,11 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
-
+        del IPropertyCache(bug).bugtasks
+        # Because of block_implicit_flushes, it is possible for a new bugtask
+        # to be queued in appropriately, which leads to Bug.bugtasks not
+        # finding the bugtask.
+        Store.of(bugtask).flush()
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):

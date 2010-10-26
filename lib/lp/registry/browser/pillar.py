@@ -29,10 +29,10 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     nearest,
     )
-from canonical.launchpad.webapp.tales import MenuAPI
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import (
-    ServiceUsage,
     service_uses_launchpad,
+    ServiceUsage,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.registry.browser.structuralsubscription import (
@@ -79,7 +79,7 @@ class InvolvedMenu(NavigationMenu):
 
     def submit_code(self):
         if self.pillar.codehosting_usage in [
-                ServiceUsage.LAUNCHPAD, 
+                ServiceUsage.LAUNCHPAD,
                 ServiceUsage.EXTERNAL,
                 ]:
             enabled = True
@@ -113,30 +113,33 @@ class PillarView(LaunchpadView):
         self.translations_usage = ServiceUsage.UNKNOWN
         self.codehosting_usage = ServiceUsage.UNKNOWN
         pillar = nearest(self.context, IPillar)
-        if IProjectGroup.providedBy(pillar):
-            for product in pillar.products:
-                self._set_official_launchpad(product)
+
+        self._set_official_launchpad(pillar)
+        if IDistroSeries.providedBy(self.context):
+            distribution = self.context.distribution
+            self.codehosting_usage = distribution.codehosting_usage
+            self.answers_usage = ServiceUsage.NOT_APPLICABLE
+        elif IDistributionSourcePackage.providedBy(self.context):
+            self.blueprints_usage = ServiceUsage.UNKNOWN
+            self.translations_usage = ServiceUsage.UNKNOWN
+        elif IProjectGroup.providedBy(pillar):
+            # XXX: 2010-10-07 EdwinGrubbs bug=656292
+            # Fix _set_official_launchpad().
+
             # Project groups do not support submit code, override the
             # default.
             self.codehosting_usage = ServiceUsage.NOT_APPLICABLE
         else:
-            self._set_official_launchpad(pillar)
-            if IDistroSeries.providedBy(self.context):
-                distribution = self.context.distribution
-                self.codehosting_usage = distribution.codehosting_usage
-                self.answers_usage = ServiceUsage.NOT_APPLICABLE
-            elif IDistributionSourcePackage.providedBy(self.context):
-                self.blueprints_usage = ServiceUsage.UNKNOWN
-                self.translations_usage = ServiceUsage.UNKNOWN
-            else:
-                # The context is used by all apps.
-                pass
+            # The context is used by all apps.
+            pass
 
     def _set_official_launchpad(self, pillar):
         """Does the pillar officially use launchpad."""
+        # XXX: 2010-10-07 EdwinGrubbs bug=656292
+        # Fix _set_official_launchpad().
         # This if structure is required because it may be called many
         # times to build the complete set of official applications.
-        if pillar.official_malone:
+        if service_uses_launchpad(IServiceUsage(pillar).bug_tracking_usage):
             self.official_malone = True
         if service_uses_launchpad(IServiceUsage(pillar).answers_usage):
             self.answers_usage = ServiceUsage.LAUNCHPAD

@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
@@ -52,6 +53,7 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import QuestionTargetSearch
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.blueprints.interfaces.specification import (
     SpecificationFilter,
@@ -74,6 +76,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
+    OfficialBugTag,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
@@ -93,6 +96,7 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
+    HasMilestonesMixin,
     Milestone,
     ProjectMilestone,
     )
@@ -110,7 +114,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    MakesAnnouncements, HasSprintsMixin, HasAliasMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
-                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin):
+                   HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
+                   HasMilestonesMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -170,6 +175,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
 
+    def getConfigurableProducts(self):
+        return [product for product in self.products
+                if check_permission('launchpad.Edit', product)]
+                    
     @property
     def drivers(self):
         """See `IHasDrivers`."""
@@ -202,9 +211,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # XXX j.c.sackett 2010-08-30 bug=627631: Once data migration has
         # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
+        # check for the translations_usage, not official_rosetta.  At that
+        # time it should also be converted to a Storm query and the issue with
+        # has_translatables resolved.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -213,6 +224,18 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    def has_translatable(self):
+        """See `IProjectGroup`."""
+        # XXX: BradCrittenden 2010-10-12 bug=659078: The test should be
+        # converted to use is_empty but the implementation in storm's
+        # sqlobject wrapper is broken.
+        # return not self.translatables().is_empty()
+        return self.translatables().count() != 0
+
+    def has_branches(self):
+        """ See `IProjectGroup`."""
+        return not self.getBranches().is_empty()
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
@@ -309,6 +332,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this milestone."""
         search_params.setProject(self)
 
+    def _getOfficialTagClause(self):
+        """See `OfficialBugTagTargetMixin`."""
+        And(ProjectGroup.id == Product.projectID,
+            Product.id == OfficialBugTag.productID)
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -396,6 +424,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestoneCondition(self):
+        """See `HasMilestonesMixin`."""
+        return And(Milestone.productID == Product.id,
+                   Product.projectID == self.id)
+
     def _getMilestones(self, only_active):
         """Return a list of milestones for this project group.
 
@@ -445,6 +478,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self._getMilestones(True)
 
     @property
+    def product_milestones(self):
+        """Hack to avoid the ProjectMilestone in MilestoneVocabulary."""
+        # XXX: bug=644977 Robert Collins - this is a workaround for
+        # insconsistency in project group milestone use.
+        return self._get_milestones()
+
+    @property
     def all_milestones(self):
         """See `IProjectGroup`."""
         return self._getMilestones(False)
@@ -467,6 +507,56 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
 
         return ProjectGroupSeries(self, series_name)
+
+    def _get_usage(self, attr):
+        """Determine ProjectGroup usage based on individual projects.
+
+        By default, return ServiceUsage.UNKNOWN.
+        If any project uses Launchpad, return ServiceUsage.LAUNCHPAD.
+        Otherwise, return the ServiceUsage of the last project that was
+        not ServiceUsage.UNKNOWN.
+        """
+        result = ServiceUsage.UNKNOWN
+        for product in self.products:
+            product_usage = getattr(product, attr)
+            if product_usage != ServiceUsage.UNKNOWN:
+                result = product_usage
+                if product_usage == ServiceUsage.LAUNCHPAD:
+                    break
+        return result
+
+    @property
+    def answers_usage(self):
+        return self._get_usage('answers_usage')
+
+    @property
+    def blueprints_usage(self):
+        return self._get_usage('blueprints_usage')
+
+    @property
+    def translations_usage(self):
+        if self.has_translatable():
+            return ServiceUsage.LAUNCHPAD
+        return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        # Project groups do not support submitting code.
+        return ServiceUsage.NOT_APPLICABLE
+
+    @property
+    def bug_tracking_usage(self):
+        return self._get_usage('bug_tracking_usage')
+
+    @property
+    def uses_launchpad(self):
+        if (self.answers_usage == ServiceUsage.LAUNCHPAD
+            or self.blueprints_usage == ServiceUsage.LAUNCHPAD
+            or self.translations_usage == ServiceUsage.LAUNCHPAD
+            or self.codehosting_usage == ServiceUsage.LAUNCHPAD
+            or self.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return True
+        return False
 
 
 class ProjectGroupSet:

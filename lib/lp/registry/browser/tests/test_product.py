@@ -56,15 +56,6 @@ class TestProductLicenseMixin(TestCaseWithFactory):
             'Commercial <commercial@launchpad.net>',
             notification['Reply-To'])
 
-    def verify_commercial_email(self, notification):
-        # Verify that the commercial team was sent an email.
-        self.assertEqual(
-            'Project License Submitted for ball by registrant',
-            notification['Subject'])
-        self.assertEqual(
-            'Commercial <commercial@launchpad.net>',
-            notification['To'])
-
     def test_ProductLicenseMixin_instance(self):
         # The object under test is an instance of ProductLicenseMixin.
         self.assertTrue(isinstance(self.view, ProductLicenseMixin))
@@ -85,26 +76,24 @@ class TestProductLicenseMixin(TestCaseWithFactory):
         self.verify_user_email(notifications.pop())
 
     def test_notifyCommercialMailingList_other_open_source(self):
-        # An Other/Open Source license sends two emails.
+        # An Other/Open Source license sends one email.
         self.product.licenses = [License.OTHER_OPEN_SOURCE]
         self.product.license_info = 'http://www,boost.org/'
         self.view.notifyCommercialMailingList()
         self.verify_whiteboard()
         notifications = pop_notifications()
-        self.assertEqual(2, len(notifications))
+        self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
-        self.verify_commercial_email(notifications.pop())
 
     def test_notifyCommercialMailingList_other_proprietary(self):
-        # An Other/Proprietary license sends two emails.
+        # An Other/Proprietary license sends one email.
         self.product.licenses = [License.OTHER_PROPRIETARY]
         self.product.license_info = 'All mine'
         self.view.notifyCommercialMailingList()
         self.verify_whiteboard()
         notifications = pop_notifications()
-        self.assertEqual(2, len(notifications))
+        self.assertEqual(1, len(notifications))
         self.verify_user_email(notifications.pop())
-        self.verify_commercial_email(notifications.pop())
 
     def test__formatDate(self):
         # Verify the date format.

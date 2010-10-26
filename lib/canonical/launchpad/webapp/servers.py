@@ -21,6 +21,7 @@ from lazr.restful.publisher import (
     WebServiceRequestTraversal,
     )
 from lazr.uri import URI
+import pytz
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
@@ -48,7 +49,10 @@ from zope.publisher.xmlrpc import (
     XMLRPCRequest,
     XMLRPCResponse,
     )
-from zope.security.interfaces import IParticipation
+from zope.security.interfaces import (
+    IParticipation,
+    Unauthorized,
+    )
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -63,9 +67,17 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivateApplication,
     IWebServiceApplication,
     )
+from canonical.launchpad.interfaces.oauth import (
+    ClockSkew,
+    IOAuthConsumerSet,
+    IOAuthSignedRequest,
+    NonceAlreadyUsed,
+    TimestampOrderingError,
+    )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
-    get_oauth_principal,
+    check_oauth_signature,
+    get_oauth_authorization,
     )
 from canonical.launchpad.webapp.authorization import (
     LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
@@ -80,6 +92,8 @@ from canonical.launchpad.webapp.interfaces import (
     INotificationRequest,
     INotificationResponse,
     IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    OAuthPermission,
     )
 from canonical.launchpad.webapp.notifications import (
     NotificationList,
@@ -511,7 +525,27 @@ def get_query_string_params(request):
     return decoded_qs
 
 
-class BasicLaunchpadRequest:
+class LaunchpadBrowserRequestMixin:
+    """Provides methods used for both API and web browser requests."""
+
+    def getRootURL(self, rootsite):
+        """See IBasicLaunchpadRequest."""
+        if rootsite is not None:
+            assert rootsite in allvhosts.configs, (
+                "rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())))
+            root_url = allvhosts.configs[rootsite].rooturl
+        else:
+            root_url = self.getApplicationURL() + '/'
+        return root_url
+
+    @property
+    def is_ajax(self):
+        """See `IBasicLaunchpadRequest`."""
+        return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
+
+
+class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
 
     implements(IBasicLaunchpadRequest)
@@ -522,7 +556,6 @@ class BasicLaunchpadRequest:
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -567,24 +600,8 @@ class BasicLaunchpadRequest:
         return get_query_string_params(self)
 
 
-class LaunchpadBrowserRequestMixin:
-    """A mixin for classes that share some method implementations."""
-
-    def getRootURL(self, rootsite):
-        """See IBasicLaunchpadRequest."""
-        if rootsite is not None:
-            assert rootsite in allvhosts.configs, (
-                "rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())))
-            root_url = allvhosts.configs[rootsite].rooturl
-        else:
-            root_url = self.getApplicationURL() + '/'
-        return root_url
-
-
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
-                              NotificationRequest, ErrorReportRequest,
-                              LaunchpadBrowserRequestMixin):
+                              NotificationRequest, ErrorReportRequest):
     """Integration of launchpad mixin request classes to make an uber
     launchpad request class.
     """
@@ -834,11 +851,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
     >>> request.needs_datepicker_iframe
     False
 
-    And for JSON and GMap2:
+    And for JSON:
 
     >>> request.needs_json
-    False
-    >>> request.needs_gmap2
     False
 
     """
@@ -857,7 +872,6 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        self.needs_gmap2 = False
         # stub out the FeatureController that would normally be provided by
         # the publication mechanism
         self.features = NullFeatureController()
@@ -1201,7 +1215,82 @@ class WebServicePublication(WebServicePublicationMixin,
         if request_path.startswith("/%s" % web_service_config.path_override):
             return super(WebServicePublication, self).getPrincipal(request)
 
-        return get_oauth_principal(request)
+        # Fetch OAuth authorization information from the request.
+        form = get_oauth_authorization(request)
+
+        consumer_key = form.get('oauth_consumer_key')
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
+        token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+
+        if consumer_key is None:
+            # Either the client's OAuth implementation is broken, or
+            # the user is trying to make an unauthenticated request
+            # using wget or another OAuth-ignorant application.
+            # Try to retrieve a consumer based on the User-Agent
+            # header.
+            anonymous_request = True
+            consumer_key = request.getHeader('User-Agent', '')
+            if consumer_key == '':
+                raise Unauthorized(
+                    'Anonymous requests must provide a User-Agent.')
+            consumer = consumers.getByKey(consumer_key)
+
+        if consumer is None:
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer name (or user
+                # agent). Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
+                if consumer_key == '' or consumer_key is None:
+                    raise Unauthorized("No consumer key specified.")
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            alsoProvides(request, IOAuthSignedRequest)
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
+        token = consumer.getAccessToken(token_key)
+        if token is None:
+            raise Unauthorized('Unknown access token (%s).' % token_key)
+        nonce = form.get('oauth_nonce')
+        timestamp = form.get('oauth_timestamp')
+        try:
+            token.checkNonceAndTimestamp(nonce, timestamp)
+        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
+            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
+        if token.permission == OAuthPermission.UNAUTHORIZED:
+            raise Unauthorized('Unauthorized token (%s).' % token.key)
+        elif token.is_expired:
+            raise Unauthorized('Expired token (%s).' % token.key)
+        elif not check_oauth_signature(request, consumer, token):
+            raise Unauthorized('Invalid signature.')
+        else:
+            # Everything is fine, let's return the principal.
+            pass
+        alsoProvides(request, IOAuthSignedRequest)
+        principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.account.id, access_level=token.permission,
+            scope=token.context)
+
+        return principal
 
 
 class LaunchpadWebServiceRequestTraversal(WebServiceRequestTraversal):
@@ -1283,7 +1372,7 @@ class PublicXMLRPCPublication(LaunchpadBrowserPublication):
 
 
 class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                          ErrorReportRequest, LaunchpadBrowserRequestMixin):
+                          ErrorReportRequest):
     """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):

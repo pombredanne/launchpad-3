@@ -1,19 +1,24 @@
-***************************
-Authorizing a request token
-***************************
+= Authorizing a request token =
 
 Once the consumer gets a request token, it must send the user to
 Launchpad's +authorize-token page in order for the user to authenticate
 and authorize or not the consumer to act on his behalf.
 
+    >>> def request_token_for(consumer):
+    ...     """Helper method to create a request token."""
+    ...     login('salgado@ubuntu.com')
+    ...     token = consumer.newRequestToken()
+    ...     logout()
+    ...     return token
+
     # Create a new request token.
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> token = consumer.newRequestToken()
     >>> logout()
+    >>> token = request_token_for(consumer)
 
 According to the OAuth Core 1.0 spec, the request to the service
 provider's user authorization URL (+authorize-token in our case) must
@@ -21,10 +26,9 @@ use the HTTP GET method and may include the oauth_callback parameter.
 The oauth_token parameter, on the other hand, is required in the
 Launchpad implementation.
 
-Access to the page
-==================
-
-The +authorize-token page is restricted to authenticated users.
+The +authorize-token page is restricted to logged in users, so users will
+first be asked to log in. (We won't show the actual login process because
+it involves OpenID, which would complicate this test quite a bit.)
 
     >>> from urllib import urlencode
     >>> params = dict(
@@ -33,18 +37,7 @@ The +authorize-token page is restricted to authenticated users.
     >>> browser.open(url)
     Traceback (most recent call last):
     ...
-    Unauthorized: Anonymous access is not allowed.
-
-However, the details of the authentication are different than from any
-other part of Launchpad. Unlike with other pages, a user can authorize
-an OAuth token by signing their outgoing requests with an _existing_
-OAuth token. This makes it possible for a desktop client to retrieve
-this page without knowing the end-user's username and password, or
-making them navigate the arbitrarily complex OpenID login procedure.
-
-But, let's deal with that a little later. First let's show how the
-process works through HTTP Basic Auth (the testing equivalent of a
-regular username-and-password login).
+    Unauthorized:...
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open(url)
@@ -53,36 +46,29 @@ regular username-and-password login).
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
     See all applications authorized to access Launchpad on your behalf.
 
-
-Using the page
-==============
-
 This page contains one submit button for each item of OAuthPermission,
-except for 'Grant Permissions', which must be specifically requested.
+except for 'Desktop Integration', which must be specifically requested.
 
-    >>> browser.getControl('No Access')
-    <SubmitControl...
-    >>> browser.getControl('Read Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Change Non-Private Data')
-    <SubmitControl...
-    >>> browser.getControl('Read Anything')
-    <SubmitControl...
-    >>> browser.getControl('Change Anything')
-    <SubmitControl...
+    >>> def print_access_levels(main_content):
+    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
+    ...     for action in actions:
+    ...         print action['value']
 
-    >>> browser.getControl('Grant Permissions')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Grant Permissions'
+    >>> print_access_levels(main_content)
+    No Access
+    Read Non-Private Data
+    Change Non-Private Data
+    Read Anything
+    Change Anything
 
-    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> actions = main_content.findAll('input', attrs={'type': 'submit'})
     >>> len(actions) == len(OAuthPermission.items) - 1
     True
 
@@ -92,106 +78,56 @@ prevents annoying cases where the user grants a level of permission
 that isn't enough for the application. The user always has the option
 to deny permission altogether.
 
-    >>> def filter_user_agent(key, value, new_value):
-    ...     """A filter to replace the User-Agent header in a list of headers.
-    ...
-    ...     [XXX bug=638058] This is a hack to work around a bug in
-    ...     zope.testbrowser.
-    ...     """
-    ...
-    ...     if key.lower() == "user-agent":
-    ...         return (key, new_value)
-    ...     return (key, value)
-
-    >>> def print_access_levels(allow_permission, user_agent=None):
-    ...     if user_agent is not None:
-    ...         # [XXX bug=638058] This is a hack to work around a bug in
-    ...         # zope.testbrowser which prevents browser.addHeader
-    ...         # from working with User-Agent.
-    ...         mech_browser = browser.mech_browser
-    ...         # Store the original User-Agent for later.
-    ...         old_user_agent = [
-    ...             value for key, value in mech_browser.addheaders
-    ...             if key.lower() == "user-agent"][0]
-    ...         # Replace the User-Agent with the value passed into this
-    ...         # function.
-    ...         mech_browser.addheaders = [
-    ...             filter_user_agent(key, value, user_agent)
-    ...             for key, value in mech_browser.addheaders]
-    ...
-    ...     # Okay, now we can make the request.
+    >>> def authorize_token_browser(allow_permission):
     ...     browser.open(
     ...         "http://launchpad.dev/+authorize-token?%s&%s"
     ...         % (urlencode(params), allow_permission))
-    ...     main_content = find_tag_by_id(browser.contents, 'maincontent')
-    ...     actions = main_content.findAll('input', attrs={'type': 'submit'})
-    ...     for action in actions:
-    ...         print action['value']
-    ...
-    ...     if user_agent is not None:
-    ...         # Finally, restore the old User-Agent.
-    ...         mech_browser.addheaders = [
-    ...             filter_user_agent(key, value, old_user_agent)
-    ...             for key, value in mech_browser.addheaders]
 
+    >>> def authorize_token_main_content(allow_permission):
+    ...     authorize_token_browser(allow_permission)
+    ...     return find_tag_by_id(browser.contents, 'maincontent')
 
-    >>> print_access_levels(
+    >>> def print_access_levels_for(allow_permission):
+    ...     main_content = authorize_token_main_content(allow_permission)
+    ...     print_access_levels(main_content)
+
+    >>> print_access_levels_for(
     ...     'allow_permission=WRITE_PUBLIC&allow_permission=WRITE_PRIVATE')
     No Access
     Change Non-Private Data
     Change Anything
 
-The only time the 'Grant Permissions' permission shows up in this list
-is if a client identifying itself as the Launchpad Credentials Manager
-specifically requests it, and no other permission. (Also requesting
-UNAUTHORIZED is okay--it will show up anyway.)
-
-    >>> USER_AGENT = "Launchpad Credentials Manager v1.0"
-    >>> print_access_levels(
-    ...     'allow_permission=GRANT_PERMISSIONS', USER_AGENT)
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     ('allow_permission=GRANT_PERMISSIONS&'
-    ...      'allow_permission=UNAUTHORIZED'),
-    ...     USER_AGENT)
-    No Access
-    Grant Permissions
-
-    >>> print_access_levels(
-    ...     ('allow_permission=WRITE_PUBLIC&'
-    ...      'allow_permission=GRANT_PERMISSIONS'))
-    No Access
-    Change Non-Private Data
-
-If a client asks for GRANT_PERMISSIONS but doesn't claim to be the
-Launchpad Credentials Manager, Launchpad will not show GRANT_PERMISSIONS.
-
-    >>> print_access_levels('allow_permission=GRANT_PERMISSIONS')
-    No Access
-    Read Non-Private Data
-    Change Non-Private Data
-    Read Anything
-    Change Anything
-
 If an application doesn't specify any valid access levels, or only
 specifies the UNAUTHORIZED access level, Launchpad will show all the
-access levels, except for GRANT_PERMISSIONS.
+access levels, except for DESKTOP_INTEGRATION.
 
-    >>> print_access_levels('')
+    >>> print_access_levels_for('')
     No Access
     Read Non-Private Data
     Change Non-Private Data
     Read Anything
     Change Anything
 
-    >>> print_access_levels('allow_permission=UNAUTHORIZED')
+    >>> print_access_levels_for('allow_permission=UNAUTHORIZED')
     No Access
     Read Non-Private Data
     Change Non-Private Data
     Read Anything
     Change Anything
+
+An application may not request the DESKTOP_INTEGRATION access level
+unless its consumer key matches a certain pattern. (Successful desktop
+integration has its own section, below.)
+
+    >>> allow_permission = "allow_permission=DESKTOP_INTEGRATION"
+    >>> browser.open(
+    ...     "http://launchpad.dev/+authorize-token?%s&%s"
+    ...         % (urlencode(params), allow_permission))
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Consumer "foobar123451432" asked for desktop
+    integration, but didn't say what kind of desktop it is, or name
+    the computer being integrated.
 
 An application may also specify a context, so that the access granted
 by the user is restricted to things related to that context.
@@ -203,6 +139,7 @@ by the user is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
+    Integrating foobar123451432 into your Launchpad account
     The application...wants to access things related to Mozilla Firefox...
 
 A client other than a web browser may request a JSON representation of
@@ -269,10 +206,7 @@ If no oauth_callback is specified, we redirect the user to
 +authorized-token.
 
     # Create a new (unreviewed) token.
-    >>> logout()
-    >>> login('salgado@ubuntu.com')
-    >>> token = consumer.newRequestToken()
-    >>> logout()
+    >>> token = request_token_for(consumer)
 
     >>> params = dict(oauth_token=token.key)
     >>> browser.open(
@@ -331,123 +265,226 @@ another window/tab so there's no need to worry.
     reviewed ... ago.
     See all applications authorized to access Launchpad on your behalf.
 
-Access through OAuth
-====================
+Desktop integration
+===================
 
-Now it's time to show how to go through the same process without
-knowing the end-user's username and password. All you need is an OAuth
-token issued with the GRANT_PERMISSIONS access level, in the name of
-the Launchpad Credentials Manager.
+The test case given above shows how to integrate a single application
+or website into Launchpad. But it's also possible to integrate an
+entire desktop environment into Launchpad.
 
-Let's go through the approval process again, without ever sending the
-user's username or password over HTTP. First we'll create a new user,
-and a GRANT_PERMISSIONS access token that they can use to sign
-requests.
+The desktop integration option is only available for OAuth consumers
+that say what kind of desktop they are (eg. Ubuntu) and give a name
+that a user can identify with their computer (eg. the hostname). Here,
+we'll create such a consumer, and then a request token for that consumer.
 
-    >>> login(ANONYMOUS)
-    >>> user = factory.makePerson(name="test-user", password="never-used")
+    >>> login('foo.bar@canonical.com')
+    >>> consumer = factory.makeOAuthConsumer(
+    ...     "System-wide: Ubuntu desktop (mycomputer)")
     >>> logout()
 
-    >>> from oauth.oauth import OAuthConsumer
-    >>> manager_consumer = OAuthConsumer("Launchpad Credentials Manager", "")
+    >>> token = request_token_for(consumer)
 
-    >>> from lp.testing import oauth_access_token_for
-    >>> login_person(user)
-    >>> grant_permissions_token = oauth_access_token_for(
-    ...     manager_consumer.key, user, "GRANT_PERMISSIONS")
-    >>> logout()
+When a desktop tries to integrate with Launchpad, the user gets a
+special warning about giving access to every program running on their
+desktop.
 
-Next, we'll give the new user an OAuth request token that needs to be
-approved using a web browser.
+    >>> params = dict(oauth_token=token.key)
+    >>> print extract_text(
+    ...     authorize_token_main_content(
+    ...         'allow_permission=DESKTOP_INTEGRATION'))
+    Confirm Computer Access
+    The Ubuntu desktop called mycomputer wants access to your
+    Launchpad account. If you allow this, every application running on
+    mycomputer will have read-write access to your Launchpad account,
+    including to your private data.
+    If you're using a public computer, if mycomputer is not the
+    computer you're using right now, or if something just doesn't feel
+    right about this situation, you should choose "Do Not Allow
+    'mycomputer' to Access my Launchpad Account", or close this window
+    now. You can always try again later.
+    Even if you decide to give mycomputer access to your Launchpad
+    account, you can change your mind later.
+    Allow mycomputer to access my Launchpad account:
+    or
+    See all applications authorized to access Launchpad on your behalf.
 
-    >>> login_person(user)
-    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
-    >>> request_token = consumer.newRequestToken()
-    >>> logout()
+The only time the 'Desktop Integration' permission shows up in the
+list of permissions is if the client specifically requests it, and no
+other permission. (Also requesting UNAUTHORIZED is okay--it will show
+up anyway.)
 
-    >>> params = dict(oauth_token=request_token.key)
-    >>> url = "http://launchpad.dev/+authorize-token?%s" % urlencode(params)
+    >>> allow_desktop = 'allow_permission=DESKTOP_INTEGRATION'
+    >>> print_access_levels_for(allow_desktop)
+    Until I Disable It
+    For One Hour
+    For One Day
+    For One Week
+    Do Not Allow "mycomputer" to Access my Launchpad Account.
 
-Next, we'll create a browser object that knows how to sign requests
-with the new user's existing access token.
+    >>> print_access_levels_for(
+    ...     'allow_permission=DESKTOP_INTEGRATION&allow_permission=UNAUTHORIZED')
+    Until I Disable It
+    For One Hour
+    For One Day
+    For One Week
+    Do Not Allow "mycomputer" to Access my Launchpad Account.
 
-    >>> from lp.testing import OAuthSigningBrowser
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, grant_permissions_token, USER_AGENT)
-    >>> browser.open(url)
-    >>> print browser.title
-    Authorize application to access Launchpad on your behalf
+A desktop may not request a level of access other than
+DESKTOP_INTEGRATION, since the whole point is to have a permission
+level that specifically applies across the entire desktop.
 
-The browser object can approve the request and see the appropriate
-messages, even though we never gave it the user's password.
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Anything") not supported for desktop-wide use.
 
-    >>> browser.getControl('Read Anything').click()
+    >>> print_access_levels_for(
+    ...     'allow_permission=WRITE_PUBLIC&' + allow_desktop)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Desktop integration token requested a permission
+    ("Change Non-Private Data") not supported for desktop-wide use.
 
-    >>> browser.url
-    'http://launchpad.dev/+token-authorized?...'
+You can't specify a callback URL when authorizing a desktop-wide
+token, since callback URLs should only be used when integrating
+websites into Launchpad.
+
+    >>> params['oauth_callback'] = 'http://launchpad.dev/bzr'
+    >>> print_access_levels_for(allow_desktop)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.
+
+This is true even if the desktop token isn't asking for the
+DESKTOP_INTEGRATION permission.
+
+    >>> print_access_levels_for('allow_permission=WRITE_PRIVATE')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: A desktop integration may not specify an OAuth
+    callback URL.
+
+    >>> del params['oauth_callback']
+
+Accepting full integration
+--------------------------
+
+Now let's create a helper function to go through the entire desktop
+integration process, given the name of the desktop and the level of
+integration desired.
+
+    >>> def integrate_desktop(button_to_click):
+    ...     """Authorize (or don't) a desktop integration request token.
+    ...     The token is authorized for the computer "mycomputer".
+    ...
+    ...     :return: the IOAuthRequestToken, possibly authorized.
+    ...     """
+    ...     token = request_token_for(consumer)
+    ...     params['oauth_token'] = token.key
+    ...     authorize_token_browser(allow_desktop)
+    ...     button = browser.getControl(button_to_click)
+    ...     button.click()
+    ...     return token
+
+If the client chooses a permanent desktop integration, the request
+token is approved and has no expiration date.
+
+    >>> token = integrate_desktop("Until I Disable It")
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
-    To finish authorizing the application identified as foobar123451432 to
-    access Launchpad on your behalf you should go back to the application
-    window in which you started the process and inform it that you have done
-    your part of the process.
+    The Ubuntu desktop called mycomputer now has access to your
+    Launchpad account. Within a few seconds, you should be able to
+    start using its Launchpad integration features.
 
-OAuth error conditions
-----------------------
+    >>> print token.is_reviewed
+    True
+    >>> print token.permission.name
+    DESKTOP_INTEGRATION
+    >>> print token.date_expires
+    None
 
-The OAuth token used to sign the requests must have the
-GRANT_PERMISSIONS access level; no other access level will work.
+Accepting time-limited integration
+----------------------------------
 
-    >>> login(ANONYMOUS)
-    >>> insufficient_token = oauth_access_token_for(
-    ...     manager_consumer.key, user, "WRITE_PRIVATE")
-    >>> logout()
+If you allow integration for a limited time, the request token is
+reviewed and given an expiration date. Here, we authorize a token for
+one hour.
 
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, insufficient_token, USER_AGENT)
-    >>> browser.open(url)
-    Traceback (most recent call last):
+    >>> token = integrate_desktop("For One Hour")
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Almost finished ...
+    The Ubuntu desktop called mycomputer now has access to your
+    Launchpad account. Within a few seconds, you should be able to
+    start using its Launchpad integration features.
+    The integration you just authorized will expire in 59 minutes. At
+    that time, you'll have to re-authorize the Ubuntu desktop called
+    mycomputer, if you want to keep using its Launchpad integration
+    features.
+
+    >>> print token.is_reviewed
+    True
+    >>> print token.permission.name
+    DESKTOP_INTEGRATION
+    >>> token.date_expires is None
+    False
+
+Note that a single computer (in this case "mycomputer") may have more
+than one desktop integration token. This is because there's no way to
+know that a user hasn't given more than one computer the same name
+(eg. "ubuntu" or "localhost"). The assignment of computer names to
+integration tokens is a useful convention, not something we try to
+enforce.
+
+Here we authorize a token for one day.
+
+    >>> token = integrate_desktop("For One Day")
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Almost finished ...
+    The integration you just authorized will expire in 23 hours.
     ...
-    Unauthorized: OAuth token has insufficient access level.
 
-The OAuth token must be for the Launchpad Credentials Manager, or it
-cannot be used. (Launchpad shouldn't even _issue_ a GRANT_PERMISSIONS
-token for any other consumer, but even if it somehow does, that token
-can't be used for this.)
+    >>> print token.is_reviewed
+    True
+    >>> token.date_expires is None
+    False
 
-    >>> login(ANONYMOUS)
-    >>> wrong_consumer = OAuthConsumer(
-    ...     "Not the Launchpad Credentials Manager", "")
-    >>> wrong_consumer_token = oauth_access_token_for(
-    ...     wrong_consumer.key, user, "GRANT_PERMISSIONS")
-    >>> logout()
+Here, we authorize a token for a week. The expiration time is given as
+a date.
 
-    >>> browser = OAuthSigningBrowser(wrong_consumer, wrong_consumer_token)
-    >>> browser.open(url)
-    Traceback (most recent call last):
+    >>> token = integrate_desktop("For One Week")
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Almost finished ...
+    The integration you just authorized will expire 2...
     ...
-    Unauthorized: Only the Launchpad Credentials Manager can access
-    this page by signing requests with an OAuth token.
 
-Signing with an anonymous token will also not work.
+    >>> print token.is_reviewed
+    True
+    >>> print token.permission.name
+    DESKTOP_INTEGRATION
+    >>> token.date_expires is None
+    False
 
-    >>> from oauth.oauth import OAuthToken
-    >>> anonymous_token = OAuthToken(key="", secret="")
-    >>> browser = OAuthSigningBrowser(manager_consumer, anonymous_token)
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Anonymous access is not allowed.
+Declining integration
+---------------------
 
-Even if it presents the right token, the user agent sending the signed
-request must *also* identify *itself* as the Launchpad Credentials
-Manager.
+If the client declines integration, the request token is reviewed but
+cannot be exchanged for an access token.
 
-    >>> browser = OAuthSigningBrowser(
-    ...     manager_consumer, grant_permissions_token,
-    ...     "Not the Launchpad Credentials Manager")
-    >>> browser.open(url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Only the Launchpad Credentials Manager can access
-    this page by signing requests with an OAuth token.
+    >>> token = integrate_desktop(
+    ...     """Do Not Allow "mycomputer" to Access my Launchpad Account.""")
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    You decided against desktop integration
+    You decided not to give the Ubuntu desktop called mycomputer
+    access to your Launchpad account. You can always change your mind
+    later.
+
+    >>> print token.is_reviewed
+    True
+    >>> print token.permission.name
+    UNAUTHORIZED

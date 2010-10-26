@@ -52,13 +52,41 @@ administrators but not for ordinary users.
     ...
     Unauthorized...
 
+The link is also available for the bug supervisor.
+
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login(ADMIN_EMAIL)
+    >>> supervisor = factory.makePerson(password='g00dpassword')
+    >>> youbuntu = factory.makeProduct(name='youbuntu',
+    ...     bug_supervisor=supervisor,
+    ...     official_malone=True)
+    >>> bug_super_browser = setupBrowser(
+    ...     auth='Basic %s:g00dpassword' %
+    ...         supervisor.preferredemail.email)
+    >>> logout()
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu')
+    >>> bug_super_browser.getLink('Edit official tags').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu/+manage-official-tags
+
+The bug supervisor can also set the tags for the product.
+
+    >>> bug_super_browser.getControl('Official Bug Tags').value = 'foo bar'
+    >>> bug_super_browser.getControl('Save').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
+    >>> print bug_super_browser.getControl('Official Bug Tags').value
+    bar foo
 
 == Official Tags on Bug Pages ==
 
 Official tags are displayed using a different style from unofficial ones.
 They are grouped together at the beginning of the list.
 
-    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
@@ -84,8 +112,8 @@ They are grouped together at the beginning of the list.
 
 The tags portlet displays a mix of official and unofficial tags.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login('foo.bar@canonical.com')
     >>> firesocks = factory.makeProduct(name='firesocks')
     >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')

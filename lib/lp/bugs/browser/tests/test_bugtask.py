@@ -6,16 +6,12 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-from contextlib import nested
 from doctest import DocTestSuite
 import unittest
 
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    MatchesAny,
-    )
+from testtools.matchers import LessThan
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -23,46 +19,38 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
     tearDown,
     )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
-    BugTaskView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.testing import (
     person_logged_in,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
     USER_EMAIL,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestBugTaskView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def record_view_initialization(self, bugtask, person):
-        self.invalidate_caches(bugtask)
-        # Login first because logging in triggers queries.
-        with nested(person_logged_in(person), StormStatementRecorder()) as (
-            _,
-            recorder):
-            view = BugTaskView(bugtask, LaunchpadTestRequest())
-            view.initialize()
-        return recorder
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -72,24 +60,32 @@ class TestBugTaskView(TestCaseWithFactory):
         # the domain objects)
         store.invalidate()
 
-    def test_query_counts_constant_with_team_memberships(self):
+    def test_rendered_query_counts_constant_with_team_memberships(self):
         login(ADMIN_EMAIL)
-        bugtask = self.factory.makeBugTask()
-        person_no_teams = self.factory.makePerson()
-        person_with_teams = self.factory.makePerson()
+        task = self.factory.makeBugTask()
+        person_no_teams = self.factory.makePerson(password='test')
+        person_with_teams = self.factory.makePerson(password='test')
         for _ in range(10):
             self.factory.makeTeam(members=[person_with_teams])
         # count with no teams
-        recorder = self.record_view_initialization(bugtask, person_no_teams)
-        self.assertThat(recorder, HasQueryCount(LessThan(14)))
+        url = canonical_url(task)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(task)
+        self.getUserBrowser(url, person_no_teams)
+        # This may seem large: it is; there is easily another 30% fat in
+        # there.
+        self.assertThat(recorder, HasQueryCount(LessThan(62)))
         count_with_no_teams = recorder.count
         # count with many teams
-        recorder2 = self.record_view_initialization(bugtask, person_with_teams)
+        self.invalidate_caches(task)
+        self.getUserBrowser(url, person_with_teams)
         # Allow an increase of one because storm bug 619017 causes additional
         # queries, revalidating things unnecessarily. An increase which is
         # less than the number of new teams shows it is definitely not
         # growing per-team.
-        self.assertThat(recorder2, HasQueryCount(
+        self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
 
@@ -105,23 +101,32 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.view = BugTasksAndNominationsView(
             self.bug, LaunchpadTestRequest())
 
+    def refresh(self):
+        # The view caches, to see different scenarios, a refresh is needed.
+        self.view = BugTasksAndNominationsView(
+            self.bug, LaunchpadTestRequest())
+
     def test_current_user_affected_status(self):
         self.failUnlessEqual(
             None, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             True, self.view.current_user_affected_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             False, self.view.current_user_affected_status)
 
     def test_current_user_affected_js_status(self):
         self.failUnlessEqual(
             'null', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             'true', self.view.current_user_affected_js_status)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
 
@@ -148,10 +153,12 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # logged-in user marked him or herself as affected or not.
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, False)
+        self.bug.markUserAffected(self.view.user, False)
+        self.refresh()
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
 
@@ -161,17 +168,18 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         other_user_1 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_1, True)
+        self.bug.markUserAffected(other_user_1, True)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         other_user_2 = self.factory.makePerson()
-        self.view.context.markUserAffected(other_user_2, True)
+        self.bug.markUserAffected(other_user_2, True)
         self.failUnlessEqual(
             3, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(other_user_1, False)
+        self.bug.markUserAffected(other_user_1, False)
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
-        self.view.context.markUserAffected(self.view.user, True)
+        self.bug.markUserAffected(self.view.user, True)
+        self.refresh()
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
 
@@ -414,6 +422,106 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
         self.assertEqual(
             'ValidAssignee',
             view.form_fields['assignee'].field.vocabularyName)
+
+
+class TestProjectGroupBugs(TestCaseWithFactory):
+    """Test the bugs overview page for Project Groups."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupBugs, self).setUp()
+        self.owner = self.factory.makePerson(name='bob')
+        self.projectgroup = self.factory.makeProject(name='container',
+                                                     owner=self.owner)
+
+    def makeSubordinateProduct(self, tracks_bugs_in_lp):
+        """Create a new product and add it to the project group."""
+        product = self.factory.makeProduct(official_malone=tracks_bugs_in_lp)
+        with person_logged_in(product.owner):
+            product.project = self.projectgroup
+
+    def test_empty_project_group(self):
+        # An empty project group does not use Launchpad for bugs.
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(self.projectgroup.hasProducts())
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_not_using_launchpad(self):
+        # A project group with all subordinates not using Launchpad
+        # will itself be marked as not using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertFalse(view.should_show_bug_information)
+
+    def test_project_group_with_subordinate_using_launchpad(self):
+        # A project group with one subordinate using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+    def test_project_group_with_mixed_subordinates(self):
+        # A project group with one or more subordinates using Launchpad
+        # will itself be marked as using Launchpad for bugs.
+        self.makeSubordinateProduct(False)
+        self.makeSubordinateProduct(True)
+        self.assertTrue(self.projectgroup.hasProducts())
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs')
+        self.assertTrue(view.should_show_bug_information)
+
+    def test_project_group_has_no_portlets_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will not have
+        # bug portlets.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertFalse(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIs(None, report_a_bug)
+
+    def test_project_group_has_portlets_link_if_using_LP(self):
+        # A project group that has projects using Launchpad will have a
+        # portlets.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        self.assertTrue(view.should_show_bug_information)
+        contents = view.render()
+        report_a_bug = find_tag_by_id(contents, 'bug-portlets')
+        self.assertIsNot(None, report_a_bug)
+
+    def test_project_group_has_help_link_if_not_using_LP(self):
+        # A project group that has no projects using Launchpad will have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(False)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        self.assertIsNot(None, help_link)
+
+    def test_project_group_has_no_help_link_if_using_LP(self):
+        # A project group that has no projects using Launchpad will not have
+        # a 'Getting started' help link.
+        self.makeSubordinateProduct(True)
+        view = create_initialized_view(
+            self.projectgroup, name=u'+bugs', rootsite='bugs',
+            current_request=True)
+        contents = view.render()
+        help_link = find_tag_by_id(contents, 'getting-started-help')
+        print help_link
+        self.assertIs(None, help_link)
 
 
 def test_suite():

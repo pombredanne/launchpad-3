@@ -428,16 +428,6 @@ changed as well.
     >>> test_project['owner_link']
     u'http://.../~mark'
 
-    >>> test_series = webservice.get('/test-project/test-series').jsonBody()
-    >>> test_series['owner_link']
-    u'http://.../~mark'
-
-    >>> release_path = '/test-project/test-series/test-milestone'
-    >>> test_project_release = webservice.get(release_path).jsonBody()
-    >>> test_project_release['owner_link']
-    u'http://.../~mark'
-
-
 Read-only attributes, like registrant, cannot be modified via the
 webservice.patch() method.
 
@@ -617,11 +607,8 @@ licensing.  We can find all projects with unreviewed licenses.
     ...    unreviewed['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 Or those that are reviewed.
 
@@ -649,11 +636,8 @@ We can also find all projects with no licensing information.
     ...    no_licenses['entries'], key=itemgetter('display_name'))
     >>> for project in entries:
     ...     print project['display_name']
-    APTonCD
     Arch mirrors
-    Bazaar
-    Bazaar
-    Derby
+    ...
 
 We can find projects based on creation date.
 
@@ -666,10 +650,7 @@ We can find projects based on creation date.
     >>> for project in entries:
     ...     print project['display_name']
     Arch mirrors
-    Bazaar
-    Evolution
-    GNOME Terminal
-    Gnome Applets
+    ...
 
 Similarly we can find new projects.
 
@@ -682,10 +663,7 @@ Similarly we can find new projects.
     >>> for project in entries:
     ...     print project['display_name']
     APTonCD
-    Bazaar
-    Derby
-    Jokosher
-    Launchpad
+    ...
 
 All of the projects of a given license can be found.
 
@@ -1245,7 +1223,7 @@ If a project has a commercial-use subscription then it can be retrieved
 through the API.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('bac@canonical.com')
     >>> product_set = getUtility(IProductSet)
