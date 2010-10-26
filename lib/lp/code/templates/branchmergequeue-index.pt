@@ -25,12 +25,12 @@
     </dt>
     <dd tal:content="context/description"></dd>
   </dl>
-  <div>
+  <div tal:condition="context/branches">
     The following branches are managed by this queue:
     <ul>
       <tal:branches repeat="branch context/branches">
       <li>
-          <a tal:replace="branch/fmt:link" />
+        <a tal:content="structure branch/fmt:link" />
       </li>
       </tal:branches>
     </ul>
