@@ -264,7 +264,7 @@ from lp.registry.model.teammembership import (
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
@@ -311,7 +311,7 @@ class ValidPersonCache(SQLBase):
     Note that it performs poorly at least some of the time, and if
     EmailAddress and Person are already being queried, its probably better to
     query Account directly. See bug
-    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    https://bugs.launchpad.net/launchpad-registry/+bug/615237 for some
     corroborating information.
     """
 
@@ -511,19 +511,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return IPropertyCache(self).languages
+        return get_property_cache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        IPropertyCache(self).languages = sorted(
+        get_property_cache(self).languages = sorted(
             languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        del IPropertyCache(self).languages
+        del get_property_cache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -626,7 +626,7 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, visible=visible)
         else:
             self.location.visible = visible
@@ -645,7 +645,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1633,7 +1633,7 @@ class Person(
             if not person:
                 return
             email = column
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
 
         decorators.append(handleemail)
 
@@ -1647,7 +1647,7 @@ class Person(
                 column is not None
                 # -- preferred email found
                 and person.preferredemail is not None)
-            IPropertyCache(person).is_valid_person = valid
+            get_property_cache(person).is_valid_person = valid
         decorators.append(handleaccount)
         return dict(
             joins=origins,
@@ -1737,7 +1737,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
-            cache = IPropertyCache(result)
+            cache = get_property_cache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1799,7 +1799,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1934,7 +1934,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            IPropertyCache(location.person).location = location
+            get_property_cache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -2076,7 +2076,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2466,7 +2466,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2503,7 +2503,7 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        IPropertyCache(self).preferredemail = email
+        get_property_cache(self).preferredemail = email
 
     @cachedproperty
     def preferredemail(self):
@@ -3077,7 +3077,7 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = IPropertyCache(account_person)
+                    cache = get_property_cache(account_person)
                     cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
