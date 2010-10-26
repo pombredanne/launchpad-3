@@ -369,7 +369,7 @@ class POTMsgSet(SQLBase):
                     TranslationTemplateItem.potmsgset = POTMsgSet.id
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
-                        SuggestivePOTemplate.id
+                        SuggestivePOTemplate.potemplate
                 WHERE
                     POTMsgSet.id <> %s AND
                     msgid_singular = %s
