@@ -193,17 +193,18 @@ class SQLiteRequestTimes:
                 else:
                     raise
 
+        # A table that will be used in a join to compute histogram.
+        self.cur.execute("CREATE TEMP TABLE histogram (bin INT)")
+        # Histogram has a bin per second up to 1.5 our timeout.
+        for x in range(int(self.timeout*1.5)):
+            self.cur.execute('INSERT INTO histogram VALUES (?)', (x,))
+
+
     def add_request(self, request):
         """Add a request to the cache."""
         sql_statements = request.sql_statements
         sql_seconds = request.sql_seconds
 
-        # Store missing value as -1, as it makes dealing with those
-        # easier with numpy.
-        if sql_statements is None:
-            sql_statements = -1
-        if sql_seconds is None:
-            sql_seconds = -1
         for idx, category in enumerate(self.categories):
             if category.match(request):
                 self.con.execute(
