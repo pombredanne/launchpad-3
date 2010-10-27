@@ -610,6 +610,21 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = self.getScript()
         self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
 
+    def test_getNewTokensSinceLastRun_handles_ntp_skew(self):
+        """An ntp-skew of up to one second will not affect the results."""
+        now = datetime.now(pytz.UTC)
+        earliest = script_start_time = now - timedelta(minutes=3, seconds=2)
+        earliest_with_ntp_skew = earliest - timedelta(milliseconds=500)
+
+        tokens = self.setupDummyTokens()[1]
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', date_started=script_start_time,
+            date_completed=script_start_time + timedelta(seconds=1))
+        removeSecurityProxy(tokens[0]).date_created = earliest_with_ntp_skew
+
+        script = self.getScript()
+        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+
     def test_getNewTokensSinceLastRun_only_active_tokens(self):
         """Only active tokens are returned."""
         now = datetime.now(pytz.UTC)

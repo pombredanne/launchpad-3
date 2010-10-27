@@ -12,7 +12,7 @@ import pytz
 import tempfile
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from operator import attrgetter
 from zope.component import getUtility
 
@@ -259,8 +259,10 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             'generate-ppa-htaccess')
         extra_expr = []
         if last_success:
+            last_script_start_with_skew = last_success.date_started - (
+                timedelta(seconds=1))
             extra_expr = [
-                ArchiveAuthToken.date_created >= last_success.date_started]
+                ArchiveAuthToken.date_created >= last_script_start_with_skew]
 
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
