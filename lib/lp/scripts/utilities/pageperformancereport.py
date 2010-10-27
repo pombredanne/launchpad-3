@@ -106,6 +106,15 @@ class Stats:
         """
         return self.mean + 3*self.std
 
+    @property
+    def relative_histogram(self):
+        """Return an histogram where the frequency is relative."""
+        if self.histogram:
+            return [[x, float(f)/self.total_hits] for x, f in self.histogram]
+        else:
+            return None
+
+
     def text(self):
         """Return a textual version of the stats."""
         return textwrap.dedent("""
@@ -144,7 +153,7 @@ class SQLiteRequestTimes:
         self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
         log.debug('Using request database %s' % self.filename)
         # Some speed optimization.
-        self.con.execute('PRAGMA cache_size = 400000') # ~400M
+        #self.con.execute('PRAGMA cache_size = 400000') # ~400M
         self.con.execute('PRAGMA synchronous = off')
         self.con.execute('PRAGMA journal_mode = off')
 
@@ -732,7 +741,7 @@ def html_report(
     histograms = []
 
     def handle_times(html_title, stats):
-        histograms.append(stats.histogram)
+        histograms.append(stats.relative_histogram)
         print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>

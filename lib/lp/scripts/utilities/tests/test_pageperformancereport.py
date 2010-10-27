@@ -214,5 +214,19 @@ class TestSQLiteTimes(TestCase):
         self.assertStatsAreEquals(PAGEID_STATS, pageid_times)
 
 
+class TestStats(TestCase):
+    """Tests for the stats class."""
+
+    def test_relative_histogram(self):
+        # Test that relative histogram gives an histogram using
+        # relative frequency.
+        stats = Stats()
+        stats.total_hits = 100
+        stats.histogram = [[0, 50], [1, 10], [2, 33], [3, 0], [4, 0], [5, 7]]
+        self.assertEquals(
+            [[0, 0.5], [1, .1], [2, .33], [3, 0], [4, 0], [5, .07]],
+            stats.relative_histogram)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
