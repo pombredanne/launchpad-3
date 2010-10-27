@@ -260,7 +260,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         extra_expr = []
         if last_success:
             extra_expr = [
-                ArchiveAuthToken.date_created >= last_success.date_completed]
+                ArchiveAuthToken.date_created >= last_success.date_started]
 
         new_ppa_tokens = store.find(
             ArchiveAuthToken,
