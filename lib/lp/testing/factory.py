@@ -810,12 +810,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(name, title, description,
+        return getUtility(IProcessorFamilySet).new(name, title, description,
             restricted=restricted)
-        # Make sure there's at least one processor in the family, so that
-        # other things can have a default processor.
-        self.makeProcessor(family=family)
-        return family
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1974,7 +1970,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         if processorfamily is None:
-            processorfamily = self.makeProcessorFamily()
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
         # XXX: architecturetag & processerfamily are tightly coupled. It's
@@ -2145,8 +2141,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-            arch = self.makeDistroArchSeries(distroseries=distroseries)
-            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(

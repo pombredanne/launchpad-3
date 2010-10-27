@@ -146,6 +146,12 @@ special = {
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
         ),
+    'buildd-slavescanner.txt': LayeredDocFileSuite(
+        '../doc/buildd-slavescanner.txt',
+        setUp=builddmasterSetUp,
+        layer=LaunchpadZopelessLayer,
+        stdout_logging_level=logging.WARNING
+        ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',
         setUp=builddmasterSetUp,
