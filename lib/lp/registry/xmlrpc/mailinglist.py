@@ -275,9 +275,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             (PostedMessageStatus.DISCARD_PENDING, 'discard'),
             )
         for status, disposition in status_dispositions:
-            for held_message in message_set.getHeldMessagesWithStatus(status):
-                held_message.acknowledge()
-                response[held_message.message_id] = (
-                    removeSecurityProxy(held_message.mailing_list.team).name,
-                    disposition)
+            held_messages = message_set.getHeldMessagesWithStatus(status)
+            for message_id, team_name in held_messages:
+                response[message_id] = (team_name, disposition)
+            message_set.acknowledgeMessagesWithStatus(status)
         return response
