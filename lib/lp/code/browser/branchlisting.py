@@ -115,10 +115,7 @@ from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
-from lp.registry.browser.product import (
-    ProductDownloadFileMixin,
-    SortSeriesMixin,
-    )
+from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -1211,8 +1208,8 @@ class ProductBranchStatisticsView(BranchCountSummaryView,
         return text.capitalize()
 
 
-class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin, BranchMirrorMixin):
+class ProductCodeIndexView(ProductBranchListingView, ProductDownloadFileMixin,
+                           BranchMirrorMixin):
     """Initial view for products on the code virtual host."""
 
     show_set_development_focus = True
@@ -1274,7 +1271,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # development focus branch, no matter what's it lifecycle status, and
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
-        sorted_series = self.sorted_active_series_list
+        sorted_series = self.product.getVersionSortedSeries(
+            filter_obsolete=True)
 
         def show_branch(branch):
             if self.selected_lifecycle_status is None:

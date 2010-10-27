@@ -37,7 +37,6 @@ __all__ = [
     'ProductSetView',
     'ProductSpecificationsMenu',
     'ProductView',
-    'SortSeriesMixin',
     'ProjectAddStepOne',
     'ProjectAddStepTwo',
     ]
@@ -48,7 +47,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -88,6 +86,9 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import (
@@ -101,7 +102,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    sorted_version_numbers,
     StandardLaunchpadFacets,
     stepthrough,
     stepto,
@@ -707,54 +707,6 @@ class ProductSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'branches']
 
 
-class SortSeriesMixin:
-    """Provide access to helpers for series."""
-
-    def _sorted_filtered_list(self, filter=None):
-        """Return a sorted, filtered list of series.
-
-        The series list is sorted by version in reverse order.  It is also
-        filtered by calling `filter` on every series.  If the `filter`
-        function returns False, don't include the series.  With None (the
-        default, include everything).
-
-        The development focus is always first in the list.
-        """
-        series_list = []
-        for series in self.product.series:
-            if filter is None or filter(series):
-                series_list.append(series)
-        # In production data, there exist development focus series that are
-        # obsolete.  This may be caused by bad data, or it may be intended
-        # functionality.  In either case, ensure that the development focus
-        # branch is first in the list.
-        if self.product.development_focus in series_list:
-            series_list.remove(self.product.development_focus)
-        # Now sort the list by name with newer versions before older.
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.product.development_focus)
-        return series_list
-
-    @property
-    def sorted_series_list(self):
-        """Return a sorted list of series.
-
-        The series list is sorted by version in reverse order.
-        The development focus is always first in the list.
-        """
-        return self._sorted_filtered_list()
-
-    @property
-    def sorted_active_series_list(self):
-        """Like `sorted_series_list()` but filters out OBSOLETE series."""
-        # Callback for the filter which only allows series that have not been
-        # marked obsolete.
-        def check_active(series):
-            return series.status != SeriesStatus.OBSOLETE
-        return self._sorted_filtered_list(check_active)
-
-
 class ProductWithSeries:
     """A decorated product that includes series data.
 
@@ -793,7 +745,25 @@ class ProductWithSeries:
             self.release_by_id[release.id] = release_delegate
 
 
-class SeriesWithReleases:
+class DecoratedSeries:
+    """A decorated series that includes helper attributes for templates."""
+    delegates(IProductSeries, 'series')
+
+    def __init__(self, series):
+        self.series = series
+
+    @property
+    def css_class(self):
+        """The highlighted, unhighlighted, or dimmed CSS class."""
+        if self.is_development_focus:
+            return 'highlighted'
+        elif self.status == SeriesStatus.OBSOLETE:
+            return 'dimmed'
+        else:
+            return 'unhighlighted'
+
+
+class SeriesWithReleases(DecoratedSeries):
     """A decorated series that includes releases.
 
     The extra data is included in this class to avoid repeated
@@ -807,10 +777,9 @@ class SeriesWithReleases:
     # raise an AttributeError for self.parent.
     parent = None
     releases = None
-    delegates(IProductSeries, 'series')
 
     def __init__(self, series, parent):
-        self.series = series
+        super(SeriesWithReleases, self).__init__(series)
         self.parent = parent
         self.releases = []
 
@@ -823,16 +792,6 @@ class SeriesWithReleases:
             if len(release.files) > 0:
                 return True
         return False
-
-    @property
-    def css_class(self):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
-        if self.is_development_focus:
-            return 'highlighted'
-        elif self.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
-        else:
-            return 'unhighlighted'
 
 
 class ReleaseWithFiles:
@@ -950,15 +909,16 @@ class ProductDownloadFileMixin:
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
-        for series in self.sorted_active_series_list:
+        active_series = self.product.getVersionSortedSeries(
+            filter_obsolete=True)
+        for series in active_series:
             for release in series.releases:
                 if len(list(release.files)) > 0:
                     return release
         return None
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin):
+class ProductView(HasAnnouncementsView, FeedsMixin, ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
 
@@ -1285,9 +1245,7 @@ class SeriesReleasePair:
         self.release = release
 
 
-class ProductDownloadFilesView(LaunchpadView,
-                               SortSeriesMixin,
-                               ProductDownloadFileMixin):
+class ProductDownloadFilesView(LaunchpadView, ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
 
     batch_size = config.launchpad.download_batch_size
@@ -1316,7 +1274,7 @@ class ProductDownloadFilesView(LaunchpadView,
         Each entry returned is a tuple of (series, release).
         """
         series_and_releases = []
-        for series in self.sorted_series_list:
+        for series in self.product.getVersionSortedSeries():
             for release in series.releases:
                 if len(release.files) > 0:
                     pair = SeriesReleasePair(series, release)
@@ -1712,6 +1670,12 @@ class ProductSeriesView(ProductView):
 
     label = 'timeline'
     page_title = label
+
+    @cachedproperty
+    def batched_series(self):
+        decorated_result = DecoratedResultSet(
+            self.context.getVersionSortedSeries(), DecoratedSeries)
+        return BatchNavigator(decorated_result, self.request)
 
 
 class ProductRdfView(BaseRdfView):
