@@ -26,7 +26,7 @@ class TestProductSeriesSetbranch(WindmillTestCase):
         user = lpuser.FOO_BAR
         user.ensure_login(self.client)
         self.client.open(
-            url=u'http://launchpad.dev:8085/firefox/trunk/+setbranch')
+            url=u'%s/firefox/trunk/+setbranch' % CodeWindmillLayer.base_url)
 
         # To demonstrate the Javascript is loaded we simply need to see that
         # one of the controls is deactivated when the radio button selections

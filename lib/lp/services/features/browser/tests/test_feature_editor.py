@@ -6,37 +6,18 @@
 __metaclass__ = type
 
 
-from testtools.matchers import (
-    Equals,
-    )
-
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities,
-    ILaunchpadRoot,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.testing import (
     BrowserTestCase,
-    TestCase,
-    TestCaseWithFactory,
-    celebrity_logged_in,
-    login_person,
     person_logged_in,
-    time_counter,
-    )
-
-from lp.services.features import (
-    get_relevant_feature_controller,
-    )
-from lp.services.features.browser.edit import (
-    FeatureControlView,
-    )
-from lp.services.features.rulesource import (
-    StormFeatureRuleSource,
     )
 
 
@@ -46,7 +27,7 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def getUserBrowserAsTeamMember(self, teams):
         """Make a TestBrowser authenticated as a team member.
-        
+
         :param teams: List of teams to add the new user to.
         """
         # XXX MartinPool 2010-09-23 bug=646563: To make a UserBrowser, you
@@ -83,7 +64,7 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def test_feature_page_from_database(self):
         StormFeatureRuleSource().setAllRules([
-            ('ui.icing', 'default',   100, u'3.0'),
+            ('ui.icing', 'default', 100, u'3.0'),
             ('ui.icing', 'beta_user', 300, u'4.0'),
             ])
         browser = self.getUserBrowserAsAdmin()

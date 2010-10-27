@@ -23,11 +23,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    ILanguageSet,
-    IPersonSet,
-    )
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -47,6 +42,9 @@ from canonical.testing.layers import (
     )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -68,7 +66,7 @@ def lobotomize_stevea():
     validity.
     """
     from canonical.launchpad.database import EmailAddress
-    from canonical.launchpad.interfaces import EmailAddressStatus
+    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW

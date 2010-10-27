@@ -5,7 +5,9 @@ set, not whether the server has sent a "set-cookie" header.
 
 When we go to launchpad as an anonymous user, the browser has no cookies.
 
-    >>> browser.open('http://launchpad.dev:8085')
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
+    >>> browser.open(root_url)
     >>> len(browser.cookies)
     0
 
@@ -16,7 +18,7 @@ Now let's log in and show that the session cookie is set.
     >>> now = datetime.datetime.now(pytz.UTC).replace(microsecond=0)
     >>> year_from_now = now + datetime.timedelta(days=365)
     >>> year_plus_from_now = year_from_now + datetime.timedelta(minutes=1)
-    >>> browser.open('http://launchpad.dev:8085/+login')
+    >>> browser.open('%s/+login' % root_url)
 
     # On a browser with JS support, this page would've been automatically
     # submitted (thanks to the onload handler), but testbrowser doesn't support
@@ -33,7 +35,7 @@ Now let's log in and show that the session cookie is set.
 
     # Open a page again so that we see the cookie for a launchpad.dev request
     # and not a testopenid.dev request (as above).
-    >>> browser.open('http://launchpad.dev:8085')
+    >>> browser.open(root_url)
 
     >>> len(browser.cookies)
     1
@@ -61,7 +63,7 @@ time for browsers with bad system clocks.
 After ensuring the browser has not left the launchpad.dev domain, the
 single cookie is shown to have the ten minute expiration.
 
-    >>> browser.open('http://launchpad.dev:8085')
+    >>> browser.open(root_url)
     >>> len(browser.cookies)
     1
     >>> expires = browser.cookies.getinfo('launchpad_tests')['expires']

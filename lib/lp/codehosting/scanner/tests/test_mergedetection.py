@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -118,7 +118,8 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.REJECTED,
             proposal.queue_status)
 
-    def test_auto_merge_proposals_rejected_proposal_target_scanned_first(self):
+    def test_auto_merge_proposals_rejected_proposal_target_scanned_first(
+                                                                        self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target but the proposal is in a final state the
         # proposal is not marked as merged.
