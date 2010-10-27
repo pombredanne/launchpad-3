@@ -842,8 +842,8 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         pofile = self.pofile
         can_edit = pofile.canEditTranslations(self.user)
         self.translationmessage_view = self._prepareView(
-            CurrentTranslationMessageZoomedView, self.context, pofile,
-            pofile=pofile, can_edit=can_edit, error=self.error)
+            CurrentTranslationMessageZoomedView, self.context, pofile=pofile,
+            can_edit=can_edit, error=self.error)
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
