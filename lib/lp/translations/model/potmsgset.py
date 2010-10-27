@@ -360,6 +360,7 @@ class POTMsgSet(SQLBase):
         else:
             query = ["(NOT %s)" % in_use_clause]
         query.append('TranslationMessage.language = %s' % sqlvalues(language))
+        query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
 
         query.append('''
             potmsgset IN (
@@ -370,10 +371,8 @@ class POTMsgSet(SQLBase):
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
                         SuggestivePOTemplate.potemplate
-                WHERE
-                    POTMsgSet.id <> %s AND
-                    msgid_singular = %s
-            )''' % sqlvalues(self, self.msgid_singular))
+                WHERE msgid_singular = %s
+            )''' % sqlvalues(self.msgid_singular))
 
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
