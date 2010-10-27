@@ -2276,9 +2276,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makePOFile(language_code, template, template.owner)
         return template
 
-    def makePOFile(self, language_code, potemplate=None, owner=None,
+    def makePOFile(self, language_code=None, potemplate=None, owner=None,
                    create_sharing=False, variant=None):
         """Make a new translation file."""
+        if language_code is None:
+            language = self.makeLanguage()
+            language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         pofile = potemplate.newPOFile(language_code,

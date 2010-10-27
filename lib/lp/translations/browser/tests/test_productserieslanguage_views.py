@@ -17,7 +17,7 @@ from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
 from lp.translations.interfaces.translator import ITranslatorSet
 
 
-class TestProductSeries(TestCaseWithFactory):
+class TestProductSeriesView(TestCaseWithFactory):
     """Test ProductSeries view in translations facet."""
 
     layer = LaunchpadZopelessLayer
@@ -27,93 +27,131 @@ class TestProductSeries(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.productseries = self.factory.makeProductSeries()
         self.productseries.product.official_rosetta = True
-        self.view = ProductSeriesView(self.productseries,
-                                      LaunchpadTestRequest())
+        self.product = self.productseries.product
+
+    def _createView(self):
+        return ProductSeriesView(self.productseries, LaunchpadTestRequest())
 
     def test_single_potemplate(self):
         # Make sure that `single_potemplate` is True only when
         # there is exactly one POTemplate for the ProductSeries.
 
-        self.assertFalse(self.view.single_potemplate)
+        view = self._createView()
+        self.assertFalse(view.single_potemplate)
 
         potemplate1 = self.factory.makePOTemplate(
             productseries=self.productseries)
 
-        # self.view may cache the old single_potemplate value, so create
-        # a fresh view now that the underlying data has changed.
-        fresh_view = ProductSeriesView(
-            self.productseries, LaunchpadTestRequest())
-        self.assertTrue(fresh_view.single_potemplate)
+        view = self._createView()
+        self.assertTrue(view.single_potemplate)
 
         potemplate2 = self.factory.makePOTemplate(
             productseries=self.productseries)
-        fresh_view = ProductSeriesView(
-            self.productseries, LaunchpadTestRequest())
-        self.assertFalse(fresh_view.single_potemplate)
+        view = self._createView()
+        self.assertFalse(view.single_potemplate)
 
-    def test_has_translation_documentation(self):
-        self.assertFalse(self.view.has_translation_documentation)
+    def test_has_translation_documentation_no_group(self):
+        # Without a translation group, there is no documentation either.
+        view = self._createView()
+        self.assertFalse(view.has_translation_documentation)
 
+    def test_has_translation_documentation_group_without_url(self):
         # Adding a translation group with no documentation keeps
         # `has_translation_documentation` at False.
-        group = self.factory.makeTranslationGroup(
+        self.product.translationgroup = self.factory.makeTranslationGroup(
             self.productseries.product.owner, url=None)
-        self.productseries.product.translationgroup = group
-        self.assertFalse(self.view.has_translation_documentation)
+        view = self._createView()
+        self.assertFalse(view.has_translation_documentation)
 
-        # When there is documentation URL, `has_translation_documentation`
-        # is True.
-        group.translation_guide_url = u'http://something'
-        self.assertTrue(self.view.has_translation_documentation)
+    def test_has_translation_documentation_group_with_url(self):
+        # After adding a translation group with a documentation URL lets
+        # `has_translation_documentation` be True.
+        self.product.translationgroup = self.factory.makeTranslationGroup(
+            self.productseries.product.owner, url=u'http://something')
+        view = self._createView()
+        self.assertTrue(view.has_translation_documentation)
 
-    def test_productserieslanguages(self):
-        # With no POTemplates, it returns None.
-        self.assertEquals(self.view.productserieslanguages,
-                          None)
+    def test_productserieslanguages_no_template(self):
+        # With no POTemplates, no languages can be seen, either.
+        view = self._createView()
+        self.assertEquals(None, view.productserieslanguages)
 
-        # Adding a single POTemplate, but no actual translations
-        # makes `productserieslanguages` return an empty list instead.
+    def _getProductserieslanguages(self, view):
+        return [psl.language for psl in view.productserieslanguages]
+
+    def test_productserieslanguages_without_pofile(self):
+        # With a single POTemplate, but no actual translations, the list
+        # of languages is empty.
+        self.factory.makePOTemplate(productseries=self.productseries)
+        view = self._createView()
+        self.assertEquals([], self._getProductserieslanguages(view))
+
+    def test_productserieslanguages_with_pofile(self):
+        # The `productserieslanguages` properperty has a list of the
+        # languages of the po files for the templates in this seris.
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.assertEquals(self.view.productserieslanguages,
-                          [])
-
-        # Adding a translation, adds that language to the list.
-        pofile = self.factory.makePOFile('sr', potemplate)
-        self.assertEquals(len(self.view.productserieslanguages),
-                          1)
-        self.assertEquals(self.view.productserieslanguages[0].language,
-                          pofile.language)
-
-        # If a user with another preferred languages looks at
-        # the list, that language is combined with existing one.
-        user = self.factory.makePerson()
-        spanish = getUtility(ILanguageSet).getLanguageByCode('es')
-        user.addLanguage(spanish)
-        self.assertEquals(len(user.languages), 1)
-
-        login_person(user)
-        view = ProductSeriesView(self.productseries, LaunchpadTestRequest())
-        # Returned languages are ordered by their name in English.
+        pofile = self.factory.makePOFile(potemplate=potemplate)
+        view = self._createView()
         self.assertEquals(
-            [psl.language.englishname for psl in view.productserieslanguages],
-            [u'Serbian', u'Spanish'])
+            [pofile.language], self._getProductserieslanguages(view))
+
+    def _makePersonWithLanguage(self):
+        user = self.factory.makePerson()
+        language = self.factory.makeLanguage()
+        user.addLanguage(language)
+        return user, language
+
+    def test_productserieslanguages_preferred_language_without_pofile(self):
+        # If the user has a preferred language, that language always in
+        # the list.
+        self.factory.makePOTemplate(
+            productseries=self.productseries)
+        user, language = self._makePersonWithLanguage()
+        login_person(user)
+        view = self._createView()
+        self.assertEquals([language], self._getProductserieslanguages(view))
+
+    def test_productserieslanguages_preferred_language_with_pofile(self):
+        # If the user has a preferred language, that language always in
+        # the list.
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        pofile = self.factory.makePOFile(potemplate=potemplate)
+        user, language = self._makePersonWithLanguage()
+        login_person(user)
+        view = self._createView()
+        self.assertContentEqual(
+            [pofile.language, language],
+            self._getProductserieslanguages(view))
+
+    def test_productserieslanguages_ordered_by_englishname(self):
+        # Returned languages are ordered by their name in English.
+        language1 = self.factory.makeLanguage(
+            language_code='lang-aa', name='Zz')
+        language2 = self.factory.makeLanguage(
+            language_code='lang-zz', name='Aa')
+        potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        self.factory.makePOFile(language1.code, potemplate)
+        self.factory.makePOFile(language2.code, potemplate)
+        view = self._createView()
+        self.assertEquals(
+            [language2, language1], self._getProductserieslanguages(view))
 
     def test_productserieslanguages_english(self):
-        # Even if there's an English POFile, it's not listed
-        # among translated languages.
+        # English is not listed among translated languages, even if there's
+        # an English POFile
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        pofile = self.factory.makePOFile('en', potemplate)
-        self.assertEquals(self.view.productserieslanguages,
-                          [])
+        self.factory.makePOFile('en', potemplate)
+        view = self._createView()
+        self.assertEquals([], self._getProductserieslanguages(view))
 
         # It's not shown even with more than one POTemplate
         # (different code paths).
-        potemplate2 = self.factory.makePOTemplate(
-            productseries=self.productseries)
-        self.assertEquals(self.view.productserieslanguages,
-                          [])
+        self.factory.makePOTemplate(productseries=self.productseries)
+        self.assertEquals([], self._getProductserieslanguages(view))
 
 
 class TestProductSeriesLanguage(TestCaseWithFactory):
