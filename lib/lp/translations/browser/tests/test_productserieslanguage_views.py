@@ -24,7 +24,7 @@ class TestProductSeriesView(TestCaseWithFactory):
 
     def setUp(self):
         # Create a productseries that uses translations.
-        TestCaseWithFactory.setUp(self)
+        super(TestProductSeriesView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
         self.productseries.product.official_rosetta = True
         self.product = self.productseries.product
@@ -130,8 +130,8 @@ class TestProductSeriesView(TestCaseWithFactory):
             language_code='lang-zz', name='Aa')
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.factory.makePOFile(language1.code, potemplate)
-        self.factory.makePOFile(language2.code, potemplate)
+        self.factory.makePOFile(language=language1, potemplate=potemplate)
+        self.factory.makePOFile(language=language2, potemplate=potemplate)
         view = self._createView()
         self.assertEquals(
             [language2, language1], self._getProductserieslanguages(view))
@@ -151,51 +151,58 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.assertEquals([], self._getProductserieslanguages(view))
 
 
-class TestProductSeriesLanguage(TestCaseWithFactory):
+class TestProductSeriesLanguageView(TestCaseWithFactory):
     """Test ProductSeriesLanguage view."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Create a productseries that uses translations.
-        TestCaseWithFactory.setUp(self)
+        super(TestProductSeriesLanguageView, self).setUp()
         self.productseries = self.factory.makeProductSeries()
         self.productseries.product.official_rosetta = True
-        self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
+        self.language = self.factory.makeLanguage()
         potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        pofile = self.factory.makePOFile('sr', potemplate)
+        self.factory.makePOFile(language=self.language, potemplate=potemplate)
         self.psl = self.productseries.productserieslanguages[0]
-        self.view = ProductSeriesLanguageView(
-            self.psl, LaunchpadTestRequest())
 
-    def test_empty_view(self):
-        self.assertEquals(self.view.translation_group, None)
-        self.assertEquals(self.view.translation_team, None)
-        self.assertEquals(self.view.context, self.psl)
+    def _createView(self):
+        view = ProductSeriesLanguageView(self.psl, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_translation_group_no_group(self):
+        view = self._createView()
+        self.assertEquals(None, view.translation_group)
+
+    def test_translation_team_no_group_no_team(self):
+        view = self._createView()
+        self.assertEquals(None, view.translation_team)
+
+    def _makeTranslationGroup(self):
+        group = self.factory.makeTranslationGroup(
+            self.productseries.product.owner, url=None)
+        self.productseries.product.translationgroup = group
+        return group
 
     def test_translation_group(self):
-        group = self.factory.makeTranslationGroup(
-            self.productseries.product.owner, url=None)
-        self.productseries.product.translationgroup = group
-        self.view.initialize()
-        self.assertEquals(self.view.translation_group, group)
+        group = self._makeTranslationGroup()
+        view = self._createView()
+        self.assertEquals(group, view.translation_group)
 
-    def test_translation_team(self):
+    def test_translation_team_no_translator(self):
         # Just having a group doesn't mean there's a translation
         # team as well.
-        group = self.factory.makeTranslationGroup(
-            self.productseries.product.owner, url=None)
-        self.productseries.product.translationgroup = group
-        self.assertEquals(self.view.translation_team, None)
+        self._makeTranslationGroup()
+        view = self._createView()
+        self.assertEquals(None, view.translation_team)
 
+    def test_translation_team(self):
         # Setting a translator for this languages makes it
         # appear as the translation_team.
-        team = self.factory.makeTeam()
-        translator = getUtility(ITranslatorSet).new(
-            group, self.language, team)
-        # Recreate the view because we are using a cached property.
-        self.view = ProductSeriesLanguageView(
-            self.psl, LaunchpadTestRequest())
-        self.view.initialize()
-        self.assertEquals(self.view.translation_team, translator)
+        group = self._makeTranslationGroup()
+        translator = self.factory.makeTranslator(
+            group=group, language=self.language)
+        view = self._createView()
+        self.assertEquals(translator, view.translation_team)
