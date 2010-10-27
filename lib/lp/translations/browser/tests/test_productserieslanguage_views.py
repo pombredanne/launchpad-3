@@ -32,21 +32,18 @@ class TestProductSeriesView(TestCaseWithFactory):
     def _createView(self):
         return ProductSeriesView(self.productseries, LaunchpadTestRequest())
 
-    def test_single_potemplate(self):
-        # Make sure that `single_potemplate` is True only when
-        # there is exactly one POTemplate for the ProductSeries.
-
+    def test_single_potemplate_no_template(self):
         view = self._createView()
         self.assertFalse(view.single_potemplate)
 
-        potemplate1 = self.factory.makePOTemplate(
-            productseries=self.productseries)
-
+    def test_single_potemplate_one_template(self):
+        self.factory.makePOTemplate(productseries=self.productseries)
         view = self._createView()
         self.assertTrue(view.single_potemplate)
 
-        potemplate2 = self.factory.makePOTemplate(
-            productseries=self.productseries)
+    def test_single_potemplate_multiple_templates(self):
+        self.factory.makePOTemplate(productseries=self.productseries)
+        self.factory.makePOTemplate(productseries=self.productseries)
         view = self._createView()
         self.assertFalse(view.single_potemplate)
 
