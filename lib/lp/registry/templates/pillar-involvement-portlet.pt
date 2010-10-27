@@ -58,7 +58,7 @@
         python: 'collapsible collapsed'
           if view.registration_done
           else 'collapsible'">
-      <div class=".config-options"
+      <div class="config-options"
            style="margin-bottom: 0.5em">Configuration options</div>
       <table
         style="width: 100%; padding-top: 1em"
