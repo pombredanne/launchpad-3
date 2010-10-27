@@ -87,7 +87,7 @@ class TestAddMilestone(WindmillTestCase):
     def test_adding_milestone_on_addrelease_page(self):
         test_inline_add_milestone(
             self.client,
-            url='http://launchpad.dev:8085/bzr/trunk/+addrelease',
+            url='%s/bzr/trunk/+addrelease' % RegistryWindmillLayer.base_url,
             name='test_inline_add_milestone_for_release')
 
 

@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -83,10 +81,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
@@ -133,6 +131,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -152,7 +151,6 @@ from lp.code.model.diff import (
     PreviewDiff,
     StaticDiff,
     )
-from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionFormat,
@@ -221,7 +219,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -1114,7 +1112,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             configuration = unicode(simplejson.dumps({
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
-        queue = BranchMergeQueue.new(
+        queue = getUtility(IBranchMergeQueueSource).new(
             name, registrant, owner, description, configuration)
         return queue
 
@@ -1957,7 +1955,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
-        IPropertyCacheManager(diff).clear()
+        clear_property_cache(diff)
         return diff
 
     def makeDistroSeriesDifferenceComment(
@@ -3149,8 +3147,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None):
         if person is None:
             person = self.makePerson()
+        from canonical.testing import BaseLayer
         launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
+            service_root=BaseLayer.appserver_root_url("api"))
         login_person(person)
         return launchpad
 

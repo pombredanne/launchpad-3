@@ -3,7 +3,6 @@
 
 """Tests for the transport-backed SFTP server implementation."""
 
-from __future__ import with_statement
 from contextlib import closing
 import os
 import unittest

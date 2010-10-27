@@ -275,6 +275,9 @@ class BaseLayer:
     @classmethod
     @profiled
     def setUp(cls):
+        # Set the default appserver config instance name.
+        # May be changed as required eg when running parallel tests.
+        cls.appserver_config_name = 'testrunner-appserver'
         BaseLayer.isSetUp = True
         cls.fixture = Fixture()
         cls.fixture.setUp()
@@ -512,6 +515,17 @@ class BaseLayer:
         finally:
             del frame # As per no-leak stack inspection in Python reference.
 
+    @classmethod
+    def appserver_config(cls):
+        """Return a config suitable for AppServer tests."""
+        return CanonicalConfig(cls.appserver_config_name)
+
+    @classmethod
+    def appserver_root_url(cls, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
+        return cls.appserver_config().appserver_root_url(
+                facet, ensureSlash)
+
 
 class MemcachedLayer(BaseLayer):
     """Provides tests access to a memcached.
@@ -623,6 +637,8 @@ class LibrarianLayer(BaseLayer):
 
     _is_setup = False
 
+    _atexit_call = None
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -635,7 +651,7 @@ class LibrarianLayer(BaseLayer):
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
         LibrarianLayer._check_and_reset()
-        atexit.register(the_librarian.tearDown)
+        cls._atexit_call = atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -650,6 +666,11 @@ class LibrarianLayer(BaseLayer):
                     )
         LibrarianLayer._check_and_reset()
         LibrarianTestSetup().tearDown()
+        # Remove the atexit handler, since we've already done the work.
+        atexit._exithandlers = [
+            handler for handler in atexit._exithandlers
+            if handler[0] != cls._atexit_call]
+        cls._atexit_call = None
 
     @classmethod
     @profiled
@@ -1984,15 +2005,10 @@ class BaseWindmillLayer(AppServerLayer):
 
         # Patch the config to provide the port number and not use https.
         sites = (
-            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
-            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
-            ('vhost.blueprints',
-                'rooturl: http://blueprints.launchpad.dev:8085/'),
-            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
-            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
-            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
-            ('vhost.translations',
-                'rooturl: http://translations.launchpad.dev:8085/'))
+            (('vhost.%s' % sitename,
+            'rooturl: %s/' % cls.appserver_root_url(sitename))
+            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
+                            'code', 'testopenid', 'translations']))
         for site in sites:
             config.push('windmillsettings', "\n[%s]\n%s\n" % site)
         allvhosts.reload()
@@ -2063,7 +2079,7 @@ class BaseWindmillLayer(AppServerLayer):
         # driver from out here.
         config_text = dedent("""\
             START_FIREFOX = True
-            TEST_URL = '%s'
+            TEST_URL = '%s/'
             CONSOLE_LOG_LEVEL = %d
             """ % (cls.base_url, logging.NOTSET))
         cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
