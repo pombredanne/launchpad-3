@@ -12,8 +12,9 @@ Set Up
     >>> login(ADMIN_EMAIL)
     >>> soyuz = factory.makeTeam(name='soyuz-team')
     >>> parent = factory.makeDistroSeries()
-    >>> child = factory.makeDistroSeries(parent_series=parent)
-    >>> second_child = factory.makeDistroSeries(parent_series=parent)
+    >>> child = factory.makeDistroSeries(name='child1', parent_series=parent)
+    >>> second_child = factory.makeDistroSeries(name='child2',
+    ...     parent_series=parent)
     >>> other = factory.makeDistroSeries()
     >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -77,7 +78,9 @@ And we can verify both jobs exists.
     >>> from lp.soyuz.interfaces.distributionjob import (
     ...     IInitialiseDistroSeriesJobSource)
     >>> login(ADMIN_EMAIL)
-    >>> job = list(
+    >>> jobs = list(
     ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady())
-    >>> [job[0].distroseries, job[1].distroseries] == [child, second_child]
-    True
+    >>> for job in jobs:
+    ...     print job.distroseries.name
+    child1
+    child2
