@@ -19,7 +19,7 @@ from lp.testing import WindmillTestCase
 
 
 ADD_COMMENT_BUTTON = (
-    u'//input[@id="field.actions.save" and @class="button"]')
+    u'//input[@id="field.actions.save" and contains(@class, "button")]')
 
 
 class TestBranchLinks(WindmillTestCase):
