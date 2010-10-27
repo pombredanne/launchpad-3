@@ -58,39 +58,36 @@ FAKE_REQUESTS = [
 
 # The category stats computed for the above 12 requests.
 CATEGORY_STATS = [
-    FakeStats(total_hits=12,
-        total_time=62.60, mean=5.22, median=2.5, std=5.99,
+    (Category('All', ''), FakeStats(
+        total_hits=12, total_time=62.60, mean=5.22, median=2.5, std=5.99,
         total_sqltime=42, mean_sqltime=3.82, median_sqltime=2.2,
         std_sqltime=3.89,
         total_sqlstatements=1392, mean_sqlstatements=126.55,
         median_sqlstatments=43, std_sqlstatements=208.94,
         histogram=[[0, 2], [1, 2], [2, 2], [3, 1], [4, 2], [5, 3]],
-        ),
-    FakeStats(),
-    FakeStats(total_hits=6,
-        total_time=51.70, mean=8.62, median=5.0, std=6.90,
+        )),
+    (Category('Test', ''), FakeStats()),
+    (Category('Bugs', ''), FakeStats(
+        total_hits=6, total_time=51.70, mean=8.62, median=5.0, std=6.90,
         total_sqltime=33.40, mean_sqltime=5.57, median_sqltime=3.0,
         std_sqltime=4.52,
         total_sqlstatements=1352, mean_sqlstatements=225.33,
         median_sqlstatements=66, std_sqlstatements=241.96,
         histogram=[[0, 0], [1, 1], [2, 0], [3, 0], [4, 2], [5, 3]],
-        ),
+        )),
     ]
 
 
 # The top 3 URL stats computed for the above 12 requests.
 TOP_3_URL_STATS = [
-    # /bugs/1
-    FakeStats(total_hits=2,
-        total_time=36.0, mean=18.0, median=15.5, std=2.50,
+    ('/bugs/1', FakeStats(
+        total_hits=2, total_time=36.0, mean=18.0, median=15.5, std=2.50,
         total_sqltime=23.0, mean_sqltime=11.5, median_sqltime=9.0,
         std_sqltime=2.50,
         total_sqlstatements=1134, mean_sqlstatements=567.0,
-        median_sqlstatments=567, std_statements=0),
-    # /bugs
-    FakeStats(),
-    # /launchpad
-    FakeStats(),
+        median_sqlstatments=567, std_statements=0)),
+    ('/bugs', FakeStats()),
+    ('/launchpad', FakeStats()),
     ]
 
 
@@ -134,43 +131,35 @@ class TestSQLiteTimes(TestCase):
         for r in FAKE_REQUESTS:
             self.db.add_request(r)
 
+    def assertStatsAreEquals(self, expected, results):
+        self.assertEquals(
+            len(expected), len(results),
+            'Wrong number of results: %d != %d' % (
+                len(expected), len(results)))
+        for idx in range(len(results)):
+            self.assertEquals(expected[idx][0], results[idx][0],
+                "Wrong key for results %d: %s != %s" % (
+                    idx, expected[idx][0], results[idx][0]))
+            key = results[idx][0]
+            self.assertEquals(expected[idx][1].text(), results[idx][1].text(),
+                "Wrong stats for results %d (%s): %s != %s" % (
+                    idx, key, expected[idx][1].text(), results[idx][1].text()
+                    ))
+            self.assertEquals(
+                expected[idx][1].histogram, results[idx][1].histogram,
+                "Wrong histogram for results %d (%s): %s != %s" % (
+                    idx, key, expected[idx][1].histogram,
+                    results[idx][1].histogram))
+
     def test_get_category_times(self):
         self.setUpRequests()
         category_times = self.db.get_category_times()
-        # All
-        self.assertEquals(self.categories[0], category_times[0][0])
-        self.assertEquals(
-            CATEGORY_STATS[0].text(), category_times[0][1].text())
-        self.assertEquals(
-            CATEGORY_STATS[0].histogram, category_times[0][1].histogram)
-        # Test
-        self.assertEquals(self.categories[1], category_times[1][0])
-        self.assertEquals(
-            CATEGORY_STATS[1].text(), category_times[1][1].text())
-        self.assertEquals(
-            CATEGORY_STATS[1].histogram, category_times[1][1].histogram)
-        # Bugs
-        self.assertEquals(self.categories[2], category_times[2][0])
-        self.assertEquals(
-            CATEGORY_STATS[2].text(), category_times[2][1].text())
-        self.assertEquals(
-            CATEGORY_STATS[2].histogram, category_times[2][1].histogram)
+        self.assertStatsAreEquals(CATEGORY_STATS, category_times)
 
     def test_get_url_times(self):
         self.setUpRequests()
         url_times = self.db.get_top_urls_times(3)
-        # /bugs/1
-        self.assertEquals('/bugs/1', url_times[0][0])
-        self.assertEquals(
-            TOP_3_URL_STATS[0].text(), url_times[0][1].text())
-        # /bugs
-        self.assertEquals('/bugs', url_times[1][0])
-        self.assertEquals(
-            TOP_3_URL_STATS[1].text(), url_times[1][1].text())
-        # /launchpad
-        self.assertEquals('/launchpad', url_times[2][0])
-        self.assertEquals(
-            TOP_3_URL_STATS[2].text(), url_times[2][1].text())
+        self.assertStatsAreEquals(TOP_3_URL_STATS, url_times)
 
 
 def test_suite():
