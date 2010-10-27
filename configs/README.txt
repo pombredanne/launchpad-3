@@ -299,10 +299,6 @@ Launchpad schema. This is a general outline of inheritance:
         |    |
         |    + staging-mailman/launchpad-lazr.conf
         |
-        + edge-lazr.conf
-        |    |
-        |    + edge<1-4>/launchpad-lazr.conf
-        |
         + lpnet-lazr.conf
         |    |
         |    + lpnet<1-8>/launchpad-lazr.conf

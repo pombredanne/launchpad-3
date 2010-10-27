@@ -637,6 +637,8 @@ class LibrarianLayer(BaseLayer):
 
     _is_setup = False
 
+    _atexit_call = None
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -649,7 +651,7 @@ class LibrarianLayer(BaseLayer):
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
         LibrarianLayer._check_and_reset()
-        atexit.register(the_librarian.tearDown)
+        cls._atexit_call = atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -664,6 +666,11 @@ class LibrarianLayer(BaseLayer):
                     )
         LibrarianLayer._check_and_reset()
         LibrarianTestSetup().tearDown()
+        # Remove the atexit handler, since we've already done the work.
+        atexit._exithandlers = [
+            handler for handler in atexit._exithandlers
+            if handler[0] != cls._atexit_call]
+        cls._atexit_call = None
 
     @classmethod
     @profiled

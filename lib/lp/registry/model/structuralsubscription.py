@@ -448,24 +448,6 @@ class StructuralSubscriptionTargetMixin:
         return StructuralSubscription.select(
             query, orderBy='Person.displayname', clauseTables=['Person'])
 
-    def getBugNotificationsRecipients(self, recipients=None, level=None):
-        """See `IStructuralSubscriptionTarget`."""
-        if level is None:
-            subscriptions = self.bug_subscriptions
-        else:
-            subscriptions = self.getSubscriptions(
-                min_bug_notification_level=level)
-        subscribers = set(
-            subscription.subscriber for subscription in subscriptions)
-        if recipients is not None:
-            for subscriber in subscribers:
-                recipients.addStructuralSubscriber(subscriber, self)
-        parent = self.parent_subscription_target
-        if parent is not None:
-            subscribers.update(
-                parent.getBugNotificationsRecipients(recipients, level))
-        return subscribers
-
     @property
     def bug_subscriptions(self):
         """See `IStructuralSubscriptionTarget`."""

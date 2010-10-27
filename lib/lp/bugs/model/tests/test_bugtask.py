@@ -8,31 +8,52 @@ from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
+from storm.store import ResultSet
 from zope.component import getUtility
 from zope.interface import providedBy
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.enums import ServiceUsage
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTaskSet,
+    IUpstreamBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugtask import build_tag_search_clause
+from lp.bugs.tests.bug import (
+    create_old_bug,
+    sync_bugtasks,
+    )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -42,6 +63,11 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.factory import (
+    is_security_proxied_or_harmless,
+    LaunchpadObjectFactory,
+    )
+from lp.testing.matchers import StartsWith
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -892,7 +918,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual(2, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
         # distorting what we're testing.
-        _ = IPerson(person.account, None)
+        IPerson(person.account, None)
         # One query and only one should be issued to get the tasks, bugs and
         # allow access to getConjoinedMaster attribute - an attribute that
         # triggers a permission check (nb: id does not trigger such a check)
@@ -943,6 +969,420 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.datecreated += timedelta(days=1)
         result = target.searchTasks(None, created_since=date)
         self.assertEqual([task2], list(result))
+
+
+class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
+    """Tests for searching bugs filtering on related bug tasks.
+
+    It also acts as a helper class, which makes related doctests more
+    readable, since they can use methods from this class.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def __init__(self, methodName='runTest', helper_only=False):
+        """If helper_only is True, set up it only as a helper class."""
+        if not helper_only:
+            unittest.TestCase.__init__(self, methodName=methodName)
+
+    def setUp(self):
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
+
+    def _getBugTaskByTarget(self, bug, target):
+        """Return a bug's bugtask for the given target."""
+        for bugtask in bug.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+        else:
+            raise AssertionError(
+                "Didn't find a %s task on bug %s." % (
+                    target.bugtargetname, bug.id))
+
+    def setUpBugsResolvedUpstreamTests(self):
+        """Modify some bugtasks to match the resolved upstream filter."""
+        bugset = getUtility(IBugSet)
+        productset = getUtility(IProductSet)
+        firefox = productset.getByName("firefox")
+        thunderbird = productset.getByName("thunderbird")
+
+        # Mark an upstream task on bug #1 "Fix Released"
+        bug_one = bugset.get(1)
+        firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD,
+            firefox_upstream.product.bug_tracking_usage)
+        self.old_firefox_status = firefox_upstream.status
+        firefox_upstream.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+        self.firefox_upstream = firefox_upstream
+
+        # Mark an upstream task on bug #9 "Fix Committed"
+        bug_nine = bugset.get(9)
+        thunderbird_upstream = self._getBugTaskByTarget(bug_nine, thunderbird)
+        self.old_thunderbird_status = thunderbird_upstream.status
+        thunderbird_upstream.transitionToStatus(
+            BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
+        self.thunderbird_upstream = thunderbird_upstream
+
+        # Add a watch to a Debian bug for bug #2, and mark the task Fix
+        # Released.
+        bug_two = bugset.get(2)
+        bugwatchset = getUtility(IBugWatchSet)
+
+        # Get a debbugs watch.
+        watch_debbugs_327452 = bugwatchset.get(9)
+        self.assertEquals(watch_debbugs_327452.bugtracker.name, "debbugs")
+        self.assertEquals(watch_debbugs_327452.remotebug, "327452")
+
+        # Associate the watch to a Fix Released task.
+        debian = getUtility(IDistributionSet).getByName("debian")
+        debian_firefox = debian.getSourcePackage("mozilla-firefox")
+        bug_two_in_debian_firefox = self._getBugTaskByTarget(
+            bug_two, debian_firefox)
+        bug_two_in_debian_firefox.bugwatch = watch_debbugs_327452
+        bug_two_in_debian_firefox.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+
+        flush_database_updates()
+
+    def tearDownBugsElsewhereTests(self):
+        """Resets the modified bugtasks to their original statuses."""
+        self.firefox_upstream.transitionToStatus(
+            self.old_firefox_status,
+            self.firefox_upstream.target.bug_supervisor)
+        self.thunderbird_upstream.transitionToStatus(
+            self.old_thunderbird_status,
+            self.firefox_upstream.target.bug_supervisor)
+        flush_database_updates()
+
+    def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
+        """Assert the bugtask is pending a bug watch elsewhere.
+
+        Pending a bugwatch elsewhere means that at least one of the bugtask's
+        related task's target isn't using Malone, and that
+        related_bugtask.bugwatch is None.
+        """
+        non_malone_using_bugtasks = [
+            related_task for related_task in bugtask.related_tasks
+            if not related_task.target_uses_malone]
+        pending_bugwatch_bugtasks = [
+            related_bugtask for related_bugtask in non_malone_using_bugtasks
+            if related_bugtask.bugwatch is None]
+        self.assert_(
+            len(pending_bugwatch_bugtasks) > 0,
+            'Bugtask %s on %s has no related bug watches elsewhere.' % (
+                bugtask.id, bugtask.target.displayname))
+
+    def assertBugTaskIsResolvedUpstream(self, bugtask):
+        """Make sure at least one of the related upstream tasks is resolved.
+
+        "Resolved", for our purposes, means either that one of the related
+        tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
+        it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
+        INVALID state.
+        """
+        resolved_upstream_states = [
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
+        resolved_bugwatch_states = [
+            BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED,
+            BugTaskStatus.INVALID]
+
+        # Helper functions for the list comprehension below.
+        def _is_resolved_upstream_task(bugtask):
+            return (
+                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.status in resolved_upstream_states)
+
+        def _is_resolved_bugwatch_task(bugtask):
+            return (
+                bugtask.bugwatch and bugtask.status in
+                resolved_bugwatch_states)
+
+        resolved_related_tasks = [
+            related_task for related_task in bugtask.related_tasks
+            if (_is_resolved_upstream_task(related_task) or
+                _is_resolved_bugwatch_task(related_task))]
+
+        self.assert_(len(resolved_related_tasks) > 0)
+        self.assert_(
+            len(resolved_related_tasks) > 0,
+            'Bugtask %s on %s has no resolved related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
+
+    def assertBugTaskIsOpenUpstream(self, bugtask):
+        """Make sure at least one of the related upstream tasks is open.
+
+        "Open", for our purposes, means either that one of the related
+        tasks is an upstream task or a task with a bugwatch which has
+        one of the states listed in open_states.
+        """
+        open_states = [
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.UNKNOWN]
+
+        # Helper functions for the list comprehension below.
+        def _is_open_upstream_task(bugtask):
+            return (
+                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.status in open_states)
+
+        def _is_open_bugwatch_task(bugtask):
+            return (
+                bugtask.bugwatch and bugtask.status in
+                open_states)
+
+        open_related_tasks = [
+            related_task for related_task in bugtask.related_tasks
+            if (_is_open_upstream_task(related_task) or
+                _is_open_bugwatch_task(related_task))]
+
+        self.assert_(
+            len(open_related_tasks) > 0,
+            'Bugtask %s on %s has no open related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
+
+    def _hasUpstreamTask(self, bug):
+        """Does this bug have an upstream task associated with it?
+
+        Returns True if yes, otherwise False.
+        """
+        for bugtask in bug.bugtasks:
+            if IUpstreamBugTask.providedBy(bugtask):
+                return True
+        return False
+
+    def assertShouldBeShownOnNoUpstreamTaskSearch(self, bugtask):
+        """Should the bugtask be shown in the search no upstream task search?
+
+        Returns True if yes, otherwise False.
+        """
+        self.assert_(
+            not self._hasUpstreamTask(bugtask.bug),
+            'Bugtask %s on %s has upstream tasks.' % (
+                bugtask.id, bugtask.target.displayname))
+
+
+class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
+    """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        """Setup the zope interaction and create expirable bugtasks."""
+        login('test@canonical.com')
+        self.user = getUtility(ILaunchBag).user
+        self.distribution = getUtility(IDistributionSet).getByName('ubuntu')
+        self.distroseries = self.distribution.getSeries('hoary')
+        self.product = getUtility(IProductSet).getByName('jokosher')
+        self.productseries = self.product.getSeries('trunk')
+        self.bugtaskset = getUtility(IBugTaskSet)
+        bugtasks = []
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.distribution))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=self.user,
+                distroseries=self.distroseries))
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.product))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=self.user,
+                productseries=self.productseries))
+        sync_bugtasks(bugtasks)
+
+    def tearDown(self):
+        logout()
+
+    def testSupportedTargetParam(self):
+        """The target param supports a limited set of BugTargets.
+
+        Four BugTarget types may passed as the target argument:
+        Distribution, DistroSeries, Product, ProductSeries.
+        """
+        supported_targets = [self.distribution, self.distroseries,
+                             self.product, self.productseries]
+        for target in supported_targets:
+            expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+                0, self.user, target=target)
+            self.assertNotEqual(expirable_bugtasks.count(), 0,
+                 "%s has %d expirable bugtasks." %
+                 (self.distroseries, expirable_bugtasks.count()))
+
+    def testUnsupportedBugTargetParam(self):
+        """Test that unsupported targets raise errors.
+
+        Three BugTarget types are not supported because the UI does not
+        provide bug-index to link to the 'bugs that can expire' page.
+        ProjectGroup, SourcePackage, and DistributionSourcePackage will
+        raise an NotImplementedError.
+
+        Passing an unknown bugtarget type will raise an AssertionError.
+        """
+        project = getUtility(IProjectGroupSet).getByName('mozilla')
+        distributionsourcepackage = self.distribution.getSourcePackage(
+            'mozilla-firefox')
+        sourcepackage = self.distroseries.getSourcePackage(
+            'mozilla-firefox')
+        unsupported_targets = [project, distributionsourcepackage,
+                               sourcepackage]
+        for target in unsupported_targets:
+            self.assertRaises(
+                NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+                0, self.user, target=target)
+
+        # Objects that are not a known BugTarget type raise an AssertionError.
+        self.assertRaises(
+            AssertionError, self.bugtaskset.findExpirableBugTasks,
+            0, self.user, target=[])
+
+
+class BugTaskSetTest(unittest.TestCase):
+    """Test `BugTaskSet` methods."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+
+    def test_getBugTasks(self):
+        """ IBugTaskSet.getBugTasks() returns a dictionary mapping the given
+        bugs to their bugtasks. It does that in a single query, to avoid
+        hitting the DB again when getting the bugs' tasks.
+        """
+        login('no-priv@canonical.com')
+        factory = LaunchpadObjectFactory()
+        bug1 = factory.makeBug()
+        factory.makeBugTask(bug1)
+        bug2 = factory.makeBug()
+        factory.makeBugTask(bug2)
+        factory.makeBugTask(bug2)
+
+        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
+            [bug1.id, bug2.id])
+        # The bugtasks returned by getBugTasks() are exactly the same as the
+        # ones returned by bug.bugtasks, obviously.
+        self.failUnlessEqual(
+            set(bugs_and_tasks[bug1]).difference(bug1.bugtasks),
+            set([]))
+        self.failUnlessEqual(
+            set(bugs_and_tasks[bug2]).difference(bug2.bugtasks),
+            set([]))
+
+    def test_getBugTasks_with_empty_list(self):
+        # When given an empty list of bug IDs, getBugTasks() will return an
+        # empty dictionary.
+        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
+        self.failUnlessEqual(bugs_and_tasks, {})
+
+
+class TestBugTaskStatuses(TestCase):
+
+    def test_open_and_resolved_statuses(self):
+        """
+        There are constants that are used to define which statuses are for
+        resolved bugs (`RESOLVED_BUGTASK_STATUSES`), and which are for
+        unresolved bugs (`UNRESOLVED_BUGTASK_STATUSES`). The two constants
+        include all statuses defined in BugTaskStatus, except for Unknown.
+        """
+        self.assertNotIn(BugTaskStatus.UNKNOWN, RESOLVED_BUGTASK_STATUSES)
+        self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
+
+
+class TestGetStructuralSubscribers(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def make_product_with_bug(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        return product, bug
+
+    def getStructuralSubscribers(self, bugtasks, *args, **kwargs):
+        # Call IBugTaskSet.getStructuralSubscribers() and check that the
+        # result is security proxied.
+        result = getUtility(IBugTaskSet).getStructuralSubscribers(
+            bugtasks, *args, **kwargs)
+        self.assertTrue(is_security_proxied_or_harmless(result))
+        return result
+
+    def test_getStructuralSubscribers_no_subscribers(self):
+        # If there are no subscribers for any of the bug's targets then no
+        # subscribers will be returned by getStructuralSubscribers().
+        product, bug = self.make_product_with_bug()
+        subscribers = self.getStructuralSubscribers(bug.bugtasks)
+        self.assertIsInstance(subscribers, ResultSet)
+        self.assertEqual([], list(subscribers))
+
+    def test_getStructuralSubscribers_single_target(self):
+        # Subscribers for any of the bug's targets are returned.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        product.addBugSubscription(subscriber, subscriber)
+        self.assertEqual(
+            [subscriber], list(
+                self.getStructuralSubscribers(bug.bugtasks)))
+
+    def test_getStructuralSubscribers_multiple_targets(self):
+        # Subscribers for any of the bug's targets are returned.
+        actor = self.factory.makePerson()
+        login_person(actor)
+
+        subscriber1 = self.factory.makePerson()
+        subscriber2 = self.factory.makePerson()
+
+        product1 = self.factory.makeProduct(owner=actor)
+        product1.addBugSubscription(subscriber1, subscriber1)
+        product2 = self.factory.makeProduct(owner=actor)
+        product2.addBugSubscription(subscriber2, subscriber2)
+
+        bug = self.factory.makeBug(product=product1)
+        bug.addTask(actor, product2)
+
+        subscribers = self.getStructuralSubscribers(bug.bugtasks)
+        self.assertIsInstance(subscribers, ResultSet)
+        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
+
+    def test_getStructuralSubscribers_recipients(self):
+        # If provided, getStructuralSubscribers() calls the appropriate
+        # methods on a BugNotificationRecipients object.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        product.addBugSubscription(subscriber, subscriber)
+        recipients = BugNotificationRecipients()
+        subscribers = self.getStructuralSubscribers(
+            bug.bugtasks, recipients=recipients)
+        # The return value is a list only when populating recipients.
+        self.assertIsInstance(subscribers, list)
+        self.assertEqual([subscriber], recipients.getRecipients())
+        reason, header = recipients.getReason(subscriber)
+        self.assertThat(
+            reason, StartsWith(
+                u"You received this bug notification because "
+                u"you are subscribed to "))
+        self.assertThat(header, StartsWith(u"Subscriber "))
+
+    def test_getStructuralSubscribers_level(self):
+        # getStructuralSubscribers() respects the given level.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        subscription = product.addBugSubscription(subscriber, subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertEqual(
+            [subscriber], list(
+                self.getStructuralSubscribers(
+                    bug.bugtasks, level=BugNotificationLevel.METADATA)))
+        subscription.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertEqual(
+            [], list(
+                self.getStructuralSubscribers(
+                    bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
 
 
 def test_suite():

@@ -80,3 +80,4 @@ lib/canonical/buildd/launchpad-files/*
 *.pt.py
 .project
 .pydevproject
+librarian.log
