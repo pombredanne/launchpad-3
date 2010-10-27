@@ -3,7 +3,8 @@
 
 from base64 import standard_b64encode
 from optparse import OptionParser
-from sys import argv, stdin, stdout, stderr
+from sys import stdin, stdout, stderr
+import sys
 from lxml import etree
 
 
@@ -150,7 +151,7 @@ def munge(root, project_name, fix_nickname, tag_nickname):
                 stderr.write('\n')
 
 
-if __name__ == '__main__':
+def main(arguments):
     # optparse.OptionParser uses lower-case for usage and help text by
     # default. This is distressing, so it is corrected for below.
     usage = "Usage: %prog [options]"
@@ -181,7 +182,7 @@ if __name__ == '__main__':
         fix_nickname=False,
         tag_nickname=False)
 
-    options, args = parser.parse_args()
+    options, args = parser.parse_args(arguments)
     if len(args) != 0:
         parser.error("Positional arguments are not recognized.")
     if options.project_name is None:
@@ -196,3 +197,9 @@ if __name__ == '__main__':
     tree.write(
         stdout, encoding='utf-8',
         pretty_print=True, xml_declaration=True)
+
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
