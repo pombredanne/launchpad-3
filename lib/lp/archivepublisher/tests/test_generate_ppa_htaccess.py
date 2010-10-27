@@ -589,7 +589,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         tokens = self.setupDummyTokens()[1]
         getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
+            'generate-ppa-htaccess', now - timedelta(minutes=3, seconds=2),
+            now - timedelta(minutes=3))
         removeSecurityProxy(tokens[0]).date_created = (
             now - timedelta(minutes=4))
 
