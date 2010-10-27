@@ -3,8 +3,6 @@
 
 """Unit tests for CodeReviewComments."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest

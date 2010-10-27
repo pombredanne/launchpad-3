@@ -9,12 +9,19 @@ __all__ = [
     'OAuthTokenAuthorizedView',
     'lookup_oauth_context']
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 from lazr.restful import HTTPResource
+import pytz
 import simplejson
 from zope.component import getUtility
 from zope.formlib.form import (
     Action,
     Actions,
+    expandPrefix,
     )
 from zope.security.interfaces import Unauthorized
 
@@ -63,7 +70,7 @@ class JSONTokenMixin:
         return simplejson.dumps(structure)
 
 
-class OAuthRequestTokenView(LaunchpadView, JSONTokenMixin):
+class OAuthRequestTokenView(LaunchpadFormView, JSONTokenMixin):
     """Where consumers can ask for a request token."""
 
     def __call__(self):
@@ -107,7 +114,21 @@ def token_exists_and_is_not_reviewed(form, action):
 
 def token_review_success(form, action, data):
     """The success callback for a button to approve a token."""
-    form.reviewToken(action.permission)
+    form.reviewToken(action.permission, action.duration)
+
+
+class TemporaryIntegrations:
+    """Contains duration constants for temporary integrations."""
+
+    HOUR = "Hour"
+    DAY = "Day"
+    WEEK = "Week"
+
+    DURATION = {
+        HOUR : 60 * 60,
+        DAY : 60 * 60 * 24,
+        WEEK : 60 * 60 * 24 * 7
+        }
 
 
 def create_oauth_permission_actions():
@@ -115,19 +136,37 @@ def create_oauth_permission_actions():
 
     The first `Actions` object contains every action supported by the
     OAuthAuthorizeTokenView. The second list contains a good default
-    set of actions, omitting special permissions like DESKTOP_INTEGRATION.
+    set of actions, omitting special actions like the
+    DESKTOP_INTEGRATION ones.
     """
     all_actions = Actions()
     ordinary_actions = Actions()
+    desktop_permission = OAuthPermission.DESKTOP_INTEGRATION
     for permission in OAuthPermission.items:
         action = Action(
             permission.title, name=permission.name,
             success=token_review_success,
             condition=token_exists_and_is_not_reviewed)
         action.permission = permission
+        action.duration = None
         all_actions.append(action)
-        if permission != OAuthPermission.DESKTOP_INTEGRATION:
+        if permission != desktop_permission:
             ordinary_actions.append(action)
+
+    # Add special actions for the time-limited DESKTOP_INTEGRATION
+    # tokens.
+    for duration in (
+        TemporaryIntegrations.HOUR, TemporaryIntegrations.DAY,
+        TemporaryIntegrations.WEEK):
+        action = Action(
+            ("For One %s" % duration),
+            name=expandPrefix(desktop_permission.name) + duration,
+            success=token_review_success,
+            condition=token_exists_and_is_not_reviewed)
+        action.permission = desktop_permission
+        action.duration = duration
+        all_actions.append(action)
+
     return all_actions, ordinary_actions
 
 
@@ -161,7 +200,8 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         used by normal applications.
         """
 
-        allowed_permissions = self.request.form_ng.getAll('allow_permission')
+        allowed_permissions = set(
+            self.request.form_ng.getAll('allow_permission'))
         if len(allowed_permissions) == 0:
             return self.actions_excluding_special_permissions
         actions = Actions()
@@ -174,9 +214,10 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
         # DESKTOP_INTEGRATION cannot be requested as one of several
         # options--it must be the only option (other than
-        # UNAUTHORIZED). If DESKTOP_INTEGRATION is one of several
-        # options, remove it from the list.
+        # UNAUTHORIZED). If there is any item in the list that doesn't
+        # use DESKTOP_INTEGRATION, remove it from the list.
         desktop_permission = OAuthPermission.DESKTOP_INTEGRATION
+
         if (desktop_permission.name in allowed_permissions
             and len(allowed_permissions) > 1):
             allowed_permissions.remove(desktop_permission.name)
@@ -192,33 +233,40 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
                      "the computer being integrated."
                      % self.token.consumer.key))
 
-            # We're going for desktop integration. The only two
-            # possibilities are "allow" and "deny". We'll customize
-            # the "allow" message using the hostname provided by the
-            # desktop.
+            # We're going for desktop integration. There are four
+            # possibilities: "allow permanently", "allow for one
+            # hour", "allow for one day", "allow for one week", and
+            # "deny". We'll customize the "allow permanently" and
+            # "deny" message using the hostname provided by the
+            # desktop. We'll use the existing Action objects for the
+            # "temporary integration" actions, without customizing
+            # their messages.
             #
             # Since self.actions is a descriptor that returns copies
             # of Action objects, we can modify the actions we get
             # in-place without ruining the Action objects for everyone
             # else.
             desktop_name = self.token.consumer.integrated_desktop_name
-            label = (
-                'Give all programs running on &quot;%s&quot; access '
-                'to my Launchpad account.')
             allow_action = [
                 action for action in self.actions
                 if action.name == desktop_permission.name][0]
-            allow_action.label = label % desktop_name
+            allow_action.label = "Until I Disable It"
             actions.append(allow_action)
 
-            # We'll customize the "deny" message as well.
-            label = "No, thanks, I don't trust &quot;%s&quot;."
+            # Bring in all of the temporary integration actions.
+            for action in self.actions:
+                if (action.permission == desktop_permission
+                    and action.name != desktop_permission.name):
+                    actions.append(action)
+
+            # Fionally, customize the "deny" message.
+            label = (
+                "Do Not Allow &quot;%s&quot; to Access my Launchpad Account.")
             deny_action = [
                 action for action in self.actions
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]
             deny_action.label = label % desktop_name
             actions.append(deny_action)
-
         else:
             # We're going for web-based integration.
             for action in self.actions_excluding_special_permissions:
@@ -237,13 +285,31 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             return self.actions_excluding_special_permissions
         return actions
 
+    @property
+    def visible_desktop_integration_actions(self):
+        """Return all visible actions for DESKTOP_INTEGRATION."""
+        actions = Actions()
+        for action in self.visible_actions:
+            if action.permission is OAuthPermission.DESKTOP_INTEGRATION:
+                actions.append(action)
+        return actions
+
+    @property
+    def unauthorized_action(self):
+        """Returns just the action for the UNAUTHORIZED permission level."""
+        for action in self.visible_actions:
+            if action.permission is OAuthPermission.UNAUTHORIZED:
+                return action
+        raise AssertionError(
+            "UNAUTHORIZED permission level should always be visible, "
+            "but wasn't.")
+
     def initialize(self):
         self.storeTokenContext()
         form = get_oauth_authorization(self.request)
         key = form.get('oauth_token')
         if key:
             self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
-
 
         callback = self.request.form.get('oauth_callback')
         if (self.token is not None
@@ -295,14 +361,23 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
             raise UnexpectedFormData("Unknown context.")
         self.token_context = context
 
-    def reviewToken(self, permission):
-        self.token.review(self.user, permission, self.token_context)
+    def reviewToken(self, permission, duration):
+        duration_seconds = TemporaryIntegrations.DURATION.get(duration)
+        if duration_seconds is not None:
+            duration_delta = timedelta(seconds=duration_seconds)
+            expiration_date = (
+                datetime.now(pytz.timezone('UTC')) + duration_delta)
+        else:
+            expiration_date = None
+        self.token.review(self.user, permission, self.token_context,
+                          date_expires=expiration_date)
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
         else:
             self.next_url = (
                 '+token-authorized?oauth_token=%s' % self.token.key)
+
 
 def lookup_oauth_context(context):
     """Transform an OAuth context string into a context object.

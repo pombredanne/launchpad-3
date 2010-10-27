@@ -369,7 +369,6 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
-                    component_groups
                     contactdetails
                     getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
@@ -709,7 +708,6 @@
                     getSubscribersForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
-                    getStructuralSubscribers
                     getBugWatch
                     canBeNominatedFor
                     getNominationFor

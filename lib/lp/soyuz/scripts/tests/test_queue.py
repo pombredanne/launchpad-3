@@ -3,8 +3,6 @@
 
 """queue tool base class tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'upload_bar_source',

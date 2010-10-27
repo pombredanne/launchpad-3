@@ -41,11 +41,12 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.model.distroseriesdifferencecomment import (
-    DistroSeriesDifferenceComment)
+    DistroSeriesDifferenceComment,
+    )
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCacheManager,
+    clear_property_cache,
     )
 
 
@@ -189,7 +190,7 @@ class DistroSeriesDifference(Storm):
         # won't cause a hard-to find bug if a script ever creates a
         # difference, copies/publishes a new version and then calls
         # update() (like the tests for this method do).
-        IPropertyCacheManager(self).clear()
+        clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
         return updated

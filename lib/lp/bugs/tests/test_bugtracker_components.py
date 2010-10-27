@@ -95,7 +95,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
         # Set the source package on the component
         component.distro_source_package = package
-        self.assertIsNot(None, component.distro_source_package is not None)
+        self.assertIsNot(None, component.distro_source_package)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
