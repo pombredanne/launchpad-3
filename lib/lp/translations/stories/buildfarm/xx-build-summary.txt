@@ -54,7 +54,7 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
 
     >>> builder = factory.makeBuilder(vm_host=factory.getUniqueString())
     >>> builder.setSlaveForTesting(FakeSlave())
-    >>> buildqueue.markAsBuilding(builder)
+    >>> builder.startBuild(buildqueue, QuietFakeLogger())
 
     >>> builder_page = canonical_url(builder)
     >>> logout()
