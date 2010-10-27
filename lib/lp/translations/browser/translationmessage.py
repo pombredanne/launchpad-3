@@ -1059,7 +1059,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             diverged_and_have_shared = (
                 self.context.potemplate is not None and
-                self.shared_translationmessage is not None) 
+                self.shared_translationmessage is not None)
             if diverged_and_have_shared:
                 pofile = self.shared_translationmessage.ensureBrowserPOFile()
                 if pofile is None:
@@ -1158,10 +1158,10 @@ class CurrentTranslationMessageView(LaunchpadView):
 
     def _setOnePOFile(self, messages):
         """Return a list of messages that all have a browser_pofile set.
-        
+
         If a pofile cannot be found for a message, it is not included in
         the resulting list.
-        """ 
+        """
         result = []
         for message in messages:
             if message.browser_pofile is None:
@@ -1173,7 +1173,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     message.setPOFile(pofile)
             result.append(message)
         return result
-    
+
     def _buildAllSuggestions(self):
         """Builds all suggestions and puts them into suggestions_block.
 
