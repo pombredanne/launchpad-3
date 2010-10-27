@@ -8,11 +8,10 @@ from __future__ import with_statement
 __metaclass__ = type
 
 from mechanize import LinkNotFoundError
+import re
 
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_main_content,
-    )
+import soupmatchers
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -43,31 +42,26 @@ class TestBranchMergeQueue(BrowserTestCase):
             with person_logged_in(branch.owner):
                 branch.addToQueue(queue)
 
+        # XXX: rockstar - bug #666979 - The text argument should really ignore
+        # whitespace, but it currently doesn't.  Now I have two problems.
+        queue_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Page title', 'h1',
+                text=re.compile('\w*%s queue owned by %s\w*' % (
+                    queue.name, queue.owner.displayname))),
+            soupmatchers.Tag(
+                'Description Label', 'dt',
+                text=re.compile('\w*Description\w*')),
+            soupmatchers.Tag(
+                'Description Value', 'dd',
+                text=re.compile('\w*%s\w*' % queue.description)),
+            soupmatchers.Tag(
+                'Branch link', 'a',
+                text=re.compile('\w*%s\w*' % branch.bzr_identity)))
+
         browser = self.getUserBrowser(canonical_url(queue), user=queue.owner)
 
-
-        pattern = """\
-            %(queue_name)s queue owned by %(owner_name)s
-
-            %(owner_name)s Code
-
-            Created by %(registrant_name)s .*
-
-            Description
-            %(queue_description)s
-
-            The following branches are managed by this queue:
-            %(branch_name)s""" % {
-                'queue_name': queue.name,
-                'owner_name': queue_owner,
-                'registrant_name': queue_registrant,
-                'queue_description': queue_description,
-                'branch_name': branch_name,
-                }
-
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+        self.assertThat(browser.contents, queue_matcher)
 
     def test_create(self):
         """Test that branch merge queues can be created from a branch."""
