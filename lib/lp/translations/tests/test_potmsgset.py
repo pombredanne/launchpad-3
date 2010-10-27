@@ -162,7 +162,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
     def test_getCurrentTranslationMessageOrDummy_returns_real_tm(self):
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile('nl')
         message = self.factory.makeTranslationMessage(
             pofile=pofile, suggestion=False, is_imported=True)
 
@@ -171,7 +171,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             message.potmsgset.getCurrentTranslationMessageOrDummy(pofile))
 
     def test_getCurrentTranslationMessageOrDummy_returns_dummy_tm(self):
-        pofile = self.factory.makePOFile()
+        pofile = self.factory.makePOFile('nl')
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
 
         message = potmsgset.getCurrentTranslationMessageOrDummy(pofile)
