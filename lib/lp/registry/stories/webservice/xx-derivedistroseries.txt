@@ -8,10 +8,12 @@ or it can create it for the user.
 Set Up
 ------
 
-    >>> login('admin@canonical.com')
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
     >>> soyuz = factory.makeTeam(name='soyuz-team')
     >>> parent = factory.makeDistroSeries()
     >>> child = factory.makeDistroSeries(parent_series=parent)
+    >>> second_child = factory.makeDistroSeries(parent_series=parent)
     >>> other = factory.makeDistroSeries()
     >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -55,14 +57,27 @@ If we call it correctly, it works.
     <BLANKLINE>
     ...
 
-And we can verify the job exists.
+If we call it with all of the arguments, it also works.
+
+    >>> child_name = second_child.name
+    >>> derived = soyuz_webservice.named_post(
+    ...     series['self_link'], 'deriveDistroSeries', {},
+    ...     name=child_name, architectures=('i386',),
+    ...     packagesets=('test1',), rebuild=False)
+    >>> print derived
+    HTTP/1.1 200 Ok
+    Status: 200 Ok
+    ...
+    <BLANKLINE>
+    ...
+
+And we can verify both jobs exists.
 
     >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
     ...     IInitialiseDistroSeriesJobSource)
-    >>> login('admin@canonical.com')
-    >>> [job] = list(
+    >>> login(ADMIN_EMAIL)
+    >>> job = list(
     ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady())
-    >>> job.distroseries == child
+    >>> [job[0].distroseries, job[1].distroseries] == [child, second_child]
     True
-
