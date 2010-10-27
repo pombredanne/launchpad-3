@@ -176,7 +176,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         view = self._createView()
         self.assertTrue(view.uses_bzr_sync)
 
-    def test_uses_bzr_sync_priveate_series_branch_non_privileged(self):
+    def test_uses_bzr_sync_private_series_branch_non_privileged(self):
         # Private branches are hidden from non-privileged users. The view
         # pretends that it is not used for imports.
         self.productseries.branch = self.factory.makeBranch(private=True)
@@ -186,12 +186,34 @@ class TestProductSeriesView(TestCaseWithFactory):
         view = self._createView()
         self.assertFalse(view.uses_bzr_sync)
 
-    def test_uses_bzr_sync_priveate_series_branch_privileged(self):
+    def test_uses_bzr_sync_private_series_branch_privileged(self):
         # Private branches are visible for privileged users.
         self.productseries.branch = self.factory.makeBranch(private=True)
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         login_person(self.productseries.branch.owner)
+        view = self._createView()
+        self.assertTrue(view.uses_bzr_sync)
+
+    def test_uses_bzr_sync_translations_branch(self):
+        self.productseries.translations_branch = self.factory.makeBranch()
+        view = self._createView()
+        self.assertTrue(view.uses_bzr_sync)
+
+    def test_uses_bzr_sync_private_translations_branch_non_privileged(self):
+        # Private branches are hidden from non-privileged users. The view
+        # pretends that it is not used for exports.
+        self.productseries.translations_branch = self.factory.makeBranch(
+            private=True)
+        login_person(self.factory.makePerson())
+        view = self._createView()
+        self.assertFalse(view.uses_bzr_sync)
+
+    def test_uses_bzr_sync_private_translations_branch_privileged(self):
+        # Private branches are visible for privileged users.
+        self.productseries.translations_branch = self.factory.makeBranch(
+            private=True)
+        login_person(self.productseries.translations_branch.owner)
         view = self._createView()
         self.assertTrue(view.uses_bzr_sync)
 
