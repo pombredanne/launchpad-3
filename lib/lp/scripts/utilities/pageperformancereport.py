@@ -114,7 +114,7 @@ class Stats:
             SQL time: total=%.2f; mean=%.2f; std=%.2f
             SQL stmt: total=%.f;  mean=%.2f; std=%.2f
             >""" % (
-                self.total_hits, self.total_time, self.mean, 
+                self.total_hits, self.total_time, self.mean,
                 self.std, self.total_sqltime, self.mean_sqltime,
                 self.std_sqltime,
                 self.total_sqlstatements, self.mean_sqlstatements,
@@ -216,13 +216,22 @@ class SQLiteRequestTimes:
     def get_category_times(self):
         """Return the times for each category."""
 
-        # Create a stats empty for each category.
-        times = [Stats() for i in range(len(self.categories))]
+        times = self.get_times('category_request', 'category')
+
+        return [
+            (category, times.get(i, Stats()))
+            for i, category in enumerate(self.categories)]
+
+    def get_times(self, table, column):
+        """Return the stats for unique value of table.column"""
+
+        times = {}
+        replacements = dict(table=table, column=column)
 
         # Compute count, total and average
         self.cur.execute('''
-            CREATE TEMPORARY TABLE IF NOT EXISTS category_stats AS
-            SELECT category,
+            CREATE TEMPORARY TABLE IF NOT EXISTS {table}_stats AS
+            SELECT {column},
                 count(time) AS time_n, sum(time) AS total_time,
                 avg(time) AS mean_time,
                 count(sql_time) AS sqltime_n, sum(sql_time) AS total_sqltime,
@@ -230,17 +239,18 @@ class SQLiteRequestTimes:
                 count(sql_statements) AS sqlstatements_n,
                 sum(sql_statements) AS total_sqlstatements,
                 avg(sql_statements) AS mean_sqlstatements
-            FROM category_request
-            GROUP BY category
-            ''')
+            FROM {table}
+            GROUP BY {column}
+            '''.format(**replacements))
         self.cur.execute('''
-            SELECT category, time_n, total_time, mean_time,
-                   total_sqltime, mean_sqltime, total_sqlstatements,
-                   mean_sqlstatements
-              FROM category_stats
-              ''')
+            SELECT {column}, time_n, total_time, mean_time,
+                   coalesce(total_sqltime, 0), coalesce(mean_sqltime, 0),
+                   coalesce(total_sqlstatements, 0),
+                   coalesce(mean_sqlstatements, 0)
+              FROM {table}_stats
+              '''.format(**replacements))
         for row in self.cur.fetchall():
-            stats = times[row[0]]
+            stats = times.setdefault(row[0], Stats())
             (stats.total_hits, stats.total_time, stats.mean,
                 stats.total_sqltime, stats.mean_sqltime,
                 stats.total_sqlstatements, stats.mean_sqlstatements) = row[1:]
@@ -252,12 +262,13 @@ class SQLiteRequestTimes:
         # sqlite doesn't support ** or POWER so we expand the expression.
         # For the same reason, we do the square root in python.
         self.cur.execute('''
-            SELECT category_stats.category,
+            SELECT {table}_stats.{column},
                 time_square_diff/time_n AS var_time,
-                sqltime_square_diff/sqltime_n AS var_sqltime,
-                sqlstatements_square_diff/sqlstatements_n AS var_sqlstatements
-            FROM category_stats JOIN (
-                SELECT category_request.category,
+                coalesce(sqltime_square_diff/sqltime_n, 0) AS var_sqltime,
+                coalesce(sqlstatements_square_diff/sqlstatements_n, 0)
+                    AS var_sqlstatements
+            FROM {table}_stats JOIN (
+                SELECT {table}.{column},
                     sum((time-mean_time)*(time-mean_time))
                         AS time_square_diff,
                     sum((sql_time-mean_sqltime)*(sql_time-mean_sqltime))
@@ -265,12 +276,12 @@ class SQLiteRequestTimes:
                     sum((sql_statements-mean_sqlstatements)*
                         (sql_statements-mean_sqlstatements))
                         AS sqlstatements_square_diff
-                  FROM category_request JOIN category_stats
-                    ON (category_request.category = category_stats.category)
-               GROUP BY category_request.category
-                ) AS category_square_diff ON (
-                    category_stats.category = category_square_diff.category)
-                ''')
+                  FROM {table} JOIN {table}_stats
+                    ON ({table}.{column}= {table}_stats.{column})
+               GROUP BY {table}.{column}
+                ) AS {table}_square_diff ON (
+                    {table}_stats.{column} = {table}_square_diff.{column})
+                '''.format(**replacements))
         for row in self.cur.fetchall():
             stats = times[row[0]]
             (stats.std, stats.std_sqltime, stats.std_sqlstatements) = [
@@ -286,80 +297,46 @@ class SQLiteRequestTimes:
 
         # Compute the histogram of requests.
         self.cur.execute('''
-            SELECT category, bin, count(time) 
-              FROM category_request JOIN histogram ON (
-                histogram.bin = CAST (min(time, %d) AS INTEGER))
-              GROUP BY category, bin
-              ''' % (self.histogram_width-1))
-        for category, bin, n in self.cur.fetchall():
-            stats = times[category]
+            SELECT {column}, bin, count(time)
+              FROM {table} JOIN histogram ON (
+                histogram.bin = CAST (min(time, {last_bin_index}) AS INTEGER))
+              GROUP BY {column}, bin
+              '''.format(
+                      last_bin_index=(self.histogram_width-1),
+                      **replacements))
+        for key, bin, n in self.cur.fetchall():
+            stats = times[key]
             if stats.histogram is None:
                 # Create an empty histogram.
                 stats.histogram = [
                     [x, 0] for x in range(self.histogram_width)]
             stats.histogram[bin][1] = n
 
-        return [
-            (self.categories[i], stats) for i, stats in enumerate(times)]
+        return times
 
     def get_top_urls_times(self, top_n):
         """Return the times for the Top URL by total time"""
-        top_url_query = '''
-            SELECT url, time, sql_statements, sql_time
-            FROM request WHERE url IN (
-                SELECT url FROM (SELECT url, sum(time) FROM request
-                    GROUP BY url
-                    ORDER BY sum(time) DESC
-                    LIMIT %d))
-            ORDER BY url
-        ''' % top_n
+        # Get the requests from the top N urls by total time.
+        self.cur.execute('''
+            CREATE TEMPORARY TABLE IF NOT EXISTS top_n_url_request AS
+            SELECT request.url, time, sql_statements, sql_time
+            FROM request JOIN (
+                SELECT url, sum(time) FROM request
+                GROUP BY url
+                ORDER BY sum(time) DESC
+                LIMIT %d) AS top_n_url
+                ON (request.url = top_n_url.url)
+        ''' % top_n)
         # Sort the result by total time
         return sorted(
-            self.get_times(top_url_query), key=lambda x: x[1].total_time,
-            reverse=True)
+            self.get_times('top_n_url_request', 'url').items(),
+            key=lambda x: x[1].total_time, reverse=True)
 
     def get_pageid_times(self):
         """Return the times for the pageids."""
-        pageid_query = '''
-            SELECT pageid, time, sql_statements, sql_time
-            FROM request
-            ORDER BY pageid
-        '''
-        return self.get_times(pageid_query)
-
-    def get_times(self, query):
-        """Return a list of key, stats based on the query.
-
-        The query should return rows of the form:
-            [key, app_time, sql_statements, sql_times]
-
-        And should be sorted on key.
-        """
-        times = []
-        current_key = None
-        results = []
-        self.cur.execute(query)
-        while True:
-            rows = self.cur.fetchmany()
-            if len(rows) == 0:
-                break
-            for row in rows:
-                # We are encountering a new group...
-                if row[0] != current_key:
-                    # Compute the stats of the previous group
-                    if current_key != None:
-                        results.append(
-                            (current_key, Stats(times, self.timeout)))
-                    # Initialize the new group.
-                    current_key = row[0]
-                    times = []
-
-                times.append(row[1:])
-        # Compute the stats of the last group
-        if current_key != None:
-            results.append((current_key, Stats(times, self.timeout)))
-
-        return results
+        # Sort the result by pageid
+        return sorted(
+            self.get_times('request', 'pageid').items())
 
     def close(self, remove=False):
         """Close the SQLite connection.

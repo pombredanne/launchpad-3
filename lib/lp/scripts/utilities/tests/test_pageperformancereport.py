@@ -85,11 +85,65 @@ TOP_3_URL_STATS = [
         total_sqltime=23.0, mean_sqltime=11.5, median_sqltime=9.0,
         std_sqltime=2.50,
         total_sqlstatements=1134, mean_sqlstatements=567.0,
-        median_sqlstatments=567, std_statements=0)),
-    ('/bugs', FakeStats()),
-    ('/launchpad', FakeStats()),
+        median_sqlstatments=567, std_statements=0,
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 2]],
+        )),
+    ('/bugs', FakeStats(
+        total_hits=3, total_time=14.2, mean=4.73, median=3, std=0.56,
+        total_sqltime=9.2, mean_sqltime=3.07, median_sqltime=9.0,
+        std_sqltime=0.74,
+        total_sqlstatements=188, mean_sqlstatements=62.67,
+        median_sqlstatments=56, std_sqlstatements=9.43,
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 2], [5, 1]],
+        )),
+    ('/launchpad', FakeStats(
+        total_hits=1, total_time=3.5, mean=3.5, median=3.5, std=0,
+        total_sqltime=3.0, mean_sqltime=3, median_sqltime=3, std_sqltime=0,
+        total_sqlstatements=3, mean_sqlstatements=3,
+        median_sqlstatments=3, std_sqlstatements=0,
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 1], [4, 0], [5, 0]],
+        )),
     ]
 
+
+# The pageid stats computed for the above 12 requests.
+PAGEID_STATS = [
+    ('+bug', FakeStats(
+        total_hits=3, total_time=37.5, mean=12.5, median=15.5, std=8.04,
+        total_sqltime=24.2, mean_sqltime=8.07, median_sqltime=9,
+        std_sqltime=5.27,
+        total_sqlstatements=1164, mean_sqlstatements=388,
+        median_sqlstatments=567, std_sqlstatements=253.14,
+        histogram=[[0, 0], [1, 1], [2, 0], [3, 0], [4, 0], [5, 2]],
+        )),
+    ('+bugs', FakeStats(
+        total_hits=3, total_time=14.2, mean=4.73, median=4.5, std=0.56,
+        total_sqltime=9.2, mean_sqltime=3.07, median_sqltime=3,
+        std_sqltime=0.74,
+        total_sqlstatements=188, mean_sqlstatements=62.67,
+        median_sqlstatments=56, std_sqlstatements=9.43,
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 2], [5, 1]],
+        )),
+    ('+distribution', FakeStats(
+        total_hits=1, total_time=2.5, mean=2.5, median=3.5, std=0,
+        total_sqltime=2.0, mean_sqltime=2, median_sqltime=2, std_sqltime=0,
+        total_sqlstatements=6, mean_sqlstatements=6,
+        median_sqlstatments=6, std_sqlstatements=0,
+        histogram=[[0, 0], [1, 0], [2, 1], [3, 0], [4, 0], [5, 0]],
+        )),
+    ('+project', FakeStats(
+        total_hits=4, total_time=7.9, mean=1.98, median=1, std=1.08,
+        total_sqltime=6.6, mean_sqltime=1.65, median_sqltime=1.3,
+        std_sqltime=0.99,
+        total_sqlstatements=34, mean_sqlstatements=8.5,
+        median_sqlstatments=4, std_sqlstatements=5.32,
+        histogram=[[0, 1], [1, 1], [2, 1], [3, 1], [4, 0], [5, 0]],
+        )),
+    ('+root', FakeStats(
+        total_hits=1, total_time=0.5, mean=0.5, median=0.5, std=0,
+        histogram=[[0, 1], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
+        )),
+    ]
 
 class TestSQLiteTimes(TestCase):
     """Tests the SQLiteTimes backend."""
@@ -133,23 +187,16 @@ class TestSQLiteTimes(TestCase):
 
     def assertStatsAreEquals(self, expected, results):
         self.assertEquals(
-            len(expected), len(results),
-            'Wrong number of results: %d != %d' % (
-                len(expected), len(results)))
+            len(expected), len(results), 'Wrong number of results')
         for idx in range(len(results)):
             self.assertEquals(expected[idx][0], results[idx][0],
-                "Wrong key for results %d: %s != %s" % (
-                    idx, expected[idx][0], results[idx][0]))
+                "Wrong key for results %d" % idx)
             key = results[idx][0]
             self.assertEquals(expected[idx][1].text(), results[idx][1].text(),
-                "Wrong stats for results %d (%s): %s != %s" % (
-                    idx, key, expected[idx][1].text(), results[idx][1].text()
-                    ))
+                "Wrong stats for results %d (%s)" % (idx, key))
             self.assertEquals(
                 expected[idx][1].histogram, results[idx][1].histogram,
-                "Wrong histogram for results %d (%s): %s != %s" % (
-                    idx, key, expected[idx][1].histogram,
-                    results[idx][1].histogram))
+                "Wrong histogram for results %d (%s)" % (idx, key))
 
     def test_get_category_times(self):
         self.setUpRequests()
@@ -160,6 +207,11 @@ class TestSQLiteTimes(TestCase):
         self.setUpRequests()
         url_times = self.db.get_top_urls_times(3)
         self.assertStatsAreEquals(TOP_3_URL_STATS, url_times)
+
+    def test_get_pageid_times(self):
+        self.setUpRequests()
+        pageid_times = self.db.get_pageid_times()
+        self.assertStatsAreEquals(PAGEID_STATS, pageid_times)
 
 
 def test_suite():
