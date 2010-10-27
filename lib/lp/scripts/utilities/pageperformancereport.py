@@ -119,17 +119,6 @@ class Stats:
         """Return a textual version of the stats."""
         return textwrap.dedent("""
         <Stats for %d requests:
-            Time:     total=%.2f; mean=%.2f; std=%.2f
-            SQL time: total=%.2f; mean=%.2f; std=%.2f
-            SQL stmt: total=%.f;  mean=%.2f; std=%.2f
-            >""" % (
-                self.total_hits, self.total_time, self.mean,
-                self.std, self.total_sqltime, self.mean_sqltime,
-                self.std_sqltime,
-                self.total_sqlstatements, self.mean_sqlstatements,
-                self.std_sqlstatements))
-        return textwrap.dedent("""
-        <Stats for %d requests:
             Time:     total=%.2f; mean=%.2f; median=%.2f; std=%.2f
             SQL time: total=%.2f; mean=%.2f; median=%.2f; std=%.2f
             SQL stmt: total=%.f;  mean=%.2f; median=%.f; std=%.2f
@@ -153,7 +142,7 @@ class SQLiteRequestTimes:
         self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
         log.debug('Using request database %s' % self.filename)
         # Some speed optimization.
-        #self.con.execute('PRAGMA cache_size = 400000') # ~400M
+        self.con.execute('PRAGMA cache_size = 200000') # ~200M
         self.con.execute('PRAGMA synchronous = off')
         self.con.execute('PRAGMA journal_mode = off')
 
@@ -297,12 +286,30 @@ class SQLiteRequestTimes:
                 math.sqrt(x) for x in row[1:]]
 
         # Compute the median
-        # This complex query comes from
+        # This complex query is a modified version from
         # http://oreilly.com/catalog/transqlcook/chapter/ch08.html
-        # It does the cross-product and find the value that have about the
-        # same number of lower values than higher values.
-
-        # TODO
+        # It does the cross-product and find the value that has about the
+        # same number of lower values than higher values (that's half the
+        # number of items).
+        for field, median_attribute in [
+                ('time', 'median'),
+                ('sql_time', 'median_sqltime'),
+                ('sql_statements', 'median_sqlstatements')]:
+            self.cur.execute('''
+                SELECT x.{column}, x.{field} AS median
+                FROM {table} AS x, {table} AS y
+                WHERE x.{column} = y.{column} 
+                    AND x.{field} IS NOT NULL AND y.{field} IS NOT NULL
+                GROUP BY x.{column}, x.{field}
+                HAVING
+                   SUM(CASE WHEN y.{field} <= x.{field}
+                      THEN 1 ELSE 0 END) >= (COUNT(x.{field})+1)/2 AND
+                   SUM(CASE WHEN y.{field} >= x.{field}
+                      THEN 1 ELSE 0 END) >= (COUNT(x.{field})/2)+1
+                      '''.format(field=field, **replacements))
+            for key, median in self.cur.fetchall():
+                stats = times[key]
+                setattr(stats, median_attribute, median)
 
         # Compute the histogram of requests.
         self.cur.execute('''
