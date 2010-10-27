@@ -3,7 +3,6 @@
 
 """Tests for error logging & OOPS reporting."""
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import datetime

@@ -172,6 +172,7 @@ Page Footers
     Terms of use http://launchpad.dev/legal
     Contact Launchpad Support /feedback
     System status http://identi.ca/launchpadstatus
+    get the code https://code.launchpad.net/~launchpad-pqm/launchpad/stable/
 
 
 Page registering
