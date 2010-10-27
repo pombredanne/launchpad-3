@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -82,10 +80,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
@@ -220,7 +218,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -812,12 +810,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(name, title, description,
+        return getUtility(IProcessorFamilySet).new(name, title, description,
             restricted=restricted)
-        # Make sure there's at least one processor in the family, so that
-        # other things can have a default processor.
-        self.makeProcessor(family=family)
-        return family
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1951,7 +1945,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
-        IPropertyCacheManager(diff).clear()
+        clear_property_cache(diff)
         return diff
 
     def makeDistroSeriesDifferenceComment(
@@ -1976,7 +1970,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         if processorfamily is None:
-            processorfamily = self.makeProcessorFamily()
+            processorfamily = ProcessorFamilySet().getByName('powerpc')
         if owner is None:
             owner = self.makePerson()
         # XXX: architecturetag & processerfamily are tightly coupled. It's
@@ -2147,8 +2141,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-            arch = self.makeDistroArchSeries(distroseries=distroseries)
-            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
