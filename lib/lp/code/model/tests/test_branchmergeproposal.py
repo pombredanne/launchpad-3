@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type

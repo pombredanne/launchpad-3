@@ -3,8 +3,6 @@
 
 """Tests for branch merge proposal jobs."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (

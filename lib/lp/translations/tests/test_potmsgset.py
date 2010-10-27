@@ -25,6 +25,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
@@ -63,6 +64,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Refresh the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_TranslationTemplateItem(self):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -333,6 +338,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 
@@ -393,6 +399,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 

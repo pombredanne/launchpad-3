@@ -3,8 +3,6 @@
 
 """Tests for `IPackageBuild`."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
@@ -34,6 +32,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
@@ -201,6 +200,19 @@ class TestPackageBuild(TestPackageBuildBase):
         expected_cookie = "%d-PACKAGEBUILD-%d" % (
             self.package_build.id, self.package_build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
 
 class TestPackageBuildSet(TestPackageBuildBase):

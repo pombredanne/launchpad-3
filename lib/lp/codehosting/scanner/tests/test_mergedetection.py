@@ -3,8 +3,6 @@
 
 """Tests for the scanner's merge detection."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import logging
