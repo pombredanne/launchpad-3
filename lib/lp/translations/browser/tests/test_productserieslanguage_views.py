@@ -151,32 +151,36 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.factory.makePOTemplate(productseries=self.productseries)
         self.assertEquals([], self._getProductserieslanguages(view))
 
-    def test_uses_bzr_sync_no_branch(self):
+    def test_has_imports_enabled_no_branch(self):
         view = self._createView()
-        self.assertFalse(view.uses_bzr_sync)
+        self.assertFalse(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_series_branch_imports_disabled(self):
+    def test_has_exports_enabled_no_branch(self):
+        view = self._createView()
+        self.assertFalse(view.has_exports_enabled)
+
+    def test_has_imports_enabled_with_branch_imports_disabled(self):
         self.productseries.branch = self.factory.makeBranch()
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.NO_IMPORT)
         view = self._createView()
-        self.assertFalse(view.uses_bzr_sync)
+        self.assertFalse(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_series_branch_template_imports_enabled(self):
+    def test_has_imports_enabled_with_branch_template_imports_enabled(self):
         self.productseries.branch = self.factory.makeBranch()
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         view = self._createView()
-        self.assertTrue(view.uses_bzr_sync)
+        self.assertTrue(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_series_branch_translation_imports_enabled(self):
+    def test_has_imports_enabled_with_branch_trans_imports_enabled(self):
         self.productseries.branch = self.factory.makeBranch()
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         view = self._createView()
-        self.assertTrue(view.uses_bzr_sync)
+        self.assertTrue(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_private_series_branch_non_privileged(self):
+    def test_has_imports_enabled_private_branch_non_privileged(self):
         # Private branches are hidden from non-privileged users. The view
         # pretends that it is not used for imports.
         self.productseries.branch = self.factory.makeBranch(private=True)
@@ -184,38 +188,38 @@ class TestProductSeriesView(TestCaseWithFactory):
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         login_person(self.factory.makePerson())
         view = self._createView()
-        self.assertFalse(view.uses_bzr_sync)
+        self.assertFalse(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_private_series_branch_privileged(self):
+    def test_has_imports_enabled_private_branch_privileged(self):
         # Private branches are visible for privileged users.
         self.productseries.branch = self.factory.makeBranch(private=True)
         self.productseries.translations_autoimport_mode = (
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         login_person(self.productseries.branch.owner)
         view = self._createView()
-        self.assertTrue(view.uses_bzr_sync)
+        self.assertTrue(view.has_imports_enabled)
 
-    def test_uses_bzr_sync_translations_branch(self):
+    def test_has_exports_enabled_with_branch(self):
         self.productseries.translations_branch = self.factory.makeBranch()
         view = self._createView()
-        self.assertTrue(view.uses_bzr_sync)
+        self.assertTrue(view.has_exports_enabled)
 
-    def test_uses_bzr_sync_private_translations_branch_non_privileged(self):
+    def test_has_exports_enabled_private_branch_non_privileged(self):
         # Private branches are hidden from non-privileged users. The view
         # pretends that it is not used for exports.
         self.productseries.translations_branch = self.factory.makeBranch(
             private=True)
         login_person(self.factory.makePerson())
         view = self._createView()
-        self.assertFalse(view.uses_bzr_sync)
+        self.assertFalse(view.has_exports_enabled)
 
-    def test_uses_bzr_sync_private_translations_branch_privileged(self):
+    def test_has_exports_enabled_private_branch_privileged(self):
         # Private branches are visible for privileged users.
         self.productseries.translations_branch = self.factory.makeBranch(
             private=True)
         login_person(self.productseries.translations_branch.owner)
         view = self._createView()
-        self.assertTrue(view.uses_bzr_sync)
+        self.assertTrue(view.has_exports_enabled)
 
 
 class TestProductSeriesLanguageView(TestCaseWithFactory):
