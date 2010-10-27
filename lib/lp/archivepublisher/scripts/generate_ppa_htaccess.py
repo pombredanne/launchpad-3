@@ -259,6 +259,9 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             'generate-ppa-htaccess')
         extra_expr = []
         if last_success:
+            # NTP is running on our servers and therefore we can assume
+            # only minimal skew, we include a fudge-factor of 1s so that
+            # even the minimal skew cannot demonstrate bug 627608.
             last_script_start_with_skew = last_success.date_started - (
                 timedelta(seconds=1))
             extra_expr = [
