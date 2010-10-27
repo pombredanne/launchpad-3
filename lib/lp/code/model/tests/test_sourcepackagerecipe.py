@@ -44,6 +44,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     )
+from lp.code.model import sourcepackagerecipedata
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -70,6 +71,7 @@ from lp.testing import (
     launchpadlib_for,
     login,
     login_person,
+    monkey_patch,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
@@ -245,6 +247,30 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
                 recipe_text)
         self.assertEquals(
             old_branches, list(sp_recipe.getReferencedBranches()))
+
+    def test_nest_part(self):
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo bar tag:foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        with monkey_patch(sourcepackagerecipedata, MAX_RECIPE_FORMAT=0.3):
+            recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
+
+    def test_nest_part_no_target(self):
+        base = self.factory.makeBranch()
+        nested = self.factory.makeBranch()
+        recipe_text = (
+            "# bzr-builder format 0.3 deb-version 1\n"
+            "%s revid:base_revid\n"
+            "nest-part nested1 %s foo\n" %
+            (base.bzr_identity, nested.bzr_identity))
+        with monkey_patch(sourcepackagerecipedata, MAX_RECIPE_FORMAT=0.3):
+            recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        self.assertEqual(recipe_text, recipe.recipe_text)
 
     def test_reject_newer_formats(self):
         with recipe_parser_newest_version(145.115):
