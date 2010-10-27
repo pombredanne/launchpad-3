@@ -10,6 +10,7 @@ from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 from datetime import datetime
 import os.path
+import math
 import re
 import subprocess
 from textwrap import dedent
@@ -83,7 +84,6 @@ class Stats:
     mean = 0 # Mean time per hit.
     median = 0 # Median time per hit.
     std = 0 # Standard deviation per hit.
-    ninetyninth_percentile_time = 0
     histogram = None # # Request times histogram.
 
     total_sqltime = 0 # Total time spent waiting for SQL to process.
@@ -96,53 +96,29 @@ class Stats:
     median_sqlstatements = 0
     std_sqlstatements = 0
 
-    def __init__(self, times, timeout):
-        """Compute the stats based on times.
+    @property
+    def ninetyninth_percentile_time(self):
+        """Time under which 99% of requests are rendered.
 
-        Times is a list of (app_time, sql_statements, sql_times).
-
-        The histogram is a list of request counts per 1 second bucket.
-        ie. histogram[0] contains the number of requests taking between 0 and
-        1 second, histogram[1] contains the number of requests taking between
-        1 and 2 seconds etc. histogram is None if there are no requests in
-        this Category.
+        This is estimated as 3 std deviation from the mean. Given that
+        in a daily report, many URLs or PageIds won't have 100 requests, it's
+        more useful to use this estimator.
         """
-        if not times:
-            return
-
-        self.total_hits = len(times)
-
-        times_array = numpy.ma.masked_object(times, None)
-
-        self.total_time, self.total_sqlstatements, self.total_sqltime = (
-            times_array.sum(axis=0))
-
-        self.mean, self.mean_sqlstatements, self.mean_sqltime = (
-            times_array.mean(axis=0))
-
-        self.median, self.median_sqlstatements, self.median_sqltime = (
-            numpy.median(times_array, axis=0))
-
-        self.std = numpy.std(times_array[:,0].compressed())
-        self.std_sqlstatements = numpy.std(times_array[:,1].compressed())
-        self.std_sqltime = numpy.std(times_array[:,2].compressed())
-
-        # This is an approximation which may not be true: we don't know if we
-        # have a std distribution or not. We could just find the 99th
-        # percentile by counting. Shock. Horror; however this appears pretty
-        # good based on eyeballing things so far - once we're down in the 2-3
-        # second range for everything we may want to revisit.
-        self.ninetyninth_percentile_time = self.mean + self.std*3
-
-        histogram_width = int(timeout*1.5)
-        histogram_times = numpy.clip(times_array[:,0], 0, histogram_width)
-        histogram = numpy.histogram(
-            histogram_times, normed=True, range=(0, histogram_width),
-            bins=histogram_width)
-        self.histogram = zip(histogram[1], histogram[0])
+        return self.mean + 3*self.std
 
     def text(self):
         """Return a textual version of the stats."""
+        return textwrap.dedent("""
+        <Stats for %d requests:
+            Time:     total=%.2f; mean=%.2f; std=%.2f
+            SQL time: total=%.2f; mean=%.2f; std=%.2f
+            SQL stmt: total=%.f;  mean=%.2f; std=%.2f
+            >""" % (
+                self.total_hits, self.total_time, self.mean, 
+                self.std, self.total_sqltime, self.mean_sqltime,
+                self.std_sqltime,
+                self.total_sqlstatements, self.mean_sqlstatements,
+                self.std_sqlstatements))
         return textwrap.dedent("""
         <Stats for %d requests:
             Time:     total=%.2f; mean=%.2f; median=%.2f; std=%.2f
@@ -174,7 +150,9 @@ class SQLiteRequestTimes:
 
         self.categories = categories
         self.store_all_request = options.pageids or options.top_urls
-        self.timeout = options.timeout
+
+        # Histogram has a bin per second up to 1.5 our timeout.
+        self.histogram_width = int(options.timeout*1.5)
         self.cur = self.con.cursor()
 
         # Create the tables, ignore errors about them being already present.
@@ -210,8 +188,7 @@ class SQLiteRequestTimes:
 
         # A table that will be used in a join to compute histogram.
         self.cur.execute("CREATE TEMP TABLE histogram (bin INT)")
-        # Histogram has a bin per second up to 1.5 our timeout.
-        for x in range(int(self.timeout*1.5)):
+        for x in range(self.histogram_width):
             self.cur.execute('INSERT INTO histogram VALUES (?)', (x,))
 
     def add_request(self, request):
@@ -228,7 +205,7 @@ class SQLiteRequestTimes:
         if self.store_all_request:
             pageid = request.pageid or 'Unknown'
             self.con.execute(
-                "INSERT INTO request VALUES (?,?,?,?,?)", 
+                "INSERT INTO request VALUES (?,?,?,?,?)",
                 (pageid, request.url, request.app_seconds, sql_statements,
                     sql_seconds))
 
@@ -238,13 +215,92 @@ class SQLiteRequestTimes:
 
     def get_category_times(self):
         """Return the times for each category."""
-        category_query = 'SELECT * FROM category_request ORDER BY category'
 
-        empty_stats = Stats([], 0)
-        categories = dict(self.get_times(category_query))
+        # Create a stats empty for each category.
+        times = [Stats() for i in range(len(self.categories))]
+
+        # Compute count, total and average
+        self.cur.execute('''
+            CREATE TEMPORARY TABLE IF NOT EXISTS category_stats AS
+            SELECT category,
+                count(time) AS time_n, sum(time) AS total_time,
+                avg(time) AS mean_time,
+                count(sql_time) AS sqltime_n, sum(sql_time) AS total_sqltime,
+                avg(sql_time) AS mean_sqltime,
+                count(sql_statements) AS sqlstatements_n,
+                sum(sql_statements) AS total_sqlstatements,
+                avg(sql_statements) AS mean_sqlstatements
+            FROM category_request
+            GROUP BY category
+            ''')
+        self.cur.execute('''
+            SELECT category, time_n, total_time, mean_time,
+                   total_sqltime, mean_sqltime, total_sqlstatements,
+                   mean_sqlstatements
+              FROM category_stats
+              ''')
+        for row in self.cur.fetchall():
+            stats = times[row[0]]
+            (stats.total_hits, stats.total_time, stats.mean,
+                stats.total_sqltime, stats.mean_sqltime,
+                stats.total_sqlstatements, stats.mean_sqlstatements) = row[1:]
+
+        # Compute the std deviation.
+        # The variance is the average of the sum of the square difference to
+        # the mean.
+        # The standard deviation is the square-root of the variance.
+        # sqlite doesn't support ** or POWER so we expand the expression.
+        # For the same reason, we do the square root in python.
+        self.cur.execute('''
+            SELECT category_stats.category,
+                time_square_diff/time_n AS var_time,
+                sqltime_square_diff/sqltime_n AS var_sqltime,
+                sqlstatements_square_diff/sqlstatements_n AS var_sqlstatements
+            FROM category_stats JOIN (
+                SELECT category_request.category,
+                    sum((time-mean_time)*(time-mean_time))
+                        AS time_square_diff,
+                    sum((sql_time-mean_sqltime)*(sql_time-mean_sqltime))
+                        AS sqltime_square_diff,
+                    sum((sql_statements-mean_sqlstatements)*
+                        (sql_statements-mean_sqlstatements))
+                        AS sqlstatements_square_diff
+                  FROM category_request JOIN category_stats
+                    ON (category_request.category = category_stats.category)
+               GROUP BY category_request.category
+                ) AS category_square_diff ON (
+                    category_stats.category = category_square_diff.category)
+                ''')
+        for row in self.cur.fetchall():
+            stats = times[row[0]]
+            (stats.std, stats.std_sqltime, stats.std_sqlstatements) = [
+                math.sqrt(x) for x in row[1:]]
+
+        # Compute the median
+        # This complex query comes from
+        # http://oreilly.com/catalog/transqlcook/chapter/ch08.html
+        # It does the cross-product and find the value that have about the
+        # same number of lower values than higher values.
+
+        # TODO
+
+        # Compute the histogram of requests.
+        self.cur.execute('''
+            SELECT category, bin, count(time) 
+              FROM category_request JOIN histogram ON (
+                histogram.bin = CAST (min(time, %d) AS INTEGER))
+              GROUP BY category, bin
+              ''' % (self.histogram_width-1))
+        for category, bin, n in self.cur.fetchall():
+            stats = times[category]
+            if stats.histogram is None:
+                # Create an empty histogram.
+                stats.histogram = [
+                    [x, 0] for x in range(self.histogram_width)]
+            stats.histogram[bin][1] = n
+
         return [
-            (category, categories.get(idx, empty_stats))
-            for idx, category in enumerate(self.categories)]
+            (self.categories[i], stats) for i, stats in enumerate(times)]
 
     def get_top_urls_times(self, top_n):
         """Return the times for the Top URL by total time"""
