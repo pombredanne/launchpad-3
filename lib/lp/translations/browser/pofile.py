@@ -854,9 +854,12 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                         self.context.potemplate, self.context.language))
             else:
                 translationmessage.setPOFile(self.context)
+
+            error = self.errors.get(potmsgset)
+            can_edit = self.context.canEditTranslations(self.user)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
-                self.errors.get(potmsgset))
+                pofile=self.context, can_edit=can_edit, error=error)
             view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 
