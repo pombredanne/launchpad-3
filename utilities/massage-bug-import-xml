@@ -48,7 +48,7 @@ def problem_resolved():
     sys.stderr.write("\n")
 
 
-def munge(root, project_name, fix_nickname, tag_nickname):
+def massage(root, project_name, fix_nickname, tag_nickname):
     """Fix problems in the bug import XML tree.
 
     This includes:
@@ -205,7 +205,7 @@ def main(arguments):
         parser.error("A project name must be specified.")
 
     tree = etree.parse(sys.stdin)
-    munge(
+    massage(
         root=tree.getroot(),
         project_name=options.project_name,
         fix_nickname=options.fix_nickname,
