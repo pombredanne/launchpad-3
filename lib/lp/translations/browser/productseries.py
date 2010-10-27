@@ -142,6 +142,7 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     def has_imports_enabled(self):
         """Is imports enabled for the series?"""
         return (self.context.branch is not None and
+                check_permission("launchpad.View", self.context.branch) and
                 self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
@@ -346,11 +347,12 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
             self.context.getCurrentTranslationTemplates().count() > 1)
 
         self.has_exports_enabled = (
-            self.context.translations_branch is not None)
+            self.context.translations_branch is not None and
+            check_permission(
+                "launchpad.View", self.context.translations_branch))
 
         self.uses_bzr_sync = (
-            (self.context.branch is not None and self.has_imports_enabled) or
-            self.has_exports_enabled)
+            self.has_imports_enabled or self.has_exports_enabled)
 
     @property
     def productserieslanguages(self):
