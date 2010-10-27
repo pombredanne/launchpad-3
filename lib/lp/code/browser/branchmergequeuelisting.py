@@ -9,23 +9,27 @@ __all__ = [
     'MergeQueueListingView',
     'HasMergeQueuesMenuMixin',
     'PersonMergeQueueListingView',
-    'ProductMergeQueueListingView',
     ]
 
+from zope.component._api import getUtility
 
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
-    LaunchpadFormView,
+    LaunchpadView,
     Link,
     )
 from lp.code.interfaces.branchmergequeuecollection import (
-    IBranchMergeQueueCollection)
+    IAllBranchMergeQueues,
+    )
 from lp.services.browser_helpers import get_plural_text
 from lp.services.propertycache import cachedproperty
 
 
 class HasMergeQueuesMenuMixin:
     """A context menus mixin for objects that implement IHasMergeQueues."""
+
+    def _getCollection(self):
+        return getUtility(IAllBranchMergeQueues).visibleByUser(self.user)
 
     @property
     def person(self):
@@ -40,49 +44,65 @@ class HasMergeQueuesMenuMixin:
         return Link(
             '+merge-queues',
             get_plural_text(
-                self.mergequeue_count(),
+                self.mergequeue_count,
                 'merge queue', 'merge queues'), site='code')
 
+    @cachedproperty
     def mergequeue_count(self):
-        return IBranchMergeQueueCollection(
-            self.person).getMergeQueues().count()
+        return self._getCollection().ownedBy(self.person).count()
 
 
-class MergeQueueListingView(LaunchpadFormView, FeedsMixin):
+class MergeQueueListingView(LaunchpadView, FeedsMixin):
 
+    # No feeds initially
     feed_types = ()
 
     branch_enabled = True
     owner_enabled = True
 
+    label_template = 'Merge Queues for %(displayname)s'
+
     @property
-    def page_title(self):
-        return 'Merge Queues for %(displayname)s' % {
-            'displayname': self.context.displayname}
+    def label(self):
+        return self.label_template % {
+            'displayname': self.context.displayname,
+            'title': getattr(self.context, 'title', 'no-title')}
+
+    # Provide a default page_title for distros and other things without
+    # breadcrumbs..
+    page_title = label
+
+    def _getCollection(self):
+        """Override this to say what queues will be in the listing."""
+        raise NotImplementedError(self._getCollection)
 
     def getVisibleQueuesForUser(self):
-        """Branch merge queuea that are visible by the logged in user."""
-        merge_queues = IBranchMergeQueueCollection(self.context)
-        #XXX only get queues visible to logged in user self.user
-        return merge_queues.getMergeQueues()
+        """Branch merge queues that are visible by the logged in user."""
+        collection = self._getCollection().visibleByUser(self.user)
+        return collection.getMergeQueues()
 
     @cachedproperty
     def mergequeues(self):
-        merge_queues = IBranchMergeQueueCollection(self.context)
-        merge_queues.getMergeQueues()
+        return self.getVisibleQueuesForUser()
 
     @cachedproperty
     def mergequeue_count(self):
         """Return the number of merge queues that will be returned."""
-        return self.getVisibleQueuesForUser().count()
+        return self._getCollection().visibleByUser(self.user).count()
 
     @property
     def no_merge_queue_message(self):
         """Shown when there is no table to show."""
-        return "%s has no merge proposals." % self.context.displayname
+        return "%s has no merge queues." % self.context.displayname
 
 
 class PersonMergeQueueListingView(MergeQueueListingView):
 
+    label_template = 'Merge Queues owned by %(displayname)s'
     owner_enabled = False
+
+    def _getCollection(self):
+        return getUtility(IAllBranchMergeQueues).ownedBy(self.context)
+
+
 

@@ -11,15 +11,18 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+
 from lp.code.interfaces.branchmergequeuecollection import (
     IBranchMergeQueueCollection,
     InvalidFilter,
     )
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branchmergequeue import BranchMergeQueue
 
 
@@ -92,9 +95,27 @@ class GenericBranchMergeQueueCollection:
         expressions = self._getMergeQueueExpressions()
         return self.store.using(*tables).find(BranchMergeQueue, *expressions)
 
-
     def ownedBy(self, person):
         """See `IBranchMergeQueueCollection`."""
         return self._filterBy([BranchMergeQueue.owner == person])
 
+    def visibleByUser(self, person):
+        """See `IBranchMergeQueueCollection`."""
+        if (person == LAUNCHPAD_SERVICES or
+            user_has_special_merge_queue_access(person)):
+            return self
+        #TODO
+        return GenericBranchMergeQueueCollection(
+            self._store, None,
+            self._tables, self._exclude_from_search)
 
+
+def user_has_special_merge_queue_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)

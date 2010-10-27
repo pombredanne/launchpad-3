@@ -18,7 +18,7 @@ __all__ = [
 from zope.interface import Interface
 
 class InvalidFilter(Exception):
-    """Raised when an `IBranchCollection` cannot apply the given filter."""
+    """Raised when an `IBranchMergeQueueCollection` can't apply the filter."""
 
 class IBranchMergeQueueCollection(Interface):
     """A collection of branch merge queues.
@@ -51,7 +51,11 @@ class IBranchMergeQueueCollection(Interface):
         """
 
     def ownedBy(person):
-        """Restrict the collection to branches owned by 'person'."""
+        """Restrict the collection to queues owned by 'person'."""
+
+    def visibleByUser(person):
+        """Restrict the collection to queues that 'person' is allowed to see.
+        """
 
 
 class IAllBranchMergeQueues(IBranchMergeQueueCollection):

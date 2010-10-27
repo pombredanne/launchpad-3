@@ -9,7 +9,6 @@ __metaclass__ = type
 __all__ = [
     'IHasBranches',
     'IHasCodeImports',
-    'IHasMergeQueues',
     'IHasMergeProposals',
     'IHasRequestedReviews',
     ]
@@ -96,13 +95,6 @@ class IHasMergeProposals(Interface):
         :param visible_by_user: Normally the user who is asking.
         :returns: A list of `IBranchMergeProposal`.
         """
-
-
-class IHasMergeQueues(Interface):
-    """An object provides access to merge queues of a person."""
-
-    def getMergeQueues():
-        """Returns all merge queues."""
 
 
 class IHasRequestedReviews(Interface):

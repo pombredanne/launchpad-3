@@ -10,22 +10,21 @@
 
   <div metal:fill-slot="main">
 
-    <!--<tal:has-queues condition="view/mergequeue_count">-->
+    <tal:has-queues condition="view/mergequeue_count">
 
         <table id="mergequeuetable" class="listing sortable">
           <thead>
             <tr>
               <th colspan="2">Name</th>
               <th tal:condition="view/owner_enabled">Owner</th>
-              <th tal:condition="view/branch_enabled">Branch</th>
-              <th>Registered</th>
+              <th>Date Created</th>
             </tr>
           </thead>
           <tbody>
-            <tal:recipes repeat="mergeQueue context/getMergeQueues">
+            <tal:mergequeues repeat="mergeQueue view/mergequeues">
               <tr>
                 <td colspan="2">
-                  <a tal:attributes="href recipe/fmt:url"
+                  <a tal:attributes="href mergeQueue/fmt:url"
                      tal:content="mergeQueue/name">Merge queue name</a>
                 </td>
                 <td tal:condition="view/owner_enabled">
@@ -33,24 +32,19 @@
                     Owner
                   </a>
                 </td>
-                <td tal:condition="view/branch_enabled">
-                  <a tal:replace="structure mergeQueue/base_branch/fmt:link">
-                    Branch
-                  </a>
-                </td>
                 <td tal:content="mergeQueue/date_created/fmt:datetime" />
               </tr>
-            </tal:recipes>
+            </tal:mergequeues>
           </tbody>
         </table>
 
-    <!--</tal:has-queues>-->
+    </tal:has-queues>
 
-    <!--<em id="no-queues"-->
-     <!--tal:condition="not: view/mergequeue_count"-->
-     <!--tal:content="view/no_merge_queue_message">-->
-     <!--No merge queues-->
-    <!--</em>-->
+    <em id="no-queues"
+     tal:condition="not: view/mergequeue_count"
+     tal:content="view/no_merge_queue_message">
+     No merge queues
+    </em>
 
   </div>
 

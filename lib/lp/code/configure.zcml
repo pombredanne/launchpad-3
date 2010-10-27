@@ -146,10 +146,6 @@
   </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
-      provides="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"
-      factory="lp.code.adapters.branchmergequeuecollection.merge_queue_collection_for_person"/>
-  <adapter
-      for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
       factory="lp.code.adapters.revisioncache.revision_cache_for_person"/>
   <adapter

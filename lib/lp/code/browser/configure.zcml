@@ -1322,7 +1322,7 @@
         <browser:page
             for="lp.registry.interfaces.person.IPerson"
             layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.mergequeuelisting.PersonMergeQueueListingView"
+            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
             permission="zope.Public"
             facet="branches"
             name="+merge-queues"

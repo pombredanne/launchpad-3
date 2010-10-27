@@ -548,6 +548,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         """Traverse to this person's merge queues."""
         return self.context.getMergeQueue(name)
 
+
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
