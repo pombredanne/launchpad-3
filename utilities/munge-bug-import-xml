@@ -30,12 +30,22 @@ def truncate(text, message=None):
         return text
 
 
-if __name__ == '__main__':
-    tree = etree.parse(stdin)
-    root = tree.getroot()
+def munge(project_name, root):
+    """Fix problems in the bug import XML tree.
 
-    # Only one argument is expected.
-    project_name = argv[1]
+    This includes, but is not limited to:
+
+    - Adding a tags element if one does not exist,
+
+    - Fixing up the bug nickname, adding the existing nickname as a tag,
+
+    - Fixing up the description,
+
+    - Fixing up the first comment,
+
+    - Normalizing whitespace.
+
+    """
 
     # Scan the tree, fixing up issues.
     for bug in root.findall('{%s}bug' % NS):
@@ -138,6 +148,10 @@ if __name__ == '__main__':
                     'see "Full description" attachment')
                 stderr.write('\n')
 
-    # Write it back out again.
+
+if __name__ == '__main__':
+    project_name = argv[1]
+    tree = etree.parse(stdin)
+    munge(project_name, tree.getroot())
     tree.write(stdout, encoding='utf-8',
                pretty_print=True, xml_declaration=True)
