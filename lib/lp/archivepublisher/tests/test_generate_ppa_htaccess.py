@@ -596,6 +596,19 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
 
+    def test_getNewTokensSinceLastRun_includes_tokens_during_last_run(self):
+        """Tokens created during the last ppa run will be included."""
+        now = datetime.now(pytz.UTC)
+        tokens = self.setupDummyTokens()[1]
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', now - timedelta(minutes=3, seconds=2),
+            now - timedelta(minutes=3))
+        removeSecurityProxy(tokens[0]).date_created = (
+            now - timedelta(minutes=3, seconds=1))
+
+        script = self.getScript()
+        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+
     def test_getNewTokensSinceLastRun_only_active_tokens(self):
         """Only active tokens are returned."""
         now = datetime.now(pytz.UTC)
