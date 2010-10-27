@@ -58,7 +58,8 @@
         python: 'collapsible collapsed'
           if view.registration_done
           else 'collapsible'">
-      <span id="legend">Configuration links</span>
+      <div class=".config-options"
+           style="margin-bottom: 0.5em">Configuration options</div>
       <table
         style="width: 100%; padding-top: 1em"
         id="configuration_links"
