@@ -35,9 +35,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.product = self.productseries.product
 
     def _createView(self):
-        view = ProductSeriesView(self.productseries, LaunchpadTestRequest())
-        view.initialize()
-        return view
+        return ProductSeriesView(self.productseries, LaunchpadTestRequest())
 
     def test_single_potemplate_no_template(self):
         view = self._createView()
@@ -157,6 +155,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.factory.makePOTemplate(productseries=self.productseries)
         self.assertEquals([], self._getProductserieslanguages(view))
 
+
 class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
     """Test ProductSeries view in translations facet."""
 
@@ -164,11 +163,10 @@ class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
 
     def setUp(self):
         # Create a productseries that uses translations.
-        # Strip off the security proxy to allow customization. 
+        # Strip off the security proxy to allow customization.
         super(TestProductSeriesViewBzrUsage, self).setUp()
         self.productseries = removeSecurityProxy(
             self.factory.makeProductSeries())
-#        self.productseries.product.official_rosetta = True
 
     def _createView(self):
         view = ProductSeriesView(self.productseries, LaunchpadTestRequest())
