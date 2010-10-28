@@ -51,10 +51,10 @@ class TestBranchLinks(WindmillTestCase):
         ])
 
     def make_invalid_links(self):
-        return [
-            self.BRANCH_URL_TEMPLATE % 'foo',
-            self.BRANCH_URL_TEMPLATE % 'bar',
-            ]
+        return dict([
+            (self.BRANCH_URL_TEMPLATE % 'foo', "No such product: 'foo'."),
+            (self.BRANCH_URL_TEMPLATE % 'bar', "No such product: 'bar'."),
+            ])
 
     def test_invalid_url_rendering(self):
         """Link a bug from the branch page."""
@@ -65,7 +65,7 @@ class TestBranchLinks(WindmillTestCase):
         naked_product, valid_links = self.make_product_and_valid_links()
         invalid_links = self.make_invalid_links()
         bug_description = self.BUG_TEXT_TEMPLATE % (
-            ', '.join(valid_links), ', '.join(invalid_links))
+            ', '.join(valid_links), ', '.join(invalid_links.keys()))
         bug = self.factory.makeBug(product=naked_product,
                                         title="The meaning of life is broken",
                                         description=bug_description)
@@ -90,9 +90,9 @@ class TestBranchLinks(WindmillTestCase):
 
             var bad_a = windmill.testWin().document.getElementsByClassName(
                             'invalid-link', 'a');
-            var bad_links = [];
+            var bad_links = {};
             for( i=0; i<bad_a.length; i++ ) {
-                bad_links.push(bad_a[i].innerHTML);
+                bad_links[bad_a[i].innerHTML] = bad_a[i].title;
             }
 
 
@@ -105,7 +105,10 @@ class TestBranchLinks(WindmillTestCase):
         result = raw_result['result']
         result_valid_links = result['good']
         result_invalid_links = result['bad']
-        self.assertEqual(set(invalid_links), set(result_invalid_links))
+        self.assertEqual(set(invalid_links.keys()),
+                         set(result_invalid_links.keys()))
+        for (href, title) in invalid_links.items():
+            self.assertEqual(title, result_invalid_links[href])
         self.assertEqual(set(valid_links), set(result_valid_links))
 
 
