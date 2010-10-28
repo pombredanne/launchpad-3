@@ -7,8 +7,6 @@ from __future__ import with_statement
 
 import simplejson
 
-import transaction
-
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -86,17 +84,20 @@ class TestBranchMergeQueue(TestCaseWithFactory):
         config = unicode(simplejson.dumps({
             'test': 'make test'}))
 
-        queue.setMergeQueueConfig(config)
+        with person_logged_in(queue.owner):
+            queue.setMergeQueueConfig(config)
 
         self.assertEqual(queue.configuration, config)
 
     def test_setMergeQueueConfig_invalid_json(self):
         """Test that invalid json can't be set as the config."""
         queue = self.factory.makeBranchMergeQueue()
-        self.assertRaises(
-            InvalidMergeQueueConfig,
-            queue.setMergeQueueConfig,
-            'abc')
+
+        with person_logged_in(queue.owner):
+            self.assertRaises(
+                InvalidMergeQueueConfig,
+                queue.setMergeQueueConfig,
+                'abc')
 
 
 class TestWebservice(TestCaseWithFactory):
@@ -123,7 +124,6 @@ class TestWebservice(TestCaseWithFactory):
                 branch2.addToQueue(db_queue)
             launchpad = launchpadlib_for('test', db_queue.owner,
                 service_root="http://api.launchpad.dev:8085")
-            transaction.commit()
 
         queuer = ws_object(launchpad, queuer)
         queue = ws_object(launchpad, db_queue)

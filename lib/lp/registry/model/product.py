@@ -71,7 +71,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
-
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -162,7 +161,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -539,7 +538,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 purchaser=purchaser,
                 sales_system_id=voucher,
                 whiteboard=whiteboard)
-            IPropertyCache(self).commercial_subscription = subscription
+            get_property_cache(self).commercial_subscription = subscription
         else:
             if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.

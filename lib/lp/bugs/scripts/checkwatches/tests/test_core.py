@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime

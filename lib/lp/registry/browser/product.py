@@ -511,7 +511,7 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def configure_bugtracker(self):
         text = 'Configure bug tracker'
         summary = 'Specify where bugs are tracked for this project'

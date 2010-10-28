@@ -8,8 +8,6 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
-from __future__ import with_statement
-
 from contextlib import contextmanager
 from datetime import (
     datetime,

@@ -2033,7 +2033,6 @@ tra ./database/tests/test_vpoexport.py
     ./doc/buildd-scoring.txt
     ./doc/buildd-sequencer.txt
     ./doc/buildd-slave.txt
-    ./doc/buildd-slavescanner.txt
     ./doc/builder-pages.txt
     ./doc/builder.txt
     ./doc/buildqueue.txt
