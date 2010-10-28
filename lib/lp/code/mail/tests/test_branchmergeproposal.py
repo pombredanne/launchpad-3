@@ -53,7 +53,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
 
     def makeProposalWithSubscriber(self, diff_text=None,
-                                   initial_comment=None, prerequisite=False):
+                                   initial_comment=None,
+                                   prerequisite=False,
+                                   needs_review=True):
         if diff_text is not None:
             preview_diff = PreviewDiff.create(
                 diff_text,
@@ -70,9 +72,13 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             prerequisite_branch = self.factory.makeProductBranch(product)
         else:
             prerequisite_branch = None
+        if needs_review:
+            initial_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            initial_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
         bmp = self.factory.makeBranchMergeProposal(
             registrant=registrant, product=product,
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
+            set_state=initial_status,
             prerequisite_branch=prerequisite_branch,
             preview_diff=preview_diff, initial_comment=initial_comment)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
