@@ -10,6 +10,7 @@ import pytz
 from storm.store import Store
 from testtools.matchers import LessThan
 import transaction
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
@@ -248,7 +249,7 @@ class TestPersonStates(TestCaseWithFactory):
         self.guadamen = person_set.getByName('guadamen')
         product_set = getUtility(IProductSet)
         self.bzr = product_set.getByName('bzr')
-        self.now = datetime.now(pytz.timezone('UTC'))
+        self.now = datetime.now(pytz.UTC)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -272,6 +273,25 @@ class TestPersonStates(TestCaseWithFactory):
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
+
+    def test_deactivateAccountReassignsOwnerAndDriver(self):
+        """Product owner and driver are reassigned.
+
+        If a user is a product owner and/or driver, when the user is
+        deactivated the roles are assigned to the registry experts team.  Note
+        a person can have both roles and the method must handle both at once,
+        that's why this is one test.
+        """
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        with person_logged_in(user):
+            product.driver = user
+            user.deactivateAccount("Going off the grid.")
+        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+        self.assertEqual(registry_team, product.owner,
+                         "Owner is not registry team.")
+        self.assertEqual(registry_team, product.driver,
+                         "Driver is not registry team.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
