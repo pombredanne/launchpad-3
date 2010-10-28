@@ -337,6 +337,19 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         merge_proposal_modified(merge_proposal, event)
         self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
 
+    def test_job_created_if_work_in_progress_merged(self):
+        # If work in progress is merged, then that is email worthy.
+        merge_proposal, person = self.makeProposalWithSubscriber(
+            needs_review=False)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
+        merge_proposal.setStatus(BranchMergeProposalStatus.MERGED)
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        merge_proposal_modified(merge_proposal, event)
+        job = self.getProposalUpdatedEmailJob(merge_proposal)
+        self.assertIsNot(None, job, 'Job was not created.')
+
     def makeProposalUpdatedEmailJob(self):
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()

@@ -53,7 +53,10 @@ def merge_proposal_modified(merge_proposal, event):
     # out an email as the needs review email will cover that.
     old_status = event.object_before_modification.queue_status
     if old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
-        return
+        # Unless the new status is merged.  If this occurs we really should
+        # send out an email.
+        if merge_proposal.queue_status != BranchMergeProposalStatus.MERGED:
+            return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
     delta = BranchMergeProposalDelta.construct(
