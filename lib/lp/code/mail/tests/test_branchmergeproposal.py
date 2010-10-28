@@ -458,14 +458,6 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         login_person(self.owner)
         self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
 
-    def makePersonWithHiddenEmail(self):
-        """Make an arbitrary person with hidden email addresses."""
-        person = self.factory.makePerson()
-        login_person(person)
-        person.hide_email_addresses = True
-        login_person(self.owner)
-        return person
-
     def getReviewNotificationEmail(self):
         """Return the review requested email job for the test's proposal."""
         [job] = list(
@@ -538,7 +530,7 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_requestReviewWithPrivateEmail(self):
         # We can request a review, even when one of the parties involved has a
         # private email address.
-        candidate = self.makePersonWithHiddenEmail()
+        candidate = self.factory.makePerson(hide_email_addresses=True)
         # Request a review and prepare the mailer.
         self.bmp.nominateReviewer(candidate, self.owner, None)
         # Send the mail.
