@@ -247,6 +247,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             old_branches, list(sp_recipe.getReferencedBranches()))
 
     def test_nest_part(self):
+        """nest-part instruction can be round-tripped."""
         base = self.factory.makeBranch()
         nested = self.factory.makeBranch()
         recipe_text = (
@@ -259,6 +260,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(recipe_text, recipe.recipe_text)
 
     def test_nest_part_no_target(self):
+        """nest-part instruction with no target-dir can be round-tripped."""
         base = self.factory.makeBranch()
         nested = self.factory.makeBranch()
         recipe_text = (
