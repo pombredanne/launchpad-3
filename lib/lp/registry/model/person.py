@@ -3829,7 +3829,7 @@ class PersonSet:
             result = cur.fetchone()
             if result:
                 # Add the karma to the remaining user.
-                karma_total =  from_karma + result[0]
+                karma_total = from_karma + result[0]
                 cur.execute('''
                     UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
                     WHERE person = %(to_id)d
