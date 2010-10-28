@@ -33,3 +33,4 @@ UPDATE Product
         blueprints_usage = 10 AND
         official_blueprints = True;
 
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
