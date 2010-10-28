@@ -224,6 +224,7 @@ class SQLiteRequestTimes:
         """Return the stats for unique value of table.column"""
 
         times = {}
+        median_idx_by_key = {}
         replacements = dict(table=table, column=column)
 
         # Compute count, total and average
@@ -242,16 +243,23 @@ class SQLiteRequestTimes:
             '''.format(**replacements))
         self.cur.execute('''
             SELECT {column}, time_n, total_time, mean_time,
+                   sqltime_n,
                    coalesce(total_sqltime, 0), coalesce(mean_sqltime, 0),
-                   coalesce(total_sqlstatements, 0),
+                   sqlstatements_n, coalesce(total_sqlstatements, 0),
                    coalesce(mean_sqlstatements, 0)
               FROM {table}_stats
               '''.format(**replacements))
         for row in self.cur.fetchall():
             stats = times.setdefault(row[0], Stats())
             (stats.total_hits, stats.total_time, stats.mean,
-                stats.total_sqltime, stats.mean_sqltime,
-                stats.total_sqlstatements, stats.mean_sqlstatements) = row[1:]
+                sqltime_n, stats.total_sqltime, stats.mean_sqltime,
+                sqlstatements_n, stats.total_sqlstatements,
+                stats.mean_sqlstatements) = row[1:]
+            # Store the index of the median for each field
+            median_idx = median_idx_by_key.setdefault(row[0], {})
+            median_idx['time'] = int((stats.total_hits-1)/2)
+            median_idx['sql_time'] = int((sqltime_n-1)/2)
+            median_idx['sql_statements'] = int((sqlstatements_n-1)/2)
 
         # Compute the std deviation.
         # The variance is the average of the sum of the square difference to
@@ -286,30 +294,26 @@ class SQLiteRequestTimes:
                 math.sqrt(x) for x in row[1:]]
 
         # Compute the median
-        # This complex query is a modified version from
-        # http://oreilly.com/catalog/transqlcook/chapter/ch08.html
-        # It does the cross-product and find the value that has about the
-        # same number of lower values than higher values (that's half the
-        # number of items).
         for field, median_attribute in [
                 ('time', 'median'),
                 ('sql_time', 'median_sqltime'),
                 ('sql_statements', 'median_sqlstatements')]:
             self.cur.execute('''
-                SELECT x.{column}, x.{field} AS median
-                FROM {table} AS x, {table} AS y
-                WHERE x.{column} = y.{column} 
-                    AND x.{field} IS NOT NULL AND y.{field} IS NOT NULL
-                GROUP BY x.{column}, x.{field}
-                HAVING
-                   SUM(CASE WHEN y.{field} <= x.{field}
-                      THEN 1 ELSE 0 END) >= (COUNT(x.{field})+1)/2 AND
-                   SUM(CASE WHEN y.{field} >= x.{field}
-                      THEN 1 ELSE 0 END) >= (COUNT(x.{field})/2)+1
+                SELECT {column}, {field} FROM {table}
+                WHERE {field} IS NOT NULL
+              ORDER BY {column}, {field}
                       '''.format(field=field, **replacements))
-            for key, median in self.cur.fetchall():
-                stats = times[key]
-                setattr(stats, median_attribute, median)
+            idx = 0
+            current_key = None
+            for key, value in self.cur.fetchall():
+                if key != current_key:
+                    idx = 0
+                    median_idx = median_idx_by_key[key][field]
+                    current_key = key
+                if idx == median_idx:
+                    stats = times[key]
+                    setattr(stats, median_attribute, value)
+                idx += 1
 
         # Compute the histogram of requests.
         self.cur.execute('''
