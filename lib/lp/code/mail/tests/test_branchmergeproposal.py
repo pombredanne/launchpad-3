@@ -513,11 +513,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
             displayname='Eric the Viking', email='eric@vikings.example.com')
         black_beard = self.factory.makePerson(
             displayname='Black Beard', email='black@pirates.example.com')
-        review_team = self.factory.makeTeam(owner=eric)
-        login_person(eric)
-        review_team.addMember(black_beard, eric)
+        review_team = self.factory.makeTeam(owner=eric, members=[black_beard])
         pop_notifications()
-        login_person(self.owner)
         self.bmp.nominateReviewer(review_team, self.owner, None)
         review_request_job = self.getReviewNotificationEmail()
         review_request_job.run()
