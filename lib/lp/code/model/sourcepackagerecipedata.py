@@ -75,7 +75,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
-                 directory, recipe_data, parent_instruction, source_directory):
+                 directory, recipe_data, parent_instruction,
+                 source_directory):
         super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
