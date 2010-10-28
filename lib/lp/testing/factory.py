@@ -729,8 +729,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             PollSecrecy.SECRET, allowspoilt=True,
             poll_type=poll_type)
 
-    def makeTranslationGroup(
-        self, owner=None, name=None, title=None, summary=None, url=None):
+    def makeTranslationGroup(self, owner=None, name=None, title=None,
+                             summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
         if owner is None:
             owner = self.makePerson()
@@ -743,10 +743,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeTranslator(
-        self, language_code, group=None, person=None, license=True):
+    def makeTranslator(self, language_code=None, group=None, person=None,
+                       license=True, language=None):
         """Create a new, arbitrary `Translator`."""
-        language = getUtility(ILanguageSet).getLanguageByCode(language_code)
+        assert language_code is None or language is None, (
+            "Please specifiy only one of language_code and language.")
+        if language_code is None:
+            if language is None:
+                language = self.makeLanguage()
+            language_code = language.code
+        else:
+            language = getUtility(ILanguageSet).getLanguageByCode(
+                language_code)
+            if language is None:
+                language = self.makeLanguage(language_code=language_code)
+
         if group is None:
             group = self.makeTranslationGroup()
         if person is None:
@@ -755,8 +766,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         tx_person.translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
-    def makeMilestone(
-        self, product=None, distribution=None, productseries=None, name=None):
+    def makeMilestone(self, product=None, distribution=None,
+                      productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -810,8 +821,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        return getUtility(IProcessorFamilySet).new(name, title, description,
+        family = getUtility(IProcessorFamilySet).new(name, title, description,
             restricted=restricted)
+        # Make sure there's at least one processor in the family, so that
+        # other things can have a default processor.
+        self.makeProcessor(family=family)
+        return family
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1970,7 +1985,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         if processorfamily is None:
-            processorfamily = ProcessorFamilySet().getByName('powerpc')
+            processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
         # XXX: architecturetag & processerfamily are tightly coupled. It's
@@ -2141,6 +2156,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
+            arch = self.makeDistroArchSeries(distroseries=distroseries)
+            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
@@ -2274,9 +2291,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makePOFile(language_code, template, template.owner)
         return template
 
-    def makePOFile(self, language_code, potemplate=None, owner=None,
-                   create_sharing=False, variant=None):
+    def makePOFile(self, language_code=None, potemplate=None, owner=None,
+                   create_sharing=False, language=None, variant=None):
         """Make a new translation file."""
+        assert language_code is None or language is None, (
+            "Please specifiy only one of language_code and language.")
+        if language_code is None:
+            if language is None:
+                language = self.makeLanguage()
+            language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         pofile = potemplate.newPOFile(language_code,

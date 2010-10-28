@@ -41,18 +41,20 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
-        self._builder.slave.cacheFile(logger, chroot)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
+        d = self._builder.slave.cacheFile(logger, chroot)
+        def got_cache_file(ignored):
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
-        args = {
-            'arch_tag': self._getDistroArchSeries().architecturetag,
-            'branch_url': self.buildfarmjob.branch.composePublicURL(),
-            }
+            args = {
+                'arch_tag': self._getDistroArchSeries().architecturetag,
+                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                }
 
-        filemap = {}
+            filemap = {}
 
-        self._builder.slave.build(
-            cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._builder.slave.build(
+                cookie, self.build_type, chroot_sha1, filemap, args)
+        return d.addCallback(got_cache_file)
 
     def _getChroot(self):
         return self._getDistroArchSeries().getChroot()
@@ -80,6 +82,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return None
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         return slave.getFile(slave_filename).read()
 
     def _uploadTarball(self, branch, tarball, logger):
@@ -119,6 +123,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         if build_status == 'OK':
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
+            # XXX 2010-10-18 bug=662631
+            # Change this to do non-blocking IO.
             tarball = self._readTarball(queue_item, filemap, logger)
 
             if tarball is None:
@@ -129,5 +135,5 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
-        queue_item.builder.cleanSlave()
-        queue_item.destroySelf()
+        d = queue_item.builder.cleanSlave()
+        return d.addCallback(lambda ignored: queue_item.destroySelf())
