@@ -132,7 +132,6 @@ from lp.soyuz.interfaces.archive import (
     IArchiveEditDependenciesForm,
     IArchiveSet,
     IPPAActivateForm,
-    NoSuchPPA,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
