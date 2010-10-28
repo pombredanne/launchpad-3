@@ -18,7 +18,6 @@ import sqlite3
 import tempfile
 import textwrap
 import time
-import warnings
 
 import simplejson as json
 import sre_constants
@@ -28,9 +27,6 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import log
 from lp.scripts.helpers import LPOptionParser
 
-# We don't care about conversion to nan, they are expected.
-warnings.filterwarnings(
-    'ignore', '.*converting a masked element to nan.', UserWarning)
 
 class Request(zc.zservertracelog.tracereport.Request):
     url = None
@@ -99,7 +95,7 @@ class Stats:
     def ninetyninth_percentile_time(self):
         """Time under which 99% of requests are rendered.
 
-        This is estimated as 3 std deviation from the mean. Given that
+        This is estimated as 3 std deviations from the mean. Given that
         in a daily report, many URLs or PageIds won't have 100 requests, it's
         more useful to use this estimator.
         """
@@ -226,7 +222,7 @@ class SQLiteRequestTimes:
         median_idx_by_key = {}
         replacements = dict(table=table, column=column)
 
-        # Compute count, total and average
+        # Compute count, total and average.
         self.cur.execute('''
             CREATE TEMPORARY TABLE IF NOT EXISTS {table}_stats AS
             SELECT {column},
@@ -254,13 +250,13 @@ class SQLiteRequestTimes:
                 sqltime_n, stats.total_sqltime, stats.mean_sqltime,
                 sqlstatements_n, stats.total_sqlstatements,
                 stats.mean_sqlstatements) = row[1:]
-            # Store the index of the median for each field
+            # Store the index of the median for each field.
             median_idx = median_idx_by_key.setdefault(row[0], {})
             median_idx['time'] = int((stats.total_hits-1)/2)
             median_idx['sql_time'] = int((sqltime_n-1)/2)
             median_idx['sql_statements'] = int((sqlstatements_n-1)/2)
 
-        # Compute the std deviation.
+        # Compute std deviation.
         # The variance is the average of the sum of the square difference to
         # the mean.
         # The standard deviation is the square-root of the variance.
@@ -292,7 +288,7 @@ class SQLiteRequestTimes:
             (stats.std, stats.std_sqltime, stats.std_sqlstatements) = [
                 math.sqrt(x) for x in row[1:]]
 
-        # Compute the median
+        # Compute the median.
         for field, median_attribute in [
                 ('time', 'median'),
                 ('sql_time', 'median_sqltime'),
