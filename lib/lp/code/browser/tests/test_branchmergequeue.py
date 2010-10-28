@@ -79,6 +79,15 @@ class TestBranchMergeQueue(BrowserTestCase):
             owner_name = branch.owner.name
 
         browser = self.getUserBrowser(canonical_url(branch), user=rockstar)
+
+        # There shouldn't be a merge queue linked here.
+        noqueue_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Not managed', 'div',
+                text=re.compile(
+                    '\w*This branch is not managed by a queue.\w*')))
+        self.assertThat(browser.contents, noqueue_matcher)
+
         browser.getLink('Create a new queue').click()
 
         browser.getControl('Name').value = 'libbob-queue'
