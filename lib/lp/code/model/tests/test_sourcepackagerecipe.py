@@ -42,7 +42,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
     )
-from lp.code.model import sourcepackagerecipedata
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -69,7 +68,6 @@ from lp.testing import (
     launchpadlib_for,
     login,
     login_person,
-    monkey_patch,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
@@ -254,8 +252,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             "%s revid:base_revid\n"
             "nest-part nested1 %s foo bar tag:foo\n" %
             (base.bzr_identity, nested.bzr_identity))
-        with monkey_patch(sourcepackagerecipedata, MAX_RECIPE_FORMAT=0.3):
-            recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
         self.assertEqual(recipe_text, recipe.recipe_text)
 
     def test_nest_part_no_target(self):
@@ -266,8 +263,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             "%s revid:base_revid\n"
             "nest-part nested1 %s foo\n" %
             (base.bzr_identity, nested.bzr_identity))
-        with monkey_patch(sourcepackagerecipedata, MAX_RECIPE_FORMAT=0.3):
-            recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
+        recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
         self.assertEqual(recipe_text, recipe.recipe_text)
 
     def test_accept_format_0_3(self):
