@@ -10,6 +10,7 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
@@ -48,6 +49,11 @@ def merge_proposal_modified(merge_proposal, event):
         from_person = None
     else:
         from_person = IPerson(event.user)
+    # If the merge proposal was work in progress, then we don't want to send
+    # out an email as the needs review email will cover that.
+    old_status = event.object_before_modification.queue_status
+    if old_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+        return
     # Create a delta of the changes.  If there are no changes to report, then
     # we're done.
     delta = BranchMergeProposalDelta.construct(
