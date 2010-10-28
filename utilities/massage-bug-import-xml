@@ -105,8 +105,8 @@ def massage(root, project_name, fix_nickname, tag_nickname):
             else:
                 problem_detail("First comment has text.")
                 problem_resolution("Removing description.")
-                # The spec says that the description is optional, but
-                # the importer treats it as optional.
+                # The spec says that the description is not optional, but the
+                # importer treats it as optional.
                 bug.remove(description)
             problem_resolved()
         elif len(description.text) > 50000:
