@@ -439,8 +439,8 @@ class KarmaTestMixin:
         """Create a KarmaCache entry with the given arguments.
 
         In order to create the KarmaCache record we must switch to the DB
-        user 'karma'. This requires a commit and invalidates the product
-        instance.
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
         """
         transaction.commit()
         reconnect_stores('karmacacheupdater')
@@ -461,7 +461,8 @@ class KarmaTestMixin:
         """Create a KarmaTotalCache entry.
 
         In order to create the KarmaTotalCache record we must switch to the DB
-        user 'karma'. The person instance is invalidated by this change.
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
         """
         transaction.commit()
         reconnect_stores('karmacacheupdater')
