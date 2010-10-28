@@ -452,18 +452,12 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.owner = self.factory.makePerson()
-        login_person(self.owner)
-        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
-
-    def getReviewNotificationEmail(self):
+    def getReviewNotificationEmail(self, bmp):
         """Return the review requested email job for the test's proposal."""
         [job] = list(
             IStore(BranchMergeProposalJob).find(
                 BranchMergeProposalJob,
-                BranchMergeProposalJob.branch_merge_proposal == self.bmp,
+                BranchMergeProposalJob.branch_merge_proposal == bmp,
                 BranchMergeProposalJob.job_type ==
                 BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL))
         return ReviewRequestedEmailJob(job)
@@ -471,25 +465,29 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_nominateReview_creates_job(self):
         # When a reviewer is nominated, a job is created to send out the
         # review request email.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
         reviewer = self.factory.makePerson()
         pop_notifications()
-        self.bmp.nominateReviewer(reviewer, self.owner, None)
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
         # No email is sent.
         sent_mail = pop_notifications()
         self.assertEqual([], sent_mail)
         # A job is created.
-        review_request_job = self.getReviewNotificationEmail()
-        self.assertEqual(self.bmp, review_request_job.branch_merge_proposal)
+        review_request_job = self.getReviewNotificationEmail(bmp)
+        self.assertEqual(bmp, review_request_job.branch_merge_proposal)
         self.assertEqual(reviewer, review_request_job.reviewer)
-        self.assertEqual(self.bmp.registrant, review_request_job.requester)
+        self.assertEqual(bmp.registrant, review_request_job.requester)
 
     def test_nominateReview_email_content(self):
         # The email that is sent contains the description of the proposal, and
         # a link to the proposal.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
         reviewer = self.factory.makePerson()
-        self.bmp.description = 'This branch is awesome.'
-        self.bmp.nominateReviewer(reviewer, self.owner, None)
-        review_request_job = self.getReviewNotificationEmail()
+        bmp.description = 'This branch is awesome.'
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         [sent_mail] = pop_notifications()
         expected = dedent("""\
@@ -501,22 +499,24 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
                 %(bmp)s
                 You are requested to review the proposed merge of %(source)s into %(target)s.
                 """ % {
-                    'source': self.bmp.source_branch.bzr_identity,
-                    'target': self.bmp.target_branch.bzr_identity,
-                    'bmp': canonical_url(self.bmp)})
+                    'source': bmp.source_branch.bzr_identity,
+                    'target': bmp.target_branch.bzr_identity,
+                    'bmp': canonical_url(bmp)})
         self.assertEqual(expected, sent_mail.get_payload(decode=True))
 
     def test_nominateReview_emails_team_address(self):
         # If a review request is made for a team, the members of the team are
         # sent an email.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
         eric = self.factory.makePerson(
             displayname='Eric the Viking', email='eric@vikings.example.com')
         black_beard = self.factory.makePerson(
             displayname='Black Beard', email='black@pirates.example.com')
         review_team = self.factory.makeTeam(owner=eric, members=[black_beard])
         pop_notifications()
-        self.bmp.nominateReviewer(review_team, self.owner, None)
-        review_request_job = self.getReviewNotificationEmail()
+        bmp.nominateReviewer(review_team, bmp.registrant, None)
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         sent_mail = pop_notifications()
         self.assertEqual(
@@ -527,11 +527,13 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_requestReviewWithPrivateEmail(self):
         # We can request a review, even when one of the parties involved has a
         # private email address.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
         candidate = self.factory.makePerson(hide_email_addresses=True)
         # Request a review and prepare the mailer.
-        self.bmp.nominateReviewer(candidate, self.owner, None)
+        bmp.nominateReviewer(candidate, bmp.registrant, None)
         # Send the mail.
-        review_request_job = self.getReviewNotificationEmail()
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         mails = pop_notifications()
         self.assertEqual(1, len(mails))
