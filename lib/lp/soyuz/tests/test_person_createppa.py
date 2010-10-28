@@ -19,30 +19,7 @@ class TestCreateNewPPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_open_team_cannot_create(self):
-        team = self.factory.makeTeam()
-        removeSecurityProxy(team).subscriptionpolicy = (
-            TeamSubscriptionPolicy.OPEN)
-        self.assertRaisesWithContent(
-            PPACreationError, 'Open teams can not have PPAs.',
-            team.createNewPPA, None, None, None)
-
-    def test_create_distribution_name(self):
-        person = self.factory.makePerson()
-        self.assertRaisesWithContent(
-            PPACreationError, 'Archives cannot have the same name as '
-            'its distribution.', person.createNewPPA,
-            'ubuntu', None, None)
-
-    def test_create_two_ppas(self):
-        person = self.factory.makePerson()
-        person.createNewPPA()
-        self.assertRaisesWithContent(
-            PPACreationError, "You already have a PPA named 'ppa'.",
-            person.createNewPPA, None, None, None)
-
     def test_create_ppa(self):
         person = self.factory.makePerson()
-        ppa = person.createNewPPA()
-        print type(ppa)
+        ppa = person.createPPA()
         self.assertEqual(ppa.name, 'ppa')

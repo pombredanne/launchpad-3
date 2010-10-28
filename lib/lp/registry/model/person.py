@@ -2742,7 +2742,7 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
-    def createNewPPA(self, name=None, displayname=None, description=None):
+    def createPPA(self, name=None, displayname=None, description=None):
         """See `IPerson`."""
         errors = Archive.validatePPA(self, name)
         if errors:

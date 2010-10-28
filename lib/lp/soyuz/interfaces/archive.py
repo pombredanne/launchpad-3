@@ -890,7 +890,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """Get the total download count for a given package."""
 
     def validatePPA(person, proposed_name):
-        """Return if a proposed name for a PPA is valid.
+        """Check if a proposed name for a PPA is valid.
 
         :param person: A Person identifying the requestor.
         :param proposed_name: A String identifying the proposed PPA name.

@@ -13,7 +13,7 @@
   ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
 
   >>> print ppa_owner_webservice.named_post(
-  ...     ppa_owner['self_link'], 'createNewPPA', {}, name=None,
+  ...     ppa_owner['self_link'], 'createPPA', {}, name=None,
   ...     displayname='My shiny new PPA', description='Shinyness!',
   ...     )
   HTTP/1.1 201 Created
@@ -21,3 +21,15 @@
   ...
   Location: http://api.launchpad.dev/.../+archive/ppa
   ...
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}, name='ubuntu',
+  ...     displayname='My shiny new PPA', description='Shinyness!',
+  ...     )
+  HTTP/1.1 400 Bad Request
+  Status: 400
+  ...
+  Traceback (most recent call last):
+  ...
+  PPACreationError: Archives cannot have the same name as its distribution.
+  <BLANKLINE>
