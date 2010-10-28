@@ -73,5 +73,5 @@ class LinkCheckerAPI:
             except (CannotHaveLinkedBranch, InvalidNamespace,
                     InvalidProductName, NoLinkedBranch, NoSuchBranch,
                     NotFoundError) as e:
-                invalid_links[link] =  str(e)
+                invalid_links[link] = str(e)
         return invalid_links
