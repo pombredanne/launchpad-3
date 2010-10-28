@@ -297,7 +297,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
-        'link_queue', 'create_queue']
+        'create_queue']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -388,10 +388,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def link_queue(self):
-        return Link('+link-queue', 'Link to an existing queue', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def create_queue(self):
