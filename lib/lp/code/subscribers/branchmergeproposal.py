@@ -69,5 +69,8 @@ def merge_proposal_modified(merge_proposal, event):
 
 def review_requested(vote_reference, event):
     """Notify the reviewer that they have been requested to review."""
-    getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
+    # Don't send email if the proposal is work in progress.
+    bmp_status = vote_reference.branch_merge_proposal.queue_status
+    if bmp_status != BranchMergeProposalStatus.WORK_IN_PROGRESS:
+        getUtility(IReviewRequestedEmailJobSource).create(vote_reference)
 

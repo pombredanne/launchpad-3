@@ -462,10 +462,31 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
                 BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL))
         return ReviewRequestedEmailJob(job)
 
+    def test_nominateReview_no_job_if_work_in_progress(self):
+        # When a reviewer is nominated for a proposal that is work in
+        # progress, there is no email job created.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        login_person(bmp.registrant)
+        reviewer = self.factory.makePerson()
+        pop_notifications()
+        bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        # No email is sent.
+        sent_mail = pop_notifications()
+        self.assertEqual([], sent_mail)
+        # No job created.
+        job = IStore(BranchMergeProposalJob).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == bmp,
+            BranchMergeProposalJob.job_type ==
+            BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL).any()
+        self.assertIs(None, job)
+
     def test_nominateReview_creates_job(self):
         # When a reviewer is nominated, a job is created to send out the
         # review request email.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         login_person(bmp.registrant)
         reviewer = self.factory.makePerson()
         pop_notifications()
@@ -482,7 +503,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_nominateReview_email_content(self):
         # The email that is sent contains the description of the proposal, and
         # a link to the proposal.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         login_person(bmp.registrant)
         reviewer = self.factory.makePerson()
         bmp.description = 'This branch is awesome.'
@@ -507,7 +529,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_nominateReview_emails_team_address(self):
         # If a review request is made for a team, the members of the team are
         # sent an email.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         login_person(bmp.registrant)
         eric = self.factory.makePerson(
             displayname='Eric the Viking', email='eric@vikings.example.com')
@@ -527,7 +550,8 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_requestReviewWithPrivateEmail(self):
         # We can request a review, even when one of the parties involved has a
         # private email address.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         login_person(bmp.registrant)
         candidate = self.factory.makePerson(hide_email_addresses=True)
         # Request a review and prepare the mailer.
