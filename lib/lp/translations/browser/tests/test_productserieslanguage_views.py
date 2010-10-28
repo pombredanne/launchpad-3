@@ -165,11 +165,13 @@ class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
         # Create a productseries that uses translations.
         # Strip off the security proxy to allow customization.
         super(TestProductSeriesViewBzrUsage, self).setUp()
-        self.productseries = removeSecurityProxy(
-            self.factory.makeProductSeries())
+        self.secured_productseries = self.factory.makeProductSeries()
+        self.productseries = removeSecurityProxy(self.secured_productseries)
 
     def _createView(self):
-        view = ProductSeriesView(self.productseries, LaunchpadTestRequest())
+        # The view operates on the secured product series!
+        view = ProductSeriesView(
+            self.secured_productseries, LaunchpadTestRequest())
         view.initialize()
         return view
 
