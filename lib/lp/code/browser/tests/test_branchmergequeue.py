@@ -102,3 +102,17 @@ class TestBranchMergeQueue(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink,
             'Create a new queue')
+
+    def test_create_featureflag(self):
+        """Test that the feature flag hides the "create" link."""
+        with person_logged_in(ANONYMOUS):
+            rockstar = self.factory.makePerson(name='rockstar')
+            branch = self.factory.makeBranch(owner=rockstar)
+            self.factory.makeBranch(product=branch.product)
+            owner_name = branch.owner.name
+
+        browser = self.getUserBrowser(canonical_url(branch), user=rockstar)
+        self.assertRaises(
+            LinkNotFoundError,
+            browser.getLink,
+            'Create a new queue')
