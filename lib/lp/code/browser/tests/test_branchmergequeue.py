@@ -16,6 +16,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     )
+from lp.services.features.model import FeatureFlag, getFeatureStore
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -27,6 +28,11 @@ class TestBranchMergeQueue(BrowserTestCase):
     """Test the Branch Merge Queue index page."""
 
     layer = DatabaseFunctionalLayer
+
+    def enable_queue_flag(self):
+        getFeatureStore().add(FeatureFlag(
+            scope=u'default', flag=u'code.branchmergequeue',
+            value=u'on', priority=1))
 
     def test_index(self):
         """Test the index page of a branch merge queue."""
@@ -65,6 +71,7 @@ class TestBranchMergeQueue(BrowserTestCase):
 
     def test_create(self):
         """Test that branch merge queues can be created from a branch."""
+        self.enable_queue_flag()
         with person_logged_in(ANONYMOUS):
             rockstar = self.factory.makePerson(name='rockstar')
             branch = self.factory.makeBranch(owner=rockstar)
@@ -85,6 +92,7 @@ class TestBranchMergeQueue(BrowserTestCase):
 
     def test_create_unauthorized(self):
         """Test that queues can't be created by unauthorized users."""
+        self.enable_queue_flag()
         with person_logged_in(ANONYMOUS):
             branch = self.factory.makeBranch()
             self.factory.makeBranch(product=branch.product)
