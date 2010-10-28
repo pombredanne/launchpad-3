@@ -72,8 +72,8 @@ class RecipeBuilderTestsMixin:
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage, recipe=recipe, requester=recipe_owner,
-            distroseries=distroseries)
+            sourcepackage=sourcepackage,
+            recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
@@ -175,14 +175,16 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
         # registrant is used.
         self._setBuilderConfig()
         recipe_registrant = self.factory.makePerson(
-            name='eric', displayname='Eric the Viking', email='eric@vikings.r.us')
+            name='eric', displayname='Eric the Viking',
+            email='eric@vikings.r.us')
         recipe_owner = self.factory.makeTeam(
             name='vikings', members=[recipe_registrant])
 
         job = self.makeJob(recipe_registrant, recipe_owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_team_owner_with_email(self):
@@ -209,7 +211,8 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
         job = self.makeJob(owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
@@ -280,6 +283,7 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
         job.setBuilder(builder)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+
         def check_dispatch(ignored):
             logger.buffer.seek(0)
             self.assertEquals(
@@ -293,7 +297,8 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
+            self.assertEqual(
+                build_args[4], job._extraBuildArgs(distroarchseries))
         return d.addCallback(check_dispatch)
 
     def test_dispatchBuildToSlave_nochroot(self):

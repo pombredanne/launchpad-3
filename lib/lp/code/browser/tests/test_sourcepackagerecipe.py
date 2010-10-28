@@ -265,7 +265,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
                 merge %(package_branch)s
                 ''' % {
                     'branch': branch.bzr_identity,
-                    'package_branch': package_branch.bzr_identity,}),
+                    'package_branch': package_branch.bzr_identity,
+            }),
             branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
