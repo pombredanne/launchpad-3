@@ -78,8 +78,9 @@ And we can verify both jobs exists.
     >>> from lp.soyuz.interfaces.distributionjob import (
     ...     IInitialiseDistroSeriesJobSource)
     >>> login(ADMIN_EMAIL)
-    >>> jobs = list(
-    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady())
+    >>> jobs = sorted(
+    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady(),
+    ...     key=lambda x: x.distroseries.name)
     >>> for job in jobs:
     ...     print job.distroseries.name
     child1
