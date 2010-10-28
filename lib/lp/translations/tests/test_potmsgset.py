@@ -13,17 +13,13 @@ from datetime import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
@@ -165,31 +161,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         translation.potemplate = self.devel_potemplate
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
-    def test_getCurrentDummyTranslationMessage(self):
-        """Test that a DummyTranslationMessage is correctly returned."""
+    def test_getCurrentTranslationMessageOrDummy_returns_real_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        message = self.factory.makeTranslationMessage(
+            pofile=pofile, suggestion=False, is_imported=True)
 
-        # When there is no POFile, we get a DummyTranslationMessage inside
-        # a DummyPOFile.
-        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+        self.assertEqual(
+            message,
+            message.potmsgset.getCurrentTranslationMessageOrDummy(pofile))
 
-        # If a POFile exists, but there is no current translation message,
-        # a dummy translation message is returned.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+    def test_getCurrentTranslationMessageOrDummy_returns_dummy_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
 
-        # When there is a current translation message, an exception
-        # is raised.
-        translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertTrue(translation.is_current)
-        self.assertRaises(AssertionError,
-                          self.potmsgset.getCurrentDummyTranslationMessage,
-                          self.devel_potemplate, serbian)
+        message = potmsgset.getCurrentTranslationMessageOrDummy(pofile)
+        self.assertIsInstance(message, DummyTranslationMessage)
 
     def test_getCurrentTranslationMessage(self):
         """Test how shared and diverged current translation messages
