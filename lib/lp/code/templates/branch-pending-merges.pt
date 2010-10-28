@@ -49,7 +49,6 @@
       tal:replace="structure link/render"
       />
 
-
     <div tal:condition="features/code.branchmergequeue">
       <div tal:condition="not: context/merge_queue">
         <h4>Merge Queue</h4>

@@ -431,8 +431,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         pattern = re.compile(
             normalise_whitespace(regular_expression_txt), re.S)
         self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)),
-            text + '\n' + regular_expression_txt)
+            None, pattern.search(normalise_whitespace(text)), text)
 
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
