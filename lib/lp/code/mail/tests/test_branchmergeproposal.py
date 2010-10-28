@@ -38,7 +38,6 @@ from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.testing import (
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
