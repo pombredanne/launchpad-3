@@ -9,7 +9,9 @@ from textwrap import dedent
 from unittest import TestLoader
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import transaction
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -18,7 +20,6 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -308,7 +309,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def test_no_job_created_if_no_delta(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
         merge_proposal_modified(merge_proposal, event)
@@ -317,7 +319,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def makeProposalUpdatedEmailJob(self):
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
         merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
         merge_proposal.description = 'change description'
