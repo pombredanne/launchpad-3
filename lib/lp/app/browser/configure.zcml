@@ -98,6 +98,12 @@
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+check-links"
+      class="lp.app.browser.linkchecker.LinkCheckerAPI"
+      permission="zope.Public"/>
+
   <!-- TALES namespaces. -->
 
   <!-- TALES lp: namespace (should be deprecated) -->

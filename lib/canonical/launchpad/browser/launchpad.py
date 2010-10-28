@@ -527,34 +527,31 @@ class LaunchpadRootNavigation(Navigation):
         target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
-            # first check for a valid branch url
-            try:
-                branch_data = getUtility(IBranchLookup).getByLPPath(path)
-                branch, trailing = branch_data
-                target_url = canonical_url(branch)
-                if trailing is not None:
-                    target_url = urlappend(target_url, trailing)
+            branch_data = getUtility(IBranchLookup).getByLPPath(path)
+            branch, trailing = branch_data
+            target_url = canonical_url(branch)
+            if trailing is not None:
+                target_url = urlappend(target_url, trailing)
+        except (NoLinkedBranch), e:
+            # A valid ICanHasLinkedBranch target exists but there's no
+            # branch or it's not visible.
 
-            except (NoLinkedBranch), e:
-                # a valid ICanHasLinkedBranch target exists but there's no
-                # branch or it's not visible
-
-                # If are aren't arriving at this invalid branch URL from
-                # another page then we just raise an exception, otherwise we
-                # end up in a bad recursion loop. The target url will be None
-                # in that case.
-                if target_url is None:
-                    raise e
-                self.request.response.addNotification(
-                    "The target %s does not have a linked branch." % path)
-
+            # If are aren't arriving at this invalid branch URL from
+            # another page then we just raise a NotFoundError to generate
+            # a 404, otherwise we end up in a bad recursion loop. The
+            # target url will be None in that case.
+            if target_url is None:
+                raise NotFoundError
+            self.request.response.addNotification(
+                "The target %s does not have a linked branch." % path)
         except (CannotHaveLinkedBranch, InvalidNamespace,
                 InvalidProductName, NotFoundError), e:
             # If are aren't arriving at this invalid branch URL from another
-            # page then we just raise an exception, otherwise we end up in a
-            # bad recursion loop. The target url will be None in that case.
+            # page then we just raise a NotFoundError to generate a 404,
+            # otherwise we end up in a bad recursion loop. The target url will
+            # be None in that case.
             if target_url is None:
-                raise e
+                raise NotFoundError
             error_msg = str(e)
             if error_msg == '':
                 error_msg = "Invalid branch lp:%s." % path
