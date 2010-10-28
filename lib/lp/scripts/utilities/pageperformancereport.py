@@ -142,7 +142,7 @@ class SQLiteRequestTimes:
         self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
         log.debug('Using request database %s' % self.filename)
         # Some speed optimization.
-        self.con.execute('PRAGMA cache_size = 200000') # ~200M
+        self.con.execute('PRAGMA cache_size = 400000') # ~400M
         self.con.execute('PRAGMA synchronous = off')
         self.con.execute('PRAGMA journal_mode = off')
 
