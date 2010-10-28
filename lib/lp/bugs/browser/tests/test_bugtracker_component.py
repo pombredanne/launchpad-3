@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     login,
@@ -40,8 +41,9 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
     def test_view_attributes(self):
         component = self.factory.makeBugTrackerComponent(
             u'Example', self.comp_group)
+        form = self._makeForm(component)
         view = create_initialized_view(
-            component, name='+edit')
+            component, name='+edit', form=form)
         label = 'Link a distribution source package to the Example component'
         self.assertEqual(label, view.label)
         self.assertEqual(label, view.page_title)
@@ -59,9 +61,9 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
             component, name='+edit', form=form)
         self.assertEqual([], view.errors)
 
-        self.assertEqual(component.distro_source_package, package)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
+        self.assertEqual(component.distro_source_package, package)
         expected = (
             "Test:Example is now linked to the foobar source package in Ubuntu")
         self.assertEqual(expected, notifications.pop().message)
@@ -74,10 +76,23 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
             u'b', self.comp_group)
         package = self.factory.makeDistributionSourcePackage()
 
-        form = self._makeForm(component_a)
+        form = self._makeForm(package)
+        view = create_initialized_view(
+            package, name='+edit', form=form)
+        # TODO: How to cause the form to do its link action?
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual([], view.errors)
         self.assertEqual(component_a.distro_source_package, package)
 
         form = self._makeForm(component_b)
+        view = create_initialized_view(
+            package, name='+edit', form=form)
+        # TODO: How to cause the form to do its link action?
+        contents = view.render()
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual([], view.errors)
         self.assertIs(None, component_b.distro_source_package)
         self.assertEqual(1, len(view.errors))
         expected = (
