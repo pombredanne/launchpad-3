@@ -1438,7 +1438,8 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment fro
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest/nest-part instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.source_directory IS 'The location in the branch to nest, if this is a nest-part instruction.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
 
