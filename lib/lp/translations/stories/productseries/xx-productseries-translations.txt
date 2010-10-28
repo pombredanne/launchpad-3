@@ -164,7 +164,8 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         owner_browser.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch.
+    Launchpad allows communities to translate projects using
+    imports or a branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
@@ -186,7 +187,8 @@ An administrator also sees the notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         admin_browser.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch.
+    Launchpad allows communities to translate projects using
+    imports or a branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
