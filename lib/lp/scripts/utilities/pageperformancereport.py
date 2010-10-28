@@ -20,7 +20,6 @@ import textwrap
 import time
 import warnings
 
-import numpy
 import simplejson as json
 import sre_constants
 import zc.zservertracelog.tracereport
