@@ -3808,6 +3808,35 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_id, team_id))
 
+    def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
+        # Merge the karma total cache so the user does not think the karma
+        # was lost.
+        if from_karma > 0:
+            cur.execute('''
+                SELECT karma_total FROM KarmaTotalCache WHERE person=%(to_id)d
+                ''' % vars())
+            result = cur.fetchone()
+            if result:
+                # Add the karma to the remaining user.
+                karma_total =  from_karma + result[0]
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
+                    WHERE person=%(to_id)d
+                    ''' % vars())
+            else:
+                # Make the existing karma belong to the remaining user.
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET person=%(to_id)d
+                    WHERE person=%(from_id)d
+                    ''' % vars())
+        # Delete the old caches; the daily job will build them later.
+        cur.execute('''
+            DELETE FROM KarmaTotalCache WHERE person=%(from_id)d
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM KarmaCache WHERE person=%(from_id)d
+            ''' % vars())
+
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
@@ -3846,8 +3875,6 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
-            ('karmacache', 'person'),
-            ('karmatotalcache', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
@@ -3978,6 +4005,10 @@ class PersonSet:
 
         self._mergeWebServiceBan(cur, from_id, to_id)
         skip.append(('webserviceban', 'person'))
+
+        self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
+        skip.append(('karmacache', 'person'))
+        skip.append(('karmatotalcache', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
