@@ -21,6 +21,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
@@ -71,6 +72,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             prerequisite_branch = None
         bmp = self.factory.makeBranchMergeProposal(
             registrant=registrant, product=product,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW,
             prerequisite_branch=prerequisite_branch,
             preview_diff=preview_diff, initial_comment=initial_comment)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
@@ -342,7 +344,6 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         """Ensure the right delta is filled out if there is a change."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         self.assertEqual(
-            '    Status: Work in progress => Needs review\n\n'
             'Commit Message changed to:\n\nnew commit message\n\n'
             'Description changed to:\n\nchange description',
             job.delta_text)
@@ -365,8 +366,6 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             'lp://dev/~mary/super-product/bar', email['subject'])
         expected = dedent("""\
             The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
-
-                Status: Work in progress => Needs review
 
             Commit Message changed to:
 
