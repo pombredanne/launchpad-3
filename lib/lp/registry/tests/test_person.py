@@ -560,6 +560,18 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(0, duplicate.karma)
         self.assertEqual(28, person.karma)
 
+    def test_person_date_created_preserved(self):
+        # Verify that the oldest datecreated is merged.
+        person = self.factory.makePerson()
+        duplicate = self.factory.makePerson()
+        oldest_date = datetime(
+            2005, 11, 25, 0, 0, 0, 0, pytz.timezone('UTC'))
+        removeSecurityProxy(duplicate).datecreated = oldest_date
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(oldest_date, person.datecreated)
+
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

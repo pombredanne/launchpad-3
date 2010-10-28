@@ -3813,7 +3813,8 @@ class PersonSet:
         # was lost.
         if from_karma > 0:
             cur.execute('''
-                SELECT karma_total FROM KarmaTotalCache WHERE person=%(to_id)d
+                SELECT karma_total FROM KarmaTotalCache
+                WHERE person = %(to_id)d
                 ''' % vars())
             result = cur.fetchone()
             if result:
@@ -3821,20 +3822,29 @@ class PersonSet:
                 karma_total =  from_karma + result[0]
                 cur.execute('''
                     UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
-                    WHERE person=%(to_id)d
+                    WHERE person = %(to_id)d
                     ''' % vars())
             else:
                 # Make the existing karma belong to the remaining user.
                 cur.execute('''
-                    UPDATE KarmaTotalCache SET person=%(to_id)d
-                    WHERE person=%(from_id)d
+                    UPDATE KarmaTotalCache SET person = %(to_id)d
+                    WHERE person = %(from_id)d
                     ''' % vars())
         # Delete the old caches; the daily job will build them later.
         cur.execute('''
-            DELETE FROM KarmaTotalCache WHERE person=%(from_id)d
+            DELETE FROM KarmaTotalCache WHERE person = %(from_id)d
             ''' % vars())
         cur.execute('''
-            DELETE FROM KarmaCache WHERE person=%(from_id)d
+            DELETE FROM KarmaCache WHERE person = %(from_id)d
+            ''' % vars())
+
+    def _mergeDateCreated(self, cur, from_id, to_id):
+        cur.execute('''
+            UPDATE Person
+            SET datecreated = (
+                SELECT MIN(datecreated) FROM Person
+                WHERE id in (%(to_id)d, %(from_id)d) LIMIT 1)
+            WHERE id = %(to_id)d
             ''' % vars())
 
     def merge(self, from_person, to_person):
@@ -4009,6 +4019,8 @@ class PersonSet:
         self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
         skip.append(('karmacache', 'person'))
         skip.append(('karmatotalcache', 'person'))
+
+        self._mergeDateCreated(cur, from_id, to_id)
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
