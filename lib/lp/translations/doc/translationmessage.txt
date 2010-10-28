@@ -27,7 +27,7 @@ DummyTranslationMessage both implement ITranslationMessage:
     True
 
     >>> dummy_message = potmsgset.getCurrentTranslationMessageOrDummy(
-    ...     factory.makePOFile())
+    ...     factory.makePOFile('xh'))
     >>> verifyObject(ITranslationMessage, dummy_message)
     True
 
