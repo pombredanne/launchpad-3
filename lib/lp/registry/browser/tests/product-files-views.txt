@@ -21,7 +21,7 @@ Test for the product/+download page.
 
     >>> def print_series_release(sr):
     ...     print "%s from the %s series" % (sr.release.name_with_codename,
-    ...                                      sr.series.series.name)
+    ...                                      sr.series.name)
 
     >>> for sr in batch:
     ...     print_series_release(sr)
