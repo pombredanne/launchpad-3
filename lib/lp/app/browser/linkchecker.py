@@ -73,5 +73,10 @@ class LinkCheckerAPI:
             except (CannotHaveLinkedBranch, InvalidNamespace,
                     InvalidProductName, NoLinkedBranch, NoSuchBranch,
                     NotFoundError) as e:
-                invalid_links[link] = str(e)
+                invalid_links[link] = self._error_message(e)
         return invalid_links
+
+    def _error_message(self, ex):
+        if hasattr(ex, 'display_message'):
+            return ex.display_message
+        return str(ex)
