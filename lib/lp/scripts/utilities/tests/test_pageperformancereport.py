@@ -17,6 +17,7 @@ from lp.scripts.utilities.pageperformancereport import (
     Stats,
     )
 
+
 class FakeOptions:
     timeout = 4
     db_file = None
@@ -27,8 +28,9 @@ class FakeOptions:
         """Assign all arguments as attributes."""
         self.__dict__.update(kwargs)
 
+
 class FakeRequest:
-    def __init__(self, url, app_seconds, sql_statements=None, 
+    def __init__(self, url, app_seconds, sql_statements=None,
                  sql_seconds=None, pageid=None):
         self.url = url
         self.pageid = pageid
@@ -41,6 +43,7 @@ class FakeStats(Stats):
     def __init__(self, **kwargs):
         # Override the constructor to just store the values.
         self.__dict__.update(kwargs)
+
 
 FAKE_REQUESTS = [
     FakeRequest('/', 0.5, pageid='+root'),
@@ -70,9 +73,7 @@ CATEGORY_STATS = [
         median_sqlstatements=16, std_sqlstatements=208.94,
         histogram=[[0, 2], [1, 2], [2, 2], [3, 1], [4, 2], [5, 3]],
         )),
-    (Category('Test', ''), FakeStats(
-        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
-        )),
+    (Category('Test', ''), FakeStats()),
     (Category('Bugs', ''), FakeStats(
         total_hits=6, total_time=51.70, mean=8.62, median=4.5, std=6.90,
         total_sqltime=33.40, mean_sqltime=5.57, median_sqltime=3,
@@ -150,6 +151,7 @@ PAGEID_STATS = [
         histogram=[[0, 1], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
         )),
     ]
+
 
 class TestRequestTimes(TestCase):
     """Tests the RequestTimes backend."""

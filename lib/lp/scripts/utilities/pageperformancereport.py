@@ -6,13 +6,15 @@
 __metaclass__ = type
 __all__ = ['main']
 
+import bz2
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
+import csv
 from datetime import datetime
-import os.path
+import gzip
 import math
+import os.path
 import re
-import subprocess
 from textwrap import dedent
 import textwrap
 import time
@@ -53,6 +55,7 @@ class Category:
 
     Requests belong to a Category if the URL matches a regular expression.
     """
+
     def __init__(self, title, regexp):
         self.title = title
         self.regexp = regexp
@@ -117,7 +120,7 @@ class OnlineApproximateMedian:
     once. (It will hold in memory log B of n elements.)
 
     It was described and analysed in
-    D. Cantone and  M.Hofri, M, 
+    D. Cantone and  M.Hofri, M,
     "Analysis of An Approximate Median Selection Algorithm"
     ftp://ftp.cs.wpi.edu/pub/techreports/pdf/06-17.pdf
 
@@ -125,13 +128,14 @@ class OnlineApproximateMedian:
     It will compute the median among B_size values. And the median among
     those.
     """
+
     def __init__(self, bucket_size=9):
         """Creates a new estimator.
 
         It approximates the median by finding the median among each
         successive bucket_size element. And then using these medians for other
         round of selection.
- 
+
         The bucket size should be a low odd-integer.
         """
         self.count = 0
@@ -226,7 +230,6 @@ class Stats:
         else:
             return None
 
-
     def text(self):
         """Return a textual version of the stats."""
         return textwrap.dedent("""
@@ -256,7 +259,7 @@ class OnlineStats(Stats):
         self.sql_time_median_approximate = OnlineApproximateMedian()
         self.sql_statements_stats = OnlineStatsCalculator()
         self.sql_statements_median_approximate = OnlineApproximateMedian()
-        self.histogram = [
+        self._histogram = [
             [x, 0] for x in range(histogram_width)]
 
     @property
@@ -311,6 +314,13 @@ class OnlineStats(Stats):
     def std_sqlstatements(self):
         return self.sql_statements_stats.std
 
+    @property
+    def histogram(self):
+        if self.time_stats.count:
+            return self._histogram
+        else:
+            return None
+
     def update(self, request):
         """Update the stats based on request."""
         self.time_stats.update(request.app_seconds)
@@ -341,7 +351,7 @@ class RequestTimes:
 
     def add_request(self, request):
         """Add a request to the ."""
-        for category, stats  in self.category_times:
+        for category, stats in self.category_times:
             if category.match(request):
                 stats.update(request)
 
@@ -497,7 +507,30 @@ def main():
         open(report_filename, 'w'), None, pageid_times, None,
         options.timeout - 2)
 
-    times.close(options.db_file is None)
+    # Output metrics for selected categories.
+    report_filename = _report_filename('metrics.dat')
+    log.info('Saving category_metrics %s', report_filename)
+    metrics_file = open(report_filename, 'w')
+    writer = csv.writer(metrics_file, delimiter=':')
+    date = options.until_ts or options.from_ts or datetime.utcnow()
+    date = time.mktime(date.timetuple())
+
+    for option in script_config.options('metrics'):
+        name = script_config.get('metrics', option)
+        found = False
+        for category, stats in category_times:
+            if category.title == name:
+                writer.writerows([
+                    ("%s_99" % option, "%f@%d" % (
+                        stats.ninetyninth_percentile_time, date)),
+                    ("%s_mean" % option, "%f@%d" % (stats.mean, date))])
+                found = True
+                break
+        if not found:
+            log.warning("Can't find category %s for metric %s" % (
+                option, name))
+    metrics_file.close()
+
     return 0
 
 
@@ -508,17 +541,9 @@ def smart_open(filename, mode='r'):
     """
     ext = os.path.splitext(filename)[1]
     if ext == '.bz2':
-        p = subprocess.Popen(
-            ['bunzip2', '-c', filename],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        p.stdin.close()
-        return p.stdout
+        return bz2.BZ2File(filename, 'r')
     elif ext == '.gz':
-        p = subprocess.Popen(
-            ['gunzip', '-c', filename],
-            stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        p.stdin.close()
-        return p.stdout
+        return gzip.GzipFile(filename, 'r')
     else:
         return open(filename, mode)
 
@@ -871,4 +896,3 @@ def html_report(
         </body>
         </html>
         """)
-
