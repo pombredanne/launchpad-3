@@ -417,6 +417,27 @@ releasefileglob fields.
     ftp://mozilla.org/firefox.*bz2
 
 
+Viewing series for a product
+============================
+
+All the product series can be viewed in batches.
+
+    >>> product = factory.makeProduct()
+    >>> for name in ('stable', 'testing', '1.1', '1.2', 'extra'):
+    ...     series = factory.makeProductSeries(product=product, name=name)
+    >>> view = create_view(product, name='+series')
+    >>> batch = view.batched_series.currentBatch()
+    >>> print batch.total()
+    6
+    >>> for series in batch:
+    ...     print series.name
+    trunk
+    1.2
+    1.1
+    testing
+    stable
+
+
 Product index view
 ==================
 

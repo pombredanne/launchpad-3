@@ -29,7 +29,7 @@ __all__ = [
     'ProductPackagesPortletView',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSeriesView',
+    'ProductSeriesSetView',
     'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
@@ -1717,7 +1717,7 @@ class ProductAddSeriesView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class ProductSeriesView(ProductView):
+class ProductSeriesSetView(ProductView):
     """A view for showing a product's series."""
 
     label = 'timeline'
