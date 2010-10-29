@@ -1265,7 +1265,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             old_revision = self.makeRevision()
         if new_revision is None:
             new_revision = self.makeRevision()
-        diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
