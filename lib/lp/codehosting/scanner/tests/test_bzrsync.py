@@ -673,6 +673,7 @@ class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
         parent_id = commit_file(self.db_branch, 'foo', 'bar')
         self.factory.makeBranchRevision(self.db_branch, parent_id,
                 revision_date=self.factory.getUniqueDate())
+        self.db_branch.last_scanned_id = parent_id
         bmp = self.factory.makeBranchMergeProposal(
             source_branch=self.db_branch,
             date_created=self.factory.getUniqueDate())
