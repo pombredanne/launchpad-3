@@ -2009,8 +2009,9 @@ class Person(
     # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
+        if not self.is_valid_person:
+            raise AssertionError(
+                "You can only deactivate an account of a valid person.")
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2045,11 +2046,15 @@ class Person(
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
+            changed = False
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
-            elif pillar.driver.id == self.id:
+                changed = True
+            if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = registry_experts
-            else:
+                changed = True
+
+            if not changed:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
                 raise AssertionError(
