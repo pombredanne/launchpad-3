@@ -14,8 +14,6 @@ import math
 import re
 import subprocess
 from textwrap import dedent
-import sqlite3
-import tempfile
 import textwrap
 import time
 
@@ -97,12 +95,9 @@ class OnlineStatsCalculator:
 
     @property
     def variance(self):
-        """Return the population variance.
-
-        This is None when no value have been added to the set.
-        """
+        """Return the population variance."""
         if self.count == 0:
-            return None
+            return 0
         else:
             return self.M2/self.count
 
@@ -110,7 +105,7 @@ class OnlineStatsCalculator:
     def std(self):
         """Return the standard deviation."""
         if self.count == 0:
-            return None
+            return 0
         else:
             return math.sqrt(self.variance)
 
@@ -172,7 +167,7 @@ class OnlineApproximateMedian:
     def median(self):
         """Return the median."""
         if self.count == 0:
-            return None
+            return 0
 
         # Find the 'weighted' median by assigning a weight to each
         # element proportional to how far they have been selected.
@@ -191,7 +186,7 @@ class OnlineApproximateMedian:
 
 
 class Stats:
-    """Bag to hold request statistics.
+    """Bag to hold and compute request statistics.
 
     All times are in seconds.
     """
@@ -247,245 +242,135 @@ class Stats:
                 self.median_sqlstatements, self.std_sqlstatements))
 
 
-class SQLiteRequestTimes:
-    """SQLite-based request times computation."""
+class OnlineStats(Stats):
+    """Implementation of stats that can be computed online.
+
+    You call update() for each request and the stats are updated incrementally
+    with minimum storage space.
+    """
+
+    def __init__(self, histogram_width):
+        self.time_stats = OnlineStatsCalculator()
+        self.time_median_approximate = OnlineApproximateMedian()
+        self.sql_time_stats = OnlineStatsCalculator()
+        self.sql_time_median_approximate = OnlineApproximateMedian()
+        self.sql_statements_stats = OnlineStatsCalculator()
+        self.sql_statements_median_approximate = OnlineApproximateMedian()
+        self.histogram = [
+            [x, 0] for x in range(histogram_width)]
+
+    @property
+    def total_hits(self):
+        return self.time_stats.count
+
+    @property
+    def total_time(self):
+        return self.time_stats.sum
+
+    @property
+    def mean(self):
+        return self.time_stats.mean
+
+    @property
+    def median(self):
+        return self.time_median_approximate.median
+
+    @property
+    def std(self):
+        return self.time_stats.std
+
+    @property
+    def total_sqltime(self):
+        return self.sql_time_stats.sum
+
+    @property
+    def mean_sqltime(self):
+        return self.sql_time_stats.mean
+
+    @property
+    def median_sqltime(self):
+        return self.sql_time_median_approximate.median
+
+    @property
+    def std_sqltime(self):
+        return self.sql_time_stats.std
+
+    @property
+    def total_sqlstatements(self):
+        return self.sql_statements_stats.sum
+
+    @property
+    def mean_sqlstatements(self):
+        return self.sql_statements_stats.mean
+
+    @property
+    def median_sqlstatements(self):
+        return self.sql_statements_median_approximate.median
+
+    @property
+    def std_sqlstatements(self):
+        return self.sql_statements_stats.std
+
+    def update(self, request):
+        """Update the stats based on request."""
+        self.time_stats.update(request.app_seconds)
+        self.time_median_approximate.update(request.app_seconds)
+        self.sql_time_stats.update(request.sql_seconds)
+        self.sql_time_median_approximate.update(request.sql_seconds)
+        self.sql_statements_stats.update(request.sql_statements)
+        self.sql_statements_median_approximate.update(request.sql_statements)
+
+        idx = int(min(len(self.histogram)-1, request.app_seconds))
+        self.histogram[idx][1] += 1
+
+
+class RequestTimes:
+    """Collect the """
 
     def __init__(self, categories, options):
-        if options.db_file is None:
-            fd, self.filename = tempfile.mkstemp(suffix='.db', prefix='ppr')
-            os.close(fd)
-        else:
-            self.filename = options.db_file
-        self.con = sqlite3.connect(self.filename, isolation_level='EXCLUSIVE')
-        log.debug('Using request database %s' % self.filename)
-        # Some speed optimization.
-        self.con.execute('PRAGMA cache_size = 400000') # ~400M
-        self.con.execute('PRAGMA synchronous = off')
-        self.con.execute('PRAGMA journal_mode = off')
-
-        self.categories = categories
-        self.store_all_request = options.pageids or options.top_urls
+        self.by_pageids = options.pageids
+        self.by_urls = options.top_urls
 
         # Histogram has a bin per second up to 1.5 our timeout.
         self.histogram_width = int(options.timeout*1.5)
-        self.cur = self.con.cursor()
-
-        # Create the tables, ignore errors about them being already present.
-        try:
-            self.cur.execute('''
-                CREATE TABLE category_request (
-                    category INTEGER,
-                    time REAL,
-                    sql_statements INTEGER,
-                    sql_time REAL)
-                    ''');
-        except sqlite3.OperationalError, e:
-            if 'already exists' in str(e):
-                pass
-            else:
-                raise
-
-        if self.store_all_request:
-            try:
-                self.cur.execute('''
-                    CREATE TABLE request (
-                        pageid TEXT,
-                        url TEXT,
-                        time REAL,
-                        sql_statements INTEGER,
-                        sql_time REAL)
-                        ''');
-            except sqlite3.OperationalError, e:
-                if 'already exists' in str(e):
-                    pass
-                else:
-                    raise
-
-        # A table that will be used in a join to compute histogram.
-        self.cur.execute("CREATE TEMP TABLE histogram (bin INT)")
-        for x in range(self.histogram_width):
-            self.cur.execute('INSERT INTO histogram VALUES (?)', (x,))
+        self.category_times = [
+            (category, OnlineStats(self.histogram_width))
+            for category in categories]
+        self.url_times = {}
+        self.pageid_times = {}
 
     def add_request(self, request):
-        """Add a request to the cache."""
-        sql_statements = request.sql_statements
-        sql_seconds = request.sql_seconds
-
-        for idx, category in enumerate(self.categories):
+        """Add a request to the ."""
+        for category, stats  in self.category_times:
             if category.match(request):
-                self.con.execute(
-                    "INSERT INTO category_request VALUES (?,?,?,?)",
-                    (idx, request.app_seconds, sql_statements, sql_seconds))
+                stats.update(request)
 
-        if self.store_all_request:
+        if self.by_pageids:
             pageid = request.pageid or 'Unknown'
-            self.con.execute(
-                "INSERT INTO request VALUES (?,?,?,?,?)",
-                (pageid, request.url, request.app_seconds, sql_statements,
-                    sql_seconds))
+            stats = self.pageid_times.setdefault(
+                pageid, OnlineStats(self.histogram_width))
+            stats.update(request)
 
-    def commit(self):
-        """Call commit on the underlying connection."""
-        self.con.commit()
+        if self.by_urls:
+            stats = self.url_times.setdefault(
+                request.url, OnlineStats(self.histogram_width))
+            stats.update(request)
 
     def get_category_times(self):
         """Return the times for each category."""
-
-        times = self.get_times('category_request', 'category')
-
-        return [
-            (category, times.get(i, Stats()))
-            for i, category in enumerate(self.categories)]
-
-    def get_times(self, table, column):
-        """Return the stats for unique value of table.column"""
-
-        times = {}
-        median_idx_by_key = {}
-        replacements = dict(table=table, column=column)
-
-        # Compute count, total and average.
-        self.cur.execute('''
-            CREATE TEMPORARY TABLE IF NOT EXISTS {table}_stats AS
-            SELECT {column},
-                count(time) AS time_n, sum(time) AS total_time,
-                avg(time) AS mean_time,
-                count(sql_time) AS sqltime_n, sum(sql_time) AS total_sqltime,
-                avg(sql_time) AS mean_sqltime,
-                count(sql_statements) AS sqlstatements_n,
-                sum(sql_statements) AS total_sqlstatements,
-                avg(sql_statements) AS mean_sqlstatements
-            FROM {table}
-            GROUP BY {column}
-            '''.format(**replacements))
-        self.cur.execute('''
-            SELECT {column}, time_n, total_time, mean_time,
-                   sqltime_n,
-                   coalesce(total_sqltime, 0), coalesce(mean_sqltime, 0),
-                   sqlstatements_n, coalesce(total_sqlstatements, 0),
-                   coalesce(mean_sqlstatements, 0)
-              FROM {table}_stats
-              '''.format(**replacements))
-        for row in self.cur.fetchall():
-            stats = times.setdefault(row[0], Stats())
-            (stats.total_hits, stats.total_time, stats.mean,
-                sqltime_n, stats.total_sqltime, stats.mean_sqltime,
-                sqlstatements_n, stats.total_sqlstatements,
-                stats.mean_sqlstatements) = row[1:]
-            # Store the index of the median for each field.
-            median_idx = median_idx_by_key.setdefault(row[0], {})
-            median_idx['time'] = int((stats.total_hits-1)/2)
-            median_idx['sql_time'] = int((sqltime_n-1)/2)
-            median_idx['sql_statements'] = int((sqlstatements_n-1)/2)
-
-        # Compute std deviation.
-        # The variance is the average of the sum of the square difference to
-        # the mean.
-        # The standard deviation is the square-root of the variance.
-        # sqlite doesn't support ** or POWER so we expand the expression.
-        # For the same reason, we do the square root in python.
-        self.cur.execute('''
-            SELECT {table}_stats.{column},
-                time_square_diff/time_n AS var_time,
-                coalesce(sqltime_square_diff/sqltime_n, 0) AS var_sqltime,
-                coalesce(sqlstatements_square_diff/sqlstatements_n, 0)
-                    AS var_sqlstatements
-            FROM {table}_stats JOIN (
-                SELECT {table}.{column},
-                    sum((time-mean_time)*(time-mean_time))
-                        AS time_square_diff,
-                    sum((sql_time-mean_sqltime)*(sql_time-mean_sqltime))
-                        AS sqltime_square_diff,
-                    sum((sql_statements-mean_sqlstatements)*
-                        (sql_statements-mean_sqlstatements))
-                        AS sqlstatements_square_diff
-                  FROM {table} JOIN {table}_stats
-                    ON ({table}.{column}= {table}_stats.{column})
-               GROUP BY {table}.{column}
-                ) AS {table}_square_diff ON (
-                    {table}_stats.{column} = {table}_square_diff.{column})
-                '''.format(**replacements))
-        for row in self.cur.fetchall():
-            stats = times[row[0]]
-            (stats.std, stats.std_sqltime, stats.std_sqlstatements) = [
-                math.sqrt(x) for x in row[1:]]
-
-        # Compute the median.
-        for field, median_attribute in [
-                ('time', 'median'),
-                ('sql_time', 'median_sqltime'),
-                ('sql_statements', 'median_sqlstatements')]:
-            self.cur.execute('''
-                SELECT {column}, {field} FROM {table}
-                WHERE {field} IS NOT NULL
-              ORDER BY {column}, {field}
-                      '''.format(field=field, **replacements))
-            idx = 0
-            current_key = None
-            for key, value in self.cur.fetchall():
-                if key != current_key:
-                    idx = 0
-                    median_idx = median_idx_by_key[key][field]
-                    current_key = key
-                if idx == median_idx:
-                    stats = times[key]
-                    setattr(stats, median_attribute, value)
-                idx += 1
-
-        # Compute the histogram of requests.
-        self.cur.execute('''
-            SELECT {column}, bin, count(time)
-              FROM {table} JOIN histogram ON (
-                histogram.bin = CAST (min(time, {last_bin_index}) AS INTEGER))
-              GROUP BY {column}, bin
-              '''.format(
-                      last_bin_index=(self.histogram_width-1),
-                      **replacements))
-        for key, bin, n in self.cur.fetchall():
-            stats = times[key]
-            if stats.histogram is None:
-                # Create an empty histogram.
-                stats.histogram = [
-                    [x, 0] for x in range(self.histogram_width)]
-            stats.histogram[bin][1] = n
-
-        return times
+        return self.category_times
 
     def get_top_urls_times(self, top_n):
         """Return the times for the Top URL by total time"""
-        # Get the requests from the top N urls by total time.
-        self.cur.execute('''
-            CREATE TEMPORARY TABLE IF NOT EXISTS top_n_url_request AS
-            SELECT request.url, time, sql_statements, sql_time
-            FROM request JOIN (
-                SELECT url, sum(time) FROM request
-                GROUP BY url
-                ORDER BY sum(time) DESC
-                LIMIT %d) AS top_n_url
-                ON (request.url = top_n_url.url)
-        ''' % top_n)
         # Sort the result by total time
         return sorted(
-            self.get_times('top_n_url_request', 'url').items(),
-            key=lambda x: x[1].total_time, reverse=True)
+            self.url_times.items(),
+            key=lambda x: x[1].total_time, reverse=True)[:top_n]
 
     def get_pageid_times(self):
         """Return the times for the pageids."""
         # Sort the result by pageid
-        return sorted(
-            self.get_times('request', 'pageid').items())
-
-    def close(self, remove=False):
-        """Close the SQLite connection.
-
-        :param remove: If true, the DB file will be removed.
-        """
-        self.con.close()
-        if remove:
-            log.debug('Deleting request database.')
-            os.unlink(self.filename)
-        else:
-            log.debug('Keeping request database %s.' % self.filename)
+        return sorted(self.pageid_times.items())
 
 
 def main():
@@ -524,17 +409,13 @@ def main():
         # Default to 12: the staging timeout.
         default=12, type="int",
         help="The configured timeout value : determines high risk page ids.")
-    parser.add_option(
-        "--db-file", dest="db_file",
-        default=None, metavar="FILE",
-        help="Do not parse the records, generate reports from the DB file.")
 
     options, args = parser.parse_args()
 
     if not os.path.isdir(options.directory):
         parser.error("Directory %s does not exist" % options.directory)
 
-    if len(args) == 0 and options.db_file is None:
+    if len(args) == 0:
         parser.error("At least one zserver tracelog file must be provided")
 
     if options.from_ts is not None and options.until_ts is not None:
@@ -568,22 +449,17 @@ def main():
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
 
-    times = SQLiteRequestTimes(categories, options)
+    times = RequestTimes(categories, options)
 
-    if len(args) > 0:
-        parse(args, times, options)
-        times.commit()
+    parse(args, times, options)
 
-    log.debug('Generating category statistics...')
     category_times = times.get_category_times()
 
     pageid_times = []
     url_times= []
     if options.top_urls:
-        log.debug('Generating top %d urls statistics...' % options.top_urls)
         url_times = times.get_top_urls_times(options.top_urls)
     if options.pageids:
-        log.debug('Generating pageid statistics...')
         pageid_times = times.get_pageid_times()
 
     def _report_filename(filename):

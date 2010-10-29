@@ -13,7 +13,7 @@ from lp.scripts.utilities.pageperformancereport import (
     Category,
     OnlineApproximateMedian,
     OnlineStatsCalculator,
-    SQLiteRequestTimes,
+    RequestTimes,
     Stats,
     )
 
@@ -60,15 +60,19 @@ FAKE_REQUESTS = [
 
 # The category stats computed for the above 12 requests.
 CATEGORY_STATS = [
+    # Median is an approximation.
+    # Real values are: 2.50, 2.20, 30
     (Category('All', ''), FakeStats(
-        total_hits=12, total_time=62.60, mean=5.22, median=2.5, std=5.99,
-        total_sqltime=42, mean_sqltime=3.82, median_sqltime=2.2,
+        total_hits=12, total_time=62.60, mean=5.22, median=1.0, std=5.99,
+        total_sqltime=42, mean_sqltime=3.82, median_sqltime=1.3,
         std_sqltime=3.89,
         total_sqlstatements=1392, mean_sqlstatements=126.55,
-        median_sqlstatements=30, std_sqlstatements=208.94,
+        median_sqlstatements=16, std_sqlstatements=208.94,
         histogram=[[0, 2], [1, 2], [2, 2], [3, 1], [4, 2], [5, 3]],
         )),
-    (Category('Test', ''), FakeStats()),
+    (Category('Test', ''), FakeStats(
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]],
+        )),
     (Category('Bugs', ''), FakeStats(
         total_hits=6, total_time=51.70, mean=8.62, median=4.5, std=6.90,
         total_sqltime=33.40, mean_sqltime=5.57, median_sqltime=3,
@@ -147,40 +151,15 @@ PAGEID_STATS = [
         )),
     ]
 
-class TestSQLiteTimes(TestCase):
-    """Tests the SQLiteTimes backend."""
+class TestRequestTimes(TestCase):
+    """Tests the RequestTimes backend."""
 
     def setUp(self):
         TestCase.setUp(self)
         self.categories = [
             Category('All', '.*'), Category('Test', '.*test.*'),
             Category('Bugs', '.*bugs.*')]
-        self.db = SQLiteRequestTimes(self.categories, FakeOptions())
-        self.addCleanup(self.db.close)
-
-    def test_histogram_table_is_created(self):
-        # A histogram table with one row by histogram bin should be
-        # present.
-        self.db.cur.execute('SELECT bin FROM histogram')
-        # Default timeout is 4.
-        self.assertEquals(
-            range(6), [row[0] for row in self.db.cur.fetchall()])
-
-    def test_add_report_null_missing_sql_fields(self):
-        # Ensure that missing sql_statements and sql_time values are
-        # inserted as NULL.
-        self.db.add_request(FakeRequest('/', 10.0))
-        # Request should be inserted into the All category (index 0)
-        # and the normal request table.
-        self.db.cur.execute(
-            '''SELECT sql_statements, sql_time 
-               FROM category_request WHERE category = 0''')
-        self.assertEquals([(None, None)], self.db.cur.fetchall())
-
-        self.db.cur.execute(
-            """SELECT sql_statements, sql_time
-               FROM request WHERE url = '/'""")
-        self.assertEquals([(None, None)], self.db.cur.fetchall())
+        self.db = RequestTimes(self.categories, FakeOptions())
 
     def setUpRequests(self):
         """Insert some requests into the db."""
@@ -242,8 +221,8 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(0, self.stats.count)
         self.assertEquals(0, self.stats.sum)
         self.assertEquals(0, self.stats.mean)
-        self.assertEquals(None, self.stats.variance)
-        self.assertEquals(None, self.stats.std)
+        self.assertEquals(0, self.stats.variance)
+        self.assertEquals(0, self.stats.std)
 
     def test_stats_for_one_value(self):
         # Test the stats when adding one element.
@@ -285,8 +264,8 @@ class TestOnlineApproximateMedian(TestCase):
         TestCase.setUp(self)
         self.estimator = OnlineApproximateMedian()
 
-    def test_median_is_None_when_no_input(self):
-        self.assertEquals(None, self.estimator.median)
+    def test_median_is_0_when_no_input(self):
+        self.assertEquals(0, self.estimator.median)
 
     def test_median_is_true_median_for_n_lower_than_bucket_size(self):
         for x in range(9):
