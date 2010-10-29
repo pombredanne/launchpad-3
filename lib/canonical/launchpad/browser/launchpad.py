@@ -705,11 +705,11 @@ class LaunchpadRootNavigation(Navigation):
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
                 raise Unauthorized("Bug %s is private" % bug_number)
-            uri = URI(canonical_url(bug.default_bugtask))
             # Empty the traversal stack, since we're redirecting.
             self.request.setTraversalStack([])
             # And perform a temporary redirect.
-            return RedirectionView(str(uri), self.request, status=303)
+            return RedirectionView(canonical_url(bug.default_bugtask),
+                self.request, status=303)
         # Explicit catchall - do not redirect.
         return None
 
