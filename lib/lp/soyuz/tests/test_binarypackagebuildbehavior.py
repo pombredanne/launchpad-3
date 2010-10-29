@@ -282,6 +282,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    def _cleanup(self):
+        if os.path.exists(config.builddmaster.root):
+            shutil.rmtree(config.builddmaster.root)
+
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
         self.factory = LaunchpadObjectFactory()
@@ -301,7 +305,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.behavior.setBuilder(self.builder)
         # This is required so that uploaded files from the buildd don't
         # hang around between test runs.
-        self.addCleanup(shutil.rmtree, config.builddmaster.root)
+        self.addCleanup(self._cleanup)
 
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
