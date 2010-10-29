@@ -1708,10 +1708,10 @@ class Archive(SQLBase):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if person.isTeam() and (
             person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
-            return "Open teams can not have PPAs."
+            return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
             return (
-                "Archives cannot have the same name as its distribution.")
+                "A PPA cannot have the same name as its distribution.")
         if proposed_name is None:
             proposed_name = 'ppa'
         try:
