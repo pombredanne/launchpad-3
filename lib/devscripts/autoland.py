@@ -28,7 +28,7 @@ class LaunchpadBranchLander:
         self._launchpad = launchpad
 
     @classmethod
-    def load(cls, service_root='edge'):
+    def load(cls, service_root='production'):
         # XXX: JonathanLange 2009-09-24: No unit tests.
         # XXX: JonathanLange 2009-09-24 bug=435813: If cached data invalid,
         # there's no easy way to delete it and try again.

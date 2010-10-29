@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (

@@ -26,9 +26,12 @@ those notifications look like.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import (
     ...     ObjectModifiedEvent, ObjectCreatedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet, IDistroSeriesSet, IPersonSet,
-    ...     IProductSet, ISourcePackageNameSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
@@ -51,8 +54,8 @@ those notifications look like.
 
 === Editing a bug report ===
 
-    >>> from lp.bugs.interfaces.bug import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = ObjectModifiedEvent(
@@ -207,9 +210,11 @@ bug. Let's take a look at each type.
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IDistroBugTask)
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IDistroBugTask,
+    ...     )
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_crashes_in_debian, providing=IDistroBugTask)

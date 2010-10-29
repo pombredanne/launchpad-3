@@ -315,6 +315,9 @@ class IProjectGroupPublic(
     def getProduct(name):
         """Get a product with name `name`."""
 
+    def getConfigurableProducts():
+        """Get all products that can be edited by user."""
+
     def translatables():
         """Return an iterator over products that have resources translatables.
 
@@ -323,6 +326,10 @@ class IProjectGroupPublic(
 
     def has_translatable():
         """Return a boolean showing the existance of translatables products.
+        """
+
+    def has_branches():
+        """Return a boolean showing the existance of products with branches.
         """
 
     def hasProducts():

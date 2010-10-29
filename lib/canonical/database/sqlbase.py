@@ -71,7 +71,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.interfaces import ISQLBase
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
@@ -270,7 +270,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
         # tested, but the entire test suite blows up awesomely if it's broken.
         # It's entirely unclear where tests for this should be.
-        IPropertyCacheManager(self).clear()
+        clear_property_cache(self)
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "

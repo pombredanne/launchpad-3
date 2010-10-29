@@ -19,8 +19,8 @@ somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
-    >>> from lp.answers.model.question import Question
     >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.model.question import Question
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value,
     ...     QuestionStatus.NEEDSINFO.value)).count()
@@ -43,8 +43,8 @@ somebody are subject to expiration.
     >>> two_weeks_ago = now - timedelta(days=14)
     >>> a_month_ago = now - timedelta(days=31)
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.answers.interfaces.questioncollection import IQuestionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
 

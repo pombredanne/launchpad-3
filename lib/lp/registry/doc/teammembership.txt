@@ -13,9 +13,11 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamSubscriptionPolicy, TeamMembershipStatus,
-    ...     TeamMembershipRenewalPolicy)
+    >>> from lp.registry.interfaces.person import (
+    ...     TeamMembershipRenewalPolicy,
+    ...     TeamSubscriptionPolicy,
+    ...     )
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 XXX: This doctest needs a lot of cleanups!
 -- Guilherme Salgado, 2006-12-15
@@ -981,8 +983,8 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from lp.services.propertycache import IPropertyCache
-    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

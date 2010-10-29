@@ -6,9 +6,9 @@ If we set soft_request_timeout to some value, the page will take
 slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
+    >>> from textwrap import dedent
     >>> old_lastid = globalErrorUtility.getLastOopsReport().id
     >>> test_data = dedent("""
     ...     [database]

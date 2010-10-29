@@ -1,9 +1,11 @@
-= Translation message helper functions =
+Translation message helper functions
+====================================
 
 For rendering translations in the TranslationMessageView a number of
 helper functions exist. The following sections cover them in detail.
 
-== contract_rosetta_escapes ==
+contract_rosetta_escapes
+------------------------
 
     >>> from lp.translations.browser.browser_helpers import (
     ...     contract_rosetta_escapes)
@@ -45,8 +47,20 @@ The string '\[nbsp]' gets converted to a literal '[nbsp]'.
     >>> contract_rosetta_escapes('foo\\[nbsp]bar')
     'foo[nbsp]bar'
 
+Similarly, string '[nnbsp]' gets converted to narrow no-break space
+character.
 
-== expand_rosetta_escapes ==
+    >>> contract_rosetta_escapes('foo[nnbsp]bar')
+    u'foo\u202fbar'
+
+The string '\[nnbsp]' gets converted to a literal '[nnbsp]'.
+
+    >>> contract_rosetta_escapes('foo\\[nnbsp]bar')
+    'foo[nnbsp]bar'
+
+
+expand_rosetta_escapes
+----------------------
 
     >>> from lp.translations.browser.browser_helpers import (
     ...     expand_rosetta_escapes)
@@ -93,8 +107,22 @@ as below:
     >>> expand_rosetta_escapes(u'foo[nbsp]bar')
     u'foo<code>\\[nbsp]</code>bar'
 
+Similarly, narrow no-break spaces get converted to a special constant
+TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR which renders as below:
 
-== parse_cformat_string ==
+    >>> expand_rosetta_escapes(u'foo\u202fbar')
+    u'foo<code>[nnbsp]</code>bar'
+
+Literal occurrences of u'[nnbsp]' get escaped to a special constant
+TranslationConstants.NARROW_NO_BREAK_SPACE_CHAR_ESCAPED which renders them
+as below:
+
+    >>> expand_rosetta_escapes(u'foo[nnbsp]bar')
+    u'foo<code>\\[nnbsp]</code>bar'
+
+
+parse_cformat_string
+--------------------
 
     >>> from lp.translations.browser.browser_helpers import (
     ...     parse_cformat_string)
@@ -112,7 +140,8 @@ as below:
     UnrecognisedCFormatString: %
 
 
-== text_to_html ==
+text_to_html
+------------
 
     >>> from lp.translations.browser.browser_helpers import (
     ...     text_to_html)
@@ -178,7 +207,8 @@ And '\r' should be also handled:
     u'foo<img alt="" src="/@@/translation-newline" /><br/>\nbar'
 
 
-== convert_newlines_to_web_form ==
+convert_newlines_to_web_form
+----------------------------
 
     >>> from lp.translations.browser.browser_helpers import (
     ...     convert_newlines_to_web_form)
@@ -194,7 +224,8 @@ And '\r' should be also handled:
     u'foo\r\nbar'
 
 
-== count_lines ==
+count_lines
+-----------
 
     >>> from lp.translations.browser.browser_helpers import count_lines
     >>> count_lines("foo")
@@ -216,8 +247,8 @@ And '\r' should be also handled:
     ...     "1234566789a123456789a")
     2
     >>> count_lines(
-    ...     "123456789abc123456789abc123456789abc123456789abc123456789abc123456\n"
-    ...     "789a123456789a123456789a")
+    ...     "123456789abc123456789abc123456789abc123456789abc123456789abc"
+    ...     "123456\n789a123456789a123456789a")
     3
     >>> count_lines(
     ...     "123456789abc123456789abc123456789abc123456789abc123456789abc"

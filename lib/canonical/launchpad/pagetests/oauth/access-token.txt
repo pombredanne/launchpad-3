@@ -5,10 +5,11 @@ consumer, the request token is eligible for being exchanged for an
 access token.
 
     # First we create a new request token and review it.
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')

@@ -222,13 +222,13 @@ image and map.
   <img src="deptree.png" usemap="#deptree" />
   <map id="deptree" name="deptree">
   <area shape="poly"
-    title="Support &lt;canvas&gt; Objects" .../>
+    ...title="Support &lt;canvas&gt; Objects" .../>
   <area shape="poly"
-    href="http://blueprints.launchpad.dev/firefox/+spec/e4x" .../>
+    ...href="http://blueprints.launchpad.dev/firefox/+spec/e4x" .../>
   <area shape="poly"
-    href="http://blueprints.launchpad.dev/firefox/+spec/mergewin" .../>
+    ...href="http://blueprints.launchpad.dev/firefox/+spec/mergewin" .../>
   <area shape="poly"
-    href="http://blueprints.launchpad.dev/firefox/+spec/svg...support" .../>
+    ...href="http://blueprints.launchpad.dev/firefox/+spec/svg...support" .../>
   </map>
 
 

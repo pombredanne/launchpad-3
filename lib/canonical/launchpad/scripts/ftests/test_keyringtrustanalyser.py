@@ -8,13 +8,13 @@ import gpgme
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import keys_for_tests
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
-    IGPGHandler,
-    IPersonSet,
     )
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.keyringtrustanalyser import (
     addOtherKeyring,
     addTrustedKeyring,
@@ -29,9 +29,11 @@ foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 
 class LogCollector(logging.Handler):
+
     def __init__(self):
         logging.Handler.__init__(self)
         self.records = []
+
     def emit(self, record):
         self.records.append(self.format(record))
 
