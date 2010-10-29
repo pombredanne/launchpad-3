@@ -742,13 +742,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
         or INACTIVE states.  Further, the user doing the purging, must be
-        a Launchpad administrator or mailing list expert.
+        an owner, Launchpad administrator or mailing list expert.
         """
         requester = IPerson(self.request.principal, None)
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (requester is None or
-            (not requester.inTeam(celebrities.admin) and
-             not requester.inTeam(celebrities.mailing_list_experts))):
+        if (requester is None
+            or not (
+                requester.inTeam(self.context)
+                or requester.inTeam(celebrities.admin)
+                or requester.inTeam(celebrities.mailing_list_experts))):
             return False
         return self.getListInState(*PURGE_STATES) is not None
 

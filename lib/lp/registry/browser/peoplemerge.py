@@ -34,7 +34,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.mailinglist import PURGE_STATES
 from lp.registry.interfaces.person import (
     IAdminPeopleMergeSchema,
     IAdminTeamMergeSchema,
@@ -216,7 +216,13 @@ class AdminTeamMergeView(AdminMergeBaseView):
     def hasMailingList(self, team):
         return (
             team.mailing_list is not None
-            and team.mailing_list.status != MailingListStatus.PURGED)
+            and team.mailing_list.status not in PURGE_STATES)
+
+    def doMerge(self, data):
+        """Purge the inactive mailing list for the owner and merge"""
+        if self.dupe_person.mailing_list is not None:
+            self.dupe_person.mailing_list.purge()
+        super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
@@ -333,6 +339,10 @@ class DeleteTeamView(AdminTeamMergeView):
         # Delete is implemented as a merge process, but email addresses should
         # be deleted because ~registry can never claim them.
         self.context.setContactAddress(None)
+        # Remove the team from super teams. Merge cannot handle super teams,
+        # but that is not an issue hear because the goal is to have no
+        # members.
+
         base.deactivate_members_and_merge_action.success(data)
 
 

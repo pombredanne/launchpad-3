@@ -76,7 +76,7 @@ no communication between the two systems.
     >>> team_one, list_one = factory.makeTeamAndMailingList(
     ...     'team-one', 'no-priv')
 
-    >>> the_owner = team_one.teamowner.preferredemail.email
+    >>> the_owner = team_one.teamowner
 
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
@@ -133,14 +133,14 @@ Mailman side.
     >>> logout()
     >>> transaction.commit()
 
-The team owner cannot purge his list...
+The team owner can purge his list...
 
     >>> login(ANONYMOUS)
     >>> view = create_view(the_owner)
     >>> view.list_can_be_purged
-    False
+    True
 
-...but a Launchpad administrator, or mailing list expert can purge the mailing
+...and Launchpad administrator, or mailing list expert can purge the mailing
 list.
 
     >>> view = create_view(an_admin)

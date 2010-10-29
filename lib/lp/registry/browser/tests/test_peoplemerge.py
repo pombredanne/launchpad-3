@@ -8,12 +8,17 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
@@ -71,3 +76,32 @@ class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
             method='POST')
         view.processForm()
         self.verify_user_must_reselect_email_addresses(view)
+
+
+class TestAdminTeamMergeView(TestCaseWithFactory):
+    """Test the AdminTeamMergeView rules."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAdminTeamMergeView, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.dupe_team = self.factory.makeTeam()
+        self.target_team = self.factory.makeTeam()
+        login_celebrity('registry_experts')
+
+    def test_merge_team_with_inactive_mailing_list(self):
+        mailing_list = self.factory.makeMailingList(
+            self.dupe_team, self.dupe_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        view = create_initialized_view(self.person_set, '+adminteammerge')
+        form = {
+            'field.dupe_person': self.dupe_team.name,
+            'field.target_person': self.target_team.name,
+            'field.actions.deactivate_members_and_merge': 'Merge',
+            }
+        view = create_initialized_view(
+            self.person_set, '+adminteammerge', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
