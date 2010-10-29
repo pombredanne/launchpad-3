@@ -32,8 +32,7 @@ cause this template to render differently.
 
 We also see some comments showing that we had a cache hit, and what the
 configuration was for it ("public").  These comments are only present
-when Launchpad's config is not configured as edge or production (``is_edge``
-or ``is_lpnet``, respectively).
+when Launchpad's config is not configured as production (``is_lpnet``).
 
 If we clear the cache, it will be rendered as expected.
 
@@ -351,9 +350,9 @@ Memcache in templates can be disabled entirely by setting the memcache flag to
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features import per_thread
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features.webapp import ScopesFromRequest
     >>> ignore = getFeatureStore().add(FeatureFlag(
     ...     scope=u'default', flag=u'memcache', value=u'disabled',
     ...     priority=1))

@@ -695,10 +695,10 @@ Though it is not possible through the Launchpad UI, some users of the
 REST API propose other people (as opposed to teams) as part of a
 mentoring process (Bug 498181).
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from zope.component import getUtility
     >>> login(ANONYMOUS)
     >>> owner = getUtility(IPersonSet).getByName('owner')
     >>> logout()

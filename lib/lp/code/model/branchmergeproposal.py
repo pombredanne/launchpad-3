@@ -62,6 +62,7 @@ from lp.code.errors import (
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
     BranchMergeProposalStatusChangeEvent,
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
@@ -413,6 +414,11 @@ class BranchMergeProposal(SQLBase):
         # review state.
         if _date_requested is None:
             _date_requested = UTC_NOW
+        # If we are going from work in progress to needs review, then reset
+        # the root message id and trigger a job to send out the email.
+        if self.queue_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.root_message_id = None
+            notify(BranchMergeProposalNeedsReviewEvent(self))
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested

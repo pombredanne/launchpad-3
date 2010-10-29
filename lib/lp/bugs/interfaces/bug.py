@@ -81,7 +81,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
@@ -491,12 +490,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
-        """
-
-    def getStructuralSubscribers(recipients=None, level=None):
-        """Return `IPerson`s subscribed to this bug's targets.
-
-        This takes into account bug subscription filters.
         """
 
     def getSubscriptionsFromDuplicates():
