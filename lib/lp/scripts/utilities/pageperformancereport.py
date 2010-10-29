@@ -120,12 +120,12 @@ class OnlineApproximateMedian:
     once. (It will hold in memory log B of n elements.)
 
     It was described and analysed in
-    D. Cantone and  M.Hofri, M,
+    D. Cantone and  M.Hofri,
     "Analysis of An Approximate Median Selection Algorithm"
     ftp://ftp.cs.wpi.edu/pub/techreports/pdf/06-17.pdf
 
     This algorithm is similar to Tukey's median of medians technique.
-    It will compute the median among B_size values. And the median among
+    It will compute the median among bucket_size values. And the median among
     those.
     """
 
