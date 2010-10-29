@@ -49,8 +49,8 @@ modified using the CodeImportJobWorkflow utility.
 
 There are two CodeImport objects of interest in the sample data.
 
-    >>> from lp.code.interfaces.codeimport import ICodeImportSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.code.interfaces.codeimport import ICodeImportSet
     >>> branch_lookup = getUtility(IBranchLookup)
     >>> code_import_set = getUtility(ICodeImportSet)
 

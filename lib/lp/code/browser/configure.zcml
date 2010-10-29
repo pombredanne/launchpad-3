@@ -1336,4 +1336,30 @@
         path_expression="string:+merge-queues/${name}"
         rootsite="code" />
 
+    <browser:menus
+        classes="BranchMergeQueueContextMenu"
+        module="lp.code.browser.branchmergequeue"/>
+
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            name="+index"
+            layer="lp.code.publisher.CodeLayer" />
+        <browser:page
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
+            name="+index"
+            template="../templates/branchmergequeue-index.pt"
+            permission="zope.Public" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
+            name="+create-queue"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.Edit" />
+
+    </facet>
+
 </configure>

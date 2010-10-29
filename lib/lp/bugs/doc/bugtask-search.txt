@@ -4,8 +4,10 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
@@ -293,9 +295,11 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
-    >>> from lp.bugs.tests.test_bugtask_1 import (
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
+    >>> from lp.bugs.model.tests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (
@@ -736,9 +740,12 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
-    ...     IMessageSet)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bugattachment import (
+    ...     BugAttachmentType,
+    ...     IBugAttachmentSet,
+    ...     )
     >>> product = factory.makeProduct()
     >>> patch_bug = factory.makeBug(
     ...     product=product)

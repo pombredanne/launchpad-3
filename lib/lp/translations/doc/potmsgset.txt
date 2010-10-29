@@ -13,11 +13,11 @@ We need to get a POTMsgSet object to perform this test.
     >>> from zope.component import getUtility
     >>> from lp.translations.model.translationmessage import (
     ...     TranslationMessage)
-    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.translations.interfaces.potmsgset import IPOTMsgSet
 
     >>> potemplate = factory.makePOTemplate()
     >>> potmsgset = factory.makePOTMsgSet(
@@ -701,10 +701,11 @@ POTMsgSet.getExternallyUsedTranslationMessages
 On the other, we have a translation template for the evolution package in
 Ubuntu Hoary distribution.
 
+    >>> templateset = getUtility(IPOTemplateSet)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> evo_hoary_package = ubuntu_hoary.getSourcePackage('evolution')
-    >>> evo_distro_template = getUtility(IPOTemplateSet).getSubset(
+    >>> evo_distro_template = templateset.getSubset(
     ...     sourcepackagename=evo_hoary_package.sourcepackagename,
     ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
     >>> print evo_distro_template.title
@@ -723,6 +724,16 @@ And both translation templates are current
     True
     >>> evo_distro_template.iscurrent
     True
+
+The "suggestive templates" cache is up to date.
+
+    >>> def refresh_suggestive_templates_cache():
+    ...     """Update the `SuggestivePOTemplate` cache."""
+    ...     templateset.wipeSuggestivePOTemplatesCache()
+    ...     templateset.populateSuggestivePOTemplatesCache()
+
+    >>> refresh_suggestive_templates_cache()
+    >>> transaction.commit()
 
 We have the same message in both templates but with different
 translations in Spanish:
@@ -765,6 +776,7 @@ When a translation template is set as not current, those translations
 are not available as suggestions anymore:
 
     >>> evo_distro_template.iscurrent = False
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
     >>> suggestions = (
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
@@ -790,6 +802,7 @@ translations.
 And products not using translations officially have the same behaviour.
 
     >>> evolution.translations_usage = ServiceUsage.NOT_APPLICABLE
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
@@ -800,6 +813,7 @@ Let's restore the flags for next section.
 
     >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
 
@@ -885,6 +899,7 @@ However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
     >>> potmsgset_translated.potemplate.iscurrent = False
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
     >>> wiki_submissions = (
@@ -900,6 +915,7 @@ Launchpad for translations.
     # suggestions just due to the change to the official_rosetta flag.
     >>> potmsgset_translated.potemplate.iscurrent = True
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
+    >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
     >>> wiki_submissions = (

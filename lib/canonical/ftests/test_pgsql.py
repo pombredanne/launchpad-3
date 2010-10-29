@@ -3,6 +3,10 @@
 
 import os
 
+from fixtures import (
+    EnvironmentVariableFixture,
+    TestWithFixtures,
+    )
 import testtools
 
 from canonical.ftests.pgsql import (
@@ -11,11 +15,10 @@ from canonical.ftests.pgsql import (
     )
 
 
-class TestPgTestSetup(testtools.TestCase):
+class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
 
-    def test_db_naming(self):
-        fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
-        expected_name = "%s_%s" % (PgTestSetup.dbname, os.getpid())
+    def assertDBName(self, expected_name, fixture):
+        """Check that fixture uses expected_name as its dbname."""
         self.assertEqual(expected_name, fixture.dbname)
         fixture.setUp()
         self.addCleanup(fixture.dropDb)
@@ -24,6 +27,19 @@ class TestPgTestSetup(testtools.TestCase):
         cur.execute('SELECT current_database()')
         where = cur.fetchone()[0]
         self.assertEqual(expected_name, where)
+
+    def test_db_naming_LP_TEST_INSTANCE_set(self):
+        # when LP_TEST_INSTANCE is set, it is used for dynamic db naming.
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE', 'xx'))
+        fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
+        expected_name = "%s_xx" % (PgTestSetup.dbname,)
+        self.assertDBName(expected_name, fixture)
+
+    def test_db_naming_without_LP_TEST_INSTANCE_is_static(self):
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
+        expected_name = PgTestSetup.dbname
+        self.assertDBName(expected_name, fixture)
 
     def testOptimization(self):
         # Test to ensure that the database is destroyed only when necessary

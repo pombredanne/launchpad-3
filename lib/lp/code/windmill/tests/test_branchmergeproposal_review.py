@@ -27,7 +27,7 @@ WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
 ADD_COMMENT_BUTTON = (
-    u'//input[@id="field.actions.add" and @class="button js-action"]')
+    u'//input[@id="field.actions.add" and contains(@class, "button")]')
 
 
 class TestRequestReview(WindmillTestCase):
@@ -45,7 +45,7 @@ class TestRequestReview(WindmillTestCase):
 
         client.open(url=''.join([
             windmill.settings['TEST_URL'],
-            '/~name12/gnome-terminal/klingon/']))
+            '~name12/gnome-terminal/klingon/']))
         client.waits.forPageLoad(timeout=u'10000')
 
         link = u'//a[@class="menu-link-register_merge sprite add"]'

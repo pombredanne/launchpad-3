@@ -3,10 +3,10 @@
 The general +filebug allows bugs to be filed on any product or package,
 and to help with this, the LaunchpadTargetWidget is used.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.bugs.interfaces.bug import IFrontPageBugAddForm
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+    >>> from lp.bugs.interfaces.bug import IFrontPageBugAddForm
 
     >>> empty_request = LaunchpadTestRequest()
     >>> widget = LaunchpadTargetWidget(
@@ -14,8 +14,8 @@ and to help with this, the LaunchpadTargetWidget is used.
 
 The widget complies to both IInputWidget and IBrowserWidget.
 
-    >>> from zope.app.form.interfaces import IInputWidget
     >>> from zope.app.form.browser.interfaces import IBrowserWidget
+    >>> from zope.app.form.interfaces import IInputWidget
     >>> verifyObject(IInputWidget, widget)
     True
     >>> verifyObject(IBrowserWidget, widget)

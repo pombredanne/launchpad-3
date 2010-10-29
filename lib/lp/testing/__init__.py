@@ -3,9 +3,6 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -90,7 +87,7 @@ from testtools.content_type import UTF8_TEXT
 import transaction
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+# as of 2009-09-16.  See https://bugs.launchpad.net/bugs/425113.
 from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -564,6 +561,7 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
@@ -719,7 +717,7 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        self.client.open(url=self.layer.appserver_root_url())
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -728,16 +726,19 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = ''
 
     _yui_results = None
-    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
         self.test_path = test_path
-        self.yui_runner_url = self._view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(id='complete')
         response = client.commands.getPageText()

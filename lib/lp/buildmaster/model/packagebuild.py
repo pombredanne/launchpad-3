@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'PackageBuild',
@@ -123,6 +121,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         package_build = cls(build_farm_job, archive, pocket, dependencies)
         store.add(package_build)
         return package_build
+
+    def destroySelf(self):
+        build_farm_job = self.build_farm_job
+        store = Store.of(self)
+        store.remove(self)
+        store.remove(build_farm_job)
 
     @property
     def current_component(self):
