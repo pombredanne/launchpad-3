@@ -1269,9 +1269,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         def make_revision(parent=None):
             sequence = source_branch.revision_history.count() + 1
             if parent is None:
-                parents_ids = []
+                parent_ids = []
             else:
-                parent_ids = [parent.id]
+                parent_ids = [parent.revision_id]
             branch_revision = self.makeBranchRevision(
                 source_branch, sequence=sequence,
                 revision_date=self.getUniqueDate(), parent_ids=parent_ids)
@@ -1284,7 +1284,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 source_branch=source_branch)
         if new_revision is None:
             new_revision = make_revision(old_revision)
-        diff = self.makeDiff()
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
@@ -1356,10 +1355,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None,
-                           parent_ids=None):
+    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+                           parent_ids=None, revision_date=None):
         revision = self.makeRevision(
-            rev_id=revision_id, parent_ids=parent_ids)
+            rev_id=revision_id, parent_ids=parent_ids,
+            revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
