@@ -22,6 +22,7 @@ __all__ = [
     ]
 
 from itertools import chain
+from storm.locals import Store
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
@@ -80,6 +81,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerComponent,
     IBugTrackerComponentGroup,
     )
+from lp.bugs.model.bugtracker import BugTrackerComponent
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.propertycache import cachedproperty
 
@@ -534,6 +536,20 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         distro_name = self.widgets['sourcepackagename'].distribution_name
         distribution = getUtility(IDistributionSet).getByName(distro_name)
         pkg = distribution.getSourcePackage(sourcepackagename)
+
+        # Has this source package already been assigned to a component?
+        pkgs = Store.of(component).find(
+            BugTrackerComponent,
+            BugTrackerComponent.distribution == distribution.id,
+            BugTrackerComponent.source_package_name ==
+            pkg.sourcepackagename.id)
+        if pkgs.count()>0:
+            self.request.response.addNotification(
+                "The %s source package is already linked to %s:%s in %s" %(
+                    sourcepackagename, component.component_group.name,
+                    component.name, distro_name))
+            return
+
         component.distro_source_package = pkg
         self.request.response.addNotification(
             "%s:%s is now linked to the %s source package in %s" %(
