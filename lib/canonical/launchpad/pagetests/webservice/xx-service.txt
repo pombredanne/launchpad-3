@@ -76,6 +76,7 @@ anonymous request, and it can't reject that request just because it
 doesn't recognize the client.
 
     >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> print consumer_set.getByKey('another-new-consumer')
     None
