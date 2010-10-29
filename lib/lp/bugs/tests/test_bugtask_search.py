@@ -31,13 +31,13 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -287,7 +287,7 @@ class SearchTestBase:
                     other_task.transitionToStatus(
                         new_status, other_target.owner)
                 return
-        raise AssertionError(
+        self.fail(
             'No bug task found for a product that is not the target of '
             'the main test bugtask.')
 
