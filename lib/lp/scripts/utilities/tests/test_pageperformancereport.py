@@ -11,6 +11,8 @@ from lp.testing import TestCase
 
 from lp.scripts.utilities.pageperformancereport import (
     Category,
+    OnlineApproximateMedian,
+    OnlineStatsCalculator,
     SQLiteRequestTimes,
     Stats,
     )
@@ -226,6 +228,81 @@ class TestStats(TestCase):
         self.assertEquals(
             [[0, 0.5], [1, .1], [2, .33], [3, 0], [4, 0], [5, .07]],
             stats.relative_histogram)
+
+
+class TestOnlineStatsCalculator(TestCase):
+    """Tests for the online stats calculator."""
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self.stats = OnlineStatsCalculator()
+
+    def test_stats_for_empty_set(self):
+        # Test the stats when there is no input.
+        self.assertEquals(0, self.stats.count)
+        self.assertEquals(0, self.stats.sum)
+        self.assertEquals(0, self.stats.mean)
+        self.assertEquals(None, self.stats.variance)
+        self.assertEquals(None, self.stats.std)
+
+    def test_stats_for_one_value(self):
+        # Test the stats when adding one element.
+        self.stats.update(5)
+        self.assertEquals(1, self.stats.count)
+        self.assertEquals(5, self.stats.sum)
+        self.assertEquals(5, self.stats.mean)
+        self.assertEquals(0, self.stats.variance)
+        self.assertEquals(0, self.stats.std)
+
+    def test_None_are_ignored(self):
+        self.stats.update(None)
+        self.assertEquals(0, self.stats.count)
+
+    def test_stats_for_3_values(self):
+        for x in [3, 6, 9]:
+            self.stats.update(x)
+        self.assertEquals(3, self.stats.count)
+        self.assertEquals(18, self.stats.sum)
+        self.assertEquals(6, self.stats.mean)
+        self.assertEquals(6, self.stats.variance)
+        self.assertEquals("2.45", "%.2f" % self.stats.std)
+
+
+SHUFFLE_RANGE_100 = [
+    25, 79, 99, 76, 60, 63, 87, 77, 51, 82, 42, 96, 93, 58, 32, 66, 75,
+     2, 26, 22, 11, 73, 61, 83, 65, 68, 44, 81, 64,  3, 33, 34, 15,  1,
+    92, 27, 90, 74, 46, 57, 59, 31, 13, 19, 89, 29, 56, 94, 50, 49, 62,
+    37, 21, 35, 5, 84, 88, 16, 8, 23, 40, 6, 48, 10, 97, 0, 53, 17, 30,
+    18, 43, 86, 12, 71, 38, 78, 36, 7, 45, 47, 80, 54, 39, 91, 98, 24,
+    55, 14, 52, 20, 69, 85, 95, 28, 4, 9, 67, 70, 41, 72
+    ]
+
+
+class TestOnlineApproximateMedian(TestCase):
+    """Tests for the approximate median computation."""
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self.estimator = OnlineApproximateMedian()
+
+    def test_median_is_None_when_no_input(self):
+        self.assertEquals(None, self.estimator.median)
+
+    def test_median_is_true_median_for_n_lower_than_bucket_size(self):
+        for x in range(9):
+            self.estimator.update(x)
+        self.assertEquals(4, self.estimator.median)
+
+    def test_None_input_is_ignored(self):
+        self.estimator.update(1)
+        self.estimator.update(None)
+        self.assertEquals(1, self.estimator.median)
+
+    def test_approximage_median_is_good_enough(self):
+        for x in SHUFFLE_RANGE_100:
+            self.estimator.update(x)
+        # True median is 50, 52 is good enough :-)
+        self.assertEquals(52, self.estimator.median)
 
 
 def test_suite():

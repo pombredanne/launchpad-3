@@ -68,6 +68,128 @@ class Category:
         return cmp(self.title.lower(), other.title.lower())
 
 
+class OnlineStatsCalculator:
+    """Object that can compute count, sum, mean, variance and median.
+
+    It computes these value incrementally and using minimal storage
+    using the Welford / Knuth algorithm described at
+    http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#On-line_algorithm
+    """
+
+    def __init__(self):
+        self.count = 0
+        self.sum = 0
+        self.M2 = 0.0 # Sum of square difference
+        self.mean = 0.0
+
+    def update(self, x):
+        """Incrementally update the stats when adding x to the set.
+
+        None values are ignored.
+        """
+        if x is None:
+            return
+        self.count += 1
+        self.sum += x
+        delta = x - self.mean
+        self.mean = float(self.sum)/self.count
+        self.M2 += delta*(x - self.mean)
+
+    @property
+    def variance(self):
+        """Return the population variance.
+
+        This is None when no value have been added to the set.
+        """
+        if self.count == 0:
+            return None
+        else:
+            return self.M2/self.count
+
+    @property
+    def std(self):
+        """Return the standard deviation."""
+        if self.count == 0:
+            return None
+        else:
+            return math.sqrt(self.variance)
+
+
+class OnlineApproximateMedian:
+    """Approximate the median of a set of elements.
+
+    This implements a space-efficient algorithm which only sees each value
+    once. (It will hold in memory log B of n elements.)
+
+    It was described and analysed in
+    D. Cantone and  M.Hofri, M, 
+    "Analysis of An Approximate Median Selection Algorithm"
+    ftp://ftp.cs.wpi.edu/pub/techreports/pdf/06-17.pdf
+
+    This algorithm is similar to Tukey's median of medians technique.
+    It will compute the median among B_size values. And the median among
+    those.
+    """
+    def __init__(self, bucket_size=9):
+        """Creates a new estimator.
+
+        It approximates the median by finding the median among each
+        successive bucket_size element. And then using these medians for other
+        round of selection.
+ 
+        The bucket size should be a low odd-integer.
+        """
+        self.count = 0
+        self.bucket_size = bucket_size
+        # Index of the median in a completed bucket.
+        self.median_idx = bucket_size/2
+        self.buckets = []
+
+    def update(self, x):
+        """Update with x."""
+        if x is None:
+            return
+
+        self.count += 1
+        i = 0
+        while True:
+            # Create bucket on demand.
+            if i == len(self.buckets):
+                self.buckets.append([])
+            bucket = self.buckets[i]
+            bucket.append(x)
+            if len(bucket) == self.bucket_size:
+                # Select the median in this bucket, and promote it.
+                x = sorted(bucket)[self.median_idx]
+                # Free the bucket for the next round.
+                del bucket[:]
+                i += 1
+                continue
+            else:
+                break
+
+    @property
+    def median(self):
+        """Return the median."""
+        if self.count == 0:
+            return None
+
+        # Find the 'weighted' median by assigning a weight to each
+        # element proportional to how far they have been selected.
+        candidates = []
+        total_weight = 0
+        for i, bucket in enumerate(self.buckets):
+            weight = self.bucket_size ** i
+            for x in bucket:
+                total_weight += weight
+                candidates.append([weight, x])
+        # Make weight relative.
+        candidates = [
+            ((float(weight)/total_weight)*x, x)
+            for weight, x in candidates]
+        return sorted(candidates)[(len(candidates)-1)/2][1]
+
+
 class Stats:
     """Bag to hold request statistics.
 
