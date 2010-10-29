@@ -272,7 +272,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """Recipe format 0.3 is accepted."""
         builder_recipe = self.factory.makeRecipe()
         builder_recipe.format = 0.3
-        self.makeSourcePackageRecipeFromBuilderRecipe(builder_recipe)
+        self.factory.makeSourcePackageRecipe(recipe=str(builder_recipe))
 
     def test_reject_newer_formats(self):
         with recipe_parser_newest_version(145.115):
