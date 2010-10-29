@@ -75,9 +75,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.hastranslationimports import (
-    IHasTranslationImports,
-    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -1431,8 +1428,7 @@ class TranslationImportQueue:
 
 
 class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
+    """Helper class for implementing `IHasTranslationImports`."""
 
     def getFirstEntryToImport(self):
         """See `IHasTranslationImports`."""

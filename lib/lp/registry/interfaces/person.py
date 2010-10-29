@@ -147,6 +147,9 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -507,7 +510,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)

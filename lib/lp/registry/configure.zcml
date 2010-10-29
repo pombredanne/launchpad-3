@@ -156,8 +156,6 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
-            interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
-        <allow
             interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
@@ -849,8 +847,6 @@
             <allow
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
             <allow
-                interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
-            <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
@@ -1112,8 +1108,6 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
-            interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
         <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
@@ -1382,8 +1376,6 @@
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
-            interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -1447,8 +1439,6 @@
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
-            interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1595,8 +1585,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-        <allow
-            interface="lp.translations.interfaces.hastranslationimports.IHasTranslationImports"/>
 
         <!-- IQuestionTarget -->
 
