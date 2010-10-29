@@ -29,7 +29,10 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product, UnDeactivateable
+from lp.registry.model.product import (
+    Product,
+    UnDeactivateable,
+    )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import TestCaseWithFactory
 

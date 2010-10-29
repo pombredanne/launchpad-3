@@ -35,7 +35,8 @@ Test for the product/+download page.
     ...         milestone = factory.makeMilestone(productseries=productseries,
     ...                                           name="%d.%d"%(i,j))
     ...         release_file = factory.makeProductReleaseFile(
-    ...             product=product, productseries=productseries, milestone=milestone)
+    ...             product=product, productseries=productseries,
+    ...             milestone=milestone)
     >>> view = create_initialized_view(product, '+download')
     >>> batch = view.series_and_releases_batch.currentBatch()
     >>> print len(batch)

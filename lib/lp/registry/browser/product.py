@@ -126,7 +126,6 @@ from canonical.launchpad.webapp.launchpadform import (
     safe_action,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.app.browser.tales import MenuAPI
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -145,6 +144,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
+from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
