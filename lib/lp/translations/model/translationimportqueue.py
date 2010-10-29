@@ -74,6 +74,10 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -86,10 +90,8 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     translation_import_queue_entry_age,
     TranslationImportQueueConflictError,

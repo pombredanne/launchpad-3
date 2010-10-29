@@ -26,9 +26,9 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 
 

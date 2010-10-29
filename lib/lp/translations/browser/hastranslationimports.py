@@ -40,10 +40,10 @@ from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.propertycache import cachedproperty
-from lp.translations.interfaces.translationimportqueue import (
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.hatranslationimports import (
     IHasTranslationImports,
     ITranslationImportQueue,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     )
 

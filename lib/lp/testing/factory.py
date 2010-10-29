@@ -259,14 +259,12 @@ from lp.testing import (
     temp_dir,
     time_counter,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
