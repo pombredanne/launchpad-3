@@ -22,5 +22,3 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
     )
-
-

@@ -70,7 +70,6 @@ class XpiSearchTestCase(unittest.TestCase):
                            u'FooZilla Zilla Thingy'],
                           message_list)
 
-
     def test_templateSearchingForMsgIDs(self):
         """Searching returns no results for internal msg IDs."""
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
