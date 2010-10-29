@@ -87,20 +87,7 @@ class POFileNavigation(Navigation):
             raise NotFoundError(
                 "%r is not a valid sequence number." % name)
 
-        # Need to check in our database whether we have already the requested
-        # TranslationMessage.
-        translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.potemplate, self.context.language)
-
-        if translationmessage is not None:
-            # Already have a valid POMsgSet entry, just return it.
-            translationmessage.setPOFile(self.context)
-            return translationmessage
-        else:
-            # Get a fake one so we don't create new TranslationMessage just
-            # because someone is browsing the web.
-            return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.potemplate, self.context.language)
+        return potmsgset.getCurrentTranslationMessageOrDummy(self.context)
 
 
 class POFileFacets(POTemplateFacets):
@@ -846,14 +833,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.potemplate, self.context.language)
-            if translationmessage is None:
-                translationmessage = (
-                    potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.potemplate, self.context.language))
-            else:
-                translationmessage.setPOFile(self.context)
+            translationmessage = (
+                potmsgset.getCurrentTranslationMessageOrDummy(self.context))
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
