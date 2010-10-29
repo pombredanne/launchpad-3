@@ -5,7 +5,6 @@
 
 import logging
 import os
-from StringIO import StringIO
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -24,7 +23,6 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -37,9 +35,9 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

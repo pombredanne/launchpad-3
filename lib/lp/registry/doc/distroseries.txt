@@ -27,7 +27,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     ...     IDistroSeries,
     ...     IDistroSeriesSet,
     ...     )
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
