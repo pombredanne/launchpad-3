@@ -1828,7 +1828,8 @@ $$
     def substitute_filled_numbers(match):
         # Prepend "~" so that version numbers will show up first
         # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
-        # of [c, b, a, 3, 2c, 2b, 1].
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
         return '~' + match.group(0).zfill(5)
 
     return re.sub(u'\d+', substitute_filled_numbers, version)
