@@ -3,8 +3,6 @@
 
 """Tests for Diff, etc."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 

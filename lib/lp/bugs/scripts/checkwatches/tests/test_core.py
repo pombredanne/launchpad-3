@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
@@ -15,20 +13,20 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
-    BugTaskStatus,
-    BugTrackerType,
-    IBugSet,
-    IBugTaskSet,
-    ILaunchpadCelebrities,
-    IPersonSet,
-    IProductSet,
-    IQuestionSet,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
     CheckWatchesErrorUtility,
@@ -45,6 +43,8 @@ from lp.bugs.tests.externalbugtracker import (
     TestBugzillaAPIXMLRPCTransport,
     TestExternalBugTracker,
     )
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
@@ -53,6 +53,7 @@ from lp.testing import (
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):
     """None of the remote bugs have products."""
+
     def getProductsForRemoteBugs(self, remote_bug_ids):
         return {}
 
@@ -210,7 +211,10 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
                 "Unexpected last OOPS value: %s" % last_oops.value)
 
     def test_suggest_batch_size(self):
-        class RemoteSystem: pass
+
+        class RemoteSystem:
+            pass
+
         remote_system = RemoteSystem()
         # When the batch_size is None, suggest_batch_size() will set
         # it accordingly.
@@ -298,9 +302,11 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
 class TestSchedulerBase:
 
     def test_args_and_kwargs(self):
+
         def func(name, aptitude):
             self.failUnlessEqual("Robin Hood", name)
             self.failUnlessEqual("Riding through the glen", aptitude)
+
         # Positional args specified when adding a job are passed to
         # the job function at run time.
         self.scheduler.schedule(
@@ -454,14 +460,12 @@ class TestTwistedThreadSchedulerInPlace(
             ["getRemoteStatus(bug_id=u'butterscotch-1')",
              "getRemoteStatus(bug_id=u'butterscotch-2')",
              "getRemoteStatus(bug_id=u'butterscotch-3')"],
-            output_file.output['butterscotch']
-            )
+            output_file.output['butterscotch'])
         self.assertEqual(
             ["getRemoteStatus(bug_id=u'strawberry-1')",
              "getRemoteStatus(bug_id=u'strawberry-2')",
              "getRemoteStatus(bug_id=u'strawberry-3')"],
-            output_file.output['strawberry']
-            )
+            output_file.output['strawberry'])
 
 
 def test_suite():

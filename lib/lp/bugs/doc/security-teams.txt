@@ -5,10 +5,10 @@ Responsibility for security-related bugs, are modelled in Launchpad with
 a "security contact" on a Distribution or a Product.
 
     >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 
     >>> personset = getUtility(IPersonSet)
     >>> productset = getUtility(IProductSet)
@@ -280,10 +280,10 @@ subscribed when moving it to the new project.
 When a bug becomes security-related, the security contacts for the pillars it
 affects are subscribed to it.
 
-    >>> from lp.bugs.interfaces.bug import IBug
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> product = factory.makeProduct()
     >>> product.security_contact = factory.makePerson(

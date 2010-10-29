@@ -3,9 +3,6 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-  <adapter factory=".propertycache.get_default_cache"/>
-  <adapter factory=".propertycache.PropertyCacheManager"/>
-  <adapter factory=".propertycache.DefaultPropertyCacheManager"/>
   <include package=".comments" />
   <include package=".database" />
   <include package=".features" />

@@ -25,8 +25,8 @@ uploaded into the system.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
   >>> from canonical.database.constants import UTC_NOW
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
   # Login as an admin.
   >>> login('foo.bar@canonical.com')
@@ -344,9 +344,9 @@ different interpretations of "importer" in attachTranslationFiles.
   ...     IArchive, ArchivePurpose)
   >>> from lp.soyuz.interfaces.queue import (
   ...     IPackageUpload, IPackageUploadCustom)
+  >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.enums import PackageUploadCustomFormat
   >>> from lp.soyuz.interfaces.component import IComponentSet
-  >>> from lp.registry.interfaces.person import IPerson
   >>> from lp.soyuz.interfaces.sourcepackagerelease import (
   ...     ISourcePackageRelease)
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket

@@ -235,7 +235,7 @@ class DistributionSourcePackage(BugTargetBase,
         # latest relevant publication. It relies on ordering of status
         # and pocket enum values, which is arguably evil but much faster
         # than CASE sorting; at any rate this can be fixed when
-        # https://bugs.edge.launchpad.net/soyuz/+bug/236922 is.
+        # https://bugs.launchpad.net/soyuz/+bug/236922 is.
         spph = SourcePackagePublishingHistory.selectFirst("""
             SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND

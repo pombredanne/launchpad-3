@@ -9,9 +9,6 @@ creating proposals, or diffs relating to the proposals.
 """
 
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 
 
