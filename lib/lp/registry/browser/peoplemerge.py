@@ -236,7 +236,8 @@ class AdminTeamMergeView(AdminMergeBaseView):
         dupe_team = data['dupe_person']
         # Our code doesn't know how to merge a team's superteams, so we
         # prohibit that here.
-        if dupe_team.super_teams.count() > 0:
+        can_handle_super_teams = data.get('can_handle_super_teams', False)
+        if not can_handle_super_teams and dupe_team.super_teams.count() > 0:
             self.addError(_(
                 "${name} has super teams, so it can't be merged.",
                 mapping=dict(name=dupe_team.name)))
@@ -330,6 +331,11 @@ class DeleteTeamView(AdminTeamMergeView):
     def has_mailing_list(self):
         return self.hasMailingList(self.context)
 
+    def validate(self, data):
+        """Validate the data and ensure super team checks are ignored."""
+        data['can_handle_super_teams'] = True
+        super(DeleteTeamView, self).validate(data)
+
     def canDelete(self, data):
         return not self.has_mailing_list
 
@@ -340,9 +346,11 @@ class DeleteTeamView(AdminTeamMergeView):
         # be deleted because ~registry can never claim them.
         self.context.setContactAddress(None)
         # Remove the team from super teams. Merge cannot handle super teams,
-        # but that is not an issue hear because the goal is to have no
+        # but that is not an issue here because the goal is to have no
         # members.
-
+        deletable_team = data['dupe_person']
+        for team in deletable_team.teams_participated_in:
+            deletable_team.retractTeamMembership(team, self.user)
         base.deactivate_members_and_merge_action.success(data)
 
 

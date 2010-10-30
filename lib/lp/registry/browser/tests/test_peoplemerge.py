@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.mailinglist import MailingListStatus
@@ -95,7 +96,6 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
             self.dupe_team, self.dupe_team.teamowner)
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        view = create_initialized_view(self.person_set, '+adminteammerge')
         form = {
             'field.dupe_person': self.dupe_team.name,
             'field.target_person': self.target_team.name,
@@ -105,3 +105,24 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
             self.person_set, '+adminteammerge', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
+
+
+class TestDeleteTeamView(TestCaseWithFactory):
+    """Test the AdminTeamMergeView rules."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDeleteTeamView, self).setUp()
+        self.team = self.factory.makeTeam()
+        self.registry = getUtility(ILaunchpadCelebrities).registry_experts
+        login_person(self.team.teamowner)
+
+    def test_delete_team_with_super_teams(self):
+        super_team = self.factory.makeTeam()
+        self.team.join(super_team, self.team.teamowner)
+        form = {'field.actions.delete': 'Delete'}
+        view = create_initialized_view(
+            self.team, '+delete', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.registry, self.team.merged)

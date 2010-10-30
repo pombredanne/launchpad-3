@@ -651,6 +651,14 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         team1_on_team2.setStatus(TeamMembershipStatus.ADMIN, self.foobar)
         self.assertEqual(team1_on_team2.status, TeamMembershipStatus.ADMIN)
 
+    def test_admin_retractTeamMembership(self):
+        # Verify a team admin can retract the membership in a team
+        self.team1.join(self.team2, self.team1.teamowner)
+        self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
+
 
 class TestCheckTeamParticipationScript(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
