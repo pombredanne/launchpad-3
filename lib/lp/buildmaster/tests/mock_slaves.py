@@ -308,6 +308,20 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
+        # Twisted has a bug!  We need to monkey patch
+        # QueryProtocol.handleResponse() so that it terminates the
+        # connection properly, otherwise the Trial test can leave the
+        # reactor dirty which fails the test.
+        # See http://twistedmatrix.com/trac/ticket/2518
+        saved_handleResponse = xmlrpc.QueryProtocol.handleResponse
+        def _handleResponse(self, contents):
+            self.factory.parseResponse(contents)
+            self.transport.loseConnection()
+        xmlrpc.QueryProtocol.handleResponse = _handleResponse
+        def restore_handleResponse():
+            xmlrpc.QueryProtocol.handleResponse = saved_handleResponse
+        self.addCleanup(restore_handleResponse)
+
         return BuilderSlave.makeBuilderSlave(
             self.TEST_URL, 'vmhost', reactor, proxy)
 

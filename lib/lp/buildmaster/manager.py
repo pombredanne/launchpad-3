@@ -103,10 +103,15 @@ class SlaveScanner:
     """A manager for a single builder."""
 
     # The interval between each poll cycle, in seconds.  We'd ideally
-    # like this to be lower but 5 seems a reasonable compromise between
+    # like this to be lower but 15 seems a reasonable compromise between
     # responsivity and load on the database server, since in each cycle
     # we can run quite a few queries.
-    SCAN_INTERVAL = 5
+    #
+    # NB. This used to be as low as 5 but as more builders are added to
+    # the farm this rapidly increases the query count, PG load and this
+    # process's load.  It's backed off until we come up with a better
+    # algorithm for polling.
+    SCAN_INTERVAL = 15
 
     def __init__(self, builder_name, logger):
         self.builder_name = builder_name
