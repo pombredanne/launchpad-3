@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'DistroSeriesDifferenceError',
+    'NotADerivedSeriesError',
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
@@ -106,6 +108,18 @@ class DeleteSubscriptionError(Exception):
 class UserCannotSubscribePerson(Exception):
     """User does not have permission to subscribe the person or team."""
     webservice_error(httplib.UNAUTHORIZED)
+
+
+class DistroSeriesDifferenceError(Exception):
+    """Raised when package diffs cannot be created for a difference."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotADerivedSeriesError(Exception):
+    """A distro series difference must be created with a derived series.
+
+    This is raised when a DistroSeriesDifference is created with a
+    non-derived series - that is, a distroseries with a null Parent."""
 
 
 class TeamMembershipTransitionError(ValueError):

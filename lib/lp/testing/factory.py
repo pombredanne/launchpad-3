@@ -1946,6 +1946,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if versions is None:
             versions = {}
 
+        base_version = versions.get('base')
+        if base_version is not None:
+            for series in [derived_series, derived_series.parent_series]:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=base_version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.SUPERSEDED)
+
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
@@ -1965,8 +1974,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name, difference_type,
-            status=status)
+            derived_series, source_package_name)
+
+        removeSecurityProxy(diff).status = status
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
@@ -2645,7 +2655,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = self.makePerson()
 
         if version is None:
-            version = self.getUniqueString('version')
+            version = unicode(self.getUniqueInteger()) + 'version'
 
         return distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=sourcepackagename,
