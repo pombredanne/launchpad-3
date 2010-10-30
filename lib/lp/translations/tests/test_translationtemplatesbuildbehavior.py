@@ -5,9 +5,10 @@
 
 import logging
 import os
-from StringIO import StringIO
 
-from twisted.trial.unittest import TestCase as TrialTestCase
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -18,13 +19,11 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
-    TwistedLaunchpadZopelessLayer,
     )
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -35,7 +34,6 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -102,17 +100,17 @@ class MakeBehaviorMixin(object):
 
 
 class TestTranslationTemplatesBuildBehavior(
-        TrialTestCase, MakeBehaviorMixin):
+    TestCaseWithFactory, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        super(TestTranslationTemplatesBuildBehavior, self)
+        super(TestTranslationTemplatesBuildBehavior, self).setUp()
         self.slave_helper = SlaveTestHelpers()
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
         login_as(ANONYMOUS)
         self.addCleanup(logout)
 
@@ -147,7 +145,7 @@ class TestTranslationTemplatesBuildBehavior(
             branch_url = build_params[-1]['branch_url']
             # The slave receives the public http URL for the branch.
             self.assertEqual(
-                branch_url, 
+                branch_url,
                 behavior.buildfarmjob.branch.composePublicURL())
         return d.addCallback(got_dispatch)
 
