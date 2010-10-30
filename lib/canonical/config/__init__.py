@@ -6,6 +6,8 @@ Configuration information pulled from launchpad.conf.
 
 The configuration section used is specified using the LPCONFIG
 environment variable, and defaults to 'development'
+
+XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.
 '''
 
 __metaclass__ = type
@@ -153,6 +155,16 @@ class CanonicalConfig:
         """Reload the config."""
         self._invalidateConfig()
         self._getConfig()
+
+    def isTestRunner(self):
+        """Return true if the current config is a 'testrunner' config.
+
+        That is, if it is the testrunner config, or a unique variation of it,
+        but not if its the testrunner-appserver, development or production
+        config.
+        """
+        return (self.instance_name == 'testrunner' or
+                self.instance_name.startswith('testrunner_'))
 
     @property
     def process_name(self):

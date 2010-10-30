@@ -670,7 +670,7 @@ class IDistributionSet(Interface):
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
-        """Creaste a new distribution."""
+        """Create a new distribution."""
 
 
 class NoSuchDistribution(NameLookupFailed):

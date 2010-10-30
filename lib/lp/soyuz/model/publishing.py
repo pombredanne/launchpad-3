@@ -570,7 +570,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         if architectures_available is None:
             architectures_available = list(
-                self.distroseries.enabled_architectures)
+                self.distroseries.buildable_architectures)
 
         architectures_available = self._getAllowedArchitectures(
             architectures_available)

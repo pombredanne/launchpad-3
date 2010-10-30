@@ -130,7 +130,7 @@ class QueueBuilder(LaunchpadCronScript):
                 % distroseries.name)
             return
 
-        architectures_available = list(distroseries.enabled_architectures)
+        architectures_available = list(distroseries.buildable_architectures)
         if not architectures_available:
             self.logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)

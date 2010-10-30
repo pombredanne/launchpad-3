@@ -120,6 +120,10 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     )
+from lp.translations.interfaces.translationimportqueue import (
+    IHasTranslationImports,
+    ITranslationImportQueueEntry,
+    )
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -204,6 +208,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -371,6 +376,8 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -434,6 +441,11 @@ patch_reference_property(IBugTask, 'owner', IPerson)
 
 # IBugWatch
 patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IHasTranslationImports
+patch_collection_return_type(
+    IHasTranslationImports, 'getTranslationImportQueueEntries',
+    ITranslationImportQueueEntry)
 
 # IIndexedMessage
 patch_reference_property(IIndexedMessage, 'inside', IBugTask)

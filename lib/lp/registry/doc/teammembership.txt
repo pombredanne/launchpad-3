@@ -13,15 +13,17 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamSubscriptionPolicy, TeamMembershipStatus,
-    ...     TeamMembershipRenewalPolicy)
+    >>> from lp.registry.interfaces.person import (
+    ...     TeamMembershipRenewalPolicy,
+    ...     TeamSubscriptionPolicy,
+    ...     )
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 XXX: This doctest needs a lot of cleanups!
 -- Guilherme Salgado, 2006-12-15
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> jblack = personset.getByName('jblack')
     >>> nopriv = personset.getByName('no-priv')
@@ -155,7 +157,7 @@ addMember returns a tuple with True plus the new membership status.
     >>> t3.addMember(
     ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
     (True, <DBItem TeamMembershipStatus.ADMIN...)
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
     >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
@@ -190,7 +192,7 @@ returns a tuple with False and the current status of the membership.
 As expected, the membership object implements ITeamMembership.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ITeamMembership
+    >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
 
@@ -978,11 +980,11 @@ Bad user joins a team, and he is approved. An admin later suspends him.
     ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
     >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> from lp.services.propertycache import IPropertyCache
-    >>> del IPropertyCache(removeSecurityProxy(bad_user)).preferredemail
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(removeSecurityProxy(bad_user)).preferredemail
     >>> transaction.commit()
 
     >>> [m.displayname for m in t3.allmembers]

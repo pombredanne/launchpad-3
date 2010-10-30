@@ -13,9 +13,9 @@ export from.
     >>> from lp.bugs.externalbugtracker import Mantis
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> alsa_mantis = Mantis('http://example.com/')
 
     >>> verifyObject(IExternalBugTracker, alsa_mantis)
@@ -49,7 +49,8 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestMantis)
 
@@ -57,7 +58,7 @@ Tracker:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1550',
@@ -79,8 +80,8 @@ And have our special Mantis instance process them:
 
     >>> transaction.commit()
 
-    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> bug_watch_updater.updateBugWatches(
@@ -93,7 +94,7 @@ And have our special Mantis instance process them:
 
 Let's add a few more watches:
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> expected_remote_statuses = dict(

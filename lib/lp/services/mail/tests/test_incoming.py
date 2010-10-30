@@ -7,7 +7,6 @@ import os
 import unittest
 
 import transaction
-
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
@@ -93,8 +92,7 @@ def tearDown(test):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
     suite.addTest(DocTestSuite('lp.services.mail.incoming'))
     suite.addTest(
         LayeredDocFileSuite(
@@ -104,7 +102,3 @@ def test_suite():
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

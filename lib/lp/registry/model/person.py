@@ -1,7 +1,5 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
 
@@ -191,7 +189,10 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.errors import NameAlreadyTaken
+from lp.registry.errors import (
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -217,7 +218,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    JoinNotAllowed,
+    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -262,7 +263,7 @@ from lp.registry.model.teammembership import (
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
@@ -309,7 +310,7 @@ class ValidPersonCache(SQLBase):
     Note that it performs poorly at least some of the time, and if
     EmailAddress and Person are already being queried, its probably better to
     query Account directly. See bug
-    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    https://bugs.launchpad.net/launchpad-registry/+bug/615237 for some
     corroborating information.
     """
 
@@ -509,19 +510,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return IPropertyCache(self).languages
+        return get_property_cache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        IPropertyCache(self).languages = sorted(
+        get_property_cache(self).languages = sorted(
             languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        del IPropertyCache(self).languages
+        del get_property_cache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -624,7 +625,7 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, visible=visible)
         else:
             self.location.visible = visible
@@ -643,7 +644,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -1631,7 +1632,7 @@ class Person(
             if not person:
                 return
             email = column
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
 
         decorators.append(handleemail)
 
@@ -1645,7 +1646,7 @@ class Person(
                 column is not None
                 # -- preferred email found
                 and person.preferredemail is not None)
-            IPropertyCache(person).is_valid_person = valid
+            get_property_cache(person).is_valid_person = valid
         decorators.append(handleaccount)
         return dict(
             joins=origins,
@@ -1735,7 +1736,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
-            cache = IPropertyCache(result)
+            cache = get_property_cache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1797,7 +1798,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1932,7 +1933,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            IPropertyCache(location.person).location = location
+            get_property_cache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -2009,8 +2010,9 @@ class Person(
     # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
+        if not self.is_valid_person:
+            raise AssertionError(
+                "You can only deactivate an account of a valid person.")
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2045,11 +2047,15 @@ class Person(
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
+            changed = False
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
-            elif pillar.driver.id == self.id:
+                changed = True
+            if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = registry_experts
-            else:
+                changed = True
+
+            if not changed:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
                 raise AssertionError(
@@ -2074,7 +2080,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2464,7 +2470,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2501,7 +2507,7 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        IPropertyCache(self).preferredemail = email
+        get_property_cache(self).preferredemail = email
 
     @cachedproperty
     def preferredemail(self):
@@ -2738,6 +2744,18 @@ class Person(
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+
+    def createPPA(self, name=None, displayname=None, description=None):
+        """See `IPerson`."""
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3075,7 +3093,7 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = IPropertyCache(account_person)
+                    cache = get_property_cache(account_person)
                     cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
@@ -4059,59 +4077,6 @@ class PersonSet:
         return Person.select('''
             Person.id in (%s)
             ''' % branch_clause)
-
-    def getSubscribersForTargets(self, targets, recipients=None, level=None):
-        """See `IPersonSet`. """
-        if len(targets) == 0:
-            return set()
-        target_criteria = []
-        for target in targets:
-            # target_args is a mapping from query arguments
-            # to query values.
-            target_args = target._target_args
-            target_criteria_clauses = []
-            for key, value in target_args.items():
-                if value is not None:
-                    target_criteria_clauses.append(
-                        '%s = %s' % (key, quote(value)))
-                else:
-                    target_criteria_clauses.append(
-                        '%s IS NULL' % key)
-            if level is not None:
-                target_criteria_clauses.append('bug_notification_level >= %s'
-                    % quote(level.value))
-
-            target_criteria.append(
-                '(%s)' % ' AND '.join(target_criteria_clauses))
-
-        # Build a UNION query, since using OR slows down the query a lot.
-        subscriptions = StructuralSubscription.select(target_criteria[0])
-        for target_criterion in target_criteria[1:]:
-            subscriptions = subscriptions.union(
-                StructuralSubscription.select(target_criterion))
-
-        # Listify the result, since we want to loop over it multiple times.
-        subscriptions = list(subscriptions)
-
-        # We can't use prejoins in UNION queries, so populate the cache
-        # by getting all the subscribers.
-        subscriber_ids = [
-            subscription.subscriberID for subscription in subscriptions]
-        if len(subscriber_ids) > 0:
-            # Pull in ValidPersonCache records in addition to Person
-            # records to warm up the cache.
-            list(IStore(Person).find(
-                    (Person, ValidPersonCache),
-                    In(Person.id, subscriber_ids),
-                    ValidPersonCache.id == Person.id))
-
-        subscribers = set()
-        for subscription in subscriptions:
-            subscribers.add(subscription.subscriber)
-            if recipients is not None:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-        return subscribers
 
     def updatePersonalStandings(self):
         """See `IPersonSet`."""

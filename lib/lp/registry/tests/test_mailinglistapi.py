@@ -3,8 +3,6 @@
 
 """Unit tests for the private MailingList API."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = []
 

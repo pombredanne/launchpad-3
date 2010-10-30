@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Testing infrastructure for page tests."""
 
 # Stop lint warning about not initializing TestCase parent on
@@ -813,7 +811,6 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['ws_uncache'] = ws_uncache
 
 
@@ -848,7 +845,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -910,20 +907,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
-    # Add unnumbered tests to the suite individually.
+    suite = unittest.TestSuite()
     checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    # Add unnumbered tests to the suite individually.
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

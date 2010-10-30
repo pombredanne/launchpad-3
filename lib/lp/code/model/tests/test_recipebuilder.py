@@ -3,8 +3,6 @@
 
 """Test RecipeBuildBehavior."""
 
-from __future__ import with_statement
-
 # pylint: disable-msg=F0401
 
 __metaclass__ = type
