@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -7,8 +7,11 @@
 
 __metaclass__ = type
 
-
-import unittest
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    flush_logged_errors,
+    )
 
 from twisted.internet import (
     defer,
@@ -16,9 +19,7 @@ from twisted.internet import (
     task,
     )
 from twisted.python import failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.testing.layers import TwistedLayer
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.processmonitor import (
     ProcessMonitorProtocol,
@@ -27,6 +28,7 @@ from lp.services.twistedsupport.processmonitor import (
     ProcessWithTimeout,
     run_process_with_timeout,
     )
+from lp.testing import TestCase
 
 
 def makeFailure(exception_factory, *args, **kwargs):
@@ -91,6 +93,7 @@ class ProcessTestsMixin:
         self.protocol.processEnded(failure.Failure(exc))
 
     def setUp(self):
+        super(ProcessTestsMixin, self).setUp()
         self.termination_deferred = defer.Deferred()
         self.clock = task.Clock()
         self.protocol = self.makeProtocol()
@@ -99,10 +102,10 @@ class ProcessTestsMixin:
         self.protocol.connectionMade()
 
 
-class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
+class TestProcessWithTimeout(ProcessTestsMixin, TestCase):
     """Tests for `ProcessWithTimeout`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
     TIMEOUT = 100
 
     def makeProtocol(self):
@@ -133,12 +136,11 @@ class TestProcessWithTimeout(ProcessTestsMixin, TrialTestCase):
         self.assertFalse(self._deferred.called)
 
 
-class TestProcessProtocolWithTwoStageKill(
-    ProcessTestsMixin, TrialTestCase):
+class TestProcessProtocolWithTwoStageKill(ProcessTestsMixin, TestCase):
 
     """Tests for `ProcessProtocolWithTwoStageKill`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def makeProtocol(self):
         """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
@@ -182,11 +184,10 @@ class TestProcessProtocolWithTwoStageKill(
         self.failIf(saved_delayed_call.active())
 
 
-class TestProcessMonitorProtocol(
-    ProcessTestsMixin, TrialTestCase):
+class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
     """Tests for `ProcessMonitorProtocol`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def makeProtocol(self):
         """See `ProcessMonitorProtocolTestsMixin.makeProtocol`."""
@@ -203,7 +204,7 @@ class TestProcessMonitorProtocol(
         # When the child process terminates with a non-zero exit code, pass on
         # the error.
         self.simulateProcessExit(clean=False)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
     def test_unexpectedError(self):
@@ -214,7 +215,7 @@ class TestProcessMonitorProtocol(
         self.assertEqual(
             [('signalProcess', 'INT')],
             self.protocol.transport.calls)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, RuntimeError)
 
     def test_runNotification(self):
@@ -232,7 +233,7 @@ class TestProcessMonitorProtocol(
         self.assertEqual(
             [('signalProcess', 'INT')],
             self.protocol.transport.calls)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, RuntimeError)
 
     def test_runNotificationSerialization(self):
@@ -258,7 +259,7 @@ class TestProcessMonitorProtocol(
         self.assertEqual(calls, [])
         deferred.errback(makeFailure(RuntimeError))
         self.assertEqual(calls, [])
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, RuntimeError)
 
     def test_waitForPendingNotification(self):
@@ -282,7 +283,7 @@ class TestProcessMonitorProtocol(
         self.protocol.runNotification(lambda : deferred)
         self.simulateProcessExit()
         deferred.errback(makeFailure(RuntimeError))
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, RuntimeError)
 
     @suppress_stderr
@@ -297,8 +298,8 @@ class TestProcessMonitorProtocol(
         runtime_error_failure = makeFailure(RuntimeError)
         deferred.errback(runtime_error_failure)
         self.assertEqual(
-            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
-        return self.assertFailure(
+            flush_logged_errors(RuntimeError), [runtime_error_failure])
+        return assert_fails_with(
             self.termination_deferred, error.ProcessTerminated)
 
     @suppress_stderr
@@ -312,15 +313,15 @@ class TestProcessMonitorProtocol(
         runtime_error_failure = makeFailure(RuntimeError)
         deferred.errback(runtime_error_failure)
         self.assertEqual(
-            self.flushLoggedErrors(RuntimeError), [runtime_error_failure])
-        return self.assertFailure(
+            flush_logged_errors(RuntimeError), [runtime_error_failure])
+        return assert_fails_with(
             self.termination_deferred, TypeError)
 
-class TestProcessMonitorProtocolWithTimeout(
-    ProcessTestsMixin, TrialTestCase):
+
+class TestProcessMonitorProtocolWithTimeout(ProcessTestsMixin, TestCase):
     """Tests for `ProcessMonitorProtocolWithTimeout`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     timeout = 5
 
@@ -333,7 +334,7 @@ class TestProcessMonitorProtocolWithTimeout(
         # If we don't receive any messages after the configured timeout
         # period, then we kill the child process.
         self.clock.advance(self.timeout + 1)
-        return self.assertFailure(
+        return assert_fails_with(
             self.termination_deferred, error.TimeoutError)
 
     def test_resetTimeout(self):
@@ -355,10 +356,10 @@ class TestProcessMonitorProtocolWithTimeout(
         return self.termination_deferred
 
 
-class TestRunProcessWithTimeout(TrialTestCase):
+class TestRunProcessWithTimeout(TestCase):
     """Tests for `run_process_with_timeout`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def test_run_process_with_timeout_invalid_args(self):
         # `run_process_with_timeout` expects the process 'args' to be a
@@ -379,13 +380,13 @@ class TestRunProcessWithTimeout(TrialTestCase):
         # On failed process, the errback is fired with a `ProcessTerminated`
         # failure.
         d = run_process_with_timeout(('false',))
-        return self.assertFailure(d, error.ProcessTerminated)
+        return assert_fails_with(d, error.ProcessTerminated)
 
     def test_run_process_with_timeout_broken(self):
         # On broken process, the errback is fired with a `ProcessTerminated`
         # failure.
         d = run_process_with_timeout(('does-not-exist',))
-        return self.assertFailure(d, error.ProcessTerminated)
+        return assert_fails_with(d, error.ProcessTerminated)
 
     def test_run_process_with_timeout_timeout(self):
         # On process timeout, the errback is fired with `TimeoutError`
@@ -394,8 +395,4 @@ class TestRunProcessWithTimeout(TrialTestCase):
         d = run_process_with_timeout(
             ('sleep', '2'), timeout=1, clock=clock)
         clock.advance(2)
-        return self.assertFailure(d, error.TimeoutError)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        return assert_fails_with(d, error.TimeoutError)
