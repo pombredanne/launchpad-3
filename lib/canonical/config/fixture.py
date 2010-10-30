@@ -1,7 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
 """Fixtures related to configs.
 
 XXX: Robert Collins 2010-10-20 bug=663454 this is in the wrong namespace.

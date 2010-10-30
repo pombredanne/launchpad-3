@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the lpmoderate monekypatches"""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = []
 

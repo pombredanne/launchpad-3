@@ -3,8 +3,6 @@
 
 """Tests for `IPackageBuild`."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
@@ -99,6 +97,8 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertRaises(
             NotImplementedError, self.package_build.verifySuccessfulUpload)
         self.assertRaises(NotImplementedError, self.package_build.notify)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.assertRaises(
             NotImplementedError, self.package_build.handleStatus,
             None, None, None)
@@ -311,6 +311,8 @@ class TestHandleStatusMixin:
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
@@ -321,6 +323,8 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
@@ -331,6 +335,8 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
@@ -341,6 +347,8 @@ class TestHandleStatusMixin:
         # The build log is set during handleStatus.
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
@@ -350,6 +358,8 @@ class TestHandleStatusMixin:
         # The date finished is updated during handleStatus_OK.
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })

@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -33,7 +31,10 @@ from email.utils import (
     make_msgid,
     )
 from itertools import count
-from operator import isSequenceType
+from operator import (
+    isMappingType,
+    isSequenceType,
+    )
 import os
 from random import randint
 from StringIO import StringIO
@@ -79,10 +80,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
@@ -217,7 +218,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -239,17 +240,13 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet,
-    )
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import (
-    PackageDiff,
-    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -813,8 +810,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        return getUtility(IProcessorFamilySet).new(name, title, description,
+        family = getUtility(IProcessorFamilySet).new(name, title, description,
             restricted=restricted)
+        # Make sure there's at least one processor in the family, so that
+        # other things can have a default processor.
+        self.makeProcessor(family=family)
+        return family
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1948,7 +1949,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
-        IPropertyCacheManager(diff).clear()
+        clear_property_cache(diff)
         return diff
 
     def makeDistroSeriesDifferenceComment(
@@ -1973,7 +1974,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         if processorfamily is None:
-            processorfamily = ProcessorFamilySet().getByName('powerpc')
+            processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
         # XXX: architecturetag & processerfamily are tightly coupled. It's
@@ -2144,6 +2145,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
+            arch = self.makeDistroArchSeries(distroseries=distroseries)
+            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
@@ -3208,9 +3211,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
-unwrapped_types = (
-    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode)
+unwrapped_types = frozenset((
+        BaseRecipeBranch,
+        DSCFile,
+        InstanceType,
+        MergeDirective2,
+        Message,
+        datetime,
+        int,
+        str,
+        unicode,
+        ))
 
 
 def is_security_proxied_or_harmless(obj):
@@ -3221,11 +3232,15 @@ def is_security_proxied_or_harmless(obj):
         return True
     if type(obj) in unwrapped_types:
         return True
-    if isSequenceType(obj):
-        for element in obj:
-            if not is_security_proxied_or_harmless(element):
-                return False
-        return True
+    if isSequenceType(obj) or isinstance(obj, (set, frozenset)):
+        return all(
+            is_security_proxied_or_harmless(element)
+            for element in obj)
+    if isMappingType(obj):
+        return all(
+            (is_security_proxied_or_harmless(key) and
+             is_security_proxied_or_harmless(obj[key]))
+            for key in obj)
     return False
 
 

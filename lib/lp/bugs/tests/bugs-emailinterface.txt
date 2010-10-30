@@ -1620,20 +1620,20 @@ a 'status' command to bug seven, the single upstream task will be
 edited:
 
     >>> login('foo.bar@canonical.com')
-    >>> bug_eigth = getUtility(IBugSet).get(8)
-    >>> len(bug_eigth.bugtasks)
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> len(bug_ten.bugtasks)
     1
-    >>> submit_commands(bug_eigth, 'status confirmed')
-    >>> mozilla_task = bug_eigth.bugtasks[0]
-    >>> print mozilla_task.status.name
+    >>> submit_commands(bug_ten, 'status confirmed')
+    >>> linux_task = bug_ten.bugtasks[0]
+    >>> print linux_task.status.name
     CONFIRMED
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.bug.id
-    8
+    10
     >>> print bug_notification.message.text_contents
-    ** Changed in: mozilla-firefox (Debian)
-        Status: Fix Released => Confirmed
+    ** Changed in: linux-source-2.6.15 (Ubuntu)
+        Status: New => Confirmed
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
