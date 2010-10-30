@@ -41,6 +41,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IRequestPeopleMerge,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class RequestPeopleMergeView(LaunchpadFormView):
@@ -218,6 +219,10 @@ class AdminTeamMergeView(AdminMergeBaseView):
             team.mailing_list is not None
             and team.mailing_list.status not in PURGE_STATES)
 
+    @cachedproperty
+    def registry_experts(self):
+        return getUtility(ILaunchpadCelebrities).registry_experts
+
     def doMerge(self, data):
         """Purge the inactive mailing list for the owner and merge"""
         if self.dupe_person.mailing_list is not None:
@@ -234,10 +239,14 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
         super(AdminTeamMergeView, self).validate(data)
         dupe_team = data['dupe_person']
-        # Our code doesn't know how to merge a team's superteams, so we
-        # prohibit that here.
-        can_handle_super_teams = data.get('can_handle_super_teams', False)
-        if not can_handle_super_teams and dupe_team.super_teams.count() > 0:
+        target_team = data['target_person']
+        # Merge cannot reconcile cyclic membership in super teams.
+        # Super team memberships are automatically removed when merging into
+        # the registry experts team. When merging into any other team, an
+        # error must be raised to explain that the user must remove the teams
+        # himself.
+        if (target_team != self.registry_experts
+            and dupe_team.super_teams.count() > 0):
             self.addError(_(
                 "${name} has super teams, so it can't be merged.",
                 mapping=dict(name=dupe_team.name)))
@@ -277,6 +286,9 @@ class AdminTeamMergeView(AdminMergeBaseView):
             % (self.target_person.unique_displayname,
                canonical_url(self.target_person)))
         self.dupe_person.deactivateAllMembers(comment, self.user)
+        if self.target_person is self.registry_experts:
+            for team in self.dupe_person.teams_participated_in:
+                self.dupe_person.retractTeamMembership(team, self.user)
         flush_database_updates()
         self.doMerge(data)
 

@@ -106,23 +106,16 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
-
-class TestDeleteTeamView(TestCaseWithFactory):
-    """Test the AdminTeamMergeView rules."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDeleteTeamView, self).setUp()
-        self.team = self.factory.makeTeam()
-        self.registry = getUtility(ILaunchpadCelebrities).registry_experts
-        login_person(self.team.teamowner)
-
-    def test_delete_team_with_super_teams(self):
+    def test_merge_team_with_super_teams_into_registry_experts(self):
+        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
-        self.team.join(super_team, self.team.teamowner)
-        form = {'field.actions.delete': 'Delete'}
+        self.dupe_team.join(super_team, self.dupe_team.teamowner)
+        form = {
+            'field.dupe_person': self.dupe_team.name,
+            'field.target_person': self.target_team.name,
+            'field.actions.deactivate_members_and_merge': 'Merge',
+            }
         view = create_initialized_view(
-            self.team, '+delete', form=form)
+            self.person_set, '+adminteammerge', form=form)
         self.assertEqual([], view.errors)
-        self.assertEqual(self.registry, self.team.merged)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
