@@ -29,9 +29,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
@@ -108,11 +105,7 @@ class TestTranslationTemplatesBuildBehavior(
 
     def setUp(self):
         super(TestTranslationTemplatesBuildBehavior, self).setUp()
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""

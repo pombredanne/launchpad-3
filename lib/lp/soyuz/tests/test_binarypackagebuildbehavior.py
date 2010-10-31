@@ -47,12 +47,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     )
-from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
@@ -70,8 +65,6 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehavior, self).setUp()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
@@ -291,8 +284,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
         self.builder = self.factory.makeBuilder()
