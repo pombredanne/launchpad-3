@@ -1438,19 +1438,23 @@ class Person(
         """See `IPerson`"""
         # Include PROPOSED and INVITED so that teams can retract mistakes
         # without involving members of the other team.
-        active_and_transitioning = (
-            TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED,
-            TeamMembershipStatus.PROPOSED, TeamMembershipStatus.INVITED)
+        active_and_transitioning = {
+            TeamMembershipStatus.ADMIN: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.APPROVED: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.PROPOSED: TeamMembershipStatus.DECLINED,
+            TeamMembershipStatus.INVITED:
+                TeamMembershipStatus.INVITATION_DECLINED,
+            }
         constraints = And(
             TeamMembership.personID == self.id,
             TeamMembership.teamID == team.id,
-            TeamMembership.status.is_in(active_and_transitioning))
+            TeamMembership.status.is_in(active_and_transitioning.keys()))
         tm = Store.of(self).find(TeamMembership, constraints).one()
         if tm is not None:
             # Flush the cache used by the inTeam method
             self._inTeam_cache = {}
-            tm.setStatus(
-                TeamMembershipStatus.DEACTIVATED, user, comment=comment)
+            new_status = active_and_transitioning[tm.status]
+            tm.setStatus(new_status, user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
