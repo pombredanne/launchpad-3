@@ -1436,11 +1436,15 @@ class Person(
 
     def retractTeamMembership(self, team, user, comment=None):
         """See `IPerson`"""
-        active = (TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED)
+        # Include PROPOSED and INVITED so that teams can retract mistakes
+        # without involving members of the other team.
+        active_and_transitioning = (
+            TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED,
+            TeamMembershipStatus.PROPOSED, TeamMembershipStatus.INVITED)
         constraints = And(
             TeamMembership.personID == self.id,
             TeamMembership.teamID == team.id,
-            TeamMembership.status.is_in(active))
+            TeamMembership.status.is_in(active_and_transitioning))
         tm = Store.of(self).find(TeamMembership, constraints).one()
         if tm is not None:
             # Flush the cache used by the inTeam method
