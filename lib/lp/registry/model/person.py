@@ -1451,7 +1451,7 @@ class Person(
             TeamMembership.status.is_in(active_and_transitioning.keys()))
         tm = Store.of(self).find(TeamMembership, constraints).one()
         if tm is not None:
-            # Flush the cache used by the inTeam method
+            # Flush the cache used by the inTeam method.
             self._inTeam_cache = {}
             new_status = active_and_transitioning[tm.status]
             tm.setStatus(new_status, user, comment=comment)

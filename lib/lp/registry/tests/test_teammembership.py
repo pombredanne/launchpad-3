@@ -664,7 +664,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
 
     def test_retractTeamMembership_invited(self):
-        # Verify a team can retract the proosed membership in a team
+        # Verify a team can retract a membership invitation.
         self.team2.addMember(self.team1, self.no_priv)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -672,7 +672,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
 
     def test_retractTeamMembership_proposed(self):
-        # Verify a team can retract the proosed membership in a team
+        # Verify a team can retract the proposed membership in a team.
         self.team2.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
         self.team1.join(self.team2, self.team1.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
@@ -681,7 +681,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.assertEqual(TeamMembershipStatus.DECLINED, tm.status)
 
     def test_retractTeamMembership_active(self):
-        # Verify a team can retract the membership in a team
+        # Verify a team can retract the membership in a team.
         self.team1.join(self.team2, self.team1.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -689,7 +689,7 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
 
     def test_retractTeamMembership_admin(self):
-        # Verify a team can retract the membership in a team
+        # Verify a team can retract the membership in a team.
         self.team1.join(self.team2, self.team1.teamowner)
         tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.team1, self.team2)
