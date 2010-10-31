@@ -12,11 +12,10 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 
-from twisted.web.client import getPage
-
 from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
+from twisted.web.client import getPage
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -119,6 +118,7 @@ class TestBuilder(TestCaseWithFactory):
 class TestBuilder(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
         super(TestBuilder, self).setUp()
@@ -365,9 +365,6 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around slaveStatusSentence()
-
-        # XXX: This test is failing consistently after the move to testtools /
-        # AsynchronousDeferredRunTest
         builder = self.factory.makeBuilder()
         builder.builderok = False
         d = builder.isAvailable()
