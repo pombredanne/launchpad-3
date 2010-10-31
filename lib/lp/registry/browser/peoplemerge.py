@@ -224,9 +224,16 @@ class AdminTeamMergeView(AdminMergeBaseView):
         return getUtility(ILaunchpadCelebrities).registry_experts
 
     def doMerge(self, data):
-        """Purge the inactive mailing list for the owner and merge"""
+        """Purge the non-transferable team data and merge."""
+        # A team cannot have more than one mailing list. The old list will
+        # reamin in the archive.
         if self.dupe_person.mailing_list is not None:
             self.dupe_person.mailing_list.purge()
+        # A team cannot have more than one email address; they are not
+        # transferrable because the identity of the team has changed.
+        self.dupe_person.setContactAddress(None)
+        # The registry experts does not want to acquire super teams from a
+        # merge.
         if self.target_person is self.registry_experts:
             for team in self.dupe_person.teams_participated_in:
                 self.dupe_person.retractTeamMembership(team, self.user)
@@ -349,15 +356,6 @@ class DeleteTeamView(AdminTeamMergeView):
     @action('Delete', name='delete', condition=canDelete)
     def merge_action(self, action, data):
         base = super(DeleteTeamView, self)
-        # Delete is implemented as a merge process, but email addresses should
-        # be deleted because ~registry can never claim them.
-        self.context.setContactAddress(None)
-        # Remove the team from super teams. Merge cannot handle super teams,
-        # but that is not an issue here because the goal is to have no
-        # members.
-        deletable_team = data['dupe_person']
-        for team in deletable_team.teams_participated_in:
-            deletable_team.retractTeamMembership(team, self.user)
         base.deactivate_members_and_merge_action.success(data)
 
 

@@ -6,6 +6,10 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
@@ -91,31 +95,40 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.target_team = self.factory.makeTeam()
         login_celebrity('registry_experts')
 
+    def getView(self):
+        form = {
+            'field.dupe_person': self.dupe_team.name,
+            'field.target_person': self.target_team.name,
+            'field.actions.deactivate_members_and_merge': 'Merge',
+            }
+        return create_initialized_view(
+            self.person_set, '+adminteammerge', form=form)
+
     def test_merge_team_with_inactive_mailing_list(self):
+        # Verify that inactive lists do not block merges.
         mailing_list = self.factory.makeMailingList(
             self.dupe_team, self.dupe_team.teamowner)
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        form = {
-            'field.dupe_person': self.dupe_team.name,
-            'field.target_person': self.target_team.name,
-            'field.actions.deactivate_members_and_merge': 'Merge',
-            }
-        view = create_initialized_view(
-            self.person_set, '+adminteammerge', form=form)
+        view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
+    def test_merge_team_with_email_address(self):
+        # Verify that team email addresses are not transferred.
+        self.factory.makeEmail(
+            "del@ex.dom", self.dupe_team, email_status=EmailAddressStatus.NEW)
+        view = self.getView()
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
+        emails = getUtility(IEmailAddressSet).getByPerson(self.target_team)
+        self.assertEqual(0, emails.count())
+
     def test_merge_team_with_super_teams_into_registry_experts(self):
+        # Verify that super team memberships are removed.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        form = {
-            'field.dupe_person': self.dupe_team.name,
-            'field.target_person': self.target_team.name,
-            'field.actions.deactivate_members_and_merge': 'Merge',
-            }
-        view = create_initialized_view(
-            self.person_set, '+adminteammerge', form=form)
+        view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
