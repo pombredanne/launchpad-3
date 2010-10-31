@@ -44,7 +44,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -78,7 +77,6 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    IPerson,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
