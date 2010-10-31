@@ -85,9 +85,9 @@ no communication between the two systems.
     >>> an_admin = list(celebrities.admin.allmembers)[0]
 
     >>> def create_view(principal, form=None):
+    ...     login_person(principal)
     ...     return create_initialized_view(
-    ...         team_one, '+mailinglist',
-    ...         form=form, principal=principal)
+    ...         team_one, '+mailinglist', form=form)
 
 Nobody can purge an active mailing list, the team owner...
 

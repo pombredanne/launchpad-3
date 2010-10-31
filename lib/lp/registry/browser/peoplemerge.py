@@ -226,11 +226,11 @@ class AdminTeamMergeView(AdminMergeBaseView):
     def doMerge(self, data):
         """Purge the non-transferable team data and merge."""
         # A team cannot have more than one mailing list. The old list will
-        # reamin in the archive.
+        # remain in the archive.
         if self.dupe_person.mailing_list is not None:
             self.dupe_person.mailing_list.purge()
         # A team cannot have more than one email address; they are not
-        # transferrable because the identity of the team has changed.
+        # transferable because the identity of the team has changed.
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
         # merge.
