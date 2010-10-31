@@ -290,17 +290,12 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         :return: A `BuilddSlaveTestSetup` object.
         """
-        tachandler = BuilddSlaveTestSetup()
-        tachandler.setUp()
-        # Basically impossible to do this w/ TrialTestCase. But it would be
-        # really nice to keep it.
-        #
-        # def addLogFile(exc_info):
-        #     self.addDetail(
-        #         'xmlrpc-log-file',
-        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        # self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
+        tachandler = self.useFixture(BuilddSlaveTestSetup())
+        self.addDetail(
+            'xmlrpc-log-file',
+            Content(
+                UTF8_TEXT,
+                lambda: open(tachandler.logfile, 'r').read()))
         return tachandler
 
     def getClientSlave(self, reactor=None, proxy=None):
