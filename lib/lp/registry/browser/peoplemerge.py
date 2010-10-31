@@ -227,6 +227,9 @@ class AdminTeamMergeView(AdminMergeBaseView):
         """Purge the inactive mailing list for the owner and merge"""
         if self.dupe_person.mailing_list is not None:
             self.dupe_person.mailing_list.purge()
+        if self.target_person is self.registry_experts:
+            for team in self.dupe_person.teams_participated_in:
+                self.dupe_person.retractTeamMembership(team, self.user)
         super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):
@@ -286,9 +289,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
             % (self.target_person.unique_displayname,
                canonical_url(self.target_person)))
         self.dupe_person.deactivateAllMembers(comment, self.user)
-        if self.target_person is self.registry_experts:
-            for team in self.dupe_person.teams_participated_in:
-                self.dupe_person.retractTeamMembership(team, self.user)
         flush_database_updates()
         self.doMerge(data)
 
@@ -342,11 +342,6 @@ class DeleteTeamView(AdminTeamMergeView):
     @property
     def has_mailing_list(self):
         return self.hasMailingList(self.context)
-
-    def validate(self, data):
-        """Validate the data and ensure super team checks are ignored."""
-        data['can_handle_super_teams'] = True
-        super(DeleteTeamView, self).validate(data)
 
     def canDelete(self, data):
         return not self.has_mailing_list
