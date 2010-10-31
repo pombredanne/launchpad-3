@@ -83,7 +83,6 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.model.mentoringoffer import MentoringOffer
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -155,8 +154,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    mentoring_offers = SQLMultipleJoin(
-            'MentoringOffer', joinColumn='specification', orderBy='id')
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
@@ -290,45 +287,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         fb = SpecificationFeedback.selectBy(
             specification=self, reviewer=person)
         return fb.prejoin(['requester'])
-
-    def canMentor(self, user):
-        """See ICanBeMentored."""
-        if user is None:
-            return False
-        if self.is_complete:
-            return False
-        if bool(self.isMentor(user)):
-            return False
-        if not user.teams_participated_in:
-            return False
-        return True
-
-    def isMentor(self, user):
-        """See ICanBeMentored."""
-        return MentoringOffer.selectOneBy(
-            specification=self, owner=user) is not None
-
-    def offerMentoring(self, user, team):
-        """See ICanBeMentored."""
-        # if an offer exists, then update the team
-        mentoringoffer = MentoringOffer.selectOneBy(
-            specification=self, owner=user)
-        if mentoringoffer is not None:
-            mentoringoffer.team = team
-            return mentoringoffer
-        # if no offer exists, create one from scratch
-        mentoringoffer = MentoringOffer(owner=user, team=team,
-            specification=self)
-        notify(ObjectCreatedEvent(mentoringoffer, user=user))
-        return mentoringoffer
-
-    def retractMentoring(self, user):
-        """See ICanBeMentored."""
-        mentoringoffer = MentoringOffer.selectOneBy(
-            specification=self, owner=user)
-        if mentoringoffer is not None:
-            notify(ObjectDeletedEvent(mentoringoffer, user=user))
-            MentoringOffer.delete(mentoringoffer.id)
 
     def notificationRecipientAddresses(self):
         """See ISpecification."""

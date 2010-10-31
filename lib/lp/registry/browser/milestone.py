@@ -284,7 +284,6 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         badge_property = self._bug_badge_properties[bugtask]
         return BugTaskListingItem(
             bugtask,
-            badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'])

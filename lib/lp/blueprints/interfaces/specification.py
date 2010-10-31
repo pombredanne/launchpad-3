@@ -53,7 +53,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
@@ -655,7 +654,7 @@ class INewSpecificationTarget(Interface):
 
 
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
-    ICanBeMentored, IHasLinkedBranches):
+    IHasLinkedBranches):
     """A Specification."""
 
     export_as_webservice_entry()
