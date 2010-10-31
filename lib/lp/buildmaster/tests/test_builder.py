@@ -55,6 +55,7 @@ from lp.buildmaster.tests.mock_slaves import (
     CorruptBehavior,
     DeadProxy,
     LostBuildingBrokenSlave,
+    make_publisher,
     MockBuilder,
     OkSlave,
     SlaveTestHelpers,
@@ -392,9 +393,7 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidateBase, self).setUp()
-        # Avoid circular imports.
-        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         # Create some i386 builders ready to build PPA builds.  Two
@@ -467,9 +466,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidatePPAWithSingleBuilder, self).setUp()
-        # Avoid circular imports.
-        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         self.bob_builder = getUtility(IBuilderSet)['bob']
@@ -730,10 +727,8 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         super(TestCurrentBuildBehavior, self).setUp()
         self.builder = self.factory.makeBuilder(name='builder')
 
-        # Avoid circular imports.
-        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         # Have a publisher and a ppa handy for some of the tests below.
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
 

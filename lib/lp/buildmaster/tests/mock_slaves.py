@@ -13,6 +13,7 @@ __all__ = [
     'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
+    'make_publisher',
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
@@ -47,6 +48,13 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
+
+
+def make_publisher():
+    """Make a Soyuz test publisher."""
+    # Avoid circular imports.
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class MockBuilder:
@@ -295,7 +303,7 @@ class SlaveTestHelpers(fixtures.Fixture):
             'xmlrpc-log-file',
             Content(
                 UTF8_TEXT,
-                lambda: open(tachandler.logfile, 'r').read()))
+                lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
     def getClientSlave(self, reactor=None, proxy=None):

@@ -55,6 +55,7 @@ from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
     BuildingSlave,
+    make_publisher,
     OkSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -82,12 +83,11 @@ class TestSlaveScannerScan(TestCase):
         Also adjust the sampledata in a way a build can be dispatched to
         'bob' builder.
         """
-        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         super(TestSlaveScannerScan, self).setUp()
         self.slave = self.useFixture(BuilddSlaveTestSetup())
 
         # Creating the required chroots needed for dispatching.
-        test_publisher = SoyuzTestPublisher()
+        test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
