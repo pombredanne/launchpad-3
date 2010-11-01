@@ -105,7 +105,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
             self.person_set, '+adminteammerge', form=form)
 
     def test_merge_team_with_inactive_mailing_list(self):
-        # Verify that inactive lists do not block merges.
+        # Inactive lists do not block merges.
         mailing_list = self.factory.makeMailingList(
             self.dupe_team, self.dupe_team.teamowner)
         mailing_list.deactivate()
@@ -115,7 +115,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
     def test_merge_team_with_email_address(self):
-        # Verify that team email addresses are not transferred.
+        # Team email addresses are not transferred.
         self.factory.makeEmail(
             "del@ex.dom", self.dupe_team, email_status=EmailAddressStatus.NEW)
         view = self.getView()
@@ -125,7 +125,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual(0, emails.count())
 
     def test_merge_team_with_super_teams_into_registry_experts(self):
-        # Verify that super team memberships are removed.
+        # Super team memberships are removed.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
         self.dupe_team.join(super_team, self.dupe_team.teamowner)

@@ -1435,14 +1435,11 @@ class IPersonEditRestricted(Interface):
     def leave(team):
         """Leave the given team.
 
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
+        This is a convenience method for retractTeamMembership() that allows
+        a user to leave the given team, or to cancel a PENDING membership
+        request.
 
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
+        :param team: The team to leave.
         """
 
     @operation_parameters(
@@ -1539,7 +1536,17 @@ class IPersonEditRestricted(Interface):
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
-        This is the team equivalent of user.leave(team).
+        If there's a membership entry for this team on the given team and
+        its status is either APPROVED, ADMIN, PENDING, or INVITED, the status
+        is changed and the relevant entries in TeamParticipation.
+
+        APPROVED and ADMIN status are changed to DEACTIVATED.
+        PENDING status is changed to DECLINED.
+        INVITED status is changes to INVITATION_DECLINED.
+
+        :param team: The team to leave.
+        :param user: The user making the retraction.
+        :param comment: An optional explanation about why the change was made.
         """
 
     def renewTeamMembership(team):

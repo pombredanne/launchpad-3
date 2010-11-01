@@ -229,8 +229,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
         # remain in the archive.
         if self.dupe_person.mailing_list is not None:
             self.dupe_person.mailing_list.purge()
-        # A team cannot have more than one email address; they are not
-        # transferable because the identity of the team has changed.
+        # Team email addresses are not transferable.
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
         # merge.
@@ -255,8 +254,8 @@ class AdminTeamMergeView(AdminMergeBaseView):
         # the registry experts team. When merging into any other team, an
         # error must be raised to explain that the user must remove the teams
         # himself.
-        if (target_team != self.registry_experts
-            and dupe_team.super_teams.count() > 0):
+        super_teams_count = dupe_team.super_teams.count()
+        if target_team != self.registry_experts and super_teams_count > 0:
             self.addError(_(
                 "${name} has super teams, so it can't be merged.",
                 mapping=dict(name=dupe_team.name)))

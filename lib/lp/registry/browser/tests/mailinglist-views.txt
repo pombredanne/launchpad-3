@@ -133,15 +133,13 @@ Mailman side.
     >>> logout()
     >>> transaction.commit()
 
-The team owner can purge his list...
+The team owner can purge his list, as well as a Launchpad administrator and
+a mailing list expert.
 
     >>> login(ANONYMOUS)
     >>> view = create_view(the_owner)
     >>> view.list_can_be_purged
     True
-
-...and Launchpad administrator, or mailing list expert can purge the mailing
-list.
 
     >>> view = create_view(an_admin)
     >>> view.list_can_be_purged
