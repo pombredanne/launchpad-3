@@ -892,10 +892,10 @@ class BugTask(SQLBase, BugTaskMixin):
             user.id == self.bug.ownerID):
             return True
         elif (user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id or
-            user.id == celebrities.janitor.id):
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
             return True
         else:
             return (self.status not in (
