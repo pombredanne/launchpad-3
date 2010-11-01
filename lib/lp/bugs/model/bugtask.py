@@ -889,7 +889,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
         if (self.status == BugTaskStatus.FIXRELEASED and
-            user == self.bug.owner):
+            user.id == self.bug.ownerID):
             return True
         elif (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
