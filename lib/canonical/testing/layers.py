@@ -51,12 +51,12 @@ __all__ = [
     'reconnect_stores',
     ]
 
-import atexit
 import datetime
 import errno
 import gc
 import logging
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -64,12 +64,12 @@ import sys
 import tempfile
 import threading
 import time
-
 from cProfile import Profile
 from textwrap import dedent
 from unittest import TestCase, TestResult
 from urllib import urlopen
 
+from fixtures import Fixture
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -97,6 +97,10 @@ from canonical.ftests.pgsql import PgTestSetup
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
+from canonical.config.fixture import (
+    ConfigFixture,
+    ConfigUseFixture,
+    )
 from canonical.database.revision import (
     confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import (
@@ -253,18 +257,54 @@ class BaseLayer:
     # LP_PERSISTENT_TEST_SERVICES environment variable.
     persist_test_services = False
 
+    # Things we need to cleanup.
+    fixture = None
+
+    # The config names that are generated for this layer
+    config_name = None
+    appserver_config_name = None
+
+    @classmethod
+    def make_config(cls, config_name, clone_from):
+        """Create a temporary config and link it into the layer cleanup."""
+        cfg_fixture = ConfigFixture(config_name, clone_from)
+        cls.fixture.addCleanup(cfg_fixture.cleanUp)
+        cfg_fixture.setUp()
+
     @classmethod
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        cls.fixture = Fixture()
+        cls.fixture.setUp()
+        cls.fixture.addCleanup(setattr, cls, 'fixture', None)
         BaseLayer.persist_test_services = (
             os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None)
-        # Kill any Memcached or Librarian left running from a previous
-        # test run, or from the parent test process if the current
-        # layer is being run in a subprocess. No need to be polite
-        # about killing memcached - just do it quickly.
+        # We can only do unique test allocation and parallelisation if
+        # LP_PERSISTENT_TEST_SERVICES is off.
         if not BaseLayer.persist_test_services:
+            test_instance = str(os.getpid())
+            os.environ['LP_TEST_INSTANCE'] = test_instance
+            cls.fixture.addCleanup(os.environ.pop, 'LP_TEST_INSTANCE', '')
+            # Kill any Memcached or Librarian left running from a previous
+            # test run, or from the parent test process if the current
+            # layer is being run in a subprocess. No need to be polite
+            # about killing memcached - just do it quickly.
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
+            config_name = 'testrunner_%s' % test_instance
+            cls.make_config(config_name, 'testrunner')
+            app_config_name = 'testrunner-appserver_%s' % test_instance
+            cls.make_config(app_config_name, 'testrunner-appserver')
+        else:
+            config_name = 'testrunner'
+            app_config_name = 'testrunner-appserver'
+        cls.config_name = config_name
+        cls.fixture.addCleanup(setattr, cls, 'config_name', None)
+        cls.appserver_config_name = app_config_name
+        cls.fixture.addCleanup(setattr, cls, 'appserver_config_name', None)
+        use_fixture = ConfigUseFixture(config_name)
+        cls.fixture.addCleanup(use_fixture.cleanUp)
+        use_fixture.setUp()
         # Kill any database left lying around from a previous test run.
         db_fixture = LaunchpadTestSetup()
         try:
@@ -278,6 +318,7 @@ class BaseLayer:
     @classmethod
     @profiled
     def tearDown(cls):
+        cls.fixture.cleanUp()
         BaseLayer.isSetUp = False
 
     @classmethod
@@ -349,6 +390,7 @@ class BaseLayer:
                     gc.collect()
                 else:
                     break
+            new_threads = new_live_threads()
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop
@@ -530,11 +572,6 @@ class MemcachedLayer(BaseLayer):
         pidfile = MemcachedLayer.getPidFile()
         open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
 
-        # Register an atexit hook just in case tearDown doesn't get
-        # invoked for some perculiar reason.
-        if not BaseLayer.persist_test_services:
-            atexit.register(kill_by_pidfile, pidfile)
-
     @classmethod
     @profiled
     def tearDown(cls):
@@ -592,7 +629,6 @@ class LibrarianLayer(BaseLayer):
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
         LibrarianLayer._check_and_reset()
-        atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -857,24 +893,6 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     def tearDown(cls):
         pass
     
-    @classmethod
-    def tearDownHelper(cls):
-        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
-
-        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
-        why atexit is used, but because test runners delegate rather than
-        returning, the librarian and other servers are only killed *at the end
-        of the whole test run*, which leads to multiple instances running, so
-        we manually run the teardown for these layers.
-        """
-        try:
-            MemcachedLayer.tearDown()
-        finally:
-            try:
-                LibrarianLayer.tearDown()
-            finally:
-                DatabaseLayer.tearDown()
-
     @classmethod
     @profiled
     def testSetUp(cls):
@@ -1174,7 +1192,6 @@ class GoogleServiceLayer(BaseLayer):
     def setUp(cls):
         google = GoogleServiceTestSetup()
         google.setUp()
-        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
@@ -1231,11 +1248,6 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @profiled
     def setUp(cls):
         pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1345,7 +1357,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def tearDown(cls):
         if not globalregistry.base.unregisterUtility(cls._mailbox):
             raise NotImplementedError('failed to unregister mailbox')
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1635,8 +1646,17 @@ class LayerProcessController:
     # configs/testrunner-appserver/mail-configure.zcml
     smtp_controller = None
 
-    # The DB fixture in use
-    _db_fixture = None
+    @classmethod
+    def _setConfig(cls):
+        """Stash a config for use."""
+        cls.appserver_config = CanonicalConfig(
+            BaseLayer.appserver_config_name, 'runlaunchpad')
+
+    @classmethod
+    def setUp(cls):
+        cls._setConfig()
+        cls.startSMTPServer()
+        cls.startAppServer()
 
     @classmethod
     @profiled
@@ -1657,9 +1677,6 @@ class LayerProcessController:
         log.propagate = False
         cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
-        # Make sure that the smtp server is killed even if tearDown() is
-        # skipped, which can happen if FunctionalLayer is in the mix.
-        atexit.register(cls.stopSMTPServer)
 
     @classmethod
     @profiled
@@ -1670,9 +1687,6 @@ class LayerProcessController:
         cls._cleanUpStaleAppServer()
         cls._runAppServer()
         cls._waitUntilAppServerIsReady()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.stopAppServer)
 
     @classmethod
     @profiled

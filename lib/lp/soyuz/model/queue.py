@@ -883,9 +883,14 @@ class PackageUpload(SQLBase):
 
         body = message.template % message.__dict__
 
+        subject = "%s rejected" % self.changesfile.filename
+        if self.isPPA():
+            subject = "[PPA %s] %s" % (
+                get_ppa_reference(self.archive), subject)
+
         self._sendMail(
-            recipients, "%s rejected" % self.changesfile.filename,
-            body, dry_run, changesfile_content=changesfile_content,
+            recipients, subject, body, dry_run,
+            changesfile_content=changesfile_content,
             attach_changes=attach_changes)
 
     def _sendSuccessNotification(

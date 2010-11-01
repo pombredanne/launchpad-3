@@ -41,6 +41,7 @@ def runLaunchpad():
     atexit.register(DatabaseLayer.tearDown)
     LibrarianLayer.setUp()
     GoogleServiceLayer.setUp()
+    LayerProcessController._setConfig()
     LayerProcessController.startSMTPServer()
     LayerProcessController.startAppServer()
     sys.stderr.write('done.\n')
