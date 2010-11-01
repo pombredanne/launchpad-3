@@ -11,13 +11,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-
+from lp.code.interfaces.branchmergequeue import (
+    user_has_special_merge_queue_access,
+    )
 from lp.code.interfaces.branchmergequeuecollection import (
     IBranchMergeQueueCollection,
     InvalidFilter,
@@ -57,8 +58,11 @@ class GenericBranchMergeQueueCollection:
         self._exclude_from_search = exclude_from_search
 
     def count(self):
+        return self._getCount()
+
+    def _getCount(self):
         """See `IBranchMergeQueueCollection`."""
-        return self.getMergeQueues().count()
+        return self._getMergeQueues().count()
 
     @property
     def store(self):
@@ -90,6 +94,9 @@ class GenericBranchMergeQueueCollection:
         return self._merge_queue_filter_expressions
 
     def getMergeQueues(self):
+        return list(self._getMergeQueues())
+
+    def _getMergeQueues(self):
         """See `IBranchMergeQueueCollection`."""
         tables = [BranchMergeQueue] + self._tables.values()
         expressions = self._getMergeQueueExpressions()
@@ -104,18 +111,69 @@ class GenericBranchMergeQueueCollection:
         if (person == LAUNCHPAD_SERVICES or
             user_has_special_merge_queue_access(person)):
             return self
-        #TODO
-        return GenericBranchMergeQueueCollection(
+        return VisibleBranchMergeQueueCollection(
+            person,
             self._store, None,
             self._tables, self._exclude_from_search)
 
 
-def user_has_special_merge_queue_access(user):
-    """Admins and bazaar experts have special access.
+class VisibleBranchMergeQueueCollection(GenericBranchMergeQueueCollection):
+    """A mergequeue collection which provides queues visible by a user."""
 
-    :param user: A 'Person' or None.
-    """
-    if user is None:
-        return False
-    celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+    def __init__(self, person, store=None,
+                 merge_queue_filter_expressions=None, tables=None,
+                 exclude_from_search=None):
+        super(VisibleBranchMergeQueueCollection, self).__init__(
+            store=store,
+            merge_queue_filter_expressions=merge_queue_filter_expressions,
+            tables=tables,
+            exclude_from_search=exclude_from_search,
+        )
+        self._user = person
+
+    def _filterBy(self, expressions, table=None, join=None,
+                  exclude_from_search=None):
+        """Return a subset of this collection, filtered by 'expressions'."""
+        tables = self._tables.copy()
+        if table is not None:
+            if join is None:
+                raise InvalidFilter("Cannot specify a table without a join.")
+            tables[table] = join
+        if exclude_from_search is None:
+            exclude_from_search = []
+        if expressions is None:
+            expressions = []
+        return self.__class__(
+            self._user,
+            self.store,
+            self._merge_queue_filter_expressions + expressions,
+            tables,
+            self._exclude_from_search + exclude_from_search)
+
+    def visibleByUser(self, person):
+        """See `IBranchMergeQueueCollection`."""
+        if person == self._user:
+            return self
+        raise InvalidFilter(
+            "Cannot filter for merge queues visible by user %r, already "
+            "filtering for %r" % (person, self._user))
+
+    def _getCount(self):
+        """See `IBranchMergeQueueCollection`."""
+        return len(self._getMergeQueues())
+
+    def _getMergeQueues(self):
+        """Return the queues visible by self._user.
+
+        A queue is visible to a user if that user can see all the branches
+        associated with the queue.
+        """
+
+        def allBranchesVisible(user, branches):
+            return len([branch for branch in branches
+                        if branch.visibleByUser(user)]) == branches.count()
+
+        queues = super(
+            VisibleBranchMergeQueueCollection, self)._getMergeQueues()
+        return [queue for queue in queues
+                if allBranchesVisible(self._user, queue.branches)]

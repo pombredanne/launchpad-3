@@ -10,43 +10,59 @@
 
   <div metal:fill-slot="main">
 
-    <tal:has-queues condition="view/mergequeue_count">
+    <div tal:condition="not: features/code.branchmergequeue">
+        <em>
+         No merge queues
+        </em>
+    </div>
 
-        <table id="mergequeuetable" class="listing sortable">
-          <thead>
-            <tr>
-              <th colspan="2">Name</th>
-              <th tal:condition="view/owner_enabled">Owner</th>
-              <th>Date Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tal:mergequeues repeat="mergeQueue view/mergequeues">
-              <tr>
-                <td colspan="2">
-                  <a tal:attributes="href mergeQueue/fmt:url"
-                     tal:content="mergeQueue/name">Merge queue name</a>
-                </td>
-                <td tal:condition="view/owner_enabled">
-                  <a tal:replace="structure mergeQueue/owner/fmt:link">
-                    Owner
-                  </a>
-                </td>
-                <td tal:content="mergeQueue/date_created/fmt:datetime" />
-              </tr>
-            </tal:mergequeues>
-          </tbody>
-        </table>
+    <div tal:condition="features/code.branchmergequeue">
 
-    </tal:has-queues>
+        <tal:has-queues condition="view/mergequeue_count">
 
-    <em id="no-queues"
-     tal:condition="not: view/mergequeue_count"
-     tal:content="view/no_merge_queue_message">
-     No merge queues
-    </em>
+            <table id="mergequeuetable" class="listing sortable">
+              <thead>
+                <tr>
+                  <th colspan="2">Name</th>
+                  <th tal:condition="view/owner_enabled">Owner</th>
+                  <th>Queue Size</th>
+                  <th>Associated Branches</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tal:mergequeues repeat="mergeQueue view/mergequeues">
+                  <tr>
+                    <td colspan="2">
+                      <a tal:attributes="href mergeQueue/fmt:url"
+                         tal:content="mergeQueue/name">Merge queue name</a>
+                    </td>
+                    <td tal:condition="view/owner_enabled">
+                      <a tal:replace="structure mergeQueue/owner/fmt:link">
+                        Owner
+                      </a>
+                    </td>
+                    <td>4</td>
+                    <td>
+                        <metal:display-branches
+                            use-macro="context/@@+bmq-macros/merge_queue_branches"/>
+                    </td>
+                  </tr>
+                </tal:mergequeues>
+              </tbody>
+            </table>
+
+        </tal:has-queues>
+
+        <em id="no-queues"
+         tal:condition="not: view/mergequeue_count"
+         tal:content="view/no_merge_queue_message">
+         No merge queues
+        </em>
+
+    </div>
 
   </div>
 
 </body>
 </html>
+

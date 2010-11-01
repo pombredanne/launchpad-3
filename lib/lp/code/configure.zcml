@@ -97,6 +97,9 @@
   <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
     <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
   </class>
+  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>

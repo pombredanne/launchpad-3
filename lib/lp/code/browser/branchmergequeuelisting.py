@@ -26,7 +26,7 @@ from lp.services.propertycache import cachedproperty
 
 
 class HasMergeQueuesMenuMixin:
-    """A context menus mixin for objects that implement IHasMergeQueues."""
+    """A context menus mixin for objects that can own merge queues."""
 
     def _getCollection(self):
         return getUtility(IAllBranchMergeQueues).visibleByUser(self.user)
@@ -103,6 +103,3 @@ class PersonMergeQueueListingView(MergeQueueListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranchMergeQueues).ownedBy(self.context)
-
-
-

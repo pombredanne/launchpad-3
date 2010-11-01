@@ -1328,6 +1328,14 @@
             name="+merge-queues"
             template="../templates/branchmergequeue-listing.pt"/>
 
+        <browser:page
+            for="*"
+            layer="lp.code.publisher.CodeLayer"
+            name="+bmq-macros"
+            permission="zope.Public"
+            template="../templates/branchmergequeue-macros.pt"/>
+
+
     </facet>
 
     <browser:url
