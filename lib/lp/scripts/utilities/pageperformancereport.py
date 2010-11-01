@@ -339,7 +339,19 @@ class RequestTimes:
 
     def __init__(self, categories, options):
         self.by_pageids = options.pageids
-        self.by_urls = options.top_urls
+        self.top_urls = options.top_urls
+        # We only keep in memory 20 times the number of URLs we want to
+        # return. The number of URLs can go pretty high (because of the
+        # distinct query parameters).
+        #
+        # Keeping all in memory at once is prohibitive. On a small but
+        # representative sample, keeping 50 times the possible number of
+        # candidates and culling to 90% on overflow, generated an identical
+        # report than keeping all the candidates in-memory.
+        #
+        # Keeping 10 times or culling at 90% generated a near-identical report
+        # (it differed a little in the tail.)
+        self.top_urls_cache_size = self.top_urls * 50
 
         # Histogram has a bin per second up to 1.5 our timeout.
         self.histogram_width = int(options.timeout*1.5)
@@ -361,21 +373,30 @@ class RequestTimes:
                 pageid, OnlineStats(self.histogram_width))
             stats.update(request)
 
-        if self.by_urls:
+        if self.top_urls:
             stats = self.url_times.setdefault(
                 request.url, OnlineStats(self.histogram_width))
             stats.update(request)
+            #  Whenever we have more URLs than we need to, discard 10%
+            # that is less likely to end up in the top.
+            if len(self.url_times) > self.top_urls_cache_size:
+                cutoff = int(self.top_urls_cache_size*0.90)
+                self.url_times = dict(
+                    sorted(self.url_times.items(),
+                    key=lambda x: x[1].total_time,
+                    reverse=True)[:cutoff])
+
 
     def get_category_times(self):
         """Return the times for each category."""
         return self.category_times
 
-    def get_top_urls_times(self, top_n):
+    def get_top_urls_times(self):
         """Return the times for the Top URL by total time"""
         # Sort the result by total time
         return sorted(
             self.url_times.items(),
-            key=lambda x: x[1].total_time, reverse=True)[:top_n]
+            key=lambda x: x[1].total_time, reverse=True)[:self.top_urls]
 
     def get_pageid_times(self):
         """Return the times for the pageids."""
@@ -468,7 +489,7 @@ def main():
     pageid_times = []
     url_times= []
     if options.top_urls:
-        url_times = times.get_top_urls_times(options.top_urls)
+        url_times = times.get_top_urls_times()
     if options.pageids:
         pageid_times = times.get_pageid_times()
 

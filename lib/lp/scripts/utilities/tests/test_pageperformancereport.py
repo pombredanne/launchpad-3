@@ -22,7 +22,7 @@ class FakeOptions:
     timeout = 4
     db_file = None
     pageids = True
-    top_urls = True
+    top_urls = 3
 
     def __init__(self, **kwargs):
         """Assign all arguments as attributes."""
@@ -188,7 +188,7 @@ class TestRequestTimes(TestCase):
 
     def test_get_url_times(self):
         self.setUpRequests()
-        url_times = self.db.get_top_urls_times(3)
+        url_times = self.db.get_top_urls_times()
         self.assertStatsAreEquals(TOP_3_URL_STATS, url_times)
 
     def test_get_pageid_times(self):
