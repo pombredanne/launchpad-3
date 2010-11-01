@@ -563,6 +563,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/lp-mochi.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/app/lp-links.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/picker.js"></script>
@@ -691,6 +693,13 @@
         // Hook up the function that dismisses the help window if we click
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
+    });
+
+    LPS.use('lp.app.links',
+      function(Y) {
+        Y.on('load', function(e) {
+            Y.lp.app.links.check_valid_lp_links();
+        }, window);
     });
   </script>
 </metal:page-javascript>
