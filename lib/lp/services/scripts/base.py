@@ -37,9 +37,6 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.lp import initZopeless
 
-from lp.services.log.mappingfilter import MappingFilter
-from lp.services.log.nullhandler import NullHandler
-
 
 LOCK_PATH = "/var/lock/"
 UTC = pytz.UTC
