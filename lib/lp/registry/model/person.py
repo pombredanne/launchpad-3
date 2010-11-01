@@ -3773,7 +3773,7 @@ class PersonSet:
                         'AND team = %s'
                         % sqlvalues(to_id, team_id))
             result = cur.fetchone()
-            if result:
+            if result is not None:
                 current_status = result[0]
                 # Now we can safely delete from_person's membership record,
                 # because we know to_person has a membership entry for this
@@ -3827,7 +3827,7 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 ''' % vars())
             result = cur.fetchone()
-            if result:
+            if result is not None:
                 # Add the karma to the remaining user.
                 karma_total = from_karma + result[0]
                 cur.execute('''
