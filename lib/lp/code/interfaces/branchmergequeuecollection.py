@@ -17,8 +17,10 @@ __all__ = [
 
 from zope.interface import Interface
 
+
 class InvalidFilter(Exception):
     """Raised when an `IBranchMergeQueueCollection` can't apply the filter."""
+
 
 class IBranchMergeQueueCollection(Interface):
     """A collection of branch merge queues.
