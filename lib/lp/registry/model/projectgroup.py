@@ -59,8 +59,6 @@ from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,
-    )
-from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus,
     )
 from lp.blueprints.model.specification import (

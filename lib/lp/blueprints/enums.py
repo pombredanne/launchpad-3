@@ -12,6 +12,7 @@ __all__ = [
     'SpecificationLifecycleStatus',
     'SpecificationPriority',
     'SpecificationSort',
+    'SprintSpecificationStatus',
     ]
 
 
@@ -460,4 +461,35 @@ class SpecificationGoalStatus(DBEnumeratedType):
         This spec has been submitted as a potential goal for the stated
         product series or distribution release, but the drivers have not yet
         accepted or declined that goal.
+        """)
+
+
+class SprintSpecificationStatus(DBEnumeratedType):
+    """The current approval status of the spec on this sprint's agenda.
+
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    ACCEPTED = DBItem(10, """
+        Accepted
+
+        The meeting organisers have confirmed this topic for the meeting
+        agenda.
+        """)
+
+    DECLINED = DBItem(20, """
+        Declined
+
+        This spec has been declined from the meeting agenda
+        because of a lack of available resources, or uncertainty over
+        the specific requirements or outcome desired.
+        """)
+
+    PROPOSED = DBItem(30, """
+        Proposed
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been accepted or declined for the
+        agenda.
         """)

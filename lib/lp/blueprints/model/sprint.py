@@ -36,13 +36,11 @@ from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,
+    SprintSpecificationStatus,
     )
 from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
-    )
-from lp.blueprints.interfaces.sprintspecification import (
-    SprintSpecificationStatus,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
