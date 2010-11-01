@@ -3,8 +3,6 @@
 
 """Tests for the Windmill test doubles themselves."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from mocker import (

@@ -809,11 +809,11 @@ class IDistroSeriesPublic(
         status=copy_field(status, required=False),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
-            "distroseries."),
+            "distroseries."), value_type=TextLine(),
             required=False),
         packagesets=List(
             title=_("The list of packagesets to copy to the derived "
-            "distroseries"),
+            "distroseries"), value_type=TextLine(),
             required=False),
         rebuild=Bool(
             title=_("If binaries will be copied to the derived "
