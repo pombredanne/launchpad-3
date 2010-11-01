@@ -114,7 +114,7 @@ is informational.
 
     >>> ubz = sprintset["ubz"]
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be no informational specs for ubz:
 

@@ -410,7 +410,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 

@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     ILaunchpadCelebrities,
     )
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,
