@@ -547,7 +547,7 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
-class ICodeReviewNewRevisions(Interface):
+class ICodeReviewNewRevisions(IComment):
     """Marker interface used to register views for CodeReviewNewRevisions."""
 
 
@@ -557,7 +557,7 @@ class CodeReviewNewRevisions:
     Each object instance represents a number of revisions scanned at a
     particular time.
     """
-    implements(IComment, ICodeReviewNewRevisions)
+    implements(ICodeReviewNewRevisions)
 
     def __init__(self, revisions, date, branch):
         self.revisions = revisions
@@ -566,6 +566,13 @@ class CodeReviewNewRevisions:
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+
+        # Other standard IComment attributes are not used.
+        self.extra_css_class = None
+        self.comment_author = None
+        self.body_text = None
+        self.comment_date = None
+        self.display_attachments = False
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):

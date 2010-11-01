@@ -149,22 +149,21 @@ class LaunchpadScript:
         useful in test scripts.
         """
         if name is None:
-            self.name = self.__class__.__name__.lower()
+            self._name = self.__class__.__name__.lower()
         else:
-            self.name = name
+            self._name = name
 
-        self.dbuser = dbuser
-
-        if self.description is None:
-            description = self.__doc__
-        else:
-            description = self.description
+        self._dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
         # we add options that our logger object uses, then call our
         # option-parsing hook, and finally pull out and store the
         # supplied options and args.
+        if self.description is None:
+            description = self.__doc__
+        else:
+            description = self.description
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
         scripts.logger_options(self.parser, default=self.loglevel)
@@ -174,9 +173,23 @@ class LaunchpadScript:
                     "profiling stats in FILE."))
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
-        self.logger = scripts.logger(self.options, name)
 
-        self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
+        # Enable subclasses to easily override these __init__()
+        # arguments using command-line arguments.
+        self.handle_options()
+
+    def handle_options(self):
+        self.logger = scripts.logger(self.options, self.name)
+
+    @property
+    def name(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._name
+
+    @property
+    def dbuser(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._dbuser
 
     #
     # Hooks that we expect users to redefine.
@@ -222,6 +235,10 @@ class LaunchpadScript:
         lockfilename.
         """
         return "launchpad-%s.lock" % self.name
+
+    @property
+    def lockfilepath(self):
+        return os.path.join(LOCK_PATH, self.lockfilename)
 
     def setup_lock(self):
         """Create lockfile.
@@ -272,8 +289,10 @@ class LaunchpadScript:
 
     @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, implicit_begin=True,
-            isolation=ISOLATION_LEVEL_DEFAULT):
+            isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+        if isolation is None:
+            isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
         self._init_db(implicit_begin=implicit_begin, isolation=isolation)
 
@@ -336,17 +355,15 @@ class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
     def __init__(self, name=None, dbuser=None, test_args=None):
-        """Initialize, and sys.exit() if the cronscript is disabled.
-
-        Rather than hand editing crontab files, cronscripts can be
-        enabled and disabled using a config file.
-
-        The control file location is specified by
-        config.canonical.cron_control_url.
-        """
         super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
 
-        name = self.name
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        enabled = cronscript_enabled(
+            config.canonical.cron_control_url, self.name, self.logger)
+        if not enabled:
+            sys.exit(0)
 
         # Configure the IErrorReportingUtility we use with defaults.
         # Scripts can override this if they want.
@@ -356,12 +373,10 @@ class LaunchpadCronScript(LaunchpadScript):
         globalErrorUtility.copy_to_zlog = False
 
         # WARN and higher log messages should generate OOPS reports.
-        logging.getLogger().addHandler(OopsHandler(name))
-
-        enabled = cronscript_enabled(
-            config.canonical.cron_control_url, name, self.logger)
-        if not enabled:
-            sys.exit(0)
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        logging.getLogger().addHandler(OopsHandler(self.name))
 
     @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):

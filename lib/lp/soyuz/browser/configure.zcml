@@ -831,13 +831,6 @@
         permission="launchpad.View"
         template="../templates/buildqueue-current.pt"/>
     <browser:page
-        for="lp.buildmaster.interfaces.buildqueue.IBuildFarmJob"
-        name="+current"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/buildfarmjob-current.pt"/>
-    <browser:page
         for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
         name="+current"
         class="canonical.launchpad.webapp.publisher.LaunchpadView"

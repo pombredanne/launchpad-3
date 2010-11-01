@@ -22,8 +22,8 @@ Additional sample data
 Adding a private branch that is only visible by No Privileges Person
 (and Launchpad administrators).
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from lp.code.enums import BranchType
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet

@@ -284,6 +284,12 @@ a.help:hover, a.help:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.invalid-link {
+    disabled: True;
+    color: #909090;
+    text-decoration: none;
+    cursor: default;
+    }
 img, a img {
     /* No border on images that are links. */
     border: none;
@@ -2419,7 +2425,7 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
     }
-table#packages_list tr.superseded {
+table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
     }
 ul.latest-ppa-updates li:nth-child(odd) {

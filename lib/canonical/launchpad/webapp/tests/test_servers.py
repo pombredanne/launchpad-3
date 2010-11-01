@@ -358,6 +358,20 @@ class TestBasicLaunchpadRequest(TestCase):
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
+    def test_is_ajax_false(self):
+        """Normal requests do not define HTTP_X_REQUESTED_WITH."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+
+        self.assertFalse(request.is_ajax)
+
+    def test_is_ajax_true(self):
+        """Requests with HTTP_X_REQUESTED_WITH set are ajax requests."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
+            'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+            })
+
+        self.assertTrue(request.is_ajax)
+
 
 class IThingSet(Interface):
     """Marker interface for a set of things."""
@@ -470,19 +484,6 @@ class TestLaunchpadBrowserRequest(TestCase):
             request.query_string_params,
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
-
-    def test_isRedirectInhibited_without_cookie(self):
-        # When the request doesn't include the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns False.
-        request = LaunchpadBrowserRequest('', {})
-        self.assertFalse(request.isRedirectInhibited())
-
-    def test_isRedirectInhibited_with_cookie(self):
-        # When the request includes the inhibit_beta_redirect cookie,
-        # isRedirectInhibited() returns True.
-        request = LaunchpadBrowserRequest(
-            '', dict(HTTP_COOKIE="inhibit_beta_redirect=1"))
-        self.assertTrue(request.isRedirectInhibited())
 
 
 def test_suite():

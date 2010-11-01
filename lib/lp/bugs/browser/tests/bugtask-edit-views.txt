@@ -10,8 +10,8 @@ Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> ubuntu_thunderbird_task = bug_nine.bugtasks[1]
@@ -83,8 +83,8 @@ If we try to change the source package to a package name that another
 distribution task already has, an error message will occur. First,
 let's add an evolution (Ubuntu) task to bug two.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
@@ -224,7 +224,7 @@ XXX: We really should update the status from the bug watch, but that's
      not trivial to do at the moment. I will fix this later.
      -- Bjorn Tillenius, 2006-03-01
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> request = LaunchpadTestRequest(
@@ -256,7 +256,7 @@ set to their default values:
     >>> thunderbird_task.bugwatch is None
     True
 
-    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> thunderbird_task.status == IBugTask['status'].default
     True
     >>> thunderbird_task.importance == IBugTask['importance'].default
@@ -271,7 +271,7 @@ permission, the edit page renders an input widget, otherwise it renders
 a display widget.
 
     >>> from zope.app.form.interfaces import IInputWidget
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 The distribution owner gets an edit widget for the distribution task.
 
@@ -302,7 +302,7 @@ But an unprivileged user does not.
 A bug supervisor can also change the milestone. Let's set no-priv as
 Ubuntu's bug supervisor.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

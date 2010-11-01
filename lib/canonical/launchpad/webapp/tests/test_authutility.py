@@ -16,11 +16,8 @@ from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
-from canonical.launchpad.interfaces import (
-    IAccount,
-    IPasswordEncryptor,
-    IPerson,
-    )
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.webapp.authentication import (
     LaunchpadPrincipal,
     PlacelessAuthUtility,
@@ -29,6 +26,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessAuthUtility,
     IPlacelessLoginSource,
     )
+from lp.registry.interfaces.person import IPerson
 
 
 class DummyPerson(object):
@@ -65,6 +63,7 @@ class DummyPasswordEncryptor(object):
 
 
 class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
+
     def setUp(self):
         PlacelessSetup.setUp(self)
         ztapi.provideUtility(IPasswordEncryptor, DummyPasswordEncryptor())

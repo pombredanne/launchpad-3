@@ -40,6 +40,7 @@ from lp.bugs.interfaces.bug import (
     )
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
@@ -77,6 +78,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonPublic,
@@ -89,6 +93,7 @@ from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
+from lp.services.comments.interfaces.conversation import IComment
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
@@ -107,15 +112,17 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     ISourcePackagePublishingHistoryPublic,
     )
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload,
-    )
+from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    IHasTranslationImports,
+    ITranslationImportQueueEntry,
     )
 
 
@@ -201,6 +208,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -321,6 +329,9 @@ patch_plain_parameter_type(
 IBuildFarmJob['status'].vocabulary = BuildStatus
 IBuildFarmJob['buildqueue_record'].schema = IBuildQueue
 
+# IComment
+IComment['comment_author'].schema = IPerson
+
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
@@ -365,6 +376,11 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
+
+# IDistroSeriesDifferenceComment
+IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
@@ -387,13 +403,17 @@ patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
 
 # IStructuralSubscription
+patch_collection_property(
+    IStructuralSubscription, 'bug_filters', IBugSubscriptionFilter)
 patch_reference_property(
     IStructuralSubscription, 'target', IStructuralSubscriptionTarget)
 
+# IStructuralSubscriptionTarget
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
+# ISourcePackageRelease
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
     ISourcePackageRecipeBuild)
@@ -421,6 +441,11 @@ patch_reference_property(IBugTask, 'owner', IPerson)
 
 # IBugWatch
 patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IHasTranslationImports
+patch_collection_return_type(
+    IHasTranslationImports, 'getTranslationImportQueueEntries',
+    ITranslationImportQueueEntry)
 
 # IIndexedMessage
 patch_reference_property(IIndexedMessage, 'inside', IBugTask)

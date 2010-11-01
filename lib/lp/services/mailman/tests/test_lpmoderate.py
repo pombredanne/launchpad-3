@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the lpmoderate monekypatches"""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = []
 
@@ -18,11 +16,11 @@ class TestLPModerateTestCase(MailmanTestCase):
     """Test lpmoderate.
 
     Mailman process() methods quietly return. They may set msg_data key-values
-    or raise an error to end processing. These tests often check for errors,
-    but that does not mean there is an error condition, it only means message
-    processing has reached a final decision. Messages that do not cause a
-    final decision pass through, and the process() methods ends without a
-    return.
+    or raise an error to end processing. This group of tests tests often check
+    for errors, but that does not mean there is an error condition, it only
+    means message processing has reached a final decision. Messages that do
+    not cause a final decision pass-through and the process() methods ends
+    without a return.
     """
 
     layer = LaunchpadFunctionalLayer
