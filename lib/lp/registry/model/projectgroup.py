@@ -55,7 +55,7 @@ from lp.answers.model.faq import (
 from lp.answers.model.question import QuestionTargetSearch
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,

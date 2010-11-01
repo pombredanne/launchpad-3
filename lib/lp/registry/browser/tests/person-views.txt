@@ -330,7 +330,7 @@ progress.
 Assigned specifications that do not display when they are not in an in
 progress state.
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationImplementationStatus
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
     >>> login(user.preferredemail.email)
     >>> product = factory.makeProduct(name="tool", owner=user)
