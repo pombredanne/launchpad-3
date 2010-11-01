@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
 from lp.bugs.model.bugtask import BugTaskStatus
 from lp.testing import (
@@ -21,7 +21,7 @@ from lp.testing import (
 class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
     """Test bugtask status transitions for a regular logged in user."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskStatusTransitionForUser, self).setUp()
@@ -151,7 +151,7 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
 class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
     """Tests for bug reporter status transitions."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskStatusTransitionForReporter, self).setUp()
@@ -179,7 +179,7 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
 class TestBugTaskStatusTransitionForPrivilegedUserBase:
     """Base class used to test privileged users and status transitions."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskStatusTransitionForPrivilegedUserBase, self).setUp()
