@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['main']
 
 import bz2
+import cPickle
 from cgi import escape as html_quote
 from ConfigParser import RawConfigParser
 import csv
@@ -527,6 +528,13 @@ def main():
     html_report(
         open(report_filename, 'w'), None, pageid_times, None,
         options.timeout - 2)
+
+    # Save the times cache for later merging.
+    report_filename = _report_filename('stats.pck.bz2')
+    log.info("Saving times database in %s", report_filename)
+    stats_file = bz2.BZ2File(report_filename, 'w')
+    cPickle.dump(times, stats_file, protocol=cPickle.HIGHEST_PROTOCOL)
+    stats_file.close()
 
     # Output metrics for selected categories.
     report_filename = _report_filename('metrics.dat')
