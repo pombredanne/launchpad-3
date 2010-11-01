@@ -351,7 +351,7 @@ The specification is displayed only when it is in a in progress state
 specifications is a link to show all the specifications that the user is
 working on.
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationDefinitionStatus
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
 
     >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> newstate = spec.updateLifecycleStatus(user)

@@ -84,7 +84,7 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.archivepublisher.debversion import Version
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,

@@ -570,7 +570,7 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationDefinitionStatus
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
     >>> login('mark@example.com')
     >>> for spec in kubuntu.specifications():
     ...     # Do this here, otherwise, the change will be flush before

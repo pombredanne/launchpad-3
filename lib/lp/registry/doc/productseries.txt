@@ -211,7 +211,7 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
-    >>> from lp.blueprints.interfaces.specification import (
+    >>> from lp.blueprints.enums import (
     ...     SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus,
     ...     )
