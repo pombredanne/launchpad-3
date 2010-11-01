@@ -381,13 +381,10 @@ class LaunchpadCronScript(LaunchpadScript):
 def cronscript_enabled(control_url, name, log):
     """Return True if the cronscript is enabled."""
     try:
-        if sys.version_info[:2] >= (2, 6):
-            # Timeout of 5 seconds should be fine on the LAN. We don't want
-            # the default as it is too long for scripts being run every 60
-            # seconds.
-            control_fp = urlopen(control_url, timeout=5)
-        else:
-            control_fp = urlopen(control_url)
+        # Timeout of 5 seconds should be fine on the LAN. We don't want
+        # the default as it is too long for scripts being run every 60
+        # seconds.
+        control_fp = urlopen(control_url, timeout=5)
     # Yuck. API makes it hard to catch 'does not exist'.
     except HTTPError, error:
         if error.code == 404:
