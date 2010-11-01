@@ -66,7 +66,38 @@ class BugAttachmentType(DBEnumeratedType):
 
 
 class IBugAttachment(IHasBug):
-    """A file attachment to an IBug."""
+    """A file attachment to an IBug.
+
+    Launchpadlib example of accessing content of an attachment::
+
+        for attachment in bug.attachments:
+            buffer = attachment.data.open()
+            for line in buffer:
+                print line
+            buffer.close()
+
+    Launchpadlib example of accessing metadata about an attachment::
+
+        attachment = bug.attachments[0]
+        print "title:",        attachment.title
+        print "ispatch:",      a.type
+
+        buffer = attachment.data.open()
+        print "modified:",     buffer.last_modified
+        print "url:",          buffer.url
+        print "content-type:", buffer.content_type
+        print "filename:",     buffer.filename.encode('utf-8')
+        print "isatty:",       buffer.isatty()
+        print "length:",       buffer.len
+        print "mode:",         buffer.mode
+        print "pos:",          buffer.pos
+        print "softspace:",    buffer.softspace
+
+        message = attachment.message
+        print "subject:",      message.subject.encode('utf-8')
+        print "owner:",        message.owner.display_name.encode('utf-8')
+        print "created:",      message.date_created
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
