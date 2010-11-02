@@ -35,6 +35,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import (
     DEFAULT,
@@ -67,7 +68,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -88,6 +89,7 @@ from lp.bugs.model.bugtarget import (
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distroseries import (
+    DerivationError,
     IDistroSeries,
     IDistroSeriesSet,
     )
@@ -128,6 +130,9 @@ from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     ICanPublishPackages,
@@ -162,6 +167,10 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialisationError,
+    InitialiseDistroSeries,
+    )
 from lp.translations.interfaces.languagepack import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
@@ -170,6 +179,9 @@ from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage,
     DummyDistroSeriesLanguage,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
@@ -177,9 +189,6 @@ from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
     )
 
 
@@ -1855,6 +1864,59 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
+
+    def deriveDistroSeries(self, user, name, distribution=None,
+                           displayname=None, title=None, summary=None,
+                           description=None, version=None,
+                           status=SeriesStatus.FROZEN, architectures=(),
+                           packagesets=(), rebuild=False):
+        """See `IDistroSeries`."""
+        # XXX StevenK bug=643369 This should be in the security adapter
+        # This should be allowed if the user is a driver for self.parent
+        # or the child.parent's drivers.
+        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
+            raise Unauthorized
+        child = IStore(self).find(DistroSeries, name=name).one()
+        if child is None:
+            if distribution is None:
+                distribution = self.distribution
+            if not displayname:
+                raise DerivationError(
+                    "Display Name needs to be set when creating a "
+                    "distroseries.")
+            if not title:
+                raise DerivationError(
+                    "Title needs to be set when creating a distroseries.")
+            if not summary:
+                raise DerivationError(
+                    "Summary needs to be set when creating a "
+                    "distroseries.")
+            if not description:
+                raise DerivationError(
+                    "Description needs to be set when creating a "
+                    "distroseries.")
+            if not version:
+                raise DerivationError(
+                    "Version needs to be set when creating a "
+                    "distroseries.")
+            child = distribution.newSeries(
+                name=name, displayname=displayname, title=title,
+                summary=summary, description=description,
+                version=version, parent_series=self, owner=user)
+            child.status = status
+            IStore(self).add(child)
+        else:
+            if child.parent_series is not self:
+                raise DerivationError(
+                    "DistroSeries %s parent series isn't %s" % (
+                        child.name, self.name))
+        initialise_series = InitialiseDistroSeries(child)
+        try:
+            initialise_series.check()
+        except InitialisationError, e:
+            raise DerivationError(e)
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            child, architectures, packagesets, rebuild)
 
 
 class DistroSeriesSet:

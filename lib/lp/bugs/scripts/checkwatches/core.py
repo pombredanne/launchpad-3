@@ -3,8 +3,6 @@
 
 """Classes and logic for the checkwatches cronscript."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'BaseScheduler',

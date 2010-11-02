@@ -18,17 +18,15 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    IPersonSet,
-    TeamMembershipStatus,
-    )
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.scripts.generate_ppa_htaccess import (
     HtaccessTokenGenerator,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.mail import stub
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.soyuz.enums import (
@@ -589,14 +587,53 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
     def test_getNewTokensSinceLastRun_only_those_since_last_run(self):
         """Only tokens created since the last run are returned."""
         now = datetime.now(pytz.UTC)
-        tokens = self.setupDummyTokens()[1]
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+        before_previous_start = script_start_time - timedelta(seconds=30)
+
         getUtility(IScriptActivitySet).recordSuccess(
-            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
-        removeSecurityProxy(tokens[0]).date_created = (
-            now - timedelta(minutes=4))
+            'generate-ppa-htaccess', date_started=script_start_time,
+            date_completed = script_end_time)
+        tokens = self.setupDummyTokens()[1]
+        # This token will not be included.
+        removeSecurityProxy(tokens[0]).date_created = before_previous_start
 
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+
+    def test_getNewTokensSinceLastRun_includes_tokens_during_last_run(self):
+        """Tokens created during the last ppa run will be included."""
+        now = datetime.now(pytz.UTC)
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+        in_between = now - timedelta(seconds=1)
+
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', script_start_time, script_end_time)
+        tokens = self.setupDummyTokens()[1]
+        # This token will be included because it's been created during
+        # the previous script run.
+        removeSecurityProxy(tokens[0]).date_created = in_between
+
+        script = self.getScript()
+        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
+
+    def test_getNewTokensSinceLastRun_handles_ntp_skew(self):
+        """An ntp-skew of up to one second will not affect the results."""
+        now = datetime.now(pytz.UTC)
+        script_start_time = now - timedelta(seconds=2)
+        script_end_time = now
+        earliest_with_ntp_skew = script_start_time - timedelta(milliseconds=500)
+
+        tokens = self.setupDummyTokens()[1]
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', date_started=script_start_time,
+            date_completed=script_end_time)
+        # This token will still be included in the results.
+        removeSecurityProxy(tokens[0]).date_created = earliest_with_ntp_skew
+
+        script = self.getScript()
+        self.assertContentEqual(tokens, script.getNewTokensSinceLastRun())
 
     def test_getNewTokensSinceLastRun_only_active_tokens(self):
         """Only active tokens are returned."""

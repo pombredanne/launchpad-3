@@ -114,11 +114,17 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueueEntry,
     )
 
 
@@ -204,6 +210,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -371,6 +378,8 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -434,6 +443,11 @@ patch_reference_property(IBugTask, 'owner', IPerson)
 
 # IBugWatch
 patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IHasTranslationImports
+patch_collection_return_type(
+    IHasTranslationImports, 'getTranslationImportQueueEntries',
+    ITranslationImportQueueEntry)
 
 # IIndexedMessage
 patch_reference_property(IIndexedMessage, 'inside', IBugTask)

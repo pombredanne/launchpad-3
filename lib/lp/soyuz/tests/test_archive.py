@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Test Archive features."""
 
 from datetime import date
@@ -50,6 +48,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -1424,6 +1423,31 @@ class TestComponents(TestCaseWithFactory):
         ap = ap_set.newComponentUploader(archive, person, component)
         self.assertEqual(set([ap]),
             set(archive.getComponentsForUploader(person)))
+
+
+class TestvalidatePPA(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_open_teams(self):
+        team = self.factory.makeTeam()
+        self.assertEqual('Open teams cannot have PPAs.',
+            Archive.validatePPA(team, None))
+
+    def test_distribution_name(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            'A PPA cannot have the same name as its distribution.',
+            Archive.validatePPA(ppa_owner, 'ubuntu'))
+
+    def test_two_ppas(self):
+        ppa = self.factory.makeArchive(name='ppa')
+        self.assertEqual("You already have a PPA named 'ppa'.",
+            Archive.validatePPA(ppa.owner, 'ppa'))
+
+    def test_valid_ppa(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(None, Archive.validatePPA(ppa_owner, None))
 
 
 class TestGetComponentsForSeries(TestCaseWithFactory):

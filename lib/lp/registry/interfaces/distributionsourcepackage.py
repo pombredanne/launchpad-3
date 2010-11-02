@@ -176,7 +176,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             - The latest distroseries wins
             - updates > security > release
 
-        See https://bugs.edge.launchpad.net/soyuz/+bug/236922 for a plan
+        See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
 

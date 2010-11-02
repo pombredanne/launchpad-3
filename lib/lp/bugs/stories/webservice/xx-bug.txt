@@ -116,8 +116,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
@@ -631,8 +631,14 @@ Initially there are no nominations.
     total_size: 0
     ---
 
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
+    >>> debuntu = removeSecurityProxy(debuntu)
+    >>> debuntu.bug_supervisor = john
+    >>> fooix = removeSecurityProxy(fooix)
+    >>> fooix.bug_supervisor = john
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -1480,11 +1486,38 @@ setting the tags_combinator parameter to 'All'.
 
 It can also be used to find bugs modified since a certain date.
 
+    >>> from datetime import timedelta
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> target = factory.makeProduct()
+    >>> bug = factory.makeBug(product=target)
+    >>> bug = removeSecurityProxy(bug)
+    >>> date = bug.date_last_updated - timedelta(days=6)
+    >>> logout()
+
     >>> pprint_collection(webservice.named_get(
-    ...     '/ubuntu', 'searchTasks',
-    ...     modified_since=u'2011-01-01T00:00:00+00:00').jsonBody())
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     modified_since=u'%s' % date ).jsonBody())
     start: 0
-    total_size: 0
+    total_size: 1
+    ...
+    ---
+
+It can also be used to find bug tasks created since a certain date.
+
+    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
+    >>> login(ADMIN_EMAIL)
+    >>> target = IBugTarget(factory.makeProduct())
+    >>> task = factory.makeBugTask(target=target)
+    >>> date = task.datecreated - timedelta(days=8)
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     created_since=u'%s' % date).jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 It is possible to search for bugs targeted to a milestone within a
@@ -1766,7 +1799,7 @@ We can search for bugs that are linked to branches...
     http://api.launchpad.dev/beta/firefox/+bug/1
     http://api.launchpad.dev/beta/firefox/+bug/16
     http://api.launchpad.dev/beta/firefox/+bug/20
-    http://api.launchpad.dev/beta/firefox/+bug/22
+    http://api.launchpad.dev/beta/firefox/+bug/24
 
 
 Affected users

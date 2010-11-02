@@ -31,26 +31,6 @@
           <tal:oops replace="structure view/oops_id_text" />)
         </p>
 
-        <div id="redirect_notice" style="display:none"
-             class="informational message">
-          <p>This server runs pre-release code, so it's possible this problem
-          doesn't affect launchpad.net. If you're a member of the Launchpad
-          Beta Testers team, you can disable redirection in order to use
-          launchpad.net.</p>
-          <p><button onclick="setBetaRedirect(false)">Disable redirection
-          for 2 hours</button></p>
-        </div>
-        <tal:comment condition="nothing">
-          Can't use the 'is_edge' global because we don't use our page
-          macros here.
-        </tal:comment>
-        <script type="text/javascript">
-          if (document.location.hostname.match('edge.')) {
-            redirect_notice_div = document.getElementById('redirect_notice');
-            redirect_notice_div.style.display = "block";
-          };
-        </script>
-
         <tal:traceback replace="structure view/maybeShowTraceback" />
 
         <div class="related">

@@ -6,8 +6,8 @@ Launchpad allows people to make an offer of mentoring for a bug or
 specification. Here, Foo Bar will make an offer on a spec and a bug:
 
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.ftests import login, syncUpdate
     >>> distroset = getUtility(IDistributionSet)
     >>> personset = getUtility(IPersonSet)
@@ -86,8 +86,11 @@ So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=mark,
@@ -201,8 +204,8 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     BugTaskStatus, SpecificationImplementationStatus)
+   >>> from lp.blueprints.enums import SpecificationImplementationStatus
+   >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates

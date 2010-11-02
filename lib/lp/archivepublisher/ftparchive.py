@@ -228,20 +228,17 @@ class FTPArchiveHandler:
 
         suite = distroseries.getSuite(pocket)
 
-        def touch_overrides(*parts):
+        # Create empty override lists.
+        for path in ((comp, ), ("extra", comp), (comp, "src")):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                ".".join(["override", suite] + list(parts))))
-        # Create empty override lists.
-        touch_overrides(comp)
-        touch_overrides("extra", comp)
-        touch_overrides(comp, "src")
+                ".".join(("override", suite) + path)))
 
         # Create empty file lists.
         def touch_list(*parts):
             f_touch(os.path.join(
                 self._config.overrideroot,
-                "_".join([suite] + list(parts))))
+                "_".join((suite, ) + parts)))
         touch_list(comp, "source")
 
         arch_tags = [

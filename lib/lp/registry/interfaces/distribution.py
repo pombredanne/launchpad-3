@@ -97,6 +97,9 @@ from lp.services.fields import (
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 
@@ -128,8 +131,8 @@ class IDistributionDriverRestricted(Interface):
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
     IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, ITranslationPolicy,
-    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
     ISpecificationTarget):
     """Public IDistribution properties."""
@@ -670,7 +673,7 @@ class IDistributionSet(Interface):
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
-        """Creaste a new distribution."""
+        """Create a new distribution."""
 
 
 class NoSuchDistribution(NameLookupFailed):

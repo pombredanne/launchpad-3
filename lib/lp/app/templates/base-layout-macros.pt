@@ -148,6 +148,8 @@
             tal:attributes="src string:${yui}/overlay/overlay.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
+     <script type="text/javascript"
+            tal:attributes="src string:${yui}/collection/collection.js"></script>
 
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
@@ -174,6 +176,8 @@
             tal:attributes="src string:${lp_js}/app/lp.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/lp-mochi.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/app/lp-links.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/dragscroll.js"></script>
     <script type="text/javascript"
@@ -304,6 +308,13 @@
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
     });
+
+    LPS.use('lp.app.links',
+      function(Y) {
+        Y.on('load', function(e) {
+            Y.lp.app.links.check_valid_lp_links();
+        }, window);
+    });
   </script>
 </metal:page-javascript>
 
@@ -424,15 +435,13 @@
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
-      <span id="lp-version" tal:condition="not:is_lpnet">
+      <span id="lp-version">
       &nbsp;&bull;&nbsp;
         r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        <tal:edge condition="is_edge">
-          beta site (<a href="https://code.edge.launchpad.net/~launchpad-pqm/launchpad/stable/"
+        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
              >get the code</a>)
-        </tal:edge>
       </span>
     </div>
   </div>
@@ -443,16 +452,6 @@
     <tal:site_message tal:content="structure site_message">
       This site is running pre-release code.
     </tal:site_message>
-    <tal:edge_only condition="is_edge">
-      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-         tal:condition="not:request/isRedirectInhibited">
-        Disable edge redirect.
-      </a>
-      <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-         tal:condition="request/isRedirectInhibited">
-        Enable edge redirect.
-      </a>
-    </tal:edge_only>
   </div>
 </metal:site-message>
 

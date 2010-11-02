@@ -9,8 +9,8 @@ DELTA, there is also a reference to the related FULL LanguagePack.
 A DELTA language pack is an export that has all translation resources that
 were updated since the export date for the associate FULL export.
 
-    >>> from cStringIO import StringIO
     >>> from zope.component import getUtility
+    >>> from cStringIO import StringIO
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.languagepack import (
     ...     ILanguagePack,
