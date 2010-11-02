@@ -733,6 +733,16 @@ class IProductPublic(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
 
+    def getVersionSortedSeries(filter_obsolete=False):
+        """Return all the series sorted by the name field as a version.
+
+        The development focus field is an exception. It will always
+        be sorted first.
+
+        :param filter_obsolete: If true, do not include any series with
+                                SeriesStatus.OBSOLETE in the results.
+        """
+
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
                                   current_datetime=None):
