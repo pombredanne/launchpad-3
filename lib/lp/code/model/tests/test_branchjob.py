@@ -80,9 +80,9 @@ from lp.services.job.model.job import Job
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

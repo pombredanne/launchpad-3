@@ -42,7 +42,7 @@ from canonical.lazr.utils import (
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationSort,
     )
