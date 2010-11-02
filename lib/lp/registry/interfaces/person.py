@@ -27,6 +27,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -60,6 +61,7 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
+    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -147,6 +149,9 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -507,7 +512,7 @@ class IHasStanding(Interface):
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -1235,6 +1240,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :raises: `NoSuchPPA` if a suitable PPA could not be found.
 
         :return: a PPA `IArchive` record corresponding to the name.
+        """
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False))
+    @export_factory_operation(Interface, []) # Really IArchive.
+    def createPPA(name=None, displayname=None, description=None):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
         """
 
 
@@ -2158,6 +2180,11 @@ class NoSuchPerson(NameLookupFailed):
 
     _message_prefix = "No such person"
 
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA."""
+
+    webservice_error(400) # Bad Request
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [

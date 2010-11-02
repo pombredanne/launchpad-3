@@ -33,10 +33,8 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
     CreateBugParams,

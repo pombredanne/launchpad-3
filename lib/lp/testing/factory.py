@@ -101,10 +101,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -262,14 +260,12 @@ from lp.testing import (
     temp_dir,
     time_counter,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
