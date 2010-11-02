@@ -34,9 +34,9 @@ from lp.services.worlddata.model.language import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
     translation_import_queue_entry_age,
     )
 from lp.translations.model.customlanguagecode import CustomLanguageCode

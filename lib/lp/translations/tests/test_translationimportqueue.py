@@ -19,9 +19,9 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 
 

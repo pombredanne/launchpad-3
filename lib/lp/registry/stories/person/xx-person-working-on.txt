@@ -19,8 +19,7 @@ displayed there.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
     >>> spec = factory.makeSpecification()
     >>> spec.assignee = spec.owner
     >>> spec.implementation_status = SpecificationImplementationStatus.STARTED

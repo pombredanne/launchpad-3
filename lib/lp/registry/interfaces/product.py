@@ -134,6 +134,9 @@ from lp.services.fields import (
     Title,
     URIField,
     )
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 # This is based on the definition of <label> in RFC 1035, section
@@ -407,9 +410,10 @@ class IProductPublic(
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
     IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports, IServiceUsage):
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
+    IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
