@@ -312,6 +312,11 @@ def start_launchpad(argv=list(sys.argv)):
         # Store our process id somewhere
         make_pidfile('launchpad')
 
+        # Ensure our logs directory exists
+        log_folder = 'logs'
+        if not os.path.exists(log_folder):
+            os.mkdir(log_folder)
+
         if config.launchpad.launch:
             main(argv)
         else:

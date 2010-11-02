@@ -276,6 +276,10 @@ class BaseLayer:
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
+        # Ensure our logs directory exists
+        log_folder = 'logs'
+        if not os.path.exists(log_folder):
+            os.mkdir(log_folder)
         cls.fixture = Fixture()
         cls.fixture.setUp()
         cls.fixture.addCleanup(setattr, cls, 'fixture', None)
@@ -1551,7 +1555,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
             PageTestLayer.profiler = Profile()
         else:
             PageTestLayer.profiler = None
-        file_handler = logging.FileHandler('pagetests-access.log', 'w')
+        file_handler = logging.FileHandler('logs/pagetests-access.log', 'w')
         file_handler.setFormatter(logging.Formatter())
         logger = PythonLogger('pagetests-access')
         logger.logger.addHandler(file_handler)
