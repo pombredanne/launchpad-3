@@ -11,7 +11,7 @@ __all__ = [
     'PersonMergeQueueListingView',
     ]
 
-from zope.component._api import getUtility
+from zope.component import getUtility
 
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (

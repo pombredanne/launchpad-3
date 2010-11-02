@@ -8,14 +8,9 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.interfaces.branchmergequeue import (
     user_has_special_merge_queue_access,
     )
@@ -67,7 +62,7 @@ class GenericBranchMergeQueueCollection:
     @property
     def store(self):
         if self._store is None:
-            return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            return IMasterStore(BranchMergeQueue)
         else:
             return self._store
 

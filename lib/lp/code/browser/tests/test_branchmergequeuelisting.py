@@ -34,8 +34,7 @@ from lp.testing.views import create_initialized_view
 class MergeQueuesTestMixin:
 
     def setUp(self):
-        self.darth_vader = self.factory.makePerson(name='darthvader')
-        self.death_star = self.factory.makeProduct(name='deathstar')
+        self.branch_owner = self.factory.makePerson(name='eric')
 
     def enable_queue_flag(self):
         getFeatureStore().add(FeatureFlag(
@@ -46,14 +45,14 @@ class MergeQueuesTestMixin:
         # We create nr_queues merge queues in total, and the first
         # nr_with_private_branches of them will have at least one private
         # branch in the queue.
-        with person_logged_in(self.darth_vader):
+        with person_logged_in(self.branch_owner):
             mergequeues = [
                 self.factory.makeBranchMergeQueue(
-                    owner=self.darth_vader, branches=self._makeBranches())
+                    owner=self.branch_owner, branches=self._makeBranches())
                 for i in range(nr_queues-nr_with_private_branches)]
             mergequeues_with_private_branches = [
                 self.factory.makeBranchMergeQueue(
-                    owner=self.darth_vader,
+                    owner=self.branch_owner,
                     branches=self._makeBranches(nr_private=1))
                 for i in range(nr_with_private_branches)]
 
@@ -61,13 +60,12 @@ class MergeQueuesTestMixin:
 
     def _makeBranches(self, nr_public=3, nr_private=0):
         branches = [
-            self.factory.makeProductBranch(
-                product=self.death_star, owner=self.darth_vader)
+            self.factory.makeProductBranch(owner=self.branch_owner)
             for i in range(nr_public)]
 
         private_branches = [
             self.factory.makeProductBranch(
-                product=self.death_star, owner=self.darth_vader, private=True)
+                owner=self.branch_owner, private=True)
             for i in range(nr_private)]
 
         branches.extend(private_branches)
@@ -88,7 +86,7 @@ class TestPersonMergeQueuesView(TestCaseWithFactory, MergeQueuesTestMixin):
         mq, mq_with_private = self._makeMergeQueues()
         login_person(self.user)
         view = create_initialized_view(
-            self.darth_vader, name="+merge-queues", rootsite='code')
+            self.branch_owner, name="+merge-queues", rootsite='code')
         self.assertEqual(set(mq), set(view.mergequeues))
 
     def test_mergequeues_with_a_private_branch_for_owner(self):
@@ -96,9 +94,9 @@ class TestPersonMergeQueuesView(TestCaseWithFactory, MergeQueuesTestMixin):
         # containing such branches.
         mq, mq_with_private = (
             self._makeMergeQueues(nr_with_private_branches=1))
-        login_person(self.darth_vader)
+        login_person(self.branch_owner)
         view = create_initialized_view(
-            self.darth_vader, name="+merge-queues", rootsite='code')
+            self.branch_owner, name="+merge-queues", rootsite='code')
         mq.extend(mq_with_private)
         self.assertEqual(set(mq), set(view.mergequeues))
 
@@ -109,7 +107,7 @@ class TestPersonMergeQueuesView(TestCaseWithFactory, MergeQueuesTestMixin):
             self._makeMergeQueues(nr_with_private_branches=1))
         login_person(self.user)
         view = create_initialized_view(
-            self.darth_vader, name="+merge-queues", rootsite='code')
+            self.branch_owner, name="+merge-queues", rootsite='code')
         self.assertEqual(set(mq), set(view.mergequeues))
 
 
@@ -127,10 +125,10 @@ class TestPersonCodePage(BrowserTestCase, MergeQueuesTestMixin):
         self._makeMergeQueues()
 
     def test_merge_queue_menu_link_without_feature_flag(self):
-        login_person(self.darth_vader)
+        login_person(self.branch_owner)
         browser = self.getUserBrowser(
-            canonical_url(self.darth_vader, rootsite='code'),
-            self.darth_vader)
+            canonical_url(self.branch_owner, rootsite='code'),
+            self.branch_owner)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink,
@@ -138,13 +136,13 @@ class TestPersonCodePage(BrowserTestCase, MergeQueuesTestMixin):
 
     def test_merge_queue_menu_link(self):
         self.enable_queue_flag()
-        login_person(self.darth_vader)
+        login_person(self.branch_owner)
         browser = self.getUserBrowser(
-            canonical_url(self.darth_vader, rootsite='code'),
-            self.darth_vader)
+            canonical_url(self.branch_owner, rootsite='code'),
+            self.branch_owner)
         browser.getLink(url='+merge-queues').click()
         self.assertEqual(
-            'http://code.launchpad.dev/~darthvader/+merge-queues',
+            'http://code.launchpad.dev/~eric/+merge-queues',
             browser.url)
 
 
@@ -161,10 +159,10 @@ class TestPersonMergeQueuesListPage(BrowserTestCase, MergeQueuesTestMixin):
         self.merge_queues.extend(mq_with_private)
 
     def test_merge_queue_list_contents_without_feature_flag(self):
-        login_person(self.darth_vader)
+        login_person(self.branch_owner)
         browser = self.getUserBrowser(
-            canonical_url(self.darth_vader, rootsite='code',
-                          view_name='+merge-queues'), self.darth_vader)
+            canonical_url(self.branch_owner, rootsite='code',
+                          view_name='+merge-queues'), self.branch_owner)
         table = find_tag_by_id(browser.contents, 'mergequeuetable')
         self.assertIs(None, table)
         noqueue_matcher = soupmatchers.HTMLContains(
@@ -176,10 +174,10 @@ class TestPersonMergeQueuesListPage(BrowserTestCase, MergeQueuesTestMixin):
 
     def test_merge_queue_list_contents(self):
         self.enable_queue_flag()
-        login_person(self.darth_vader)
+        login_person(self.branch_owner)
         browser = self.getUserBrowser(
-            canonical_url(self.darth_vader, rootsite='code',
-                          view_name='+merge-queues'), self.darth_vader)
+            canonical_url(self.branch_owner, rootsite='code',
+                          view_name='+merge-queues'), self.branch_owner)
 
         table = find_tag_by_id(browser.contents, 'mergequeuetable')
 
