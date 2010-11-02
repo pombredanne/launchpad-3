@@ -89,5 +89,5 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertEqual(
                     'Invalid value',
                     harness.getFieldError('bug_notification_level'),
-                    "The view should treat BugNotificationLevel.NOTHING as an "
-                    "invalid value.")
+                    "The view should treat BugNotificationLevel.NOTHING "
+                    "as an invalid value.")
