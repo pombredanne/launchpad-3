@@ -158,7 +158,7 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
         self.task = self.factory.makeBugTask()
         self.reporter = self.task.bug.owner
 
-    def test_privileged_user_can_unset_fix_released_status(self):
+    def test_reporter_can_unset_fix_released_status(self):
         # The bug reporter can transition away from Fix Released.
         removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
         with person_logged_in(self.reporter):
@@ -174,6 +174,19 @@ class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
             self.task.canTransitionToStatus(
                 BugTaskStatus.CONFIRMED, self.reporter),
             True)
+
+    def test_reporter_team_can_unset_fix_released_status(self):
+        # The bug reporter can be a team in the case of bug imports
+        # and needs to be able to transition away from Fix Released.
+        team = self.factory.makeTeam(members=[self.reporter])
+        team_bug = self.factory.makeBug(owner=team)
+        naked_task = removeSecurityProxy(team_bug.default_bugtask)
+        naked_task.status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.reporter):
+            team_bug.default_bugtask.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter)
+            self.assertEqual(
+                team_bug.default_bugtask.status, BugTaskStatus.CONFIRMED)
 
 
 class TestBugTaskStatusTransitionForPrivilegedUserBase:
