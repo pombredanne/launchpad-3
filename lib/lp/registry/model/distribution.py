@@ -84,7 +84,7 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.archivepublisher.debversion import Version
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -151,7 +151,7 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -190,7 +190,7 @@ from lp.soyuz.model.publishing import (
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
@@ -1752,7 +1752,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
-        del IPropertyCache(self).series
+        del get_property_cache(self).series
 
         return series
 

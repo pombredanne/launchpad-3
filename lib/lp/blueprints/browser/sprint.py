@@ -55,7 +55,7 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     HasSpecificationsView,
     )
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationPriority,

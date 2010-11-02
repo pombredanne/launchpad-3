@@ -27,7 +27,7 @@ I{priority}.
 Flags are defined by a I{name} that typically looks like a Python
 identifier, for example C{notification.global.text}.  A definition is
 given for a particular I{scope}, which also looks like a dotted identifier,
-for example C{user.beta} or C{server.edge}.  This is just a naming
+for example C{user.beta} or C{server.lpnet}.  This is just a naming
 convention, and they do not need to correspond to Python modules.
 
 The value is stored in the database as just a Unicode string, and it might

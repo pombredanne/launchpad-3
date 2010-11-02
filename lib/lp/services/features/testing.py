@@ -10,7 +10,7 @@ __all__ = ['active_features']
 from fixtures import Fixture
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.features.rulesource import Rule, StormFeatureRuleSource
 
 
 class FeatureFixture(Fixture):
@@ -54,11 +54,6 @@ class FeatureFixture(Fixture):
 
     def makeNewRules(self):
         """Make a set of new feature flag rules."""
-        # XXX mars 2010-10-22
-        # This would be much nicer if the rules were built as a namedtuple
-        # instead of a list of position-dependant tuple elements.
-        # Still waiting for Python 2.6 though.
-
         # Create a list of the new rules. Note that rules with a None
         # value are quietly dropped, since you can't assign None as a
         # feature flag value (it would come out as u'None') and setting
@@ -66,12 +61,12 @@ class FeatureFixture(Fixture):
         #
         # Flags that are not present in the set of new rules will be deleted
         # by setAllRules().
-
         new_rules = [
-            (flag_name,         # Flag name.
-             'default',         # Scope.
-             1,                 # Priority 1 is a safe default.
-             unicode(value))    # Flag value.
+            Rule(
+                flag=flag_name,
+                scope='default',
+                priority=999,
+                value=unicode(value))
             for flag_name, value in self.desired_features.iteritems()
                 if value is not None]
 

@@ -12,6 +12,7 @@ __all__ = [
 __metaclass__ = type
 
 import re
+from collections import namedtuple
 
 from storm.locals import Desc
 
@@ -19,6 +20,10 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+
+
+# A convenient mapping for a feature flag rule in the database.
+Rule = namedtuple("Rule", "flag scope priority value")
 
 
 class FeatureRuleSource(object):
@@ -90,7 +95,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
                 .find(FeatureFlag)
                 .order_by(FeatureFlag.flag, Desc(FeatureFlag.priority)))
         for r in rs:
-            yield str(r.flag), str(r.scope), r.priority, r.value
+            yield Rule(str(r.flag), str(r.scope), r.priority, r.value)
 
     def setAllRules(self, new_rules):
         """Replace all existing rules with a new set.

@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AddBranchVisibilityTeamPolicyView',
     'RemoveBranchVisibilityTeamPolicyView',
+    'BranchVisibilityPolicyMixin',
     'BranchVisibilityPolicyView',
     ]
 
@@ -38,6 +39,8 @@ from lp.code.enums import (
     BranchVisibilityRule,
     TeamBranchVisibilityRule,
     )
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchvisibilitypolicy import (
     IBranchVisibilityTeamPolicy,
     )
@@ -155,21 +158,30 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
-class BranchVisibilityPolicyView(LaunchpadView):
+class BranchVisibilityPolicyMixin:
+    """Mixin class providing visibility rules."""
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
+
+    @property
+    def team_policies(self):
+        """The policy items that have a valid team."""
+        return [item for item in self.items if item.team is not None]
+
+    @cachedproperty
+    def items(self):
+        return self.context.getBranchVisibilityTeamPolicies()
+
+
+class BranchVisibilityPolicyView(LaunchpadView,
+                                 BranchVisibilityPolicyMixin):
     """Simple view for displaying branch visibility policies."""
 
     @property
     def page_title(self):
         name = self.context.displayname
         return 'Set branch visibility policy for %s' % name
-
-    @cachedproperty
-    def items(self):
-        return self.context.getBranchVisibilityTeamPolicies()
-
-    @property
-    def base_visibility_rule(self):
-        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):
@@ -178,8 +190,3 @@ class BranchVisibilityPolicyView(LaunchpadView):
         """
         return (len(self.items) > 0 and
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
-
-    @property
-    def team_policies(self):
-        """The policy items that have a valid team."""
-        return [item for item in self.items if item.team is not None]

@@ -19,10 +19,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.database import Component
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities,
-    ILibraryFileAliasSet,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.tests.test_uploadprocessor import (
@@ -38,12 +36,8 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.queue import (
-    NonBuildableSourceUploadError,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -490,7 +484,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         Anyone listed as an uploader in ArchivePermissions will automatically
         get an upload notification email.
 
-        See https://bugs.edge.launchpad.net/soyuz/+bug/397077
+        See https://bugs.launchpad.net/soyuz/+bug/397077
         """
         # Create the extra permissions. We're making an extra team and
         # adding it to cprov's upload permission, plus name12.
@@ -1046,7 +1040,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
 
         Some error messages can contain the PPA display name, which may
         sometimes contain unicode characters.  There was a bug
-        https://bugs.edge.launchpad.net/bugs/275509 reported about getting
+        https://bugs.launchpad.net/bugs/275509 reported about getting
         upload errors related to unicode.  This only happened when the
         uploder was attaching a .orig.tar.gz file with different contents
         than the one already in the PPA.

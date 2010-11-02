@@ -263,15 +263,10 @@ class MailmanStub:
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
-        message_ids = set()
         for status in (PostedMessageStatus.APPROVAL_PENDING,
                        PostedMessageStatus.REJECTION_PENDING,
                        PostedMessageStatus.DISCARD_PENDING):
-            for message in message_set.getHeldMessagesWithStatus(status):
-                message_ids.add(message.message_id)
-        for message_id in message_ids:
-            message = message_set.getMessageByMessageID(message_id)
-            message.acknowledge()
+            message_set.acknowledgeMessagesWithStatus(status)
 
 
 mailman = MailmanStub()

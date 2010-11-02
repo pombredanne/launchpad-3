@@ -71,7 +71,7 @@ totalizing the watched bugs for native upstreams, but then we'd have a
 broken percentage when comparing with bugs marked upstream. Perhaps
 we'd solve this by separating the watched column into natively watched
 and remote watched, but I don't know how to fix this right now.  See
-https://bugs.edge.launchpad.net/malone/+bug/188020
+https://bugs.launchpad.net/malone/+bug/188020
     -- kiko, 2008-02-01
 
 

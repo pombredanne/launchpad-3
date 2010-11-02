@@ -84,6 +84,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import (
     INewSpecification,
     INewSpecificationProjectTarget,
@@ -92,7 +93,6 @@ from lp.blueprints.interfaces.specification import (
     INewSpecificationTarget,
     ISpecification,
     ISpecificationSet,
-    SpecificationDefinitionStatus,
     )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
