@@ -117,7 +117,6 @@ class BugzillaRemoteComponentFinder:
         self.static_bugzilla_text = static_bugzilla_text
 
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
-        """"""
         lp_bugtrackers = getUtility(IBugTrackerSet)
         if bugtracker_name is not None:
             lp_bugtrackers = [
