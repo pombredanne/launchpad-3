@@ -11,7 +11,6 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import (
-    login,
     login_person,
     TestCaseWithFactory,
     )
@@ -61,7 +60,7 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
         package = self.factory.makeDistributionSourcePackage(
             sourcepackagename='example', distribution=distro)
-        
+
         self.assertIs(None, component.distro_source_package)
         form = self._makeForm(package)
         view = create_initialized_view(
@@ -105,6 +104,7 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
             u"""The example source package is already linked to """
             """alpha:b in ubuntu""")
         self.assertEqual(expected, notifications.pop().message)
+
 
 def test_suite():
     suite = unittest.TestSuite()

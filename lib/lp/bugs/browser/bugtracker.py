@@ -24,7 +24,6 @@ __all__ = [
 from itertools import chain
 from storm.locals import Store
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -532,7 +531,7 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
 
         sourcepackagename = self.request.form.get(
             self.widgets['sourcepackagename'].name)
-        
+
         distro_name = self.widgets['sourcepackagename'].distribution_name
         distribution = getUtility(IDistributionSet).getByName(distro_name)
         pkg = distribution.getSourcePackage(sourcepackagename)
