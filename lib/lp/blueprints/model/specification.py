@@ -56,9 +56,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from lp.blueprints.adapters import SpecificationDelta
-from lp.blueprints.interfaces.specification import (
-    ISpecification,
-    ISpecificationSet,
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -66,6 +64,10 @@ from lp.blueprints.interfaces.specification import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     SpecificationSort,
+    )
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.blueprints.model.specificationbug import SpecificationBug

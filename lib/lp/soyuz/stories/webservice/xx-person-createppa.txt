@@ -27,9 +27,9 @@
   ...     displayname='My shiny new PPA', description='Shinyness!',
   ...     )
   HTTP/1.1 400 Bad Request
-  Status: 400
+  Status: 400 Bad Request
   ...
   Traceback (most recent call last):
   ...
-  PPACreationError: Archives cannot have the same name as its distribution.
+  PPACreationError: A PPA cannot have the same name as its distribution.
   <BLANKLINE>

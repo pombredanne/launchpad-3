@@ -12,9 +12,7 @@ from canonical.testing.layers import LaunchpadScriptLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue,
     )

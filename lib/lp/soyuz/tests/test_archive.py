@@ -1429,13 +1429,13 @@ class TestvalidatePPA(TestCaseWithFactory):
 
     def test_open_teams(self):
         team = self.factory.makeTeam()
-        self.assertEqual('Open teams can not have PPAs.',
+        self.assertEqual('Open teams cannot have PPAs.',
             Archive.validatePPA(team, None))
 
     def test_distribution_name(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(
-            'Archives cannot have the same name as its distribution.',
+            'A PPA cannot have the same name as its distribution.',
             Archive.validatePPA(ppa_owner, 'ubuntu'))
 
     def test_two_ppas(self):
