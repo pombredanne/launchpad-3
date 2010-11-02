@@ -43,9 +43,7 @@ from lp.translations.interfaces.translationimporter import (
     NotExportedFromLaunchpad,
     OutdatedTranslationError,
     )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationmessage import TranslationConflict
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter

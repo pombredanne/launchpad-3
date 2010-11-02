@@ -14,7 +14,7 @@ not Launchpad users.
     ...     IPersonSet,
     ...     )
     >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...

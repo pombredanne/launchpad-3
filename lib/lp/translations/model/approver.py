@@ -12,10 +12,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.utilities.template import (
     make_domain,
     make_name,
