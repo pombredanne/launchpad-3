@@ -90,7 +90,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -170,10 +170,10 @@ from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
     )
-from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.potemplate import POTemplate
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
