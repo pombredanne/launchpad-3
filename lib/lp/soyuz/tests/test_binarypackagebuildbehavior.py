@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import gzip
 import os
+import shutil
 import tempfile
 import transaction
 
@@ -16,6 +17,7 @@ from twisted.trial import unittest as trialtest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
@@ -280,6 +282,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    def _cleanup(self):
+        if os.path.exists(config.builddmaster.root):
+            shutil.rmtree(config.builddmaster.root)
+
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
         self.factory = LaunchpadObjectFactory()
@@ -297,6 +303,9 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.candidate.markAsBuilding(self.builder)
         self.behavior = self.candidate.required_build_behavior
         self.behavior.setBuilder(self.builder)
+        # This is required so that uploaded files from the buildd don't
+        # hang around between test runs.
+        self.addCleanup(self._cleanup)
 
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
