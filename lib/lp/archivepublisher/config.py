@@ -6,12 +6,12 @@
 # to managing the archive publisher's configuration as stored in the
 # distribution and distroseries tables
 
+from ConfigParser import ConfigParser
 import os
 from StringIO import StringIO
-from ConfigParser import ConfigParser
 
 from canonical.config import config
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 
 
 def update_pub_config(pubconf):
@@ -54,8 +54,8 @@ def getPubConfig(archive):
         # Reset the list of components to partner only.  This prevents
         # any publisher runs from generating components not related to
         # the partner archive.
-        for distroseries in pubconf._distroserieses.keys():
-            pubconf._distroserieses[
+        for distroseries in pubconf._distroseries.keys():
+            pubconf._distroseries[
                 distroseries]['components'] = ['partner']
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
@@ -66,10 +66,28 @@ def getPubConfig(archive):
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name + '-debug')
         update_pub_config(pubconf)
+    elif archive.is_copy:
+        pubconf.distroroot = config.archivepublisher.root
+        pubconf.archiveroot = os.path.join(
+            pubconf.distroroot,
+            archive.distribution.name + '-' + archive.name,
+            archive.distribution.name)
+        # Multiple copy archives can exist on the same machine so the
+        # temp areas need to be unique also.
+        pubconf.temproot = pubconf.archiveroot + '-temp'
+        update_pub_config(pubconf)
+        pubconf.overrideroot = pubconf.archiveroot + '-overrides'
+        pubconf.cacheroot = pubconf.archiveroot + '-cache'
+        pubconf.miscroot = pubconf.archiveroot + '-misc'
     else:
         raise AssertionError(
             "Unknown archive purpose %s when getting publisher config.",
             archive.purpose)
+
+    meta_root = os.path.join(
+        pubconf.distroroot, archive.owner.name)
+    pubconf.metaroot = os.path.join(
+        meta_root, "meta", archive.name)
 
     return pubconf
 
@@ -87,7 +105,7 @@ class Config(object):
     def __init__(self, distribution):
         """Initialise the configuration"""
         self.distroName = distribution.name.encode('utf-8')
-        self._distroserieses = {}
+        self._distroseries = {}
         if not distribution.lucilleconfig:
             raise LucilleConfigError(
                 'No Lucille config section for %s' % distribution.name)
@@ -99,21 +117,19 @@ class Config(object):
                 }
 
             for dar in dr.architectures:
-                config_segment["archtags"].append(
-                    dar.architecturetag.encode('utf-8'))
+                if dar.enabled:
+                    config_segment["archtags"].append(
+                        dar.architecturetag.encode('utf-8'))
 
-            if not dr.lucilleconfig:
-                raise LucilleConfigError(
-                    'No Lucille configuration section for %s' % dr.name)
+            if dr.lucilleconfig:
+                strio = StringIO(dr.lucilleconfig.encode('utf-8'))
+                config_segment["config"] = ConfigParser()
+                config_segment["config"].readfp(strio)
+                strio.close()
+                config_segment["components"] = config_segment["config"].get(
+                    "publishing", "components").split(" ")
 
-            strio = StringIO(dr.lucilleconfig.encode('utf-8'))
-            config_segment["config"] = ConfigParser()
-            config_segment["config"].readfp(strio)
-            strio.close()
-            config_segment["components"] = config_segment["config"].get(
-                "publishing", "components").split(" ")
-
-            self._distroserieses[distroseries_name] = config_segment
+                self._distroseries[distroseries_name] = config_segment
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -124,13 +140,21 @@ class Config(object):
 
     def distroSeriesNames(self):
         # Because dicts iterate for keys only; this works to get dr names
-        return self._distroserieses.keys()
+        return self._distroseries.keys()
+
+    def series(self, dr):
+        try:
+            return self._distroseries[dr]
+        except KeyError:
+            raise LucilleConfigError(
+                'No Lucille config section for %s in %s' %
+                    (dr, self.distroName))
 
     def archTagsForSeries(self, dr):
-        return self._distroserieses[dr]["archtags"]
+        return self.series(dr)["archtags"]
 
     def componentsForSeries(self, dr):
-        return self._distroserieses[dr]["components"]
+        return self.series(dr)["components"]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""

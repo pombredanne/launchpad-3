@@ -1,5 +1,6 @@
-Distro Arch Release Binary Package
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+=================================
+Distro Arch Series Binary Package
+=================================
 
   >>> from lp.soyuz.model.binarypackagename import (
   ...     BinaryPackageName)
@@ -15,30 +16,36 @@ Distro Arch Release Binary Package
   >>> firefox_hoary_i386 = DistroArchSeriesBinaryPackage(hoary_i386,
   ...                                                    firefox_name)
 
+`DistroArchSeriesBinaryPackage`s have a title property:
+
+  >>> print pmount_hoary_i386.title
+  "pmount" binary package in Ubuntu Hoary i386
+
 
 First, we create a new version of pmount, and a version of
 mozilla-firefox that coincides with pmount's. We're hitch-hiking on two
 existing builds that are in sampledata!
 
   >>> from lp.soyuz.model.publishing import (
-  ...     SecureBinaryPackagePublishingHistory)
-  >>> from lp.soyuz.model.build import Build
+  ...     BinaryPackagePublishingHistory)
+  >>> from canonical.database.constants import UTC_NOW
+  >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
   >>> from lp.soyuz.model.component import Component
   >>> from lp.soyuz.model.section import Section
-  >>> from canonical.database.constants import UTC_NOW
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
-  >>> from canonical.launchpad.interfaces import BinaryPackageFormat
+  >>> from lp.soyuz.enums import BinaryPackageFormat
   >>> binpackageformat = BinaryPackageFormat.DEB
-  >>> from canonical.launchpad.interfaces import (
-  ...     PackagePublishingPriority, PackagePublishingStatus,
-  ...     PackagePublishingPocket, IDistributionSet)
+  >>> from lp.soyuz.enums import (
+  ...     PackagePublishingPriority, PackagePublishingStatus)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> priority = PackagePublishingPriority.STANDARD
 
-XXX: noodles 2008-11-05 bug=294585: The dependency on a database id 
+XXX: noodles 2008-11-05 bug=294585: The dependency on a database id
 needs to be removed.
-  >>> bpr = Build.get(8).createBinaryPackageRelease(
+  >>> bpr = BinaryPackageBuild.get(8).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
   ...   version="120.6-0",
   ...   summary="Firefox loves lollies",
@@ -59,9 +66,10 @@ needs to be removed.
   ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   architecturespecific=False)
+  ...   architecturespecific=False,
+  ...   debug_package=None)
 
-  >>> pe = SecureBinaryPackagePublishingHistory(
+  >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
   ...   section=misc_section.id,
@@ -77,9 +85,9 @@ needs to be removed.
   ...   dateremoved=None,
   ...   archive=hoary_i386.main_archive)
 
-XXX: noodles 2008-11-06 bug=294585: The dependency on a database id 
+XXX: noodles 2008-11-06 bug=294585: The dependency on a database id
 needs to be removed.
-  >>> bpr = Build.get(9).createBinaryPackageRelease(
+  >>> bpr = BinaryPackageBuild.get(9).createBinaryPackageRelease(
   ...   binarypackagename=pmount_name.id,
   ...   version="cr98.34",
   ...   summary="Pmount bakes cakes",
@@ -100,9 +108,10 @@ needs to be removed.
   ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
-  ...   architecturespecific=False)
+  ...   architecturespecific=False,
+  ...   debug_package=None)
 
-  >>> pe = SecureBinaryPackagePublishingHistory(
+  >>> pe = BinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
   ...   section=misc_section.id,
@@ -152,11 +161,7 @@ distro_source_package attribute should return None.
   None
 
 Check the publishing record of packages returned by 'currentrelease' and
-'__getitem__', which are different and in 'Published' state. We compare
-the IDs below because pe is a SecureBinaryPackagePublishingHistory,
-whereas the publishing record is a BinaryPackagePublishingHistory -- an
-artifact of how these objects are fetched are done. The ID column on the
-latter view comes from SBPPH, though.
+'__getitem__', which are different and in 'Published' state.
 
   >>> pe.id == current_release.current_publishing_record.id
   True
@@ -184,16 +189,16 @@ XXX: this is really too complicated, and the code in
 DistroArchSeriesBinaryPackage.summary should be simplified.
     -- kiko, 2008-03-28
 
-  >>> from canonical.launchpad.interfaces import (
-  ...   IDistributionSet, IPersonSet)
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
   >>> warty = ubuntu['warty']
 
 First, update the cache tables for Celso's PPA:
 
-  >>> from canonical.testing import LaunchpadZopelessLayer
   >>> from canonical.config import config
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
   >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
   >>> class TestLog:
@@ -202,6 +207,7 @@ First, update the cache tables for Celso's PPA:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn, log=TestLog())
+  DEBUG: ...
   DEBUG: Considering source 'pmount'
   ...
 
@@ -222,7 +228,6 @@ us up to demonstrate bug 208233).
   >>> from canonical.launchpad.database import (
   ...   DistroArchSeries, DistroArchSeriesBinaryPackage,
   ...   BinaryPackageName, BinaryPackagePublishingHistory)
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> warty_i386 = DistroArchSeries.get(1)
   >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
   >>> pmount_warty_i386 = DistroArchSeriesBinaryPackage(warty_i386,

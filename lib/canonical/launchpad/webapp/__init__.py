@@ -46,18 +46,43 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
-    safe_action)
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, ContextMenu, FacetMenu, Link, NavigationMenu,
-    enabled_with_permission, structured)
+    ApplicationMenu,
+    ContextMenu,
+    enabled_with_permission,
+    FacetMenu,
+    Link,
+    NavigationMenu,
+    structured,
+    )
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
-    canonical_name, canonical_url, nearest, LaunchpadView, Navigation,
-    stepthrough, redirection, stepto, LaunchpadXMLRPCView)
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    LaunchpadXMLRPCView,
+    Navigation,
+    nearest,
+    redirection,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.sorting import (
-    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
-from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
+    expand_numbers,
+    sorted_dotted_numbers,
+    sorted_version_numbers,
+    )
+from canonical.launchpad.webapp.url import (
+    urlappend,
+    urlparse,
+    urlsplit,
+    )
 
 
 class GetitemNavigation(Navigation):
@@ -121,15 +146,9 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
         text = 'Code'
-        summary = 'View related branches of code'
+        summary = 'View related code'
         return Link('', text, summary=summary)

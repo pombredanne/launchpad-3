@@ -11,19 +11,29 @@ __all__ = [
     'UndeletableEmailAddress',
     ]
 
-import operator
-import sha
 
+import hashlib
+import operator
+
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
-    EmailAddressStatus, InvalidEmailAddress)
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
 from canonical.launchpad.validators.email import valid_email
 
 
@@ -80,7 +90,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     @property
     def rdf_sha1(self):
         """See `IEmailAddress`."""
-        return sha.new('mailto:' + self.email).hexdigest().upper()
+        return hashlib.sha1('mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:

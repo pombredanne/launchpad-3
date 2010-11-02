@@ -20,6 +20,9 @@ output we will get.
     ...     for name in names:
     ...         file = tarfile.extractfile(name)
     ...
+    ...         # XXX: 2010-04-26, Salgado, bug=570244: This is to make the
+    ...         # test pass on python2.5 and 2.6.
+    ...         name = name.rstrip('/')
     ...         if file is not None:
     ...             print format % (name, file.read())
     ...         else:
@@ -96,9 +99,9 @@ created.
     ...     'uno/dos/tres/cuatro': 'blah'
     ...     })
     >>> examine_tarfile(archive)
-    uno/                | 
-    uno/dos/            | 
-    uno/dos/tres/       | 
+    uno                 | 
+    uno/dos             | 
+    uno/dos/tres        | 
     uno/dos/tres/cuatro | blah
 
 Also, if there is a duplicated file, last one is the one that remains there.

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BATCH_SIZE_UNLIMITED',
     'BugNotFound',
     'BugTrackerAuthenticationError',
     'BugTrackerConnectError',
@@ -15,6 +16,7 @@ __all__ = [
     'LookupTree',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
+    'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
@@ -29,19 +31,25 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.bugs.adapters import treelookup
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
-    IExternalBugTracker)
-
+    IExternalBugTracker,
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    )
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
+
+# To signify that all bug watches should be checked in a single run.
+BATCH_SIZE_UNLIMITED = 0
 
 
 #
 # Errors.
 #
-
 
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
@@ -91,12 +99,12 @@ class BugTrackerAuthenticationError(BugTrackerConnectError):
 # Warnings.
 #
 
-
 class BugWatchUpdateWarning(Exception):
     """An exception representing a warning.
 
     This is a flag exception for the benefit of the OOPS machinery.
     """
+
     def __init__(self, message, *args):
         # Require a message.
         Exception.__init__(self, message, *args)
@@ -114,8 +122,12 @@ class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
+class UnknownRemoteImportanceError(BugWatchUpdateWarning):
+    """The remote bug's importance isn't mapped to a `BugTaskImportance`."""
+
+
 class UnknownRemoteStatusError(BugWatchUpdateWarning):
-    """Raised when a remote bug's status isn't mapped to a `BugTaskStatus`."""
+    """The remote bug's status isn't mapped to a `BugTaskStatus`."""
 
 
 class PrivateRemoteBug(BugWatchUpdateWarning):
@@ -131,14 +143,19 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
 
-    batch_size = 100
+    batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
     comment_template = 'default_remotecomment_template.txt'
-    sync_comments = config.checkwatches.sync_comments
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
+        self.sync_comments = (
+            config.checkwatches.sync_comments and (
+                ISupportsCommentPushing.providedBy(self) or
+                ISupportsCommentImport.providedBy(self) or
+                ISupportsBackLinking.providedBy(self)))
 
+    @ensure_no_transaction
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
@@ -267,7 +284,7 @@ class LookupBranch(treelookup.LookupBranch):
             self.result not in BugTaskStatus):
             raise TypeError(
                 'Result is not a member of BugTaskStatus: %r' % (
-                    self.result,))
+                    self.result))
         super(LookupBranch, self)._verify()
 
     def _describe_result(self, result):
@@ -294,7 +311,7 @@ class LookupTree(treelookup.LookupTree):
                 raise ValueError(
                     "Table of %d columns needs %d titles, but %d given." % (
                         (max_depth + 1), (max_depth + 1), len(titles)))
-            yield line("'''%s'''" % (title,) for title in titles)
+            yield line("'''%s'''" % (title) for title in titles)
 
         def diff(last, now):
             """Yields elements from `now` when different to those in `last`.

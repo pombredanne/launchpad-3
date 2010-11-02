@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# LPCONFIG will come from the environment so this script can run unaltered
+# on dogfood.
+if [ -z $LPCONFIG ]; then
+    echo LPCONFIG must be set to run this script.
+    exit 1
+fi
+
+set -x
+set -e
+set -u
+
+#
+# This script publishes the COPY (rebuild) archvies *only*.
+#
+
+
+# Informational -- this *MUST* match the database.
+ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+DISTSROOT=$ARCHIVEROOT/dists
+OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
+INDICES=$ARCHIVEROOT/indices
+PRODUCTION_CONFIG=ftpmaster-publish
+
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+else
+    echo GPG keys will come from ~/.gnupg
+    # GNUPGHOME does not need to be set, keys can come from ~/.gnupg.
+fi
+
+# Configuration options.
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
+DISTRONAME=ubuntu
+TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
+
+# Manipulate the environment.
+export GNUPGHOME
+PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing:$LAUNCHPADROOT/scripts/ftpmaster-tools
+
+# Claim the lock.
+if ! lockfile -r1 $LOCKFILE; then
+  echo "Could not claim lock file."
+  exit 1
+fi
+
+# Lock claimed.
+
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup EXIT
+
+# Process the accepted queue into the publishing records.
+process-accepted.py --copy-archive -v -v -v $DISTRONAME
+
+# Publish the packages to disk.
+publish-distro.py -v -v --copy-archive -d $DISTRONAME
+
+set +x
+
+echo Removing uncompressed Packages and Sources files
+find ${DISTSROOT} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
+
+# Copy in the indices.
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    echo Copying the indices into place.
+    rm -f $INDICES/override.*
+    cp $OVERRIDEROOT/override.* $INDICES
+fi
+
+# Timestamp our trace file to track when the last archive publisher run took
+# place.
+if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
+    date -u > "$TRACEFILE"
+fi

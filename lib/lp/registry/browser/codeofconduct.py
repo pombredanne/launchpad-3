@@ -8,10 +8,10 @@ __metaclass__ = type
 __all__ = [
     'SignedCodeOfConductSetNavigation',
     'CodeOfConductSetNavigation',
-    'CodeOfConductContextMenu',
-    'CodeOfConductSetContextMenu',
-    'SignedCodeOfConductSetContextMenu',
-    'SignedCodeOfConductContextMenu',
+    'CodeOfConductOverviewMenu',
+    'CodeOfConductSetOverviewMenu',
+    'SignedCodeOfConductSetOverviewMenu',
+    'SignedCodeOfConductOverviewMenu',
     'CodeOfConductView',
     'CodeOfConductDownloadView',
     'CodeOfConductSetView',
@@ -23,18 +23,30 @@ __all__ = [
     'SignedCodeOfConductDeactiveView',
     ]
 
-from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    GetitemNavigation)
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.codeofconduct import (
-    ICodeOfConduct, ICodeOfConductConf, ICodeOfConductSet,
-    ISignedCodeOfConduct, ISignedCodeOfConductSet)
-from lp.registry.interfaces.person import IPerson
+    ICodeOfConduct,
+    ICodeOfConductConf,
+    ICodeOfConductSet,
+    ISignedCodeOfConduct,
+    ISignedCodeOfConductSet,
+    )
+
+
 class SignedCodeOfConductSetNavigation(GetitemNavigation):
 
     usedfor = ISignedCodeOfConductSet
@@ -45,13 +57,14 @@ class CodeOfConductSetNavigation(GetitemNavigation):
     usedfor = ICodeOfConductSet
 
 
-class CodeOfConductContextMenu(ContextMenu):
+class CodeOfConductOverviewMenu(ApplicationMenu):
 
     usedfor = ICodeOfConduct
+    facet = 'overview'
     links = ['sign', 'download']
 
     def sign(self):
-        text = 'Sign this version'
+        text = 'Sign it'
         if (self.context.current and
             self.user and
             not self.user.is_ubuntu_coc_signer):
@@ -67,9 +80,10 @@ class CodeOfConductContextMenu(ContextMenu):
         return Link('+download', text, enabled=is_current, icon='download')
 
 
-class CodeOfConductSetContextMenu(ContextMenu):
+class CodeOfConductSetOverviewMenu(ApplicationMenu):
 
     usedfor = ICodeOfConductSet
+    facet = 'overview'
     links = ['admin']
 
     @enabled_with_permission('launchpad.Admin')
@@ -78,9 +92,10 @@ class CodeOfConductSetContextMenu(ContextMenu):
         return Link('console', text, icon='edit')
 
 
-class SignedCodeOfConductSetContextMenu(ContextMenu):
+class SignedCodeOfConductSetOverviewMenu(ApplicationMenu):
 
     usedfor = ISignedCodeOfConductSet
+    facet = 'overview'
     links = ['register']
 
     def register(self):
@@ -88,17 +103,18 @@ class SignedCodeOfConductSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
 
-class SignedCodeOfConductContextMenu(ContextMenu):
+class SignedCodeOfConductOverviewMenu(ApplicationMenu):
 
     usedfor = ISignedCodeOfConduct
+    facet = 'overview'
     links = ['activation', 'adminconsole']
 
     def activation(self):
         if self.context.active:
-            text = 'Deactivate Signature'
+            text = 'deactivate'
             return Link('+deactivate', text, icon='edit')
         else:
-            text = 'Activate Signature'
+            text = 'activate'
             return Link('+activate', text, icon='edit')
 
     def adminconsole(self):
@@ -106,13 +122,15 @@ class SignedCodeOfConductContextMenu(ContextMenu):
         return Link('../', text, icon='info')
 
 
-class CodeOfConductView:
+class CodeOfConductView(LaunchpadView):
     """Simple view class for CoC page."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
+    @property
+    def page_title(self):
+        """See `LaunchpadView`."""
+        # This page has no breadcrumbs, nor should it.
+        return self.context.title
+
 
 class CodeOfConductDownloadView:
     """Download view class for CoC page.
@@ -144,12 +162,8 @@ class CodeOfConductDownloadView:
         return content
 
 
-class CodeOfConductSetView:
+class CodeOfConductSetView(LaunchpadView):
     """Simple view class for CoCSet page."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
 
 class SignedCodeOfConductAddView(LaunchpadFormView):
@@ -178,40 +192,24 @@ class SignedCodeOfConductAddView(LaunchpadFormView):
         return coc_set[coc_conf.currentrelease]
 
 
-class SignedCodeOfConductAckView(AddView):
+class SignedCodeOfConductAckView(LaunchpadFormView):
     """Acknowledge a Paper Submitted CoC."""
+    schema = ISignedCodeOfConduct
+    field_names = ['owner']
+    label = 'Register a code of conduct signature'
+    page_title = label
 
-    __used_for__ = ICodeOfConduct
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
-        self._nextURL = '.'
-        self.page_title = self.label
-        AddView.__init__(self, context, request)
+    cancel_url = next_url
 
-    def createAndAdd(self, data):
+    @action('Register', name='add')
+    def createAndAdd(self, action, data):
         """Verify and Add the Acknowledge SignedCoC entry."""
-        kw = {}
-
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        # XXX cprov 2005-03-23:
-        # rename unused key:value
-        kw['user'] = kw['owner']
-        del kw['owner']
-
-        recipient = getUtility(ILaunchBag).user
-        kw['recipient'] = recipient
-
-        # use utility to store it in the database
-        sCoC_util = getUtility(ISignedCodeOfConductSet)
-        sCoC_util.acknowledgeSignature(**kw)
-
-    def nextURL(self):
-        return self._nextURL
+        self.context.acknowledgeSignature(
+            user=data['owner'], recipient=self.user)
 
 
 class SignedCodeOfConductView:
@@ -248,83 +246,39 @@ class SignedCodeOfConductAdminView:
         return True
 
 
-class SignedCodeOfConductActiveView(EditView):
-    """Active a SignedCodeOfConduct Entry.
-    When activating a signature:
-     * Grant a new admincomment,
-     * store the recipient,
-     * set active.
-    """
+class SignedCodeOfConductActiveView(LaunchpadFormView):
+    """Active a SignedCodeOfConduct Entry."""
+    schema = ISignedCodeOfConduct
+    field_names = ['admincomment']
+    label = 'Activate code of conduct signature'
+    page_title = label
+    state = True
 
-    __used_for__ = ISignedCodeOfConduct
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
+    cancel_url = next_url
 
-    def changed(self):
-        admincomment = self.request.form.get('field.admincomment')
+    def _change(self, action, data):
+        admincomment = data['admincomment']
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        sCoC_util.modifySignature(
+            sign_id=self.context.id, recipient=self.user,
+            admincomment=admincomment, state=self.state)
+        self.request.response.redirect(self.next_url)
 
-        if admincomment:
-            # No verification is needed since this page is protected by
-            # lp.Admin
-            recipient = IPerson(self.request.principal, None)
-            kw = {}
-            kw['recipient'] = recipient
-            kw['admincomment'] = admincomment
-            kw['sign_id'] = self.context.id
-            kw['state'] = True
-
-            # use utility to active it in the database
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            sCoC_util.modifySignature(**kw)
-
-            # now redirect to view the SignedCoC
-            self.request.response.redirect(self.request.URL[-1])
-
-        # XXX: cprov 2005-02-26:
-        # How to proceed with no admincomment ?
-
-class SignedCodeOfConductDeactiveView(EditView):
-    """Deactive a SignedCodeOfConduct Entry.
-    When deactivating a signature:
-     * Grant admincomment,
-     * store recipient,
-     * clear active.
-    """
-
-    __used_for__ = ISignedCodeOfConduct
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
-
-    def changed(self):
-        admincomment = self.request.form.get('field.admincomment')
-
-        if admincomment:
-            # No verification is needed since this page is protected by
-            # lp.Edit
-            recipient = IPerson(self.request.principal, None)
-
-            kw = {}
-            kw['recipient'] = recipient
-            kw['admincomment'] = admincomment
-            kw['sign_id'] = self.context.id
-            kw['state'] = False
-
-            # use utility to active it in the database
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            sCoC_util.modifySignature(**kw)
-
-            # now redirect to view the SignedCoC
-            self.request.response.redirect(self.request.URL[-1])
+    @action('Activate', name='change')
+    def activate(self, action, data):
+        self._change(action, data)
 
 
-        # XXX: cprov 2005-02-26:
-        # How to proceed with no admincomment ?
+class SignedCodeOfConductDeactiveView(SignedCodeOfConductActiveView):
+    """Deactivate a SignedCodeOfConduct Entry."""
+    label = 'Deactivate code of conduct signature'
+    page_title = label
+    state = False
 
+    @action('Deactivate', name='change')
+    def deactivate(self, action, data):
+        self._change(action, data)

@@ -11,24 +11,26 @@ __all__ = [
     'DistroArchSeriesBinaryPackage',
     ]
 
-from storm.locals import Desc, In
+from storm.locals import (
+    Desc,
+    In,
+    )
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces import IStore
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
-    DistroArchSeriesBinaryPackageRelease)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroArchSeriesBinaryPackage,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
+    DistroArchSeriesBinaryPackageRelease,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 class DistroArchSeriesBinaryPackage:
@@ -71,8 +73,8 @@ class DistroArchSeriesBinaryPackage:
     @property
     def title(self):
         """See IDistroArchSeriesBinaryPackage."""
-        return 'Binary Package "%s" in %s' % (
-            self.binarypackagename.name, self.distroarchseries.title)
+        return '"%s" binary package in %s' % (
+            self.binarypackagename.name, self.distroarchseries.displayname)
 
     @cachedproperty
     def cache(self):
@@ -238,7 +240,7 @@ class DistroArchSeriesBinaryPackage:
         current_release = self.currentrelease
         if current_release is None:
             return None
-            
+
         src_pkg_release = current_release.distributionsourcepackagerelease
         if src_pkg_release is None:
             return None

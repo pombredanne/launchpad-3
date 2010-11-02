@@ -10,8 +10,9 @@ Class to handle and query the katie db properly.
 __all__ = ['Katie']
 
 from canonical.config import config
-from canonical.launchpad.scripts import log
 from canonical.database.sqlbase import connect
+from canonical.launchpad.scripts import log
+
 
 class Katie:
     def __init__(self, dbname, suite, dry_run):

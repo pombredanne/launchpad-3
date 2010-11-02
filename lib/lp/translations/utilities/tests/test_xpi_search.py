@@ -8,12 +8,13 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from canonical.testing import LaunchpadZopelessLayer
+    RosettaImportStatus,
+    )
 from lp.translations.utilities.tests.helpers import (
     import_pofile_or_potemplate,
     )
@@ -29,7 +30,7 @@ class XpiSearchTestCase(unittest.TestCase):
 
     def setUp(self):
         # Get the importer.
-        self.importer = getUtility(IPersonSet).getByName('sabdfl')
+        self.importer = getUtility(IPersonSet).getByName('mark')
 
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')

@@ -5,30 +5,35 @@
 
 __metaclass__ = type
 
-import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.product import IProductSet
+from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
-    TranslationImporter)
-from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-from canonical.testing import LaunchpadZopelessLayer
+    TranslationImporter,
+    )
 
 
-class TranslationImporterTestCase(unittest.TestCase):
+class TranslationImporterTestCase(TestCaseWithFactory):
     """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TranslationImporterTestCase, self).setUp()
         # Add a new entry for testing purposes. It's a template one.
         productset = getUtility(IProductSet)
         evolution = productset.getByName('evolution')
@@ -149,6 +154,31 @@ class TranslationImporterTestCase(unittest.TestCase):
         self._assertIsNotTemplate("pt_BR.xpi")
         self._assertIsNotTemplate("pt-BR.xpi")
 
+    def testHiddenFilesRecognition(self):
+        # Hidden files and directories (leading dot) are recognized.
+        hidden_files = [
+            ".hidden.pot",
+            ".hidden/foo.pot",
+            "po/.hidden/foo.pot",
+            "po/.hidden.pot",
+            "bla/.hidden/foo/bar.pot",
+            ]
+        visible_files = [
+            "not.hidden.pot",
+            "not.hidden/foo.pot",
+            "po/not.hidden/foo.pot",
+            "po/not.hidden.pot",
+            "bla/not.hidden/foo/bar.pot",
+            ]
+        for path in hidden_files:
+            self.assertTrue(
+                self.translation_importer.isHidden(path),
+                'Failed to recognized "%s" as a hidden file.' % path)
+        for path in visible_files:
+            self.assertFalse(
+                self.translation_importer.isHidden(path),
+                'Failed to recognized "%s" as a visible file.' % path)
+
     def _assertIsTranslation(self, path):
         self.assertTrue(
             self.translation_importer.isTranslationName(path),
@@ -216,10 +246,3 @@ class TranslationImporterTestCase(unittest.TestCase):
         msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
         self.assertTrue(is_identical_translation(msg1, msg2),
             "Identical multi-form messages not accepted as identical.")
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TranslationImporterTestCase))
-    return suite
-

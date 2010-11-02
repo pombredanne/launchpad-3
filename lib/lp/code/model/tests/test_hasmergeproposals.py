@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.testing import TestCaseWithFactory
 
@@ -28,7 +28,7 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         self.assertProvides(person, IHasMergeProposals)
 
     def test_project_implements_hasmergeproposals(self):
-        # Projects should implement IHasMergeProposals.
+        # ProjectGroups should implement IHasMergeProposals.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasMergeProposals)
 

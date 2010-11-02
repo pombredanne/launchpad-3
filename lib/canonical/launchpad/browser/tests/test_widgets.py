@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 
+from lazr.uri import URI
 from zope.app.form.interfaces import ConversionError
 from zope.app.testing import ztapi
 from zope.component import getUtility
@@ -15,17 +16,24 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.widgets import (
-    BranchPopupWidget, NoProductError)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    BranchPopupWidget,
+    NoProductError,
+    )
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from lp.code.vocabularies.branch import (
+    BranchRestrictedOnProductVocabulary,
+    BranchVocabulary,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.vocabularies import (
-    BranchRestrictedOnProductVocabulary, BranchVocabulary)
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lazr.uri import URI
 
 
 class DummyLaunchBag:

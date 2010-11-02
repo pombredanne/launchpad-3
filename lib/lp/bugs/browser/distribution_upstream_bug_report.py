@@ -6,18 +6,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionUpstreamBugReport'
-]
+    'DistributionUpstreamBugReport',
+    ]
 
 from operator import attrgetter
 
-from canonical.cachedproperty import cachedproperty
-from lp.bugs.browser.bugtask import (
-    get_buglisting_search_filter_url)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.url import urlappend
-
+from lp.app.enums import ServiceUsage
+from lp.bugs.browser.bugtask import get_buglisting_search_filter_url
+from lp.services.propertycache import cachedproperty
 
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.
@@ -60,11 +61,12 @@ class BugReportData:
     BAD_THRESHOLD = 20
 
     def __init__(self, open_bugs=0, triaged_bugs=0, upstream_bugs=0,
-                 watched_bugs=0):
+                 watched_bugs=0, bugs_with_upstream_patches=0):
         self.open_bugs = open_bugs
         self.triaged_bugs = triaged_bugs
         self.upstream_bugs = upstream_bugs
         self.watched_bugs = watched_bugs
+        self.bugs_with_upstream_patches = bugs_with_upstream_patches
 
     @property
     def triaged_bugs_percentage(self):
@@ -144,13 +146,15 @@ class PackageBugReportData(BugReportData):
         - dssp: an IDistributionSeriesSourcepackage
         - product: an IProduct
         - bugtracker: convenience holder for the product's bugtracker
-        - official_malone: convenience boolean for IProduct.official_malone
+        - bug_tracking_usage: convenience enum for
+            IProduct.bug_tracking_usage
         - *_url: convenience URLs
     """
+
     def __init__(self, dsp, dssp, product, open_bugs, triaged_bugs,
-                 upstream_bugs, watched_bugs):
+                 upstream_bugs, watched_bugs, bugs_with_upstream_patches):
         BugReportData.__init__(self, open_bugs, triaged_bugs, upstream_bugs,
-                               watched_bugs)
+                               watched_bugs, bugs_with_upstream_patches)
         self.dsp = dsp
         self.dssp = dssp
         self.product = product
@@ -161,9 +165,12 @@ class PackageBugReportData(BugReportData):
         self.open_bugs_url = urlappend(
             dsp_bugs_url, get_buglisting_search_filter_url())
 
-        self.official_malone = bool(product and product.official_malone)
-        self.branch = (
-            product and product.development_focus.branch)
+        if product is not None:
+            self.bug_tracking_usage = product.bug_tracking_usage
+            self.branch = product.development_focus.branch
+        else:
+            self.bug_tracking_usage = ServiceUsage.UNKNOWN
+            self.branch = None
 
         # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The
@@ -179,7 +186,7 @@ class PackageBugReportData(BugReportData):
             # Create a 'bugtracker_name' attribute for searching.
             if self.bugtracker is not None:
                 self.bugtracker_name = self.bugtracker.title
-            elif self.product.official_malone:
+            elif self.product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
                 self.bugtracker_name = 'Launchpad'
             else:
                 self.bugtracker_name = None
@@ -235,6 +242,14 @@ class PackageBugReportData(BugReportData):
         self.watched_bugs_delta_url = urlappend(
             dsp_bugs_url, unwatched_bugs_search_filter_url)
 
+        # The bugs with upstream patches URL links to all open upstream
+        # bugs that don't have a bugwatch but have patches attached.
+        bugs_with_upstream_patches_filter_url = (
+            get_buglisting_search_filter_url(
+                status_upstream='pending_bugwatch', has_patches=True))
+        self.bugs_with_upstream_patches_url = urlappend(
+            dsp_bugs_url, bugs_with_upstream_patches_filter_url)
+
 
 class DistributionUpstreamBugReport(LaunchpadView):
     """Implements the actual upstream bug report.
@@ -248,6 +263,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
     valid_sort_keys = [
         'bugtracker_name',
         'bug_supervisor_name',
+        'bugs_with_upstream_patches',
         'dsp',
         'open_bugs',
         'product',
@@ -344,7 +360,8 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
-        for (dsp, product, open, triaged, upstream, watched) in counts:
+        for (dsp, product, open, triaged, upstream, watched,
+             bugs_with_upstream_patches) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here. If
             # the distribution doesn't have series we can't offer a link
@@ -360,6 +377,6 @@ class DistributionUpstreamBugReport(LaunchpadView):
             self.total.watched_bugs += watched
 
             item = PackageBugReportData(
-                dsp, dssp, product, open, triaged, upstream, watched)
+                dsp, dssp, product, open, triaged, upstream, watched,
+                bugs_with_upstream_patches)
             self._data.append(item)
-

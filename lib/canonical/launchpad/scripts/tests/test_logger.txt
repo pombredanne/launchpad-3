@@ -7,13 +7,12 @@ by our logging handler.
     ...     import sys
     ...     import subprocess
     ...     from canonical.config import config
-    ...     # We want to make sure that the subprocess will have the benefit
-    ...     # of all of the dependency paths inserted by the buildout.
-    ...     # We pass them via PYTHONPATH.
-    ...     env = kw.get('env')
-    ...     if env is None:
-    ...         kw['env'] = env = dict(os.environ)
-    ...     env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
+    ...     if 'env' in kw:
+    ...         # We want to make sure that the subprocess will have the
+    ...         # benefit of all of the dependency paths inserted by the
+    ...         # buildout.  This is already set up in our environment's
+    ...         # PYTHONPATH, so use it.
+    ...         kw['env']['PYTHONPATH'] = os.environ['PYTHONPATH']
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'canonical', 'launchpad',
     ...         'scripts', 'tests', 'loglevels.py')
@@ -90,12 +89,35 @@ Combining -q and -v arguments is handled as you would expect.
 
 
 We have 10 debug levels. DEBUG2 to DEBUG9 are custom, defined in
-canonical.launchpad.scripts.logger. DEBUG is part of the standard
-Python library.
+lp.services.log.loglevels. All available loglevels are exported from
+this module, including the stadard Python ones. You can see that
+FATAL is an alias for CRITICAL, and DEBUG1 is an alias for DEBUG.
 
-    >>> from canonical.launchpad.scripts.logger import (
-    ...     DEBUG2, DEBUG3, DEBUG4, DEBUG5,
-    ...     DEBUG6, DEBUG7, DEBUG8, DEBUG9)
+    >>> from lp.services.log import loglevels
+    >>> levels = [
+    ...     loglevels.FATAL, loglevels.CRITICAL, loglevels.ERROR,
+    ...     loglevels.WARNING, loglevels.INFO, loglevels.DEBUG,
+    ...     loglevels.DEBUG1, loglevels.DEBUG2, loglevels.DEBUG3,
+    ...     loglevels.DEBUG4, loglevels.DEBUG5, loglevels.DEBUG6,
+    ...     loglevels.DEBUG7, loglevels.DEBUG8, loglevels.DEBUG9]
+    >>> import logging
+    >>> for level in levels:
+    ...     print "%2d %s" % (level, logging.getLevelName(level))
+    50 CRITICAL
+    50 CRITICAL
+    40 ERROR
+    30 WARNING
+    20 INFO
+    10 DEBUG
+    10 DEBUG
+     9 DEBUG2
+     8 DEBUG3
+     7 DEBUG4
+     6 DEBUG5
+     5 DEBUG6
+     4 DEBUG7
+     3 DEBUG8
+     2 DEBUG9
 
     >>> test(*["-v"] * 20)
     ERROR   This is an error

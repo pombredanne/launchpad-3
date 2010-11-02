@@ -2,34 +2,25 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import cgi
-
-from lp.translations.interfaces.translator import (
-    ITranslator, IEditTranslator)
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
-from canonical.launchpad.webapp.menu import structured
-
 __all__ = [
     'TranslatorAdminView',
     'TranslatorEditView',
     'TranslatorRemoveView',
     ]
 
-class TranslatorEditView(LaunchpadEditFormView):
-    """View class to edit ITranslator objects"""
+import cgi
 
-    schema = IEditTranslator
-
-    @action("Change")
-    def change_action(self, action, data):
-        """Edit the translator that does translations for a given language."""
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context.translator)
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from canonical.launchpad.webapp.menu import structured
+from lp.translations.interfaces.translator import (
+    IEditTranslator,
+    ITranslator,
+    )
 
 
 class TranslatorAdminView(LaunchpadEditFormView):
@@ -62,21 +53,61 @@ class TranslatorAdminView(LaunchpadEditFormView):
                     existing_translator_link))
 
     @property
+    def label(self):
+        """Return form label describing the action one is doing."""
+        return "Edit %s translation team in %s" % (
+            self.context.language.englishname,
+            self.context.translationgroup.title)
+
+    @property
+    def page_title(self):
+        """Page title for the edit form."""
+        return "Edit %s translation team" % self.context.language.englishname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.translationgroup,
+                             rootsite='translations')
+
+    @property
     def next_url(self):
-        return canonical_url(self.context.translationgroup)
+        return self.cancel_url
+
+
+class TranslatorEditView(LaunchpadEditFormView):
+    """View class to edit ITranslator objects"""
+
+    schema = IEditTranslator
+
+    @action("Set guidelines")
+    def change_action(self, action, data):
+        """Set the translator guidelines for a given language."""
+        self.updateContextFromData(data)
+
+    @property
+    def label(self):
+        """Return form label describing the action one is doing."""
+        return "Set %s guidelines for %s" % (
+            self.context.language.englishname,
+            self.context.translationgroup.title)
+
+    @property
+    def page_title(self):
+        """Page title for the edit form."""
+        return "Set %s guidelines" % self.context.language.englishname
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.translator, rootsite='translations')
+
+    @property
+    def next_url(self):
+        return self.cancel_url
 
 
 class TranslatorRemoveView(LaunchpadFormView):
     schema = ITranslator
     field_names = []
-
-    @action("Cancel")
-    def cancel(self, action, data):
-        self.request.response.addInfoNotification(
-            'Canceled the request to remove %s as the %s translator for %s.' %
-                (self.context.translator.displayname,
-                 self.context.language.englishname,
-                 self.context.translationgroup.title))
 
     @action("Remove")
     def remove(self, action, data):
@@ -89,5 +120,23 @@ class TranslatorRemoveView(LaunchpadFormView):
         self.request.response.addInfoNotification(message)
 
     @property
+    def label(self):
+        """Return form label describing the action one is doing."""
+        return "Unset '%s' as the %s translator in %s" % (
+            self.context.translator.displayname,
+            self.context.language.englishname,
+            self.context.translationgroup.title)
+
+    @property
+    def page_title(self):
+        """Page title for the edit form."""
+        return "Remove translation team"
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.translationgroup,
+                             rootsite='translations')
+
+    @property
     def next_url(self):
-        return canonical_url(self.context.translationgroup)
+        return self.cancel_url

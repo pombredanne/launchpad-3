@@ -1,26 +1,44 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Unit tests for `TranslationMessage`."""
 
 __metaclass__ = type
 
-from unittest import TestLoader
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.model.potranslation import POTranslation
 from lp.translations.interfaces.translations import TranslationConstants
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.model.potranslation import POTranslation
+
+
+class TestPOFileStillInitialized(TestCaseWithFactory):
+    """Until the 10.09 rollout, TranslationMessage.pofile is still needed.
+
+    This is a fix for just a few days.  We still need to initialize this
+    on edge while production still relies on it.
+
+    Remove this test, as well as the initialization of pofile in
+    POTMsgSet.updateTranslation, after 10.09 rollout.
+    """
+    layer = ZopelessDatabaseLayer
+
+    def test_pofile_still_initialized(self):
+        pofile = self.factory.makePOFile('sux')
+        tm = self.factory.makeTranslationMessage(pofile=pofile)
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
-        """Set up test situation.
+        """Create common objects for all tests.
 
         Arranges for a `ProductSeries` with `POTemplate` and
         `POTMsgSet`, as well as a Dutch translation.  Also sets up
@@ -129,12 +147,6 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
 
-    def test_findIdenticalMessageChecksLanguageVariant(self):
-        # A difference in variants also makes messages different.
-        self.other_message.variant = 'Lithp'
-        nonclone = self._find(self.other_potmsgset, self.other_template)
-        self.assertEqual(nonclone, None)
-
     def test_findIdenticalMessageChecksFirstForm(self):
         # Messages with different translations are not identical.
         self.other_message.msgstr0 = self._getPOTranslation('xyz')
@@ -149,7 +161,3 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         setattr(self.other_message, last_form, translation)
         nonclone = self._find(self.other_potmsgset, self.other_template)
         self.assertEqual(nonclone, None)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

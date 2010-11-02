@@ -71,8 +71,9 @@ assignee, and the bug will be filed with those choices.
 
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> print_bug_affects_table(user_browser.contents)
-    Mozilla Firefox
+    Mozilla Firefox ...
     Triaged
     High
     Andrew Bennetts
+    ...
     1.0

@@ -11,10 +11,15 @@ __all__ = [
 
 
 from canonical.launchpad import _
-from lp.blueprints.interfaces.specificationsubscription import (
-    ISpecificationSubscription)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
 
 
 class SpecificationSubscriptionAddView(LaunchpadFormView):
@@ -44,3 +49,7 @@ class SpecificationSubscriptionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context.specification)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.specification)

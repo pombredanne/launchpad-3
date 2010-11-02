@@ -1,13 +1,14 @@
-= Answer Tracker Email Notifications =
+Answer Tracker Email Notifications
+==================================
 
-When a question is created or changed, an email notification is sent out,
-informing the subscribers and the answer contacts about the change.
+When a question is created or changed, an email notification is sent
+out, informing the subscribers and the answer contacts about the change.
 Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
@@ -18,33 +19,37 @@ notification looks like:
 
 The notifications get sent to the question's subscribers, the question's
 target answer contacts as well as to the question's assignee. Initially,
-only the submitter, Sample Person, is subscribed to the question and there
-is no answer contact registered on Ubuntu, so only 1 notification is
-sent:
+only the submitter, Sample Person, is subscribed to the question and
+there is no answer contact registered on Ubuntu, so only 1 notification
+is sent:
 
     >>> ubuntu.answer_contacts
     []
+
     >>> [sub.person.displayname for sub in ubuntu_question.subscriptions]
     [u'Sample Person']
+
     >>> notifications = pop_notifications()
     >>> len(notifications)
     1
 
-Note that the From address uses the submitter's name with the
-question's email address. Answer's uses real names to help the
-questioner and the answerers communicate. The Reply-To address
-is the question's address. When using the mail client's reply
-feature, the user should clearly see that he is replying to the
-question and not the user.
-[sic] Kiko and Danilo have a story worth telling.
+Note that the From address uses the submitter's name with the question's
+email address. Answer's uses real names to help the questioner and the
+answerers communicate. The Reply-To address is the question's address.
+When using the mail client's reply feature, the user should clearly see
+that he is replying to the question and not the user. [sic] Kiko and
+Danilo have a story worth telling.
 
     >>> add_notification = notifications[0]
     >>> add_notification['From']
     'Sample Person <question...@answers.launchpad.net>'
+
     >>> add_notification['Reply-To']
     'question...@answers.launchpad.net'
+
     >>> add_notification['To']
     'test@canonical.com'
+
     >>> add_notification['Subject']
     "[Question #...]: Can't install Ubuntu"
 
@@ -78,7 +83,8 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)
@@ -90,14 +96,16 @@ notifications:
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_question.assignee = getUtility(ILaunchBag).user
 
-== Edit Notifications ==
+
+Edit Notifications
+------------------
 
 If we edit the title and description of the question, a notification
 will be sent.
 
+    >>> from zope.interface import providedBy
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from zope.interface import providedBy
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
@@ -126,6 +134,7 @@ Foo Bar, and one to Ubuntu Team:
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print edit_notification['Subject']
     [Question #...]: Installer doesn't work on a Mac
+
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... libstdc++ in ubuntu changed:
     http://.../ubuntu/+source/libstdc++/+question/...
@@ -145,10 +154,10 @@ Foo Bar, and one to Ubuntu Team:
     You received this question notification because you are the assignee for
     this question.
 
-# XXX flacoste 2006-09-19: Add checks for notification of change to
-# status whiteboard, priority. For example, if a question is
-# transferred to another QuestionTarget and priority is changed,
-# the notification does not include priority.
+# XXX flacoste 2006-09-19: Add checks for notification of change to #
+status whiteboard, priority. For example, if a question is # transferred
+to another QuestionTarget and priority is changed, # the notification
+does not include priority.
 
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
@@ -195,8 +204,8 @@ Changing the assignee will trigger a notification.
     You received this question notification because you are the assignee for
     this question.
 
-If we trigger a modification event when no changes worth
-notifying about was made, no notification is sent:
+If we trigger a modification event when no changes worth notifying about
+was made, no notification is sent:
 
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
@@ -211,14 +220,18 @@ After receiving that notification, Foo Bar unassigned himself:
 
     >>> ubuntu_question.assignee = None
 
-== Bug Linking and Unlinking Notifications ==
 
-=== Bug link Notification ===
+Bug Linking and Unlinking Notifications
+---------------------------------------
 
-If we create a bug from the question, it will be reported as a
-bug that has been linked to it:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+Bug link Notification
+.....................
+
+If we create a bug from the question, it will be reported as a bug that
+has been linked to it:
+
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> login('no-priv@canonical.com')
     >>> unmodified_question = Snapshot(
@@ -229,12 +242,14 @@ bug that has been linked to it:
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
     <QuestionBug...>
+
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
     2
+
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -249,7 +264,9 @@ bug that has been linked to it:
     You received this question notification because you are a member of
     Ubuntu Team, which is an answer contact for Ubuntu.
 
-=== Bug Unlinked Notification ===
+
+Bug Unlinked Notification
+.........................
 
 A notification is also sent when a bug is unlinked from the question:
 
@@ -257,6 +274,7 @@ A notification is also sent when a bug is unlinked from the question:
     ...     providing=providedBy(ubuntu_question))
     >>> ubuntu_question.unlinkBug(bug)
     <QuestionBug...>
+
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
@@ -279,14 +297,16 @@ A notification is also sent when a bug is unlinked from the question:
     Ubuntu Team, which is an answer contact for Ubuntu.
 
 
-=== Linked Bug Status Changed Notification ===
+Linked Bug Status Changed Notification
+......................................
 
 When a question is linked to a bug, the question's subscribers are
-notified of changes of the bug status. See
-answer-tracker-notifications-linked-bug.txt for more information.
+notified of changes of the bug status. See answer-tracker-notifications-
+linked-bug.txt for more information.
 
 
-== Workflow Notifications ==
+Workflow Notifications
+----------------------
 
 Notifications are also sent when workflow actions are done on questions.
 The content of the notification will be different depending on the
@@ -298,6 +318,7 @@ workflow action done.
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['support@ubuntu.com', 'test@canonical.com']
+
     >>> support_notification = notifications[0]
     >>> support_notification['Subject']
     "Re: [Question #...]: Installer doesn't work on a Mac"
@@ -322,8 +343,8 @@ subscribers except the question owner will look like this:
     You received this question notification because you are a member of
     Ubuntu Team, which is an answer contact for Ubuntu.
 
-But the owner notification has a slightly different preamble and has
-an extra footer.
+But the owner notification has a slightly different preamble and has an
+extra footer.
 
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
@@ -371,9 +392,11 @@ a notification.
 The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
 
-    >>> print notifications[0]['References']
+    >>> references = notifications[0]['References']
+    >>> print references
     <...>
-    >>> notifications[0]['References'] == ubuntu_question.messages[-2].rfc822msgid
+
+    >>> references == ubuntu_question.messages[-2].rfc822msgid
     True
 
 We already saw the notifications sent for the requestInfo() and
@@ -381,10 +404,13 @@ giveInfo() transitions, let's see the other ones.
 
     # Subscribe the owner back, to compare the different notifications
     # sent.
+
     >>> ubuntu_question.subscribe(sample_person)
     <QuestionSubscription ...>
 
-=== Notifications for expireQuestion() ===
+
+Notifications for expireQuestion()
+..................................
 
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_question.expireQuestion(
@@ -431,13 +457,15 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for reopen() ===
+
+Notifications for reopen()
+..........................
 
 (This example will also show that comments are wrapped for 72 columns
 display.)
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> email_msg = getUtility(IMessageSet).fromText(
     ...     subject=(
     ...         "Re: [Question %d]: Installer doesn't work on "
@@ -496,7 +524,9 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for giveAnswer() ===
+
+Notifications for giveAnswer()
+..............................
 
     >>> login('no-priv@canonical.com')
     >>> answer_message = ubuntu_question.giveAnswer(
@@ -561,7 +591,9 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for confirm() ===
+
+Notifications for confirm()
+...........................
 
     >>> login('test@canonical.com')
     >>> message = ubuntu_question.confirmAnswer(
@@ -604,7 +636,9 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for addComment() ===
+
+Notifications for addComment()
+..............................
 
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_question.addComment(
@@ -645,7 +679,9 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for reject() ===
+
+Notifications for reject()
+..........................
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(ILaunchBag).user
@@ -693,9 +729,11 @@ Notification received by the owner:
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Notifications for setStatus() ===
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
+Notifications for setStatus()
+.............................
+
+    >>> from lp.answers.interfaces.questionenums import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
@@ -737,24 +775,27 @@ Notification received by the owner:
     subscriber of the question.
 
 
-=== Notifications for linkFAQ() ===
+Notifications for linkFAQ()
+...........................
 
 When a user links a FAQ to a question, the notification includes that
 information before the message.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_question = firefox.newQuestion(
     ...     no_priv, 'How can I play Flash?', 'I want Flash!')
 
     # Discard notifications.
+
     >>> notifications = pop_notifications()
 
     >>> login('test@canonical.com')
     >>> firefox_faq = firefox.getFAQ(10)
     >>> print firefox_faq.title
     How do I install plugins (Shockwave, QuickTime, etc.)?
+
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, firefox_faq, "Read the FAQ.")
 
@@ -802,10 +843,11 @@ If the FAQ is unlinked, the notification will look like:
     --...
 
 
-== Notifications for convertToQuestion() ==
+Notifications for convertToQuestion()
+-------------------------------------
 
-Answer contacts and the bug owner is notified when questions are
-created from bugs just like when a question is normally created.
+Answer contacts and the bug owner is notified when questions are created
+from bugs just like when a question is normally created.
 
     >>> bug_question = ubuntu.createQuestionFromBug(bug)
     >>> notifications = pop_notifications()
@@ -830,13 +872,14 @@ created from bugs just like when a question is normally created.
     --...
 
 
-== Notifications and Teams ==
+Notifications and Teams
+-----------------------
 
-When a team is subscribed to a question, there are two cases two consider.
-The first one is if the team has an email address set, a notification
-will only be sent to that address. (That email address is assumed to
-be a mailing list reaching all the team members.) We already saw an
-example of that case with the Ubuntu Team in the examples above.
+When a team is subscribed to a question, there are two cases two
+consider. The first one is if the team has an email address set, a
+notification will only be sent to that address. (That email address is
+assumed to be a mailing list reaching all the team members.) We already
+saw an example of that case with the Ubuntu Team in the examples above.
 
 The other case is when the team doesn't have an email address set. In
 that case, all the team members will be notified individually.
@@ -852,8 +895,8 @@ that case, all the team members will be notified individually.
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-Of course, if the user is also individually subscribed to the question, he
-will receives only one notification:
+Of course, if the user is also individually subscribed to the question,
+he will receives only one notification:
 
     >>> ubuntu_question.subscribe(foo_bar)
     <QuestionSubscription...>
@@ -865,20 +908,23 @@ will receives only one notification:
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
 
-== Notifications and Localized Questions ==
+Notifications and Localized Questions
+-------------------------------------
 
 In general, only subscribers speaking the language of the question will
 receive notifications related to it.
 
     # Register salgado as answer contact, this makes the pt_BR language
     # supported in Ubuntu.
+
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> ubuntu.addAnswerContact(salgado)
     True
+
     >>> sorted([lang.code for lang in ubuntu.getSupportedLanguages()])
     [u'en', u'pt_BR']
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
     >>> pt_BR_question = ubuntu.newQuestion(
     ...     sample_person, title=(
@@ -903,8 +949,10 @@ Similarly, when a question in a non-English language is modified or its
 status changed, only the subscribers speaking that language will receive
 the notifications.
 
-    >>> pt_BR_question.giveInfo("Veja o screenshot: http://tinyurl.com/y8jq8z")
+    >>> pt_BR_question.giveInfo(
+    ...     "Veja o screenshot: http://tinyurl.com/y8jq8z")
     <QuestionMessage...>
+
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']
@@ -934,6 +982,7 @@ sent to the support list about that question:
     # Define a function that will replace non-ascii character with
     # its unicoded encoded value.
     # Effectively replace u'\xe9' by '\\e9'.
+
     >>> def escape_utf8_payload(message):
     ...     charset = message.get_content_charset()
     ...     content = unicode(message.get_payload(decode=True), charset)
@@ -1000,11 +1049,13 @@ with a warning appended to it.
     You received this question notification because you are a direct
     subscriber of the question.
 
-=== Localized Questions and Teams ===
 
-We will notify the team only if the question language is in one of
-the team's preferred languages. The languages spoken by the team
-members is unimportant.
+Localized Questions and Teams
+.............................
+
+We will notify the team only if the question language is in one of the
+team's preferred languages. The languages spoken by the team members is
+unimportant.
 
 For example, the rosetta admins team becomes an Answer contact for
 English questions. Carlos speaks Spanish, and he is an answer contact
@@ -1015,18 +1066,22 @@ contacts too.
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]
     []
+
     >>> rosetta_admins.addLanguage(getUtility(ILanguageSet)['en'])
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> carlos.inTeam(rosetta_admins)
     True
+
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> spanish in carlos.languages
     True
 
     >>> ubuntu.addAnswerContact(carlos)
     True
+
     >>> ubuntu.addAnswerContact(rosetta_admins)
     True
+
     >>> spanish_question = ubuntu.newQuestion(
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
@@ -1045,29 +1100,34 @@ receive notifications about French (and English) questions.
     >>> rosetta_admins.addLanguage(french)
 
     # Resend the new message notification
+
     >>> notify(ObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
 
-When the team doesn't use an explicit address. All
-team members will be contacted if the question language is supported.
-For example, the Launchpad Developers team doesn't have any preferred
-email address set. Its only member, Foo Bar will receive a notification
-if the team supported languages includes the question language:
+When the team doesn't use an explicit address. All team members will be
+contacted if the question language is supported. For example, the
+Launchpad Developers team doesn't have any preferred email address set.
+Its only member, Foo Bar will receive a notification if the team
+supported languages includes the question language:
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
     >>> list(launchpad_devs.languages)
     []
+
     >>> [member.name for member in launchpad_devs.activemembers]
     [u'name16']
+
     >>> launchpad_devs.addLanguage(spanish)
     >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
     # Resend the new message notification
+
     >>> notify(ObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
+
 

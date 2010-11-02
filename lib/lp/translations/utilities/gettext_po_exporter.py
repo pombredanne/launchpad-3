@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for gettext's .po file format.
@@ -14,19 +14,31 @@ __all__ = [
     'GettextPOExporter',
     ]
 
+import logging
 import os
 
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translations import TranslationConstants
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-from lp.translations.utilities.translation_export import (
-    ExportFileStorage)
+    TranslationMessageData,
+    )
+
+
+def strip_last_newline(text):
+    """Return text with the final newline/carriage return stripped."""
+    if text.endswith('\r\n'):
+        return text[:-2]
+    elif text[-1] in '\r\n':
+        return text[:-1]
+    else:
+        return text
 
 
 def comments_text_representation(translation_message):
@@ -37,12 +49,11 @@ def comments_text_representation(translation_message):
     """
     comment_lines = []
     comment_lines_previous_msgids = []
-    # Comment and source_comment always end in a newline, so
-    # splitting by \n always results in an empty last element.
     # Previous msgsid comments (indicated by a | symbol) have to come
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
-        for line in translation_message.comment.split('\n')[:-1]:
+        unparsed_comment = strip_last_newline(translation_message.comment)
+        for line in unparsed_comment.split('\n'):
             if line.startswith('|'):
                 if translation_message.is_obsolete:
                     comment_prefix = u'#~'
@@ -54,7 +65,9 @@ def comments_text_representation(translation_message):
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
-            for line in translation_message.source_comment.split('\n')[:-1]:
+            unparsed_comment = (
+                strip_last_newline(translation_message.source_comment))
+            for line in unparsed_comment.split('\n'):
                 comment_lines.append(u'#. ' + line)
         if translation_message.file_references:
             for line in translation_message.file_references.split('\n'):
@@ -92,6 +105,7 @@ def wrap_text(text, prefix, wrap_width):
         it.
     :param wrap_width: The width where the text should be wrapped.
     """
+
     def local_escape(text):
         ret = text.replace(u'\\', u'\\\\')
         ret = ret.replace(ur'"', ur'\"')
@@ -257,6 +271,7 @@ class GettextPOExporterBase:
 
     format = None
     supported_source_formats = []
+    mime_type = 'application/x-po'
 
     # Does the format we're exporting allow messages to be distinguished
     # by just their msgid_plural?
@@ -266,97 +281,103 @@ class GettextPOExporterBase:
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Transform the header information into a format suitable for export.
 
         :return: Unicode string containing the header.
         """
         raise NotImplementedError
 
-    def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
-                               force_utf8=False):
+    def _encode_file_content(self, translation_file, exported_content):
+        """Try to encode the file using the charset given in the header."""
+        file_content = (
+            self._makeExportedHeader(translation_file) +
+            u'\n\n' +
+            exported_content)
+        encoded_file_content = file_content.encode(
+            translation_file.header.charset)
+        return encoded_file_content
+
+    def exportTranslationFile(self, translation_file, storage,
+                              ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        storage = ExportFileStorage('application/x-po')
+        mime_type = 'application/x-po'
 
-        for translation_file in translation_files:
-            dirname = os.path.dirname(translation_file.path)
-            if dirname == '':
-                # There is no directory in the path. Use
-                # translation_domain as its directory.
-                dirname = translation_file.translation_domain
+        dirname = os.path.dirname(translation_file.path)
+        if dirname == '':
+            # There is no directory in the path. Use translation_domain
+            # as its directory.
+            dirname = translation_file.translation_domain
 
-            if translation_file.is_template:
-                file_extension = 'pot'
-                file_path = os.path.join(
-                    dirname, '%s.%s' % (
-                        translation_file.translation_domain,
-                        file_extension))
-            else:
-                file_extension = 'po'
-                file_path = os.path.join(
-                    dirname, '%s-%s.%s' % (
-                        translation_file.translation_domain,
-                        translation_file.language_code,
-                        file_extension))
+        if translation_file.is_template:
+            file_extension = 'pot'
+            file_path = os.path.join(
+                dirname, '%s.%s' % (
+                    translation_file.translation_domain,
+                    file_extension))
+        else:
+            file_extension = 'po'
+            file_path = os.path.join(
+                dirname, '%s-%s.%s' % (
+                    translation_file.translation_domain,
+                    translation_file.language_code,
+                    file_extension))
 
-            if force_utf8:
-                translation_file.header.charset = 'UTF-8'
-            chunks = [self._makeExportedHeader(translation_file)]
+        chunks = []
+        seen_keys = {}
 
-            seen_keys = {}
-
-            for message in translation_file.messages:
-                key = (message.context, message.msgid_singular)
-                if key in seen_keys:
-                    # Launchpad can deal with messages that are
-                    # identical to gettext, but differ in plural msgid.
-                    plural = message.msgid_plural
-                    previous_plural = seen_keys[key].msgid_plural
-
-                    if not self.msgid_plural_distinguishes_messages:
-                        # Suppress messages that are duplicative to
-                        # gettext so that gettext doesn't choke on the
-                        # resulting file.
-                        continue
-                else:
-                    seen_keys[key] = message
-
-                if (message.is_obsolete and
-                    (ignore_obsolete or len(message.translations) == 0)):
+        for message in translation_file.messages:
+            key = (message.context, message.msgid_singular)
+            if key in seen_keys:
+                # Launchpad can deal with messages that are
+                # identical to gettext, but differ in plural msgid.
+                if not self.msgid_plural_distinguishes_messages:
+                    # Suppress messages that are duplicative to
+                    # gettext so that gettext doesn't choke on the
+                    # resulting file.
                     continue
-                exported_message = self.exportTranslationMessageData(message)
-                try:
-                    encoded_text = exported_message.encode(
-                        translation_file.header.charset)
-                except UnicodeEncodeError, error:
-                    if translation_file.header.charset.upper() == 'UTF-8':
-                        # It's already UTF-8, we cannot do anything.
-                        raise UnicodeEncodeError(
-                            '%s:\n%s' % (file_path, str(error)))
+            else:
+                seen_keys[key] = message
 
-                    # This message cannot be represented in current encoding,
-                    # change to UTF-8 and try again.
-                    old_charset = translation_file.header.charset
-                    translation_file.header.charset = 'UTF-8'
-                    # We need to update the header too.
-                    chunks[0] = self._makeExportedHeader(
-                        translation_file, old_charset)
-                    # Update already exported entries.
-                    for index, chunk in enumerate(chunks):
-                        chunks[index] = chunk.decode(
-                            old_charset).encode('UTF-8')
-                    encoded_text = exported_message.encode('UTF-8')
+            if (message.is_obsolete and
+                (ignore_obsolete or len(message.translations) == 0)):
+                continue
+            chunks.append(self.exportTranslationMessageData(message))
 
-                chunks.append(encoded_text)
+        # Gettext .po files are supposed to end with a new line.
+        exported_file_content = u'\n\n'.join(chunks) + u'\n'
 
-            exported_file_content = '\n\n'.join(chunks)
+        # Try to encode the file
+        if force_utf8:
+            translation_file.header.charset = 'UTF-8'
+        try:
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
+        except UnicodeEncodeError:
+            if translation_file.header.charset.upper() == 'UTF-8':
+                # It's already UTF-8, we cannot do anything.
+                raise
+            # This file content cannot be represented in the current
+            # encoding.
+            if translation_file.path:
+                file_description = translation_file.path
+            elif translation_file.language_code:
+                file_description = (
+                    "%s translation" % translation_file.language_code)
+            else:
+                file_description = "template"
+            logging.info(
+                "Can't represent %s as %s; using UTF-8 instead." % (
+                    file_description,
+                    translation_file.header.charset.upper()))
+            # Use UTF-8 instead.
+            translation_file.header.charset = 'UTF-8'
+            # This either succeeds or raises UnicodeError.
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
 
-            # Gettext .po files are supposed to end with a new line.
-            exported_file_content += '\n'
-
-            storage.addFile(file_path, file_extension, exported_file_content)
-
-        return storage.export()
+        storage.addFile(
+            file_path, file_extension, encoded_file_content, mime_type)
 
     def acceptSingularClash(self, previous_message, current_message):
         """Handle clash of (singular) msgid and context with other message.
@@ -387,13 +408,11 @@ class GettextPOExporter(GettextPOExporterBase):
             TranslationFileFormat.PO,
             TranslationFileFormat.KDEPO]
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Create a standard gettext PO header, encoded as a message.
 
         :return: The header message as a unicode string.
         """
-        if charset is None:
-            charset = translation_file.header.charset
         header_translation_message = TranslationMessageData()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
@@ -404,7 +423,7 @@ class GettextPOExporter(GettextPOExporterBase):
             header_translation_message.flags.update(['fuzzy'])
         exported_header = self.exportTranslationMessageData(
             header_translation_message)
-        return exported_header.encode(charset)
+        return exported_header
 
 
 class GettextPOChangedExporter(GettextPOExporterBase):
@@ -424,15 +443,13 @@ class GettextPOChangedExporter(GettextPOExporterBase):
         self.format = TranslationFileFormat.POCHANGED
         self.supported_source_formats = []
 
-    def _makeExportedHeader(self, translation_file, charset=None):
+    def _makeExportedHeader(self, translation_file):
         """Create a header for changed PO files.
         This is a reduced header containing a warning that this is an
         icomplete gettext PO file.
         :return: The header as a unicode string.
         """
-        if charset is None:
-            charset = translation_file.header.charset
-        return self.exported_header.encode(charset)
+        return self.exported_header
 
     def acceptSingularClash(self, previous_message, current_message):
         """See `GettextPOExporterBase`."""

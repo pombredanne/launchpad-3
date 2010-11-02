@@ -14,9 +14,8 @@ import unittest
 from openid.association import Association
 from openid.store import nonce
 
+from canonical.launchpad.database.baseopenidstore import BaseStormOpenIDStore
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.database.baseopenidstore import (
-    BaseStormOpenIDStore)
 
 
 class BaseStormOpenIDStoreTestsMixin:
@@ -115,6 +114,11 @@ class BaseStormOpenIDStoreTestsMixin:
         # The nonce can only be used once.
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), True)
+        storm_store = IMasterStore(self.store.Nonce)
+        nonce = storm_store.get(
+            self.store.Nonce, (u'server-url', timestamp, u'salt'))
+        self.assertIsNot(None, nonce)
+
         self.assertEqual(
             self.store.useNonce('server-url', timestamp, 'salt'), False)
         self.assertEqual(

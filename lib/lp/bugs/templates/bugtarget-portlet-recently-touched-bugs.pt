@@ -6,15 +6,10 @@
   tal:define="recently_updated_bugtasks view/getMostRecentlyUpdatedBugTasks"
   tal:condition="recently_updated_bugtasks">
   <h2>Latest bugs touched</h2>
-  <div class="portletBody portletContent">
-
-      <table>
-        <tbody>
-          <tal:per_task repeat="bugtask recently_updated_bugtasks"
-                        replace="structure bugtask/@@+listing-detailed"/>
-        </tbody>
-      </table>
-
-  </div>
-
+  <table>
+    <tbody>
+      <tal:per_task repeat="bugtask recently_updated_bugtasks"
+                    replace="structure bugtask/@@+listing-detailed"/>
+    </tbody>
+  </table>
 </div>

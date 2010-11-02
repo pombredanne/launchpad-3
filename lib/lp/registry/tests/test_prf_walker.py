@@ -3,14 +3,13 @@
 
 """Tests for lp.registry.scripts.productreleasefinder.walker."""
 
-import StringIO
 import logging
+import StringIO
 import unittest
 import urlparse
 
 from canonical.lazr.utils import safe_hasattr
 from canonical.testing import reset_logging
-
 from lp.testing import TestCase
 
 
@@ -177,6 +176,7 @@ class WalkerBase_walk(TestCase):
 
     def tearDown(self):
         reset_logging()
+        super(WalkerBase_walk, self).tearDown()
 
     def test_walk_UnicodeEncodeError(self):
         """Verify that a UnicodeEncodeError is logged."""
@@ -311,6 +311,7 @@ class HTTPWalker_ListDir(TestCase):
 
     def tearDown(self):
         reset_logging()
+        super(HTTPWalker_ListDir, self).tearDown()
 
     def setUpWalker(self, listing_url, listing_content):
         from lp.registry.scripts.productreleasefinder.walker import (
@@ -487,6 +488,7 @@ class HTTPWalker_IsDirectory(TestCase):
 
     def tearDown(self):
         reset_logging()
+        super(HTTPWalker_IsDirectory, self).tearDown()
 
     def testFtpIsDirectory(self):
         # Test that no requests are made by isDirectory() when walking

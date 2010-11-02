@@ -13,21 +13,35 @@ __all__ = [
 from urllib import urlencode
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH,
-    QuestionSort)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
-    safe_action)
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    Link,
+    NavigationMenu,
+    safe_action,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import enabled_with_permission
+from lp.answers.interfaces.faqcollection import (
+    FAQSort,
+    IFAQCollection,
+    ISearchFAQsForm,
+    )
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questionenums import QuestionSort
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
-class FAQCollectionMenu(ApplicationMenu):
+class FAQCollectionMenu(NavigationMenu):
     """Base menu definition for `IFAQCollection`."""
 
     usedfor = IFAQCollection
     facet = 'answers'
-    links = ['list_all']
+    links = ['list_all', 'create_faq']
 
     def list_all(self):
         """Return a Link to list all FAQs."""
@@ -36,7 +50,20 @@ class FAQCollectionMenu(ApplicationMenu):
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
-        return Link(url, 'List all FAQs')
+        return Link(url, 'All FAQs', icon='info')
+
+    @enabled_with_permission('launchpad.Append')
+    def create_faq(self):
+        """Return a Link to create a new FAQ."""
+        collection = IFAQCollection(self.context)
+        if IProjectGroup.providedBy(self.context):
+            url = ''
+            enabled = False
+        else:
+            url = canonical_url(
+                collection, view_name='+createfaq', rootsite='answers')
+            enabled = True
+        return Link(url, 'Create a new FAQ', icon='add', enabled=enabled)
 
 
 class SearchFAQsView(LaunchpadFormView):
@@ -52,8 +79,8 @@ class SearchFAQsView(LaunchpadFormView):
     matching_questions_count = 0
 
     @property
-    def heading(self):
-        """Return the heading that should be used for the listing."""
+    def page_title(self):
+        """Return the page_title that should be used for the listing."""
         replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
@@ -62,6 +89,8 @@ class SearchFAQsView(LaunchpadFormView):
                      u'$displayname', mapping=replacements)
         else:
             return _('FAQs for $displayname', mapping=replacements)
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -80,6 +109,23 @@ class SearchFAQsView(LaunchpadFormView):
         """Return a BatchNavigator of the matching FAQs."""
         faqs = self.context.searchFAQs(search_text=self.search_text)
         return BatchNavigator(faqs, self.request)
+
+    @property
+    def portlet_action(self):
+        """The action URL of the portlet form."""
+        return canonical_url(
+            self.context, view_name='+faqs', rootsite='answers')
+
+    @cachedproperty
+    def latest_faqs(self):
+        """Return the latest faqs created for this target.
+
+        This is used by the +portlet-listfaqs view.
+        """
+        quantity = 5
+        faqs = self.context.searchFAQs(
+            search_text=self.search_text, sort=FAQSort.NEWEST_FIRST)
+        return faqs[:quantity]
 
     @safe_action
     @action(_('Search'), name='search')

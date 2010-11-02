@@ -9,15 +9,21 @@ __all__ = []
 
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(LayeredDocFileSuite(
         'bugzilla-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer))
+    suite.addTest(LayeredDocFileSuite(
+        'bugzilla-api-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(
         'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,

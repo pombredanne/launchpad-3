@@ -1,0 +1,64 @@
+================================
+A person's contact email address
+================================
+
+A person may have many confirmed email address which he may use to
+login with, but only one email address will be the contact email
+address.
+
+
+Setting the contact email address
+=================================
+
+Sample Person chooses to change his contact email address to the
+address he prefers to login with.
+
+    >>> browser = setupBrowser(auth='Basic testing@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser.getLink(url='+editemails').click()
+    >>> print browser.url
+    http://launchpad.dev/~name12/+editemails
+    >>> print browser.title
+    Change your e-mail settings...
+
+Sample Person has a second browser open to the same page; maybe he is
+absent minded.
+
+    >>> second_browser = setupBrowser(auth='Basic testing@canonical.com:test')
+    >>> second_browser.open('http://launchpad.dev/~name12/+editemails')
+
+His confirmed email addresses are listed for him to manage. His
+contact email address is selected, and always first.
+
+    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    (*) test@canonical.com
+    ( ) testing@canonical.com
+
+Sample Persons selects his testing email address and submits his choice
+with the "Set as Contact Address" button.
+
+    >>> browser.getControl('testing@canonical.com').selected = True
+    >>> browser.getControl('Set as Contact Address').click()
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Your contact address has been changed to: testing@canonical.com
+
+His testing email address is now first in the list and selected
+as his contact address.
+
+    >>> print_radio_button_field(browser.contents, "VALIDATED_SELECTED")
+    (*) testing@canonical.com
+    ( ) test@canonical.com
+
+In a moment of deja vu, Sample Person returns to his second browser,
+selects his testing email address again, then submits his choice. There
+is no change; he sees a message explaining that testing was already his
+contact address.
+
+    >>> second_browser.getControl('testing@canonical.com').selected = True
+    >>> second_browser.getControl('Set as Contact Address').click()
+
+    >>> for msg in get_feedback_messages(second_browser.contents):
+    ...     print msg
+    testing@canonical.com is already set as your contact address.

@@ -9,46 +9,51 @@ __all__ = [
     'is_identical_translation',
     ]
 
-import gettextpo
 import datetime
-import os
+from operator import attrgetter
+
+import gettextpo
+import posixpath
 import pytz
+from storm.exceptions import TimeoutError
+import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
-from operator import attrgetter
-
-from canonical.database.sqlbase import cursor, quote
-
-from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    )
+from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
+from canonical.launchpad.webapp import canonical_url
 from lp.registry.interfaces.person import (
     IPersonSet,
-    PersonCreationRationale)
+    PersonCreationRationale,
+    )
+from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     NotExportedFromLaunchpad,
-    OutdatedTranslationError)
+    OutdatedTranslationError,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from lp.translations.interfaces.translationmessage import (
-    TranslationConflict)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
-from canonical.launchpad.interfaces.emailaddress import InvalidEmailAddress
-from lp.translations.utilities.kde_po_importer import (
-    KdePOImporter)
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.kde_po_importer import KdePOImporter
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-
-from canonical.launchpad.webapp import canonical_url
+    TranslationMessageData,
+    )
 
 
 importers = {
@@ -119,7 +124,6 @@ class ExistingPOFileInDatabase:
         # Pre-fill self.messages and self.imported with data.
         self._fetchDBRows()
 
-
     def _fetchDBRows(self):
         msgstr_joins = [
             "LEFT OUTER JOIN POTranslation pt%d "
@@ -129,6 +133,13 @@ class ExistingPOFileInDatabase:
         translations = [
             "pt%d.translation AS translation%d" % (form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
+        substitutions = {
+            'translation_columns': ', '.join(translations),
+            'translation_joins': '\n'.join(msgstr_joins),
+            'language': quote(self.pofile.language),
+            'potemplate': quote(self.pofile.potemplate),
+        }
 
         sql = '''
         SELECT
@@ -141,18 +152,13 @@ class ExistingPOFileInDatabase:
             %(translation_columns)s
           FROM POTMsgSet
             JOIN TranslationTemplateItem ON
-              TranslationTemplateItem.potmsgset=POTMsgSet.id
-            JOIN POTemplate ON
-              POTemplate.id=TranslationTemplateItem.potemplate
-            JOIN POFile ON
-              POFile.potemplate=POTemplate.id AND
-              POFile.id=%(pofile)s
+              TranslationTemplateItem.potmsgset = POTMsgSet.id AND
+              TranslationTemplateItem.potemplate = %(potemplate)s
             JOIN TranslationMessage ON
               POTMsgSet.id=TranslationMessage.potmsgset AND
-              (TranslationMessage.potemplate=POTemplate.id OR
+              (TranslationMessage.potemplate = %(potemplate)s OR
                TranslationMessage.potemplate IS NULL) AND
-              POFile.language=TranslationMessage.language AND
-              POFile.variant IS NOT DISTINCT FROM TranslationMessage.variant
+              TranslationMessage.language = %(language)s
             %(translation_joins)s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
@@ -163,11 +169,33 @@ class ExistingPOFileInDatabase:
           ORDER BY
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
-          ''' % { 'translation_columns' : ','.join(translations),
-                  'translation_joins' : '\n'.join(msgstr_joins),
-                  'pofile' : quote(self.pofile) }
+          ''' % substitutions
+
         cur = cursor()
-        cur.execute(sql)
+        try:
+            # XXX 2009-09-14 DaniloSegan (bug #408718):
+            # this statement causes postgres to eat the diskspace
+            # from time to time.  Let's wrap it up in a timeout.
+            timeout = config.poimport.statement_timeout
+
+            # We have to commit what we've got so far or we'll lose
+            # it when we hit TimeoutError.
+            transaction.commit()
+
+            if timeout == 'timeout':
+                # This is used in tests.
+                query = "SELECT pg_sleep(2)"
+                timeout = '1s'
+            else:
+                timeout = 1000 * int(timeout)
+                query = sql
+            cur.execute("SET statement_timeout to %s" % quote(timeout))
+            cur.execute(query)
+        except TimeoutError:
+            # Restart the transaction and return empty SelectResults.
+            transaction.abort()
+            transaction.begin()
+            cur.execute("SELECT 1 WHERE 1=0")
         rows = cur.fetchall()
 
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
@@ -253,6 +281,7 @@ class ExistingPOFileInDatabase:
         else:
             return False
 
+
 class TranslationImporter:
     """Handle translation resources imports."""
 
@@ -284,9 +313,14 @@ class TranslationImporter:
                 return True
         return False
 
+    def isHidden(self, path):
+        """See `ITranslationImporter`."""
+        normalized_path = posixpath.normpath(path)
+        return normalized_path.startswith('.') or '/.' in normalized_path
+
     def isTranslationName(self, path):
         """See `ITranslationImporter`."""
-        base_name, suffix = os.path.splitext(path)
+        base_name, suffix = posixpath.splitext(path)
         if suffix not in self.supported_file_extensions:
             return False
         for importer_suffix in self.template_suffixes:
@@ -311,13 +345,13 @@ class TranslationImporter:
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
-            "The translation import queue entry cannot be None.")
+            "Import queue entry cannot be None.")
         assert (translation_import_queue_entry.status ==
                 RosettaImportStatus.APPROVED), (
-                "The entry is not approved!.")
+            "Import queue entry is not approved.")
         assert (translation_import_queue_entry.potemplate is not None or
                 translation_import_queue_entry.pofile is not None), (
-                "The entry has not any import target.")
+            "Import queue entry has no import target.")
 
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
@@ -404,7 +438,7 @@ class FileImporter(object):
         is added to the list in self.errors but the translations are stored
         anyway, marked as having an error.
 
-        :param message: The message who's translations will be stored.
+        :param message: The message for which translations will be stored.
         :param potmsgset: The POTMsgSet that this message belongs to.
 
         :return: The updated translation_message entry or None, if no storing
@@ -415,7 +449,9 @@ class FileImporter(object):
             # store English strings in an IPOFile.
             return None
 
-        if not message.translations:
+        if (not message.translations or
+            set(message.translations) == set([u'']) or
+            set(message.translations) == set([None])):
             # We don't have anything to import.
             return None
 
@@ -453,7 +489,6 @@ class FileImporter(object):
                         "Conflicting updates; ignoring invalid message %d." %
                             potmsgset.id)
                 return None
-
 
         just_replaced_msgid = (
             self.importer.uses_source_string_msgids and
@@ -514,7 +549,6 @@ class FileImporter(object):
                         self.translation_import_queue_entry.format)
         return self._cached_format_exporter
 
-
     def _addUpdateError(self, message, potmsgset, errormsg):
         """Add an error returned by updateTranslation.
 
@@ -533,7 +567,7 @@ class FileImporter(object):
             'pofile': self.pofile,
             'pomessage': self.format_exporter.exportTranslationMessageData(
                 message),
-            'error-message': unicode(errormsg)
+            'error-message': unicode(errormsg),
         })
 
     def _addConflictError(self, message, potmsgset):
@@ -559,7 +593,7 @@ class POTFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation template."""
 
-        assert(translation_import_queue_entry.pofile is None,
+        assert translation_import_queue_entry.pofile is None, (
             "Pofile must be None when importing a template.")
 
         # Call base constructor
@@ -635,7 +669,7 @@ class POFileImporter(FileImporter):
     def __init__(self, translation_import_queue_entry, importer, logger):
         """Construct an Importer for a translation file."""
 
-        assert(translation_import_queue_entry.pofile is not None,
+        assert translation_import_queue_entry.pofile is not None, (
             "Pofile must not be None when importing a translation.")
 
         # Call base constructor
@@ -728,21 +762,18 @@ class POFileImporter(FileImporter):
             return None
 
         personset = getUtility(IPersonSet)
-        person = personset.getByEmail(email)
 
-        if person is None:
-            # We create a new person, without a password.
-            comment = 'when importing the %s translation of %s' % (
-                self.pofile.language.displayname, self.potemplate.displayname)
+        # We may have to create a new person.  If we do, this is the
+        # rationale.
+        comment = 'when importing the %s translation of %s' % (
+            self.pofile.language.displayname, self.potemplate.displayname)
+        rationale = PersonCreationRationale.POFILEIMPORT
 
-            try:
-                person, dummy = personset.createPersonAndEmail(
-                    email, PersonCreationRationale.POFILEIMPORT,
-                    displayname=name, comment=comment)
-            except InvalidEmailAddress:
-                return None
-
-        return person
+        try:
+            return personset.ensurePerson(
+                email, displayname=name, rationale=rationale, comment=comment)
+        except InvalidEmailAddress:
+            return None
 
     def importMessage(self, message):
         """See FileImporter."""
@@ -787,8 +818,7 @@ class POFileImporter(FileImporter):
             if potmsgset is not None:
                 previous_imported_message = (
                     potmsgset.getImportedTranslationMessage(
-                    self.potemplate, self.pofile.language,
-                    self.pofile.variant))
+                    self.potemplate, self.pofile.language))
                 if previous_imported_message is not None:
                     # The message was not imported this time, it
                     # therefore looses its imported status.

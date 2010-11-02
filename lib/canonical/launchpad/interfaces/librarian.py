@@ -9,20 +9,29 @@ __metaclass__ = type
 
 __all__ = [
     'ILibraryFileAlias',
+    'ILibraryFileAliasWithParent',
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
-    'IParsedApacheLog',
     'NEVER_EXPIRES',
     ]
 
 from datetime import datetime
-from pytz import utc
-
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Date, Datetime, Int, TextLine
 
 from lazr.restful.fields import Reference
+from pytz import utc
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.librarian.interfaces import LIBRARIAN_SERVER_DEFAULT_TIMEOUT
@@ -64,19 +73,24 @@ class ILibraryFileAlias(Interface):
         required=True, readonly=True,
         description=_('If the file is restricted, it can only be '
                       'retrieved through the restricted librarian.'))
+    deleted = Attribute('Is this file deleted.')
 
     # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
     # byte strings.
     http_url = Attribute(_("The http URL to this file"))
     https_url = Attribute(_("The https URL to this file"))
+    private_url = Attribute(_("The secure URL to this file (private files)"))
 
     def getURL():
         """Return this file's http or https URL.
 
+        If the file is a restricted file, the private_url will be returned,
+        which is on https and uses unique domains per file alias.
+
         The generated URL will be https if the use_https config variable is
         set, in order to prevent warnings about insecure objects from
-        happening in some browsers.
+        happening in some browsers (this is used for, e.g., branding).
 
         If config.launchpad.virtual_host.use_https is set, then return the
         https URL. Otherwise return the http URL.
@@ -116,6 +130,10 @@ class ILibraryFileAlias(Interface):
         """
 
 
+class ILibraryFileAliasWithParent(ILibraryFileAlias):
+    """A ILibraryFileAlias that knows about its parent."""
+
+
 class ILibraryFileContent(Interface):
     """Actual data in the Librarian.
 
@@ -127,9 +145,6 @@ class ILibraryFileContent(Interface):
     datecreated = Datetime(
             title=_('Date created'), required=True, readonly=True
             )
-    datemirrored = Datetime(
-            title=_('Date mirrored'), required=True, readonly=True
-            )
     filesize = Int(
             title=_('File size'), required=True, readonly=True
             )
@@ -139,9 +154,7 @@ class ILibraryFileContent(Interface):
     md5 = TextLine(
             title=_('MD5 hash'), required=True, readonly=True
             )
-    deleted = Bool(
-            title=_('Deleted'), required=True, readonly=True
-            )
+
 
 class ILibraryFileAliasSet(Interface):
     def create(name, size, file, contentType, expires=None, debugID=None,
@@ -155,7 +168,7 @@ class ILibraryFileAliasSet(Interface):
         from the Librarian at this time. See LibrarianGarbageCollection.
 
         If restricted is True, the file will be created through the
-        IRestricteLibrarianClient utility.
+        IRestrictedLibrarianClient utility.
         """
 
     def __getitem__(key):
@@ -179,18 +192,3 @@ class ILibraryFileDownloadCount(Interface):
         title=_('The number of downloads'), required=True, readonly=False)
     country = Choice(
         title=_('Country'), required=False, vocabulary='CountryName')
-
-
-class IParsedApacheLog(Interface):
-    """An apache log file parsed to extract download counts of files.
-
-    This is used so that we don't parse log files more than once.
-    """
-
-    first_line = TextLine(
-        title=_("The log file's first line"), required=True,
-        readonly=True)
-    bytes_read = Int(
-        title=_('Number of bytes read'), required=True, readonly=False)
-    date_last_parsed = Datetime(
-        title=_('Date last parsed'), required=False, readonly=False)

@@ -4,13 +4,116 @@
 """Test helpers for common AJAX widgets."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'FormPickerWidgetTest',
+    'InlineEditorWidgetTest',
+    'InlinePickerWidgetButtonTest',
+    'InlinePickerWidgetSearchTest',
+    'OnPageWidget',
+    'search_and_select_picker_widget',
+    'search_picker_widget',
+    ]
 
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import constants
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
+
+
+class OnPageWidget:
+    """A class that represents and interacts with an on-page JavaScript widget.
+
+    The widget is assumed to be a YUI widget controlled by yui-X-hidden classes.
+    """
+
+    def __init__(self, client, widget_name):
+        """Constructor.
+
+        :param client: A WindmillTestClient instance for interacting with pages.
+        :param widget_name: The class name of the YUI widget, like 'yui-picker'.
+        """
+        self.client = client
+        self.widget_name = widget_name
+
+    @property
+    def xpath(self):
+        """The XPath of this widget, not including the hidden or visible state.
+        """
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        return u"//div[contains(@class, '%s ')]" % self.widget_name
+
+    @property
+    def visible_xpath(self):
+        """The XPath of the widget when it is visible on page."""
+        subs = dict(name=self.widget_name)
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        return (u"//div[contains(@class, '%(name)s ') "
+                "and not(contains(@class, '%(name)s-hidden'))]" % subs)
+
+    @property
+    def hidden_xpath(self):
+        """The XPath of the widget when it is hidden."""
+        # We include a space after the widget name because @class matches the
+        # /beginning/ of text strings, not whole words!
+        subs = dict(name=self.widget_name)
+        return (u"//div[contains(@class, '%(name)s ') "
+                "and contains(@class, '%(name)s-hidden')]" % subs)
+
+    def should_be_visible(self):
+        """Check to see if the widget is visible on screen."""
+        self.client.waits.forElement(xpath=self.visible_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+
+    def should_be_hidden(self):
+        """Check to see if the widget is hidden on screen."""
+        self.client.waits.forElement(xpath=self.hidden_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+
+
+class SearchPickerWidget(OnPageWidget):
+    """A proxy for the yui-picker widget from lazr-js."""
+
+    def __init__(self, client):
+        """Constructor.
+
+        :param client: A WindmillTestClient instance.
+        """
+        super(SearchPickerWidget, self).__init__(client, 'yui-picker')
+        self.search_input_xpath = (
+            self.xpath + "//input[@class='yui-picker-search']")
+        self.search_button_xpath = (
+            self.xpath + "//div[@class='yui-picker-search-box']/button")
+
+    def _get_result_xpath_by_number(self, item_number):
+        """Return the XPath for the given search result number."""
+        item_xpath = "//ul[@class='yui-picker-results']/li[%d]/span" % item_number
+        return self.xpath + item_xpath
+
+    def do_search(self, text):
+        """Enter some text in the search field and click the search button.
+
+        :param text: The text we want to search for.
+        """
+        self.client.waits.forElement(xpath=self.search_input_xpath,
+                                timeout=constants.FOR_ELEMENT)
+        self.client.type(xpath=self.search_input_xpath, text=text)
+        self.client.click(xpath=self.search_button_xpath,
+                          timeout=constants.FOR_ELEMENT)
+
+    def click_result_by_number(self, item_number):
+        """Click on the given result number in the results list.
+
+        :param item_number: The item in the results list we should click on.
+        """
+        item_xpath = self._get_result_xpath_by_number(item_number)
+        self.client.waits.forElement(xpath=item_xpath,
+                                     timeout=constants.FOR_ELEMENT)
+        self.client.click(xpath=item_xpath)
 
 
 class InlineEditorWidgetTest:
@@ -53,10 +156,9 @@ class InlineEditorWidgetTest:
         * reloads and verifies that the new value sticked.
         """
         client = WindmillTestClient(self.suite)
-
         self.user.ensure_login(client)
-
         client.open(url=self.url)
+
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
         client.waits.forElement(
@@ -70,7 +172,7 @@ class InlineEditorWidgetTest:
             xpath=widget_base + '//textarea', timeout=constants.FOR_ELEMENT)
         client.type(
             xpath=widget_base + '//textarea', text=self.new_value)
-        client.click(xpath=widget_base + '//button[1]')
+        client.click(xpath=widget_base + '//button[last()]')
         client.asserts.assertNode(
             xpath=widget_base + '/span[1]')
         client.asserts.assertText(
@@ -79,33 +181,26 @@ class InlineEditorWidgetTest:
         # And make sure it's actually saved on the server.
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.asserts.assertNode(
-            xpath=widget_base + '/span[1]')
+        client.waits.forElement(
+            xpath=widget_base + '/span[1]',
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=widget_base + '/span[1]', validator=self.new_value)
 
 
-def _search_picker_widget(client, search_text, result_index):
-    """Search in picker widget and select an item."""
-    # Search for search_text in picker widget.
-    search_box_xpath = (u"//table[contains(@class, 'yui-picker') "
-                         "and not(contains(@class, 'yui-picker-hidden'))]"
-                         "//input[@class='yui-picker-search']")
-    client.waits.forElement(
-        xpath=search_box_xpath,
-        timeout=constants.FOR_ELEMENT)
-    client.type(text=search_text, xpath=search_box_xpath)
-    client.click(
-        xpath=u"//table[contains(@class, 'yui-picker') "
-               "and not(contains(@class, 'yui-picker-hidden'))]"
-               "//div[@class='yui-picker-search-box']/button")
-    # Select item at the result_index in the list.
-    item_xpath = (u"//table[contains(@class, 'yui-picker') "
-                     "and not(contains(@class, 'yui-picker-hidden'))]"
-                     "//ul[@class='yui-picker-results']/li[%d]/span"
-                     % result_index)
-    client.waits.forElement(xpath=item_xpath, timeout=constants.FOR_ELEMENT)
-    client.click(xpath=item_xpath)
+def search_picker_widget(client, search_text):
+    """Search using an on-page picker widget."""
+    picker = SearchPickerWidget(client)
+    picker.should_be_visible()
+    picker.do_search(search_text)
+
+
+def search_and_select_picker_widget(client, search_text, result_index):
+    """Search using an on-page picker widget and click a search result."""
+    picker = SearchPickerWidget(client)
+    picker.should_be_visible()
+    picker.do_search(search_text)
+    picker.click_result_by_number(result_index)
 
 
 class InlinePickerWidgetSearchTest:
@@ -157,8 +252,8 @@ class InlinePickerWidgetSearchTest:
         client.click(xpath=button_xpath)
 
         # Search picker.
-        _search_picker_widget(client, self.search_text,
-                              self.result_index)
+        search_and_select_picker_widget(
+            client, self.search_text, self.result_index)
 
         # Verify update.
         client.waits.sleep(milliseconds=u'2000')
@@ -225,7 +320,7 @@ class InlinePickerWidgetButtonTest:
 
         # Click on remove button.
         remove_button_xpath = (
-            u"//table[contains(@class, 'yui-picker') "
+            u"//div[contains(@class, 'yui-picker ') "
              "and not(contains(@class, 'yui-picker-hidden'))]"
              "//*[contains(@class, '%s')]" % self.button_class)
         client.waits.forElement(xpath=remove_button_xpath, timeout=u'25000')
@@ -291,13 +386,15 @@ class FormPickerWidgetTest:
 
         # Load page.
         client.open(url=self.url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on "Choose" link to show picker for the given field.
+        client.waits.forElement(
+            id=self.choose_link_id, timeout=constants.PAGE_LOAD)
         client.click(id=self.choose_link_id)
 
         # Search picker.
-        _search_picker_widget(client, self.search_text, self.result_index)
+        search_and_select_picker_widget(
+            client, self.search_text, self.result_index)
 
         # Verify value.
         client.asserts.assertProperty(

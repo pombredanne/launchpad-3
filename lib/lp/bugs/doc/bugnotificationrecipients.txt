@@ -10,17 +10,17 @@ The IBug.getBugNotificationRecipients() implementation creates and uses
 BugNotificationRecipients instances. Here's an example of this in
 action:
 
-  >>> from canonical.launchpad.database import Bug
-  >>> from lp.registry.model.product import Product
+  >>> from lp.bugs.model.bug import Bug
   >>> from lp.registry.model.distribution import Distribution
+  >>> from lp.registry.model.product import Product
   >>> bug_one = Bug.get(1)
   >>> recipients = bug_one.getBugNotificationRecipients()
 
 The instance of BugNotificationRecipients we get back correctly
 implements INotificationRecipientSet:
 
+  >>> from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import INotificationRecipientSet
   >>> verifyObject(INotificationRecipientSet, recipients)
   True
 
@@ -42,7 +42,7 @@ appropriate for an email footer.
   foo.bar@canonical.com
       Subscriber (mozilla-firefox in ubuntu)
       You received this bug notification because you are subscribed to mozilla-firefox in ubuntu.
-  mark@hbd.com
+  mark@example.com
       Assignee
       You received this bug notification because you are a bug assignee.
   support@ubuntu.com
@@ -62,8 +62,8 @@ IBug.getBugNotificationRecipients().
 
 Let's up some data for our test:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.mailnotification import (
+  >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from lp.bugs.mail.bugnotificationrecipients import (
   ...     BugNotificationRecipients)
   >>> debian = Distribution.selectOneBy(name="debian")
   >>> pmount = debian.getSourcePackage("pmount")
@@ -240,7 +240,7 @@ membership is causing us to send mail.
     marilize@hbd.com
         Subscriber @shipit-admins
         You received this bug notification because you are a member of ShipIt Administrators, which is a direct subscriber.
-    mark@hbd.com
+    mark@example.com
         Subscriber of Duplicate @testing-spanish-team
         You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
     robertc@robertcollins.net

@@ -10,8 +10,12 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
 
 
@@ -26,23 +30,22 @@ def send_branch_modified_notifications(branch, event):
     mailer.sendAll()
 
 
-class RecipientReason:
-    """Reason for sending mail to a recipient."""
+class RecipientReason(basemailer.RecipientReason):
 
     def __init__(self, subscriber, recipient, branch, mail_header,
                  reason_template, merge_proposal=None,
                  max_diff_lines=BranchSubscriptionDiffSize.WHOLEDIFF,
-                 branch_identity_cache=None):
-        self.subscriber = subscriber
-        self.recipient = recipient
+                 branch_identity_cache=None,
+                 review_level=CodeReviewNotificationLevel.FULL):
+        super(RecipientReason, self).__init__(subscriber, recipient,
+              mail_header, reason_template)
         self.branch = branch
-        self.mail_header = mail_header
-        self.reason_template = reason_template
         self.merge_proposal = merge_proposal
         self.max_diff_lines = max_diff_lines
         if branch_identity_cache is None:
             branch_identity_cache = {}
         self.branch_identity_cache = branch_identity_cache
+        self.review_level = review_level
 
     def _getBranchIdentity(self, branch):
         """Get the branch identity out of the cache, or generate it."""
@@ -62,26 +65,27 @@ class RecipientReason:
             subscription.person, recipient, subscription.branch, rationale,
             '%(entity_is)s subscribed to branch %(branch_name)s.',
             merge_proposal, subscription.max_diff_lines,
-            branch_identity_cache=branch_identity_cache)
+            branch_identity_cache=branch_identity_cache,
+            review_level=subscription.review_level)
 
     @classmethod
-    def forReviewer(cls, vote_reference, recipient,
+    def forReviewer(cls, branch_merge_proposal, pending_review, reviewer,
                     branch_identity_cache=None):
         """Construct RecipientReason for a reviewer.
 
         The reviewer will be the sole recipient.
         """
-        merge_proposal = vote_reference.branch_merge_proposal
-        branch = merge_proposal.source_branch
-        if vote_reference.comment is None:
+        branch = branch_merge_proposal.source_branch
+        if pending_review:
             reason_template = (
                 '%(entity_is)s requested to review %(merge_proposal)s.')
         else:
             reason_template = (
                 '%(entity_is)s reviewing %(merge_proposal)s.')
-        return cls(vote_reference.reviewer, recipient, branch,
-                     'Reviewer', reason_template, merge_proposal,
-                     branch_identity_cache=branch_identity_cache)
+        return cls(reviewer, reviewer, branch,
+                   cls.makeRationale('Reviewer', reviewer),
+                   reason_template, branch_merge_proposal,
+                   branch_identity_cache=branch_identity_cache)
 
     @classmethod
     def forRegistrant(cls, merge_proposal, branch_identity_cache=None):
@@ -89,7 +93,6 @@ class RecipientReason:
 
         The registrant will be the sole recipient.
         """
-        branch = merge_proposal.source_branch
         reason_template = 'You proposed %(branch_name)s for merging.'
         return cls(merge_proposal.registrant, merge_proposal.registrant,
                      merge_proposal.source_branch,
@@ -120,26 +123,15 @@ class RecipientReason:
         The owner will be the sole recipient.
         """
         return cls(branch.owner, recipient, branch,
-                     cls.makeRationale('Owner', branch.owner, recipient),
+                     cls.makeRationale('Owner', branch.owner),
                      'You are getting this email as %(lc_entity_is)s the'
                      ' owner of the branch and someone has edited the'
                      ' details.',
                      branch_identity_cache=branch_identity_cache)
 
-    @staticmethod
-    def makeRationale(rationale_base, subscriber, recipient):
-        if subscriber.isTeam():
-            return '%s @%s' % (rationale_base, subscriber.name)
-        else:
-            return rationale_base
-
-    def getReason(self):
-        """Return a string explaining why the recipient is a recipient."""
-        template_values = {
-            'branch_name': self._getBranchIdentity(self.branch),
-            'entity_is': 'You are',
-            'lc_entity_is': 'you are',
-            }
+    def _getTemplateValues(self):
+        template_values = super(RecipientReason, self)._getTemplateValues()
+        template_values['branch_name'] = self._getBranchIdentity(self.branch)
         if self.merge_proposal is not None:
             source = self._getBranchIdentity(
                 self.merge_proposal.source_branch)
@@ -147,16 +139,7 @@ class RecipientReason:
                 self.merge_proposal.target_branch)
             template_values['merge_proposal'] = (
                 'the proposed merge of %s into %s' % (source, target))
-        if self.recipient != self.subscriber:
-            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
-                '%s does not participate in team %s.' %
-                (self.recipient.displayname, self.subscriber.displayname))
-        if self.recipient != self.subscriber or self.subscriber.is_team:
-            template_values['entity_is'] = (
-                'Your team %s is' % self.subscriber.displayname)
-            template_values['lc_entity_is'] = (
-                'your team %s is' % self.subscriber.displayname)
-        return (self.reason_template % template_values)
+        return template_values
 
 
 class BranchMailer(BaseMailer):
@@ -164,7 +147,7 @@ class BranchMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, contents=None, diff=None, message_id=None,
-                 revno=None, notification_type=None):
+                 revno=None, notification_type=None, **kwargs):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id,
                             notification_type)
@@ -175,6 +158,7 @@ class BranchMailer(BaseMailer):
         else:
             self.diff_size = self.diff.count('\n') + 1
         self.revno = revno
+        self.extra_template_params = kwargs
 
     @classmethod
     def forBranchModified(cls, branch, user, delta):
@@ -209,10 +193,10 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
         from_address = format_address(
             user.displayname, user.preferredemail.email)
-        subject = cls._branchSubject(branch)
         return cls(
-            subject, 'branch-modified.txt', actual_recipients, from_address,
-            delta=delta, notification_type='branch-updated')
+            '[Branch %(unique_name)s]', 'branch-modified.txt',
+            actual_recipients, from_address, delta=delta,
+            notification_type='branch-updated')
 
     @classmethod
     def forRevision(cls, db_branch, revno, from_address, contents, diff,
@@ -238,21 +222,9 @@ class BranchMailer(BaseMailer):
                 subscriber_reason = RecipientReason.forBranchSubscriber(
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
-        subject = cls._branchSubject(db_branch, subject)
-        return cls(subject, 'branch-modified.txt', recipient_dict,
+        return cls('%(full_subject)s', 'branch-modified.txt', recipient_dict,
             from_address, contents=contents, diff=diff, revno=revno,
-            notification_type='branch-revision')
-
-    @staticmethod
-    def _branchSubject(db_branch, subject=None):
-        """Determine a subject to use for this email.
-
-        :param db_branch: The db branch to use.
-        :param subject: Any subject supplied as a parameter.
-        """
-        if subject is not None:
-            return subject
-        return '[Branch %s]' % (db_branch.unique_name)
+            notification_type='branch-revision', full_subject=subject)
 
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
@@ -267,19 +239,22 @@ class BranchMailer(BaseMailer):
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
         reason, rationale = self._recipients.getReason(email)
-        params['branch_identity'] = reason.branch.bzr_identity
-        params['branch_url'] = canonical_url(reason.branch)
-        if reason.recipient in reason.branch.subscribers:
+        branch = reason.branch
+        params['unique_name'] = branch.unique_name
+        params['branch_identity'] = branch.bzr_identity
+        params['branch_url'] = canonical_url(branch)
+        if reason.recipient in branch.subscribers:
             # Give subscribers a link to unsubscribe.
             params['unsubscribe'] = (
                 "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(reason.branch))
+                "%s/+edit-subscription" % canonical_url(branch))
         else:
             params['unsubscribe'] = ''
         params['diff'] = self.contents or ''
         if not self._includeDiff(email):
             params['diff'] += self._explainNotPresentDiff(email)
         params.setdefault('delta', '')
+        params.update(self.extra_template_params)
         return params
 
     def _includeDiff(self, email):

@@ -8,7 +8,7 @@ from urllib2 import URLError, HTTPError
 
 import transaction
 
-from canonical.testing import DatabaseLayer, LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.librarian import client as client_module
@@ -32,7 +32,7 @@ class InstrumentedLibrarianClient(LibrarianClient):
 
 
 def make_mock_file(error, max_raise):
-    """Return a surrogate for clinet._File.
+    """Return a surrogate for client._File.
 
     The surrogate function raises error when called for the first
     max_raise times.
@@ -44,13 +44,14 @@ def make_mock_file(error, max_raise):
         'num_calls': 0,
         }
 
-    def mock_file(url):
+    def mock_file(url_file, url):
         if file_status['num_calls'] < file_status['max_raise']:
             file_status['num_calls'] += 1
             raise file_status['error']
         return 'This is a fake file object'
 
     return mock_file
+
 
 class LibrarianClientTestCase(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
@@ -119,7 +120,7 @@ class LibrarianClientTestCase(unittest.TestCase):
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
-            lfa.content.deleted = True
+            lfa.content = None
             call = block_implicit_flushes( # Prevent a ProgrammingError
                 LibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)
@@ -155,7 +156,7 @@ class LibrarianClientTestCase(unittest.TestCase):
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
-            lfa.content.deleted = True
+            lfa.content = None
             call = block_implicit_flushes( # Prevent a ProgrammingError
                 RestrictedLibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)

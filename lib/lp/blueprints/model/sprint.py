@@ -11,28 +11,42 @@ __all__ = [
     ]
 
 
+from sqlobject import (
+    ForeignKey,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, StringCol, SQLRelatedJoin)
-
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
-from lp.blueprints.interfaces.sprintspecification import (
-    SprintSpecificationStatus)
-from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from lp.registry.interfaces.person import validate_public_person
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    )
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
+from lp.blueprints.interfaces.sprintspecification import (
+    SprintSpecificationStatus,
+    )
 from lp.blueprints.model.sprintattendance import SprintAttendance
-from lp.blueprints.model.sprintspecification import (
-    SprintSpecification)
+from lp.blueprints.model.sprintspecification import SprintSpecification
+from lp.registry.interfaces.person import validate_public_person
 
 
 class Sprint(SQLBase):
@@ -265,16 +279,18 @@ class Sprint(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
-    def attend(self, person, time_starts, time_ends):
+    def attend(self, person, time_starts, time_ends, is_physical):
         """See `ISprint`."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
                 attendance.time_starts = time_starts
                 attendance.time_ends = time_ends
+                attendance.is_physical = is_physical
                 return attendance
         # since no previous attendance existed, create a new one
-        return SprintAttendance(sprint=self, attendee=person,
+        return SprintAttendance(
+            sprint=self, attendee=person, is_physical=is_physical,
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):
@@ -335,7 +351,7 @@ class SprintSet:
         return Sprint.select(orderBy='-time_starts')
 
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-            summary=None, address=None, driver=None, home_page=None,
+            summary, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
         """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,

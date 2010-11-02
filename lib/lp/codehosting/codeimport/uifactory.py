@@ -10,7 +10,10 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
-from bzrlib.ui.text import TextUIFactory, TextProgressView
+from bzrlib.ui.text import (
+    TextProgressView,
+    TextUIFactory,
+    )
 
 
 class LoggingUIFactory(TextUIFactory):
@@ -20,14 +23,9 @@ class LoggingUIFactory(TextUIFactory):
     (by default).
     """
 
-    def __init__(self, bar_type=None, stdin=None, stdout=None, stderr=None,
-                 time_source=time.time, writer=None, interval=60.0):
+    def __init__(self, time_source=time.time, writer=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
-        :param bar_type: See `TextUIFactory.__init__`.
-        :param stdin: See `TextUIFactory.__init__`.
-        :param stdout: See `TextUIFactory.__init__`.
-        :param stderr: See `TextUIFactory.__init__`.
         :param time_source: A callable that returns time in seconds since the
             epoch.  Defaults to ``time.time`` and should be replaced with
             something deterministic in tests.
@@ -36,7 +34,7 @@ class LoggingUIFactory(TextUIFactory):
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
-        TextUIFactory.__init__(self, bar_type, stdin, stdout, stderr)
+        TextUIFactory.__init__(self)
         self.interval = interval
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
@@ -79,6 +77,24 @@ class LoggingTextProgressView(TextProgressView):
     def _render_bar(self):
         # There's no point showing a progress bar in a flat log.
         return ''
+
+    def _render_line(self):
+        bar_string = self._render_bar()
+        if self._last_task:
+            task_part, counter_part = self._format_task(self._last_task)
+        else:
+            task_part = counter_part = ''
+        if self._last_task and not self._last_task.show_transport_activity:
+            trans = ''
+        else:
+            trans = self._last_transport_msg
+        # the bar separates the transport activity from the message, so even
+        # if there's no bar or spinner, we must show something if both those
+        # fields are present
+        if (task_part and trans) and not bar_string:
+            bar_string = ' | '
+        s = trans + bar_string + task_part + counter_part
+        return s
 
     def _format_transport_msg(self, scheme, dir_char, rate):
         # We just report the amount of data transferred.

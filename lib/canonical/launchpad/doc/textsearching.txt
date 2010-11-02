@@ -128,7 +128,7 @@ The following examples show the text version of the query using
     ...     try:
     ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
     ...         uncompiled, compiled = cur.fetchone()
-    ...     except:
+    ...     except Exception:
     ...         SQLBase._connection._connection.rollback()
     ...         raise
     ...     if uncompiled is not None:
@@ -549,10 +549,12 @@ Implementing something similar with tsearch2 is straightforward:
 tsearch2 to_tsquery() already removes stop-words (it also stems the
 words). Relevance can be computed using the rank() or rank_cd()
 functions. These are not TD-IDF scoring functions, but they take into
-accounts where the words appeared (in the case of rank()) or proximity
+account where the words appeared (in the case of rank()) or proximity
 of the words (in the case of rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
-is the >50% filtering part.
+is the >50% filtering part. Howevert the > 50% filtering is very expensive,
+and so is processing every single returned item (> 200000 for common queries
+on Ubuntu) - so we are disabling this and reworking from the ground up.
 
 
 === nl_term_candidates() ===
@@ -588,15 +590,20 @@ Except for the hyphenation character, all non-word caracters are ignored:
 
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
-two optional ones. You pass in the search phrase and a SQLObject class.
+two optional ones. You pass in the search phrase and a database model class.
+
+The original nl_phrase_search has proved slow, so there are now two
+implementations in the core.
+
+First we describe the slow implementation.
 
 The select method of that class will be use to count the number of rows
 that is matched by each term. Term matching 50% or more of the total
 rows will be excluded from the final search.
 
     >>> from canonical.database.nl_search import nl_phrase_search
-    >>> from lp.answers.model.question import Question
     >>> from canonical.database.sqlbase import quote
+    >>> from lp.answers.model.question import Question
 
 More than 50% of the questions matches firefox:
 
@@ -608,13 +615,26 @@ More than 50% of the questions matches firefox:
 
 So firefox will be removed from the final query:
 
-    >>> nl_phrase_search('system is slow when running firefox', Question)
+    >>> nl_phrase_search('system is slow when running firefox', Question,
+    ...     fast_enabled=False)
     u'system|slow|run'
 
     >>> nl_term_candidates('how do I do this?')
     []
     >>> nl_phrase_search('how do I do this?', Question)
     ''
+
+The fast code path does not remove any terms. Rather it uses an & query over
+all the terms combined with an & query for each ordinal-1 subset of the terms:
+
+    >>> nl_phrase_search('system is slow when running firefox on ubuntu',
+    ...     Question)
+    u'(firefox&run&slow&system&ubuntu)|(run&slow&system&ubuntu)|(firefox&slow&system&ubuntu)|(firefox&run&system&ubuntu)|(firefox&run&slow&ubuntu)|(firefox&run&slow&system)'
+
+Short queries are expanded more simply:
+
+    >>> nl_phrase_search('system is slow', Question)
+    u'slow|system'
 
 
 ==== Using other constraints ====
@@ -627,7 +647,7 @@ considered a stop word by tsearch2). If the constraint uses any
 additional tables, you can pass in list of names of these tables as a
 forth parameter:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox_product = getUtility(IProductSet).getByName('firefox')
 
     >>> firefox_count = Question.select(
@@ -640,13 +660,13 @@ forth parameter:
     >>> nl_phrase_search(
     ...     'firefox gets very slow on flickr', Question,
     ...     "Question.product = %s AND Product.active = 't'" % firefox_product.id,
-    ...     ['Product'])
+    ...     ['Product'], fast_enabled=False)
     u'slow|flickr'
 
-When the query only has stop words or common words in it, the returned
-query will be the empty string:
+When the query only has stop words in it, the returned query will be the empty
+string:
 
-    >>> nl_phrase_search('firefox will not do it', Question)
+    >>> nl_phrase_search('will not do it', Question)
     ''
 
 When there are no candidate rows, only stemming and stop words removal
@@ -656,7 +676,7 @@ is done.
     0
     >>> nl_phrase_search('firefox is very slow on flickr', Question,
     ...                  'product = -1')
-    u'firefox|slow|flickr'
+    u'(firefox&flickr&slow)|(flickr&slow)|(firefox&slow)|(firefox&flickr)'
 
 
 ==== No keywords filtering with few rows ====
@@ -669,8 +689,8 @@ keywords could be eliminated. For that reason, when there are less than
 For example, there are less than 5 questions filed on the
 mozilla-firefox source package.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from canonical.database.sqlbase import sqlvalues
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
     >>> firefox_package_questions = Question.select(

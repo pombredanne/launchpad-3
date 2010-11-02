@@ -9,20 +9,26 @@ __all__ = [
     'MentoringOfferSet',
     ]
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.mentoringoffer import (
-    IMentoringOffer, IMentoringOfferSet)
-
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.registry.interfaces.mentoringoffer import (
+    IMentoringOffer,
+    IMentoringOfferSet,
+    )
+from lp.registry.interfaces.person import validate_public_person
 
 
 class MentoringOffer(SQLBase):
@@ -104,14 +110,12 @@ class MentoringOfferSet:
             """ % sqlvalues(yearago) + """
             Specification.id = MentoringOffer.specification AND
             (""" + Specification.completeness_clause +")",
-            clauseTables=['Specification'],
-            distinct=True)
+            clauseTables=['Specification'])
         via_bugs = MentoringOffer.select("""
             MentoringOffer.date_created > %s AND
             """ % sqlvalues(yearago) + """
             BugTask.bug = MentoringOffer.bug AND (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask'],
-            distinct=True)
-        return via_specs.union(via_bugs)
+            clauseTables=['BugTask'])
+        return via_specs.union(via_bugs).orderBy("id")
 

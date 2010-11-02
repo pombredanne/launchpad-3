@@ -16,10 +16,6 @@
   <permission
     id="launchpad.Edit" title="Editing something" access_level="write" />
 
-  <permission
-    id="launchpad.EditLocation" title="Editing an object's location"
-    access_level="write" />
-
   <!-- Request large downloads, or other heavyweight jobs that are not
   semantically like "editing" and are not restricted to administrators.
   -->
@@ -60,7 +56,7 @@
   <permission
     id="launchpad.Special" title="Special permissions" access_level="write" />
 
-  <!-- Experimental (sabdfl) Trying to use the permissions system to
+  <!-- Experimental (mark) Trying to use the permissions system to
        establish roles. If this works we should consider a parallel "roles"
        system that is similar to the permissions system, or just extending
        our permissions vocabulary to include these roles. -->
@@ -68,6 +64,11 @@
     id="launchpad.Driver"
     title="The role of deciding what bug fixes and features should be goals
            for a series or release."
+    access_level="write" />
+
+  <permission
+    id="launchpad.BugSupervisor"
+    title="The role of managing bugs and bug rules for a product."
     access_level="write" />
 
   <permission
@@ -80,14 +81,10 @@
     title="The role of someone who can manage and configure a mailing list."
     access_level="write" />
 
-  <!--
-    XXX: BradCrittenden 2009-05-17 bug=400762: ProjectReview should properly
-    just be Moderate except there is a clash between IProduct and IFAQTarget.
-  -->
+  <!-- This permission only exists to please apidoc.launchpad.dev and
+       shouldn't be used anywhere else. -->
   <permission
-    id="launchpad.ProjectReview"
-    title="Review Launchpad projects"
-    access_level="write" />
-
+    id="zope.ManageApplication" title="Needed by zope.app.apidoc"
+    access_level="read" />
 
 </configure>

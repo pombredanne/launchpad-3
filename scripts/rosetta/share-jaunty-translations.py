@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -52,8 +52,7 @@ class ShareJauntyTranslationMessages:
                 FlagHolder.%(flag)s IS TRUE AND
                 FlagHolder.potmsgset = Candidate.potmsgset AND
                 FlagHolder.potemplate IS NULL AND
-                FlagHolder.language = Candidate.language AND
-                FlagHolder.variant IS NOT DISTINCT FROM Candidate.variant
+                FlagHolder.language = Candidate.language
             WHERE
                 POTemplate.distroseries = %(series_id)s AND
                 POTemplate.iscurrent IS TRUE AND

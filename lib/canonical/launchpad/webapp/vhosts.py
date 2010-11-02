@@ -101,6 +101,11 @@ class AllVirtualHostsConfiguration:
             self._hostnames.update(config.althostnames)
         self._has_vhost_data = True
 
+    def reload(self):
+        """Reload the VHost data."""
+        self._has_vhost_data = False
+        self._getVHostData()
+
     @property
     def use_https(self):
         """Do the vhosts use HTTPS?"""

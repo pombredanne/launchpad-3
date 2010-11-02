@@ -8,31 +8,58 @@ __all__ = [
     'BugEmailCommands',
     'get_error_message']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.schema import ValidationError
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.launchpad.interfaces import (
-        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError,
-        NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
-        BugTaskStatus, UserCannotUnsubscribePerson)
-from lazr.lifecycle.event import (
-    ObjectModifiedEvent, ObjectCreatedEvent)
-from lazr.lifecycle.interfaces import (
-    IObjectCreatedEvent, IObjectModifiedEvent)
-
+    BugTargetNotFound,
+    BugTaskImportance,
+    BugTaskStatus,
+    CreateBugParams,
+    EmailProcessingError,
+    IBug,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugSet,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    ICveSet,
+    IDistribution,
+    IDistributionSourcePackage,
+    IDistroBugTask,
+    IDistroSeries,
+    ILaunchBag,
+    IMessageSet,
+    IPillarNameSet,
+    IProduct,
+    IProductSeries,
+    IProjectGroup,
+    ISourcePackage,
+    )
 from canonical.launchpad.mail.helpers import (
-    get_error_message, get_person_or_team)
+    get_error_message,
+    get_person_or_team,
+    )
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
 
 
 def normalize_arguments(string_args):
@@ -279,7 +306,7 @@ class SecurityEmailCommand(EmailCommand):
                 edited = True
                 edited_fields.add('private')
         if context.security_related != security_related:
-            context.security_related = security_related
+            context.setSecurityRelated(security_related)
             edited = True
             edited_fields.add('security_related')
 
@@ -380,30 +407,40 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class DuplicateEmailCommand(EditEmailCommand):
+class DuplicateEmailCommand(EmailCommand):
     """Marks a bug as a duplicate of another bug."""
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See IEmailCommand."""
+        self._ensureNumberOfArguments()
         [bug_id] = self.string_args
-        if bug_id == 'no':
+
+        if bug_id != 'no':
+            try:
+                bug = getUtility(IBugSet).getByNameOrID(bug_id)
+            except NotFoundError:
+                raise EmailProcessingError(
+                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+        else:
             # 'no' is a special value for unmarking a bug as a duplicate.
-            return {'duplicateof': None}
-        try:
-            bug = getUtility(IBugSet).getByNameOrID(bug_id)
-        except NotFoundError:
-            raise EmailProcessingError(
-                get_error_message('no-such-bug.txt', bug_id=bug_id))
+            bug = None
+
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
         except ValidationError, error:
             raise EmailProcessingError(error.doc())
 
-        return {'duplicateof': bug}
+        context_snapshot = Snapshot(
+            context, providing=providedBy(context))
+        context.markAsDuplicate(bug)
+        current_event = ObjectModifiedEvent(
+            context, context_snapshot, 'duplicateof')
+        notify(current_event)
+        return bug, current_event
 
 
 class CVEEmailCommand(EmailCommand):
@@ -496,9 +533,9 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -604,15 +641,19 @@ class AffectsEmailCommand(EmailCommand):
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:

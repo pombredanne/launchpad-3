@@ -14,9 +14,9 @@
           undergoing maintenance and is running in
           <strong>read-only</strong> mode.
       </p>
-      <p>Normal service will resume as soon as possible. Further information
-          about scheduled downtime may be available on the
-          <a href="http://blog.launchpad.net/maintenance">Launchpad Blog</a>.
+      <p>Normal service will resume as soon as possible. You can find more
+         information on the <a href="http://identi.ca/launchpadstatus">
+         Launchpad system status</a> page.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

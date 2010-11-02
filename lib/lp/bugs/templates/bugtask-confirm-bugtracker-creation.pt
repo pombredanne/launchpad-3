@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -25,9 +25,6 @@
       </div>
 
       </div>
-
-      <div id="portlets"
-           tal:content="structure context/bug/@@+portlet-notified" />
 
     </div>
 

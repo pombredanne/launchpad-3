@@ -43,35 +43,56 @@ class IExternalBugTracker(Interface):
         """Return the `ExternalBugTracker` instance to use.
 
         Probe the remote bug tracker and choose the right
-        `ExternalBugTracker` instance to use further on.
+        `ExternalBugTracker` instance to use further on. In most cases
+        this will simply return `self`.
         """
 
     def getCurrentDBTime():
         """Return the current time of the bug tracker's DB server.
 
         The current time will be returned as a timezone-aware datetime.
+
+        :return: `datetime.datetime` with timezone.
         """
 
     def getModifiedRemoteBugs(remote_bug_ids, last_checked):
         """Return the bug ids that have been modified.
 
         Return all ids if the modified bugs can't be determined.
+
+        :param remote_bug_ids: The remote bug IDs to be checked.
+        :type remote_bug_ids: `list` of strings
+
+        :param last_checked: The date and time since when a bug should
+            be considered modified.
+        :param last_checked: `datetime.datetime`
         """
 
     def initializeRemoteBugDB(remote_bug_ids):
-        """Do any initialization before each bug watch is updated."""
+        """Do any initialization before each bug watch is updated.
+
+        :param remote_bug_ids: The remote bug IDs that to be checked.
+        :type remote_bug_ids: `list` of strings
+        """
 
     def convertRemoteStatus(remote_status):
-        """Convert a remote status string to a BugTaskStatus item."""
+        """Convert a remote status string to a BugTaskStatus item.
+
+        :return: a member of `BugTaskStatus`
+        """
 
     def convertRemoteImportance(remote_importance):
-        """Convert a remote importance to a BugTaskImportance item."""
+        """Convert a remote importance to a BugTaskImportance item.
+
+        :return: a member of `BugTaskImportance`
+        """
 
     def getRemoteProduct(remote_bug):
         """Return the remote product for a given remote bug.
 
         :param remote_bug: The ID of the remote bug for which to return
             the remote product.
+        :type remote_bug: string
         :return: The remote product for `remote_bug`. If no remote
             product is recorded for `remote_bug` return None.
         :raise BugNotFound: If `remote_bug` doesn't exist for the bug
@@ -82,36 +103,41 @@ class IExternalBugTracker(Interface):
 class ISupportsCommentImport(IExternalBugTracker):
     """An external bug tracker that supports comment imports."""
 
-    def fetchComments(bug_watch, comment_ids):
+    def fetchComments(remote_bug_id, comment_ids):
         """Load a given set of remote comments, ready for parsing.
 
-        :param bug_watch: The bug watch for which to fetch the comments.
+        :param remote_bug_id: The ID of the remote bug from which to
+            fetch comments.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_ids: A list of the IDs of the comments to load.
         """
 
-    def getCommentIds(bug_watch):
+    def getCommentIds(remote_bug_id):
         """Return all the comment IDs for a given remote bug.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments should be imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :return: A list of strings, each of which is the ID of one
             comment on the remote bug.
         """
 
-    def getPosterForComment(bug_watch, comment_id):
+    def getPosterForComment(remote_bug_id, comment_id):
         """Return a tuple of (name, emailaddress) for a comment's poster.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments have been imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_id: A string representing the remote comment ID
             from which the poster's details should be extracted.
         """
 
-    def getMessageForComment(bug_watch, comment_id, poster):
+    def getMessageForComment(remote_bug_id, comment_id, poster):
         """Return an `IMessage` instance for a comment.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments have been imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_id: A string representing the remote comment ID
             from which the returned `IMessage` should be created.
         """
@@ -123,16 +149,19 @@ class ISupportsBugImport(IExternalBugTracker):
     def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
 
-        A tuple of (display name, email) is returned.
+        :return: `tuple` of (display name, email)
         """
 
     def getBugSummaryAndDescription(remote_bug):
-        """Return a tuple of summary and description for the given bug."""
+        """Return the summary and description for the given bug.
+
+        :return: `tuple` of (summary, description)
+        """
 
     def getBugTargetName(remote_bug):
         """Return the specific target name of the bug.
 
-        Return None if no target can be determined.
+        :return: string, or `None` if no target can be determined
         """
 
 
@@ -168,12 +197,13 @@ class ISupportsBackLinking(IExternalBugTracker):
         `remote_bug`.
         """
 
-    def setLaunchpadBugId(remote_bug, launchpad_bug_id):
+    def setLaunchpadBugId(remote_bug, launchpad_bug_id, launchpad_bug_url):
         """Set the Launchpad bug ID for a bug on the remote bug tracker.
 
         :param remote_bug: The ID of the bug on the remote tracker on
             which to set the Launchpad bug ID.
         :param launchpad_bug_id: The ID of the Launchpad bug that's
             watching the remote bug.
+        :param launchpad_bug_url: The canonical URL of the bug in
+            Launchpad.
         """
-

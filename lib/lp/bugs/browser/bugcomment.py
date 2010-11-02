@@ -10,48 +10,45 @@ __all__ = [
     'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
     'BugCommentXHTMLRepresentation',
+    'BugCommentBreadcrumb',
     'build_comments_from_chunks',
-    'should_display_remote_comments',
     ]
 
-from zope.component import adapts, getMultiAdapter, getUtility
-from zope.interface import implements, Interface
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-
-from lp.bugs.interfaces.bugmessage import (
-    IBugComment, IBugMessageSet)
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.authorization import check_permission
+from pytz import utc
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
-
-
-def should_display_remote_comments(user):
-    """Return whether remote comments should be displayed for the user."""
-    # comment_syncing_team can be either None or '' to indicate unset.
-    if config.malone.comment_syncing_team:
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
-        assert comment_syncing_team is not None, (
-            "comment_syncing_team was set to %s, which doesn't exist." % (
-                config.malone.comment_syncing_team))
-    else:
-        comment_syncing_team = None
-
-    if comment_syncing_team is None:
-        return True
-    else:
-        return user is not None and user.inTeam(comment_syncing_team)
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bugmessage import (
+    IBugComment,
+    IBugMessageSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
 
 
 def build_comments_from_chunks(chunks, bugtask, truncate=False):
     """Build BugComments from MessageChunks."""
-    display_if_from_bugwatch = should_display_remote_comments(
-        getUtility(ILaunchBag).user)
-
     comments = {}
     index = 0
     for chunk in chunks:
@@ -59,7 +56,7 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
         bug_comment = comments.get(message_id)
         if bug_comment is None:
             bug_comment = BugComment(
-                index, chunk.message, bugtask, display_if_from_bugwatch)
+                index, chunk.message, bugtask)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -103,8 +100,7 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
-                 activity=None):
+    def __init__(self, index, message, bugtask, activity=None):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -114,10 +110,10 @@ class BugComment:
         self.datecreated = message.datecreated
         self.owner = message.owner
         self.rfc822msgid = message.rfc822msgid
-        self.display_if_from_bugwatch = display_if_from_bugwatch
 
         self.chunks = []
         self.bugattachments = []
+        self.patches = []
 
         if activity is None:
             activity = []
@@ -125,14 +121,6 @@ class BugComment:
         self.activity = activity
 
         self.synchronized = False
-
-    @property
-    def can_be_shown(self):
-        """Return whether or not the BugComment can be shown."""
-        if self.bugwatch and not self.display_if_from_bugwatch:
-            return False
-        else:
-            return True
 
     @property
     def show_for_admin(self):
@@ -185,7 +173,8 @@ class BugComment:
             return False
         if self.title != other.title:
             return False
-        if self.bugattachments or other.bugattachments:
+        if (self.bugattachments or self.patches or other.bugattachments or
+            other.patches):
             # We shouldn't collapse comments which have attachments;
             # there's really no possible identity in that case.
             return False
@@ -195,7 +184,7 @@ class BugComment:
         """Return True if text_for_display is empty."""
 
         return (len(self.text_for_display) == 0 and
-            len(self.bugattachments) == 0)
+            len(self.bugattachments) == 0 and len(self.patches) == 0)
 
     @property
     def add_comment_url(self):
@@ -209,6 +198,39 @@ class BugComment:
         else:
             return False
 
+    @property
+    def rendered_cache_time(self):
+        """The number of seconds we can cache the rendered comment for.
+
+        Bug comments are cached with 'authenticated' visibility, so
+        should contain no information hidden from some users. We use
+        'authenticated' rather than 'public' as email addresses are
+        obfuscated for unauthenticated users.
+        """
+        now = datetime.now(tz=utc)
+        # The major factor in how long we can cache a bug comment is
+        # the timestamp. The rendering of the timestamp changes every
+        # minute for the first hour because we say '7 minutes ago'.
+        if self.datecreated > now - timedelta(hours=1):
+            return 60
+
+        # Don't cache for long if we are waiting for synchronization.
+        elif self.bugwatch and not self.synchronized:
+            return 5*60
+
+        # For the rest of the first day, the rendering changes every
+        # hour. '4 hours ago'. Expire in 15 minutes so the timestamp
+        # is at most 15 minutes out of date.
+        elif self.datecreated > now - timedelta(days=1):
+            return 15*60
+
+        # Otherwise, cache away. Lets cache for 6 hours. We don't want
+        # to cache for too long as there are still things that can
+        # become stale - eg. if a bug attachment has been deleted we
+        # should stop rendering the link.
+        else:
+            return 6*60*60
+
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""
@@ -220,14 +242,27 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
 
+    def page_title(self):
+        return 'Comment %d for bug %d' % (
+            self.comment.index, self.context.bug.id)
 
-class BugCommentBoxView(LaunchpadView):
+
+class BugCommentBoxViewMixin:
+    """A class which provides proxied Librarian URLs for bug attachments."""
+
+    def proxiedUrlOfLibraryFileAlias(self, attachment):
+        """Return the proxied URL for the Librarian file of the attachment."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+
+
+class BugCommentBoxView(LaunchpadView, BugCommentBoxViewMixin):
     """Render a comment box with reply field collapsed."""
 
     expand_reply_box = False
 
 
-class BugCommentBoxExpandedReplyView(LaunchpadView):
+class BugCommentBoxExpandedReplyView(LaunchpadView, BugCommentBoxViewMixin):
     """Render a comment box with reply field expanded."""
 
     expand_reply_box = True
@@ -247,3 +282,13 @@ class BugCommentXHTMLRepresentation:
             (self.comment, self.request), name="+box")
         return comment_view()
 
+
+class BugCommentBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IBugComment`."""
+
+    def __init__(self, context):
+        super(BugCommentBreadcrumb, self).__init__(context)
+
+    @property
+    def text(self):
+        return "Comment #%d" % self.context.index

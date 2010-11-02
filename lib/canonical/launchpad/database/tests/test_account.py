@@ -12,12 +12,16 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, IAccountSet)
+    AccountCreationRationale,
+    IAccountSet,
+    )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
-    IPerson, PersonCreationRationale)
+    IPerson,
+    PersonCreationRationale,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class CreatePersonTests(TestCaseWithFactory):
@@ -73,6 +77,24 @@ class CreatePersonTests(TestCaseWithFactory):
         self.assertEqual(valid_email.person, person)
         self.assertEqual(new_email.person, person)
         self.assertEqual(old_email.person, person)
+
+    def test_createPerson_uses_name(self):
+        # A optional user name can be provided. Normally the name is
+        # generated from the email address.
+        account = self.factory.makeAccount("Test Account")
+        person = account.createPerson(
+            PersonCreationRationale.UNKNOWN, name="sam.bell")
+        self.failUnlessEqual("sam.bell", person.name)
+
+    def test_createPerson_uses_comment(self):
+        # An optional creation comment can be provided.
+        account = self.factory.makeAccount("Test Account")
+        person = account.createPerson(
+            PersonCreationRationale.UNKNOWN,
+            comment="when importing He-3 from the Moon")
+        self.failUnlessEqual(
+            "when importing He-3 from the Moon",
+            person.creation_comment)
 
 
 class EmailManagementTests(TestCaseWithFactory):
@@ -136,14 +158,13 @@ class EmailManagementTests(TestCaseWithFactory):
 
     def test_validated_emails(self):
         account = self.factory.makeAccount("Test Account")
-        preferred_email = account.preferredemail
-        new_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "new-email@example.org", None, account,
             EmailAddressStatus.NEW)
         validated_email = self.factory.makeEmail(
             "validated-email@example.org", None, account,
             EmailAddressStatus.VALIDATED)
-        old_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
         transaction.commit()
@@ -154,10 +175,10 @@ class EmailManagementTests(TestCaseWithFactory):
         new_email = self.factory.makeEmail(
             "new-email@example.org", None, account,
             EmailAddressStatus.NEW)
-        validated_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "validated-email@example.org", None, account,
             EmailAddressStatus.VALIDATED)
-        old_email = self.factory.makeEmail(
+        self.factory.makeEmail(
             "old@example.org", None, account,
             EmailAddressStatus.OLD)
         transaction.commit()

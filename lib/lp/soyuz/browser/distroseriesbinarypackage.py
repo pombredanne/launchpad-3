@@ -4,17 +4,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesBinaryPackageBreadcrumbBuilder',
+    'DistroSeriesBinaryPackageBreadcrumb',
     'DistroSeriesBinaryPackageFacets',
     'DistroSeriesBinaryPackageNavigation',
     'DistroSeriesBinaryPackageView',
     ]
 
-from lp.soyuz.interfaces.distroseriesbinarypackage import (
-    IDistroSeriesBinaryPackage)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Navigation)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+    ApplicationMenu,
+    Navigation,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
+from lp.soyuz.interfaces.distroseriesbinarypackage import (
+    IDistroSeriesBinaryPackage,
+    )
 
 
 class DistroSeriesBinaryPackageFacets(StandardLaunchpadFacets):
@@ -37,7 +42,7 @@ class DistroSeriesBinaryPackageNavigation(Navigation):
     usedfor = IDistroSeriesBinaryPackage
 
 
-class DistroSeriesBinaryPackageBreadcrumbBuilder(BreadcrumbBuilder):
+class DistroSeriesBinaryPackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeriesBinaryPackage`."""
     @property
     def text(self):
@@ -50,4 +55,6 @@ class DistroSeriesBinaryPackageView:
         self.context = context
         self.request = request
 
-
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

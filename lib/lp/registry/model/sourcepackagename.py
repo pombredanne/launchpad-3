@@ -7,25 +7,28 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'SourcePackageNameVocabulary',
-    'getSourcePackageDescriptions'
-]
+    'getSourcePackageDescriptions',
+    ]
 
+from sqlobject import (
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
-from zope.schema.vocabulary import SimpleTerm
 
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, SQLMultipleJoin
-
-from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
-
-from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.database.sqlbase import (
+    cursor,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
-from canonical.launchpad.webapp.vocabulary import (
-    BatchedCountableIterator)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
 
 
 class SourcePackageName(SQLBase):
@@ -35,12 +38,16 @@ class SourcePackageName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True,
         alternateID=True)
 
-    potemplates = SQLMultipleJoin('POTemplate', joinColumn='sourcepackagename')
+    potemplates = SQLMultipleJoin(
+        'POTemplate', joinColumn='sourcepackagename')
     packagings = SQLMultipleJoin(
-         'Packaging', joinColumn='sourcepackagename', orderBy='Packaging.id')
+        'Packaging', joinColumn='sourcepackagename', orderBy='Packaging.id')
 
     def __unicode__(self):
         return self.name
+
+    def __repr__(self):
+        return "<%s '%s'>" % (self.__class__.__name__, self.name)
 
     def ensure(klass, name):
         try:
@@ -90,33 +97,8 @@ class SourcePackageNameSet:
             return self.new(name)
 
 
-class SourcePackageNameIterator(BatchedCountableIterator):
-    """A custom iterator for SourcePackageNameVocabulary.
-
-    Used to iterate over vocabulary items and provide full
-    descriptions.
-
-    Note that the reason we use special iterators is to ensure that we
-    only do the search for descriptions across source package names that
-    we actually are attempting to list, taking advantage of the
-    resultset slicing that BatchNavigator does.
-    """
-    def getTermsWithDescriptions(self, results):
-        descriptions = getSourcePackageDescriptions(results)
-        return [SimpleTerm(obj, obj.name,
-                    descriptions.get(obj.name, "Not yet built"))
-                for obj in results]
-
-
-class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
-    """A vocabulary that lists source package names."""
-    displayname = 'Select a Source Package'
-    _table = SourcePackageName
-    _orderBy = 'name'
-    iterator = SourcePackageNameIterator
-
-
-def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):
+def getSourcePackageDescriptions(
+    results, use_names=False, max_title_length=50):
     """Return a dictionary with descriptions keyed on source package names.
 
     Takes an ISelectResults of a *PackageName query. The use_names
@@ -136,24 +118,25 @@ def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):
     # sourcepackagename_id and binarypackagename_id depending on
     # whether the row represented one or both of those cases.
     if use_names:
-       clause = ("SourcePackageName.name in %s" %
+        clause = ("SourcePackageName.name in %s" %
                  sqlvalues([pn.name for pn in results]))
     else:
-       clause = ("SourcePackageName.id in %s" %
+        clause = ("SourcePackageName.id in %s" %
                  sqlvalues([spn.id for spn in results]))
 
     cur = cursor()
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
-                     FROM BinaryPackageRelease, SourcePackageName, Build,
-                          SourcePackageRelease, BinaryPackageName
+                     FROM BinaryPackageRelease, SourcePackageName,
+                          BinaryPackageBuild, SourcePackageRelease,
+                          BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
-                       BinaryPackageRelease.build = Build.id AND
+                       BinaryPackageRelease.build = BinaryPackageBuild.id AND
                        SourcePackageRelease.sourcepackagename =
                            SourcePackageName.id AND
-                       Build.sourcepackagerelease =
+                       BinaryPackageBuild.source_package_release =
                            SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,
@@ -172,4 +155,3 @@ def getSourcePackageDescriptions(results, use_names=False, max_title_length=50):
                 description = ", %s" % binarypackagename
             descriptions[sourcepackagename] += description
     return descriptions
-

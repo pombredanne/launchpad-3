@@ -16,14 +16,22 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-
-from lp.bugs.interfaces.cve import ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
-
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    Link,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.bugs.interfaces.cve import (
+    ICve,
+    ICveSet,
+    )
 
 
 class CveSetNavigation(GetitemNavigation):
@@ -83,7 +91,16 @@ class CveLinkView(LaunchpadFormView):
         self.context.bug.linkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s added.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    label = 'Link to CVE report'
+
+    page_title = label
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class CveUnlinkView(CveLinkView):
@@ -95,12 +112,17 @@ class CveUnlinkView(CveLinkView):
         self.context.bug.unlinkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s removed.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def label(self):
+        return  'Bug # %s Remove link to CVE report' % self.context.bug.id
+
+    page_title = label
+
+    heading = 'Remove links to bug reports'
 
 
 class CveSetView:
-
-    __used_for__ = ICveSet
 
     def __init__(self, context, request):
         self.context = context
@@ -112,6 +134,9 @@ class CveSetView:
 
         if self.text:
             self.pre_search()
+
+    label = 'Launchpad CVE tracker'
+    page_title = label
 
     def getAllBatched(self):
         return BatchNavigator(self.context.getAll(), self.request)

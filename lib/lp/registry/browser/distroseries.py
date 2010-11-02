@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -8,52 +8,90 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesAddView',
     'DistroSeriesAdminView',
-    'DistroSeriesBreadcrumbBuilder',
+    'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesLocalDifferences',
     'DistroSeriesPackageSearchView',
+    'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import Interface
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import (
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
-from canonical.launchpad import helpers
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.browser.queue import QueueItemsView
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguageSet)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, NotFoundError)
+from canonical.launchpad import (
+    _,
+    helpers,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+    action,
+    custom_widget,
+    GetitemNavigation,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadEditFormView, LaunchpadFormView)
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, enabled_with_permission)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, stepthrough, stepto)
+    canonical_url,
+    LaunchpadView,
+    stepthrough,
+    stepto,
+    )
+from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.errors import NotFoundError
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.translations.browser.distroseries import (
+    check_distroseries_translations_viewable,
+    )
 
 
-class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
+class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistroSeries
 
@@ -71,19 +109,13 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        distroserieslang = self.context.getDistroSeriesLanguage(lang)
 
-        if distroserieslang is None:
-            # There is no IDistroSeriesLanguage yet for this IDistroSeries,
-            # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get to it in the
-            # navigation and start adding translations for it.
-            distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(
-                self.context, lang)
+        distroserieslang = self.context.getDistroSeriesLanguageOrDummy(lang)
 
-        if not check_permission('launchpad.Admin', distroserieslang):
-            self.context.checkTranslationsViewable()
+        # Check if user is able to view the translations for
+        # this distribution series language.
+        # If not, raise TranslationUnavailable.
+        check_distroseries_translations_viewable(self.context)
 
         return distroserieslang
 
@@ -120,12 +152,18 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
 
+    @stepthrough('+difference')
+    def traverse_difference(self, name):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        return dsd_source.getByDistroSeriesAndName(self.context, name)
 
-class DistroSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+
+class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
+
     @property
     def text(self):
-        return self.context.version
+        return self.context.named_version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
@@ -135,13 +173,14 @@ class DistroSeriesFacets(StandardLaunchpadFacets):
                    'translations']
 
 
-class DistroSeriesOverviewMenu(ApplicationMenu):
+class DistroSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
-             'subscribe']
+    links = ['edit', 'reassign', 'driver', 'answers',
+             'packaging', 'needs_packaging', 'builds', 'queue',
+             'add_port', 'create_milestone', 'subscribe', 'admin']
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -160,18 +199,23 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
+    def create_milestone(self):
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream links'
-        return Link('+packaging', text, icon='info')
+        text = 'All upstream links'
+        summary = 'A listing of source packages and their upstream projects'
+        return Link('+packaging', text, summary=summary, icon='info')
+
+    def needs_packaging(self):
+        text = 'Needs upstream links'
+        summary = 'A listing of source packages without upstream projects'
+        return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
     # has a search form.
-
     def answers(self):
         text = 'Ask a question'
         url = canonical_url(self.context.distribution) + '/+addquestion'
@@ -182,7 +226,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
@@ -195,12 +239,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class DistroSeriesBugsMenu(ApplicationMenu):
+class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
@@ -216,47 +256,15 @@ class DistroSeriesBugsMenu(ApplicationMenu):
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class DistroSeriesSpecificationsMenu(ApplicationMenu):
+class DistroSeriesSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listapproved(self):
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, icon='info')
-
-    def setgoals(self):
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = [
+        'listall', 'listdeclined', 'assignments', 'setgoals',
+        'new', 'register_sprint']
 
 
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
@@ -266,19 +274,63 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
 
+    label = 'Search packages'
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+
+class SeriesStatusMixin:
+    """A mixin that provides status field support."""
+
+    def createStatusField(self):
+        """Create the 'status' field.
+
+        Create the status vocabulary according the current distroseries
+        status:
+         * stable   -> CURRENT, SUPPORTED, OBSOLETE
+         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
+        """
+        stable_status = (
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
+            SeriesStatus.OBSOLETE,
+            )
+
+        if self.context.status not in stable_status:
+            terms = [status for status in SeriesStatus.items
+                     if status not in stable_status]
+            terms.append(SeriesStatus.CURRENT)
+        else:
+            terms = stable_status
+
+        status_vocabulary = SimpleVocabulary(
+            [SimpleTerm(item, item.name, item.title) for item in terms])
+
+        return form.Fields(
+            Choice(__name__='status',
+                   title=_('Status'),
+                   default=self.context.status,
+                   vocabulary=status_vocabulary,
+                   description=_("Select the distroseries status."),
+                   required=True))
+
+    def updateDateReleased(self, status):
+        """Update the datereleased field if the status is set to CURRENT."""
+        if (self.context.datereleased is None and
+            status == SeriesStatus.CURRENT):
+            self.context.datereleased = UTC_NOW
+
+
+class DistroSeriesView(MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
 
-    @cachedproperty
-    def cached_packagings(self):
-        # +packaging hits this many times, so avoid redoing the query
-        # multiple times, in particular because it's gnarly.
-        return list(self.context.packagings)
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return '%s %s in Launchpad' % (
+        self.context.distribution.title, self.context.version)
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -286,55 +338,97 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
-
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
 
         Filing a bug on a distribution series is not directly
         permitted; we redirect to the distribution's file
         """
-        distro_url = canonical_url(self.context.distribution)
-        return self.request.response.redirect(distro_url + "/+filebug")
+        distro_url = canonical_url(
+            self.context.distribution, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            distro_url += '?no-redirect'
+        return self.request.response.redirect(distro_url)
+
+    @cachedproperty
+    def num_linked_packages(self):
+        """The number of linked packagings for this distroseries."""
+        return self.context.packagings.count()
 
     @property
-    def show_arch_selector(self):
-        """Display the architecture selector.
+    def num_unlinked_packages(self):
+        """The number of unlinked packagings for this distroseries."""
+        return self.context.sourcecount - self.num_linked_packages
 
-        See `BuildRecordsView` for further details."""
-        return True
+    @cachedproperty
+    def recently_linked(self):
+        """Return the packages that were most recently linked upstream."""
+        return self.context.getMostRecentlyLinkedPackagings()
+
+    @cachedproperty
+    def needs_linking(self):
+        """Return a list of 10 packages most in need of upstream linking."""
+        # XXX sinzui 2010-02-26 bug=528648: This method causes a timeout.
+        # return self.context.getPrioritizedUnlinkedSourcePackages()[:10]
+        return None
+
+    milestone_can_release = False
+
+    @cachedproperty
+    def milestone_batch_navigator(self):
+        return BatchNavigator(self.context.all_milestones, self.request)
 
 
-class DistroSeriesEditView(LaunchpadEditFormView):
+class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
     """
     schema = IDistroSeries
     field_names = ['displayname', 'title', 'summary', 'description']
+    custom_widget('status', LaunchpadDropdownWidget)
 
-    def initialize(self):
-        """See `LaunchpadEditFormView`.
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Edit %s details' % self.context.title
 
-        Additionally set the 'label' attribute which will be used in the
-        template.
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        In addition to setting schema fields, also initialize the
+        'status' field. See `createStatusField` method.
         """
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Change %s details' % self.context.title
+        LaunchpadEditFormView.setUpFields(self)
+        is_derivitive = not self.context.distribution.full_functionality
+        has_admin = check_permission('launchpad.Admin', self.context)
+        if has_admin or is_derivitive:
+            # The user is an admin or this is an IDerivativeDistribution.
+            self.form_fields = (
+                self.form_fields + self.createStatusField())
 
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page."""
+        if not self.context.distribution.full_functionality:
+            self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(LaunchpadEditFormView):
+class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -343,14 +437,20 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
     field_names = ['name', 'version', 'changeslist']
     custom_widget('status', LaunchpadDropdownWidget)
 
-    def initialize(self):
-        """See `LaunchpadEditFormView`.
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Administer %s' % self.context.title
 
-        Additionally set the 'label' attribute which will be used in the
-        template.
-        """
-        LaunchpadEditFormView.initialize(self)
-        self.label = 'Administer %s' % self.context.title
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
@@ -362,37 +462,6 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         self.form_fields = (
             self.form_fields + self.createStatusField())
 
-    def createStatusField(self):
-        """Create the 'status' field.
-
-        Create the status vocabulary according the current distroseries
-        status:
-         * stable   -> CURRENT, SUPPORTED, OBSOLETE
-         * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
-        """
-        stable_status = (
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.OBSOLETE,
-            )
-
-        if self.context.status not in stable_status:
-            terms = [status for status in DistroSeriesStatus.items
-                     if status not in stable_status]
-            terms.append(DistroSeriesStatus.CURRENT)
-        else:
-            terms = stable_status
-
-        status_vocabulary = SimpleVocabulary(
-            [SimpleTerm(item, item.name, item.title) for item in terms])
-
-        return form.Fields(
-            Choice(__name__='status',
-                   title=_('Status'),
-                   vocabulary=status_vocabulary,
-                   description=_("Select the distroseries status."),
-                   required=True))
-
     @action("Change")
     def change_action(self, action, data):
         """Update the context and redirects to its overviw page.
@@ -400,11 +469,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView):
         Also, set 'datereleased' when a unstable distroseries is made
         CURRENT.
         """
-        status = data.get('status')
-        if (self.context.datereleased is None and
-            status == DistroSeriesStatus.CURRENT):
-            self.context.datereleased = UTC_NOW
-
+        self.updateDateReleased(data.get('status'))
         self.updateContextFromData(data)
 
         self.request.response.addInfoNotification(
@@ -418,12 +483,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
-    label = "Register a new series"
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return 'Register a series in %s' % self.context.displayname
+    label = 'Register a series'
+    page_title = label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
@@ -432,15 +494,14 @@ class DistroSeriesAddView(LaunchpadFormView):
 
         assert owner is not None
         distroseries = self.context.newSeries(
-            name = data['name'],
-            displayname = data['displayname'],
-            title = data['title'],
-            summary = data['summary'],
-            description = data['description'],
-            version = data['version'],
-            parent_series = data['parent_series'],
-            owner = owner
-            )
+            name=data['name'],
+            displayname=data['displayname'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            version=data['version'],
+            parent_series=data['parent_series'],
+            owner=owner)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -448,3 +509,131 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class DistroSeriesPackagesView(LaunchpadView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'All series packages linked to upstream project series'
+    page_title = 'All upstream links'
+
+    @cachedproperty
+    def cached_packagings(self):
+        """The batched upstream packaging links."""
+        packagings = self.context.getPrioritizedPackagings()
+        navigator = BatchNavigator(packagings, self.request, size=20)
+        navigator.setHeadings('packaging', 'packagings')
+        return navigator
+
+
+class DistroSeriesNeedsPackagesView(LaunchpadView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Packages that need upstream packaging links'
+    page_title = 'Needs upstream links'
+
+    @cachedproperty
+    def cached_unlinked_packages(self):
+        """The batched `ISourcePackage`s that needs packaging links."""
+        packages = self.context.getPrioritizedUnlinkedSourcePackages()
+        navigator = BatchNavigator(packages, self.request, size=20)
+        navigator.setHeadings('package', 'packages')
+        return navigator
+
+
+class IDifferencesFormSchema(Interface):
+    selected_differences = List(
+        title=_('Selected differences'),
+        value_type=Choice(vocabulary=SimpleVocabulary([])),
+        description=_("Select the differences for syncing."),
+        required=True)
+
+
+class DistroSeriesLocalDifferences(LaunchpadFormView):
+    """Present differences between a derived series and its parent."""
+    schema = IDifferencesFormSchema
+    custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
+
+    page_title = 'Local package differences'
+
+    def initialize(self):
+        """Redirect to the derived series if the feature is not enabled."""
+        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        # Update the label for sync action.
+        self.__class__.actions.byname['actions.sync'].label = (
+            "Sync Selected %s Versions into %s" % (
+                self.context.parent_series.displayname,
+                self.context.displayname,
+                ))
+        super(DistroSeriesLocalDifferences, self).initialize()
+
+    @property
+    def label(self):
+        return (
+            "Source package differences between '%s' and "
+            "parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of potentially filtered results."""
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        differences = utility.getForDistroSeries(self.context)
+        return BatchNavigator(differences, self.request)
+
+    def setUpFields(self):
+        """Add the selected differences field.
+
+        As this field depends on other search/filtering field values
+        for its own vocabulary, we set it up after all the others.
+        """
+        super(DistroSeriesLocalDifferences, self).setUpFields()
+        has_edit = check_permission('launchpad.Edit', self.context)
+
+        terms = [
+            SimpleTerm(diff, diff.source_package_name.name,
+                diff.source_package_name.name)
+                for diff in self.cached_differences.batch]
+        diffs_vocabulary = SimpleVocabulary(terms)
+        choice = self.form_fields['selected_differences'].field.value_type
+        choice.vocabulary = diffs_vocabulary
+
+    @action(_("Sync Sources"), name="sync", validator='validate_sync',
+            condition='canPerformSync')
+    def sync_sources(self, action, data):
+        """Mark the diffs as syncing and request the sync.
+
+        Currently this is a stub operation, the details of which will
+        be implemented later.
+        """
+        selected_differences = data['selected_differences']
+        diffs = [
+            diff.source_package_name.name
+                for diff in selected_differences]
+
+        self.request.response.addNotification(
+            "The following sources would have been synced if this "
+            "wasn't just a stub operation: " + ", ".join(diffs))
+
+        self.next_url = self.request.URL
+
+    def validate_sync(self, action, data):
+        """Validate selected differences."""
+        form.getWidgetsData(self.widgets, self.prefix, data)
+
+        if len(data.get('selected_differences', [])) == 0:
+            self.setFieldError(
+                'selected_differences', 'No differences selected.')
+
+    def canPerformSync(self, *args):
+        """Return whether a sync can be performed.
+
+        This method is used as a condition for the above sync action, as
+        well as directly in the template.
+        """
+        return check_permission('launchpad.Edit', self.context)

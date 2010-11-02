@@ -1,9 +1,10 @@
-= Authentication of Emails =
+Authentication of Emails
+========================
 
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
-    >>> from canonical.launchpad.mail.incoming import authenticateEmail
+    >>> from lp.services.mail.incoming import authenticateEmail
 
 The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
@@ -12,7 +13,7 @@ emails:
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import_public_test_keys()
@@ -36,8 +37,9 @@ We can check that the user really got authenticated by looking at the
 user in the launch bag:
 
     >>> import email
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> launchbag = getUtility(ILaunchBag)
     >>> name, addr = email.Utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
@@ -111,12 +113,12 @@ message.
     ...     '\n'.join(msg_lines), _class=SignedMessage)
     >>> msg.parsed_string = msg.as_string()
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 8, 'Bad signature')
+    GPGVerificationError: (7, 8, u'Bad signature')
 
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
@@ -124,7 +126,7 @@ message.
 
 authenticateEmail() doesn't have any problems verifying the signature:
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> for line_ending in '\n', '\r\n':
     ...     msg = email.message_from_string(
     ...         line_ending.join(msg_lines), _class=SignedMessage)
@@ -137,7 +139,10 @@ authenticateEmail() doesn't have any problems verifying the signature:
 
 Python's email library unfolds the headers, which means that we have to
 be careful when extracting the signed content when folded headers are
-signed.
+signed. This is done by manually parsing boundaries in
+SignedMessage._getSignatureAndSignedContent. If the second test here
+starts failing, Python is probably fixed, so the manual boundary parsing
+hack can be removed.
 
     >>> msg = read_test_message('signed_folded_header.txt')
     >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
@@ -147,9 +152,7 @@ signed.
      boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 
-    >>> print msg.as_string() #doctest: -NORMALIZE_WHITESPACE
-    Date:...
-    ...
+    >>> print msg.get_payload(i=0).as_string() #doctest: -NORMALIZE_WHITESPACE
     Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 
@@ -158,7 +161,8 @@ signed.
     Sample Person
 
 
-== IWeaklyAuthenticatedPrinipal ==
+IWeaklyAuthenticatedPrincipal
+-----------------------------
 
 It's a huge difference to signing an email with a key that is associated
 with the authenticated Person, and signing it with a key that isn't
@@ -171,7 +175,8 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces.mail import (
+    ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
     >>> principal = authenticateEmail(msg)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)

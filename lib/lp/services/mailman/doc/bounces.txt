@@ -1,3 +1,4 @@
+=================
 Bounce processing
 =================
 
@@ -11,8 +12,8 @@ bounce messages.
 
 A (faked) DSN bounce message is received from Anne's mail server.
 
-    >>> from Mailman.Post import inject
     >>> from Mailman import mm_cfg
+    >>> from Mailman.Post import inject
 
     >>> inject('itest-one', """\
     ... From: <mailer-daemon@example.com>

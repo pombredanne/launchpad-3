@@ -2,17 +2,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-depends">
+  tal:define="relationships view/depends"
+  tal:condition="relationships/has_items"
+  class="first yui-u" id="portlet-depends">
 
-  <h2>Depends on</h2>
-
-  <div class="portletBody portletContent"
-       id="depends"
-       tal:define="relationships view/depends">
-
-     <tal:block condition="relationships/has_items"
-                replace="structure relationships/@@+render-list"/>
-
-  </div>
+  <dl id="depends">
+    <dt>Depends on:</dt>
+    <tal:block replace="structure relationships/@@+render-list"/>
+  </dl>
 
 </div>

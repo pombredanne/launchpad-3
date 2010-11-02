@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_external_bugtracker',
+    'BATCH_SIZE_UNLIMITED',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -30,6 +30,7 @@ __all__ = [
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
+    'get_external_bugtracker',
     ]
 
 from lp.bugs.externalbugtracker.base import *
@@ -37,10 +38,12 @@ from lp.bugs.externalbugtracker.bugzilla import *
 from lp.bugs.externalbugtracker.debbugs import *
 from lp.bugs.externalbugtracker.mantis import *
 from lp.bugs.externalbugtracker.roundup import *
-from lp.bugs.externalbugtracker.sourceforge import *
 from lp.bugs.externalbugtracker.rt import *
+from lp.bugs.externalbugtracker.sourceforge import *
 from lp.bugs.externalbugtracker.trac import *
 from lp.bugs.interfaces.bugtracker import BugTrackerType
+
+
 BUG_TRACKER_CLASSES = {
     BugTrackerType.BUGZILLA: Bugzilla,
     BugTrackerType.DEBBUGS: DebBugs,

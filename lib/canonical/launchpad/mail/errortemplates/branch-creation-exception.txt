@@ -1,0 +1,2 @@
+Launchpad cannot create the branch requested by your merge directive:
+%(reason)s

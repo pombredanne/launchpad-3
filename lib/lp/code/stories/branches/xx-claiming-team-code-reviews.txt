@@ -21,7 +21,8 @@ link shown in the reviewer table for the team.
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
     >>> eric_browser.open(branch_url)
     >>> eric_browser.getLink('Propose for merging').click()
-    >>> eric_browser.getControl('Initial Comment').value = 'Initial comment'
+    >>> eric_browser.getControl('Description of the Change').value = (
+    ...     'This fix is awesome!')
     >>> eric_browser.getControl('Propose Merge').click()
 
 The reviewer table shows both the Vikings team and Eric himself.
@@ -46,6 +47,6 @@ The team review has been claimed.
     >>> print extract_text(find_tag_by_id(
     ...     eric_browser.contents, 'code-review-votes'))
     Reviewer                   Review Type    Date Requested  Status
-    Eric the Viking (community)                               Approve ... ago
+    Eric the Viking                                           Approve ... ago
     Review via email: mp+1@code.launchpad.dev
                                                       Request another review

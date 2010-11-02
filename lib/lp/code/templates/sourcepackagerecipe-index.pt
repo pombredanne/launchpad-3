@@ -1,0 +1,128 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+
+<body>
+
+<tal:registering metal:fill-slot="registering">
+  Created by
+    <tal:registrant replace="structure context/registrant/fmt:link" />
+  on
+    <tal:created-on replace="structure context/date_created/fmt:date" />
+  and last modified on
+    <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
+</tal:registering>
+
+
+<metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+global-actions" />
+</metal:side>
+
+<div metal:fill-slot="main">
+  <div class="yui-g first">
+    <div class="yui-u first">
+      <div class="portlet">
+        <h2>Description</h2>
+        <tal:description replace="context/description" />
+      </div>
+    </div>
+    <div class="yui-u">
+      <div class="portlet">
+        <h2>Recipe information</h2>
+        <div class="two-column-list">
+          <dl id="build_daily">
+            <dt>Build schedule:</dt>
+            <dd tal:condition="context/build_daily">
+              Built daily
+            </dd>
+            <dd tal:condition="not:context/build_daily">
+              Built on request
+            </dd>
+          </dl>
+
+          <dl id="owner">
+            <dt>Owner:</dt>
+            <dd tal:content="structure context/owner/fmt:link" />
+          </dl>
+          <dl id="base-branch">
+            <dt>Base branch:</dt>
+            <dd tal:content="structure context/base_branch/fmt:link" />
+          </dl>
+          <dl id="debian-version">
+            <dt>Debian version:</dt>
+            <dd tal:content="context/deb_version_template" />
+          </dl>
+          <dl id="daily_build_archive">
+            <dt>Daily build archive:</dt>
+            <dd tal:content="structure context/daily_build_archive/fmt:link"
+                tal:condition="context/daily_build_archive">
+            </dd>
+            <dd tal:condition="not: context/daily_build_archive">None</dd>
+          </dl>
+
+          <dl id="distros">
+            <dt>Distribution series:</dt>
+            <dd>
+              <ul>
+                  <li tal:repeat="curseries context/distroseries"
+                      tal:content="structure curseries/fmt:link" />
+              </ul>
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="yui-g">
+    <div class="portlet">
+      <h2>Build records</h2>
+        <table class="listing" style='margin-bottom: 1em;'>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Time</th>
+              <th>Distribution series</th>
+              <th>Archive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="build view/builds">
+              <td>
+                <a tal:content="build/@@+index/status"
+                   tal:attributes="href build/fmt:url"></a>
+              </td>
+              <td>
+                <tal:date replace="build/@@+index/date/fmt:displaydate" />
+                <tal:estimate condition="build/@@+index/estimate">
+                (estimated)
+                </tal:estimate>
+              </td>
+              <td>
+                <tal:distro
+                replace="structure build/distroseries/fmt:link:mainsite" />
+              </td>
+              <td>
+                <tal:archive replace="structure build/archive/fmt:link"/>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p tal:condition="not: view/builds">
+          This recipe has not been built yet.
+        </p>
+        <tal:request replace="structure context/menu:context/request_builds/fmt:link" />
+      </div>
+      <div class='portlet'>
+        <h2>Recipe contents</h2>
+        <pre tal:content="context/builder_recipe" />
+      </div>
+    </div>
+  </div>
+</body>
+</html>

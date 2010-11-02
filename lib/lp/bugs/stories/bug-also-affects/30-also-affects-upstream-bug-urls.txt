@@ -198,11 +198,11 @@ confirmation.
     ...         'tr', id=re.compile('^tasksummary[0-9]+$'))
     ...     for bugtask in bugtasks:
     ...         cells = bugtask('td', recursive=False)
-    ...         if len(cells) != 7:
+    ...         if len(cells) != 6:
     ...             continue
     ...         affects = extract_text(cells[1])
     ...         assignee = extract_text(cells[-2])
-    ...         if assignee:
+    ...         if assignee and not 'Unassigned' in assignee:
     ...             assignee_link = cells[-2].a
     ...             if assignee_link is None:
     ...                 print '%s -->\n  %s' % (affects, assignee)
@@ -215,7 +215,7 @@ confirmation.
       --> mailto:dark-master-o-bugs@mylittlepony.com
 
     >>> print_assigned_bugtasks(user_browser)
-    GNOME Terminal -->
+    GNOME Terminal ... -->
       auto-dark-master-o-bugs
       mailto:dark-master-o-bugs@mylittlepony.com
 
@@ -232,7 +232,7 @@ not logged in.
       --> None
 
     >>> print_assigned_bugtasks(anon_browser)
-    GNOME Terminal -->
+    GNOME Terminal ... -->
       auto-dark-master-o-bugs
 
     >>> anon_browser.contents.count(

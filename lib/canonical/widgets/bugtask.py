@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -21,17 +21,18 @@ from zope.app.form.utility import setUpWidget
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from lp.services.fields import URIField
 from canonical.launchpad.interfaces import (
     IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
-    NotFoundError, UnrecognizedBugTrackerURL)
+    UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.tales import TeamFormatterAPI
+from lp.app.browser.tales import TeamFormatterAPI
 from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.popup import VocabularyPickerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from lp.app.errors import NotFoundError, UnexpectedFormData
+
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -51,7 +52,7 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-        self.assignee_chooser_widget = SinglePopupWidget(
+        self.assignee_chooser_widget = VocabularyPickerWidget(
             context, context.vocabulary, request)
         self.setUpNames()
 
@@ -82,23 +83,11 @@ class BugTaskAssigneeWidget(Widget):
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Missing value for assignee")
-                        )
+                        ValidationError("Missing value for assignee"))
             if not self.assignee_chooser_widget.hasValidInput():
                 raise WidgetInputError(
                         self.name, self.label,
-                        ValidationError("Assignee not found")
-                        )
-            #try:
-                # A ConversionError is expected if the user provides
-                # an assignee value that doesn't exist in the
-                # assignee_chooser_widget's vocabulary.
-            #except ConversionError:
-                # Turn the ConversionError into a WidgetInputError.
-            #    raise WidgetInputError(
-            #        self.assignee_chooser_widget.name,
-            #        self.assignee_chooser_widget.label,
-            #        ValidationError("Assignee not found"))
+                        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""
@@ -223,6 +212,29 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assign_to_me
             else:
                 return self.assigned_to
+
+    def showUnassignOption(self):
+        """Should the "unassign bugtask" option be shown?
+
+        To avoid user confusion, we show this option only if the user
+        can set the bug task assignee to None or if there is currently
+        no assignee set.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return context.userCanUnassign(user) or context.assignee is None
+
+    def showPersonChooserWidget(self):
+        """Should the person chooser widget bw shown?
+
+        The person chooser is shown only if the user can assign at least
+        one other person or team in addition to himself.
+        """
+        user = getUtility(ILaunchBag).user
+        context = self.context.context
+        return user is not None and (
+            context.userCanSetAnyAssignee(user) or
+            user.teams_participated_in.count() > 0)
 
 
 class BugWatchEditForm(Interface):
@@ -419,7 +431,7 @@ class BugTaskBugWatchWidget(RadioWidget):
             contents='\n'.join(rendered_items))
 
 
-class BugTaskSourcePackageNameWidget(SinglePopupWidget):
+class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.

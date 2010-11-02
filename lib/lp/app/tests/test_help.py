@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the help system integration."""
@@ -8,15 +8,16 @@ import unittest
 
 from zope.component import getUtility
 
-
-from canonical.testing.layers import FunctionalLayer
-from canonical.launchpad.layers import (
-    AnswersLayer, BlueprintsLayer, BugsLayer, CodeLayer, LaunchpadLayer,
-    TranslationsLayer)
+from canonical.launchpad.layers import LaunchpadLayer
 from canonical.launchpad.testing.systemdocs import create_view
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
 from canonical.lazr.folder import ExportedFolder
+from canonical.testing.layers import FunctionalLayer
+from lp.answers.publisher import AnswersLayer
+from lp.blueprints.publisher import BlueprintsLayer
+from lp.bugs.publisher import BugsLayer
+from lp.code.publisher import CodeLayer
+from lp.translations.publisher import TranslationsLayer
 
 # The root of the tree
 ROOT = os.path.realpath(
@@ -50,12 +51,12 @@ class TestHelpSystemSetup(unittest.TestCase):
     def test_blueprints_help_folder(self):
         self.assertHasHelpFolderView(
             BlueprintsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/blueprints'))
+            os.path.join(ROOT, 'lib/lp/blueprints/help'))
 
     def test_bugs_help_folder(self):
         self.assertHasHelpFolderView(
             BugsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/bugs'))
+            os.path.join(ROOT, 'lib/lp/bugs/help'))
 
     def test_code_help_folder(self):
         self.assertHasHelpFolderView(
@@ -69,8 +70,4 @@ class TestHelpSystemSetup(unittest.TestCase):
     def test_translations_help_folder(self):
         self.assertHasHelpFolderView(
             TranslationsLayer,
-            os.path.join(ROOT, 'lib/canonical/launchpad/help/translations'))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+            os.path.join(ROOT, 'lib/lp/translations/help'))

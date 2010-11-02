@@ -1,21 +1,24 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
-from datetime import datetime, timedelta
 
 import pytz
 
 from canonical.launchpad.ftests import login
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestPoll(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_getWinners_handle_polls_with_only_spoilt_votes(self):
-        login('mark@hbd.com')
+        login('mark@example.com')
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner)
         poll = self.factory.makePoll(team, 'name', 'title', 'proposition')

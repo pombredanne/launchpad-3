@@ -10,12 +10,25 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
+    'SSHKeyAdditionError',
+    'SSHKeyCompromisedError',
     'SSHKeyType',
     ]
 
-from zope.schema import Choice, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.interface import Interface
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
@@ -42,14 +55,18 @@ class SSHKeyType(DBEnumeratedType):
 
 class ISSHKey(Interface):
     """SSH public key"""
+
+    export_as_webservice_entry('ssh_key')
+
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
     personID = Int(title=_('Owner ID'), required=True, readonly=True)
-    keytype = Choice(title=_("Key type"), required=True,
-                     vocabulary=SSHKeyType)
-    keytext = TextLine(title=_("Key text"), required=True)
-    comment = TextLine(title=_("Comment describing this key"),
-                       required=True)
+    keytype = exported(Choice(title=_("Key type"), required=True,
+                     vocabulary=SSHKeyType, readonly=True))
+    keytext = exported(TextLine(title=_("Key text"), required=True,
+                       readonly=True))
+    comment = exported(TextLine(title=_("Comment describing this key"),
+                       required=True, readonly=True))
 
     def destroySelf():
         """Remove this SSHKey from the database."""
@@ -58,7 +75,7 @@ class ISSHKey(Interface):
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
 
-    def new(person, keytype, keytext, comment):
+    def new(person, sshkey):
         """Create a new SSHKey pointing to the given Person."""
 
     def getByID(id, default=None):
@@ -69,4 +86,12 @@ class ISSHKeySet(Interface):
 
     def getByPeople(people):
         """Return SSHKey object associated to the people provided."""
+
+
+class SSHKeyAdditionError(Exception):
+    """Raised when the SSH public key is invalid."""
+
+
+class SSHKeyCompromisedError(Exception):
+    """Raised when the SSH public key is known to be easily compromisable."""
 

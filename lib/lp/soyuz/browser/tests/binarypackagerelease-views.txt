@@ -1,12 +1,8 @@
 = BinaryPackageRelease Pages =
 
-The view class for IBinaryPackageRelease is exposed via a traversal of
-a IBuild, i.e, by traversing a 'name' in an IBuild you can access an
-raw (may be unpublished) IBinaryPackageRelease.
-
-  >>> from zope.component import queryMultiAdapter
-  >>> from zope.publisher.browser import TestRequest
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.database import BinaryPackageRelease
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> pmount_bin = BinaryPackageRelease.get(15)
   >>> pmount_bin.name
@@ -16,11 +12,12 @@ raw (may be unpublished) IBinaryPackageRelease.
 
 Get a "mock" request:
   >>> mock_form = {}
-  >>> request = TestRequest(form=mock_form)
+  >>> request = LaunchpadTestRequest(form=mock_form)
 
-Let's instantiate the view for +index:
+Let's instantiate the view for +portlet-details:
 
-  >>> pmount_view = queryMultiAdapter((pmount_bin, request), name="+index")
+  >>> pmount_view = getMultiAdapter(
+  ...     (pmount_bin, request), name="+portlet-details")
 
 Main functionality of this class is to provide abstracted model of the
 stored package relationships. They are provided as a
@@ -29,8 +26,8 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
+  >>> from canonical.launchpad.interfaces.packagerelationship import IPackageRelationshipSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)
   True
@@ -55,4 +52,3 @@ should be rendered for this dependency.
   ('tramp-package', None, '', None)
 
 Other relationship groups use the same mechanism.
-

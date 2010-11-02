@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -20,8 +20,6 @@
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
     </class>
 
     <class class="canonical.launchpad.webapp.publisher.RedirectionView">
@@ -48,7 +46,7 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
@@ -64,10 +62,18 @@
     <!-- lazr.batchnavigator hook -->
     <adapter
         factory='.batching.FiniteSequenceAdapter' />
-    
+
     <adapter
         factory='.batching.FiniteSequenceAdapter'
         for='storm.zope.interfaces.ISQLObjectResultSet' />
+
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundReferenceSet' />
+
+    <adapter
+        factory='.batching.BoundReferenceSetAdapter'
+        for='storm.references.BoundIndirectReferenceSet' />
 
     <!-- links -->
     <class class="canonical.launchpad.webapp.menu.LinkData">
@@ -124,395 +130,6 @@
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"
         />
 
-    <!-- TALES namespaces. -->
-
-    <!-- TALES lp: namespace (should be deprecated) -->
-    <adapter
-        for="zope.publisher.interfaces.IApplicationRequest"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestAPI"
-        name="lp"
-        />
-
-    <!-- TALES enum-value: namespace -->
-    <adapter
-        for="lazr.enum.BaseItem"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.EnumValueAPI"
-        name="enumvalue"
-        />
-
-    <!-- TALES menu: namespace -->
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MenuAPI"
-        name="menu"
-        />
-
-    <!-- TALES count: namespace -->
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CountAPI"
-        name="count"
-        />
-
-    <!-- TALES macro: namespace -->
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PageMacroDispatcher"
-        name="macro"
-        />
-
-    <!-- TALES htmlform: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
-        name="htmlform"
-        />
-
-    <!-- TALES image: namespace -->
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IKarmaCategory"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IQuestion"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.QuestionImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="lp.bugs.browser.bugtask.BugTaskListingItem"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="lp.soyuz.interfaces.build.IBuild"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="lp.soyuz.interfaces.archive.IArchive"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ArchiveImageDisplayAPI"
-        name="image"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.ISpecification"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
-        name="image"
-        />
-
-    <!-- TALES badges: namespace -->
-
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BadgeDisplayAPI"
-        name="badges"
-        />
-
-    <!-- TALES fmt: namespace -->
-
-    <!-- The next directive is registered for all dicts, but we really only
-         want it to apply to the page template's CONTEXTS dict.
-      -->
-    <adapter
-        for="canonical.launchpad.interfaces.IPPA"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PPAFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="dict"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="int"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
-        name="lp"
-        />
-
-    <adapter
-        for="datetime.datetime"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DateTimeFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="datetime.timedelta"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.DurationFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="basestring"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.FormattersAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="int"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="long"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="float"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="types.NoneType"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.NoneFormatter"
-        name="fmt"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPerson"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.ITeam"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.TeamFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IProduct"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IProject"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IDistribution"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.branch.IBranch"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugBranch"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugBranchFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.branchsubscription.IBranchSubscription"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BranchSubscriptionFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BranchMergeProposalFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.diff.IPreviewDiff"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.codeimport.ICodeImport"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.codeimportmachine.ICodeImportMachine"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.IProductRelease"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ProductReleaseFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="lp.registry.interfaces.productrelease.IProductReleaseFile"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ProductReleaseFileFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.IProductSeries"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.IQuestion"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.QuestionFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.ISpecification"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.ISpecificationBranch"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="lp.code.interfaces.codereviewcomment.ICodeReviewComment"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.SourcePackageFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTracker"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.interfaces.IBugWatch"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugWatchFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="canonical.launchpad.webapp.interfaces.ILink"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.LinkFormatterAPI"
-        name="fmt"
-        />
-    <adapter
-        for="*"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
-        name="required"
-        />
-
     <!-- Authentication. -->
     <utility
         component="canonical.launchpad.webapp.authentication.authService"
@@ -547,7 +164,7 @@
 
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
-        provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+        provides="canonical.launchpad.interfaces.launchpad.IPasswordEncryptor"
         permission="zope.Public"
         />
 
@@ -577,32 +194,35 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
-        provides="canonical.launchpad.interfaces.IStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterStore"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_master_store"
         />
     <adapter
-        provides="canonical.launchpad.interfaces.ISlaveStore"
+        provides="canonical.launchpad.interfaces.lpstorm.ISlaveStore"
         for="zope.interface.Interface"
         factory="canonical.launchpad.webapp.adapter.get_slave_store"
         />
+    <!-- Universal adapter needed here per Bug #591841.
+         We have no way of specifying that all subclasses of
+         storm.locals.Storm implement an Interface. -->
     <adapter
-        provides="canonical.launchpad.interfaces.IMasterObject"
-        for="canonical.launchpad.interfaces.IDBObject"
+        provides="canonical.launchpad.interfaces.lpstorm.IMasterObject"
+        for="zope.interface.Interface"
         trusted="yes"
         factory="canonical.launchpad.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
-        <implements interface="canonical.launchpad.interfaces.IStore" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IStore" />
         <allow attributes="get" />
     </class>
     <class class="canonical.database.sqlbase.SQLBase">
-        <implements interface="canonical.launchpad.interfaces.IDBObject" />
+        <implements interface="canonical.launchpad.interfaces.lpstorm.IDBObject" />
     </class>
 
     <!-- Default favicon -->
@@ -640,7 +260,7 @@
         />
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.IFeedsApplication"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
         class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
@@ -657,6 +277,12 @@
     to write -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <adapter
+        for="canonical.launchpad.webapp.servers.LaunchpadTestRequest"
         provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
         factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
         />
@@ -702,12 +328,20 @@
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 
-    <!-- the SIGUSR1 handler -->
-
+    <!-- Signal handlers -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.sigusr1.setup_sigusr1"
         />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigusr2.setup_sigusr2"
+        />
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
+        />
+
 
     <!-- Confirm the database is the correct revision level -->
     <subscriber
@@ -721,16 +355,10 @@
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
         />
 
-    <!-- Make sure that the config is sane for references debugging. -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
-        />
-
     <!-- Set the default timeout function. -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        handler="canonical.launchpad.webapp.adapter.set_launchpad_default_timeout"
         />
 
     <subscriber
@@ -759,11 +387,21 @@
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="lp.services.fields.PublicPersonChoice
+        canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.widgets.popup.PersonPickerWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
-        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+        lp.code.vocabularies.branch.BranchVocabularyBase"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"
@@ -771,7 +409,7 @@
 
     <!-- A simple view used by the page tests. -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+whichdb"
         permission="zope.Public"
         class="canonical.launchpad.webapp.dbpolicy.WhichDbView"

@@ -7,12 +7,20 @@ XXX: Distributions can't yet be marked inactive, so this test won't
 cover that part of the change. See bug #156263 for more details.
     -- kiko, 2007-10-23
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.pillar import IPillarNameSet
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.testing import unlink_source_packages
+    >>> pillar_set = getUtility(IPillarNameSet)
     >>> def toggleProject(name):
-    ...     admin_browser.open('http://launchpad.dev/%s' % name)
-    ...     admin_browser.getLink(url='+review').click()
-    ...     state = admin_browser.getControl('Active').selected
-    ...     admin_browser.getControl('Active').selected = (not state)
-    ...     admin_browser.getControl('Change').click()
+    ...     login('admin@canonical.com')
+    ...     pillar = pillar_set.getByName(name)
+    ...     if IProduct.providedBy(pillar) and pillar.active:
+    ...         # A product cannot be deactivated if
+    ...         # it is linked to source packages.
+    ...         unlink_source_packages(pillar)
+    ...     pillar.active = not pillar.active
+    ...     logout()
 
 We start off with active and visible projects:
 
@@ -72,13 +80,12 @@ And they are back to normal:
     >>> anon_browser.getLink(url='/firefox').click()
     >>> anon_browser.title
     'Mozilla Firefox in Launchpad'
-    >>> print find_tag_by_id(admin_browser.contents, 'project-inactive')
+    >>> print find_tag_by_id(anon_browser.contents, 'project-inactive')
     None
 
     >>> anon_browser.open('http://launchpad.dev/projects/+index?text=mozilla')
     >>> anon_browser.getLink(url='/mozilla').click()
     >>> anon_browser.title
     'The Mozilla Project in Launchpad'
-    >>> print find_tag_by_id(admin_browser.contents, 'project-inactive')
+    >>> print find_tag_by_id(anon_browser.contents, 'project-inactive')
     None
-

@@ -17,11 +17,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.soyuz.adapters.archivedependencies import (
-    component_dependencies)
-from lp.soyuz.interfaces.archivedependency import (
-    IArchiveDependency)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import component_dependencies
+from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 
 
 class ArchiveDependency(SQLBase):
@@ -46,6 +44,14 @@ class ArchiveDependency(SQLBase):
 
     component = ForeignKey(
         foreignKey='Component', dbName='component')
+
+    @property
+    def component_name(self):
+        """See `IArchiveDependency`"""
+        if self.component:
+            return self.component.name
+        else:
+            return None
 
     @property
     def title(self):

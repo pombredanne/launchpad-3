@@ -10,8 +10,8 @@ that makes implementing that kind of behaviour easy.
 The time to wait can be passed using the timeout parameter to the
 decorator.
 
-    >>> from select import select
     >>> from canonical.lazr.timeout import with_timeout
+    >>> from select import select
 
     >>> @with_timeout(timeout=0.5)
     ... def wait_for(time):
@@ -173,7 +173,7 @@ Normal urllib2 exceptions are raised:
     >>> urlfetch(http_server_url)
     Traceback (most recent call last):
       ...
-    URLError: ...'Connection refused'...
+    URLError: ...Connection refused...
 
 After the listen() is called, connections will hang until accept() is
 called, so a TimeoutError will be raised.

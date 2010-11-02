@@ -1,0 +1,191 @@
+<html>
+  <head>
+    <title>Bug heat</title>
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssreset/reset.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssfonts/fonts.css" />
+    <link rel="stylesheet" type="text/css"
+          href="/+icing/yui/cssbase/base.css" />
+  </head>
+  <body>
+    <h1>Bug heat</h1>
+
+    <p>
+      Launchpad helps you to appraise a bug by giving you a calculated measure
+      &mdash; called bug heat &mdash; of its likely significance.
+    </p>
+
+    <p>
+      You can see bug heat in bug listings, and also on individual bug pages,
+      as four flames: the more flames that are lit, the higher the bug's
+      <em>heat</em>.
+    </p>
+
+    <p>
+      Launchpad works out how many flames to light by calculating a bug heat
+      score and then seeing how that compares with the bug heat of other bugs
+      for that project. If you want to see the bug heat score itself, hover
+      your mouse over the flames icon.
+    </p>
+
+    <p>
+      To calculate the bug heat score, Launchpad looks at the bug's:
+    </p>
+
+    <ul>
+      <li>privacy status</li>
+      <li>security status</li>
+      <li>number of subscribers</li>
+      <li>number of duplicates</li>
+      <li>number of people who've selected the "this bug affects me" option
+      <li>length of time since the last action.</li>
+    </ul>
+
+    <h2>How Launchpad calculates bug heat &mdash; the detailed version</h2>
+
+    <p>
+      Here's exactly how Launchpad calculates the bug heat score. First
+      Launchpad gives the bug a base score:
+    </p>
+
+    <table width="100%">
+      <tr>
+        <th>
+          <strong>Attribute</strong>
+        </th>
+        <th>
+          <strong>Calculation</strong>
+        </th>
+      </tr>
+
+      <tr>
+        <td>
+          Private
+        </td>
+        <td>
+          Adds 150 points
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Security issue
+        </td>
+        <td>
+          Adds 250 points
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Duplicates
+        </td>
+        <td>
+          Adds 6 points per duplicate bug
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Affected users
+        </td>
+        <td>
+          Adds 4 points per affected user
+        </td>
+      </tr>
+
+      <tr>
+        <td>
+          Subscribers (incl. subscribers to duplicates)
+        </td>
+        <td>
+          Adds 2 points per subscriber
+        </td>
+      </tr>
+    </table>
+
+    <p>
+      Next, it adjusts the score depending on how active the bug is:
+    </p>
+
+    <table width="100%">
+      <tr>
+        <th>
+          <strong>Nature of recent activity</strong>
+        </th>
+        <th>
+          <strong>Calculation</strong>
+        </th>
+      </tr>
+
+      <tr>
+        <td>
+          Bug has been active* within the past 24 hours
+        </td>
+        <td>
+          Add 25% of the project's <em>hottest</em> bug's score divided by the
+          number of days since the first activity on the bug in question
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Bug has <strong>not</strong> been active* in within the past 24
+          hours
+        </td>
+        <td>
+          Subtract 1% of the bug heat score for every day of inactivity
+        </td>
+      </tr>
+    </table>
+
+    <p>
+      <small><em>* Activity is either a comment posted or some other update to
+      the bug report.</em></small>
+    </p>
+
+    <p>
+      Some bug statuses will also affect the overall score:
+    </p>
+
+    <table width="100%">
+      <tr>
+        <th>
+          <strong>Status</strong>
+        </th>
+        <th>
+          <strong>Affect on bug heat score</strong>
+        </th>
+      </tr>
+      <tr>
+        <td>
+          Fix Released
+        </td>
+        <td rowspan="4">
+          Reduces the total bug heat score to zero
+        </td>
+      <tr>
+        <td>
+          Invalid
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Won't Fix
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Expired
+        </td>
+      </tr>
+    </table>
+
+    <p>To view the code that calculates bug heat, look for
+      calculate_bug_heat in the file
+      <a target="_blank"
+      href="http://bazaar.launchpad.net/~launchpad-pqm/launchpad/db-devel/annotate/head:/database/schema/trusted.sql">trusted.sql</a>
+    </p>
+
+  </body>
+</html>

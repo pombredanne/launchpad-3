@@ -7,9 +7,11 @@ Architecture: i386
 Source: quodlibet
 Version: 0.13.1-1
 Depends: libatk1.0-0 (>= 1.9.0), libc6 (>= 2.3.4-1), libcairo2 (>= 1.0.2), libfontconfig1 (>= 2.3.0), libglib2.0-0 (>= 2.8.0), libgtk2.0-0 (>= 2.8.0), libpango1.0-0 (>= 1.10.1), libx11-6, libxcursor1 (>> 1.1.2), libxext6, libxfixes3, libxi6, libxinerama1, libxrandr2, libxrender1, quodlibet (= 0.13.1-1)
-Filename: pool/main/f/foo/foo.deb
+Filename: pool/main/f/foo/foo_1_i386.deb
 Size: 11884
 MD5sum: c4908a901e44d6d5282f7889cd0b7cb0
+SHA1: 1ef5dbfe0584c39718c78092dbbdaf417a51fc72
+SHA256: 19e2946d2434d72d8f7df2da2a6ec3b8da4420266af33ccd75f28ab5ade43fc4
 Description: extensions for the Quod Libet audio player
  This package contains architecture-dependent extensions to Quod
  Libet. It adds a notification area icon and multimedia key support

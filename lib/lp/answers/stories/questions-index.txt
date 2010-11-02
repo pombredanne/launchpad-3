@@ -1,4 +1,5 @@
-= Answer Tracker Introduction Page =
+Answer Tracker Introduction Page
+================================
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
@@ -69,4 +70,4 @@ Answers front page:
     >>> print anon_browser.url
     http://answers.launchpad.dev/ubuntu
     >>> print anon_browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu

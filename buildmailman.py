@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -13,9 +13,9 @@ import tempfile
 import subprocess
 
 from canonical.config import config
-from canonical.launchpad.mailman.config import (
+from lp.services.mailman.config import (
     configure_prefix, configure_siteowner)
-from canonical.launchpad.mailman.monkeypatches import monkey_patch
+from lp.services.mailman.monkeypatches import monkey_patch
 from lazr.config import as_username_groupname
 
 basepath = [part for part in sys.path if part]
@@ -40,6 +40,14 @@ def build_mailman():
         pass
     else:
         return 0
+
+    # sys.path_importer_cache is a mapping of elements of sys.path to importer
+    # objects used to handle them. In Python2.5+ when an element of sys.path
+    # is found to not exist on disk, a NullImporter is created and cached -
+    # this causes Python to never bother re-inspecting the disk for that path
+    # element. We must clear that cache element so that our second attempt to
+    # import MailMan after building it will actually check the disk.
+    del sys.path_importer_cache[mailman_path]
 
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
@@ -76,25 +84,52 @@ def build_mailman():
 
     # Build and install the Mailman software.  Note that we don't care about
     # --with-cgi-gid because we're not going to use that Mailman subsystem.
+    executable = os.path.abspath('bin/py')
     configure_args = (
         './configure',
         '--prefix', mailman_path,
         '--with-var-prefix=' + var_dir,
-        '--with-python=' + sys.executable,
+        '--with-python=' + executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
         '--with-mail-gid=' + group,
         '--with-mailhost=' + build_host_name,
         '--with-urlhost=' + build_host_name,
         )
+    # Configure.
     retcode = subprocess.call(configure_args, cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not configure Mailman:'
         sys.exit(retcode)
-    retcode = subprocess.call(('make',), cwd=mailman_source)
+    # Make.
+    retcode = subprocess.call(('make', ), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not make Mailman.'
         sys.exit(retcode)
+    # We have a brief interlude before we install.  Hardy will not
+    # accept a script as the executable for the shebang line--it will
+    # treat the file as a shell script instead. The ``bin/by``
+    # executable that we specified in '--with-python' above is a script
+    # so this behavior causes problems for us. Our work around is to
+    # prefix the ``bin/py`` script with ``/usr/bin/env``, which makes
+    # Hardy happy.  We need to do this before we install because the
+    # installation will call Mailman's ``bin/update``, which is a script
+    # that needs this fix.
+    build_dir = os.path.join(mailman_source, 'build')
+    original = '#! %s\n' % (executable, )
+    modified = '#! /usr/bin/env %s\n' % (executable, )
+    for (dirpath, dirnames, filenames) in os.walk(build_dir):
+        for filename in filenames:
+            filename = os.path.join(dirpath, filename)
+            f = open(filename, 'r')
+            if f.readline() == original:
+                rest = f.read()
+                f.close()
+                f = open(filename, 'w')
+                f.write(modified)
+                f.write(rest)
+            f.close()
+    # Now we actually install.
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'
@@ -156,7 +191,8 @@ def build_mailman():
 def configure_site_list(mailman_bin, site_list_name):
     """Configure the site list.
 
-    Currently, the only thing we want to set is to not advertise the site list.
+    Currently, the only thing we want to set is to not advertise the
+    site list.
     """
     fd, config_file_name = tempfile.mkstemp()
     try:
@@ -182,7 +218,6 @@ def main():
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
     return build_mailman()
-
 
 
 if __name__ == '__main__':

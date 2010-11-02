@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -11,9 +11,9 @@
 
 __metaclass__ = type
 
+import _pythonpath
 import os
 import logging
-import _pythonpath
 
 # zope bits
 from zope.component import getUtility
@@ -77,9 +77,9 @@ class CreateDebWatches(LaunchpadCronScript):
 
         # first find all the published ubuntu packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        for p in ubuntu.currentrelease.publishedBinaryPackages(
-            component='main'):
-            target_package_set.add(p.binarypackagename.name)
+        for p in ubuntu.currentrelease.getAllPublishedBinaries():
+            target_package_set.add(
+                p.binarypackagerelease.binarypackagename.name)
         # then add packages passed on the command line
         for package in self.options.packages:
             target_package_set.add(package)

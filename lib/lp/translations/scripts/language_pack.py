@@ -14,24 +14,32 @@ __all__ = [
 import datetime
 import gc
 import os
+from shutil import copyfileobj
 import sys
 import tempfile
-from shutil import copyfileobj
 
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.translations.interfaces.languagepack import (
     ILanguagePackSet,
-    LanguagePackType)
+    LanguagePackType,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.vpoexport import IVPOExportSet
-from lp.translations.utilities.translation_export import (
-    LaunchpadWriteTarFile)
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
 def iter_sourcepackage_translationdomain_mapping(series):
@@ -116,6 +124,10 @@ def export(distroseries, component, update, force_utf8, logger):
             for potmsgset in cached_potmsgsets:
                 store.invalidate(potmsgset.msgid_singular)
                 store.invalidate(potmsgset)
+
+            # Commit a transaction with every PO template and its
+            # PO files exported so we don't keep it open for too long.
+            transaction.commit()
 
             cached_potemplate = potemplate
             cached_potmsgsets = [

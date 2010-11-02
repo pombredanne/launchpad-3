@@ -1,177 +1,155 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for BranchMergeQueues."""
+"""Unit tests for methods of BranchMergeQueue."""
 
-__metaclass__ = type
+from __future__ import with_statement
 
+import simplejson
 
-from unittest import TestLoader
-
-from zope.security.proxy import isinstance
-
-from canonical.launchpad.ftests import login_person
-from lp.testing import TestCaseWithFactory
-from lp.code.model.branchmergequeue import (
-    BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
-from lp.code.enums import BranchMergeControlStatus, BranchMergeProposalStatus
-from lp.code.interfaces.branchmergequeue import (
-    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-
-from canonical.testing import DatabaseFunctionalLayer
-
-
-class TestBranchMergeQueueInterfaces(TestCaseWithFactory):
-    """Make sure that the interfaces are verifiable."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_branch_merge_queue_set(self):
-        # A BranchMergeQueueSet implements IBranchMergeQueueSet
-        self.assertTrue(
-            verifyObject(IBranchMergeQueueSet, BranchMergeQueueSet()))
-
-    def test_single_branch_merge_queue(self):
-        # A SingleBranchMergeQueue implements IBranchMergeQueue
-        self.assertTrue(
-            verifyObject(
-                IBranchMergeQueue,
-                SingleBranchMergeQueue(self.factory.makeAnyBranch())))
-
-    def test_multi_branch_merge_queue(self):
-        # A MultiBranchMergeQueue implements IMultiBranchMergeQueue
-        queue = MultiBranchMergeQueue(
-                    registrant=self.factory.makePerson(),
-                    owner=self.factory.makePerson(),
-                    name=self.factory.getUniqueString(),
-                    summary=self.factory.getUniqueString())
-        self.assertTrue(verifyObject(IMultiBranchMergeQueue, queue))
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.code.errors import InvalidMergeQueueConfig
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
+from lp.code.model.branchmergequeue import BranchMergeQueue
+from lp.testing import (
+    ANONYMOUS,
+    person_logged_in,
+    launchpadlib_for,
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
-class TestBranchMergeQueueSet(TestCaseWithFactory):
-    """Test the BranchMergeQueueSet."""
+class TestBranchMergeQueueInterface(TestCaseWithFactory):
+    """Test IBranchMergeQueue interface."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_get_for_branch_with_simple_branch(self):
-        # If the branch does not have a merge_queue set then a
-        # SingleBranchMergeQueue is returned.
-        branch = self.factory.makeAnyBranch()
-        queue = BranchMergeQueueSet.getForBranch(branch)
-        self.assertTrue(isinstance(queue, SingleBranchMergeQueue))
+    def test_implements_interface(self):
+        queue = self.factory.makeBranchMergeQueue()
+        IStore(BranchMergeQueue).add(queue)
+        verifyObject(IBranchMergeQueue, queue)
 
-    def test_get_for_branch_with_merge_queue(self):
-        # If the branch does have a merge_queue set, then the associated merge
-        # queue is returned.
-        new_queue = self.factory.makeBranchMergeQueue()
-        branch = self.factory.makeAnyBranch()
-        # Login the branch owner to allow launchpad.Edit on the branch.
-        login_person(branch.owner)
-        branch.merge_queue = new_queue
-        queue = BranchMergeQueueSet.getForBranch(branch)
-        self.assertEqual(new_queue, queue)
 
-    def test_new_branch_merge_queue(self):
-        # A new multi-branch merge queue should be created with the
-        # appropriate attributes set.
-        registrant = self.factory.makePerson()
+class TestBranchMergeQueueSource(TestCaseWithFactory):
+    """Test the methods of IBranchMergeQueueSource."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new(self):
         owner = self.factory.makePerson()
-        queue = BranchMergeQueueSet.newMultiBranchMergeQueue(
-            registrant=registrant, owner=owner, name='eric',
-            summary='A queue for eric.')
-        self.assertTrue(isinstance(queue, MultiBranchMergeQueue))
-        self.assertEqual(registrant, queue.registrant)
-        self.assertEqual(owner, queue.owner)
-        self.assertEqual('eric', queue.name)
-        self.assertEqual('A queue for eric.', queue.summary)
+        name = u'SooperQueue'
+        description = u'This is Sooper Queue'
+        config = unicode(simplejson.dumps({'test': 'make check'}))
 
-    def test_get_by_name_not_existant(self):
-        self.assertTrue(BranchMergeQueueSet.getByName('anything') is None)
+        queue = BranchMergeQueue.new(
+            name, owner, owner, description, config)
 
-    def test_get_by_name(self):
-        queue = self.factory.makeBranchMergeQueue(name='new-queue')
-        get_result = BranchMergeQueueSet.getByName('new-queue')
-        self.assertEqual(queue, get_result)
+        self.assertEqual(queue.name, name)
+        self.assertEqual(queue.owner, owner)
+        self.assertEqual(queue.registrant, owner)
+        self.assertEqual(queue.description, description)
+        self.assertEqual(queue.configuration, config)
 
 
-class TestSingleBranchMergeQueue(TestCaseWithFactory):
-    """Test the implementation of the interface methods."""
+class TestBranchMergeQueue(TestCaseWithFactory):
+    """Test the functions of the BranchMergeQueue."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_queue_branches(self):
-        # A SingleBranchMergeQueue has one and only one branch, and that is
-        # the branch that it is constructed with.
-        branch = self.factory.makeAnyBranch()
-        queue = SingleBranchMergeQueue(branch)
-        self.assertEqual([branch], queue.branches)
+    def test_branches(self):
+        """Test that a merge queue can get all its managed branches."""
+        store = IStore(BranchMergeQueue)
 
-    def test_queue_items(self):
-        # The items of the queue are those merge proposals that are targetted
-        # at the branch of the queue, and are in a queued state.
-        branch = self.factory.makeProductBranch()
-        # Login the branch owner to make the proposals.  ANONYMOUS is not
-        # good enough as the date_last_modified needs launchpad.AnyPerson.
-        login_person(branch.owner)
-        queue = SingleBranchMergeQueue(branch)
-        first_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch, set_state=BranchMergeProposalStatus.QUEUED)
-        second_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch, set_state=BranchMergeProposalStatus.QUEUED)
-        non_queued_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch)
-        different_queue_item = self.factory.makeBranchMergeProposal()
-
-        items = list(queue.items)
-        self.assertEqual([first_item, second_item], items)
-
-
-class TestMultiBranchMergeQueue(TestCaseWithFactory):
-    """Test the implementation of the interface methods."""
-
-    layer = DatabaseFunctionalLayer
-
-    def _make_branch_and_associate_with_queue(self, queue):
-        # Small helper to make a branch and set the merge queue.
-        branch = self.factory.makeProductBranch(
-            merge_control_status=BranchMergeControlStatus.ROBOT)
-        # Login the branch owner to allow launchpad.Edit on merge_queue.
-        login_person(branch.owner)
-        branch.merge_queue = queue
-        return branch
-
-    def test_queue_branches(self):
-        # A MultiBranchMergeQueue is able to list the branches that use it.
         queue = self.factory.makeBranchMergeQueue()
-        branch1 = self._make_branch_and_associate_with_queue(queue)
-        branch2 = self._make_branch_and_associate_with_queue(queue)
-        branch3 = self._make_branch_and_associate_with_queue(queue)
-        # Result ordering is not guaranteed, so use a set.
-        self.assertEqual(set([branch1, branch2, branch3]),
-                         set(queue.branches))
+        store.add(queue)
 
-    def test_queue_items(self):
-        # The items of the queue are those merge proposals that are targetted
-        # at any of the branch of the queue, and are in a queued state.
+        branch = self.factory.makeBranch()
+        store.add(branch)
+        with person_logged_in(branch.owner):
+            branch.addToQueue(queue)
+
+        self.assertEqual(
+            list(queue.branches),
+            [branch])
+
+    def test_setMergeQueueConfig(self):
+        """Test that the configuration is set properly."""
         queue = self.factory.makeBranchMergeQueue()
-        branch1 = self._make_branch_and_associate_with_queue(queue)
-        branch2 = self._make_branch_and_associate_with_queue(queue)
-        # Login the branch owner to make the proposals.  ANONYMOUS is not
-        # good enough as the date_last_modified needs launchpad.AnyPerson.
-        login_person(branch1.owner)
-        first_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch1, set_state=BranchMergeProposalStatus.QUEUED)
-        login_person(branch2.owner)
-        second_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch2, set_state=BranchMergeProposalStatus.QUEUED)
-        non_queued_item = self.factory.makeBranchMergeProposal(
-            target_branch=branch1)
-        different_queue_item = self.factory.makeBranchMergeProposal()
+        config = unicode(simplejson.dumps({
+            'test': 'make test'}))
 
-        items = list(queue.items)
-        self.assertEqual([first_item, second_item], items)
+        with person_logged_in(queue.owner):
+            queue.setMergeQueueConfig(config)
+
+        self.assertEqual(queue.configuration, config)
+
+    def test_setMergeQueueConfig_invalid_json(self):
+        """Test that invalid json can't be set as the config."""
+        queue = self.factory.makeBranchMergeQueue()
+
+        with person_logged_in(queue.owner):
+            self.assertRaises(
+                InvalidMergeQueueConfig,
+                queue.setMergeQueueConfig,
+                'abc')
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestWebservice(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_properties(self):
+        """Test that the correct properties are exposed."""
+        with person_logged_in(ANONYMOUS):
+            name = u'teh-queue'
+            description = u'Oh hai! I are a queues'
+            configuration = unicode(simplejson.dumps({'test': 'make check'}))
+
+            queuer = self.factory.makePerson()
+            db_queue = self.factory.makeBranchMergeQueue(
+                registrant=queuer, owner=queuer, name=name,
+                description=description,
+                configuration=configuration)
+            branch1 = self.factory.makeBranch()
+            with person_logged_in(branch1.owner):
+                branch1.addToQueue(db_queue)
+            branch2 = self.factory.makeBranch()
+            with person_logged_in(branch2.owner):
+                branch2.addToQueue(db_queue)
+            launchpad = launchpadlib_for('test', db_queue.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        queuer = ws_object(launchpad, queuer)
+        queue = ws_object(launchpad, db_queue)
+        branch1 = ws_object(launchpad, branch1)
+        branch2 = ws_object(launchpad, branch2)
+
+        self.assertEqual(queue.registrant, queuer)
+        self.assertEqual(queue.owner, queuer)
+        self.assertEqual(queue.name, name)
+        self.assertEqual(queue.description, description)
+        self.assertEqual(queue.configuration, configuration)
+        self.assertEqual(queue.date_created, db_queue.date_created)
+        self.assertEqual(len(queue.branches), 2)
+
+    def test_set_configuration(self):
+        """Test the mutator for setting configuration."""
+        with person_logged_in(ANONYMOUS):
+            db_queue = self.factory.makeBranchMergeQueue()
+            launchpad = launchpadlib_for('test', db_queue.owner,
+                service_root="http://api.launchpad.dev:8085")
+
+        configuration = simplejson.dumps({'test': 'make check'})
+
+        queue = ws_object(launchpad, db_queue)
+        queue.configuration = configuration
+        queue.lp_save()
+
+        queue2 = ws_object(launchpad, db_queue)
+        self.assertEqual(queue2.configuration, configuration)

@@ -4,7 +4,7 @@
 from canonical.database import sqlbase
 import unittest, doctest
 
-from zope.testing.doctest import ELLIPSIS, NORMALIZE_WHITESPACE, REPORT_NDIFF
+from doctest import ELLIPSIS, NORMALIZE_WHITESPACE, REPORT_NDIFF
 
 
 def test_suite():

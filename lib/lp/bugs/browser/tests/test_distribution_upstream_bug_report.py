@@ -10,12 +10,17 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.bugs.browser.distribution_upstream_bug_report import (
-    DistributionUpstreamBugReport)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.systemdocs import create_view
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.browser.distribution_upstream_bug_report import (
+    DistributionUpstreamBugReport,
+    )
 
 
 class TestDistributionUpstreamBugReport(unittest.TestCase):
@@ -43,7 +48,7 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
             # a tuple in the form (sort_key, reversed).
             view_sort_key, view_sort_reversed = view.sort_order
             self.assertEqual(view_sort_key, sort_key,
-                "Expected a sort_key of '%s', got '%s'" % 
+                "Expected a sort_key of '%s', got '%s'" %
                 (sort_key, view_sort_key))
 
             # By default, reversed is False.
@@ -67,7 +72,3 @@ class TestDistributionUpstreamBugReport(unittest.TestCase):
             self.assertTrue(view_sort_reversed,
                 "Sort order should be reversed for a sort_by value of "
                 "%s" % reversed_key)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

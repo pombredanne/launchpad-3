@@ -1,7 +1,7 @@
 <issue status_code="200" status_message="OK">
   <issue_id>%(bug_id)s</issue_id>
   <issue_status>%(status)s</issue_status>
-  <priority>NOT USED</priority>
+  <priority>%(priority)s</priority>
   <resolution>%(resolution)s</resolution>
   <component>NOT USED</component>
   <version>NOT USED</version>

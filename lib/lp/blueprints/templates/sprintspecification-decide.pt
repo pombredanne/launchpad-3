@@ -3,31 +3,20 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/sprint/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
-
-      <div tal:content="structure context/specification/fmt:link" />
-
-  <h1>Accept for agenda of <span
-  tal:replace="context/sprint/title">Firefox</span>?</h1>
 
   <form method="POST" action=".">
 
     <div>
+      <h2>Specification summary:</h2>
 
-      <h3>Specification summary:</h3>
+      <div tal:content="structure context/specification/fmt:link" />
 
       <p tal:content="context/specification/summary">
         Summary here
@@ -36,13 +25,11 @@
     </div>
 
     <div>
-
-      <h3>Sprint details:</h3>
+      <h2>Sprint details:</h2>
 
       <p tal:content="context/sprint/summary">
         Summary here
       </p>
-
     </div>
 
     <p>

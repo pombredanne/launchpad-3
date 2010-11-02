@@ -22,7 +22,7 @@ OK, best we try again, with administrator rights!
     ...     'http://translations.launchpad.dev/+groups/+new')
     >>> print find_main_content(
     ...     admin_browser.contents).first('h1').renderContents()
-    Add a new Translation Group
+    Create a new translation group
 
 Translation group names must meet certain conditions.  For example, they
 may not contain any upper-case letters.
@@ -35,7 +35,7 @@ may not contain any upper-case letters.
     ...     "handles the work of translating a number of Ubuntu and upstream "
     ...     "projects. It consists of a large number of translation teams, "
     ...     "each specialising in their own language.")
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Create').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
@@ -52,7 +52,7 @@ translation-team.
     http://translations.launchpad.dev/+groups/testing-translation-team
 
     >>> admin_browser.getControl('Name').value = 'testing-translation-team'
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Create').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/+groups/+new
 
@@ -67,7 +67,7 @@ such as just "polyglot" (no upper-case letters).
     >>> admin_browser.getControl('Name').value='polyglot'
     >>> admin_browser.getControl('Translation instructions').value=(
     ...     u'https://help.launchpad.net/Translations/PolyglotPolicies')
-    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.getControl('Create').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/+groups/polyglot
 
@@ -82,7 +82,7 @@ that group's page.
 
     >>> docs = find_tag_by_id(admin_browser.contents, 'documentation')
     >>> print extract_text(docs)
-    Please read translation instructions...
+    Please read the translation instructions...
     >>> docs_url = docs.find('a')
     >>> extract_link_from_tag(docs_url)
     u'https://help.launchpad.net/Translations/PolyglotPolicies'
@@ -97,7 +97,7 @@ A Rosetta administrator is also allowed to create groups.
     >>> browser.getControl('Summary').value = (
     ...     "Since each of us only speaks one language, we work out software "
     ...     "translations through drawings and hand signals.")
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Create').click()
     >>> print browser.url
     http://translations.launchpad.dev/+groups/monolingua
 
@@ -113,18 +113,18 @@ By default, when a group is created, the creator is its owner.
 The Rosetta administrator assigns ownership of the group to Sample
 Person.
 
-    >>> browser.getLink('Reassign').click()
+    >>> browser.getLink(id='link-reassign').click()
     >>> browser.url
     'http://translations.launchpad.dev/+groups/monolingua/+reassign'
 
     >>> browser.getControl(name='field.owner').value = 'name12'
-    >>> browser.getControl('Change owner').click()
+    >>> browser.getControl('Change').click()
     >>> browser.url
-    'http://translations.launchpad.dev/+groups/monolingua/'
+    'http://translations.launchpad.dev/+groups/monolingua'
 
 The Rosetta administrator is still able to administer this group:
 
-    >>> browser.getLink('Appoint')
+    >>> browser.getLink('Appoint a new translation team')
     <...+appoint'>
 
 But Sample Person is now listed as its owner:
@@ -139,5 +139,21 @@ That means that Sample Person is allowed to administer "his" group.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'translations/groups/monolingua/')
-    >>> browser.getLink('Appoint')
+    >>> browser.getLink('Appoint a new translation team')
     <...+appoint'>
+
+The new groups should show up on the "Translation groups" page.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/+groups')
+    >>> print anon_browser.url
+    http://translations.launchpad.dev/+groups
+
+    >>> groups_table = find_tag_by_id(
+    ...     anon_browser.contents, 'translation-groups')
+    >>> groups = groups_table.find('tbody').findAll('tr')
+    >>> for group_row in groups:
+    ...     group = group_row.findNext('td')
+    ...     print '%s: %s' % (group.a.string, group.a['href'])
+    Just a testing team: ...testing-translation-team
+    Single-language Translators: ...monolingua
+    The PolyGlot Translation Group: ...polyglot

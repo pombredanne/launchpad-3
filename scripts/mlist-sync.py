@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -24,14 +24,14 @@
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
+# pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 import logging
 import textwrap
 import subprocess
-
-# pylint: disable-msg=W0403
-import _pythonpath
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -39,8 +39,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, IMailingListSet, IPersonSet)
-from canonical.launchpad.mailman.config import configure_prefix
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.mailman.config import configure_prefix
+from lp.services.scripts.base import LaunchpadScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')
@@ -49,7 +49,7 @@ RSYNC_SUBDIRECTORIES = ('archives', 'backups', 'lists', 'mhonarc')
 SPACE = ' '
 
 
-class MailingListSyncScript(LaunchpadCronScript):
+class MailingListSyncScript(LaunchpadScript):
     """
     %prog [options] source_url
 
@@ -205,7 +205,7 @@ class MailingListSyncScript(LaunchpadCronScript):
             # Keep going.
 
     def main(self):
-        """See `LaunchpadCronScript`."""
+        """See `LaunchpadScript`."""
         source_url = None
         if len(self.args) == 0:
             self.parser.error('Missing source_url')

@@ -8,20 +8,20 @@ the Gnome project page and that it has no translation group assigned.
     >>> gnome_owner_browser.getLink('Translations').click()
     >>> translations_page_url = gnome_owner_browser.url
     >>> print gnome_owner_browser.title
-    Translatable projects for The GNOME Project
+    Translations : GNOME
 
 And now make sure we can see the form to change the translation group
 and permissions on a project.
 
-    >>> gnome_owner_browser.getLink('Settings').click()
+    >>> gnome_owner_browser.getLink('Change permissions').click()
     >>> print gnome_owner_browser.title
-    Set translation group for The GNOME Project
+    Permissions and policies...
 
 Other users don't see the "Change translators" link and aren't allowed
 to access the page it leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Settings').click()
+    >>> user_browser.getLink('Change permissions').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -45,17 +45,11 @@ closed permissions.
     ...     'Translation group').displayValue = [
     ...         'The PolyGlot Translation Group']
     >>> gnome_owner_browser.getControl('Change').click()
-    >>> print gnome_owner_browser.title
-    Set translation group for The GNOME Project
-
-    >>> for tag in find_tags_by_class(
-    ...     gnome_owner_browser.contents, 'informational message'):
-    ...     print tag.renderContents()
-    Updated on ...
 
 And make sure these changes are now reflected in the Gnome project page
 in the relevant portlet.
 
-    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> gnome_owner_browser.url
+    'http://translations.launchpad.dev/gnome'
     >>> print gnome_owner_browser.title
-    Translatable projects for The GNOME Project
+    Translations : GNOME

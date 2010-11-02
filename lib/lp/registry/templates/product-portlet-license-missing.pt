@@ -3,7 +3,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
 <div class="portlet" id="portlet-missing-license"
      tal:condition="not: context/licenses">
   <h2>

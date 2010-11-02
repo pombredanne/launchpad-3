@@ -13,18 +13,24 @@ __all__ = [
     'ISearchQuestionsForm',
     ]
 
-import sets
-
 from zope.interface import Interface
-from zope.schema import Choice, List, Set, TextLine
+from zope.schema import (
+    Choice,
+    List,
+    Set,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-
 from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
+    ISearchableByQuestionOwner,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
 from lp.answers.interfaces.questionenums import (
-    QuestionSort, QuestionStatus)
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.services.fields import PublicPersonChoice
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -156,11 +162,11 @@ class ISearchQuestionsForm(Interface):
 
     status = Set(title=_('Status'), required=False,
                  value_type=Choice(vocabulary=QuestionStatus),
-                 default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
+                 default=set(QUESTION_STATUS_DEFAULT_SEARCH))
 
 
 class IAnswersFrontPageSearchForm(ISearchQuestionsForm):
     """Schema for the Answers front page search form."""
 
     scope = Choice(title=_('Search scope'), required=False,
-                   vocabulary='DistributionOrProductOrProject')
+                   vocabulary='DistributionOrProductOrProjectGroup')

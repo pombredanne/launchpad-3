@@ -19,20 +19,36 @@ __all__ = [
     'OptionIsNotFromSimplePoll'
     ]
 
-from datetime import datetime, timedelta
-import pytz
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+import pytz
 from zope.component import getUtility
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.person import ITeam
-from canonical.launchpad.fields import ContentNameField
+from lp.services.fields import ContentNameField
 
 
 class PollNameField(ContentNameField):
@@ -108,38 +124,41 @@ class IPoll(Interface):
         readonly=True)
 
     name = PollNameField(
-        title=_('The unique name of this poll.'),
+        title=_('The unique name of this poll'),
         description=_('A short unique name, beginning with a lower-case '
                       'letter or number, and containing only letters, '
                       'numbers, dots, hyphens, or plus signs.'),
         required=True, readonly=False, constraint=name_validator)
 
     title = TextLine(
-        title=_('The title of this poll.'), required=True, readonly=False)
+        title=_('The title of this poll'), required=True, readonly=False)
 
     dateopens = Datetime(
-        title=_('The date and time when this poll opens.'), required=True,
+        title=_('The date and time when this poll opens'), required=True,
         readonly=False)
 
     datecloses = Datetime(
-        title=_('The date and time when this poll closes.'), required=True,
+        title=_('The date and time when this poll closes'), required=True,
         readonly=False)
 
     proposition = Text(
-        title=_('The proposition that is going to be voted.'), required=True,
+        title=_('The proposition that is going to be voted'), required=True,
         readonly=False)
 
     type = Choice(
-        title=_('The type of this poll.'), required=True,
+        title=_('The type of this poll'), required=True,
         readonly=False, vocabulary=PollAlgorithm,
         default=PollAlgorithm.CONDORCET)
 
     allowspoilt = Bool(
-        title=_('Users can spoil their votes?'), required=True,
-        readonly=False, default=True)
+        title=_('Users can spoil their votes?'),
+        description=_(
+            'Allow users to leave the ballot blank (i.e. cast a vote for '
+            '"None of the above")'),
+        required=True, readonly=False, default=True)
 
     secrecy = Choice(
-        title=_('The secrecy of the Poll.'), required=True,
+        title=_('The secrecy of the Poll'), required=True,
         readonly=False, vocabulary=PollSecrecy,
         default=PollSecrecy.SECRET)
 

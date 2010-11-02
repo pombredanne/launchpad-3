@@ -8,8 +8,9 @@ ProductSeries.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSeries, IProductSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.productseries import IProductSeries
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     IHasTranslationImports)
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -49,12 +50,12 @@ And verify that it looks like the series we think it should be.
 It's also possible to ask a product for all its associated series.
 
     >>> onedotzero = firefox.getSeries('1.0')
-    >>> list(firefox.serieses) == [onedotzero, trunk]
+    >>> list(firefox.series) == [onedotzero, trunk]
     True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from lp.registry.interfaces.productseries import IProductSeriesSet
 
     >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
     >>> print firefox_1_0.product.name
@@ -73,11 +74,26 @@ owner or driver can call Product.newSeries().
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
     >>> login_person(firefox.owner)
-    >>> emacs_series = firefox.newSeries(firefox.owner , 'emacs', summary)
+    >>> emacs_series = firefox.newSeries(
+    ...     firefox.owner , 'emacs', summary,
+    ...     releasefileglob='ftp://gnu.org/emacs*.gz')
+    >>> print emacs_series.name
+    emacs
+
+    >>> print emacs_series.summary
+    Port of Firefox to the Emacs operating system.
+
+    >>> print emacs_series.releasefileglob
+    ftp://gnu.org/emacs*.gz
+
+When a driver creates a series, he is also the driver of the new series
+to make him the release manager.
 
     >>> firefox.driver = series_driver
     >>> login_person(series_driver)
     >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
+    >>> print emacs2.driver.name
+    driver
 
 A newly created series is assumed to be in the development state.
 
@@ -94,7 +110,7 @@ Let's check that the new series is properly associated to its product.
 
 = Drivers and release managers =
 
-A driver for an IProduct or IProject cannot modify a product series.
+A driver for an IProduct or IProjectGroup cannot modify a product series.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
@@ -175,7 +191,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
     >>> onezero = firefox.getSeries("1.0")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
@@ -195,8 +211,10 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationDefinitionStatus,
+    ...     SpecificationImplementationStatus,
+    ...     )
     >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
     >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
@@ -318,7 +336,7 @@ Products, projects and product series have drivers, who are people that
 have permission to approve bugs and features for specific releases. The
 rules are that:
 
- 1. a "driver" can be set on either Project, Product or ProductSeries
+ 1. a "driver" can be set on either ProjectGroup, Product or ProductSeries
 
  2. drivers are only actually relevant on a ProductSeries, because thats
     the granularity at which we track spec/bug targeting
@@ -344,14 +362,14 @@ checks when setting and resetting the driver attributes.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
     >>> project = factory.makeProject(name='testproj',
     ...     displayname='Test Project',
     ...     title='Test Project Title', homepageurl='http://foo.com/url',
     ...     summary='summary', description='description', owner=carlos)
-    >>> product = factory.makeProduct(owner=sabdfl, name='testprod',
+    >>> product = factory.makeProduct(owner=mark, name='testprod',
     ...     displayname='Test Product', title='Test product title',
     ...     summary='summary', project=project)
     >>> series = factory.makeProductSeries(owner=jblack, name='1.0', product=product,
@@ -372,83 +390,49 @@ If there is a project on the product, we would expect the project owner:
 If there is NO project on the product, then we expect the product owner:
 
     >>> product.project = None
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
-    sabdfl
+    mark
 
 Now lets put the project back:
 
     >>> product.project = project.id
     >>> flush_database_updates()
 
-And lets see what happens if we have an explicit driver on any of
-project, product or series:
+Edgar and cprov will be the drivers.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> edgar = getUtility(IPersonSet).getByName('edgar')
-    >>> danner = getUtility(IPersonSet).getByName('danner')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
-    >>> project.driver = danner
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
+Edgar becomes the driver of the project group and thus also drives the
+series.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
-    >>> flush_database_updates()
+    >>> project.driver = edgar
     >>> for d in series.drivers:
     ...     print d.name
     edgar
 
-    >>> project.driver = None
-    >>> product.driver = None
+In addition cprov is made driver of the series. Both are drivers now.
+
     >>> series.driver = cprov
-    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    cprov
+    edgar
+
+With just a driver on the series, the owner of the project group is reported
+as driver, too.
+
+    >>> project.driver = None
     >>> for d in series.drivers:
     ...     print d.name
     carlos
     cprov
 
-OK, now let's test pairs of drivers:
+Without a project group, the driver role falls back to the product owner.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
-    >>> series.driver = cprov
-    >>> flush_database_updates()
+    >>> product.project = None
     >>> for d in series.drivers:
     ...     print d.name
     cprov
-    edgar
-
-    >>> project.driver = sabdfl
-    >>> product.driver = danner
-    >>> series.driver = None
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
-    sabdfl
-
-    >>> project.driver = jdub
-    >>> product.driver = None
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    edgar
-    jdub
-
-And finally the case where they are all set:
-
-    >>> project.driver = cprov
-    >>> product.driver = danner
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    cprov
-    danner
-    edgar
+    mark

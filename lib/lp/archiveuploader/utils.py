@@ -9,12 +9,16 @@ __all__ = [
     're_taint_free',
     're_isadeb',
     're_issource',
+    're_is_component_orig_tar_ext',
     're_no_epoch',
     're_no_revision',
     're_valid_version',
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
+    'get_source_file_extension',
+    'determine_binary_file_type',
+    'determine_source_file_type',
     'prefix_multi_line_string',
     'safe_fix_maintainer',
     'ParseMaintError',
@@ -24,14 +28,27 @@ __all__ = [
 import email.Header
 import re
 
+from canonical.encoding import (
+    ascii_smash,
+    guess as guess_encoding,
+    )
 from lp.archiveuploader.tagfiles import TagFileParseError
-from canonical.encoding import guess as guess_encoding, ascii_smash
+from lp.soyuz.enums import BinaryPackageFileType
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
+
+source_file_exts = [
+    'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
+    '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
+re_issource = re.compile(
+    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -42,6 +59,50 @@ re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>")
+
+
+def get_source_file_extension(filename):
+    """Get the extension part of a source file name."""
+    match = re_issource.match(filename)
+    if match is None:
+        return None
+    return match.group(3)
+
+
+def determine_source_file_type(filename):
+    """Determine the SourcePackageFileType of the given filename."""
+    # Avoid circular imports.
+    from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+
+    extension = get_source_file_extension(filename)
+    if extension is None:
+        return None
+    elif extension == "dsc":
+        return SourcePackageFileType.DSC
+    elif extension == "diff.gz":
+        return SourcePackageFileType.DIFF
+    elif re_is_orig_tar_ext.match(extension):
+        return SourcePackageFileType.ORIG_TARBALL
+    elif re_is_component_orig_tar_ext.match(extension):
+        return SourcePackageFileType.COMPONENT_ORIG_TARBALL
+    elif re_is_debian_tar_ext.match(extension):
+        return SourcePackageFileType.DEBIAN_TARBALL
+    elif re_is_native_tar_ext.match(extension):
+        return SourcePackageFileType.NATIVE_TARBALL
+    else:
+        return None
+
+
+def determine_binary_file_type(filename):
+    """Determine the BinaryPackageFileType of the given filename."""
+    if filename.endswith(".deb"):
+        return BinaryPackageFileType.DEB
+    elif filename.endswith(".udeb"):
+        return BinaryPackageFileType.UDEB
+    elif filename.endswith(".ddeb"):
+        return BinaryPackageFileType.DDEB
+    else:
+        return None
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
@@ -70,54 +131,6 @@ def extract_component_from_section(section, default_component="main"):
     return (section, component)
 
 
-def build_file_list(tagfile, is_dsc = False, default_component="main" ):
-    files = {}
-
-    if "files" not in tagfile:
-        raise ValueError("No Files section in supplied tagfile")
-
-    format = tagfile["format"]
-
-    format = float(format)
-
-    if not is_dsc and (format < 1.5 or format > 2.0):
-        raise ValueError("Unsupported format '%s'" % tagfile["format"])
-
-    for line in tagfile["files"].split("\n"):
-        if not line:
-            break
-
-        tokens = line.split()
-
-        section = priority = ""
-
-        try:
-            if is_dsc:
-                (md5, size, name) = tokens
-            else:
-                (md5, size, section, priority, name) = tokens
-        except ValueError:
-            raise TagFileParseError(line)
-
-        if section == "":
-            section = "-"
-        if priority == "":
-            priority = "-"
-
-        (section, component) = extract_component_from_section(
-            section, default_component)
-
-        files[name] = {
-            "md5sum": md5,
-            "size": size,
-            "section": section,
-            "priority": priority,
-            "component": component
-            }
-
-    return files
-
-
 def force_to_utf8(s):
     """Forces a string to UTF-8.
 
@@ -127,7 +140,7 @@ def force_to_utf8(s):
         unicode(s, 'utf-8')
         return s
     except UnicodeError:
-        latin1_s = unicode(s,'iso8859-1')
+        latin1_s = unicode(s, 'iso8859-1')
         return latin1_s.encode('utf-8')
 
 
@@ -163,11 +176,11 @@ class ParseMaintError(Exception):
 
     def __init__(self, message):
         Exception.__init__(self)
-        self.args = (message,)
+        self.args = (message, )
         self.message = message
 
 
-def fix_maintainer (maintainer, field_name="Maintainer"):
+def fix_maintainer(maintainer, field_name="Maintainer"):
     """Parses a Maintainer or Changed-By field and returns:
 
     (1) an RFC822 compatible version,
@@ -206,6 +219,10 @@ def fix_maintainer (maintainer, field_name="Maintainer"):
     # Force the name to be UTF-8
     name = force_to_utf8(name)
 
+    # If the maintainer's name contains a full stop then the whole field will
+    # not work directly as an email address due to a misfeature in the syntax
+    # specified in RFC822; see Debian policy 5.6.2 (Maintainer field syntax)
+    # for details.
     if name.find(',') != -1 or name.find('.') != -1:
         rfc822_maint = "%s (%s)" % (email, name)
         rfc2047_maint = "%s (%s)" % (email, rfc2047_name)
@@ -232,4 +249,3 @@ def safe_fix_maintainer(content, fieldname):
     content = ascii_smash(content)
 
     return fix_maintainer(content, fieldname)
-

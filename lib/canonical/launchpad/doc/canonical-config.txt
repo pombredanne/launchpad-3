@@ -14,8 +14,10 @@ is thread safe (not that this will be a problem if we stick with
 simple configuration).
 
     >>> from canonical.config import config
-    >>> print config.database.main_master
-    dbname=launchpad_ftest
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> expected = 'dbname=%s' % DatabaseLayer._db_fixture.dbname
+    >>> expected == config.database.rw_main_master
+    True
     >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
@@ -44,18 +46,20 @@ environment variable (scripts can override this using setInstance()). It
 will choose the conf file that matches its process_name if it exists,
 otherwise it loads launchpad-lazr.conf. The general rule is
 configs/<instance_name>/<process_name>.conf. The testrunner sets the
-instance_name to 'testrunner' to select testrunner/launchpad-lazr.conf,
-which extends default/launchpad-lazr.conf.
+instance_name to 'testrunner' and additionally uses unique temporary
+configs to permit changing the config during tests (but not if we
+are using persistent helpers - see canonical.testing.layers).
 
-    >>> config.instance_name
-    'testrunner'
+    >>> (config.instance_name == 'testrunner' or
+    ...  config.instance_name == os.environ['LPCONFIG'])
+    True
     >>> config.process_name
     'test'
 
     >>> config.filename
-    '.../configs/testrunner/launchpad-lazr.conf'
+    '.../launchpad-lazr.conf'
     >>> config.extends.filename
-    '.../configs/development/launchpad-lazr.conf'
+    '.../launchpad-lazr.conf'
 
 CanonicalConfig provides __contains__ and __getitem__ to check and
 access lazr.config sections and keys.
@@ -226,7 +230,7 @@ argument to the constructor.
 #    >>> canonical.config.config = config
 #    >>> config.filename
 #    '.../configs/testrunner/launchpad-lazr.conf'
-#    >>> config.dbname
-#    'launchpad_ftest'
+#    >>> config.dbname == DatabaseLayer._db_fixture.dbname
+#    True
 #    >>> config._cache.testrunner
 #    <SectionValue for canonical 'testrunner'>

@@ -65,13 +65,8 @@ Also, template3 happens to be deactivated.
 
 We need a transaction manager (in this case a fake one) to make the copy work.
 
-    >>> class FakeTransactionManager:
-    ...     """Mock transaction manager for test."""
-    ...     def begin(self):
-    ...         pass
-    ...     def commit(self):
-    ...         pass
-    >>> transaction_stub = FakeTransactionManager()
+    >>> from lp.testing.faketransaction import FakeTransaction
+    >>> transaction_stub = FakeTransaction()
 
 
 == Preconditions for migrating translations between distro series ==
@@ -198,7 +193,8 @@ set.
     >>> returnvalue
     1
     >>> print error_output
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     ERROR   Before this process starts, set the hide_all_translations and
             defer_translation_imports flags for distribution foobuntu, series
             darty; or use the --force option to make it happen
@@ -224,7 +220,8 @@ sets the defer_translation_imports flag itself before copying.
     >>> returnvalue
     0
     >>> print error_output
-    INFO    creating lockfile
+    INFO    Creating lockfile:
+      /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
     INFO    Populating blank distroseries darty with translations from barty.
     INFO    Extracting from POTemplate into

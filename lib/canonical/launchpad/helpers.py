@@ -10,33 +10,33 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import subprocess
-import gettextpo
+from difflib import unified_diff
+import hashlib
 import os
 import random
 import re
+from StringIO import StringIO
+import subprocess
 import tarfile
 import warnings
-from StringIO import StringIO
-from difflib import unified_diff
-import sha
 
+import gettextpo
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages,
-    SourcePackageFileType)
+from canonical.launchpad.interfaces import ILaunchBag
+from lp.services.geoip.interfaces import (
+    IRequestLocalLanguages,
+    IRequestPreferredLanguages,
+    )
 
 
-# pylint: disable-msg=W0102
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
-    The keys of the dict are substrings to find, the values are what to replace
-    found substrings with.
+    The keys of the dict are substrings to find, the values are what to
+    replace found substrings with.
 
     :arg text: An unicode or str to do the replacement.
     :arg replacements: A dictionary with the replacements that should be done
@@ -78,13 +78,16 @@ def text_replaced(text, replacements, _cache={}):
         # Make a copy of the replacements dict, as it is mutable, but we're
         # keeping a cached reference to it.
         replacements_copy = dict(replacements)
+
         def matchobj_replacer(matchobj):
             return replacements_copy[matchobj.group()]
+
         regexsub = re.compile(join_char.join(L)).sub
+
         def replacer(s):
             return regexsub(matchobj_replacer, s)
-        _cache[cachekey] = replacer
 
+        _cache[cachekey] = replacer
     return _cache[cachekey](text)
 
 
@@ -98,7 +101,7 @@ def backslashreplace(str):
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
 
-    return ''.join([ x + '\n' for x in lines ])
+    return ''.join([x + '\n' for x in lines])
 
 
 def string_to_tarfile(s):
@@ -169,7 +172,7 @@ def getValidNameFromString(invalid_name):
     in the database.
     """
     # All chars should be lower case, underscores and spaces become dashes.
-    return text_replaced(invalid_name.lower(), {'_': '-', ' ':'-'})
+    return text_replaced(invalid_name.lower(), {'_': '-', ' ': '-'})
 
 
 def browserLanguages(request):
@@ -193,8 +196,7 @@ def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
 
     p = subprocess.Popen(
             command, env=env, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, nothing) = p.communicate(input)
     return output
 
@@ -247,7 +249,7 @@ replacements = {0: {'.': ' |dot| ',
                 3: {'.': ' (!) ',
                     '@': ' (at) '},
                 4: {'.': ' {dot} ',
-                    '@': ' {at} '}
+                    '@': ' {at} '},
                 }
 
 
@@ -444,12 +446,13 @@ def filenameToContentType(fname):
     >>> filenameToContentType('test.tgz')
     'application/octet-stream'
     """
-    ftmap = {".dsc":      "text/plain",
-             ".changes":  "text/plain",
-             ".deb":      "application/x-debian-package",
-             ".udeb":     "application/x-debian-package",
-             ".txt":      "text/plain",
-             ".txt.gz":   "text/plain", # For the build master logs
+    ftmap = {".dsc": "text/plain",
+             ".changes": "text/plain",
+             ".deb": "application/x-debian-package",
+             ".udeb": "application/x-debian-package",
+             ".txt": "text/plain",
+             # For the build master logs
+             ".txt.gz": "text/plain",
              }
     for ending in ftmap:
         if fname.endswith(ending):
@@ -464,68 +467,7 @@ def get_filename_from_message_id(message_id):
     """
     return '%s.msg' % (
             canonical.base.base(
-                long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.TARBALL
-
-
-BINARYPACKAGE_EXTENSIONS = {
-    BinaryPackageFormat.DEB: '.deb',
-    BinaryPackageFormat.UDEB: '.udeb',
-    BinaryPackageFormat.RPM: '.rpm'}
-
-
-class UnrecognizedBinaryFormat(Exception):
-
-    def __init__(self, fname, *args):
-        Exception.__init__(self, *args)
-        self.fname = fname
-
-    def __str__(self):
-        return '%s is not recognized as a binary file.' % self.fname
-
-
-def getBinaryPackageFormat(fname):
-    """Return the BinaryPackageFormat for the given filename.
-
-    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
-    'DEB'
-    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
-    'UDEB'
-    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
-    'RPM'
-    """
-    for key, value in BINARYPACKAGE_EXTENSIONS.items():
-        if fname.endswith(value):
-            return key
-
-    raise UnrecognizedBinaryFormat(fname)
-
-
-def getBinaryPackageExtension(format):
-    """Return the file extension for the given BinaryPackageFormat.
-
-    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
-    '.deb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
-    '.udeb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
-    '.rpm'
-    """
-    return BINARYPACKAGE_EXTENSIONS[format]
+                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
 
 
 def intOrZero(value):

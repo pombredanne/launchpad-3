@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4 -u
+#!/usr/bin/python -uS
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -24,10 +24,15 @@ from canonical.launchpad.database import account
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
 from lp.codehosting.rewrite import BranchRewriter
+from lp.services.log.loglevels import INFO, WARNING
 from lp.services.scripts.base import LaunchpadScript
 
 
 class BranchRewriteScript(LaunchpadScript):
+
+    # By default, only emit WARNING and above messages to stderr, which
+    # will end up in the Apache error log.
+    loglevel = WARNING
 
     def add_my_options(self):
         """Make the logging go to a file by default.
@@ -43,6 +48,7 @@ class BranchRewriteScript(LaunchpadScript):
         if not os.path.isdir(log_file_directory):
             os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
+        self.parser.defaults['log_file_level'] = INFO
 
     def main(self):
         rewriter = BranchRewriter(self.logger)

@@ -66,7 +66,7 @@ addresses for a set of people:
     [u'celso.providelo@canonical.com', u'colin.watson@ubuntulinux.com',
      u'daniel.silverstone@canonical.com', u'edgar@monteparadiso.hr',
      u'foo.bar@canonical.com', u'jeff.waugh@ubuntulinux.com',
-     u'limi@plone.org', u'mark@hbd.com', u'steve.alexander@ubuntulinux.com',
+     u'limi@plone.org', u'mark@example.com', u'steve.alexander@ubuntulinux.com',
      u'support@ubuntu.com']
 
 

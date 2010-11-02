@@ -8,24 +8,43 @@ __metaclass__ = type
 __all__ = [
     'AddBranchVisibilityTeamPolicyView',
     'RemoveBranchVisibilityTeamPolicyView',
+    'BranchVisibilityPolicyMixin',
     'BranchVisibilityPolicyView',
     ]
 
 from zope.app.form import CustomWidgetFactory
 from zope.formlib import form
-from zope.schema import Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from canonical.cachedproperty import cachedproperty
+from zope.schema import (
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
-from lp.code.enums import BranchVisibilityRule, TeamBranchVisibilityRule
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    )
 from canonical.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.code.enums import (
+    BranchVisibilityRule,
+    TeamBranchVisibilityRule,
+    )
+from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IBranchVisibilityTeamPolicy,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -39,7 +58,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+branchvisibility'
+        return canonical_url(self.context, view_name='+branchvisibility')
 
     cancel_url = next_url
 
@@ -47,7 +66,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
-    pagetitle = "Set branch visibility policy for team"
+    page_title = label = "Set branch visibility policy for team"
 
     initial_values = {'rule': TeamBranchVisibilityRule.PRIVATE}
     custom_widget('rule', LaunchpadRadioWidgetWithDescription)
@@ -91,7 +110,7 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """The view to remove zero or more branch visibility policy items."""
 
-    pagetitle = "Remove branch visibility policy for teams"
+    page_title = label = "Remove branch visibility policy for teams"
 
     def _policyDescription(self, item):
         """The text visible to the user displayed by the widget."""
@@ -139,16 +158,30 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
-class BranchVisibilityPolicyView(LaunchpadView):
-    """Simple view for displaying branch visibility policies."""
+class BranchVisibilityPolicyMixin:
+    """Mixin class providing visibility rules."""
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
+
+    @property
+    def team_policies(self):
+        """The policy items that have a valid team."""
+        return [item for item in self.items if item.team is not None]
 
     @cachedproperty
     def items(self):
         return self.context.getBranchVisibilityTeamPolicies()
 
+
+class BranchVisibilityPolicyView(LaunchpadView,
+                                 BranchVisibilityPolicyMixin):
+    """Simple view for displaying branch visibility policies."""
+
     @property
-    def base_visibility_rule(self):
-        return self.context.getBaseBranchVisibilityRule()
+    def page_title(self):
+        name = self.context.displayname
+        return 'Set branch visibility policy for %s' % name
 
     @property
     def can_remove_items(self):
@@ -157,8 +190,3 @@ class BranchVisibilityPolicyView(LaunchpadView):
         """
         return (len(self.items) > 0 and
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
-
-    @property
-    def team_policies(self):
-        """The policy items that have a valid team."""
-        return [item for item in self.items if item.team is not None]

@@ -7,16 +7,22 @@ __all__ = [
     'XpiHeader',
     ]
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 from email.Utils import parseaddr
 from StringIO import StringIO
 
 from zope.interface import implements
 
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationHeaderData)
+    ITranslationHeaderData,
+    )
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError,
+    )
 
 
 class XpiHeader:

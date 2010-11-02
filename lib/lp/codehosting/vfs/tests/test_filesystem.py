@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import unittest
 import stat
+import unittest
 
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
@@ -15,9 +15,12 @@ from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
-from lp.codehosting.vfs.branchfs import LaunchpadServer
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.vfs.branchfs import LaunchpadServer
 
 
 class TestFilesystem(TestCaseWithTransport):
@@ -27,14 +30,15 @@ class TestFilesystem(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
+        endpoint = XMLRPCWrapper(frontend.getCodehostingEndpoint())
         self.requester = self.factory.makePerson()
         self._server = LaunchpadServer(
-            endpoint, self.requester.id, MemoryTransport(), MemoryTransport())
-        self._server.setUp()
-        self.addCleanup(self._server.tearDown)
+            endpoint, self.requester.id, MemoryTransport())
+        self._server.start_server()
+        self.addCleanup(self._server.stop_server)
 
     def getTransport(self, relpath=None):
         return get_transport(self._server.get_url()).clone(relpath)

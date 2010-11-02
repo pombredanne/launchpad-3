@@ -28,11 +28,11 @@ will put in canonical.launchpad.ftests.
 Add a view for Country/+map.
 
     >>> from zope.component import provideAdapter
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> class CountryMapView(object):
     ...     def __init__(self, country, request):
     ...         pass
-    >>> provideAdapter(CountryMapView, (ICountry, IHTTPApplicationRequest),
+    >>> provideAdapter(CountryMapView, (ICountry, IDefaultBrowserLayer),
     ...                name='+map', provides=Interface)
 
 Define a navigation for the Country URL.
@@ -56,7 +56,7 @@ Define a navigation for the Country URL.
     ...         town.name = 'Greenwich'
     ...         return town
     >>> provideAdapter(
-    ...     CountryNavigation, [ICountry, IHTTPApplicationRequest], 
+    ...     CountryNavigation, [ICountry, IDefaultBrowserLayer], 
     ...     IBrowserPublisher)
 
 Put the interfaces into canonical.launchpad.ftests, ensuring that there
@@ -184,7 +184,7 @@ normal way to do this.  Normally, we'd just say
 But, here, I want to test the variant of the zcml directive that specifes
 an adapter.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
     >>> class CountrySetUrl:
     ...
     ...     implements(ICanonicalUrlData)
@@ -352,6 +352,7 @@ from the request.  To get this information, canonical_url uses the operation
 getApplicationURL() from
 zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
     >>> class FakeRequest:
     ...
     ...     implements(IHTTPApplicationRequest)
@@ -468,7 +469,7 @@ Giving an unregistered view name will trigger an assertion failure.
     Traceback (most recent call last):
       ...
     AssertionError: Name "+does-not-exist" is not registered as a view 
-    or navigation step for "Country".
+    or navigation step for "Country" on "bugs".
 
 
 == The 'nearest' helper function ==
@@ -477,7 +478,7 @@ The `nearest(obj, *interfaces)` function returns the nearest object up the
 canonical url chain that provides at least one of the interfaces given.
 
     >>> from canonical.launchpad.webapp import nearest
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> nearest(town_instance, IPerson) is None
     True
     >>> nearest(town_instance, ITown) is town_instance
@@ -486,10 +487,8 @@ canonical url chain that provides at least one of the interfaces given.
     True
     >>> nearest(town_instance, ICountry) is country_instance
     True
-    >>> nearest(unrooted_object, ICountry)
-    Traceback (most recent call last):
-    ...
-    NoCanonicalUrl: No url for <...ObjectThatHasUrl...> because <...object...> broke the chain.
+    >>> print nearest(unrooted_object, ICountry)
+    None
 
 
 == canonical_url in the web service ==
@@ -503,8 +502,8 @@ a web service request
 
     >>> from zope.app.security.principalregistry import (
     ...     UnauthenticatedPrincipal)
-    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.interaction import setupInteraction
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from lazr.restful.utils import get_current_browser_request
     >>> anonymous = UnauthenticatedPrincipal(None, None, None)
     >>> api_request = WebServiceTestRequest()
@@ -521,6 +520,15 @@ request has to be passed in explicitly.
 
     >>> canonical_url(countryset_instance, request=api_request)
     u'http://api.launchpad.dev/countries'
+
+It is often the case that the web application wants to provide URLs that will
+be written out onto the pages that the Javascript can process using the
+LP.client code to get access to the object entries using the API.  In these
+cases, the "force_local_path" parameter can be passed to canonical_url to have
+only the relative local path returned.
+
+    >>> canonical_url(countryset_instance, force_local_path=True)
+    u'/countries'
 
 
 == The end ==

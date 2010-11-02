@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from zope.testing import doctest
+import doctest
 
 from canonical.launchpad.testing.systemdocs import default_optionflags
 

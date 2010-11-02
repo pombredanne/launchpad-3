@@ -8,11 +8,18 @@ Also define utilities that manipulate layers.
 
 __metaclass__ = type
 
-from zope.interface import directlyProvides, directlyProvidedBy, Interface
-from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer)
-
 from lazr.restful.interfaces import IWebServiceLayer
+from zope.interface import (
+    alsoProvides,
+    directlyProvidedBy,
+    directlyProvides,
+    Interface,
+    )
+from zope.publisher.interfaces.browser import (
+    IBrowserRequest,
+    IBrowserSkinType,
+    IDefaultBrowserLayer,
+    )
 
 
 def setAdditionalLayer(request, layer):
@@ -27,32 +34,20 @@ class LaunchpadLayer(IBrowserRequest, IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 
-class TranslationsLayer(LaunchpadLayer):
-    """The `TranslationsLayer` layer."""
-
-
-class BugsLayer(LaunchpadLayer):
-    """The `BugsLayer` layer."""
-
-
-class CodeLayer(LaunchpadLayer):
-    """The `CodeLayer` layer."""
-
-
-class BlueprintLayer(LaunchpadLayer):
-    """The `BlueprintLayer` layer."""
-BlueprintsLayer = BlueprintLayer
-
-
-class AnswersLayer(LaunchpadLayer):
-    """The `AnswersLayer` layer."""
-
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
 
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
+
+
+class APIDocLayer(IBrowserRequest, IDefaultBrowserLayer):
+    """The `APIDocLayer` layer."""
+
+
+class TestOpenIDLayer(LaunchpadLayer):
+    """The `TestOpenIDLayer` layer."""
 
 
 class PageTestLayer(LaunchpadLayer):
@@ -69,6 +64,10 @@ class PageTestLayer(LaunchpadLayer):
     The SystemErrorView base class looks at the request to see if it provides
     this interface.  If so, it renders tracebacks as plain text.
     """
+# A few tests register this interface directly as a layer, bypassing the zcml
+# machinery.  This means that they don't get the proper SkinType interface
+# applied to them.  We add it here for convenience.
+alsoProvides(PageTestLayer, IBrowserSkinType)
 
 
 class FeedsLayer(LaunchpadLayer):
@@ -77,4 +76,3 @@ class FeedsLayer(LaunchpadLayer):
 
 class WebServiceLayer(IWebServiceLayer, LaunchpadLayer):
     """The layer for web service requests."""
-

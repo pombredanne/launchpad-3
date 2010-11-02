@@ -30,24 +30,46 @@ __all__ = [
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
-from zope.component import getUtility, queryMultiAdapter
-from zope.interface import implements
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import (
+    directlyProvides,
+    implements,
+    )
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.checker import ProxyFactory, NamesChecker
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IDefaultBrowserLayer,
+    )
+from zope.security.checker import (
+    NamesChecker,
+    ProxyFactory,
+    )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.layers import (
+    LaunchpadLayer,
+    setFirstLayer,
+    WebServiceLayer,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
-    ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
-    NotFoundError)
+    ICanonicalUrlData,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadContainer,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    IStructuredString,
+    NoCanonicalUrl,
+    )
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import get_current_browser_request
-
+from lp.app.errors import NotFoundError
 
 # HTTP Status code constants - define as appropriate.
 HTTP_MOVED_PERMANENTLY = 301
@@ -231,7 +253,6 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
-    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
@@ -279,19 +300,6 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
-
-    @cachedproperty
-    def striped_class(self):
-        """Return a generator which yields alternating CSS classes.
-
-        This is to be used for HTML tables in which the row colors should be
-        alternated.
-        """
-        def bg_stripe_generator():
-            while True:
-                yield 'white'
-                yield 'shaded'
-        return bg_stripe_generator()
 
     def _getErrorMessage(self):
         """Property getter for `error_message`."""
@@ -423,9 +431,32 @@ class CanonicalAbsoluteURL:
     __call__ = __str__
 
 
+def layer_for_rootsite(rootsite):
+    """Return the registered layer for the specified rootsite.
+
+    'code' -> lp.code.publisher.CodeLayer
+    'translations' -> lp.translations.publisher.TranslationsLayer
+    et al.
+
+    The layer is defined in ZCML using a named utility with the name of the
+    rootsite, and providing IDefaultBrowserLayer.  If there is no utility
+    defined with the specified name, then LaunchpadLayer is returned.
+    """
+    try:
+        return getUtility(IDefaultBrowserLayer, rootsite)
+    except ComponentLookupError:
+        return LaunchpadLayer
+
+
+class FakeRequest:
+    """Used solely to provide a layer for the view check in canonical_url."""
+
+    form_ng = None
+
+
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
-    view_name=None):
+    view_name=None, force_local_path=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -450,6 +481,7 @@ def canonical_url(
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
         rather than the default view.
+    :param force_local_path: Strip off the site no matter what.
     :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
@@ -486,14 +518,14 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
-        assert request is not None, (
-            "Cannot check view_name parameter when the request is not "
-            "available.")
-
+        # Make sure that the view is registered for the site requested.
+        fake_request = FakeRequest()
+        directlyProvides(fake_request, layer_for_rootsite(rootsite))
         # Look first for a view.
-        if queryMultiAdapter((obj, request), name=view_name) is None:
+        if queryMultiAdapter((obj, fake_request), name=view_name) is None:
             # Look if this is a special name defined by Navigation.
-            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            navigation = queryMultiAdapter(
+                (obj, fake_request), IBrowserPublisher)
             if isinstance(navigation, Navigation):
                 all_names = navigation.all_traversal_and_redirection_names
             else:
@@ -501,20 +533,24 @@ def canonical_url(
             if view_name not in all_names:
                 raise AssertionError(
                     'Name "%s" is not registered as a view or navigation '
-                    'step for "%s".' % (view_name, obj.__class__.__name__))
+                    'step for "%s" on "%s".' % (
+                        view_name, obj.__class__.__name__, rootsite))
         urlparts.insert(0, view_name)
 
-    if request is None and rootsite is not None:
+    if request is None:
+        # Yes this really does need to be here, as rootsite can be None, and
+        # we don't want to make the getRootURL from the request break.
+        if rootsite is None:
+            rootsite = 'mainsite'
         root_url = allvhosts.configs[rootsite].rooturl
-    elif request is None:
-        root_url = allvhosts.configs['mainsite'].rooturl
     else:
         root_url = request.getRootURL(rootsite)
 
     path = u'/'.join(reversed(urlparts))
-    if (path_only_if_possible and
-        request is not None and
-        root_url.startswith(request.getApplicationURL())
+    if ((path_only_if_possible and
+         request is not None and
+         root_url.startswith(request.getApplicationURL()))
+        or force_local_path
         ):
         return unicode('/' + path)
     return unicode(root_url + path)
@@ -542,20 +578,21 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
-    # These next two needed by the Z3 API browser
-    __parent__ = None
-    __name__ = 'Launchpad'
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
@@ -692,10 +729,6 @@ class Navigation:
         # this request.
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
-
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
 
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals

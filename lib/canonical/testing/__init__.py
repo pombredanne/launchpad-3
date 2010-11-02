@@ -32,10 +32,6 @@ def reset_logging():
     """Reset the logging system back to defaults
 
     Currently, defaults means 'the way the Z3 testrunner sets it up'
-
-    XXX: StuartBishop 2006-03-08 bug=39877:
-    We need isolation enforcement so that an error will be raised and
-    the test run stop if a test fails to reset the logging system.
     """
     # Remove all handlers from non-root loggers, and remove the loggers too.
     loggerDict = logging.Logger.manager.loggerDict
@@ -63,8 +59,10 @@ def reset_logging():
     logging._handlers.clear()
 
     # Reset the setup
-    import zope.testing.testrunner
-    zope.testing.testrunner.configure_logging()
+    from zope.testing.testrunner.runner import Runner
+    from zope.testing.testrunner.logsupport import Logging
+    Logging(Runner()).global_setup()
+
 
 
 # This import registers the 'doctest' Unicode codec.

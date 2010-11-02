@@ -4,13 +4,27 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchSeriesBinaryPackageReleaseBreadcrumb',
     'DistroArchSeriesBinaryPackageReleaseNavigation',
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    Navigation,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
-    IDistroArchSeriesBinaryPackageRelease)
-from canonical.launchpad.webapp import ApplicationMenu, Navigation
+    IDistroArchSeriesBinaryPackageRelease,
+    )
+
+
+class DistroArchSeriesBinaryPackageReleaseBreadcrumb(Breadcrumb):
+    """A breadcrumb for `DistroArchSeriesBinaryPackageRelease`."""
+
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):

@@ -6,13 +6,14 @@
 __metaclass__ = type
 
 from cookielib import domain_match
+
+from lazr.uri import URI
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.session.http import CookieClientIdManager
 
-from storm.zope.interfaces import IZStorm
-
 from canonical.config import config
-from canonical.launchpad.webapp.url import urlparse
+from canonical.database.sqlbase import session_store
 
 
 SECONDS = 1
@@ -77,7 +78,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            store = getUtility(IZStorm).get('session', 'launchpad-session:')
+            store = session_store()
             result = store.execute("SELECT secret FROM secret")
             self._secret = result.get_one()[0]
         return self._secret
@@ -99,22 +100,19 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         We also log the referrer url on creation of a new
         requestid so we can track where first time users arrive from.
         """
-        # XXX: SteveAlexander, 2007-04-01.
-        #      This is on the codepath where anon users get a session cookie
-        #      set unnecessarily.
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)
-        protocol, request_domain = urlparse(request.getURL())[:2]
+        uri = URI(request.getURL())
 
         # Set secure flag on cookie.
-        if protocol != 'http':
+        if uri.scheme != 'http':
             cookie['secure'] = True
         else:
             cookie['secure'] = False
 
         # Set domain attribute on cookie if vhosting requires it.
-        cookie_domain = get_cookie_domain(request_domain)
+        cookie_domain = get_cookie_domain(uri.host)
         if cookie_domain is not None:
             cookie['domain'] = cookie_domain
 

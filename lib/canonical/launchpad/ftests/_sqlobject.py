@@ -10,10 +10,13 @@ __all__ = ['print_date_attribute',
 
 from storm.sqlobject import SQLObjectBase as SQLObject
 from zope.security.proxy import (
-    removeSecurityProxy, isinstance as zope_isinstance)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
+
 
 def sync(object):
     """Sync the object's from the database.

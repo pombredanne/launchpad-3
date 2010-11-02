@@ -5,10 +5,11 @@ consumer, the request token is eligible for being exchanged for an
 access token.
 
     # First we create a new request token and review it.
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumerSet, IPersonSet, IProductSet)
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('salgado@ubuntu.com')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -74,9 +75,10 @@ before it's been reviewed, though, or it'll get a 401 response.
     ... """ % urlencode(data2))
     HTTP/1.1 401 Unauthorized
     ...
+    Request token has not yet been reviewed. Try again later.
 
-The same will happen if the signature is wrong or if the token's
-permission is UNAUTHORIZED.
+If the token is missing or the signature is wrong the response will
+also be 401.
 
     >>> data2['oauth_signature'] = '&'.join(['foobar', token.secret])
     >>> print http(r"""
@@ -85,6 +87,22 @@ permission is UNAUTHORIZED.
     ... """ % urlencode(data2))
     HTTP/1.1 401 Unauthorized
     ...
+    Invalid OAuth signature.
+
+    >>> data3 = data.copy()
+    >>> del(data3['oauth_token'])
+    >>> print http(r"""
+    ... GET /+access-token?%s HTTP/1.1
+    ... Host: launchpad.dev
+    ... """ % urlencode(data3))
+    HTTP/1.1 401 Unauthorized
+    ...
+    No request token specified.
+
+If the token's permission is set to UNAUTHORIZED, the response code is
+403 ("Forbidden"). This conveys that (to quote the HTTP RFC)
+"authorization will not help" and that the token can _never_ be
+exchanged for an access token.
 
     >>> token.review(salgado, OAuthPermission.UNAUTHORIZED)
     >>> data2['oauth_signature'] = '&'.join([consumer.secret, token.secret])
@@ -92,6 +110,7 @@ permission is UNAUTHORIZED.
     ... GET /+access-token?%s HTTP/1.1
     ... Host: launchpad.dev
     ... """ % urlencode(data2))
-    HTTP/1.1 401 Unauthorized
+    HTTP/1.1 403 Forbidden
     ...
+    End-user refused to authorize request token.
 

@@ -3,34 +3,17 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/reopenings"
-       tal:replace="structure context/@@+portlet-reopenings" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:rightportlets>
+<metal:heading fill-slot="heading">
+    <h2><tal:heading replace="view/label" /></h2>
+</metal:heading>
 
 <div metal:fill-slot="main">
-  
-  <div>
-    <img alt="" src="/@@/question" />
-    <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-  </div>
-
-  <h1>History of this question</h1>
 
   <table class="listing">
     <thead>
@@ -61,14 +44,5 @@
   </table>
 </div>
 
-<p metal:fill-slot="help">
-  The history table displays all the status change that the question underwent.
-  The date and time at which the status change occured,
-  the person who made the status change and the kind of action that
-  triggered the change are displayed.
-  You can find more information about status changes in the
-    <a href="https://help.launchpad.net/QuestionLifeCycle">Question
-      Life-cycle</a> document.
-</p>
 </body>
 </html>

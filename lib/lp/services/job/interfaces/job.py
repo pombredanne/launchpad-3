@@ -9,14 +9,28 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IJobSource',
+    'IRunnableJob',
+    'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
     ]
 
 
-from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 
@@ -55,6 +69,12 @@ class JobStatus(DBEnumeratedType):
         The job was run, but failed.  Will not be run again.
         """)
 
+    SUSPENDED = DBItem(4, """
+        Suspended
+
+        The job is suspended, so should not be run.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
@@ -82,6 +102,9 @@ class IJob(Interface):
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
+    def getTimeout():
+        """Determine how long this job can run before timing out."""
+
     def start():
         """Mark the job as started."""
 
@@ -97,6 +120,16 @@ class IJob(Interface):
     def queue():
         """Mark the job as queued for processing."""
 
+    def suspend():
+        """Mark the job as suspended.
+
+        Only waiting jobs can be suspended."""
+
+    def resume():
+        """Mark the job as waiting.
+
+        Only suspended jobs can be resumed."""
+
 
 class IRunnableJob(IJob):
     """Interface for jobs that can be run via the JobRunner."""
@@ -107,5 +140,37 @@ class IRunnableJob(IJob):
         :param oops: The oops produced by this Job.
         """
 
+    def getOopsVars():
+        """Return a list of variables to appear in the OOPS.
+
+        These vars should help determine why the jobs OOPsed.
+        """
+
+    user_error_types = Attribute(
+        'A tuple of exception classes which result from user error.')
+
+    def notifyUserError(e):
+        """Notify interested parties that this job encountered a user error.
+
+        :param e: The exception encountered by this job.
+        """
+
     def run():
         """Run this job."""
+
+
+class IJobSource(Interface):
+    """Interface for creating and getting jobs."""
+
+    def iterReady():
+        """Iterate through all jobs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""
+
+
+class ITwistedJobSource(IJobSource):
+    """Interface for a job source that is usable by the TwistedJobRunner."""
+
+    def get(id):
+        """Get a job by its id."""

@@ -23,8 +23,10 @@ Because the mailing list is active, there is no archived backup file.
 
 The team administrator can deactivate the list through the web.
 
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
     >>> browser.getControl('Deactivate this Mailing List').click()
     >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
 
@@ -42,7 +44,9 @@ gzip'd tarfile containing the list's pickle data.
     >>> import tarfile
     >>> tarball = tarfile.open(backup_file, 'r:gz')
     >>> for name in sorted(tarball.getnames()):
-    ...     print name
-    itest-one/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    itest-one
     itest-one/config.pck
     itest-one/config.pck.last

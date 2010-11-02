@@ -5,20 +5,20 @@
 
 __metaclass__ = type
 
+from unittest import TestLoader
+
 from storm.store import Store
 import transaction
-from unittest import TestLoader
 
 from canonical.config import config
 from canonical.launchpad.database.emailaddress import EmailAddressSet
-from canonical.launchpad.ftests.logger import MockLogger
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
-
+from lp.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.model.revision import RevisionSet
 from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 from lp.registry.model.karma import Karma
+from lp.testing import TestCaseWithFactory
+from lp.testing.logger import MockLogger
 
 
 class TestRevisionKarma(TestCaseWithFactory):
@@ -49,7 +49,8 @@ class TestRevisionKarma(TestCaseWithFactory):
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
-        branch.product = self.factory.makeProduct()
+        project = self.factory.makeProduct()
+        branch.setTarget(user=branch.owner, project=project)
         # Commit and switch to the script db user.
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.revisionkarma.dbuser)

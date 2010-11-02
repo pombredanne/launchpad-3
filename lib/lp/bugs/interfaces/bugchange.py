@@ -10,7 +10,10 @@ __all__ = [
     'IBugChange',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IBugChange(Interface):

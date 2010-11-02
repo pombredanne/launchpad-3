@@ -17,7 +17,8 @@ keysdir = os.path.join(os.path.dirname(__file__), 'keys')
 class ZecaTestSetup(TacTestSetup):
     r"""Setup a zeca for use by functional tests
 
-    >>> ZecaTestSetup().setUp()
+    >>> fixture = ZecaTestSetup()
+    >>> fixture.setUp()
 
     Make sure the server is running
 
@@ -29,7 +30,7 @@ class ZecaTestSetup(TacTestSetup):
     >>> from urllib import urlopen
 
     >>> print urlopen(root_url).read()
-    Copyright 2004-2008 Canonical Ltd.
+    Copyright 2004-2009 Canonical Ltd.
     <BLANKLINE>
 
     A key index lookup form via GET.
@@ -40,6 +41,8 @@ class ZecaTestSetup(TacTestSetup):
     <html>
     ...
     <title>Results for Key 0xDFD20543</title>
+    ...
+    pub  1024D/DFD20543 2005-04-13 Sample Person (revoked) &lt;sample.revoked@canonical.com&gt;
     ...
 
     A key content lookup form via GET.
@@ -52,6 +55,41 @@ class ZecaTestSetup(TacTestSetup):
     ...
     <title>Results for Key 0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543</title>
     ...
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    Version: GnuPG v1.4.9 (GNU/Linux)
+    <BLANKLINE>
+    mQGiBEJdmOcRBADkNJPTBuCIefBdRAhvWyD9SSVHh8GHQWS7l9sRLEsirQkKz1yB
+    ...
+
+    We can also request a key ID instead of a fingerprint, and it will glob
+    for the fingerprint.
+
+    >>> print urlopen(
+    ...    '%s/pks/lookup?op=get&'
+    ...    'search=0xDFD20543' % root_url
+    ...    ).read()
+    <html>
+    ...
+    <title>Results for Key 0xDFD20543</title>
+    ...
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+    Version: GnuPG v1.4.9 (GNU/Linux)
+    <BLANKLINE>
+    mQGiBEJdmOcRBADkNJPTBuCIefBdRAhvWyD9SSVHh8GHQWS7l9sRLEsirQkKz1yB
+    ...
+
+    If we request a nonexistent key, we get a nice error.
+
+    >>> print urlopen(
+    ...    '%s/pks/lookup?op=get&'
+    ...    'search=0xDFD20544' % root_url
+    ...    ).read()
+    <html>
+    ...
+    <title>Results for Key 0xDFD20544</title>
+    ...
+    Key Not Found
+    ...
 
     A key submit form via POST (see doc/gpghandler.txt for more information).
 
@@ -61,17 +99,17 @@ class ZecaTestSetup(TacTestSetup):
     <title>Submit a key</title>
     ...
 
-    >>> ZecaTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     And again for luck
 
-    >>> ZecaTestSetup().setUp()
+    >>> fixture.setUp()
 
     >>> print urlopen(root_url).readline()
-    Copyright 2004-2008 Canonical Ltd.
+    Copyright 2004-2009 Canonical Ltd.
     <BLANKLINE>
 
-    >>> ZecaTestSetup().tearDown()
+    >>> fixture.tearDown()
     """
     def setUpRoot(self):
         """Recreate root directory and copy needed keys"""

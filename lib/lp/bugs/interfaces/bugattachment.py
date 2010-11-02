@@ -12,22 +12,34 @@ __all__ = [
     'IBugAttachment',
     'IBugAttachmentSet',
     'IBugAttachmentEditForm',
+    'IBugAttachmentIsPatchConfirmationForm',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Int, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.launchpad import IHasBug
-
-from canonical.launchpad.fields import Title
-from canonical.launchpad import _
-
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasBug
+from canonical.launchpad.interfaces.message import IMessage
+from lp.services.fields import RestrictedBytes, Title
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -76,17 +88,34 @@ class IBugAttachment(IHasBug):
     libraryfile = Bytes(title=_("The attachment content."),
               required=True)
     data = exported(
-        Bytes(title=_("The attachment content."),
+        RestrictedBytes(title=_("The attachment content."),
               required=True,
               readonly=True))
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
+    is_patch = Bool(
+        title=_('Patch?'),
+        description=_('Is this attachment a patch?'),
+        readonly=True)
 
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def removeFromBug(user):
         """Remove the attachment from the bug."""
+
+    def destroySelf():
+        """Delete this record.
+
+        The library file content for this attachment is set to None.
+        """
+
+    def getFileByName(filename):
+        """Return the `ILibraryFileAlias for the given file name.
+
+        NotFoundError is raised if the given filename does not match
+        libraryfile.filename.
+        """
 
 
 # Need to do this here because of circular imports.
@@ -127,5 +156,11 @@ class IBugAttachmentEditForm(Interface):
             "text/plain"),
         required=True)
     patch = Bool(
-        title=u"This attachment is a patch",
+        title=u"This attachment contains a solution (patch) for this bug",
         required=True, default=False)
+
+
+class IBugAttachmentIsPatchConfirmationForm(Interface):
+    """Schema used to confirm the setting of the "patch" flag."""
+
+    patch = Bool(title=u"Is this file a patch", required=True, default=False)

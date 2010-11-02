@@ -42,7 +42,7 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
@@ -57,7 +57,7 @@ Set the email address for annoucements emails:
 
   >>> anything_policy.distroseries.changeslist = 'announce@example.com'
 
-  >>> upload = NascentUpload(
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
   ...     anything_policy, mock_logger_quiet)

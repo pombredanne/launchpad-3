@@ -15,7 +15,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
     >>> from zope.component import getUtility
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
 To create a bug task, you have to be logged in:
@@ -37,12 +37,14 @@ to access those other objects:
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
-    >>> sabdfl = personset.getByEmail('mark@hbd.com')
+    >>> mark = personset.getByEmail('mark@example.com')
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -52,12 +54,12 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=evolution, owner=sabdfl,
+    ...     bug=bug_one, product=evolution, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
 
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
     >>> IUpstreamBugTask.providedBy(upstream_task)
     True
 
@@ -65,12 +67,12 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
+    ...     bug=bug_one, distribution=ubuntu, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> IDistroBugTask.providedBy(distro_task)
     True
 
@@ -79,12 +81,12 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> warty = distoseriesset.get(1)
     >>> distro_series_task = bugtaskset.createTask(
-    ...     bug=bug_one, distroseries=warty, owner=sabdfl,
+    ...     bug=bug_one, distroseries=warty, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
@@ -105,8 +107,8 @@ The created bugtasks are guaranteed to implement the correct interface.
 
 == Bug Task Targets ==
 
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
-    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
 
 The "target" of an IBugTask can be one of the items in the following
 list.
@@ -118,13 +120,13 @@ list.
 
   * a product series
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
+    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
     >>> productseries_task = bugtaskset.createTask(
-    ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
+    ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -165,8 +167,8 @@ list.
 
   * a distroseries sourcepackage
 
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.registry.model.sourcepackage import SourcePackage
-    >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
@@ -308,7 +310,8 @@ IProduct.developmentfocus. The following attributes are synched:
 We'll open a bug on just the distribution, and also a bug on a specific
 package.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> launchbag = getUtility(ILaunchBag)
     >>> params = CreateBugParams(
     ...     owner=launchbag.user,
@@ -595,6 +598,7 @@ is passed to transitionToImportance an exception is raised.
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
+    >>> noway_milestone = alsa_utils.development_focus.newMilestone("noway")
     >>> Store.of(test_milestone).flush()
 
     >>> generic_alsa_utils_task.milestone is None
@@ -602,10 +606,23 @@ is passed to transitionToImportance an exception is raised.
     >>> devel_focus_alsa_utils_task.milestone is None
     True
 
-    >>> devel_focus_alsa_utils_task.milestone = test_milestone
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     test_milestone, alsa_utils.owner)
 
     >>> print generic_alsa_utils_task.milestone.name
     test
+    >>> print devel_focus_alsa_utils_task.milestone.name
+    test
+
+But a normal unprivileged user can't set the milestone.
+
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     noway_milestone, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskMilestone:
+      User does not have sufficient permissions to edit the bug task milestone.
+
     >>> print devel_focus_alsa_utils_task.milestone.name
     test
 
@@ -810,8 +827,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
-    >>> from canonical.launchpad.interfaces import IBug
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
@@ -854,7 +871,7 @@ The private bugs will be invisible to No Privileges Person in the search
 results:
 
     >>> from canonical.launchpad.searchbuilder import any
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
@@ -918,7 +935,7 @@ will also have it added to the count.
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
 
 And note that he can access and set the bugtask attributes:
 
@@ -944,8 +961,9 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
 But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
-    >>> login("mark@hbd.com")
-    >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
+    >>> login("mark@example.com")
+    >>> ignored = ubuntu_team.addMember(
+    ...     no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(
@@ -1004,7 +1022,7 @@ As will attribute access:
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
@@ -1038,7 +1056,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
 
 An IBugTask can be adapted to an IBug.
 
-   >>> from canonical.launchpad.interfaces import IBug
+   >>> from lp.bugs.interfaces.bug import IBug
 
    >>> bugtask_four = bugtaskset.get(4)
    >>> bug = IBug(bugtask_four)
@@ -1059,7 +1077,7 @@ the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
 
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=netapplet, owner=sabdfl,
+    ...     bug=bug_one, product=netapplet, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.bugtargetdisplayname
     u'NetApplet'
@@ -1089,7 +1107,7 @@ is used here.
     >>> (out, err) = process.communicate()
 
     >>> print err
-    INFO creating lockfile
+    INFO Creating lockfile: /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
     INFO Updating targetname cache of bugtasks.
     INFO Updating 1 BugTasks (starting id: 2).
     INFO Updating ...BugTasks...
@@ -1114,17 +1132,16 @@ to the same series. The nominations are implicitly accepted and have
 targetnamecache updated.
 
     >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
-    ...     CreateBugParams(sabdfl, 'New Bug', comment='New Bug'))
+    ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('mozilla-firefox')))
     <BugTask at ...>
 
-    >>> new_bug.addNomination(sabdfl, ubuntu.currentseries)
-    <BugNomination at ...>
+    >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
 
 The first task has been created and successfully nominated to Hoary.
 
@@ -1134,7 +1151,7 @@ The first task has been created and successfully nominated to Hoary.
     mozilla-firefox (Ubuntu Hoary)
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=sabdfl,
+    ...     bug=new_bug, owner=mark,
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('alsa-utils')))
@@ -1220,10 +1237,12 @@ multiple bug tasks in one go.
     Properties for bug 2:
      has_branch: False
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
     Properties for bug 3:
      has_branch: False
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
 
 If a mentoring offer gets made...
@@ -1235,7 +1254,7 @@ If a mentoring offer gets made...
 
 ..., a specification gets linked...
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> spec = getUtility(ISpecificationSet).all_specifications[0]
     >>> spec.linkBug(bug_two)
     <SpecificationBug at ...>
@@ -1254,10 +1273,12 @@ If a mentoring offer gets made...
     Properties for bug 2:
      has_branch: False
      has_mentoring_offer: True
+     has_patch: False
      has_specification: True
     Properties for bug 3:
      has_branch: True
      has_mentoring_offer: False
+     has_patch: False
      has_specification: False
 
 
@@ -1273,7 +1294,6 @@ accessing the similar_bugs property of its bug tasks.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
 
 This also works for distributions...
@@ -1283,6 +1303,7 @@ This also works for distributions...
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
+
 
 ... and for SourcePackages.
 
@@ -1306,7 +1327,6 @@ against Firefox.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
     ...Yet another Firefox bug
 
@@ -1320,7 +1340,6 @@ list for no_priv any more, since they're not a direct subscriber.
     >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
-    4: Reflow problems with complex page layouts
     5: Firefox install instructions should be complete
 
 
@@ -1338,7 +1357,7 @@ constraints will be violated.
 
     >>> bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
-    ...     owner=sabdfl, status=STATUS_NEW,
+    ...     owner=mark, status=STATUS_NEW,
     ...     importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
     ...

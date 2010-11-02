@@ -12,23 +12,85 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import (
-    GenericBranchCollection)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
-    remove_all_sample_data_branches)
+    remove_all_sample_data_branches,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
+from lp.code.interfaces.branchcollection import (
+    IAllBranches,
+    IBranchCollection,
+    )
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
+
+
+class TestBranchCollectionAdaptation(TestCaseWithFactory):
+    """Check that certain objects can be adapted to a branch collection."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product(self):
+        # A product can be adapted to a branch collection.
+        product = self.factory.makeProduct()
+        collection = IBranchCollection(product, None)
+        self.assertIsNot(None, collection)
+
+    def test_project(self):
+        # A project can be adapted to a branch collection.
+        project = self.factory.makeProject()
+        collection = IBranchCollection(project, None)
+        self.assertIsNot(None, collection)
+
+    def test_person(self):
+        # A person can be adapted to a branch collection.
+        person = self.factory.makePerson()
+        collection = IBranchCollection(person, None)
+        self.assertIsNot(None, collection)
+
+    def test_distribution(self):
+        # A distribution can be adapted to a branch collection.
+        distribution = self.factory.makeDistribution()
+        collection = IBranchCollection(distribution, None)
+        self.assertIsNot(None, collection)
+
+    def test_distro_series(self):
+        # A distro series can be adapted to a branch collection.
+        distro_series = self.factory.makeDistroRelease()
+        collection = IBranchCollection(distro_series, None)
+        self.assertIsNot(None, collection)
+
+    def test_source_package(self):
+        # A source package can be adapted to a branch collection.
+        source_package = self.factory.makeSourcePackage()
+        collection = IBranchCollection(source_package, None)
+        self.assertIsNot(None, collection)
+
+    def test_distribution_source_package(self):
+        # A distribution source pakcage can be adapted to a branch collection.
+        distro_source_package = self.factory.makeDistributionSourcePackage()
+        collection = IBranchCollection(distro_source_package, None)
+        self.assertIsNot(None, collection)
 
 
 class TestGenericBranchCollection(TestCaseWithFactory):
@@ -214,6 +276,40 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual(
             sorted([branch, branch2]), sorted(collection.getBranches()))
 
+    def _makeOffical(self, branch, pocket):
+        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+        run_with_login(
+            ubuntu_branches.teamowner, branch.sourcepackage.setBranch,
+            pocket, branch, ubuntu_branches.teamowner)
+
+    def test_official_branches(self):
+        # `officialBranches` returns a new collection that only has branches
+        # that have been officially linked to a source package.
+        branch1 = self.factory.makePackageBranch()
+        self._makeOffical(branch1, PackagePublishingPocket.RELEASE)
+        branch2 = self.factory.makePackageBranch()
+        self._makeOffical(branch2, PackagePublishingPocket.BACKPORTS)
+        self.factory.makePackageBranch()
+        self.factory.makePackageBranch()
+        collection = self.all_branches.officialBranches()
+        self.assertEqual(
+            sorted([branch1, branch2]), sorted(collection.getBranches()))
+
+    def test_official_branches_pocket(self):
+        # If passed a pocket, `officialBranches` returns a new collection that
+        # only has branches that have been officially linked to a source
+        # package in that pocket.
+        branch1 = self.factory.makePackageBranch()
+        self._makeOffical(branch1, PackagePublishingPocket.RELEASE)
+        branch2 = self.factory.makePackageBranch()
+        self._makeOffical(branch2, PackagePublishingPocket.BACKPORTS)
+        self.factory.makePackageBranch()
+        self.factory.makePackageBranch()
+        collection = self.all_branches.officialBranches(
+            PackagePublishingPocket.BACKPORTS)
+        self.assertEqual(
+            sorted([branch2]), sorted(collection.getBranches()))
+
     def test_in_distribution_source_package(self):
         # 'inDistributionSourcePackage' returns a new collection that only has
         # branches for the source package across any distroseries of the
@@ -280,7 +376,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
         collection = self.all_branches.subscribedBy(subscriber)
         self.assertEqual([branch], list(collection.getBranches()))
 
@@ -293,7 +390,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         owned_branch = self.factory.makeAnyBranch(owner=person)
         # Unsubscribe the owner, to demonstrate that we show owned branches
         # even if they aren't subscribed.
-        owned_branch.unsubscribe(person)
+        owned_branch.unsubscribe(person, person)
         # Subscribe two other people to the owned branch to make sure
         # that the BranchSubscription join is doing it right.
         self.factory.makeBranchSubscription(branch=owned_branch)
@@ -305,7 +402,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         subscribed_branch.subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            person)
         related_branches = self.all_branches.relatedTo(person)
         self.assertEqual(
             sorted([owned_branch, registered_branch, subscribed_branch]),
@@ -464,7 +562,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         removeSecurityProxy(self.private_branch1).subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            subscriber)
         branches = self.all_branches.visibleByUser(subscriber)
         self.assertEqual(
             sorted([self.public_branch, self.private_branch1]),
@@ -480,7 +579,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
         removeSecurityProxy(private_branch).subscribe(
             team, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL,
+            team_owner)
         # Members of the team can see the private branch that the team is
         # subscribed to.
         branches = self.all_branches.visibleByUser(team_owner)
@@ -577,6 +677,15 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.inProduct(product)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.NEEDS_REVIEW])
+        self.assertEqual([mp1], list(proposals))
+
+    def test_specifying_target_branch(self):
+        # If the target_branch is specified, only merge proposals where that
+        # branch is the target are returned.
+        mp1 = self.factory.makeBranchMergeProposal()
+        mp2 = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(
+            target_branch=mp1.target_branch)
         self.assertEqual([mp1], list(proposals))
 
 
@@ -693,6 +802,42 @@ class TestSearch(TestCaseWithFactory):
         not_branch = self.factory.makeAnyBranch()
         search_results = self.collection.search(branch.codebrowse_url())
         self.assertEqual([branch], list(search_results))
+
+    def test_exact_match_bzr_identity(self):
+        # If you search for the bzr identity of a branch, then you get a
+        # single result with that branch.
+        branch = self.factory.makeAnyBranch()
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search(branch.bzr_identity)
+        self.assertEqual([branch], list(search_results))
+
+    def test_exact_match_bzr_identity_development_focus(self):
+        # If you search for the development focus and it is set, you get a
+        # single result with the development focus branch.
+        fooix = self.factory.makeProduct(name='fooix')
+        branch = self.factory.makeProductBranch(product=fooix)
+        run_with_login(
+            fooix.owner, setattr, fooix.development_focus,
+            'branch', branch)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([branch], list(search_results))
+
+    def test_bad_match_bzr_identity_development_focus(self):
+        # If you search for the development focus for a project where one
+        # isn't set, you get an empty search result.
+        fooix = self.factory.makeProduct(name='fooix')
+        branch = self.factory.makeProductBranch(product=fooix)
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([], list(search_results))
+
+    def test_bad_match_bzr_identity_no_project(self):
+        # If you search for the development focus for a project where one
+        # isn't set, you get an empty search result.
+        not_branch = self.factory.makeAnyBranch()
+        search_results = self.collection.search('lp://dev/fooix')
+        self.assertEqual([], list(search_results))
 
     def test_exact_match_url_trailing_slash(self):
         # Sometimes, users are inconsiderately unaware of our arbitrary
@@ -841,6 +986,65 @@ class TestGetTeamsWithBranches(TestCaseWithFactory):
         collection = self.all_branches.inProduct(branch.product)
         teams = list(collection.getTeamsWithBranches(person))
         self.assertEqual([team1], teams)
+
+
+class TestBranchCollectionOwnerCounts(TestCaseWithFactory):
+    """Test IBranchCollection.ownerCounts."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+        self.all_branches = getUtility(IAllBranches)
+
+    def test_no_branches(self):
+        # If there are no branches, we should get zero counts for both.
+        person_count, team_count = self.all_branches.ownerCounts()
+        self.assertEqual(0, person_count)
+        self.assertEqual(0, team_count)
+
+    def test_individual_branch_owners(self):
+        # Branches owned by an individual are returned as the first part of
+        # the tuple.
+        self.factory.makeAnyBranch()
+        self.factory.makeAnyBranch()
+        person_count, team_count = self.all_branches.ownerCounts()
+        self.assertEqual(2, person_count)
+        self.assertEqual(0, team_count)
+
+    def test_team_branch_owners(self):
+        # Branches owned by teams are returned as the second part of the
+        # tuple.
+        self.factory.makeAnyBranch(owner=self.factory.makeTeam())
+        self.factory.makeAnyBranch(owner=self.factory.makeTeam())
+        person_count, team_count = self.all_branches.ownerCounts()
+        self.assertEqual(0, person_count)
+        self.assertEqual(2, team_count)
+
+    def test_multiple_branches_owned_counted_once(self):
+        # Confirming that a person that owns multiple branches only gets
+        # counted once.
+        individual = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        for owner in [individual, individual, team, team]:
+            self.factory.makeAnyBranch(owner=owner)
+        person_count, team_count = self.all_branches.ownerCounts()
+        self.assertEqual(1, person_count)
+        self.assertEqual(1, team_count)
+
+    def test_counts_limited_by_collection(self):
+        # For collections that are constrained in some way, we only get counts
+        # for the constrained collection.
+        b1 = self.factory.makeProductBranch()
+        product = b1.product
+        self.factory.makeProductBranch(
+            product=product, lifecycle_status=BranchLifecycleStatus.MERGED)
+        self.factory.makeAnyBranch()
+        collection = self.all_branches.inProduct(product).withLifecycleStatus(
+            *DEFAULT_BRANCH_STATUS_IN_LISTING)
+        person_count, team_count = collection.ownerCounts()
+        self.assertEqual(1, person_count)
 
 
 def test_suite():

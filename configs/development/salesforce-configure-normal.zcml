@@ -9,18 +9,18 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <class class="lp.registry.utilities.salesforce.SalesforceVoucherProxy">
-        <allow interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy" />
+    <class class="lp.services.salesforce.proxy.SalesforceVoucherProxy">
+        <allow interface="lp.services.salesforce.interfaces.ISalesforceVoucherProxy" />
     </class>
 
-    <class class="lp.registry.utilities.salesforce.Voucher">
-        <allow attributes="id project status term __str__" />
+    <class class="lp.services.salesforce.proxy.Voucher">
+        <allow attributes="voucher_id project status term_months __str__" />
     </class>
 
    <securedutility
-        class="lp.registry.tests.salesforce.TestSalesforceVoucherProxy"
-        provides="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy">
-        <allow interface="lp.registry.interfaces.salesforce.ISalesforceVoucherProxy" />
+        class="lp.services.salesforce.tests.proxy.TestSalesforceVoucherProxy"
+        provides="lp.services.salesforce.interfaces.ISalesforceVoucherProxy">
+        <allow interface="lp.services.salesforce.interfaces.ISalesforceVoucherProxy" />
     </securedutility>
 
 </configure>

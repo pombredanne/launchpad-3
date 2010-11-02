@@ -1,0 +1,123 @@
+Source Package API
+==================
+
+
+Prelude
+-------
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> from lp.registry.interfaces.distroseries import (
+    ...     IDistroSeriesSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lazr.restful.testing.webservice import pprint_entry
+
+
+Getting source packages
+-----------------------
+
+We can get source packages that are bound to a distribution series from the
+distribution series.
+
+    >>> hoary = webservice.get('/ubuntu/hoary').jsonBody()
+    >>> evolution = webservice.named_get(
+    ...     hoary['self_link'], 'getSourcePackage',
+    ...     name='evolution').jsonBody()
+
+    >>> pprint_entry(evolution)
+    bug_reported_acknowledgement: None
+    bug_reporting_guidelines: None
+    displayname: u'evolution in Ubuntu Hoary'
+    distribution_link: u'http://.../ubuntu'
+    distroseries_link: u'http://.../ubuntu/hoary'
+    latest_published_component_name: u'main'
+    name: u'evolution'
+    official_bug_tags: []
+    productseries_link: u'http://.../evolution/trunk'
+    resource_type_link: ...
+    self_link: u'http://.../ubuntu/hoary/+source/evolution'
+
+
+Getting official branches
+-------------------------
+
+Then we can get the branches that are bound to various pockets of this
+distribution series. By default, there are none bound to evolution.
+
+    >>> branch = webservice.named_get(
+    ...     evolution['self_link'], 'getBranch', pocket='Release').jsonBody()
+    >>> print branch
+    None
+
+
+Setting official branches
+-------------------------
+
+We can even set a branch for the series. First we need to *make* a branch
+though.
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = getUtility(IDistroSeriesSet).queryByName(ubuntu, 'hoary')
+    >>> evolution_package = hoary.getSourcePackage('evolution')
+    >>> owner = factory.makePerson(name='devo')
+    >>> branch = factory.makePackageBranch(
+    ...     sourcepackage=evolution_package, owner=owner, name='branch')
+    >>> print branch.unique_name
+    ~devo/ubuntu/hoary/evolution/branch
+    >>> branch_url = '/' + branch.unique_name
+    >>> logout()
+
+And actually, when I said "we", I wasn't talking about you. I was talking
+about members of the ubuntu-branches celebrity team.
+
+    >>> login('admin@canonical.com')
+    >>> person = factory.makePerson()
+    >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
+    >>> ignored = ubuntu_branches.addMember(person, ubuntu_branches.teamowner)
+    >>> logout()
+
+Then we set the branch on the evolution hoary package:
+
+    >>> webservice = webservice_for_person(
+    ...     person, permission=OAuthPermission.WRITE_PRIVATE)
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> response = webservice.named_post(
+    ...     evolution['self_link'], 'setBranch', pocket='Release',
+    ...     branch=branch['self_link'])
+    >>> print response.jsonBody()
+    None
+
+I guess this means that if we get the branch for the RELEASE pocket again,
+we'll get the new branch.
+
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch['unique_name']
+    ~devo/ubuntu/hoary/evolution/branch
+
+    >>> linked_branches = webservice.named_get(
+    ...     evolution['self_link'], 'linkedBranches').jsonBody()
+    >>> print linked_branches.keys()
+    [u'RELEASE']
+    >>> branch = linked_branches[u'RELEASE']
+    >>> print branch['unique_name']
+    ~devo/ubuntu/hoary/evolution/branch
+
+Of course, we're also allowed to change our minds. If we set the branch for
+the RELEASE pocket to 'null' (i.e. the JSON for Python' None), then there is
+no longer an official branch for that pocket.
+
+    >>> response = webservice.named_post(
+    ...     evolution['self_link'], 'setBranch', pocket='Release',
+    ...     branch='null')
+    >>> print response.jsonBody()
+    None
+    >>> branch = webservice.named_get(evolution['self_link'], 'getBranch',
+    ...     pocket='Release').jsonBody()
+    >>> print branch
+    None

@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,27 +8,33 @@
 __metaclass__ = type
 
 from datetime import datetime
-from optparse import OptionParser, OptionValueError
 import logging
-from pytz import timezone
+from optparse import (
+    OptionParser,
+    OptionValueError,
+    )
 from unittest import TestLoader
 
+from pytz import timezone
+from storm.store import Store
 from zope.component import getUtility
 
-from storm.store import Store
-
 from canonical.launchpad.ftests import sync
-from lp.translations.model.translationrelicensingagreement import (
-    TranslationRelicensingAgreement)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.translations.scripts.remove_translations import (
-    RemoveTranslations, remove_translations)
 from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    )
+from lp.translations.model.translationrelicensingagreement import (
+    TranslationRelicensingAgreement,
+    )
+from lp.translations.scripts.remove_translations import (
+    remove_translations,
+    RemoveTranslations,
+    )
 
 
 def make_script(args=None):
@@ -45,6 +51,7 @@ class TestRemoveTranslationsConstraints(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsConstraints, self).setUp()
         # Acquire privileges to delete TranslationMessages.  We won't
         # actually do that here, but we'll go through all the motions.
         self.layer.switchDbUser('postgres')
@@ -134,6 +141,7 @@ class TestRemoveTranslationsConstraints(TestCase):
 
 class OptionChecker(OptionParser):
     """`OptionParser` that doesn't abort the whole program on error."""
+
     def error(self, msg):
         """See `OptionParser`.  Raises exception instead of exiting."""
         raise OptionValueError(msg)
@@ -155,6 +163,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsOptionsHandling, self).setUp()
         self.factory = LaunchpadObjectFactory()
 
     def test_WithNativeArgs(self):
@@ -198,7 +207,7 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--reviewer=%s' % reviewer.name,
             '--is-current=0',
             '--is-imported=true',
-            '--origin=SCM'
+            '--origin=SCM',
             ])
         self.assertEqual(options.submitter, submitter.id)
         self.assertEqual(options.reviewer, reviewer.id)
@@ -222,6 +231,7 @@ class TestRemoveTranslations(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslations, self).setUp()
         # Acquire privileges to delete TranslationMessages.  That's not
         # something we normally do.  Actually we should test under
         # rosettaadmin, but that user does not have all the privileges
@@ -278,8 +288,7 @@ class TestRemoveTranslations(TestCase):
         return sorted(
             message.msgstr0.translation
             for message in pofile.translation_messages
-            if message.msgstr0 is not None
-            )
+            if message.msgstr0 is not None)
 
     def _checkInvariant(self):
         """Check that our translations are in their original state.
@@ -288,7 +297,7 @@ class TestRemoveTranslations(TestCase):
         changes and then testing for them.  Instead they make changes by
         creating new messages, and then using `remove_translations` to
         undo those changes.
-        
+
         We see that a removal worked correctly by verifying that the
         invariant is restored.
         """
@@ -553,6 +562,7 @@ class TestRemoveTranslationsUnmasking(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestRemoveTranslationsUnmasking, self).setUp()
         self.layer.switchDbUser('postgres')
 
         # Set up a template with a Laotian translation file.  There's

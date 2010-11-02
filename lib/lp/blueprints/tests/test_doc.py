@@ -7,15 +7,15 @@ Run the doctests and pagetests.
 
 import logging
 import os
-import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
+from canonical.launchpad.ftests.test_system_documentation import (
+    ProcessMailLayer,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.ftests.test_system_documentation import(
-    ProcessMailLayer)
-from canonical.testing import DatabaseFunctionalLayer
-
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from lp.services.testing import build_test_suite
 
 

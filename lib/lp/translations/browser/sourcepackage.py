@@ -11,17 +11,24 @@ __all__ = [
     ]
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 class SourcePackageTranslationsView(TranslationsMixin):
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
+
+    @property
+    def label(self):
+        return "Translations for %s" % self.context.displayname
 
 
 class SourcePackageTranslationsMenu(NavigationMenu):
@@ -31,18 +38,36 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def download(self):
         text = 'Download'
         enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
+        return Link('+export', text, icon='download', enabled=enabled,
+                    site='translations')
 
     def overview(self):
-        return Link('', 'Overview', icon='info')
+        return Link('', 'Overview', icon='info', site='translations')
 
 
 class SourcePackageTranslationsExportView(BaseExportView):
     """Request tarball export of all translations for a source package."""
-    pass
+
+    page_title = "Download"
+
+    @property
+    def download_description(self):
+        """Current context description used inline in paragraphs."""
+        return "%s package in %s %s" % (
+            self.context.sourcepackagename.name,
+            self.context.distroseries.distribution.displayname,
+            self.context.distroseries.displayname)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def label(self):
+        return "Download translations for %s" % self.download_description

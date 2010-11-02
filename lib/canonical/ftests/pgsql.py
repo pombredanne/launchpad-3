@@ -7,7 +7,7 @@ Test harness for tests needing a PostgreSQL backend.
 
 __metaclass__ = type
 
-import unittest
+import os
 import time
 
 import psycopg2
@@ -119,7 +119,6 @@ class CursorWrapper:
 
 _org_connect = None
 def fake_connect(*args, **kw):
-    global _org_connect
     return ConnectionWrapper(_org_connect(*args, **kw))
 
 def installFakeConnect():
@@ -136,13 +135,24 @@ def uninstallFakeConnect():
 
 
 class PgTestSetup:
+
     connections = [] # Shared
+    # Use a dynamically generated dbname:
+    dynamic = object()
 
     template = 'template1'
+    # Needs to match configs/testrunner*/*:
     dbname = 'launchpad_ftest'
     dbuser = None
     host = None
     port = None
+
+    # Class attributes. With PostgreSQL 8.4, pg_shdepend bloats
+    # hugely when we drop and create databases, because this
+    # operation cancels any autovacuum process maintaining it.
+    # To cope, we need to manually vacuum it ourselves occasionally.
+    vacuum_shdepend_every = 10
+    _vacuum_shdepend_counter = 0
 
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
@@ -158,8 +168,18 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
-        if dbname is not None:
+        if dbname is PgTestSetup.dynamic:
+            if os.environ.get('LP_TEST_INSTANCE'):
+                self.dbname = "%s_%s" % (
+                    self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
+            else:
+                # Fallback to the class name.
+                self.dbname = self.__class__.dbname
+        elif dbname is not None:
             self.dbname = dbname
+        else:
+            # Fallback to the class name.
+            self.dbname = self.__class__.dbname
         if dbuser is not None:
             self.dbuser = dbuser
         if host is not None:
@@ -254,7 +274,6 @@ class PgTestSetup:
         ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
-            PgTestSetup._reset_db = True
         #uninstallFakeConnect()
 
     def connect(self):
@@ -308,8 +327,14 @@ class PgTestSetup:
                     if 'does not exist' in str(x):
                         break
                     raise
+                PgTestSetup._vacuum_shdepend_counter += 1
+                if (PgTestSetup._vacuum_shdepend_counter
+                    % PgTestSetup.vacuum_shdepend_every) == 0:
+                    cur.execute('VACUUM pg_catalog.pg_shdepend')
             finally:
                 con.close()
+        # Any further setUp's must make a new DB.
+        PgTestSetup._reset_db = True
 
     def force_dirty_database(self):
         """flag the database as being dirty
@@ -320,30 +345,3 @@ class PgTestSetup:
         as database changes made from a subprocess.
         """
         PgTestSetup._reset_db = True
-
-
-class PgTestCase(unittest.TestCase):
-    dbname = None
-    dbuser = None
-    host = None
-    port = None
-    template = None
-    def setUp(self):
-        pg_test_setup = PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                )
-        pg_test_setup.setUp()
-        self.dbname = pg_test_setup.dbname
-        self.dbuser = pg_test_setup.dbuser
-        assert self.dbname, 'self.dbname is not set.'
-
-    def tearDown(self):
-        PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).tearDown()
-
-    def connect(self):
-        return PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).connect()
-

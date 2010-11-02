@@ -12,30 +12,33 @@ the sources and binarypackages.
 __metaclass__ = type
 
 
-__all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
+__all__ = [
+    'AbstractPackageData',
+    'BinaryPackageData',
+    'get_dsc_path',
+    'PoolFileNotFound',
+    'prioritymap',
+    'SourcePackageData',
+    'urgencymap',
+    ]
 
-import re
-import os
 import glob
-import tempfile
-import shutil
+import os
+import re
 import rfc822
+import shutil
+import tempfile
 
 from canonical import encoding
-
-from lp.archivepublisher.diskpool import poolify
-from lp.soyuz.scripts.gina.changelog import parse_changelog
-
 from canonical.database.constants import UTC_NOW
-
+from canonical.launchpad.scripts import log
+from canonical.launchpad.validators.version import valid_debian_version
+from lp.archivepublisher.diskpool import poolify
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from canonical.launchpad.scripts import log
+from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import call
-
-from canonical.launchpad.validators.version import valid_debian_version
-
+from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 #
 # Data setup
@@ -140,12 +143,13 @@ def read_dsc(package, version, component, archive_root):
 
     return dsc, changelog, copyright
 
+
 def parse_person(val):
     if "," in val:
         # Some emails have ',' like "Adam C. Powell, IV
         # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
         # handle this properly, so we munge them here
-        val = val.replace(',','')
+        val = val.replace(',', '')
     return rfc822.parseaddr(val)
 
 
@@ -175,12 +179,6 @@ def get_person_by_key(keyrings, key):
 
         line = line.split(":")
         algo = int(line[3])
-        if GPGALGOS.has_key(algo):
-            algochar = GPGALGOS[algo]
-        else:
-            algochar = "?" % algo
-        # STRIPPED GPGID Support by cprov 20041004
-        #          id = line[2] + algochar + "/" + line[4][-8:]
         id = line[4][-8:]
         algorithm = algo
         keysize = line[2]
@@ -380,7 +378,6 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-
     def do_package(self, archive_root):
         """Get the Changelog and urgency from the package on archive.
 
@@ -397,7 +394,7 @@ class SourcePackageData(AbstractPackageData):
         self.changelog = None
         if changelog and changelog[0]:
             cldata = changelog[0]
-            if cldata.has_key("changes"):
+            if 'changes' in cldata:
                 if cldata["package"] != self.package:
                     log.warn("Changelog package %s differs from %s" %
                              (cldata["package"], self.package))

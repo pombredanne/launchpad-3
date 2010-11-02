@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,10 +9,10 @@ when given certain user-configurable URLs.
 """
 
 
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from canonical.config import config
-from canonical.launchpad.webapp.url import urlsplit
-from canonical.lazr.pidfile import make_pidfile, get_pid, pidfile_path
+from BaseHTTPServer import (
+    BaseHTTPRequestHandler,
+    HTTPServer,
+    )
 import errno
 import logging
 import os
@@ -21,6 +21,13 @@ import socket
 import subprocess
 import time
 
+from canonical.config import config
+from canonical.launchpad.webapp.url import urlsplit
+from canonical.lazr.pidfile import (
+    get_pid,
+    make_pidfile,
+    pidfile_path,
+    )
 
 # Set up basic logging.
 log = logging.getLogger(__name__)
@@ -108,7 +115,7 @@ def service_is_available(timeout=2.0):
         sock.close() # Clean up.
 
 
-def wait_for_service(timeout=10.0):
+def wait_for_service(timeout=15.0):
     """Poll the service and BLOCK until we can connect to it.
 
     :param timeout: The socket should timeout after this many seconds.
@@ -125,7 +132,7 @@ def wait_for_service(timeout=10.0):
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                if err.args[0] == errno.ECONNREFUSED:
+                if err.args[0] in [errno.ECONNREFUSED, errno.ECONNABORTED]:
                     elapsed = (time.time() - start)
                     if elapsed > timeout:
                         raise RuntimeError("Socket poll time exceeded.")

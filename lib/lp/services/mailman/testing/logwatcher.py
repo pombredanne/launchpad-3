@@ -14,14 +14,15 @@ __all__ = [
     ]
 
 
+import datetime
 import os
 import pdb
 import time
-import datetime
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
 from Mailman.mm_cfg import LOG_DIR
+
 
 try:
     # Python 2.5
@@ -33,8 +34,8 @@ except AttributeError:
 
 BREAK_ON_TIMEOUT = bool(os.getenv('BREAK_ON_TIMEOUT'))
 LINES_TO_CAPTURE = 50
-LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=20)
-FAILURE_CAPTURE_INTERVAL = datetime.timedelta(seconds=60)
+LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=10)
+FAILURE_CAPTURE_INTERVAL = datetime.timedelta(seconds=10)
 SECONDS_TO_SNOOZE = 0.1
 Empty = object()
 NL = '\n'

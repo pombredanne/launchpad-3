@@ -6,28 +6,43 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportMachineSetBreadcrumbBuilder',
+    'CodeImportMachineBreadcrumb',
+    'CodeImportMachineSetBreadcrumb',
     'CodeImportMachineSetNavigation',
     'CodeImportMachineSetView',
     'CodeImportMachineView',
     ]
 
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.code.enums import (
-    CodeImportMachineOfflineReason, CodeImportMachineState)
+    CodeImportMachineOfflineReason,
+    CodeImportMachineState,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEvent
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from canonical.launchpad.webapp import (
-    action, canonical_url, Navigation, LaunchpadFormView,
-    LaunchpadView)
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
-from lazr.delegates import delegates
+from lp.services.propertycache import cachedproperty
+
+
+class CodeImportMachineBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` that uses the machines hostname."""
+
+    @property
+    def text(self):
+        return self.context.hostname
 
 
 class CodeImportMachineSetNavigation(Navigation):
@@ -39,15 +54,13 @@ class CodeImportMachineSetNavigation(Navigation):
         return self.context.getByHostname(hostname)
 
 
-class CodeImportMachineSetBreadcrumbBuilder(BreadcrumbBuilder):
+class CodeImportMachineSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ICodeImportMachineSet`."""
     text = u'Machines'
 
 
 class CodeImportMachineSetView(LaunchpadView):
     """The view for the page that shows all the import machines."""
-
-    __used_for__ = ICodeImportMachineSet
 
     label = "Import machines for Launchpad"
 

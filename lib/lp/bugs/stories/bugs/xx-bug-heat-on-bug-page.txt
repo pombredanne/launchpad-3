@@ -1,0 +1,35 @@
+= Bug heat on bug page =
+
+The bug heat appears on the bug index page as four flames.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> print find_main_content(
+    ...     anon_browser.contents).find('img', src='/@@/bug-heat-0.png')
+    <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 0" />
+
+Packages use their distribution as context when generating flame icons
+for a bug page, since a package of low heat value could be displayed
+with four flames if there are few reported bugs against the package.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> login('foo.bar@canonical.com')
+    >>> max_heat = 5000.0
+    >>> distro = factory.makeDistribution()
+    >>> dsp = factory.makeDistributionSourcePackage(distribution=distro)
+    >>> person = factory.makePerson()
+    >>> bug_params = CreateBugParams(
+    ...     owner=person,
+    ...     title="A new bug",
+    ...     comment="This is a new bug")
+    >>> dsp_bug = dsp.createBug(bug_params)
+    >>> dsp_bug.setHeat(max_heat/4)
+    >>> dsp.setMaxBugHeat(max_heat/4)
+    >>> distro.setMaxBugHeat(max_heat)
+    >>> logout()
+
+    >>> anon_browser.open(canonical_url(dsp_bug))
+    >>> print find_main_content(
+    ...     anon_browser.contents).find('img', src='/@@/bug-heat-0.png')
+    <img src="/@@/bug-heat-0.png" alt="0 out of 4 heat flames" title="Heat: 1250" />

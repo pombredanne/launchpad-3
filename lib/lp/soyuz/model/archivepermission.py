@@ -10,32 +10,64 @@ __all__ = [
     'ArchivePermissionSet',
     ]
 
-from sqlobject import BoolCol, ForeignKey
-from storm.expr import In, SQL
-from storm.locals import Int, Reference
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
+from storm.expr import (
+    In,
+    SQL,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import alsoProvides, implements
+from zope.interface import (
+    alsoProvides,
+    implements,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import sqlvalues, SQLBase
-
-from lp.soyuz.interfaces.archive import ComponentNotFound
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
-    IArchiveUploader, IArchiveQueueAdmin)
-from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.interfaces.component import IComponent, IComponentSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
-from lp.soyuz.interfaces.packageset import IPackageset
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
+from lp.soyuz.interfaces.archive import (
+    ComponentNotFound,
+    IArchive,
+    )
+from lp.soyuz.enums import ArchivePermissionType
+from lp.soyuz.interfaces.archivepermission import (
+    IArchivePermission,
+    IArchivePermissionSet,
+    IArchiveQueueAdmin,
+    IArchiveUploader,
+    )
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.model.packageset import Packageset
 
 
 def _extract_type_name(value):
@@ -91,7 +123,7 @@ class ArchivePermission(SQLBase):
     def component_name(self):
         """See `IArchivePermission`"""
         if self.component:
-            return self.component.name 
+            return self.component.name
         else:
             return None
 
@@ -108,6 +140,14 @@ class ArchivePermission(SQLBase):
         """See `IArchivePermission`"""
         if self.packageset:
             return self.packageset.name
+        else:
+            return None
+
+    @property
+    def distro_series_name(self):
+        """See `IArchivePermission`"""
+        if self.packageset:
+            return self.packageset.distroseries.name
         else:
             return None
 
@@ -142,8 +182,8 @@ class ArchivePermissionSet:
             prejoins.append("packageset")
         else:
             raise AssertionError(
-                "'item' is not an IComponent, IPackageset or an "
-                "ISourcePackageName")
+                "'item' %r is not an IComponent, IPackageset or an "
+                "ISourcePackageName" % item)
 
         query = " AND ".join(clauses)
         auth = ArchivePermission.select(
@@ -180,17 +220,22 @@ class ArchivePermissionSet:
                           TeamParticipation.team = ArchivePermission.person)
             """ % sqlvalues(archive, person))
 
-    def _componentsFor(self, archive, person, permission_type):
+    def _componentsFor(self, archives, person, permission_type):
         """Helper function to get ArchivePermission objects."""
+        if IArchive.providedBy(archives):
+            archive_ids = [archives.id]
+        else:
+            archive_ids = [archive.id for archive in archives]
+
         return ArchivePermission.select("""
-            ArchivePermission.archive = %s AND
+            ArchivePermission.archive IN %s AND
             ArchivePermission.permission = %s AND
             ArchivePermission.component IS NOT NULL AND
             EXISTS (SELECT TeamParticipation.person
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, permission_type, person),
+            """ % sqlvalues(archive_ids, permission_type, person),
             prejoins=["component"])
 
     def componentsForUploader(self, archive, person):
@@ -312,9 +357,13 @@ class ArchivePermissionSet:
     def _nameToPackageset(self, packageset):
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
+            # A package set name was passed, assume the current distro series.
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
             name = packageset
             store = IStore(Packageset)
-            packageset = store.find(Packageset, name=name).one()
+            packageset = store.find(
+                Packageset, name=name,
+                distroseries=ubuntu.currentseries).one()
             if packageset is not None:
                 return packageset
             else:
@@ -475,48 +524,56 @@ class ArchivePermissionSet:
                 ''', (sourcepackagename.id, archive.id)))
         return rset
 
-    def isSourceUploadAllowed(self, archive, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, archive, sourcepackagename, person, distroseries=None):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         store = IStore(ArchivePermission)
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
 
         # Put together the parameters for the query that follows.
         archive_params = (ArchivePermissionType.UPLOAD, archive.id)
+        permission_params = (sourcepackagename.id, person.id, distroseries.id)
         query_params = (
             # Query parameters for the first WHERE clause.
-            (archive.id, sourcepackagename.id) +
+            (archive.id, distroseries.id, sourcepackagename.id) +
             # Query parameters for the second WHERE clause.
-            (sourcepackagename.id,) + (person.id,) + archive_params + 
+            permission_params + archive_params +
             # Query parameters for the third WHERE clause.
-            (sourcepackagename.id,) + (person.id,) + archive_params)
+            permission_params + archive_params)
 
         query = '''
         SELECT CASE
           WHEN (
             SELECT COUNT(ap.id)
-            FROM packagesetsources pss, archivepermission ap
+            FROM packagesetsources pss, archivepermission ap, packageset ps
             WHERE
               ap.archive = %s AND ap.explicit = TRUE
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.sourcepackagename = %s
               AND pss.packageset = ap.packageset) > 0
           THEN (
             SELECT COUNT(ap.id)
             FROM
-              packagesetsources pss, archivepermission ap,
+              packagesetsources pss, archivepermission ap, packageset ps,
               teamparticipation tp
             WHERE
               pss.sourcepackagename = %s
               AND ap.person = tp.team AND tp.person = %s
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.packageset = ap.packageset AND ap.explicit = TRUE
               AND ap.permission = %s AND ap.archive = %s)
           ELSE (
             SELECT COUNT(ap.id)
             FROM
-              packagesetsources pss, archivepermission ap,
+              packagesetsources pss, archivepermission ap, packageset ps,
               teamparticipation tp, flatpackagesetinclusion fpsi
             WHERE
               pss.sourcepackagename = %s
               AND ap.person = tp.team AND tp.person = %s
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.packageset = fpsi.child AND fpsi.parent = ap.packageset
               AND ap.permission = %s AND ap.archive = %s)
         END AS number_of_permitted_package_sets;

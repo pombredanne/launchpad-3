@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -78,25 +78,6 @@ def test_schema():
             POFile.language <> TranslationMessage.language
         """
     check(query, "Found TranslationMessages with incorrect language.")
-
-    # Are all language variants set up?
-    query = """
-        SELECT count(*)
-        FROM TranslationMessage
-        JOIN POFile ON POFile.id = TranslationMessage.pofile
-        WHERE (POFile.variant IS NULL) <> (TranslationMessage.variant IS NULL)
-        """
-    check(query, "Found TranslationMessages with wrong variant nullness.")
-
-    # Are all variants correct?  (Easier to compare now that we know
-    # that all the nulls are in the right places).
-    query = """
-        SELECT count(*)
-        FROM TranslationMessage
-        JOIN POFile ON POFile.id = TranslationMessage.pofile
-        WHERE POFile.variant <> TranslationMessage.variant
-        """
-    check(query, "Found TranslationMessages with incorrect variants.")
 
     # Do all POTMsgSets with nonzero sequence numbers have linking-table
     # entries linking them to their POTemplates?  (Zero sequence number

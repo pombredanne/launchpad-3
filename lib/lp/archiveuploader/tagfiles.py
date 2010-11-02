@@ -1,11 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import apt_pkg, re
+"""Utility classes for parsing Debian tag files."""
 
 __all__ = [
-    'TagFile', 'TagStanza', 'TagFileParseError',
-    'parse_tagfile', 'parse_tagfile_lines']
+    'TagFile',
+    'TagStanza',
+    'TagFileParseError',
+    'parse_tagfile',
+    'parse_tagfile_lines'
+    ]
+
+
+import apt_pkg
+import re
+
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""
@@ -53,19 +62,19 @@ class TagStanza(object):
         """Expose a dicty has_key"""
         return key in self.stanza.keys()
 
-    """Enables (foo in bar) functionality"""
+    # Enables (foo in bar) functionality.
     __contains__ = has_key
 
     def items(self):
         """Allows for k,v in foo.items()"""
-        return [ (k,self.stanza[k]) for k in self.stanza.keys() ]
+        return [ (k, self.stanza[k]) for k in self.stanza.keys() ]
 
 class TagFileParseError(Exception):
     """This exception is raised if parse_changes encounters nastiness"""
     pass
 
-re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
-re_multi_line_field = re.compile(r"^\s(.*)");
+re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
+re_multi_line_field = re.compile(r"^(\s.*)")
 
 
 def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
@@ -89,6 +98,7 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
       '-----BEGIN PGP SIGNATURE-----'.
     """
     error = ""
+
     changes = {}
 
     # Reindex by line number so we can easily verify the format of
@@ -103,7 +113,8 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
 
     num_of_lines = len(indexed_lines.keys())
     index = 0
-    first = -1
+    first_value_for_newline_delimited_field = False
+    more_values_can_follow = False
     while index < num_of_lines:
         index += 1
         line = indexed_lines[index]
@@ -116,11 +127,15 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
             if dsc_whitespace_rules:
                 index += 1
                 if index > num_of_lines:
-                    raise TagFileParseError("%s: invalid .dsc file at line %d" % (filename, index))
+                    raise TagFileParseError(
+                        "%s: invalid .dsc file at line %d" % (
+                            filename, index))
                 line = indexed_lines[index]
                 if not line.startswith("-----BEGIN PGP SIGNATURE"):
-                    raise TagFileParseError("%s: invalid .dsc file at line %d -- "
-                        "expected PGP signature; got '%s'" % (filename, index,line))
+                    raise TagFileParseError(
+                        "%s: invalid .dsc file at line %d -- "
+                        "expected PGP signature; got '%s'" % (
+                            filename, index,line))
                 inside_signature = 0
                 break
             else:
@@ -128,8 +143,9 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         if line.startswith("-----BEGIN PGP SIGNATURE"):
             break
 
-        # If we're at the start of a signed section, then consume the signature
-        # information, and remember that we're inside the signed data.
+        # If we're at the start of a signed section, then consume the
+        # signature information, and remember that we're inside the signed
+        # data.
         if line.startswith("-----BEGIN PGP SIGNED MESSAGE"):
             inside_signature = 1
             if dsc_whitespace_rules:
@@ -143,33 +159,62 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
             continue
         slf = re_single_line_field.match(line)
         if slf:
-            field = slf.groups()[0].lower()
+            field = slf.groups()[0]
             changes[field] = slf.groups()[1]
-            first = 1
+
+            # If there is no value on this line, we assume this is
+            # the first line of a multiline field, such as the 'files'
+            # field.
+            if changes[field] == '':
+                first_value_for_newline_delimited_field = True
+
+            # Either way, more values for this field could follow
+            # on the next line.
+            more_values_can_follow = True
             continue
         if line.rstrip() == " .":
-            changes[field] += '\n'
+            changes[field] += '\n' + line
             continue
         mlf = re_multi_line_field.match(line)
         if mlf:
-            if first == -1:
-                raise TagFileParseError("%s: could not parse .changes file "
-                "line %d: '%s'\n [Multi-line field continuing on from nothing?]"
-                % (filename, index,line))
-            if first == 1 and changes[field] != "":
-                changes[field] += '\n'
-            first = 0
-            changes[field] += mlf.groups()[0] + '\n'
+            if more_values_can_follow is False:
+                raise TagFileParseError(
+                    "%s: could not parse .changes file line %d: '%s'\n"
+                    " [Multi-line field continuing on from nothing?]" % (
+                        filename, index,line))
+
+            # XXX Michael Nelson 20091001 bug=440014
+            # Is there any reason why we're not simply using
+            # apt_pkg.ParseTagFile instead of this looong function.
+            # If we can get rid of this code that is trying to mimic
+            # what ParseTagFile does out of the box, it would be a good
+            # thing.
+
+            # The first value for a newline delimited field, such as
+            # the 'files' field, has its leading spaces stripped. Other
+            # fields (such as a 'binary' field spanning multiple lines)
+            # should *not* be l-stripped of their leading spaces otherwise
+            # they will be re-parsed incorrectly by apt_get.ParseTagFiles()
+            # (for example, from a Source index).
+            value = mlf.groups()[0]
+            if first_value_for_newline_delimited_field:
+                changes[field] = value.lstrip()
+            else:
+                changes[field] += '\n' + value
+
+            first_value_for_newline_delimited_field = False
             continue
         error += line
 
     if dsc_whitespace_rules and inside_signature:
-        raise TagFileParseError("%s: invalid .dsc format at line %d" % (filename, index))
+        raise TagFileParseError(
+            "%s: invalid .dsc format at line %d" % (filename, index))
 
     changes["filecontents"] = "".join(lines)
 
     if error:
-        raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
+        raise TagFileParseError(
+            "%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes
 

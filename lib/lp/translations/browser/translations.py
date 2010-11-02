@@ -9,25 +9,35 @@ __all__ = [
     'RosettaStatsView',
     'RosettaApplicationNavigation',
     'TranslateRedirectView',
+    'TranslationsLanguageBreadcrumb',
     'TranslationsMixin',
     'TranslationsRedirectView',
+    'TranslationsVHostBreadcrumb',
     ]
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IRosettaApplication)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.layers import TranslationsLayer
-from canonical.launchpad.webapp import Navigation, stepto, canonical_url
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.publisher import TranslationsLayer
 
 
 class HelpTranslateButtonView:
@@ -47,7 +57,7 @@ class HelpTranslateButtonView:
 class TranslationsMixin:
     """Provide Translations specific properties."""
 
-    @property
+    @cachedproperty
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILaunchpadCelebrities).english
@@ -62,7 +72,9 @@ class TranslationsMixin:
             getUtility(ILaunchpadCelebrities).lp_translations,
             rootsite='answers')
 
+
 class RosettaApplicationView(TranslationsMixin):
+    """View for various top-level Translations pages."""
 
     def __init__(self, context, request):
         self.context = context
@@ -106,6 +118,17 @@ class RosettaApplicationView(TranslationsMixin):
         """The url of the launchpad-users team."""
         team = getUtility(IPersonSet).getByName('launchpad-users')
         return canonical_url(team)
+
+
+class TranslatableProductsView(LaunchpadView):
+    """List of translatable products."""
+    label = "Projects with translations in Launchpad"
+
+    @cachedproperty
+    def batchnav(self):
+        """Navigate the list of translatable products."""
+        return BatchNavigator(
+            getUtility(IProductSet).getTranslatables(), self.request)
 
 
 class RosettaStatsView:
@@ -166,7 +189,7 @@ class PageRedirectView:
         self.request.response.redirect(
             '/'.join([
                 canonical_url(self.context, rootsite='translations'),
-                self.page
+                self.page,
                 ]), status=301)
 
 
@@ -182,3 +205,16 @@ class TranslationsRedirectView(PageRedirectView):
 
     def __init__(self, context, request):
         PageRedirectView.__init__(self, context, request, '+translations')
+
+
+class TranslationsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'translations'
+    text = 'Translations'
+
+
+class TranslationsLanguageBreadcrumb(Breadcrumb):
+    """Breadcrumb for objects with language."""
+
+    @property
+    def text(self):
+        return self.context.language.displayname

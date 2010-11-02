@@ -12,26 +12,58 @@ __all__ = [
     'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
-    'IProjectMilestone',
+    'IProjectGroupMilestone',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, TextLine
-
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.bugs.interfaces.bugtarget import IHasBugs
-from lp.bugs.interfaces.bugtask import IBugTask
-from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, NoneableDescription, NoneableTextLine)
-from canonical.launchpad.validators.name import name_validator
-
-from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation, exported,
-    export_operation_as, export_read_operation, export_write_operation,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Date,
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import (
+    patch_plain_parameter_type,
+    )
+from canonical.launchpad.validators.name import name_validator
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    FormattableDate,
+    NoneableDescription,
+    NoneableTextLine,
+    )
 
 
 class MilestoneNameField(ContentNameField):
@@ -56,7 +88,7 @@ class MilestoneNameField(ContentNameField):
         elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 'Editing a milestone in an unexpected context: %r'
                 % self.context)
         if milestone is not None:
@@ -66,7 +98,8 @@ class MilestoneNameField(ContentNameField):
         return milestone
 
 
-class IMilestone(IHasBugs):
+class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
+                 IHasOfficialBugTags):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
@@ -102,7 +135,7 @@ class IMilestone(IHasBugs):
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = exported(
-        Date(title=_("Date Targeted"), required=False,
+        FormattableDate(title=_("Date Targeted"), required=False,
              description=_("Example: 2005-11-24")),
         exported_as='date_targeted')
     active = exported(
@@ -159,7 +192,16 @@ class IMilestone(IHasBugs):
         :returns: `IProductRelease` object.
         """
 
-    @export_write_operation()
+    def closeBugsAndBlueprints(user):
+        """Close completed bugs and blueprints.
+
+        Bugs that are fix committed status are updated to fix released.
+        Blueprints that are in deployment status are updated to implemented
+        status.
+        XXX sinzui 2010-01-27 bug=341687: blueprints not yet implemented.
+        """
+
+    @export_destructor_operation()
     @export_operation_as('delete')
     def destroySelf():
         """Delete this milestone.
@@ -170,6 +212,8 @@ class IMilestone(IHasBugs):
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
+patch_plain_parameter_type(
+    IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 
 
 class IMilestoneSet(Interface):
@@ -201,13 +245,15 @@ class IMilestoneSet(Interface):
         """Return all visible milestones."""
 
 
-class IProjectMilestone(IMilestone):
+class IProjectGroupMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
 
 
 class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
     export_as_webservice_entry()
+
+    has_milestones = Bool(title=_("Whether the object has any milestones."))
 
     milestones = exported(
         CollectionField(

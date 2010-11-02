@@ -3,31 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-    <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_top" class="documentDescription">
-        All mirrors require at least an HTTP or FTP URL to be specified.
-      </p>
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <p metal:fill-slot="extra_top" class="documentDescription">
+          All mirrors require at least an HTTP or FTP URL to be specified.
+        </p>
+      </div>
     </div>
-
-  </div>
-
-</body>
+  </body>
 </html>

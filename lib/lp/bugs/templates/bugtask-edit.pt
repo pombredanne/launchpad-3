@@ -6,28 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <tal:icon replace="structure context/image:icon" />
-        <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-      </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-status-details" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-  </metal:rightportlets>
-
     <div metal:fill-slot="main">
       <p tal:condition="view/is_question" class="error message">
         This bug was converted into a question. It cannot be edited.

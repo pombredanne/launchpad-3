@@ -18,23 +18,28 @@ __all__ = [
 from datetime import datetime
 
 import pytz
-
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, SQLObjectNotFound
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
-
-from lp.bugs.adapters.bugchange import BugTaskAdded
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.bugs.adapters.bugchange import BugTaskAdded
 from lp.bugs.interfaces.bugnomination import (
-    BugNominationStatus, IBugNomination, IBugNominationSet)
+    BugNominationStatus,
+    BugNominationStatusError,
+    IBugNomination,
+    IBugNominationSet,
+    )
 from lp.registry.interfaces.person import validate_public_person
+
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -66,6 +71,9 @@ class BugNomination(SQLBase):
 
     def approve(self, approver):
         """See IBugNomination."""
+        if self.isApproved():
+            # Approving an approved nomination is a no-op.
+            return
         self.status = BugNominationStatus.APPROVED
         self.decider = approver
         self.date_decided = datetime.now(pytz.timezone('UTC'))
@@ -91,6 +99,9 @@ class BugNomination(SQLBase):
 
     def decline(self, decliner):
         """See IBugNomination."""
+        if self.isApproved():
+            raise BugNominationStatusError(
+                "Cannot decline an approved nomination.")
         self.status = BugNominationStatus.DECLINED
         self.decider = decliner
         self.date_decided = datetime.now(pytz.timezone('UTC'))
@@ -137,7 +148,7 @@ class BugNomination(SQLBase):
                     upload_component.component
                     for upload_component in distribution.uploaders)
             for packagename_or_component in bug_packagenames_and_components:
-                if distribution.main_archive.canUpload(
+                if distribution.main_archive.checkArchivePermission(
                     person, packagename_or_component):
                     return True
 

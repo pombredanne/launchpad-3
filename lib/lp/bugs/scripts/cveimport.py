@@ -7,24 +7,31 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-import cElementTree
-import urllib2
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 import gzip
 import StringIO
-import timing
+import time
+import urllib2
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-
 from zope.lifecycleevent import ObjectModifiedEvent
 
 from canonical.config import config
-from lp.bugs.interfaces.cve import CveStatus, ICveSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICveSet,
+    )
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads}'
@@ -217,12 +224,13 @@ class CVEUpdater(LaunchpadCronScript):
         else:
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
-        # start analysing the data
-        timing.start()
+        # Start analysing the data.
+        start_time = time.time()
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
-        timing.finish()
-        self.logger.info('%d seconds to update database.' % timing.seconds())
+        finish_time = time.time()
+        self.logger.info('%d seconds to update database.'
+                % (finish_time - start_time))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.

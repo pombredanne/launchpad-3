@@ -3,20 +3,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
   >
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1 tal:content="CONTEXTS/fmt:pagetitle">
-    Edit dependencies for Blah PPA
-  </h1>
-
+<div class="top-portlet">
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div class="form" metal:fill-slot="widgets">
@@ -69,14 +62,14 @@
   </div> <!-- launchpad_form -->
 
 <script type="text/javascript">
-   YUI().use("node", function(Y) {
+   LPS.use("node", function(Y) {
 
        // Highlight (setting bold font-weight) the label for the
        // selected option in a given NodesList. Assumes the input is
        // contained by the label.
        function highlight_checked (nodes) {
            nodes.each(function(input) {
-               var label = Y.get(input.get("parentNode"));
+               var label = Y.one(input.get("parentNode"));
                if (input.get("checked")) {
                    label.setStyle("fontWeight", "bold");
                }
@@ -86,49 +79,43 @@
            });
        };
 
-       var main_area = Y.get("#mainarea");
+       var main_area = Y.one("#mainarea");
 
        // Highlight the selected radio button input on page load.
-       var inputs = main_area.queryAll("input.highlight-selected");
+       var inputs = main_area.all("input.highlight-selected");
        highlight_checked(inputs);
 
        // Install signal handlers for all radio-button inputs to
        // recalculate with options should be highlighted when one of
        // them is clicked.
-       inputs.each(function(input) {
-           input.on("click", function(e) {
-               var main_area = Y.get("#mainarea");
-               var inputs = main_area.queryAll("input.highlight-selected");
-               highlight_checked(inputs);
-           });
-       });
+       inputs.on("click", function(e) {
+           highlight_checked(inputs);
+       }, this);
 
        // Install handlers to decorate selected check-box inputs when
        // they get clicked. Selected options text (next sibling) will
        // be decorated with 'line-through' style and rendered in
        // 'red'. Options not selected (or unselected) text will be
        // rendered in 'blue' and without any decoration.
-       var inputs = main_area.queryAll("input.line-through-when-checked");
-       if (inputs) {
-           inputs.each(function(input) {
-               input.on("click", function(e) {
-                   var input = e.currentTarget;
-                   var link = input.next();
-                   if (input.get("checked")) {
-                       link.setStyle("color", "red");
-                       link.setStyle("textDecoration", "line-through");
-                   }
-                   else {
-                       link.setStyle("color", "blue");
-                       link.setStyle("textDecoration", "none");
-                   }
-               });
+       main_area.all(
+           "input.line-through-when-checked").on('click', function(e) {
+               var input = e.currentTarget;
+               var link = input.next();
+               if (input.get("checked")) {
+                   link.setStyle("color", "red");
+                   link.setStyle("textDecoration", "line-through");
+               }
+               else {
+                   link.setStyle("color", "blue");
+                   link.setStyle("textDecoration", "none");
+               }
            });
-       };
+       });
    });
 </script>
 
 
+</div> <!--top-portlet -->
 </div> <!--main -->
 
 </body>

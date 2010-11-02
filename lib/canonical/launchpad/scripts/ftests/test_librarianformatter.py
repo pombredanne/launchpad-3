@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 import os.path
 import re
@@ -17,9 +20,13 @@ from urllib2 import urlopen
 from pytz import utc
 import transaction
 
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 this_directory = os.path.dirname(__file__)

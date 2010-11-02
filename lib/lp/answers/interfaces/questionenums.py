@@ -17,7 +17,12 @@ __all__ = [
     'QuestionStatus',
     ]
 
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    )
 
 
 class QuestionAction(DBEnumeratedType):
@@ -127,7 +132,7 @@ class QuestionParticipation(EnumeratedType):
 class QuestionPriority(DBEnumeratedType):
     """The Priority with a Question must be handled.
 
-    This enum is used to prioritise work done in the Launchpad Answert Tracker
+    This enum is used to prioritize work done in the Launchpad Answert Tracker
     management system.
     """
 
@@ -150,7 +155,7 @@ class QuestionPriority(DBEnumeratedType):
         High
 
         This question has been flagged as being of higher than normal
-        priority. It should always be prioritised over a "normal" question.
+        priority. It should always be prioritized over a "normal" question.
         """)
 
     EMERGENCY = DBItem(90, """

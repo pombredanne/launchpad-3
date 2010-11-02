@@ -3,67 +3,54 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
->
+  >
 
 <body>
-
-<div metal:fill-slot="main">
-  <h1>
-    &#8220;<span tal:replace="context/displayname">
-    Foo</span>&#8221; team
-  </h1>
-  <h2>Relationship to other teams</h2>
-  <tal:block define="
-    subteams context/sub_teams;
-    superteams context/super_teams
-  ">
-    <p tal:condition="python: not subteams and not superteams">
+  <div metal:fill-slot="main">
+    <p tal:condition="not: view/has_relationships">
       None of the members of
       &#8220;<span tal:replace="context/displayname"/>&#8221;
-      are teams,
-      and nor is it a member of any other team.
+      are teams, nor is it a member of any other team.
     </p>
-    <p tal:condition="python: superteams and not subteams">
+    <p tal:condition="view/has_only_super_teams">
       None of the members of
       &#8220;<span tal:replace="context/displayname"/>&#8221;
       are teams.
     </p>
-    <tal:block condition="subteams">
+    <tal:block condition="view/has_sub_teams">
       <p>
         These teams are members of
         &#8220;<span tal:replace="context/displayname"/>&#8221;:
       </p>
       <ul id="subteams">
-        <tal:subteams repeat="team subteams">
-          <li tal:condition="team/@@+restricted-membership/userCanViewMembership">
+        <tal:subteams repeat="team context/sub_teams">
+          <li
+            tal:condition="team/@@+restricted-membership/userCanViewMembership">
             <tal:link replace="structure team/fmt:link" />
           </li>
         </tal:subteams>
-      </ul>
+    </ul>
     </tal:block>
-    <p tal:condition="python: subteams and not superteams">
+    <p tal:condition="view/has_only_sub_teams">
       &#8220;<span tal:replace="context/displayname"/>&#8221;
       is not a member of any other team.
     </p>
-    <tal:block condition="superteams">
+    <tal:block condition="view/has_super_teams">
       <p>
         &#8220;<span tal:replace="context/displayname"/>&#8221;
         is a member of these teams:
       </p>
       <ul id="superteams">
-        <tal:superteams repeat="team superteams">
-          <li tal:condition="team/@@+restricted-membership/userCanViewMembership">
+        <tal:superteams repeat="team context/super_teams">
+          <li
+            tal:condition="team/@@+restricted-membership/userCanViewMembership">
             <tal:link replace="structure team/fmt:link" />
           </li>
         </tal:superteams>
       </ul>
     </tal:block>
-  </tal:block>
-</div>
+  </div>
 </body>
 </html>

@@ -4,21 +4,35 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Language', 'LanguageSet']
+__all__ = [
+    'Language',
+    'LanguageSet',
+    ]
 
-from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    BoolCol,
+    CONTAINSSTRING,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from storm.locals import Or
+from zope.interface import implements
 
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.interfaces import ISlaveStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
-    ILanguageSet, ILanguage, TextDirection)
+    ILanguage,
+    ILanguageSet,
+    TextDirection,
+    )
 
 
 class Language(SQLBase):
@@ -65,6 +79,10 @@ class Language(SQLBase):
         """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.englishname, self.code)
+
     @property
     def alt_suggestion_language(self):
         """See `ILanguage`.
@@ -75,7 +93,7 @@ class Language(SQLBase):
         Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
         and may provide suggestions for each other.
         """
-        if self.code in ['pt_BR',]:
+        if self.code == 'pt_BR':
             return None
         elif self.code == 'nn':
             return Language.byCode('nb')
@@ -128,29 +146,34 @@ class Language(SQLBase):
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
-    def getFullCode(self, variant=None):
+    @property
+    def translators_count(self):
         """See `ILanguage`."""
-        if variant:
-            return '%s@%s' % (self.code, variant)
-        else:
-            return self.code
-
-    def getFullEnglishName(self, variant=None):
-        """See `ILanguage`."""
-        if variant:
-            return '%s ("%s" variant)' % (self.englishname, variant)
-        else:
-            return self.englishname
+        return self.translators.count()
 
 
 class LanguageSet:
     implements(ILanguageSet)
 
     @property
-    def common_languages(self):
-        return iter(Language.select(
+    def _visible_languages(self):
+        return Language.select(
             'visible IS TRUE',
-            orderBy='englishname'))
+            orderBy='englishname')
+
+    @property
+    def common_languages(self):
+        """See `ILanguageSet`."""
+        return iter(self._visible_languages)
+
+    def getDefaultLanguages(self):
+        """See `ILanguageSet`."""
+        return self._visible_languages
+
+    def getAllLanguages(self):
+        """See `ILanguageSet`."""
+        return ISlaveStore(Language).find(Language).order_by(
+            Language.englishname)
 
     def __iter__(self):
         """See `ILanguageSet`."""
@@ -161,7 +184,7 @@ class LanguageSet:
         language = self.getLanguageByCode(code)
 
         if language is None:
-            raise NotFoundError, code
+            raise NotFoundError(code)
 
         return language
 
@@ -207,27 +230,6 @@ class LanguageSet:
                 pass
 
         return languages
-
-    def getLanguageAndVariantFromString(self, language_string):
-        """See `ILanguageSet`."""
-        if language_string is None:
-            return (None, None)
-
-        if u'@' in language_string:
-            # Seems like this entry is using a variant entry.
-            language_code, language_variant = language_string.split(u'@')
-        else:
-            language_code = language_string
-            language_variant = None
-
-        try:
-            language = self[language_code]
-        except NotFoundError:
-            # We don't have such language in our database so we cannot
-            # guess it using this method.
-            return (None, None)
-
-        return (language, language_variant)
 
     def createLanguage(self, code, englishname, nativename=None,
                        pluralforms=None, pluralexpression=None, visible=True,

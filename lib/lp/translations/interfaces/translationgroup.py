@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,32 +8,47 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasTranslationGroup',
+    'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
     'TranslationPermission',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
 
 
 class TranslationPermission(DBEnumeratedType):
     """Translation Permission System
 
-    Projects, products and distributions can all have content that needs to
-    be translated. In this case, Launchpad Translations allows them to decide
-    how open they want that translation process to be. At one extreme, anybody
-    can add or edit any translation, without review. At the other, only the
-    designated translator for that group in that language can add or edit its
-    translation files. This schema enumerates the options.
+    Projects groups, products and distributions can all have content that
+    needs to be translated. In this case, Launchpad Translations allows them
+    to decide how open they want that translation process to be. At one
+    extreme, anybody can add or edit any translation, without review. At the
+    other, only the designated translator for that group in that language can
+    add or edit its translation files. This schema enumerates the options.
     """
 
     OPEN = DBItem(1, """
@@ -74,7 +89,7 @@ class TranslationPermission(DBEnumeratedType):
         to add suggestions.""")
 
 
-class IHasTranslationGroup(Interface):
+class ITranslationPolicy(Interface):
     translationgroup = Choice(
         title = _("Translation group"),
         description = _("The translation group that helps review "
@@ -148,9 +163,6 @@ class ITranslationGroup(IHasOwner):
     def query_translator(language):
         """Retrieve a translator, or None, based on a Language"""
 
-    def __getitem__(languagecode):
-        """Retrieve the translator for the given language in this group."""
-
     # adding and removing translators
     def remove_translator(language):
         """Remove the translator for this language from the group."""
@@ -158,6 +170,51 @@ class ITranslationGroup(IHasOwner):
     # used for the form machinery
     def add(content):
         """Add a new object."""
+
+    top_projects = Attribute(
+        "Most relevant projects using this translation group.")
+
+    number_of_remaining_projects = Attribute(
+        "Count of remaining projects not listed in the `top_projects`.")
+
+    def __getitem__(language_code):
+        """Retrieve the translator for the given language in this group.
+
+        This is used for navigation through the group.
+        """
+
+    def fetchTranslatorData():
+        """Fetch translators and related data.
+
+        Prefetches display-related properties.
+
+        :return: A result set of (`Translator`, `Language`, `Person`),
+            ordered by language name in English.
+        """
+
+    def fetchProjectsForDisplay():
+        """Fetch `Product`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Product`, ordered by display name.
+        """
+
+    def fetchProjectGroupsForDisplay():
+        """Fetch `Project`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Project`, ordered by display name.
+        """
+
+    def fetchDistrosForDisplay():
+        """Fetch `Distribution`s using this group, for display purposes.
+
+        Prefetches display-related properties.
+
+        :return: A result set of `Distribution`, ordered by display name.
+        """
 
 
 class ITranslationGroupSet(Interface):

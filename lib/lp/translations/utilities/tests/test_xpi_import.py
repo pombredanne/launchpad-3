@@ -9,14 +9,15 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
-from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaXpiImporter)
-from canonical.testing import LaunchpadZopelessLayer
+    RosettaImportStatus,
+    )
+from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.tests.helpers import (
     import_pofile_or_potemplate,
     )
@@ -39,7 +40,7 @@ class XpiTestCase(unittest.TestCase):
 
     def setUp(self):
         # Get the importer.
-        self.importer = getUtility(IPersonSet).getByName('sabdfl')
+        self.importer = getUtility(IPersonSet).getByName('mark')
 
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')
@@ -204,7 +205,8 @@ class XpiTestCase(unittest.TestCase):
             ).count()
 
         # Force the entry to be imported again:
-        entry.setStatus(RosettaImportStatus.APPROVED)
+        entry.setStatus(RosettaImportStatus.APPROVED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
 

@@ -9,7 +9,10 @@ __metaclass__ = type
 __all__ = ['TranslationFileFormat']
 
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 class TranslationFileFormat(DBEnumeratedType):
@@ -53,9 +56,9 @@ class TranslationFileFormat(DBEnumeratedType):
         """)
 
     POCHANGED = DBItem(6, """
-        Changes from packaged translations in partial PO format
+        Changes from imported translations in partial PO format
 
         Gettext's standard text file format but contains only those msgids
-        that were changed since the packaged version was imported.
+        that were changed compared to the imported version.
         """)
 

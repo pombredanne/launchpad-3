@@ -1,41 +1,243 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
 from datetime import datetime
-import pytz
 
+from lazr.lifecycle.snapshot import Snapshot
+import pytz
+from storm.store import Store
+from testtools.matchers import LessThan
+import transaction
 from zope.component import getUtility
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
+from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    )
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
-from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.registry.interfaces.person import InvalidName
-from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
-from lp.registry.interfaces.person import (
-    IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility)
-from canonical.launchpad.database import Bug, BugTask, BugSubscription
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscription)
-from lp.registry.model.person import Person
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    InvalidEmailAddress,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    reconnect_stores,
+    )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import create_initialized_view
-from lp.registry.interfaces.person import PrivatePersonLinkageError
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.registry.errors import (
+    NameAlreadyTaken,
+    PrivatePersonLinkageError,
+    )
+from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.person import (
+    ImmutableVisibilityError,
+    InvalidName,
+    IPersonSet,
+    PersonCreationRationale,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.product import IProductSet
+from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.person import Person
+from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.testing import (
+    celebrity_logged_in,
+    login_person,
+    logout,
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing._webservice import QueryCollector
+from lp.testing.matchers import HasQueryCount
+from lp.testing.views import create_initialized_view
+
+
+class TestPersonTeams(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonTeams, self).setUp()
+        self.user = self.factory.makePerson()
+        self.a_team = self.factory.makeTeam(name='a')
+        self.b_team = self.factory.makeTeam(name='b', owner=self.a_team)
+        self.c_team = self.factory.makeTeam(name='c', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.a_team.addMember(self.user, self.a_team.teamowner)
+
+    def test_teams_indirectly_participated_in(self):
+        indirect_teams = self.user.teams_indirectly_participated_in
+        expected_teams = [self.b_team, self.c_team]
+        test_teams = sorted(indirect_teams,
+            key=lambda team: team.displayname)
+        self.assertEqual(expected_teams, test_teams)
+
+    def test_team_memberships(self):
+        memberships = self.user.team_memberships
+        memberships = [(m.person, m.team) for m in memberships]
+        self.assertEqual([(self.user, self.a_team)], memberships)
+
+    def test_path_to_team(self):
+        path_to_a = self.user.findPathToTeam(self.a_team)
+        path_to_b = self.user.findPathToTeam(self.b_team)
+        path_to_c = self.user.findPathToTeam(self.c_team)
+
+        self.assertEqual([self.a_team], path_to_a)
+        self.assertEqual([self.a_team, self.b_team], path_to_b)
+        self.assertEqual([self.a_team, self.b_team, self.c_team], path_to_c)
+
+    def test_teams_participated_in(self):
+        teams = self.user.teams_participated_in
+        teams = sorted(list(teams), key=lambda x: x.displayname)
+        expected_teams = [self.a_team, self.b_team, self.c_team]
+        self.assertEqual(expected_teams, teams)
+
+    def test_getPathsToTeams(self):
+        paths, memberships = self.user.getPathsToTeams()
+        expected_paths = {self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
+
+    def test_getPathsToTeams_complicated(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        e_team = self.factory.makeTeam(name='e')
+        f_team = self.factory.makeTeam(name='f', owner=e_team)
+        unrelated_team = self.factory.makeTeam(name='unrelated')
+        login_person(self.a_team.teamowner)
+        d_team.addMember(self.user, d_team.teamowner)
+        login_person(e_team.teamowner)
+        e_team.addMember(self.user, e_team.teamowner)
+
+        paths, memberships = self.user.getPathsToTeams()
+        expected_paths = {
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user],
+            e_team: [e_team, self.user],
+            f_team: [f_team, e_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [
+            (e_team, self.user),
+            (d_team, self.user),
+            (self.a_team, self.user),
+            ]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
+
+    def test_getPathsToTeams_multiple_paths(self):
+        d_team = self.factory.makeTeam(name='d', owner=self.b_team)
+        login_person(self.a_team.teamowner)
+        self.c_team.addMember(d_team, self.c_team.teamowner)
+
+        paths, memberships = self.user.getPathsToTeams()
+        # getPathsToTeams should not randomly pick one path or another
+        # when multiples exist; it sorts to use the oldest path, so
+        # the expected paths below should be the returned result.
+        expected_paths = {
+            self.a_team: [self.a_team, self.user],
+            self.b_team: [self.b_team, self.a_team, self.user],
+            self.c_team: [self.c_team, self.b_team, self.a_team, self.user],
+            d_team: [d_team, self.b_team, self.a_team, self.user]}
+        self.assertEqual(expected_paths, paths)
+
+        expected_memberships = [(self.a_team, self.user)]
+        memberships = [
+            (membership.team, membership.person) for membership
+            in memberships]
+        self.assertEqual(expected_memberships, memberships)
+
+    def test_inTeam_direct_team(self):
+        # Verify direct membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.a_team))
+        self.assertEqual(
+            {self.a_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_indirect_team(self):
+        # Verify indirect membeship is True and the cache is populated.
+        self.assertTrue(self.user.inTeam(self.b_team))
+        self.assertEqual(
+            {self.b_team.id: True},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_cache_cleared_by_membership_change(self):
+        # Verify a change in membership clears the team cache.
+        self.user.inTeam(self.a_team)
+        with person_logged_in(self.b_team.teamowner):
+            self.b_team.addMember(self.user, self.b_team.teamowner)
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
+    def test_inTeam_person_is_false(self):
+        # Verify a user cannot be a member of another user.
+        other_user = self.factory.makePerson()
+        self.assertFalse(self.user.inTeam(other_user))
+
+    def test_inTeam_person_does_not_build_TeamParticipation_cache(self):
+        # Verify when a user is the argument, a DB call to TeamParticipation
+        # was not made to learn this.
+        other_user = self.factory.makePerson()
+        Store.of(self.user).invalidate()
+        # Load the two person objects only by reading a non-id attribute
+        # unrelated to team/person or teamparticipation.
+        other_user.name
+        self.user.name
+        self.assertFalse(
+            self.assertStatementCount(0, self.user.inTeam, other_user))
+        self.assertEqual(
+            {},
+            removeSecurityProxy(self.user)._inTeam_cache)
+
 
 class TestPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getOwnedOrDrivenPillars(self):
+        user = self.factory.makePerson()
+        active_project = self.factory.makeProject(owner=user)
+        inactive_project = self.factory.makeProject(owner=user)
+        with celebrity_logged_in('admin'):
+            inactive_project.active = False
+        expected_pillars = [active_project.name]
+        received_pillars = [pillar.name for pillar in
+            user.getOwnedOrDrivenPillars()]
+        self.assertEqual(expected_pillars, received_pillars)
+
+
+class TestPersonStates(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -47,7 +249,7 @@ class TestPerson(TestCaseWithFactory):
         self.guadamen = person_set.getByName('guadamen')
         product_set = getUtility(IProductSet)
         self.bzr = product_set.getByName('bzr')
-        self.now = datetime.now(pytz.timezone('UTC'))
+        self.now = datetime.now(pytz.UTC)
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -71,6 +273,25 @@ class TestPerson(TestCaseWithFactory):
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
+
+    def test_deactivateAccountReassignsOwnerAndDriver(self):
+        """Product owner and driver are reassigned.
+
+        If a user is a product owner and/or driver, when the user is
+        deactivated the roles are assigned to the registry experts team.  Note
+        a person can have both roles and the method must handle both at once,
+        that's why this is one test.
+        """
+        user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=user)
+        with person_logged_in(user):
+            product.driver = user
+            user.deactivateAccount("Going off the grid.")
+        registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+        self.assertEqual(registry_team, product.owner,
+                         "Owner is not registry team.")
+        self.assertEqual(registry_team, product.driver,
+                         "Driver is not registry team.")
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
@@ -109,19 +330,6 @@ class TestPerson(TestCaseWithFactory):
                 PrivatePersonLinkageError,
                 setattr, bug, attr_name, self.myteam)
 
-    def test_BugTask_person_validator(self):
-        bug_task = BugTask.select(limit=1)[0]
-        for attr_name in ['assignee', 'owner']:
-            self.assertRaises(
-                PrivatePersonLinkageError,
-                setattr, bug_task, attr_name, self.myteam)
-
-    def test_BugSubscription_person_validator(self):
-        bug_subscription = BugSubscription.select(limit=1)[0]
-        self.assertRaises(
-            PrivatePersonLinkageError,
-            setattr, bug_subscription, 'person', self.myteam)
-
     def test_Specification_person_validator(self):
         specification = Specification.select(limit=1)[0]
         for attr_name in ['assignee', 'drafter', 'approver', 'owner',
@@ -130,22 +338,6 @@ class TestPerson(TestCaseWithFactory):
             self.assertRaises(
                 PrivatePersonLinkageError,
                 setattr, specification, attr_name, self.myteam)
-
-    def test_visibility_validator_announcement(self):
-        announcement = self.bzr.announce(
-            user = self.otherteam,
-            title = 'title foo',
-            summary = 'summary foo',
-            url = 'http://foo.com',
-            publication_date = self.now
-            )
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by an announcement.')
 
     def test_visibility_validator_caching(self):
         # The method Person.visibilityConsistencyWarning can be called twice
@@ -157,217 +349,14 @@ class TestPerson(TestCaseWithFactory):
         naked_team = removeSecurityProxy(self.otherteam)
         naked_team._visibility_warning_cache = fake_warning
         warning = self.otherteam.visibilityConsistencyWarning(
-            PersonVisibility.PRIVATE_MEMBERSHIP)
+            PersonVisibility.PRIVATE)
         self.assertEqual(fake_warning, warning)
-
-    def test_visibility_validator_answer_contact(self):
-        answer_contact = AnswerContact(
-            person=self.otherteam,
-            product=self.bzr,
-            distribution=None,
-            sourcepackagename=None)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by an answercontact.')
-
-    def test_visibility_validator_archive(self):
-        archive = getUtility(IArchiveSet).new(
-            owner=self.otherteam,
-            description='desc foo',
-            purpose=ArchivePurpose.PPA)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by an archive.')
-
-    def test_visibility_validator_branch(self):
-        branch = self.factory.makeProductBranch(
-            registrant=self.otherteam,
-            owner=self.otherteam,
-            product=self.bzr)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by a branch and a branchsubscription.')
-
-    def test_visibility_validator_bug(self):
-        bug_params = CreateBugParams(
-            owner=self.otherteam,
-            title='title foo',
-            comment='comment foo',
-            description='description foo',
-            datecreated=self.now)
-        bug_params.setBugTarget(product=self.bzr)
-        bug = getUtility(IBugSet).createBug(bug_params)
-        bug.bugtasks[0].transitionToAssignee(self.otherteam)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by a bug, a bugaffectsperson, '
-                'a bugnotificationrecipient, a bugsubscription, '
-                'a bugtask and a message.')
-
-    def test_visibility_validator_product_subscription(self):
-        self.bzr.addSubscription(self.otherteam, self.guadamen)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by a project subscriber.')
-
-    def test_visibility_validator_specification_subscriber(self):
-        email = getUtility(IEmailAddressSet).new(
-            'otherteam@canonical.com', self.otherteam)
-        self.otherteam.setContactAddress(email)
-        specification = getUtility(ISpecificationSet).get(1)
-        specification.subscribe(self.otherteam, self.otherteam, True)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by a specificationsubscription.')
-
-    def test_visibility_validator_team_member(self):
-        self.guadamen.addMember(self.otherteam, self.guadamen)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership since '
-                'it is referenced by a teammembership.')
-
-    def test_visibility_validator_team_mailinglist_public(self):
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        try:
-            self.otherteam.visibility = PersonVisibility.PUBLIC
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be made public since it has a mailing list')
-
-    def test_visibility_validator_team_mailinglist_public_view(self):
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        # The view should add an error notification.
-        view = create_initialized_view(self.otherteam, '+edit', {
-            'field.name': 'otherteam',
-            'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.renewal_policy': 'NONE',
-            'field.visibility': 'PUBLIC',
-            'field.actions.save': 'Save',
-            })
-        self.assertEqual(len(view.request.notifications), 1)
-        self.assertEqual(
-            view.request.notifications[0].message,
-            'This team cannot be made public since it has a mailing list')
-
-    def test_visibility_validator_team_mailinglist_public_purged(self):
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        mailinglist.purge()
-        self.otherteam.visibility = PersonVisibility.PUBLIC
-        self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
-
-    def test_visibility_validator_team_mailinglist_private(self):
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'This team cannot be converted to Private Membership '
-                'since it is referenced by a mailing list.')
-
-    def test_visibility_validator_team_mailinglist_private_view(self):
-        # The view should add a field error.
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        view = create_initialized_view(self.otherteam, '+edit', {
-            'field.name': 'otherteam',
-            'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.renewal_policy': 'NONE',
-            'field.visibility': 'PRIVATE_MEMBERSHIP',
-            'field.actions.save': 'Save',
-            })
-        self.assertEqual(len(view.errors), 1)
-        self.assertEqual(
-            view.errors[0],
-            'This team cannot be converted to Private '
-            'Membership since it is referenced by a mailing list.')
-
-    def test_visibility_validator_team_mailinglist_pmt_to_private(self):
-        # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
-        # PRIVATE.
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        self.otherteam.visibility = PersonVisibility.PRIVATE
-
-    def test_visibility_validator_team_mailinglist_pmt_to_private_view(self):
-        # A PRIVATE_MEMBERSHIP team with a mailing list may convert to a
-        # PRIVATE.
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        view = create_initialized_view(self.otherteam, '+edit', {
-            'field.name': 'otherteam',
-            'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.renewal_policy': 'NONE',
-            'field.visibility': 'PRIVATE',
-            'field.actions.save': 'Save',
-            })
-        self.assertEqual(len(view.errors), 0)
-
-    def test_visibility_validator_team_private_to_pmt(self):
-        # A PRIVATE team cannot convert to PRIVATE_MEMBERSHIP.
-        self.otherteam.visibility = PersonVisibility.PRIVATE
-        try:
-            self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        except ImmutableVisibilityError, exc:
-            self.assertEqual(
-                str(exc),
-                'A private team cannot change visibility.')
-
-    def test_visibility_validator_team_private_to_pmt_view(self):
-        # A PRIVATE team cannot convert to PRIVATE_MEMBERSHIP.
-        self.otherteam.visibility = PersonVisibility.PRIVATE
-        view = create_initialized_view(self.otherteam, '+edit', {
-            'field.name': 'otherteam',
-            'field.displayname': 'Other Team',
-            'field.subscriptionpolicy': 'RESTRICTED',
-            'field.renewal_policy': 'NONE',
-            'field.visibility': 'PRIVATE_MEMBERSHIP',
-            'field.actions.save': 'Save',
-            })
-        self.assertEqual(len(view.errors), 0)
-        self.assertEqual(len(view.request.notifications), 1)
-        self.assertEqual(view.request.notifications[0].message,
-                         'A private team cannot change visibility.')
 
     def test_visibility_validator_team_ss_prod_pub_to_private(self):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        sub = StructuralSubscription(
+        StructuralSubscription(
             product=self.bzr, subscriber=self.otherteam,
             subscribed_by=foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
@@ -398,20 +387,44 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(view.request.notifications[0].message,
                          'A private team cannot change visibility.')
 
-    def test_visibility_validator_team_mailinglist_private_purged(self):
-        mailinglist = getUtility(IMailingListSet).new(self.otherteam)
-        mailinglist.purge()
-        self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        self.assertEqual(self.otherteam.visibility,
-                         PersonVisibility.PRIVATE_MEMBERSHIP)
+    def test_person_snapshot(self):
+        omitted = (
+            'activemembers', 'adminmembers', 'allmembers',
+            'all_members_prepopulated', 'approvedmembers',
+            'deactivatedmembers', 'expiredmembers', 'inactivemembers',
+            'invited_members', 'member_memberships', 'pendingmembers',
+            'proposedmembers', 'unmapped_participants',
+            )
+        snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
+        for name in omitted:
+            self.assertFalse(
+                hasattr(snap, name),
+                "%s should be omitted from the snapshot but is not." % name)
+
+    def test_person_repr_ansii(self):
+        # Verify that ANSI displayname is ascii safe.
+        person = self.factory.makePerson(
+            name="user", displayname=u'\xdc-tester')
+        ignore, name, displayname = repr(person).rsplit(' ', 2)
+        self.assertEqual('user', name)
+        self.assertEqual('(\\xdc-tester)>', displayname)
+
+    def test_person_repr_unicode(self):
+        # Verify that Unicode displayname is ascii safe.
+        person = self.factory.makePerson(
+            name="user", displayname=u'\u0170-tester')
+        ignore, displayname = repr(person).rsplit(' ', 1)
+        self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(unittest.TestCase):
+class TestPersonSet(TestCase):
     """Test `IPersonSet`."""
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        TestCase.setUp(self)
         login(ANONYMOUS)
+        self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
 
     def test_isNameBlacklisted(self):
@@ -434,12 +447,274 @@ class TestPersonSet(unittest.TestCase):
         self.assertEqual(person1, person2)
 
 
-class TestCreatePersonAndEmail(unittest.TestCase):
-    """Test `IPersonSet`.createPersonAndEmail()."""
-    layer = LaunchpadFunctionalLayer
+class TestPersonSetMerge(TestCaseWithFactory):
+    """Test cases for PersonSet merge."""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TestPersonSetMerge, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+
+    def _do_premerge(self, from_person, to_person):
+        # Do the pre merge work performed by the LoginToken.
+        login('admin@canonical.com')
+        email = from_person.preferredemail
+        email.status = EmailAddressStatus.NEW
+        email.person = to_person
+        email.account = to_person.account
+        transaction.commit()
+        logout()
+
+    def _get_testable_account(self, person, date_created, openid_identifier):
+        # Return a naked account with predictable attributes.
+        account = removeSecurityProxy(person.account)
+        account.date_created = date_created
+        account.openid_identifier = openid_identifier
+        return account
+
+    def test_openid_identifiers(self):
+        # Verify that OpenId Identifiers are merged.
+        duplicate = self.factory.makePerson()
+        duplicate_identifier = removeSecurityProxy(
+            duplicate.account).openid_identifiers.any().identifier
+        person = self.factory.makePerson()
+        person_identifier = removeSecurityProxy(
+            person.account).openid_identifiers.any().identifier
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(
+            0,
+            removeSecurityProxy(duplicate.account).openid_identifiers.count())
+
+        merged_identifiers = [
+            identifier.identifier for identifier in
+                removeSecurityProxy(person.account).openid_identifiers]
+
+        self.assertIn(duplicate_identifier, merged_identifiers)
+        self.assertIn(person_identifier, merged_identifiers)
+
+
+class TestPersonSetCreateByOpenId(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonSetCreateByOpenId, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.store = IMasterStore(Account)
+
+        # Generate some valid test data.
+        self.account = self.makeAccount()
+        self.identifier = self.makeOpenIdIdentifier(self.account, u'whatever')
+        self.person = self.makePerson(self.account)
+        self.email = self.makeEmailAddress(
+            email='whatever@example.com',
+            account=self.account, person=self.person)
+
+    def makeAccount(self):
+        return self.store.add(Account(
+            displayname='Displayname',
+            creation_rationale=AccountCreationRationale.UNKNOWN,
+            status=AccountStatus.ACTIVE))
+
+    def makeOpenIdIdentifier(self, account, identifier):
+        openid_identifier = OpenIdIdentifier()
+        openid_identifier.identifier = identifier
+        openid_identifier.account = account
+        return self.store.add(openid_identifier)
+
+    def makePerson(self, account):
+        return self.store.add(Person(
+            name='acc%d' % account.id, account=account,
+            displayname='Displayname',
+            creation_rationale=PersonCreationRationale.UNKNOWN))
+
+    def makeEmailAddress(self, email, account, person):
+            return self.store.add(EmailAddress(
+                email=email,
+                account=account,
+                person=person,
+                status=EmailAddressStatus.PREFERRED))
+
+    def testAllValid(self):
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testEmailAddressCaseInsensitive(self):
+        # As per testAllValid, but the email address used for the lookup
+        # is all upper case.
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email.upper(),
+            'Ignored Name', PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(False, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+    def testNewOpenId(self):
+        # Account looked up by email and the new OpenId identifier
+        # attached. We can do this because we trust our OpenId Provider.
+        new_identifier = u'newident'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # Old OpenId Identifier still attached.
+        self.assertIn(self.identifier, list(self.account.openid_identifiers))
+
+        # So is our new one.
+        identifiers = [
+            identifier.identifier for identifier
+                in self.account.openid_identifiers]
+        self.assertIn(new_identifier, identifiers)
+
+    def testNewEmailAddress(self):
+        # Account looked up by OpenId identifier and new EmailAddress
+        # attached. We can do this because we trust our OpenId Provider.
+        new_email = u'new_email@example.com'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, new_email, 'Ignored Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+        self.assertIs(self.account, found.account)
+        self.assertEqual(
+            [self.identifier], list(self.account.openid_identifiers))
+
+        # The old email address is still there and correctly linked.
+        self.assertIs(self.email, found.preferredemail)
+        self.assertIs(self.email.account, self.account)
+        self.assertIs(self.email.person, self.person)
+
+        # The new email address is there too and correctly linked.
+        new_email = self.store.find(EmailAddress, email=new_email).one()
+        self.assertIs(new_email.account, self.account)
+        self.assertIs(new_email.person, self.person)
+        self.assertEqual(EmailAddressStatus.NEW, new_email.status)
+
+    def testNewAccountAndIdentifier(self):
+        # If neither the OpenId Identifier nor the email address are
+        # found, we create everything.
+        new_email = u'new_email@example.com'
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, new_email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(None, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+
+    def testNoPerson(self):
+        # If the account is not linked to a Person, create one. ShipIt
+        # users fall into this category the first time they log into
+        # Launchpad.
+        self.email.person = None
+        self.person.account = None
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        # We have a new Person
+        self.assertIs(True, updated)
+        self.assertIsNot(self.person, found)
+
+        # It is correctly linked to an account, emailaddress and
+        # identifier.
+        self.assertIs(found, found.preferredemail.person)
+        self.assertIs(found.account, found.preferredemail.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
+
+    def testNoAccount(self):
+        # EmailAddress is linked to a Person, but there is no Account.
+        # Convert this stub into something valid.
+        self.email.account = None
+        self.email.status = EmailAddressStatus.NEW
+        self.person.account = None
+        new_identifier = u'new_identifier'
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            new_identifier, self.email.email, 'Ignored',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+
+        self.assertIsNot(None, found.account)
+        self.assertEqual(
+            new_identifier, found.account.openid_identifiers.any().identifier)
+        self.assertIs(self.email.person, found)
+        self.assertIs(self.email.account, found.account)
+        self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
+
+    def testMovedEmailAddress(self):
+        # The EmailAddress and OpenId Identifier are both in the
+        # database, but they are not linked to the same account. The
+        # identifier needs to be relinked to the correct account - the
+        # user able to log into the trusted SSO with that email address
+        # should be able to log into Launchpad with that email address.
+        # This lets us cope with the SSO migrating email addresses
+        # between SSO accounts.
+        self.identifier.account = self.store.find(
+            Account, displayname='Foo Bar').one()
+
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, self.email.email, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        found = removeSecurityProxy(found)
+
+        self.assertIs(True, updated)
+        self.assertIs(self.person, found)
+
+        self.assertIs(found.account, self.identifier.account)
+        self.assertIn(self.identifier, list(found.account.openid_identifiers))
+
+
+class TestCreatePersonAndEmail(TestCase):
+    """Test `IPersonSet`.createPersonAndEmail()."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
         login(ANONYMOUS)
+        self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
 
     def test_duplicated_name_not_accepted(self):
@@ -470,5 +745,242 @@ class TestCreatePersonAndEmail(unittest.TestCase):
             name='/john')
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonRelatedBugTaskSearch, self).setUp()
+        self.user = self.factory.makePerson(displayname="User")
+        self.context = self.factory.makePerson(displayname="Context")
+
+    def checkUserFields(
+        self, params, assignee=None, bug_subscriber=None,
+        owner=None, bug_commenter=None, bug_reporter=None,
+        structural_subscriber=None):
+        self.failUnlessEqual(assignee, params.assignee)
+        # fromSearchForm() takes a bug_subscriber parameter, but saves
+        # it as subscriber on the parameter object.
+        self.failUnlessEqual(bug_subscriber, params.subscriber)
+        self.failUnlessEqual(owner, params.owner)
+        self.failUnlessEqual(bug_commenter, params.bug_commenter)
+        self.failUnlessEqual(bug_reporter, params.bug_reporter)
+        self.failUnlessEqual(structural_subscriber,
+                             params.structural_subscriber)
+
+    def test_get_related_bugtasks_search_params(self):
+        # With no specified options, get_related_bugtasks_search_params()
+        # returns 5 BugTaskSearchParams objects, each with a different
+        # user field set.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context)
+        self.assertEqual(len(search_params), 5)
+        self.checkUserFields(
+            search_params[0], assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.context, bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[3], bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], structural_subscriber=self.context)
+
+    def test_get_related_bugtasks_search_params_with_assignee(self):
+        # With assignee specified, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, assignee=self.user)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], assignee=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[1], assignee=self.user, owner=self.context,
+            bug_reporter=self.context)
+        self.checkUserFields(
+            search_params[2], assignee=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], assignee=self.user,
+            structural_subscriber=self.context)
+
+    def test_get_related_bugtasks_search_params_with_owner(self):
+        # With owner specified, get_related_bugtasks_search_params() returns
+        # 4 BugTaskSearchParams objects.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, owner=self.user)
+        self.assertEqual(len(search_params), 4)
+        self.checkUserFields(
+            search_params[0], owner=self.user, assignee=self.context)
+        self.checkUserFields(
+            search_params[1], owner=self.user, bug_subscriber=self.context)
+        self.checkUserFields(
+            search_params[2], owner=self.user, bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[3], owner=self.user,
+            structural_subscriber=self.context)
+
+    def test_get_related_bugtasks_search_params_with_bug_reporter(self):
+        # With bug reporter specified, get_related_bugtasks_search_params()
+        # returns 4 BugTaskSearchParams objects, but the bug reporter
+        # is overwritten in one instance.
+        search_params = get_related_bugtasks_search_params(
+            self.user, self.context, bug_reporter=self.user)
+        self.assertEqual(len(search_params), 5)
+        self.checkUserFields(
+            search_params[0], bug_reporter=self.user,
+            assignee=self.context)
+        self.checkUserFields(
+            search_params[1], bug_reporter=self.user,
+            bug_subscriber=self.context)
+        # When a BugTaskSearchParams is prepared with the owner filled
+        # in, the bug reporter is overwritten to match.
+        self.checkUserFields(
+            search_params[2], bug_reporter=self.context,
+            owner=self.context)
+        self.checkUserFields(
+            search_params[3], bug_reporter=self.user,
+            bug_commenter=self.context)
+        self.checkUserFields(
+            search_params[4], bug_reporter=self.user,
+            structural_subscriber=self.context)
+
+    def test_get_related_bugtasks_search_params_illegal(self):
+        self.assertRaises(
+            IllegalRelatedBugTasksParams,
+            get_related_bugtasks_search_params, self.user, self.context,
+            assignee=self.user, owner=self.user, bug_commenter=self.user,
+            bug_subscriber=self.user, structural_subscriber=self.user)
+
+    def test_get_related_bugtasks_search_params_illegal_context(self):
+        # in case the `context` argument is not  of type IPerson an
+        # AssertionError is raised
+        self.assertRaises(
+            AssertionError,
+            get_related_bugtasks_search_params, self.user, "Username",
+            assignee=self.user)
+
+
+class TestPersonKarma(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonKarma, self).setUp()
+        self.person = self.factory.makePerson()
+        a_product = self.factory.makeProduct(name='aa')
+        b_product = self.factory.makeProduct(name='bb')
+        self.c_product = self.factory.makeProduct(name='cc')
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        self._makeKarmaCache(
+            self.person, a_product, [('bugs', 10)])
+        self._makeKarmaCache(
+            self.person, b_product, [('answers', 50)])
+        self._makeKarmaCache(
+            self.person, self.c_product, [('code', 100), (('bugs', 50))])
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This requires a commit and invalidates the product
+        instance.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        total = 0
+        # Insert category total for person and project.
+        for category_name, value in category_name_values:
+            category = KarmaCategory.byName(category_name)
+            self.cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
+            total += value
+        # Insert total cache for person and project.
+        self.cache_manager.new(
+            total, person.id, None, product_id=product.id)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+    def test__getProjectsWithTheMostKarma_ordering(self):
+        # Verify that pillars are ordered by karma.
+        results = removeSecurityProxy(
+            self.person)._getProjectsWithTheMostKarma()
+        self.assertEqual(
+            [('cc', 150), ('bb', 50), ('aa', 10)], results)
+
+    def test__getContributedCategories(self):
+        # Verify that a iterable of karma categories is returned.
+        categories = removeSecurityProxy(
+            self.person)._getContributedCategories(self.c_product)
+        names = sorted(category.name for category in categories)
+        self.assertEqual(['bugs', 'code'], names)
+
+    def test_getProjectsAndCategoriesContributedTo(self):
+        # Verify that a list of projects and contributed karma categories
+        # is returned.
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa'], names)
+        project_categories = results[0]
+        names = [
+            category.name for category in project_categories['categories']]
+        self.assertEqual(
+            ['code', 'bugs'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_active_only(self):
+        # Verify that deactivated pillars are not included.
+        login('admin@canonical.com')
+        a_product = getUtility(IProductSet).getByName('cc')
+        a_product.active = False
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['bb', 'aa'], names)
+
+    def test_getProjectsAndCategoriesContributedTo_limit(self):
+        # Verify the limit of 5 is honored.
+        d_product = self.factory.makeProduct(name='dd')
+        self._makeKarmaCache(
+            self.person, d_product, [('bugs', 5)])
+        e_product = self.factory.makeProduct(name='ee')
+        self._makeKarmaCache(
+            self.person, e_product, [('bugs', 4)])
+        f_product = self.factory.makeProduct(name='ff')
+        self._makeKarmaCache(
+            self.person, f_product, [('bugs', 3)])
+        results = removeSecurityProxy(
+            self.person).getProjectsAndCategoriesContributedTo()
+        names = [entry['project'].name for entry in results]
+        self.assertEqual(
+            ['cc', 'bb', 'aa', 'dd', 'ee'], names)
+
+
+class TestAPIPartipication(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_participation_query_limit(self):
+        # A team with 3 members should only query once for all their
+        # attributes.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.factory.makePerson(), team.teamowner)
+            team.addMember(self.factory.makePerson(), team.teamowner)
+            team.addMember(self.factory.makePerson(), team.teamowner)
+        webservice = LaunchpadWebServiceCaller()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        url = "/~%s/participants" % team.name
+        logout()
+        response = webservice.get(url,
+            headers={'User-Agent': 'AnonNeedsThis'})
+        self.assertEqual(response.status, 200,
+            "Got %d for url %r with response %r" % (
+            response.status, url, response.body))
+        # XXX: This number should really be 10, but see
+        # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
+        # queries to the test.
+        self.assertThat(collector, HasQueryCount(LessThan(13)))

@@ -12,8 +12,9 @@ have the launchpad.Driver permission.
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet, IDistributionSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login("no-priv@canonical.com")
 
@@ -134,16 +135,3 @@ Clicking "Approve" approves the nomination.
     True
     >>> logout()
 
-
-== Links ==
-
-Certain items in the bug nomination row are linked for useful navigation to
-other pages.  For example, a milestone name is linked to the project's
-milestone page.
-
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/5')
-    >>> browser.getControl(name='firefox.milestone').value = ['1']
-    >>> browser.getControl(name='firefox.actions.save').click()
-    >>> browser.getLink('1.0').click()
-    >>> print browser.title
-    Mozilla Firefox 1.0

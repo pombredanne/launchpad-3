@@ -18,10 +18,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, List, TextLine
+from zope.schema import (
+    Bool,
+    Int,
+    List,
+    TextLine,
+    )
 
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
 
 
 class OutdatedTranslationError(TranslationImportExportBaseException):
@@ -123,6 +129,14 @@ class ITranslationImporter(Interface):
         :return: Boolean: True if `path` identifies this file as a
             translation.  A template, or a file with an unknown filename
             extension, is not considered a translation.
+        """
+
+    def isHidden(path):
+        """Based on filename, is this a hidden file?
+
+        :param path: file name, possibly including directory component.
+        :return: Boolean: True if `path` contains either a hidden file
+            or a hidden directory.
         """
 
     def getTranslationFileFormat(file_extension, file_contents):

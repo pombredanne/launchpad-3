@@ -16,8 +16,7 @@ Check that the Bazaar home page works.
     >>> print extract_text(footer)
     30 branches registered in
     6 projects
-    0 imported branches
-    2 branches associated with bug reports
+    1 imported branches
     Launchpad uses Bazaar 0.92.0.
 
 
@@ -31,12 +30,11 @@ with a link to the complete listing.
 
     >>> preview = find_tag_by_id(browser.contents, 'project-cloud-preview')
     >>> print extract_text(preview)
-    Projects with active branches
-    firefox
+    Most active projects in the last month
     see all projects&#8230;
 
     >>> print preview.fetch('a')[-1]['href']
-    /+project-cloud
+    /projects
 
 
 == Short Listings ==

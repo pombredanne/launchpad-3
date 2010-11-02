@@ -2,6 +2,6 @@ You have been requested to review the proposed merge of %(source_branch)s into %
 
 %(comment)s
 
---
-%(proposal_url)s
+-- 
+%(diff_cutoff_warning)s%(proposal_url)s
 %(reason)s%(edit_subscription)s

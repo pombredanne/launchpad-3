@@ -11,30 +11,39 @@ __all__ = [
     'BugsUnlinkView',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.launchpad import _
-from lp.bugs.interfaces.buglink import IBugLinkForm, IUnlinkBugsForm
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.buglink import (
+    IBugLinkForm,
+    IUnlinkBugsForm,
+    )
 
 
 class BugLinkView(LaunchpadFormView):
     """This view is used to link bugs to any IBugLinkTarget."""
 
-    label = _('Link to bug report')
-
+    label = _('Link a bug report')
     schema = IBugLinkForm
 
     focused_element_id = 'bug'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -90,9 +99,13 @@ class BugsUnlinkView(LaunchpadFormView):
     """This view is used to remove bug links from any IBugLinkTarget."""
 
     label = _('Remove links to bug reports')
-
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
@@ -118,4 +131,3 @@ class BugsUnlinkView(LaunchpadFormView):
         """
         return [bug for bug in self.context.bugs
                 if check_permission('launchpad.View', bug)]
-

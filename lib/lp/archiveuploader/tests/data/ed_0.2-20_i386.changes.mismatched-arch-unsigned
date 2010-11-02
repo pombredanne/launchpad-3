@@ -2,7 +2,7 @@ Format: 1.7
 Date: Wed,  2 Apr 2003 17:19:47 +0100
 Source: ed
 Binary: ed
-Architecture: source amd64
+Architecture: amd64
 Version: 0.2-20
 Distribution: unstable
 Urgency: low
@@ -44,7 +44,5 @@ Changes:
      out on errors.  Thanks to Joel Baker <fenton@debian.org>.
      Closes: #130327
 Files: 
- de8b206f8fc57bd931f6226feac6644a 578 editors important ed_0.2-20.dsc
- 8343836094fb01ee9b9a1067b23365f1 8600 editors important ed_0.2-20.diff.gz
  379bf8c1d4fd2244d31851e15ee14ae0 46792 editors important ed_0.2-20_i386.deb
 

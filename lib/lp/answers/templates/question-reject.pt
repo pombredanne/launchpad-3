@@ -2,33 +2,18 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
-
-      <div>
-        <img alt="" src="/@@/question" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-      </div>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <h1 metal:fill-slot="heading">Reject question</h1>
+    <h1 metal:fill-slot="heading" tal:content="structure view/label">
+        Reject question
+    </h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
       If this question is a hoax, spam, a test, or sample data, it should
@@ -37,9 +22,5 @@
   </div>
 </div>
 
-<p metal:fill-slot="help">Rejecting a question will change its status
-  to <emph>Invalid</emph>. By default, it won't appear in listings anymore.
-  Give an appropriate reason why you are rejecting the question.
-</p>
 </body>
 </html>

@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-subscribers">
+<div class="portlet" id="subscribers">
   <h2>Subscribers</h2>
 
   <div class="portletBody portletContent"
@@ -13,7 +13,13 @@
 
     <ul tal:condition="subscribers">
       <li tal:repeat="subscriber subscribers">
-        <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
+        <a
+          tal:condition="subscriber/name|nothing"
+          tal:attributes="href subscriber/fmt:url">
+
+          <tal:block replace="structure subscriber/fmt:icon" />
+          <tal:block replace="subscriber/fmt:displayname/fmt:shorten/20" />
+        </a>
       </li>
     </ul>
     <p tal:condition="not: subscribers">
@@ -24,7 +30,13 @@
       <b>Also notified:</b><br />
       <ul>
         <li tal:repeat="subscriber indirect_subscribers">
-          <a tal:replace="structure subscriber/fmt:link">Dafydd Harries</a>
+          <a
+            tal:condition="subscriber/name|nothing"
+            tal:attributes="href subscriber/fmt:url">
+
+            <tal:block replace="structure subscriber/fmt:icon" />
+            <tal:block replace="subscriber/fmt:displayname/fmt:shorten/20" />
+          </a>
         </li>
       </ul>
 

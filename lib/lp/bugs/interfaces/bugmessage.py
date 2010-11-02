@@ -13,16 +13,27 @@ __all__ = [
     'IBugMessageSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import Title
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint,
+    )
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.services.fields import Title
 
 
 class IBugMessage(IHasBug):
@@ -80,9 +91,10 @@ class IBugMessageAddForm(Interface):
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
-        constraint=bug_attachment_size_constraint)
-    patch = Bool(title=u"This attachment is a patch", required=False,
-        default=False)
+        constraint=attachment_size_constraint)
+    patch = Bool(
+        title=u"This attachment contains a solution (patch) for this bug",
+        required=False, default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
@@ -103,9 +115,6 @@ class IBugComment(IMessage):
         to construct the correct URL.
         """)
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
-    can_be_shown = Bool(
-        title=u'Whether or not the comment can be displayed',
-        readonly=True)
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
@@ -124,3 +133,7 @@ class IBugComment(IMessage):
         "A list of BugActivityItems associated with this comment.")
     show_footer = Attribute(
         "Whether or not to show a footer for the comment.")
+    patches = Attribute(
+        "Patches attched to this comment.")
+    rendered_cache_time = Attribute(
+        "How long we can cache the rendered comment for.")

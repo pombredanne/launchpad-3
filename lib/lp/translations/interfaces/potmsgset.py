@@ -3,11 +3,26 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Object, Text
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pomsgid import IPOMsgID
+
 
 __metaclass__ = type
 
@@ -15,11 +30,41 @@ __all__ = [
     'IPOTMsgSet',
     'BrokenTextError',
     'POTMsgSetInIncompatibleTemplatesError',
+    'TranslationCreditsType',
     ]
+
+
+class TranslationCreditsType(EnumeratedType):
+    """Identify a POTMsgSet as translation credits."""
+
+    NOT_CREDITS = Item("""
+        Not a translation credits message
+
+        This is a standard msgid and not translation credits.
+        """)
+
+    GNOME = Item("""
+        Gnome credits message
+
+        How they do them in Gnome.
+        """)
+
+    KDE_EMAILS = Item("""
+        KDE emails credits message
+
+        How they do them in KDE for translator emails.
+        """)
+
+    KDE_NAMES = Item("""
+        KDE names credits message
+
+        How they do them in KDE for translator names.
+        """)
 
 
 class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
+
 
 class POTMsgSetInIncompatibleTemplatesError(Exception):
     """Raised when a POTMsgSet appears in multiple incompatible templates.
@@ -82,54 +127,75 @@ class IPOTMsgSet(Interface):
             gettext uses the original English strings to identify messages.
             """))
 
-    def getCurrentDummyTranslationMessage(potemplate, language):
-        """Return a DummyTranslationMessage for this message language.
+    credits_message_ids = List(
+        title=_("List of possible msgids for translation credits"),
+        readonly=True,
+        description=_("""
+            This class attribute is intended to be used to construct database
+            queries that search for credits messages.
+            """))
 
-        :param potemplate: PO template you want a translation message for.
-        :param language: language we want a dummy translations for.
+    def getCurrentTranslationMessageOrDummy(pofile):
+        """Return the current `TranslationMessage`, or a dummy.
 
-        If a TranslationMessage for this language already exists,
-        an exception is raised.
+        :param pofile: PO template you want a translation message for.
+        :return: The current translation for `self` in `pofile`, if
+            there is one.  Otherwise, a `DummyTranslationMessage` for
+            `self` in `pofile`.
         """
 
-    def getCurrentTranslationMessage(potemplate, language, variant=None):
+    def getCurrentTranslationMessage(potemplate, language):
         """Returns a TranslationMessage marked as being currently used.
 
         Diverged messages are preferred.
         """
 
-    def getImportedTranslationMessage(potemplate, language, variant=None):
+    def getImportedTranslationMessage(potemplate, language):
         """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
 
-    def getSharedTranslationMessage(language, variant=None):
+    def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
-    def getLocalTranslationMessages(potemplate, language):
+    def getLocalTranslationMessages(potemplate, language,
+                                    include_dismissed=False,
+                                    include_unreviewed=True):
         """Return all local unused translation messages for the POTMsgSet.
 
         Unused are those which are not current or imported, and local are
         those which are directly attached to this POTMsgSet.
 
         :param language: language we want translations for.
+        :param include_dismissed: Also return those translation messages
+          that have a creation date older than the review date of the current
+          message (== have been dismissed).
+        :param include_unreviewed: Also return those translation messages
+          that have a creation date newer than the review date of the current
+          message (== that are unreviewed). This is the default.
         """
 
     def getExternallyUsedTranslationMessages(language):
-        """Returns all externally used translations.
+        """Find externally used translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Used" messages are either current or imported ones.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that are actually used (i.e. current or imported) in
+        other templates.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """
 
     def getExternallySuggestedTranslationMessages(language):
-        """Return all externally suggested translations.
+        """Find externally suggested translations for the same message.
 
-        External are those on other templates for the same English message.
-        "Suggested" messages are those which are neither current nor imported.
+        This is used to find suggestions for translating this
+        `POTMsgSet` that were entered in another context, but for the
+        same English text, and are not in actual use.
+
+        The suggestions are read-only; they come from the slave store.
 
         :param language: language we want translations for.
         """
@@ -157,7 +223,8 @@ class IPOTMsgSet(Interface):
 
     def updateTranslation(pofile, submitter, new_translations, is_imported,
                           lock_timestamp, force_suggestion=False,
-                          ignore_errors=False, force_edition_rights=False):
+                          ignore_errors=False, force_edition_rights=False,
+                          allow_credits=False):
         """Update or create a translation message using `new_translations`.
 
         :param pofile: a `POFile` to add `new_translations` to.
@@ -175,6 +242,8 @@ class IPOTMsgSet(Interface):
             should be stored even when an error is detected.
         :param force_edition_rights: A flag that 'forces' handling this
             submission as coming from an editor, even if `submitter` is not.
+        :param allow_credits: Override the protection of translation credits
+            message.
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
@@ -189,6 +258,18 @@ class IPOTMsgSet(Interface):
 
         :param pofile: a `POFile` to dismiss suggestions from.
         :param reviewer: the person that is doing the dismissal.
+        :param lock_timestamp: the timestamp when we checked the values we
+            want to update.
+
+        If a translation conflict is detected, TranslationConflict is raised.
+        """
+
+    def resetCurrentTranslation(pofile, lock_timestamp):
+        """Reset the currently used translation.
+
+        This will set the "is_current" attribute to False and if the message
+        is diverge, will try to converge it.
+        :param pofile: a `POFile` to dismiss suggestions from.
         :param lock_timestamp: the timestamp when we checked the values we
             want to update.
 
@@ -243,6 +324,11 @@ class IPOTMsgSet(Interface):
     is_translation_credit = Attribute(
         """Whether this is a message set for crediting translators.""")
 
+    translation_credits_type = Choice(
+        title=u"The type of translation credit of this message.",
+        required=True,
+        vocabulary = TranslationCreditsType)
+
     def makeHTMLID(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 
@@ -274,6 +360,17 @@ class IPOTMsgSet(Interface):
         :param potemplate: `IPOTemplate` where the sequence number applies.
         :param sequence: The sequence number of this `IPOTMsgSet` in the given
             `IPOTemplate`.
+        """
+
+    def setTranslationCreditsToTranslated(pofile):
+        """Set the current translation for this translation credits message.
+
+        Sets a fixed dummy string as the current translation, if this is a
+        translation credits message, so that these get counted as
+        'translated', too.
+        Credits messages that already have a translation, imported messages
+        and normal messages are left untouched.
+        :param pofile: the POFile to set this translation in.
         """
 
     def getAllTranslationMessages():

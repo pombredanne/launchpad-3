@@ -10,11 +10,24 @@ import os
 import unittest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+
+special_test_layer = {
+    'bug-views.txt': LaunchpadFunctionalLayer,
+    'bugtarget-filebug-views.txt': LaunchpadFunctionalLayer,
+    'bugtask-target-link-titles.txt': LaunchpadFunctionalLayer,
+    }
 
 
 def test_suite():
@@ -29,11 +42,10 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = filename
+        layer = special_test_layer.get(path, DatabaseFunctionalLayer)
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
+            path, setUp=setUp, tearDown=tearDown, layer=layer,
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

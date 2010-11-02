@@ -7,72 +7,86 @@
 
 __metaclass__ = type
 __all__ = [
-    'BadBranchMergeProposalSearchContext',
-    'BadStateTransition',
-    'BranchMergeProposalExists',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
-    'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
+    'IBranchMergeProposalJobSource',
     'IBranchMergeProposalListingBatchNavigator',
+    'ICodeReviewCommentEmailJob',
+    'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
-    'UserNotBranchReviewer',
-    'WrongBranchMergeProposal',
+    'IMergeProposalNeedsReviewEmailJob',
+    'IMergeProposalNeedsReviewEmailJobSource',
+    'IMergeProposalUpdatedEmailJob',
+    'IMergeProposalUpdatedEmailJobSource',
+    'IReviewRequestedEmailJob',
+    'IReviewRequestedEmailJobSource',
+    'IUpdatePreviewDiffJob',
+    'IUpdatePreviewDiffJobSource',
+    'notify_modified',
     ]
 
-from zope.interface import Attribute, Interface
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.event import notify
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
-from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob, IRunnableJob
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
-
-
-class InvalidBranchMergeProposal(Exception):
-    """Raised during the creation of a new branch merge proposal.
-
-    The text of the exception is the rule violation.
-    """
-
-
-class BranchMergeProposalExists(InvalidBranchMergeProposal):
-    """Raised if there is already a matching BranchMergeProposal."""
-
-
-class UserNotBranchReviewer(Exception):
-    """The user who attempted to review the merge proposal isn't a reviewer.
-
-    A specific reviewer may be set on a branch.  If a specific reviewer
-    isn't set then any user in the team of the owner of the branch is
-    considered a reviewer.
-    """
-
-
-class BadStateTransition(Exception):
-    """The user requested a state transition that is not possible."""
-
-
-class WrongBranchMergeProposal(Exception):
-    """The comment requested is not associated with this merge proposal."""
-
-
-class BadBranchMergeProposalSearchContext(Exception):
-    """The context is not valid for a branch merge proposal search."""
+from lp.bugs.interfaces.bug import IBug
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.diff import (
+    IPreviewDiff,
+    IStaticDiff,
+    )
+from lp.registry.interfaces.person import IPerson
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Whiteboard,
+    )
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    ITwistedJobSource,
+    )
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -82,7 +96,7 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     )
 
 
-class IBranchMergeProposal(Interface):
+class IBranchMergeProposal(IPrivacy):
     """Branch merge proposals show intent of landing one branch on another."""
 
     export_as_webservice_entry()
@@ -110,13 +124,29 @@ class IBranchMergeProposal(Interface):
             description=_(
                 "The branch that the source branch will be merged into.")))
 
-    dependent_branch = exported(
+    prerequisite_branch = exported(
         Reference(
             title=_('Dependent Branch'),
             schema=IBranch, required=False, readonly=True,
             description=_("The branch that the source branch branched from. "
                           "If this is the same as the target branch, then "
                           "leave this field blank.")))
+
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is determined by the involved branches.
+    private = exported(
+        Bool(
+            title=_("Proposal is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "If True, this proposal is visible only to subscribers.")))
+
+    description = exported(
+        Text(title=_('Description'), required=False,
+             description=_(
+                "A detailed description of the changes that are being "
+                "addressed by the branch being proposed to be merged."),
+             max_length=50000))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
@@ -142,6 +172,9 @@ class IBranchMergeProposal(Interface):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
+    next_preview_diff_job = Attribute(
+        'The next BranchMergeProposalJob that will update a preview diff.')
+
     preview_diff = exported(
         Reference(
             IPreviewDiff,
@@ -150,15 +183,16 @@ class IBranchMergeProposal(Interface):
 
     reviewed_revision_id = exported(
         Text(
-            title=_("The revision id that has been approved by the reviewer.")
-            ),
-        exported_as='reviewed_revno')
+            title=_(
+                "The revision id that has been approved by the reviewer.")),
+        exported_as='reviewed_revid')
 
     commit_message = exported(
         Summary(
             title=_("Commit Message"), required=False,
             description=_("The commit message that should be used when "
-                          "merging the source branch.")))
+                          "merging the source branch."),
+            strip_text=True))
 
     queue_position = exported(
         Int(
@@ -177,7 +211,7 @@ class IBranchMergeProposal(Interface):
             required=False,
             description=_("The revision id that has been queued for "
                           "landing.")),
-        exported_as='queued_revno')
+        exported_as='queued_revid')
 
     merged_revno = exported(
         Int(
@@ -229,9 +263,6 @@ class IBranchMergeProposal(Interface):
     date_queued = exported(
         Datetime(
             title=_('Date Queued'), required=False, readonly=True))
-    # Cannote use Object as this would cause circular dependencies.
-    root_comment = Attribute(
-        _("The first message in discussion of this merge proposal"))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)
@@ -240,6 +271,10 @@ class IBranchMergeProposal(Interface):
             title=_("All messages discussing this merge proposal"),
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
+
+    related_bugs = CollectionField(
+        title=_("Bugs related to this merge proposal."),
+        value_type=Reference(schema=IBug), readonly=True)
 
     address = exported(
         TextLine(
@@ -255,6 +290,13 @@ class IBranchMergeProposal(Interface):
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getRevisionsSinceReviewStart():
+        """Return all the revisions added since the review began.
+
+        Revisions are grouped by creation (i.e. push) time.
+        :return: An iterator of (date, iterator of revision data)
+        """
 
     def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""
@@ -275,7 +317,7 @@ class IBranchMergeProposal(Interface):
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
             value_type=Reference(schema=Interface), #ICodeReviewVoteReference
-            readonly=True
+            readonly=True,
             )
         )
 
@@ -283,7 +325,7 @@ class IBranchMergeProposal(Interface):
         """True if it is valid for user update the proposal to next_state."""
 
     @call_with(user=REQUEST_USER)
-    @rename_parameters_as(revision_id='revno')
+    @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
@@ -298,8 +340,8 @@ class IBranchMergeProposal(Interface):
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param revision_id: The revno to provide to the underlying status
-            change method.
+        :param revision_id: The revision id to provide to the underlying
+            status change method.
         """
 
     def setAsWorkInProgress():
@@ -348,6 +390,9 @@ class IBranchMergeProposal(Interface):
         If the proposal is not in the Approved state before this method
         is called, approveBranch is called with the reviewer and revision_id
         specified.
+
+        If None is supplied as the revision_id, the proposals
+        reviewed_revision_id is used.
         """
 
     def dequeue():
@@ -359,9 +404,6 @@ class IBranchMergeProposal(Interface):
 
     def moveToFrontOfQueue():
         """Move the queue proposal to the front of the queue."""
-
-    def mergeFailed(merger):
-        """Mark the proposal as 'Code failed to merge'."""
 
     def markAsMerged(merged_revno=None, date_merged=None,
                      merge_reporter=None):
@@ -392,22 +434,9 @@ class IBranchMergeProposal(Interface):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
-        user-entered data like the whiteboard.
-        """
-
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A person for which the reviewer status is in question."),
-            schema=IPerson))
-    @export_read_operation()
-    def isPersonValidReviewer(reviewer):
-        """Return true if the `reviewer` is able to review the proposal.
-
-        There is an attribute on branches called `reviewer` which allows
-        a specific person or team to be set for a branch as an authorised
-        person to approve merges for a branch.  If a reviewer is not set
-        on the target branch, then the owner of the target branch is used
-        as the authorised user.
+        user-entered data like the whiteboard.  All the current proposal's
+        reviewers, including those who have only been nominated, are requested
+        to review the new proposal.
         """
 
     def isMergable():
@@ -431,6 +460,7 @@ class IBranchMergeProposal(Interface):
             title=_("A reviewer."), schema=IPerson),
         review_type=Text())
     @call_with(registrant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
     @export_write_operation()
     def nominateReviewer(reviewer, registrant, review_type=None):
         """Set the specified person as a reviewer.
@@ -450,7 +480,8 @@ class IBranchMergeProposal(Interface):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_write_operation()
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -477,13 +508,13 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
     @operation_parameters(
-        diff_content=Bytes(), diff_stat=Text(),
-        source_revision_id=TextLine(), target_revision_id=TextLine(),
-        dependent_revision_id=TextLine(), conflicts=Text())
+        diff_content=Bytes(), source_revision_id=TextLine(),
+        target_revision_id=TextLine(), prerequisite_revision_id=TextLine(),
+        conflicts=Text())
     @export_write_operation()
-    def updatePreviewDiff(diff_content, diff_stat,
-                        source_revision_id, target_revision_id,
-                        dependent_revision_id=None, conflicts=None):
+    def updatePreviewDiff(diff_content, source_revision_id,
+                          target_revision_id, prerequisite_revision_id=None,
+                          conflicts=None):
         """Update the preview diff for this proposal.
 
         If there is not an existing preview diff, one will be created.
@@ -495,14 +526,18 @@ class IBranchMergeProposal(Interface):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param dependent_revision_id: The revision id that was used from the
-            dependent branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 
 
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
 
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
@@ -515,6 +550,10 @@ class IBranchMergeProposalJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
+
+
+class IBranchMergeProposalJobSource(ITwistedJobSource):
+    """A job source that will get all supported merge proposal jobs."""
 
 
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
@@ -587,25 +626,104 @@ class ICreateMergeProposalJob(IRunnableJob):
     """
 
 
-class ICreateMergeProposalJobSource(Interface):
+class ICreateMergeProposalJobSource(IJobSource):
     """Acquire MergeProposalJobs."""
 
     def create(message_bytes):
         """Return a CreateMergeProposalJob for this message."""
 
-    def iterReady():
-        """Iterate through jobs that are ready to run."""
+
+class IMergeProposalNeedsReviewEmailJob(IRunnableJob):
+    """Email about a merge proposal needing a review.."""
 
 
-class IMergeProposalCreatedJob(IRunnableJob):
-    """Interface for review diffs."""
-
-
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class IMergeProposalNeedsReviewEmailJobSource(Interface):
+    """Interface for acquiring MergeProposalNeedsReviewEmailJobs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a needs review email job for the specified proposal."""
 
-    def iterReady():
-        """Iterate through all ready MergeProposalCreatedJobs."""
+
+class IUpdatePreviewDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+    def checkReady():
+        """Check to see if this job is ready to run."""
+
+
+class IUpdatePreviewDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp):
+        """Create a job to update the diff for this merge proposal."""
+
+    def get(id):
+        """Return the UpdatePreviewDiffJob with this id."""
+
+
+class ICodeReviewCommentEmailJob(IRunnableJob):
+    """Interface for the job to send code review comment email."""
+
+    code_review_comment = Attribute('The code review comment.')
+
+
+class ICodeReviewCommentEmailJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(code_review_comment):
+        """Create a job to email subscribers about the comment."""
+
+
+class IReviewRequestedEmailJob(IRunnableJob):
+    """Interface for the job to sends review request emails."""
+
+    reviewer = Attribute('The person or team asked to do the review.')
+    requester = Attribute('The person who has asked for the review.')
+
+
+class IReviewRequestedEmailJobSource(Interface):
+    """Create or retrieve jobs that email review requests."""
+
+    def create(review_request):
+        """Create a job to email a review request.
+
+        :param review_request: A vote reference for the requested review.
+        """
+
+
+class IMergeProposalUpdatedEmailJob(IRunnableJob):
+    """Interface for the job to sends email about merge proposal updates."""
+
+    editor = Attribute('The person that did the editing.')
+    delta_text = Attribute(
+        'The textual representation of the changed fields.')
+
+
+class IMergeProposalUpdatedEmailJobSource(Interface):
+    """Create or retrieve jobs that email about merge proposal updates."""
+
+    def create(merge_proposal, delta_text, editor):
+        """Create a job to email merge proposal updates to subscribers.
+
+        :param merge_proposal: The merge proposal that has been edited.
+        :param delta_text: The text representation of the changed fields.
+        :param editor: The person who did the editing.
+        """
+
+
+# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
+# should be moved there.
+def notify_modified(proposal, func, *args, **kwargs):
+    """Call func, then notify about the changes it made.
+
+    :param proposal: the merge proposal to notify about.
+    :param func: The callable that will modify the merge proposal.
+    :param args: Additional arguments for the method.
+    :param kwargs: Keyword arguments for the method.
+    :return: The return value of the method.
+    """
+    from lp.code.adapters.branch import BranchMergeProposalDelta
+    snapshot = BranchMergeProposalDelta.snapshot(proposal)
+    result = func(*args, **kwargs)
+    notify(ObjectModifiedEvent(proposal, snapshot, []))
+    return result

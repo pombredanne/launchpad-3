@@ -5,7 +5,7 @@ filter or otherwise specialize views or behavior.
 First, we'll set up various imports and stub objects.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import ILaunchBag
+>>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 >>> from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
 >>> from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 >>> from canonical.launchpad.webapp.interfaces import \
@@ -55,6 +55,11 @@ Login should be set back to None on a logout.
 >>> event = LoggedOutEvent(request)
 >>> notify(event)
 >>> print launchbag.login
+None
+
+'user' will also be set to None:
+
+>>> print launchbag.user
 None
 
 Let's do a cookie auth principal identification.  In this case, the login

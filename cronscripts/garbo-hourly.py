@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -13,7 +13,7 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
-from canonical.launchpad.scripts.garbo import HourlyDatabaseGarbageCollector
+from lp.scripts.garbo import HourlyDatabaseGarbageCollector
 
 if __name__ == '__main__':
     script = HourlyDatabaseGarbageCollector()

@@ -1,4 +1,5 @@
-= Voucher Redemption =
+Voucher Redemption
+==================
 
 For a project to use Launchpad it must either be released under an
 approved open source license or the project administrators must buy a
@@ -11,17 +12,17 @@ The voucher belongs to a user in Launchpad so the redemption function
 is related to a person.
 
 
-== Accessing the voucher redemption page ==
+Accessing the voucher redemption page
+-------------------------------------
 
 Mark is an administrator for at least one project that does not have a
 valid open source license so he is displayed the voucher redemption
 page.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -32,28 +33,26 @@ the page she is not given the option to redeem a voucher.
     >>> browser.open('http://launchpad.dev/~marilize/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
-    Redeem Vouchers for Commercial Subscriptions
-    Marilize Coetzee does not own any commercial projects. Only project owners can redeem
-    vouchers for a project.
+    Redeem Vouchers for Commercial Subscriptions...
+    Marilize Coetzee does not own any commercial projects. Only project
+    owners can redeem vouchers for a project.
 
 A user can access her voucher page but not someone else's.  Here
 Marilize tries to access '+vouchers' on another user and is not
 allowed.
 
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     Traceback (most recent call last):
-        ...
+    ...
     Unauthorized: ...
 
 Unless, of course, that user is an administrator.  Then he can access
 the '+vouchers' page on any user.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -63,13 +62,13 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> browser.open('http://launchpad.dev/~name12/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
-    ...Sample Person does not have any unredeemed vouchers available.
+    ...Sample Person does not have any redeemable vouchers available.
     Here are the steps to obtain a commercial subscription:...
 
 
-== Redeeming a voucher ==
+Redeeming a voucher
+------------------
 
 Selecting a project the user owns and a valid voucher result in a
 successful voucher redemption.
@@ -111,7 +110,7 @@ setting up Canonical-internal projects.
     ...     auth='Basic commercial-member@canonical.com:test')
 
 Show that the commercial member does not own or drive any projects by
-viewing his +related-software page.
+viewing his +related-projects page.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
@@ -121,16 +120,17 @@ viewing his +related-software page.
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
     >>> celebs = getUtility(ILaunchpadCelebrities)
-    >>> celebs.registry_experts.addMember(commercial_member, commercial_member)
+    >>> ignored = celebs.registry_experts.addMember(
+    ...     commercial_member, commercial_member)
     >>> logout()
 
-    >>> browser.open('http://launchpad.dev/~commercial-member/+related-software')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~commercial-member/+related-projects')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
-    Related projects...
-    Commercial Member
-    doesn't own or drive any projects...
+    Related projects
+    ...
+    Commercial Member doesn't own or drive any projects.
 
 He can still redeem a voucher against a commercial project even though
 he is not responsible for it.
@@ -145,7 +145,8 @@ he is not responsible for it.
     Voucher redeemed successfully
 
 
-== OOPS handling ==
+OOPS handling
+-------------
 
 If an error occurs in the proxy while trying to redeem a voucher an
 OOPS is recorded but an error is not raised.  The user is shown an
@@ -153,7 +154,7 @@ error message instead.
 
 Set the canned fault.
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport)
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
@@ -177,8 +178,8 @@ Attempt to redeem a valid voucher and see the error message.
 The OOPS report shows the error was logged even though the OOPS was
 not shown to the user.
 
-    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from zope.component import getUtility
+    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from sys import stdout
     >>> error_utility = getUtility(IErrorReportingUtility)
     >>> report = error_utility.getLastOopsReport()
@@ -192,7 +193,9 @@ Reset the class variable to disable forced faults.
 
     >>> SalesforceXMLRPCTestTransport.forced_fault = None
 
-== Canceling the request ==
+
+Canceling the request
+---------------------
 
 If the 'Cancel' button is selected the person's overview page is shown.
 

@@ -3,23 +3,31 @@
 
 __metaclass__ = type
 
+from lazr.enum import BaseItem
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
-from lazr.enum import BaseItem
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from lp.bugs.adapters.bugchange import (
-    CveLinkedToBug, CveUnlinkedFromBug)
 from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
-    BugWatchAdded, BugWatchRemoved)
-from canonical.launchpad.interfaces._schema_circular_imports import IBug, IPerson
+    BugTaskAdded,
+    BugWatchAdded,
+    BugWatchRemoved,
+    CveLinkedToBug,
+    CveUnlinkedFromBug,
+    )
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.registry.interfaces.milestone import IMilestone, IProductRelease
+from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import (
+    IPerson,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.bugs.adapters.bugchange import BugTaskAdded
+
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -133,13 +141,14 @@ def record_cve_unlinked_from_bug(bug_cve, event):
 
 @block_implicit_flushes
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=bugsubscription_added.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='added subscriber %s' % (
-            bugsubscription_added.person.displayname))
+    subscribed_user = bugsubscription_added.person
+    if subscribed_user.visibility == PersonVisibility.PUBLIC:
+        getUtility(IBugActivitySet).new(
+            bug=bugsubscription_added.bug,
+            datechanged=UTC_NOW,
+            person=IPerson(object_created_event.user),
+            whatchanged='bug',
+            message='added subscriber %s' % subscribed_user.displayname)
 
 
 @block_implicit_flushes

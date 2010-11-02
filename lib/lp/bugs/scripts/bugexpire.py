@@ -10,24 +10,28 @@ __all__ = ['BugJanitor']
 
 from logging import getLogger
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.config import config
-from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction)
+    endInteraction,
+    setupInteraction,
+    )
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 
 
 class BugJanitor:
     """Expire Incomplete BugTasks that are older than a configurable period.
-    
+
     The BugTask must be unassigned, and the project it is associated with
     must use Malone for bug tracking.
     """
@@ -80,7 +84,7 @@ class BugJanitor:
                 bugtask_before_modification = Snapshot(
                     bugtask, providing=providedBy(bugtask))
                 bugtask.transitionToStatus(
-                    BugTaskStatus.INVALID, self.janitor)
+                    BugTaskStatus.EXPIRED, self.janitor)
                 content = message_template % (
                     bugtask.bugtargetdisplayname, self.days_before_expiration)
                 bugtask.bug.newMessage(
@@ -105,7 +109,7 @@ class BugJanitor:
 
     def _login(self):
         """Setup an interaction as the bug janitor.
-        
+
         The role of bug janitor is usually played by bug_watch_updater.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)

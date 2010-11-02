@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasBranches
 from lp.testing import TestCaseWithFactory
 
@@ -28,7 +28,7 @@ class TestIHasBranches(TestCaseWithFactory):
         self.assertProvides(person, IHasBranches)
 
     def test_project_implements_hasbranches(self):
-        # Projects should implement IHasBranches.
+        # ProjectGroups should implement IHasBranches.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasBranches)
 

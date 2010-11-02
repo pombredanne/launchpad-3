@@ -14,8 +14,12 @@ __all__ = [
     'ISourcePackageReleaseFileSet',
     ]
 
-from zope.schema import Int
 from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Int,
+    )
+
 from canonical.launchpad import _
 
 
@@ -66,6 +70,11 @@ class ISourcePackageReleaseFile(Interface):
 
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
+            )
+
+    is_orig = Bool(
+            title=_('Whether this file is an original tarball'),
+            required=True, readonly=False,
             )
 
 

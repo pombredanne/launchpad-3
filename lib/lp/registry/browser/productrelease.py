@@ -18,30 +18,47 @@ __all__ = [
 import cgi
 import mimetypes
 
-from zope.event import notify
-from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
-
-from zope.formlib.form import FormFields
-from zope.schema import Bool
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFileAddForm)
-
 from lazr.restful.interface import copy_field
-from canonical.launchpad import _
-from lp.registry.browser.product import ProductDownloadFileMixin
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, stepthrough)
-from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import DateTimeWidget
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import Bool
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
+from canonical.launchpad import _
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    )
+from canonical.lazr.utils import smartquote
+from canonical.widgets import DateTimeWidget
+from lp.registry.browser import (
+    BaseRdfView,
+    MilestoneOverlayMixin,
+    RegistryDeleteViewMixin,
+    )
+from lp.registry.browser.product import ProductDownloadFileMixin
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFileAddForm,
+    )
 
 
 class ProductReleaseNavigation(Navigation):
@@ -60,32 +77,28 @@ class ProductReleaseNavigation(Navigation):
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'add_file', 'administer', 'download', 'view_milestone']
+    links = ('edit', 'add_file', 'download', 'delete')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Change details'
+        text = 'Change release details'
         summary = "Edit this release"
         return Link('+edit', text, summary=summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete release'
+        summary = "Delete release"
+        return Link('+delete', text, summary=summary, icon='remove')
 
     @enabled_with_permission('launchpad.Edit')
     def add_file(self):
         text = 'Add download file'
         return Link('+adddownloadfile', text, icon='add')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+review', text, icon='edit')
-
     def download(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    def view_milestone(self):
-        text = 'View milestone'
-        url = canonical_url(self.context.milestone)
-        return Link(url, text)
 
 
 class ProductReleaseAddViewBase(LaunchpadFormView):
@@ -122,18 +135,16 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             milestone.active = False
             milestone_link = '<a href="%s">%s milestone</a>' % (
                 canonical_url(milestone), cgi.escape(milestone.name))
-            self.request.response.addWarningNotification(structured(
-                _("The %s for this project release was deactivated "
-                  "so that bugs and blueprints cannot be associated with "
-                  "this release." % milestone_link)))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
     @property
     def label(self):
         """The form label."""
-        return 'Create a new release for %s' % (
-            self.context.product.displayname)
+        return smartquote('Create a new release for %s' %
+                          self.context.product.displayname)
+
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -186,7 +197,7 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
 
     def initialize(self):
         # The dynamically loaded milestone form needs this javascript
-        # enabled in the main-template.pt.
+        # enabled in the base-layout.
         self.request.needs_datepicker_iframe = True
         super(ProductReleaseFromSeriesAddView, self).initialize()
 
@@ -232,7 +243,9 @@ class ProductReleaseEditView(LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Edit %s release details' % self.context.title
+        return smartquote('Edit %s release details' % self.context.title)
+
+    page_title = label
 
     @action('Change', name='change')
     def change_action(self, action, data):
@@ -244,33 +257,17 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class ProductReleaseRdfView(object):
+class ProductReleaseRdfView(BaseRdfView):
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile('../templates/productrelease-rdf.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader(
-            'Content-Disposition',
-            'attachment; filename=%s-%s-%s.rdf' % (
-                self.context.product.name,
-                self.context.productseries.name,
-                self.context.version))
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s-%s-%s' % (
+            self.context.product.name,
+            self.context.productseries.name,
+            self.context.version)
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
@@ -282,7 +279,9 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Add a download file to %s' % self.context.title
+        return smartquote('Add a download file to %s' % self.context.title)
+
+    page_title = label
 
     @action('Upload', name='add')
     def add_action(self, action, data):
@@ -335,7 +334,6 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
 class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
-    __used_for__ = IProductRelease
 
     def initialize(self):
         self.form = self.request.form
@@ -354,9 +352,11 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s' % self.context.title
+        return smartquote('Delete %s' % self.context.title)
 
-    @action('Delete this Release', name='delete')
+    page_title = label
+
+    @action('Delete Release', name='delete')
     def delete_action(self, action, data):
         series = self.context.productseries
         version = self.context.version
@@ -368,4 +368,3 @@ class ProductReleaseDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-

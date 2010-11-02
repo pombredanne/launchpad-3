@@ -7,13 +7,14 @@ SQLObject we need to use to be sure we have the right information. Seems
 like SQLObjects are not persistent between transactions.
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import (
-    ...     IKarmaActionSet, IPersonSet,
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue, RosettaImportStatus)
-    >>> from lp.translations.model.potemplate import POTemplate
     >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.translations.model.potemplate import POTemplate
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)
@@ -21,7 +22,7 @@ like SQLObjects are not persistent between transactions.
 
 Setup an event listener to help ensure karma is assigned when it should.
 
-    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -58,7 +59,7 @@ of karma to that user.
 
     # Login as a rosetta expert to be able to change the import's status.
     >>> login('carlos@canonical.com')
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -90,7 +91,7 @@ Do the import.
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
     ...     foo_bar, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -146,7 +147,7 @@ Do the import.
     ...     pofile.path, pofile_contents, comes_from_upstream,
     ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -173,7 +174,7 @@ will give karma only for the upload action.
     ...     pofile.path, pofile_contents, comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -210,7 +211,7 @@ We attach the new file as not comming from upstream.
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -242,7 +243,7 @@ We import it again without changes and see that we don't get karma changes.
     ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
@@ -364,7 +365,7 @@ We are going to use Sample Person for this test as he's the owner of the
 product from where the IPOTemplate is and he has rights to change the
 description.
 
-    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> from lp.translations.publisher import TranslationsLayer
     >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
     >>> form = {
@@ -384,7 +385,8 @@ Let's see the description we have atm:
 We do the update and see the karma being assigned.
 
     >>> status = potemplate_view.initialize()
-    Karma added: action=translationtemplatedescriptionchanged, product=evolution
+    Karma added: action=translationtemplatedescriptionchanged,
+                 product=evolution
 
 And the new one is:
 

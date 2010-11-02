@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -6,153 +6,150 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
-    'ApplicationButtons',
-    'BrowserWindowDimensions',
     'DoesNotExistView',
-    'get_launchpad_views',
     'Hierarchy',
     'IcingContribFolder',
     'IcingFolder',
-    'LaunchpadRootNavigation',
     'LaunchpadImageFolder',
+    'LaunchpadGraphics',
+    'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
     'NavigationMenuTabs',
     'SoftTimeoutView',
-    'StructuralHeaderPresentation',
-    'StructuralObjectPresentation',
+    'get_launchpad_views',
     ]
 
 
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import operator
 import os
 import re
 import time
 import urllib
-from datetime import timedelta, datetime
-from urlparse import urlunsplit
 
-from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility, queryAdapter
+from lazr.uri import URI
+from zope import i18n
+from zope.app import zapi
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.datetime import (
+    DateTimeError,
+    parseDatetimetz,
+    tzinfo,
+    )
+from zope.i18nmessageid import Message
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.traversing.interfaces import ITraversable
 
 from canonical.config import config
-from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.layers import WebServiceLayer
-
-from lp.registry.interfaces.announcement import IAnnouncementSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from canonical.launchpad.interfaces.bounty import IBountySet
-from lp.code.interfaces.branch import IBranchSet
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import InvalidNamespace
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.karma import IKarmaActionSet
-from canonical.launchpad.interfaces.hwdb import IHWDBApplication
-from lp.services.worlddata.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation)
+    IAppFrontPageSearchForm,
+    IBazaarApplication,
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
-from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    InvalidProductName, IProductSet)
-from lp.registry.interfaces.project import IProjectSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.interfaces.sprint import ISprintSet
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryStorageManager,
+    )
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
-    stepto)
-from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumbBuilder, ILaunchBag, ILaunchpadRoot, INavigationMenu,
-    NotFoundError, POSTToNonCanonicalURL)
-from canonical.launchpad.webapp.publisher import RedirectionView
+    canonical_name,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-from lazr.uri import URI
-from canonical.launchpad.webapp.url import urlparse, urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets.project import ProjectScopeWidget
-
-
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import (
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
+from canonical.launchpad.webapp.publisher import RedirectionView
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
-
+from lp.app.browser.tales import (
+    DurationFormatterAPI,
+    MenuAPI,
+    PageTemplateContextsAPI,
+    )
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import (
+    ExportedFolder,
+    ExportedImageFolder,
+    )
+from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
-
-
-class MenuBox(LaunchpadView):
-    """View class that helps its template render the actions menu box.
-
-    Nothing at all is rendered if there are no contextmenu items and also
-    no applicationmenu items.
-
-    If there is at least one item, the template is rendered.
-
-    The context may be another view, or a content object.
-    """
-
-    def initialize(self):
-        menuapi = MenuAPI(self.context)
-        # We are only interested on enabled links in non development mode.
-        self.contextmenuitems = sorted([
-            link for link in menuapi.context.values()
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-        facet = menuapi.selectedfacetname()
-        if facet not in ('unknown', 'bounties'):
-            # XXX sinzui 2008-06-23 bug=242453:
-            # Why are we getting unknown? Bounties are borked. We need
-            # to end the facet hacks to get a clear state for the menus.
-            application_links = getattr(menuapi, facet).values()
-        else:
-            application_links = []
-        self.applicationmenuitems = sorted([
-            link for link in application_links
-            if link.enabled or config.devmode],
-            key=operator.attrgetter('sort_key'))
-
-    def render(self):
-        if (not self.contextmenuitems and not self.applicationmenuitems):
-            return u''
-        else:
-            return self.template()
+from lp.app.errors import (
+    GoneError,
+    NotFoundError,
+    POSTToNonCanonicalURL,
+    )
+from lp.app.interfaces.headings import IMajorHeadingView
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    )
+from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.registry.interfaces.announcement import IAnnouncementSet
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProductSet,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -173,6 +170,7 @@ class NavigationMenuTabs(LaunchpadView):
             menu = queryAdapter(self.context, INavigationMenu, name=facet)
             if menu is not None:
                 self.title = menu.title
+        self.enabled_links = [link for link in self.links if link.enabled]
 
     def render(self):
         if not self.links:
@@ -215,144 +213,101 @@ class LinkView(LaunchpadView):
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
 
+    vhost_breadcrumb = True
+
+    @property
+    def objects(self):
+        """The objects for which we want breadcrumbs."""
+        return self.request.traversed_objects
+
+    @cachedproperty
     def items(self):
         """Return a list of `IBreadcrumb` objects visible in the hierarchy.
 
         The list starts with the breadcrumb closest to the hierarchy root.
         """
-        urlparts = urlparse(self.request.getURL(0, path_only=False))
-        baseurl = urlunsplit((urlparts[0], urlparts[1], '', '', ''))
-
-        # Construct a list of complete URLs for each URL path segment.
-        pathurls = []
-        working_url = baseurl
-        for segment in urlparts[2].split('/'):
-            working_url = urlappend(working_url, segment)
-            # Segments starting with '+' should be ignored because they
-            # will never correspond to an object in navigation.
-            if segment.startswith('+'):
-                continue
-            pathurls.append(working_url)
-
-        # We assume a 1:1 relationship between the traversed_objects list and
-        # the URL path segments.  Note that there may be more segments than
-        # there are objects.
-        object_urls = zip(self.request.traversed_objects, pathurls)
-        return self._breadcrumbs(object_urls)
-
-    def _breadcrumbs(self, object_urls):
-        """Generate the breadcrumb list.
-
-        :param object_urls: A sequence of (object, url) pairs.
-        :return: A list of 'IBreadcrumb' objects.
-        """
         breadcrumbs = []
-        for obj, url in object_urls:
-            crumb = self.breadcrumb_for(obj, url)
-            if crumb is not None:
-                breadcrumbs.append(crumb)
+        for obj in self.objects:
+            breadcrumb = IBreadcrumb(obj, None)
+            if breadcrumb is not None:
+                breadcrumbs.append(breadcrumb)
+
+        host = URI(self.request.getURL()).host
+        mainhost = allvhosts.configs['mainsite'].hostname
+        if (len(breadcrumbs) != 0 and
+            host != mainhost and
+            self.vhost_breadcrumb):
+            # We have breadcrumbs and we're not on the mainsite, so we'll
+            # sneak an extra breadcrumb for the vhost we're on.
+            vhost = host.split('.')[0]
+
+            # Iterate over the context of our breadcrumbs in reverse order and
+            # for the first one we find an adapter named after the vhost we're
+            # on, generate an extra breadcrumb and insert it in our list.
+            for idx, breadcrumb in reversed(list(enumerate(breadcrumbs))):
+                extra_breadcrumb = queryAdapter(
+                    breadcrumb.context, IBreadcrumb, name=vhost)
+                if extra_breadcrumb is not None:
+                    breadcrumbs.insert(idx + 1, extra_breadcrumb)
+                    break
+        if len(breadcrumbs) > 0:
+            page_crumb = self.makeBreadcrumbForRequestedPage()
+            if page_crumb:
+                breadcrumbs.append(page_crumb)
         return breadcrumbs
 
-    def breadcrumb_for(self, obj, url):
-        """Return the breadcrumb for the an object, using the supplied URL.
-
-        :return: An `IBreadcrumb` object, or None if a breadcrumb adaptation
-            for the object doesn't exist.
-        """
-        # If the object has an IBreadcrumbBuilder adaptation then the
-        # object is intended to be shown in the hierarchy.
-        builder = queryAdapter(obj, IBreadcrumbBuilder)
-        if builder is not None:
-            # The breadcrumb builder hasn't been given a URL yet.
-            builder.url = url
-            return builder.make_breadcrumb()
-        return None
-
-    def render(self):
-        """Render the hierarchy HTML.
-
-        The hierarchy elements are taken from the request.breadcrumbs list.
-        For each element, element.text is cgi escaped.
-        """
-        elements = self.items()
-
-        if config.launchpad.site_message:
-            site_message = (
-                '<div id="globalheader" xml:lang="en" lang="en" dir="ltr">'
-                '<div class="sitemessage">%s</div></div>'
-                % config.launchpad.site_message)
+    @property
+    def _naked_context_view(self):
+        """Return the unproxied view for the context of the hierarchy."""
+        from zope.security.proxy import removeSecurityProxy
+        if len(self.request.traversed_objects) > 0:
+            return removeSecurityProxy(self.request.traversed_objects[-1])
         else:
-            site_message = ""
+            return None
 
-        if len(elements) > 0:
-            # We're not on the home page.
-            prefix = ('<div id="lp-hierarchy">'
-                     '<span class="first-rounded"></span>')
-            suffix = ('</div><span class="last-rounded">&nbsp;</span>'
-                     '%s<div class="apps-separator"><!-- --></div>'
-                     % site_message)
+    def makeBreadcrumbForRequestedPage(self):
+        """Return an `IBreadcrumb` for the requested page.
 
-            if len(elements) == 1:
-                first_class = 'before-last item'
-            else:
-                first_class = 'item'
+        The `IBreadcrumb` for the requested page is created using the current
+        URL and the page's name (i.e. the last path segment of the URL).
 
-            steps = []
-            steps.append(
-                '<span class="%s">'
-                '<a href="/" class="breadcrumb container"'
-                ' id="homebreadcrumb">'
-                '<img alt="Launchpad"'
-                ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                '</a>&nbsp;</span>' % first_class)
-
-            last_element = elements[-1]
-            if len(elements) > 1:
-                before_last_element = elements[-2]
-            else:
-                before_last_element = None
-
-            for element in elements:
-
-                if element is before_last_element:
-                    css_class = 'before-last'
-                elif element is last_element:
-                    css_class = 'last'
-                else:
-                    # No extra CSS class.
-                    css_class = ''
-
-                steps.append(
-                    self.getHtmlForBreadcrumb(element, css_class))
-
-            hierarchy = prefix + '<small> &gt; </small>'.join(steps) + suffix
-        else:
-            # We're on the home page.
-            hierarchy = ('<div id="lp-hierarchy" class="home">'
-                        '<a href="/" class="breadcrumb">'
-                        '<img alt="Launchpad" '
-                        ' src="/@@/launchpad-logo-and-name-hierarchy.png"/>'
-                        '</a></div>'
-                        '%s<div class="apps-separator"><!-- --></div>' %
-                        site_message)
-
-        return hierarchy
-
-    def getHtmlForBreadcrumb(self, breadcrumb, extra_css_class=''):
-        """Return the HTML to display an `IBreadcrumb` object.
-
-        :param extra_css_class: A string of additional CSS classes
-            to apply to the breadcrumb.
+        If the requested page (as specified in self.request) is the default
+        one for our parent view's context, return None.
         """
-        bodytext = cgi.escape(breadcrumb.text)
+        url = self.request.getURL()
+        obj = self.request.traversed_objects[-2]
+        default_view_name = zapi.getDefaultViewName(obj, self.request)
+        view = self._naked_context_view
+        if view.__name__ != default_view_name:
+            title = getattr(view, 'page_title', None)
+            if title is None:
+                title = getattr(view, 'label', None)
+            if title is None or title == '':
+                template = getattr(view, 'template', None)
+                if template is None:
+                    template = view.index
+                template_api = PageTemplateContextsAPI(
+                    dict(context=obj, template=template, view=view))
+                title = template_api.pagetitle()
+            if isinstance(title, Message):
+                title = i18n.translate(title, context=self.request)
+            breadcrumb = Breadcrumb(None)
+            breadcrumb._url = url
+            breadcrumb.text = title
+            return breadcrumb
+        else:
+            return None
 
-        if breadcrumb.icon is not None:
-            bodytext = '%s %s' % (breadcrumb.icon, bodytext)
-
-        css_class = 'item ' + extra_css_class
-        return (
-            '<span class="%s"><a href="%s">%s</a></span>'
-            % (css_class, breadcrumb.url, bodytext))
+    @property
+    def display_breadcrumbs(self):
+        """Return whether the breadcrumbs should be displayed."""
+        # If there is only one breadcrumb then it does not make sense
+        # to display it as it will simply repeat the context.title.
+        # If the view is an IMajorHeadingView then we do not want
+        # to display breadcrumbs either.
+        has_major_heading = IMajorHeadingView.providedBy(
+            self._naked_context_view)
+        return len(self.items) > 1 and not has_major_heading
 
 
 class MaintenanceMessage:
@@ -436,12 +391,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
-    def bounties(self):
-        target = 'bounties'
-        text = 'Bounties'
-        summary = 'The Launchpad Universal Bounty Tracker'
-        return Link(target, text, summary)
-
     def branches(self):
         target = ''
         text = 'Code'
@@ -517,8 +466,14 @@ class LoginStatus:
         if full_url.endswith('/'):
             full_url = full_url[:-1]
         logout_url_end = '/+logout'
+        openid_callback_url_end = '/+openid-callback'
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
+        elif full_url.endswith(openid_callback_url_end):
+            full_url = full_url[:-len(openid_callback_url_end)]
+        else:
+            # No need to remove anything from full_url.
+            pass
         return '%s/+login%s' % (full_url, query_string)
 
 
@@ -528,10 +483,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('support')
     def redirect_support(self):
-        """Redirect /support to Answers root site."""
+        """Redirect /support to launchpad Answers site."""
         target_url = canonical_url(
-            getUtility(ILaunchpadRoot), rootsite='answers')
-        return self.redirectSubTree(target_url + 'questions', status=301)
+            getUtility(ILaunchpadCelebrities).launchpad, rootsite='answers')
+        return self.redirectSubTree(target_url, status=301)
 
     @stepto('legal')
     def redirect_legal(self):
@@ -558,20 +513,51 @@ class LaunchpadRootNavigation(Navigation):
 
         'foo' can be the unique name of the branch, or any of the aliases for
         the branch.
+        If 'foo' resolves to an ICanHasLinkedBranch instance but the linked
+        branch is not yet set, redirect back to the referring page with a
+        suitable notification message.
+        If 'foo' is completely invalid, redirect back to the referring page
+        with a suitable error message.
         """
+
+        # The default target url to go to will be back to the referring page
+        # (in the case that there is an error resolving the branch url).
+        # Note: the http referer may be None if someone has hacked a url
+        # directly rather than following a /+branch/<foo> link.
+        target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
-                InvalidProductName):
-            raise NotFoundError
-        branch, trailing = branch_data
-        if branch is None:
-            raise NotFoundError
-        url = canonical_url(branch)
-        if trailing is not None:
-            url = urlappend(url, trailing)
-        return self.redirectSubTree(url)
+            branch, trailing = branch_data
+            target_url = canonical_url(branch)
+            if trailing is not None:
+                target_url = urlappend(target_url, trailing)
+        except (NoLinkedBranch), e:
+            # A valid ICanHasLinkedBranch target exists but there's no
+            # branch or it's not visible.
+
+            # If are aren't arriving at this invalid branch URL from
+            # another page then we just raise a NotFoundError to generate
+            # a 404, otherwise we end up in a bad recursion loop. The
+            # target url will be None in that case.
+            if target_url is None:
+                raise NotFoundError
+            self.request.response.addNotification(
+                "The target %s does not have a linked branch." % path)
+        except (CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError), e:
+            # If are aren't arriving at this invalid branch URL from another
+            # page then we just raise a NotFoundError to generate a 404,
+            # otherwise we end up in a bad recursion loop. The target url will
+            # be None in that case.
+            if target_url is None:
+                raise NotFoundError
+            error_msg = str(e)
+            if error_msg == '':
+                error_msg = "Invalid branch lp:%s." % path
+            self.request.response.addErrorNotification(error_msg)
+
+        return self.redirectSubTree(target_url)
 
     @stepto('+builds')
     def redirect_buildfarm(self):
@@ -587,24 +573,23 @@ class LaunchpadRootNavigation(Navigation):
         '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'branches': IBranchSet,
-        'bounties': IBountySet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
         '+code': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
+        '+countries': ICountrySet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
         'projects': IProductSet,
-        'projectgroups': IProjectSet,
+        'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -612,8 +597,9 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
-        '+rpconfig': IOpenIDRPConfigSet,
+        'temporary-blobs': ITemporaryStorageManager,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,
@@ -641,14 +627,20 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
+                if person is None:
+                    return person
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person is None or
-                    not person.is_team or
-                    check_permission('launchpad.View', person)):
-                    return person
-                raise NotFound(self.context, name)
+                if (person.is_team
+                    and not check_permission('launchpad.View', person)):
+                    raise NotFound(self.context, name)
+                # Only admins are permitted to see suspended users.
+                if person.account_status == AccountStatus.SUSPENDED:
+                    if not check_permission('launchpad.Admin', person):
+                        raise GoneError(
+                            'User is suspended: %s' % name)
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -664,7 +656,8 @@ class LaunchpadRootNavigation(Navigation):
             if self.request.method == 'POST':
                 raise POSTToNonCanonicalURL
             return self.redirectSubTree(
-                canonical_url(self.context) + canonical_name(name),
+                (canonical_url(self.context, request=self.request) +
+                 canonical_name(name)),
                 status=301)
 
         pillar = getUtility(IPillarNameSet).getByName(
@@ -788,13 +781,6 @@ class SoftTimeoutView(LaunchpadView):
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
 
-class ObjectForTemplate:
-
-    def __init__(self, **kw):
-        for name, value in kw.items():
-            setattr(self, name, value)
-
-
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
@@ -866,146 +852,6 @@ class LaunchpadAPIDocFolder(ExportedFolder):
             return self, ()
 
 
-class StructuralHeaderPresentation:
-    """Base class for StructuralHeaderPresentation adapters."""
-
-    implements(IStructuralHeaderPresentation)
-
-    def __init__(self, context):
-        self.context = context
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        raise NotImplementedError()
-
-
-class StructuralObjectPresentation(StructuralHeaderPresentation):
-    """Base class for StructuralObjectPresentation adapters."""
-
-    implements(IStructuralObjectPresentation)
-
-    def listChildren(self, num):
-        return []
-
-    def countChildren(self):
-        raise NotImplementedError()
-
-    def listAltChildren(self, num):
-        return None
-
-    def countAltChildren(self):
-        raise NotImplementedError()
-
-
-class Button:
-
-    def __init__(self, **kw):
-        assert len(kw) == 1
-        self.name = kw.keys()[0]
-        self.text = kw.values()[0]
-        self.replacement_dict = self.makeReplacementDict()
-
-    def makeReplacementDict(self):
-        return dict(
-            url=allvhosts.configs[self.name].rooturl,
-            buttonname=self.name,
-            text=self.text)
-
-    def renderActive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderInactive(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="64"'
-            '    height="64"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s-sml.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderFrontPage(self):
-        return (
-            '<a href="%(url)s">\n'
-            '  <img'
-            '    width="146"'
-            '    height="146"'
-            '    alt="%(buttonname)s"'
-            '    src="/+icing/app-%(buttonname)s.gif"'
-            '    title="%(text)s"'
-            '  />\n'
-            '</a>\n' % self.replacement_dict)
-
-    def renderButton(self, is_active, is_front_page):
-        if (is_front_page):
-            return self.renderFrontPage()
-        elif is_active:
-            return self.renderActive()
-        else:
-            return self.renderInactive()
-
-
-class PeopleButton(Button):
-
-    def makeReplacementDict(self):
-        return dict(
-            url='%speople/' % allvhosts.configs['mainsite'].rooturl,
-            buttonname=self.name,
-            text=self.text)
-
-
-class ApplicationButtons(LaunchpadView):
-    """Those buttons that you get on the index pages."""
-
-    implements(ITraversable)
-
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-        self.name = None
-
-    buttons = [
-        PeopleButton(people="Join thousands of people and teams collaborating"
-            " in software development."),
-        Button(code="Publish your code for people to merge and branch from."),
-        Button(bugs="Share bug reports and fixes."),
-        Button(blueprints="Track blueprints through approval and "
-            "implementation."),
-        Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software.")
-        ]
-
-    def render(self):
-        L = []
-        for button in self.buttons:
-            if self.name:
-                is_active = button.name == self.name
-            else:
-                is_active = True
-            is_front_page = self.name == 'main'
-            L.append(button.renderButton(is_active, is_front_page))
-        return u'\n'.join(L)
-
-    def traverse(self, name, furtherPath):
-        self.name = name
-        if furtherPath:
-            raise AssertionError(
-                'Max of one path item after +applicationbuttons')
-        return self
-
-
 class AppFrontPageSearchView(LaunchpadFormView):
 
     schema = IAppFrontPageSearchForm
@@ -1025,11 +871,8 @@ class AppFrontPageSearchView(LaunchpadFormView):
         return self.getFieldError('scope')
 
 
-class BrowserWindowDimensions(LaunchpadView):
-    """Allow capture of browser window dimensions."""
-
-    def render(self):
-        return u'Thanks.'
+class LaunchpadGraphics(LaunchpadView):
+    label = page_title = 'Overview of Launchpad graphics and icons'
 
 
 def get_launchpad_views(cookies):

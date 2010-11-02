@@ -35,10 +35,11 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bugchange import IBugChange
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.webapp.publisher import canonical_url
 
 
 class NoBugChangeFoundError(Exception):
@@ -212,7 +213,7 @@ class BugTaskAdded(BugChangeBase):
         lines.append(u"%13s: %s" % (
             u"Status", self.bug_task.status.title))
         return {
-            'text': '\n'.join(lines)
+            'text': '\n'.join(lines),
             }
 
 
@@ -366,17 +367,61 @@ class BugDuplicateChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is not None and self.new_value is not None:
-            text = ("** This bug is no longer a duplicate of bug %d\n"
-                    "   %s\n"
-                    "** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.old_value.id, self.old_value.title,
-                               self.new_value.id, self.new_value.title))
-        elif self.old_value is None:
-            text = ("** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.new_value.id, self.new_value.title))
-        elif self.new_value is None:
-            text = ("** This bug is no longer a duplicate of bug %d\n"
+            if self.old_value.private:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
                     "   %s" % (self.old_value.id, self.old_value.title))
+            if self.new_value.private:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of bug "
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
+                        'bug_id': self.new_value.id,
+                        'bug_title': self.new_value.title,
+                        'subscribe_link': canonical_url(
+                            self.new_value.default_bugtask,
+                            view_name='+subscribe'),
+                        })
+
+            text = "\n".join((old_value_text, new_value_text))
+
+        elif self.old_value is None:
+            if self.new_value.private:
+                text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                text = (
+                    "** This bug has been marked a duplicate of bug "
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
+                        'bug_id': self.new_value.id,
+                        'bug_title': self.new_value.title,
+                        'subscribe_link': canonical_url(
+                            self.new_value.default_bugtask,
+                            view_name='+subscribe'),
+                        })
+
+        elif self.new_value is None:
+            if self.old_value.private:
+                text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+
         else:
             raise AssertionError(
                 "There is no change: both the old bug and new bug are None.")
@@ -463,7 +508,7 @@ class BugSecurityChange(AttributeChange):
     def getBugNotification(self):
         return {
             'text': self.notification_mapping[
-                (self.old_value, self.new_value)]
+                (self.old_value, self.new_value)],
             }
 
 
@@ -499,6 +544,12 @@ class BugTagsChange(AttributeChange):
         return {'text': "\n".join(messages)}
 
 
+def download_url_of_bugattachment(attachment):
+    """Return the URL of the ProxiedLibraryFileAlias for the attachment."""
+    return ProxiedLibraryFileAlias(
+        attachment.libraryfile, attachment).http_url
+
+
 class BugAttachmentChange(AttributeChange):
     """Used to represent a change to an `IBug`'s attachments."""
 
@@ -507,12 +558,14 @@ class BugAttachmentChange(AttributeChange):
             what_changed = "attachment added"
             old_value = None
             new_value = "%s %s" % (
-                self.new_value.title, self.new_value.libraryfile.http_url)
+                self.new_value.title,
+                download_url_of_bugattachment(self.new_value))
         else:
             what_changed = "attachment removed"
             attachment = self.new_value
             old_value = "%s %s" % (
-                self.old_value.title, self.old_value.libraryfile.http_url)
+                self.old_value.title,
+                download_url_of_bugattachment(self.old_value))
             new_value = None
 
         return {
@@ -523,11 +576,21 @@ class BugAttachmentChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is None:
-            message = '** Attachment added: "%s"\n   %s' % (
-                self.new_value.title, self.new_value.libraryfile.http_url)
+            if self.new_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
+            message = '** %s added: "%s"\n   %s' % (
+                attachment_str, self.new_value.title,
+                download_url_of_bugattachment(self.new_value))
         else:
-            message = '** Attachment removed: "%s"\n   %s' % (
-                self.old_value.title, self.old_value.libraryfile.http_url)
+            if self.old_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
+            message = '** %s removed: "%s"\n   %s' % (
+                attachment_str, self.old_value.title,
+                download_url_of_bugattachment(self.old_value))
 
         return {'text': message}
 
@@ -638,9 +701,9 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.display_notification_label,
-                'oldval' : self.display_old_value,
-                'newval' : self.display_new_value,
+                'label': self.display_notification_label,
+                'oldval': self.display_old_value,
+                'newval': self.display_new_value,
             })
 
         return {'text': text.rstrip()}

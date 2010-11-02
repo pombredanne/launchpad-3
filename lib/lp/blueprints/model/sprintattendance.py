@@ -7,16 +7,16 @@ __metaclass__ = type
 
 __all__ = ['SprintAttendance']
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from lp.registry.interfaces.person import validate_public_person
-
-from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.database.sqlbase import SQLBase
 
 
 class SprintAttendance(SQLBase):
@@ -33,5 +33,4 @@ class SprintAttendance(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
-
-
+    is_physical = BoolCol(dbName='is_physical', notNull=True, default=True)

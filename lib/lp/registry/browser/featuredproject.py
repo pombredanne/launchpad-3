@@ -9,16 +9,22 @@ __all__ = [
     'FeaturedProjectsView',
     ]
 
-from zope.interface import Interface
 from zope.component import getUtility
-from zope.schema import Choice, Set
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Set,
+    )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView,
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
     )
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class FeaturedProjectForm(Interface):
@@ -28,7 +34,7 @@ class FeaturedProjectForm(Interface):
         title=_("Add project"),
         description=_(
             "Choose a project to feature on the Launchpad home page."),
-        required=False, vocabulary='DistributionOrProductOrProject')
+        required=False, vocabulary='DistributionOrProductOrProjectGroup')
 
     remove = Set(
         title=u'Remove projects',
@@ -40,6 +46,9 @@ class FeaturedProjectForm(Interface):
 
 class FeaturedProjectsView(LaunchpadFormView):
     """A view for adding and removing featured projects."""
+
+    label = 'Manage featured projects in Launchpad'
+    page_title = label
 
     schema = FeaturedProjectForm
     custom_widget('remove', LabeledMultiCheckBoxWidget)

@@ -6,33 +6,106 @@
 __metaclass__ = type
 
 __all__ = [
+    'HasSpecificationsMenuMixin',
     'HasSpecificationsView',
     'RegisterABlueprintButtonView',
+    'SpecificationAssignmentsView',
+    'SpecificationDocumentationView',
     ]
 
 from operator import itemgetter
 
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSeries
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationSort)
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import ISprint
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import (
+    getMultiAdapter,
+    queryMultiAdapter,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from canonical.lazr.utils import (
+    safe_hasattr,
+    smartquote,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.interfaces.specification import (
+    SpecificationFilter,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import ISprint
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    )
+from lp.services.propertycache import cachedproperty
+
+
+class HasSpecificationsMenuMixin:
+
+    def listall(self):
+        """Return a link to show all blueprints."""
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='blueprint')
+
+    def listaccepted(self):
+        """Return a link to show the approved goals."""
+        text = 'List approved blueprints'
+        return Link('+specs?acceptance=accepted', text, icon='blueprint')
+
+    def listproposed(self):
+        """Return a link to show the proposed goals."""
+        text = 'List proposed blueprints'
+        return Link('+specs?acceptance=proposed', text, icon='blueprint')
+
+    def listdeclined(self):
+        """Return a link to show the declined goals."""
+        text = 'List declined blueprints'
+        return Link('+specs?acceptance=declined', text, icon='blueprint')
+
+    def doc(self):
+        text = 'List documentation'
+        return Link('+documentation', text, icon='info')
+
+    def setgoals(self):
+        """Return a link to set the series goals."""
+        text = 'Set series goals'
+        return Link('+setgoals', text, icon='edit')
+
+    def assignments(self):
+        """Return a link to show the people assigned to the blueprint."""
+        text = 'Assignments'
+        return Link('+assignments', text, icon='person')
+
+    def new(self):
+        """Return a link to register a blueprint."""
+        text = 'Register a blueprint'
+        return Link('+addspec', text, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('/sprints/+new', text, summary=summary, icon='add')
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -68,26 +141,79 @@ class HasSpecificationsView(LaunchpadView):
     is_project = False
     is_series = False
     is_sprint = False
+    has_wiki = False
     has_drivers = False
 
-    # XXX: jsk: 2007-07-12: This method might be improved by
+    # Templates for the various conditions of blueprints:
+    # * On Launchpad
+    # * External
+    # * Disabled
+    # * Unknown
+    default_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    not_launchpad_template = ViewPageTemplateFile(
+        '../templates/unknown-specs.pt')
+
+    @property
+    def template(self):
+        # Check for the magical "index" added by the browser:page template
+        # machinery. If it exists this is actually the
+        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # mixed in by the browser:page zcml directive the template defined in
+        # the directive should be used.
+        if safe_hasattr(self, 'index'):
+            return super(HasSpecificationsView, self).template
+
+        # Sprints and Persons don't have a usage enum for blueprints, so we
+        # have to fallback to the default.
+        if (ISprint.providedBy(self.context)
+            or IPerson.providedBy(self.context)):
+            return self.default_template
+
+        # ProjectGroups are a special case, as their products may be a
+        # combination of usage settings. To deal with this, check all
+        # products via the involvment menu.
+        if (IProjectGroup.providedBy(self.context)
+            or IProjectGroupSeries.providedBy(self.context)):
+            involvement = getMultiAdapter(
+                (self.context, self.request),
+                name='+get-involved')
+            if service_uses_launchpad(involvement.blueprints_usage):
+                return self.default_template
+            else:
+                return self.not_launchpad_template
+
+        # Otherwise, determine usage and provide the correct template.
+        service_usage = IServiceUsage(self.context)
+        if service_uses_launchpad(service_usage.blueprints_usage):
+            return self.default_template
+        else:
+            return self.not_launchpad_template
+
+    def render(self):
+        return self.template()
+
+    # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
-    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
-        mapping = {'name': self.context.displayname}
         if IPerson.providedBy(self.context):
             self.is_person = True
-        elif (IDistribution.providedBy(self.context) or
-              IProduct.providedBy(self.context)):
+        elif IDistribution.providedBy(self.context):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif IProject.providedBy(self.context):
+        elif IProduct.providedBy(self.context):
+            self.is_target = True
+            self.is_pillar = True
+            self.has_wiki = True
+            self.show_series = True
+        elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.has_wiki = True
             self.show_target = True
             self.show_series = True
-        elif IProjectSeries.providedBy(self.context):
+        elif IProjectGroupSeries.providedBy(self.context):
             self.show_milestone = True
             self.show_target = True
             self.show_series = True
@@ -99,12 +225,7 @@ class HasSpecificationsView(LaunchpadView):
             self.is_sprint = True
             self.show_target = True
         else:
-            raise AssertionError, 'Unknown blueprint listing site'
-
-        if self.is_person:
-            self.title = _('Specifications involving $name', mapping=mapping)
-        else:
-            self.title = _('Specifications for $name', mapping=mapping)
+            raise AssertionError('Unknown blueprint listing site.')
 
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
@@ -112,6 +233,26 @@ class HasSpecificationsView(LaunchpadView):
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
+
+    @property
+    def can_configure_blueprints(self):
+        """Can the user configure blueprints for the `ISpecificationTarget`.
+        """
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
+
+    @property
+    def label(self):
+        mapping = {'name': self.context.displayname}
+        if self.is_person:
+            return _('Blueprints involving $name', mapping=mapping)
+        else:
+            return _('Blueprints for $name', mapping=mapping)
+
+    page_title = 'Blueprints'
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
@@ -133,7 +274,7 @@ class HasSpecificationsView(LaunchpadView):
             'distroseries',
             'direction_approved',
             'man_days',
-            'delivery'
+            'delivery',
             ]
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
@@ -260,6 +401,12 @@ class HasSpecificationsView(LaunchpadView):
         return self.context.specifications(filter=filter)
 
     @cachedproperty
+    def specs_batched(self):
+        navigator = BatchNavigator(self.specs, self.request, size=500)
+        navigator.setHeadings('specification', 'specifications')
+        return navigator
+
+    @cachedproperty
     def spec_count(self):
         return self.specs.count()
 
@@ -291,7 +438,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.definition_status):
+            if spec.definition_status in categories:
                 category = categories[spec.definition_status]
             else:
                 category = {}
@@ -303,17 +450,41 @@ class HasSpecificationsView(LaunchpadView):
         return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
-        """Return <quantity> latest specs created for this target. This
-        is used by the +portlet-latestspecs view.
+        """Return <quantity> latest specs created for this target.
+
+        Only ACCEPTED specifications are returned.  This list is used by the
+        +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity, prejoin_people=False)
 
 
+class SpecificationAssignmentsView(HasSpecificationsView):
+    """View for +assignments pages."""
+    page_title = "Assignments"
+
+    @property
+    def label(self):
+        return smartquote(
+            'Blueprint assignments for "%s"' % self.context.displayname)
+
+
+class SpecificationDocumentationView(HasSpecificationsView):
+    """View for blueprints +documentation page."""
+    page_title = "Documentation"
+
+    @property
+    def label(self):
+        return smartquote('Current documentation for "%s"' %
+                          self.context.displayname)
+
+
 class RegisterABlueprintButtonView:
     """View that renders a button to register a blueprint on its context."""
 
-    def __call__(self):
+    @cachedproperty
+    def target_url(self):
+        """The +addspec URL for the specifiation target or None"""
         # Check if the context has an +addspec view available.
         if queryMultiAdapter(
             (self.context, self.request), name='+addspec'):
@@ -321,13 +492,27 @@ class RegisterABlueprintButtonView:
         else:
             # otherwise find an adapter to ISpecificationTarget which will.
             target = ISpecificationTarget(self.context)
+        if target is None:
+            return None
+        else:
+            return canonical_url(
+                target, rootsite='blueprints', view_name='+addspec')
 
+    def __call__(self):
+        if self.target_url is None:
+            return ''
         return """
-              <a href="%s/+addspec" id="addspec">
-                <img
-                  alt="Register a blueprint"
-                  src="/+icing/but-sml-registerablueprint.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='blueprints')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li style="border: none">
+                  <a class="menu-link-register_blueprint sprite blueprints"
+                    href="%s">Register a blueprint</a>
+                </li>
+              </ul>
+            </div>
+            """ % self.target_url
 
+
+class BlueprintsVHostBreadcrumb(Breadcrumb):
+    rootsite = 'blueprints'
+    text = 'Blueprints'

@@ -4,24 +4,49 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
+__all__ = [
+    'BinaryPackageRelease',
+    'BinaryPackageReleaseDownloadCount',
+    'BinaryPackageReleaseSet',
+    ]
 
 
+import simplejson
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
-
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
-
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseSet)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
-from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageRelease,
+    IBinaryPackageReleaseDownloadCount,
+    IBinaryPackageReleaseSet,
+    )
 from lp.soyuz.model.files import BinaryPackageFile
 
 
@@ -33,7 +58,8 @@ class BinaryPackageRelease(SQLBase):
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
-    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    build = ForeignKey(
+        dbName='build', foreignKey='BinaryPackageBuild', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
                                schema=BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
@@ -55,10 +81,29 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
+    homepage = StringCol(dbName='homepage')
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    debug_package = ForeignKey(dbName='debug_package',
+                              foreignKey='BinaryPackageRelease')
 
     files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease', orderBy="libraryfile")
+
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(BinaryPackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def title(self):
@@ -78,17 +123,17 @@ class BinaryPackageRelease(SQLBase):
             import DistributionSourcePackageRelease
         return DistributionSourcePackageRelease(
             distribution=self.build.distribution,
-            sourcepackagerelease=self.build.sourcepackagerelease)
+            sourcepackagerelease=self.build.source_package_release)
 
     @property
     def sourcepackagename(self):
         """See `IBinaryPackageRelease`."""
-        return self.build.sourcepackagerelease.sourcepackagename.name
+        return self.build.source_package_release.sourcepackagename.name
 
     @property
     def is_new(self):
         """See `IBinaryPackageRelease`."""
-        distroarchseries = self.build.distroarchseries
+        distroarchseries = self.build.distro_arch_series
         distroarchseries_binary_package = distroarchseries.getBinaryPackage(
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
@@ -198,4 +243,41 @@ class BinaryPackageReleaseSet:
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables
+
+
+class BinaryPackageReleaseDownloadCount(Storm):
+    """See `IBinaryPackageReleaseDownloadCount`."""
+
+    implements(IBinaryPackageReleaseDownloadCount)
+    __storm_table__ = 'BinaryPackageReleaseDownloadCount'
+
+    id = Int(primary=True)
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+    binary_package_release_id = Int(
+        name='binary_package_release', allow_none=False)
+    binary_package_release = Reference(
+        binary_package_release_id, 'BinaryPackageRelease.id')
+    day = Date(allow_none=False)
+    country_id = Int(name='country', allow_none=True)
+    country = Reference(country_id, 'Country.id')
+    count = Int(allow_none=False)
+
+    def __init__(self, archive, binary_package_release, day, country, count):
+        super(BinaryPackageReleaseDownloadCount, self).__init__()
+        self.archive = archive
+        self.binary_package_release = binary_package_release
+        self.day = day
+        self.country = country
+        self.count = count
+
+    @property
+    def binary_package_name(self):
+        """See `IBinaryPackageReleaseDownloadCount`."""
+        return self.binary_package_release.name
+
+    @property
+    def binary_package_version(self):
+        """See `IBinaryPackageReleaseDownloadCount`."""
+        return self.binary_package_release.version
 

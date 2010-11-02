@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -9,31 +9,32 @@
 # as Launchpad contains lots of queues.
 
 __metaclass__ = type
-
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
     'QueueActionError',
-    'name_queue_map'
+    'name_queue_map',
     ]
 
-import errno
-import pytz
-
 from datetime import datetime
-from sha import sha
+import errno
+import hashlib
 
+import pytz
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
 
 name_queue_map = {
@@ -41,7 +42,7 @@ name_queue_map = {
     "unapproved": PackageUploadStatus.UNAPPROVED,
     "accepted": PackageUploadStatus.ACCEPTED,
     "done": PackageUploadStatus.DONE,
-    "rejected": PackageUploadStatus.REJECTED
+    "rejected": PackageUploadStatus.REJECTED,
     }
 
 #XXX cprov 2006-09-19: We need to use template engine instead of harcoded
@@ -116,7 +117,7 @@ class QueueAction:
 
         # Avoid circular imports.
         from lp.registry.interfaces.distribution import IDistributionSet
-        from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+        from lp.registry.interfaces.pocket import PackagePublishingPocket
 
         distroset = getUtility(IDistributionSet)
         try:
@@ -141,7 +142,6 @@ class QueueAction:
 
         if not self.announcelist:
             self.announcelist = self.distroseries.changeslist
-
 
     def initialize(self):
         """Builds a list of affected records based on the filter argument."""
@@ -189,7 +189,8 @@ class QueueAction:
                            self.distroseries.distribution.name,
                            self.distroseries.name, self.pocket.name))
 
-                self.items.append(item)
+                if item not in self.items:
+                    self.items.append(item)
                 self.explicit_ids_specified = True
             else:
                 # retrieve PackageUpload item by name/version key
@@ -201,7 +202,8 @@ class QueueAction:
                 for item in self.distroseries.getQueueItems(
                     status=self.queue, name=term, version=version,
                     exact_match=self.exact_match, pocket=self.pocket):
-                    self.items.append(item)
+                    if item not in self.items:
+                        self.items.append(item)
                 self.package_names.append(term)
 
         self.items_size = len(self.items)
@@ -287,7 +289,7 @@ class QueueAction:
                 self.display(
                     "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
                     % (status_flag, bpr.name, bpr.version,
-                       bpr.build.distroarchseries.architecturetag,
+                       bpr.build.distro_arch_series.architecturetag,
                        bpr.component.name, bpr.section.name,
                        bpr.priority.name))
 
@@ -299,6 +301,7 @@ class QueueAction:
 
 class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
+
     def __init__(self, **kargs):
         self.kargs = kargs
         self.kargs['no_mail'] = True
@@ -309,7 +312,7 @@ class QueueActionHelp(QueueAction):
         """Mock initialization """
         pass
 
-    def run (self):
+    def run(self):
         """Present the actions description summary"""
         # present summary for specific or all actions
         if not self.actions:
@@ -319,12 +322,10 @@ class QueueActionHelp(QueueAction):
             actions_help = [
                 (action, provider)
                 for action, provider in queue_actions.items()
-                if action in self.actions
-                ]
+                if action in self.actions]
             not_available_actions = [
                 action for action in self.actions
-                if action not in queue_actions.keys()
-                ]
+                if action not in queue_actions.keys()]
         # present not available requested action if any.
         if not_available_actions:
             self.display(
@@ -342,6 +343,7 @@ class QueueActionHelp(QueueAction):
 
 class QueueActionReport(QueueAction):
     """Present a report about the size of available queues"""
+
     def initialize(self):
         """Mock initialization """
         self.setDefaultContext()
@@ -365,6 +367,7 @@ class QueueActionInfo(QueueAction):
 
     queue info <filter>
     """
+
     def run(self):
         """Present the filtered queue ordered by date."""
         self.displayTitle('Listing')
@@ -383,6 +386,7 @@ class QueueActionFetch(QueueAction):
 
     queue fetch <filter>
     """
+
     def run(self):
         self.displayTitle('Fetching')
         self.displayRule()
@@ -420,7 +424,7 @@ class QueueActionFetch(QueueAction):
                     libfile.close()
                 else:
                     # Check sha against existing file (bug #67014)
-                    existing_sha = sha()
+                    existing_sha = hashlib.sha1()
                     for chunk in filechunks(existing_file):
                         existing_sha.update(chunk)
                     existing_file.close()
@@ -445,6 +449,7 @@ class QueueActionReject(QueueAction):
 
     queue reject <filter>
     """
+
     def run(self):
         """Perform Reject action."""
         self.displayTitle('Rejecting')
@@ -469,6 +474,7 @@ class QueueActionAccept(QueueAction):
 
     queue accept <filter>
     """
+
     def run(self):
         """Perform Accept action."""
         self.displayTitle('Accepting')
@@ -529,6 +535,7 @@ class QueueActionOverride(QueueAction):
                              priority_name, announcelist, display,
                              no_mail=True, exact_match=False, log=log)
         self.terms_start_index = 1
+        self.overrides_performed = 0
 
     def run(self):
         """Perform Override action."""
@@ -567,11 +574,15 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
-            # There's usually only one item in queue_item.sources.
-            for source in queue_item.sources:
-                source.sourcepackagerelease.override(component=component,
-                                                     section=section)
-                self.displayInfo(queue_item)
+            # We delegate to the queue_item itself to override any/all
+            # of its sources.
+            if queue_item.contains_source:
+                queue_item.overrideSource(
+                    component, section, [
+                        component,
+                        queue_item.sourcepackagerelease.component])
+                self.overrides_performed += 1
+            self.displayInfo(queue_item)
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""
@@ -610,11 +621,12 @@ class QueueActionOverride(QueueAction):
                                         binary.priority.name))
                         binary.override(component=component, section=section,
                                         priority=priority)
+                        self.overrides_performed += 1
                         self.displayInfo(queue_item, only=binary.name)
                 # See if the new component requires a new archive on the
                 # build:
                 if component:
-                    distroarchseries = build.build.distroarchseries
+                    distroarchseries = build.build.distro_arch_series
                     distribution = distroarchseries.distroseries.distribution
                     new_archive = distribution.getArchiveByComponent(
                         self.component_name)
@@ -651,6 +663,7 @@ class CommandRunnerError(Exception):
 
 class CommandRunner:
     """A wrapper for queue_action classes."""
+
     def __init__(self, queue, distribution_name, suite_name,
                  announcelist, no_mail, component_name, section_name,
                  priority_name, display=default_display, log=None):
@@ -685,7 +698,7 @@ class CommandRunner:
         # perform the required action on queue.
         try:
             # be sure to send every args via kargs
-            queue_action  = queue_action_class(
+            queue_action = queue_action_class(
                 distribution_name=self.distribution_name,
                 suite_name=self.suite_name,
                 announcelist=self.announcelist,

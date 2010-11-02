@@ -28,7 +28,7 @@
             <li><a href="api" accesskey="9">Beta: web services API</a></li>
             <li><a href="feature-tracking" accesskey="a">Lightweight specifications</a></li>
             <li><a href="release-management" accesskey="b">Release management</a></li>
-            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>                        
+            <li><a href="join-launchpad" accesskey="c">Join Launchpad!</a></li>
         </ul>
         <div id="page-intro-top"></div>
         <div id="page-intro">
@@ -38,7 +38,7 @@
             </p>
             <p class="intro-text">
                 <strong>Publishing your software is simple with Launchpad's Personal Package Archives.</strong><br /><br />
-                
+
                 Launchpad builds installable Ubuntu packages for multiple architectures and hosts them in your own software repository.
                 <br /><br />
                 Installing applications from a PPA is just as easy as standard Ubuntu software, with updates automatically pushed to your users.
@@ -65,8 +65,7 @@
                         <p class="screen-holder">
                             <img src="images/ppa/1.png" alt="Automatic software distribution - with updates!" />                        </p>
                         <p>
-                            PPAs are the easiest and quickest way to get your software directly to Ubuntu users. Once they've added your archive to their Ubuntu system,
-                            all of your PPA's packages are just a few clicks away.
+                            PPAs are the easiest and quickest way to get your software directly to Ubuntu users. Adding your PPA to an Ubuntu system takes just a few keystrokes &mdash; <code>add-apt-repository ppa:your-ppa</code> &mdash; and then all of your PPA's packages are just a few clicks away.
                             <br /><br />
                             Ubuntu and your PPA take care of any dependencies, either from the primary Ubuntu repositories or from other PPAs that you specify.
                             <br /><br />
@@ -80,9 +79,8 @@
                         <p class="screen-holder">
                             <img src="images/ppa/2.png" alt="Team PPAs" />                        </p>
                         <p>
-                            Want to distribute nightly builds to your developer community, beta versions to your test team and backports to another group? No problem, you can create a PPA to serve each group. That way, there's no confusion over who gets which version.
-                            <br /><br />
-                            You can also create PPAs for the teams you run. Any member of a team can upload new packages to its PPAs, making it a great way for groups of people to publish software collectively. The Kubuntu project did just that to distribute their first builds of the KDE 4 environment.<br /><br />
+                            Want to distribute nightly builds to your developer community, beta versions to your test team and backports to another group? No problem. Create separate PPAs to serve each group.<br /><br />
+                            Teams can also have one or many PPAs. With team PPAs, any member of that team can upload new packages, making it a great way for groups of people to publish software collectively.<br /><br />
                             If you have a team of developers working on a set of related packages, consider setting up a team PPA as a way to simplify coordination across each of those pieces of software.
                         </p>
                     </div>
@@ -99,7 +97,7 @@
                         <p class="screen-holder">
                             <img src="images/ppa/3.png" alt="Multiple architectures"  />                        </p>
                         <p>
-                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86, AMD64 and LPIA architectures, with more coming in the future.
+                            Even if you don&rsquo;t have the hardware yourself, Launchpad will create binaries for x86 and AMD64 architectures.
                         </p>
                     </div>
                     <div class="clear"></div>
@@ -110,12 +108,12 @@
         <ul id="footer-navigation">
             <li class="button-prev">
                 <a href="community" title="Back to the mailing lists and teams page" accesskey="f" tabindex="4">Back</a>
-            </li>        
+            </li>
             <li class="button-next" title="Read about user support tracking in Launchpad">
                 <a href="community-support" accesskey="g" tabindex="5">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

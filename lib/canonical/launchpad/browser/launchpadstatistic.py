@@ -6,11 +6,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'LaunchpadStatisticSet',
     'LaunchpadStatisticSetFacets',
     ]
 
 from canonical.launchpad.interfaces import ILaunchpadStatisticSet
-from canonical.launchpad.webapp import StandardLaunchpadFacets
+from canonical.launchpad.webapp import (
+    LaunchpadView,
+    StandardLaunchpadFacets,
+    )
 
 
 class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):
@@ -23,3 +27,5 @@ class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview',]
 
 
+class LaunchpadStatisticSet(LaunchpadView):
+    label = page_title = "Launchpad statistics"

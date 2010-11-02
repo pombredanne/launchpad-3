@@ -26,14 +26,14 @@
     <!-- Marketing material for Answers. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         name="+about"
         new_name="+tour/community-support"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         name="+faq"
         new_name="+tour/community-support"
         rootsite="mainsite"
@@ -43,20 +43,20 @@
         new_name="+tour/community-support"
         rootsite="mainsite"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.AnswersLayer"
+        layer="lp.answers.publisher.AnswersLayer"
         />
 
     <!-- Marketing material for Blueprints. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         name="+about"
         new_name="+tour/feature-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         name="+faq"
         new_name="+tour/feature-tracking"
         rootsite="mainsite"
@@ -64,7 +64,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BlueprintsLayer"
+        layer="lp.blueprints.publisher.BlueprintsLayer"
         new_name="+tour/feature-tracking"
         rootsite="mainsite"
         />
@@ -72,14 +72,14 @@
     <!-- Marketing material for Bugs. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         name="+about"
         new_name="+tour/bugs"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         name="+faq"
         new_name="+tour/bugs"
         rootsite="mainsite"
@@ -87,7 +87,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.BugsLayer"
+        layer="lp.bugs.publisher.BugsLayer"
         new_name="+tour/bugs"
         rootsite="mainsite"
         />
@@ -95,14 +95,14 @@
     <!-- Marketing material for Code. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+about"
         new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         name="+faq"
         new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
@@ -110,7 +110,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.CodeLayer"
+        layer="lp.code.publisher.CodeLayer"
         new_name="+tour/branch-hosting-tracking"
         rootsite="mainsite"
         />
@@ -119,14 +119,14 @@
     <!-- Marketing material for Translations. -->
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         name="+about"
         new_name="+tour/translation"
         rootsite="mainsite"
         />
     <browser:renamed-page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         name="+faq"
         new_name="+tour/translation"
         rootsite="mainsite"
@@ -134,7 +134,7 @@
     <browser:renamed-page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        layer="canonical.launchpad.layers.TranslationsLayer"
+        layer="lp.translations.publisher.TranslationsLayer"
         new_name="+tour/translation"
         rootsite="mainsite"
         />

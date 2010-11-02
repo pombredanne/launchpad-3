@@ -5,18 +5,14 @@ first finding out if you're bug has already been reported.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-There are no duplicate bugs reported in Ubuntu so the most common bugs
-table is not shown.
-
-    >>> most_common_bugs_table = find_tag_by_id(
-    ...     user_browser.contents, "most-common-bugs")
-    >>> print most_common_bugs_table
-    None
-
 Submitting a bug title...
 
+The example here are a little short - in reality we have a comprehensive
+database to find candidates from, our sample data has no real near-fits,
+see bug 612384 for the overall effort to provide a sensible search facility.
+
     >>> user_browser.getControl("Summary").value = (
-    ...     "Thunderbird crashes when opening large e-mails")
+    ...     "Thunderbird crashes opening")
     >>> user_browser.getControl("Continue").click()
 
 ...yields one similar bug.

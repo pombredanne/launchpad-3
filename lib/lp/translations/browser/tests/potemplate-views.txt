@@ -5,16 +5,15 @@ On this section, we are going to test the view class for an IPOTemplate.
 
 First, we need some imports.
 
-    >>> from StringIO import StringIO
     >>> from zope.publisher.browser import FileUpload
+    >>> from StringIO import StringIO
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
-    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
-    >>> from canonical.launchpad.layers import TranslationsLayer
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.translations.publisher import TranslationsLayer
 
 All the tests will be submitted as comming from the No Privilege person.
 
@@ -107,39 +106,5 @@ to differenciate different .po files associated with the context.
 
     >>> entry.path
     u'po/es.po'
-
-Let's check the traversal code.
-
-    >>> from zope.security.proxy import isinstance
-    >>> from lp.translations.browser.potemplate import POTemplateNavigation
-    >>> from lp.translations.model.pofile import POFile, DummyPOFile
-
-First, what happens if we get any method that is not supported?
-
-    >>> request = LaunchpadTestRequest()
-    >>> request.method = 'PUT'
-    >>> navigation = POTemplateNavigation(potemplate, request)
-    >>> navigation.traverse('es')
-    Traceback (most recent call last):
-    ...
-    AssertionError: We only know about GET, HEAD, and POST
-
-But when we use a supported method, we get the right object.
-
-    >>> request.method = 'GET'
-    >>> isinstance(navigation.traverse('es'), POFile)
-    True
-
-Now, we are going to select a POFile that doesn't exist yet in our database.
-
-    >>> isinstance(navigation.traverse('zh_TW'), DummyPOFile)
-    True
-
-But if we do a POST, instead of getting a DummyPOFile object, we will get a
-POFile one.
-
-    >>> request.method = 'POST'
-    >>> isinstance(navigation.traverse('zh_TW'), POFile)
-    True
 
 And that's all, folks!

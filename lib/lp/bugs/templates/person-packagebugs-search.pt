@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
@@ -34,19 +34,9 @@
     </style>
   </div>
 
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:define="name context/fmt:displayname"
-          tal:content="string:${name}'s bug reports by package">
-        Foo Bar's bug reports by package
-      </h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-    <tal:do_not_show_portlets_advanced_form
-      condition="not: view/shouldShowAdvancedForm">
-      <div tal:content="structure context/@@+portlet-otherpackages" />
-    </tal:do_not_show_portlets_advanced_form>
-  </metal:leftportlets>
+  <metal:side fill-slot="side">
+    <tal:menu replace="structure context/@@+global-actions" />
+  </metal:side>
 
   <div metal:fill-slot="main">
       <tal:do_not_show_advanced_form
@@ -74,8 +64,6 @@
         <metal:advanced_form
           use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
       </tal:show_advanced>
-    <div class="visualClear">&nbsp;</div>
-
   </div>
 </body>
 </html>

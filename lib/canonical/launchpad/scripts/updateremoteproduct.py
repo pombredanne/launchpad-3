@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Update Product.remote_product using BugWatch information."""
+"""Update Product.remote_product using BugWatch information.
+
+This script updates the Launchpad Product's remote_product string value
+from the upstream bug tracker.  It only updates multi-product bug
+trackers, not single-product bug trackers or email-only bug trackers.
+"""
 
 __metaclass__ = type
 __all__ = ['RemoteProductUpdater']
@@ -9,9 +14,14 @@ __all__ = ['RemoteProductUpdater']
 from zope.component import getUtility
 
 from lp.bugs.externalbugtracker import (
-    BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
+    BugWatchUpdateError,
+    BugWatchUpdateWarning,
+    get_external_bugtracker,
+    )
 from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
+    BugTrackerType,
+    SINGLE_PRODUCT_BUGTRACKERTYPES,
+    )
 from lp.registry.interfaces.product import IProductSet
 
 

@@ -16,7 +16,11 @@ __all__ = [
     'STANDARD_BADGES',
     ]
 
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
+
 from canonical.lazr.interfaces import IObjectPrivacy
 
 
@@ -82,6 +86,7 @@ STANDARD_BADGES = {
                            '/@@/merge-proposal-large',
                            '(Has a merge proposal)', 'Has a merge proposal',
                            'mpbadge'),
+    'patch': Badge(None, None, '(Has a patch)', 'Has a patch', 'haspatch'),
     }
 
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -34,6 +34,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 # pylint: disable-msg=W0614,W0401
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
+from lp.bugs.model.bug import Bug
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail import create_mail_for_directoryMailBox
 from canonical.launchpad.testing.systemdocs import (
@@ -48,8 +49,7 @@ import rlcompleter
 from storm.locals import *
 from storm.expr import *
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, AUTH_STORE, MASTER_FLAVOR,
-        SLAVE_FLAVOR, DEFAULT_FLAVOR)
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, SLAVE_FLAVOR, DEFAULT_FLAVOR)
 
 
 def switch_db_user(dbuser, commit_first=True):
@@ -69,8 +69,6 @@ def _get_locals():
         dbuser = None
     print 'execute_zcml_for_scripts()...'
     execute_zcml_for_scripts()
-    print 'xmlconfig.file()...'
-    xmlconfig.file('script.zcml', execute=True)
     readline.parse_and_bind('tab: complete')
     # Mimic the real interactive interpreter's loading of any $PYTHONSTARTUP file.
     print 'Reading $PYTHONSTARTUP...'
@@ -88,7 +86,7 @@ def _get_locals():
         p = Person.get(1)
         ds = DistroSeries.get(1)
         prod = Product.get(1)
-        proj = Project.get(1)
+        proj = ProjectGroup.get(1)
         b2 = Bug.get(2)
         b1 = Bug.get(1)
         s = Specification.get(1)

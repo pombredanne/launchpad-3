@@ -13,8 +13,15 @@ __all__ = [
     ]
 
 
-from zope.schema import TextLine
-from zope.interface import Interface, Attribute
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
@@ -32,6 +39,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
+    changelog = Attribute("LibraryFileAlias containing debian/changelog.")
     changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
@@ -94,7 +102,15 @@ class ISourcePackageRelease(Interface):
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
@@ -135,6 +151,17 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
+
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
@@ -172,8 +199,8 @@ class ISourcePackageRelease(Interface):
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published by
-            upstream.
+        :is_published: indicates if the imported files are already published
+            by upstream.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from
@@ -198,6 +225,15 @@ class ISourcePackageRelease(Interface):
             `PackageDiff` record matching the request being made.
 
         :return: the corresponding `IPackageDiff` record.
+        """
+
+    def getPackageSize():
+        """Get the size total (in KB) of files comprising this package.
+
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+
+        :return: total size (in KB) of this package
         """
 
 

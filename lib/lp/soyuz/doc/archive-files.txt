@@ -3,7 +3,7 @@
 `IArchive` provides a method that looks up files involved in the context
 archive, getFileByName()
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 The given filename is looked up in the context corresponding to its
@@ -37,8 +37,8 @@ Create a test source publication.
 
 When the file exists, the corresponding `ILibraryFileAlias` is returned.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> result = cprov.archive.getFileByName('test-pkg_1.0.dsc')
 
@@ -115,7 +115,7 @@ Adding and retrieving a binary 'udeb'.
 
 Adding and retrieving a source changesfile.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> source_upload = test_source.distroseries.createQueueEntry(
     ...     pocket=PackagePublishingPocket.RELEASE,
@@ -191,7 +191,7 @@ Adding and retrieving a buildlog.
     ...    'buildlog_ubuntu-breezy-autotest-i386.'
     ...    'test-pkg_1.0_FULLYBUILT.txt.gz')
     >>> buildlog = test_publisher.addMockFile(buildlog_name)
-    >>> build.buildlog = buildlog
+    >>> build.log = buildlog
 
     >>> buildlog == build.getFileByName(buildlog_name)
     True
@@ -208,4 +208,12 @@ Adding and retrieving a upload_log.
 Retrieve a built file:
 
     >>> deb == build.getFileByName('test_1.0_all.deb')
+    True
+
+We can also retrieve the corresponding BinaryPackageFile:
+
+    >>> bpf = build.getBinaryPackageFileByName('test_1.0_all.deb')
+    >>> bpf
+    <BinaryPackageFile ...>
+    >>> bpf.libraryfile == deb
     True

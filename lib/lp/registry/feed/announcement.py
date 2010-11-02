@@ -19,15 +19,25 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url, urlappend
-from lp.registry.interfaces.announcement import IAnnouncementSet, IHasAnnouncements
+from canonical.launchpad.interfaces.launchpad import IFeedsApplication
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlappend,
+    )
+from canonical.lazr.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.registry.interfaces.announcement import (
+    IAnnouncementSet,
+    IHasAnnouncements,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
-from canonical.launchpad.interfaces.launchpad import IFeedsApplication
-from canonical.launchpad.webapp.tales import FormattersAPI
-from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData)
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class AnnouncementsFeedBase(FeedBase):
@@ -119,7 +129,7 @@ class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):
         # item shall be an instance of `IFeedEntry`.
 
         # The quantity is defined in FeedBase or config file.
-        items = getUtility(IAnnouncementSet).announcements(
+        items = getUtility(IAnnouncementSet).getAnnouncements(
             limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
@@ -168,7 +178,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         Called by getItems which may cache the results.
         """
         # The quantity is defined in FeedBase or config file.
-        items = self.context.announcements(limit=self.quantity)
+        items = self.context.getAnnouncements(limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
         return items
@@ -187,7 +197,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         # The logo is different depending upon the context we are displaying.
         if self.context.logo is not None:
             return self.context.logo.getURL()
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             url = '/@@/project-logo'
         elif IProduct.providedBy(self.context):
             url = '/@@/product-logo'
@@ -205,7 +215,7 @@ class TargetAnnouncementsFeed(AnnouncementsFeedBase):
         # The icon is customized based upon the context.
         if self.context.icon is not None:
             return self.context.icon.getURL()
-        elif IProject.providedBy(self.context):
+        elif IProjectGroup.providedBy(self.context):
             url = '/@@/project'
         elif IProduct.providedBy(self.context):
             url = '/@@/product'

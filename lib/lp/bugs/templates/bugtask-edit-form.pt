@@ -36,9 +36,15 @@
     <tal:bugtracker-active
         condition="watch/bugtracker/active">
       <p tal:condition="watch/last_error_type"
-          class="error message"
-          tal:content="watch/getLastErrorMessage"
-      />
+          class="error message">
+        <tal:bugwatch-error-message define="
+            message view/bug_watch_error_message/message;
+            help_url view/bug_watch_error_message/help_url;">
+          <tal:message replace="message" /><br />
+          <a tal:attributes="href help_url" target="help" class="help"
+            >(what does this mean?)</a>
+        </tal:bugwatch-error-message>
+      </p>
     </tal:bugtracker-active>
     <p class="warning message"
         tal:condition="not:watch/bugtracker/active">

@@ -9,8 +9,8 @@ decline those topics.
 First, lets get hold of some people, a product, a sprint and a spec.
 
     >>> from lp.blueprints.model.sprint import SprintSet
-    >>> from lp.registry.model.product import ProductSet
     >>> from lp.registry.model.person import PersonSet
+    >>> from lp.registry.model.product import ProductSet
     >>> upstream_firefox = ProductSet()['firefox']
     >>> canvas = upstream_firefox.getSpecification('canvas')
     >>> guacamole = SprintSet()['uds-guacamole']

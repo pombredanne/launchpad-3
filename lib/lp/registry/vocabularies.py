@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -26,8 +26,9 @@ __metaclass__ = type
 __all__ = [
     'ActiveMailingListVocabulary',
     'AdminMergeablePersonVocabulary',
+    'AllUserTeamsParticipationVocabulary',
     'CommercialProjectsVocabulary',
-    'DistributionOrProductOrProjectVocabulary',
+    'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
     'DistributionVocabulary',
     'DistroSeriesVocabulary',
@@ -42,7 +43,8 @@ __all__ = [
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
-    'ProjectVocabulary',
+    'ProjectGroupVocabulary',
+    'SourcePackageNameVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -57,57 +59,99 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject import AND, CONTAINSSTRING, OR
-
-from storm.expr import Alias, And, Desc, Join, LeftJoin, Lower, Not, Or, SQL
-
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    OR,
+    )
+from storm.expr import (
+    Alias,
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Lower,
+    Not,
+    Or,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zisinstance
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zisinstance,
+    removeSecurityProxy,
+    )
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.database.account import Account
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
-from lp.bugs.interfaces.bugtask import (
-    IBugTask, IDistroBugTask, IDistroSeriesBugTask, IProductSeriesBugTask,
-    IUpstreamBugTask)
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.blueprints.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+    DEFAULT_FLAVOR,
+    ILaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
-    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-
+    BatchedCountableIterator,
+    CountableIterator,
+    IHugeVocabulary,
+    NamedSQLObjectHugeVocabulary,
+    NamedSQLObjectVocabulary,
+    SQLObjectVocabularyBase,
+    )
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IDistroBugTask,
+    IDistroSeriesBugTask,
+    IProductSeriesBugTask,
+    IUpstreamBugTask,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, MailingListStatus)
-from lp.registry.interfaces.milestone import IMilestoneSet, IProjectMilestone
+    IMailingListSet,
+    MailingListStatus,
+    )
+from lp.registry.interfaces.milestone import (
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.person import (
-    IPerson, IPersonSet, ITeam, PersonVisibility)
+    IPerson,
+    IPersonSet,
+    ITeam,
+    PersonVisibility,
+    )
 from lp.registry.interfaces.pillar import IPillarName
-from lp.registry.interfaces.product import IProduct, IProductSet, License
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    License,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.teammembership import TeamParticipation
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.featuredproject import FeaturedProject
@@ -119,7 +163,10 @@ from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.project import Project
+from lp.registry.model.projectgroup import ProjectGroup
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import cachedproperty
 
 
 class BasePersonVocabulary:
@@ -170,8 +217,6 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-# XXX kiko 2007-01-18: any reason why this can't be an
-# NamedSQLObjectHugeVocabulary?
 class ProductVocabulary(SQLObjectVocabularyBase):
     """All `IProduct` objects vocabulary."""
     implements(IHugeVocabulary)
@@ -215,19 +260,16 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql, orderBy=self._orderBy)
         return self.emptySelectResults()
 
 
-# XXX kiko 2007-01-18: any reason why this can't be an
-# NamedSQLObjectHugeVocabulary?
-class ProjectVocabulary(SQLObjectVocabularyBase):
-    """All `IProject` objects vocabulary."""
+class ProjectGroupVocabulary(SQLObjectVocabularyBase):
+    """All `IProjectGroup` objects vocabulary."""
     implements(IHugeVocabulary)
 
-    _table = Project
+    _table = ProjectGroup
     _orderBy = 'displayname'
     displayname = 'Select a project group'
 
@@ -263,8 +305,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
-                    like_query, fti_query
-                    )
+                    like_query, fti_query)
             return self._table.select(sql)
         return self.emptySelectResults()
 
@@ -272,7 +313,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 def project_products_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the project's products."""
     assert context is not None
-    project = IProject(context)
+    project = IProjectGroup(context)
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products])
@@ -285,8 +326,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        return SimpleTerm(
-            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+        return SimpleTerm(obj, obj.name, obj.unique_displayname)
 
     def __iter__(self):
         kw = {}
@@ -470,6 +510,7 @@ class ValidPersonOrTeamVocabulary(
                     Or(Person.visibility == PersonVisibility.PUBLIC,
                        private_query,
                        ),
+                    Person.merged == None,
                     self.extra_clause
                     )
                 )
@@ -481,16 +522,11 @@ class ValidPersonOrTeamVocabulary(
             # TeamParticipation table, which is very expensive.  The search
             # for private teams does need that table but the number of private
             # teams is very small so the cost is not great.
-            valid_email_statuses = (
-                EmailAddressStatus.VALIDATED,
-                EmailAddressStatus.PREFERRED,
-                )
 
             # First search for public persons and teams that match the text.
             public_tables = [
                 Person,
                 LeftJoin(EmailAddress, EmailAddress.person == Person.id),
-                LeftJoin(Account, EmailAddress.account == Account.id),
                 ]
 
             # Create an inner query that will match public persons and teams
@@ -501,33 +537,36 @@ class ValidPersonOrTeamVocabulary(
             # the best results. The fti rank will be between 0 and 1.
             # Note we use lower() instead of the non-standard ILIKE because
             # ILIKE doesn't hit the indexes.
-            # The '%%%%' is necessary, since the first variable substitution
-            # converts it to '%%' and the storm variable substitution converts
-            # it to '%'.
+            # The '%%' is necessary because storm variable substitution
+            # converts it to '%'.
             public_inner_textual_select = SQL("""
                 SELECT id FROM (
                     SELECT Person.id, 100 AS rank
                     FROM Person
-                    WHERE name = %(text)s
+                    WHERE name = ?
                     UNION ALL
-                    SELECT Person.id, rank(fti, ftq(%(text)s))
+                    SELECT Person.id, rank(fti, ftq(?))
                     FROM Person
-                    WHERE Person.fti @@ ftq(%(text)s)
+                    WHERE Person.fti @@ ftq(?)
                     UNION ALL
                     SELECT Person.id, 10 AS rank
                     FROM Person, IrcId
                     WHERE IrcId.person = Person.id
-                        AND lower(IrcId.nickname) = %(text)s
+                        AND lower(IrcId.nickname) = ?
                     UNION ALL
                     SELECT Person.id, 1 AS rank
                     FROM Person, EmailAddress
                     WHERE EmailAddress.person = Person.id
-                        AND lower(email) LIKE %(like_text)s || '%%%%'
+                        AND lower(email) LIKE ? || '%%'
+                        AND EmailAddress.status IN (?, ?)
                     ) AS public_subquery
                 ORDER BY rank DESC
-                LIMIT %(limit)d
-                """ % dict(text=quote(text), like_text=quote_like(text),
-                           limit=self.LIMIT))
+                LIMIT ?
+                """, (text, text, text, text, text,
+                      EmailAddressStatus.VALIDATED.value,
+                      EmailAddressStatus.PREFERRED.value,
+                      self.LIMIT))
+
 
             public_result = self.store.using(*public_tables).find(
                 Person,
@@ -538,15 +577,9 @@ class ValidPersonOrTeamVocabulary(
                     Or(# A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
-
-                       # Or a person who has an active account and a working
-                       # email address.
-                       And(Account.status == AccountStatus.ACTIVE,
-                           EmailAddress.status.is_in(valid_email_statuses))
-                       ),
-                    self.extra_clause
-                    )
-                )
+                       # Or a person who has a preferred email address.
+                       EmailAddress.status == EmailAddressStatus.PREFERRED),
+                    ))
             # The public query doesn't need to be ordered as it will be done
             # at the end.
             public_result.order_by()
@@ -558,33 +591,28 @@ class ValidPersonOrTeamVocabulary(
             # Searching for private teams that match can be easier since we
             # are only interested in teams.  Teams can have email addresses
             # but we're electing to ignore them here.
-            private_inner_select = SQL("""
-                SELECT Person.id
-                FROM Person
-                WHERE Person.fti @@ ftq(%s)
-                LIMIT %d
-                """ % (quote(text), self.LIMIT))
             private_result = self.store.using(*private_tables).find(
                 Person,
                 And(
-                    Person.id.is_in(private_inner_select),
+                    SQL('Person.fti @@ ftq(?)', [text]),
                     private_query,
                     )
                 )
 
-            # The private query doesn't need to be ordered as it will be done
-            # at the end, and we need to eliminate the default ordering.
-            private_result.order_by()
+            private_result.order_by(SQL('rank(fti, ftq(?)) DESC', [text]))
+            private_result.config(limit=self.LIMIT)
 
             combined_result = public_result.union(private_result)
             # Eliminate default ordering.
             combined_result.order_by()
             # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
-            # is a work-around for .count() not working with the 'distinct'
-            # option.
+            # _get_select() is a work-around for .count() not working
+            # with the 'distinct' option.
             subselect = Alias(combined_result._get_select(), 'Person')
             exact_match = (Person.name == text)
-            result = self.store.using(subselect).find((Person, exact_match))
+            result = self.store.using(subselect).find(
+                (Person, exact_match),
+                self.extra_clause)
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
@@ -603,10 +631,7 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -624,14 +649,11 @@ class ValidPersonOrTeamVocabulary(
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
 
+
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
 
     displayname = 'Select a Team'
-
-    # XXX: BradCrittenden 2008-08-11 bug=255798: This method does not return
-    # only the valid teams as the name implies because it does not account for
-    # merged teams.
 
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
@@ -644,15 +666,19 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         """Return the teams whose fti, IRC, or email address match :text:"""
 
         private_query, private_tables = self._privateTeamQueryAndTables()
-        base_query = Or(
-            Person.visibility == PersonVisibility.PUBLIC,
-            private_query,
+        base_query = And(
+            Or(
+                Person.visibility == PersonVisibility.PUBLIC,
+                private_query,
+                ),
+            Person.merged == None
             )
 
         tables = [Person] + private_tables
 
         if not text:
             query = And(base_query,
+                        Person.merged == None,
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
@@ -682,10 +708,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        # XXX: BradCrittenden 2009-04-24 bug=217644: Wrap the results to
-        # ensure the .count() method works until the Storm bug is fixed and
-        # integrated.
-        return DecoratedResultSet(result)
+        return result
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
@@ -722,8 +745,8 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
             Person.id NOT IN (
                 SELECT team FROM TeamParticipation
                 WHERE person = %d
-                ) AND Person.id != %d
-            """ % (self.team.id, self.team.id)
+                )
+            """ % self.team.id
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
@@ -753,6 +776,27 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
 
+class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
+    """The set of teams where the current user is a member.
+
+    Other than UserTeamsParticipationVocabulary, this vocabulary includes
+    private teams.
+    """
+
+    displayname = 'Select a Team of which you are a member'
+
+    def __init__(self, context):
+        super(AllUserTeamsParticipationVocabulary, self).__init__(context)
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            self.extra_clause = False
+        else:
+            self.extra_clause = AND(
+                super(AllUserTeamsParticipationVocabulary, self).extra_clause,
+                TeamParticipation.person == user.id,
+                TeamParticipation.team == Person.id)
+
+
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
 
@@ -765,7 +809,7 @@ class PersonActiveMembershipVocabulary:
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
         return [membership.team for membership
-                in self.context.myactivememberships
+                in self.context.team_memberships
                 if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):
@@ -956,9 +1000,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 Milestone.q.productseriesID == ProductSeries.q.id,
                 ProductSeries.q.productID == Product.q.id,
                 Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                )
-            )
+                ProductSeries.q.name == productseriesname))
         try:
             return self.toTerm(obj)
         except IndexError:
@@ -992,7 +1034,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     displayname = 'Select a Release Series'
     _table = ProductSeries
-    _orderBy = [Product.q.name, ProductSeries.q.name]
+    _order_by = [Product.name, ProductSeries.name]
     _clauseTables = ['Product']
 
     def toTerm(self, obj):
@@ -1010,33 +1052,41 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError(token)
 
-        result = ProductSeries.selectOne('''
-                    Product.id = ProductSeries.product AND
-                    Product.name = %s AND
-                    ProductSeries.name = %s
-                    ''' % sqlvalues(productname, productseriesname),
-                    clauseTables=['Product'])
+        result = IStore(self._table).find(
+            self._table,
+            ProductSeries.product == Product.id,
+            Product.name == productname,
+            ProductSeries.name == productseriesname).one()
         if result is not None:
             return self.toTerm(result)
         raise LookupError(token)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
+        """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
-        objs = self._table.select(
-                AND(
-                    Product.q.id == ProductSeries.q.productID,
-                    OR(
-                        CONTAINSSTRING(Product.q.name, query),
-                        CONTAINSSTRING(ProductSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
-        return objs
+        query = query.lower().strip('/')
+        # If there is a slash splitting the product and productseries
+        # names, they must both match. If there is no slash, we don't
+        # know whether it is matching the product or the productseries
+        # so we search both for the same string.
+        if '/' in query:
+            product_query, series_query = query.split('/', 1)
+            substring_search = And(
+                CONTAINSSTRING(Product.name, product_query),
+                CONTAINSSTRING(ProductSeries.name, series_query))
+        else:
+            substring_search = Or(
+                CONTAINSSTRING(Product.name, query),
+                CONTAINSSTRING(ProductSeries.name, query))
+
+        result = IStore(self._table).find(
+            self._table,
+            Product.id == ProductSeries.productID,
+            substring_search)
+        result = result.order_by(self._order_by)
+        return result
 
 
 class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
@@ -1056,9 +1106,9 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            serieses = self._table.selectBy(
+            series = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for series in sorted(serieses, key=attrgetter('sortkey')):
+            for series in sorted(series, key=attrgetter('sortkey')):
                 yield self.toTerm(series)
 
 
@@ -1075,7 +1125,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         if launchbag.product is not None:
-            for series in launchbag.product.serieses:
+            for series in launchbag.product.series:
                 yield self.toTerm(series)
 
 
@@ -1098,16 +1148,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         elif IDistroSeriesBugTask.providedBy(milestone_context):
             target = milestone_context.distroseries
         elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries
+            target = milestone_context.productseries.product
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
             target = milestone_context.distroseries
         elif ISpecification.providedBy(milestone_context):
             target = milestone_context.target
-        elif (IProject.providedBy(milestone_context) or
+        elif IProductSeries.providedBy(milestone_context):
+            # Show all the milestones of the product for a product series.
+            target = milestone_context.product
+        elif (IProjectGroup.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
-              IProductSeries.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
               IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
@@ -1132,24 +1184,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem
         # should be revisited after we've unblocked users.
         if target is not None:
-            if IProject.providedBy(target):
-                milestones = shortlist(
-                    (milestone for product in target.products
-                     for milestone in product.milestones),
-                    longest_expected=40)
-            elif IProductSeries.providedBy(target):
-                # While some milestones may be associated with a
-                # productseries, we want to show all milestones for
-                # the product. Since the database constraint
-                # "valid_target" ensures that a milestone associated
-                # with a series is also associated with the product
-                # itself, we don't need to look up series-related
-                # milestones.
-                milestones = shortlist(target.product.milestones,
-                                       longest_expected=40)
+            if IProjectGroup.providedBy(target):
+                milestones_source = target.product_milestones
             else:
-                milestones = shortlist(
-                    target.milestones, longest_expected=40)
+                milestones_source = target.milestones
+            milestones = shortlist(milestones_source, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
             # milestones, so let's either just grab all of them,
@@ -1186,9 +1225,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         product_ids = set(
             removeSecurityProxy(milestone).productID
             for milestone in milestones)
+        product_ids.discard(None)
         distro_ids = set(
             removeSecurityProxy(milestone).distributionID
             for milestone in milestones)
+        distro_ids.discard(None)
         if len(product_ids) > 0:
             list(Product.select("id IN %s" % sqlvalues(product_ids)))
         if len(distro_ids) > 0:
@@ -1201,8 +1242,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(milestone)
 
     def __contains__(self, obj):
-        if IProjectMilestone.providedBy(obj):
-            # Project milestones are pseudo content objects
+        if IProjectGroupMilestone.providedBy(obj):
+            # ProjectGroup milestones are pseudo content objects
             # which aren't really a part of this vocabulary,
             # but sometimes we want to pass them to fields
             # that rely on this vocabulary for validation
@@ -1218,7 +1259,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     A commercial project is one that does not qualify for free hosting.  For
     normal users only commercial projects for which the user is the
     maintainer, or in the maintainers team, will be listed.  For users with
-    launchpad.ProjectReview permission, all commercial projects are returned.
+    launchpad.Moderate permission, all commercial projects are returned.
     """
 
     implements(IHugeVocabulary)
@@ -1236,8 +1277,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         return [
             project for project in sorted(projects,
                                           key=attrgetter('displayname'))
-            if not project.qualifies_for_free_hosting
-            ]
+            if not project.qualifies_for_free_hosting]
 
     def _doSearch(self, query=None):
         """Return terms where query is in the text of name
@@ -1247,7 +1287,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
         product_set = getUtility(IProductSet)
-        if check_permission('launchpad.ProjectReview', product_set):
+        if check_permission('launchpad.Moderate', product_set):
             projects = product_set.forReview(
                 search_text=query, licenses=[License.OTHER_PROPRIETARY],
                 active=True)
@@ -1319,7 +1359,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         query = query.lower()
         like_query = "'%%' || %s || '%%'" % quote_like(query)
-        fti_query = quote(query)
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
@@ -1333,10 +1372,10 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
     _clauseTables = ['Distribution']
 
     def __iter__(self):
-        serieses = self._table.select(
+        series = self._table.select(
             DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for series in sorted(serieses, key=attrgetter('sortkey')):
+        for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
     def toTerm(self, obj):
@@ -1376,11 +1415,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                     Distribution.q.id == DistroSeries.q.distributionID,
                     OR(
                         CONTAINSSTRING(Distribution.q.name, query),
-                        CONTAINSSTRING(DistroSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
+                        CONTAINSSTRING(DistroSeries.q.name, query))),
+                    orderBy=self._orderBy)
         return objs
 
 
@@ -1394,8 +1430,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         """See `IVocabulary`."""
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
-                    obj.__class__.__name__, obj.id
-                    )
+                    obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
         # It is a hack using the class name here, but it works
@@ -1433,20 +1468,21 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
             return IDistribution.providedBy(obj)
 
 
-class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
-    """Active `IProduct`, `IProject` or `IDistribution` objects vocabulary."""
+class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
+    """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
     _filter = PillarName.q.active == True
 
     def __contains__(self, obj):
-        if IProduct.providedBy(obj) or IProject.providedBy(obj):
+        if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
             # Only active products and projects are in the vocabulary.
             return obj.active
         else:
             return IDistribution.providedBy(obj)
 
 
-class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
+class FeaturedProjectVocabulary(
+                               DistributionOrProductOrProjectGroupVocabulary):
     """Vocabulary of projects that are featured on the LP Home Page."""
 
     _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
@@ -1459,3 +1495,27 @@ class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
                    AND PillarName.name = %s""" % sqlvalues(obj.name)
         return PillarName.selectOne(
                    query, clauseTables=['FeaturedProject']) is not None
+
+
+class SourcePackageNameIterator(BatchedCountableIterator):
+    """A custom iterator for SourcePackageNameVocabulary.
+
+    Used to iterate over vocabulary items and provide full
+    descriptions.
+
+    Note that the reason we use special iterators is to ensure that we
+    only do the search for descriptions across source package names that
+    we actually are attempting to list, taking advantage of the
+    resultset slicing that BatchNavigator does.
+    """
+
+    def getTermsWithDescriptions(self, results):
+        return [SimpleTerm(obj, obj.name, obj.name) for obj in results]
+
+
+class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+    """A vocabulary that lists source package names."""
+    displayname = 'Select a source package'
+    _table = SourcePackageName
+    _orderBy = 'name'
+    iterator = SourcePackageNameIterator

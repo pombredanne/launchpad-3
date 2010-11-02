@@ -3,9 +3,15 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 __all__ = [
+    'GPGKeyExpired',
+    'GPGKeyRevoked',
     'GPGKeyNotFoundError',
     'GPGUploadFailure',
     'GPGVerificationError',
@@ -27,6 +33,29 @@ class MoreThanOneGPGKeyFound(Exception):
 
 class GPGKeyNotFoundError(Exception):
     """The given GPG key was not found in the keyserver."""
+
+    def __init__(self, fingerprint, pubkey=None):
+        self.fingerprint = fingerprint
+        self.pubkey = pubkey
+        super(GPGKeyNotFoundError, self).__init__(
+            "No GPG key found with the given content: %s" % (fingerprint, ))
+
+
+class GPGKeyRevoked(Exception):
+    """The given GPG key was revoked."""
+
+    def __init__(self, key):
+        self.key = key
+        super(GPGKeyRevoked, self).__init__(
+            "%s has been publicly revoked" % (key.keyid, ))
+
+
+class GPGKeyExpired(Exception):
+    """The given GPG key has expired."""
+
+    def __init__(self, key):
+        self.key = key
+        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid, ))
 
 
 class SecretGPGKeyImportDetected(Exception):
@@ -187,6 +216,19 @@ class IGPGHandler(Interface):
         :return: a `PymeKey`object containing the key information.
         """
 
+    def retrieveActiveKey(fingerprint):
+        """Retrieve key information, raise errors if the key is not active.
+
+        Exactly like `retrieveKey` except raises errors if the key is expired
+        or has been revoked.
+
+        :param fingerprint: The key fingerprint, which must be an hexadecimal
+            string.
+        :raise GPGKeyNotFoundError: if the key is not found neither in the
+            local keyring nor in the key server.
+        :return: a `PymeKey`object containing the key information.
+        """
+
     def uploadPublicKey(fingerprint):
         """Upload the specified public key to a keyserver.
 
@@ -233,6 +275,7 @@ class IPymeSignature(Interface):
 
     fingerprint = Attribute("Signer Fingerprint.")
     plain_data = Attribute("Plain Signed Text.")
+    timestamp = Attribute("The time at which the message was signed.")
 
 
 class IPymeKey(Interface):

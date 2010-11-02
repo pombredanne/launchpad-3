@@ -22,13 +22,6 @@ similar matching bugs.
     <...
     No similar bug reports were found...
 
-And no duplicated bugs in this package.
-
-    >>> most_common_bugs_table = find_tag_by_id(
-    ...     user_browser.contents, "most-common-bugs")
-    >>> most_common_bugs_table is None
-    True
-
 The filebug form looks similar to the normal distro form, but the
 package name is prepopulated.
 

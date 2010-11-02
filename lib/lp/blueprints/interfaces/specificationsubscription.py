@@ -12,9 +12,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int, Bool
+from zope.schema import (
+    Bool,
+    Int,
+    )
+
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
+
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
@@ -26,8 +31,7 @@ class ISpecificationSubscription(Interface):
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
             'The person you would like to subscribe to this blueprint. '
-            'They will be notified of the subscription by e-mail, if they '
-            'have an active Launchpad account.')
+            'They will be notified of the subscription by e-mail.')
             )
     specification = Int(title=_('Specification'), required=True,
         readonly=True)

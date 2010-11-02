@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -7,7 +7,22 @@
 
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, List, Object, Set, Text, TextLine
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Set,
+    Text,
+    TextLine,
+    )
+
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+
 
 __metaclass__ = type
 
@@ -139,14 +154,14 @@ class ITranslationMessageData(Interface):
         required=True, readonly=True)
 
     is_obsolete = Bool(
-        title=(
-            u'A flag indicating whether the message is obsolete and not used.'
-            ),
-        required=True, readonly=True)
+        title=u"Is this message obsolete?", required=True, readonly=True)
 
 
 class ITranslationFileData(Interface):
     """Parsed translation template file interface."""
+    format = Choice(
+        title=u"This file's translation file format.", required=True,
+        vocabulary=TranslationFileFormat)
 
     header = Object(
         title=u'An `ITranslationHeaderData` for the parsed file.',
@@ -169,10 +184,8 @@ class ITranslationFileData(Interface):
         required=True, readonly=True)
 
     is_template = Bool(
-        title=(
-            u'A flag indicating whether this entry is a translation template.'
-            ),
-        required=True, readonly=True)
+        title=u"Is this entry a translation template?", required=True,
+        readonly=True)
 
     language_code = TextLine(
         title=u'Language iso code for this translation file',

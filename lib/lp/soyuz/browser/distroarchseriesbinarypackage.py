@@ -8,9 +8,15 @@ __all__ = [
     'DistroArchSeriesBinaryPackageView',
     ]
 
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    GetitemNavigation,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
-from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
+    IDistroArchSeriesBinaryPackage,
+    )
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
@@ -31,3 +37,6 @@ class DistroArchSeriesBinaryPackageView:
         self.context = context
         self.request = request
 
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

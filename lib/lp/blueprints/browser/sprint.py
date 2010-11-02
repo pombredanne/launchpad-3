@@ -8,14 +8,12 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
-    'SprintBreadcrumbBuilder',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
-    'SprintSetBreadcrumbBuilder',
-    'SprintSetContextMenu',
+    'SprintSetBreadcrumb',
     'SprintSetFacets',
     'SprintSetNavigation',
     'SprintSetView',
@@ -25,30 +23,54 @@ __all__ = [
     ]
 
 import csv
-import pytz
 from StringIO import StringIO
 
-from zope.component import getUtility
+import pytz
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad import _
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.branding import BrandingChangeView
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
-    SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.lazr.utils import smartquote
 from canonical.widgets.date import DateTimeWidget
+from lp.app.interfaces.headings import IMajorHeadingView
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    HasSpecificationsView,
+    )
+from lp.blueprints.interfaces.specification import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -68,14 +90,8 @@ class SprintNavigation(Navigation):
     usedfor = ISprint
 
 
-class SprintBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `ISprint`."""
-    @property
-    def text(self):
-        return self.context.title
-
-
-class SprintOverviewMenu(ApplicationMenu):
+class SprintOverviewMenu(NavigationMenu):
+    """Defines a menu used for the global actions."""
 
     usedfor = ISprint
     facet = 'overview'
@@ -111,32 +127,16 @@ class SprintOverviewMenu(ApplicationMenu):
         return Link('+branding', text, summary, icon='edit')
 
 
-class SprintSpecificationsMenu(ApplicationMenu):
-
+class SprintSpecificationsMenu(NavigationMenu,
+                               HasSpecificationsMenuMixin):
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'addspec']
-
-    def assignments(self):
-        text = 'Assignments'
-        summary = 'View the specification assignments'
-        return Link('+assignments', text, summary, icon='info')
-
-    def declined(self):
-        text = 'List declined blueprints'
-        summary = 'Show topics that were not accepted for discussion'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
+    links = ['assignments', 'listdeclined', 'settopics', 'new']
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
         text = 'Set agenda'
-        summary = 'Approve or defer topics for discussion'
-        return Link('+settopics', text, summary, icon='edit')
-
-    def addspec(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for this meeting'
-        return Link('+addspec', text, summary, icon='info')
+        return Link('+settopics', text, icon='edit')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -144,7 +144,7 @@ class SprintSetNavigation(GetitemNavigation):
     usedfor = ISprintSet
 
 
-class SprintSetBreadcrumbBuilder(BreadcrumbBuilder):
+class SprintSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISprintSet`."""
     text = 'Meetings'
 
@@ -156,35 +156,19 @@ class SprintSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', ]
 
 
-class SprintSetContextMenu(ContextMenu):
-
-    usedfor = ISprintSet
-    links = ['products', 'distributions', 'people', 'sprints', 'all', 'new']
-
-    def all(self):
-        text = 'List all meetings'
-        return Link('+all', text)
-
-    def new(self):
-        text = 'Register a meeting'
-        return Link('+new', text, icon='add')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def sprints(self):
-        return Link('/sprints/', 'View meetings')
-
-
 class SprintView(HasSpecificationsView, LaunchpadView):
 
-    __used_for__ = ISprint
+    implements(IMajorHeadingView)
+
+    # XXX Michael Nelson 20090923 bug=435255
+    # This class inherits a label from HasSpecificationsView, which causes
+    # a second h1 to display. But as this view implements IMajorHeadingView
+    # it should not include an h1 below the app buttons.
+    label = None
+
+    @property
+    def page_title(self):
+        return '%s (sprint or meeting)' % self.context.title
 
     def initialize(self):
         self.notices = []
@@ -232,7 +216,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
 
-    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    _local_timeformat = '%H:%M %Z on %A, %Y-%m-%d'
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
@@ -302,6 +286,10 @@ class SprintAddView(LaunchpadFormView):
         assert self.sprint is not None, 'No sprint has been created'
         return canonical_url(self.sprint)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(ISprintSet))
+
 
 class SprintBrandingView(BrandingChangeView):
 
@@ -316,6 +304,7 @@ class SprintEditView(LaunchpadEditFormView):
 
     schema = ISprint
     label = "Edit sprint details"
+
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
@@ -353,13 +342,25 @@ class SprintEditView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
     checkboxes, then process the selected items, which is not the usual
-    add/edit metaphor."""
+    add/edit metaphor.
+    """
+
+    @property
+    def label(self):
+        return smartquote(
+            'Review discussion topics for "%s" sprint' % self.context.title)
+
+    page_title = label
 
     def initialize(self):
         self.status_message = None
@@ -488,7 +489,34 @@ class SprintMeetingExportView(LaunchpadView):
         return body.encode('utf-8')
 
 
+class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for sprints index."""
+    usedfor = ISprintSet
+    links = (
+        'register_team',
+        'register_project',
+        'register_sprint',
+        'create_account',
+        'view_all_sprints',
+        )
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('+new', text, summary=summary, icon='add')
+
+    def view_all_sprints(self):
+        text = 'Show all meetings'
+        return Link('+all', text, icon='list')
+
+
 class SprintSetView(LaunchpadView):
+    """View for the /sprints top level collection page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Meetings and sprints registered in Launchpad'
 
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)
@@ -519,7 +547,9 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Country',
                  'Timezone',
                  'Arriving',
-                 'Leaving')]
+                 'Leaving',
+                 'Physically present',
+                 )]
         for attendance in self.context.attendances:
             time_zone = ''
             location = attendance.attendee.location
@@ -528,22 +558,22 @@ class SprintAttendeesCsvExportView(LaunchpadView):
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
-            if attendance.attendee.country is None:
-                country = ''
-            else:
-                country = attendance.attendee.country.name
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
                  attendance.attendee.safe_email_or_blank,
                  irc_nicknames,
-                 attendance.attendee.phone,
-                 attendance.attendee.organization,
-                 attendance.attendee.city,
-                 country,
+                 # We used to store phone, organization, city and
+                 # country, but this was a lie because users could not
+                 # update these fields.
+                 '', # attendance.attendee.phone
+                 '', # attendance.attendee.organization
+                 '', # attendance.attendee.city
+                 '', # country
                  time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.is_physical))
         # CSV can't handle unicode, so we force encoding
         # everything as UTF-8
         rows = [[self.encode_value(column)

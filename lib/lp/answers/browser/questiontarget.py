@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnswersVHostBreadcrumb',
     'AskAQuestionButtonView',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -24,31 +25,67 @@ __all__ = [
 from operator import attrgetter
 from urllib import urlencode
 
-from zope.app.form.browser import DropdownWidget
-from zope.component import getUtility, queryMultiAdapter
-from zope.formlib import form
-from zope.schema import Bool, Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import DropdownWidget
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.formlib import form
+from zope.schema import (
+    Bool,
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, preferred_or_request_languages)
-from lp.answers.browser.faqcollection import FAQCollectionMenu
-from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, ILaunchpadCelebrities,
-    IProject, IQuestionCollection, IQuestionSet, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    QuestionStatus)
+    browserLanguages,
+    is_english_variant,
+    preferred_or_request_languages,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, Link,
-    safe_action, stepto, stepthrough, urlappend)
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadFormView,
+    Link,
+    safe_action,
+    stepthrough,
+    stepto,
+    urlappend,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.interfaces.faqcollection import IFAQCollection
+from lp.answers.interfaces.questioncollection import (
+    IQuestionCollection,
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.interfaces.questiontarget import (
+    IQuestionTarget,
+    ISearchQuestionsForm,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.fields import PublicPersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class AskAQuestionButtonView:
@@ -64,13 +101,16 @@ class AskAQuestionButtonView:
             target = IQuestionTarget(self.context)
 
         return """
-              <a href="%s/+addquestion">
-                <img
-                  alt="Ask a question"
-                  src="/+icing/but-sml-askaquestion.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='answers')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li style="border: none">
+                  <a class="menu-link-ask_question sprite answers"
+                    href="%s">Ask a question</a>
+                </li>
+              </ul>
+            </div>
+        """ % canonical_url(
+            target, view_name='+addquestion', rootsite='answers')
 
 
 class UserSupportLanguagesMixin:
@@ -106,6 +146,10 @@ class UserSupportLanguagesMixin:
 
 class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
+
+    @property
+    def page_title(self):
+        return 'Latest questions for %s' % (self.context.displayname)
 
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
@@ -147,12 +191,70 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
 
-    template = ViewPageTemplateFile('../templates/question-listing.pt')
+    default_template = ViewPageTemplateFile(
+        '../templates/question-listing.pt')
+    unknown_template = ViewPageTemplateFile('../templates/unknown-support.pt')
+
+    @property
+    def template(self):
+        """The template to render the presentation.
+
+        Subclasses can redefine this property to choose their own template.
+        """
+        if IQuestionSet.providedBy(self.context):
+            return self.default_template
+        involvement = getMultiAdapter(
+            (self.context, self.request), name='+get-involved')
+        if service_uses_launchpad(involvement.answers_usage):
+            # Primary contexts that officially use answers have a
+            # search and listing presentation.
+            return self.default_template
+        else:
+            # Primary context that do not officially use answers have an
+            # an explanation about about the current state.
+            return self.unknown_template
+
+    def render(self):
+        """See `LaunchpadView`."""
+        return self.template()
+
+    @property
+    def page_title(self):
+        """Heading to display above the search results."""
+
+        if IQuestionSet.providedBy(self.context):
+            return _(
+                'Questions matching "${search_text}"',
+                mapping=dict(search_text=self.search_text))
+
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # Check if the set of selected status has a special title.
+        status_set_title = self.status_title_map.get(
+            frozenset(self.status_filter))
+        if status_set_title:
+            replacements['status'] = status_set_title
+            if self.search_text:
+                return _('${status} questions matching "${search_text}" '
+                         'for ${context}', mapping=replacements)
+            else:
+                return _('${status} questions for ${context}',
+                         mapping=replacements)
+        else:
+            if self.search_text:
+                return _('Questions matching "${search_text}" for '
+                         '${context}', mapping=replacements)
+            else:
+                return _('Questions for ${context}',
+                         mapping=replacements)
+
+    label = page_title
 
     @property
     def display_target_column(self):
         """Return True when the context has question targets to display."""
-        return IProject.providedBy(self.context)
+        return IProjectGroup.providedBy(self.context)
 
     # Will contain the parameters used by searchResults
     search_params = None
@@ -224,37 +326,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def context_is_project(self):
         """Return True when the context is a project."""
-        return IProject.providedBy(self.context)
-
-    @property
-    def pagetitle(self):
-        """Page title."""
-        return self.pageheading
-
-    @property
-    def pageheading(self):
-        """Heading to display above the search results."""
-        replacements = dict(
-            context=self.context.displayname,
-            search_text=self.search_text)
-        # Check if the set of selected status has a special title.
-        status_set_title = self.status_title_map.get(
-            frozenset(self.status_filter))
-        if status_set_title:
-            replacements['status'] = status_set_title
-            if self.search_text:
-                return _('${status} questions matching "${search_text}" '
-                         'for ${context}', mapping=replacements)
-            else:
-                return _('${status} questions for ${context}',
-                         mapping=replacements)
-        else:
-            if self.search_text:
-                return _('Questions matching "${search_text}" for '
-                         '${context}', mapping=replacements)
-            else:
-                return _('Questions for ${context}',
-                         mapping=replacements)
+        return IProjectGroup.providedBy(self.context)
 
     @property
     def unspoken_languages(self):
@@ -434,6 +506,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 canonical_url(sourcepackage, rootsite='answers'),
                 question.sourcepackagename.name)
 
+    @property
+    def can_configure_answers(self):
+        """Can the user configure answers for the `IQuestionTarget`."""
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
+
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My questions' report.
@@ -446,7 +527,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
@@ -456,6 +537,8 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
         else:
             return _('Questions you asked about ${context}',
                      mapping={'context': self.context.displayname})
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -485,7 +568,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
@@ -495,6 +578,8 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
         else:
             return _('Questions needing your attention for ${context}',
                      mapping={'context': self.context.displayname})
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -543,7 +628,7 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
                 canonical_url(self.context, rootsite='answers'))
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         mapping = dict(context=self.context.displayname,
                        search_text=self.search_text,
@@ -555,6 +640,8 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
         else:
             return _('${language} questions in ${context}',
                       mapping=mapping)
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -589,6 +676,11 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     label = _("Manage answer contacts")
 
+    @property
+    def page_title(self):
+        return 'Answer contact for %s' % self.context.title
+
+    label = page_title
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -632,7 +724,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
-            'answer_contact_teams': list(answer_contact_teams)
+            'answer_contact_teams': list(answer_contact_teams),
             }
 
     @action(_('Continue'), name='update')
@@ -694,8 +786,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         english = getUtility(ILaunchpadCelebrities).english
         if person_or_team.isTeam():
             person_or_team.addLanguage(english)
-            team_mapping = {'name' : person_or_team.name,
-                            'displayname' : person_or_team.displayname}
+            team_mapping = {'name': person_or_team.name,
+                            'displayname': person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
                       '<a href="/~${name}/+editlanguages">preferred '
                       'languages</a>.',
@@ -712,7 +804,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
                       'languages</a> were updated to include your browser '
                       'languages: $languages.',
-                      mapping={'languages' : language_str})
+                      mapping={'languages': language_str})
             response.addNotification(structured(msgid))
 
 
@@ -748,7 +840,6 @@ class QuestionTargetTraversalMixin:
             raise NotFoundError(name)
         return self.redirectSubTree(canonical_url(question))
 
-
     @stepto('+ticket')
     def redirect_ticket(self):
         """Use RedirectionNavigation to redirect to +question.
@@ -760,15 +851,13 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-
-# XXX flacoste 2007-07-08 bug=125851:
-# This menu shouldn't "extend" FAQCollectionMenu.
-# But this is needed because of limitations in the current menu architecture.
-# Menu should be built by merging all menus applying to the context object
-# (-based on the interfaces it provides).
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
-
+    # XXX flacoste 2007-07-08 bug=125851:
+    # This menu shouldn't "extend" FAQCollectionMenu.
+    # architecture. But this is needed because of limitations in the current
+    # menu  Menu should be built by merging all menus applying to the context
+    # object (-based on the interfaces it provides).
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
     links = FAQCollectionMenu.links + [
@@ -822,3 +911,8 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         """Return a link to the manage answer contact view."""
         text = 'Set answer contact'
         return Link('+answer-contact', text, icon='edit')
+
+
+class AnswersVHostBreadcrumb(Breadcrumb):
+    rootsite = 'answers'
+    text = 'Questions'

@@ -11,8 +11,10 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.tests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonalStanding)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonalStanding,
+    ...     )
     >>> from canonical.launchpad.ftests import sync, syncUpdate
 
     >>> person_set = getUtility(IPersonSet)
@@ -29,9 +31,9 @@ are not a member of, their message gets held for moderator approval.
     >>> message_ids = message_id_generator()
 
     # A helper for posting messages to a list.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IMessageSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> from email.Utils import formatdate
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def post_message(from_address, to_team_name):
     ...     message = getUtility(IMessageSet).fromEmail("""\
     ... From: %s
@@ -55,8 +57,8 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.testing.logger import MockLogger
     >>> class TestableScript(UpdatePersonalStanding):
     ...     """A testable version of `UpdatePersonalStanding`."""
     ...     def main(self):
@@ -168,21 +170,21 @@ approved.  As a result, his personal standing gets updated.
 Along comes Mark who also sends three messages to three different lists.  His
 personal standing gets updated to Good also.
 
-    >>> message = post_message('mark@hbd.com', 'test-one')
+    >>> message = post_message('mark@example.com', 'test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> mark = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('mark@hbd.com', 'test-two')
+    >>> message = post_message('mark@example.com', 'test-two')
     >>> message.approve(foobar)
     >>> script.main()
     >>> sync(mark)
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
-    >>> message = post_message('mark@hbd.com', 'test-three')
+    >>> message = post_message('mark@example.com', 'test-three')
     >>> message.approve(foobar)
     >>> script.main()
     >>> sync(mark)
@@ -260,7 +262,7 @@ standing untouched.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-update-personal-standing.lock
     INFO    Updating personal standings
     INFO    Done.
     <BLANKLINE>
@@ -294,7 +296,7 @@ update-standing script bumps his standing to Good too.
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    creating lockfile
+    INFO    Creating lockfile: /var/lock/launchpad-update-personal-standing.lock
     INFO    Updating personal standings
     INFO    Done.
     <BLANKLINE>

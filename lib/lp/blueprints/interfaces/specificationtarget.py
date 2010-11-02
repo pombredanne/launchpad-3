@@ -13,7 +13,10 @@ __all__ = [
     'ISpecificationGoal',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IHasSpecifications(Interface):
@@ -76,5 +79,3 @@ class ISpecificationGoal(ISpecificationTarget):
     """An interface for those things which can have specifications proposed
     as goals for them.
     """
-
-

@@ -11,13 +11,15 @@ __all__ = [
     'IBranchNamespace',
     'IBranchNamespacePolicy',
     'IBranchNamespaceSet',
-    'InvalidNamespace',
     'lookup_branch_namespace',
     'split_unique_name',
     ]
 
 from zope.component import getUtility
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 from lp.code.enums import BranchLifecycleStatus
 
@@ -69,6 +71,24 @@ class IBranchNamespace(Interface):
 
     def isNameUsed(name):
         """Is 'name' already used in this namespace?"""
+
+    def moveBranch(branch, mover, new_name=None, rename_if_necessary=False):
+        """Move the branch into this namespace.
+
+        :param branch: The `IBranch` to move.
+        :param mover: The `IPerson` doing the moving.
+        :param new_name: A new name for the branch.
+        :param rename_if_necessary: Rename the branch if the branch name
+            exists already in this namespace.
+        :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
+            a team, and 'mover' is not in that team.
+        :raises BranchCreatorNotOwner: if the namespace owner is an individual
+            and 'mover' is not the owner.
+        :raises BranchCreationForbidden: if 'mover' is not allowed to create
+            a branch in this namespace due to privacy rules.
+        :raises BranchExists: if a branch with the 'name' exists already in
+            the namespace, and 'rename_if_necessary' is False.
+        """
 
 
 class IBranchNamespacePolicy(Interface):
@@ -133,11 +153,13 @@ class IBranchNamespacePolicy(Interface):
             validation constraints on IBranch.name.
         """
 
-    def validateMove(branch, mover):
+    def validateMove(branch, mover, name=None):
         """Check that 'mover' can move 'branch' into this namespace.
 
         :param branch: An `IBranch` that might be moved.
         :param mover: The `IPerson` who would move it.
+        :param name: A new name for the branch.  If None, the branch name is
+            used.
         :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
             a team, and 'mover' is not in that team.
         :raises BranchCreatorNotOwner: if the namespace owner is an individual
@@ -199,7 +221,7 @@ class IBranchNamespaceSet(Interface):
         'distribution', 'distroseries' and 'sourcepackagename'.
 
         'parse' returns a dict which maps the names of these elements (e.g.
-        'person', 'product') to the values of these elements (e.g. 'sabdfl',
+        'person', 'product') to the values of these elements (e.g. 'mark',
         'firefox'). If the given path doesn't include a particular kind of
         element, the dict maps that element name to None.
 
@@ -259,19 +281,6 @@ class IBranchNamespaceSet(Interface):
             cannot be found.
         :return: `IBranch`.
         """
-
-
-class InvalidNamespace(Exception):
-    """Raised when someone tries to lookup a namespace with a bad name.
-
-    By 'bad', we mean that the name is unparseable. It might be too short, too
-    long or malformed in some other way.
-    """
-
-    def __init__(self, name):
-        self.name = name
-        Exception.__init__(
-            self, "Cannot understand namespace name: '%s'" % (name,))
 
 
 def get_branch_namespace(person, product=None, distroseries=None,

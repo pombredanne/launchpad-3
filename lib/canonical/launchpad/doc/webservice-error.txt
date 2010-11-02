@@ -6,7 +6,8 @@ this behavior and set some other response code.
 
     >>> import threading
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.webapp.adapter import set_request_started
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     set_request_started, clear_request_started)
     >>> from zope.component import getMultiAdapter
 
     >>> def render_using_default_view(error):
@@ -32,3 +33,7 @@ IRequestExpired exceptions have a 503 status code.
     >>> response, result = render_using_default_view(RequestExpired())
     >>> response.getStatus()
     503
+
+Cleanup.
+
+   >>> clear_request_started()

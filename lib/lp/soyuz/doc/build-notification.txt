@@ -2,9 +2,10 @@
 Build Notification System
 =========================
 
-IBuild instance implements the 'notify' method which sends a status
-report about the current record to the ISourcePackageRelease.creator
-and the package uploader's preferred email address.
+IBinaryPackageBuild instance implements the 'notify' method which sends
+a status report about the current record to the
+ISourcePackageRelease.creator and the package uploader's preferred email
+address.
 
 We rely on get_contact_email_addresses() to DTRT, either use the
 Team.contactaddress of the Launchpad Buildd Celebrity or the
@@ -15,9 +16,10 @@ The report is based on the emailtemplate/build-notification.txt.
 All build states are supported by the current implementation, however
 only failures should be reported this time.
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> from lp.soyuz.interfaces.binarypackagebuild import (
+  ...     IBinaryPackageBuildSet)
   >>> from lp.testing.mail_helpers import pop_notifications
-  >>> buildset = getUtility(IBuildSet)
+  >>> buildset = getUtility(IBinaryPackageBuildSet)
 
 To avoid consequences of modified sampledata, specially if we add
 more builds for test we are going to pick a specific build record
@@ -26,12 +28,12 @@ in a known state to perform the tests.
 Notification for a FAILEDTOBUILD (failed) build record:
 
   >>> failed_candidate = buildset.getByBuildID(9)
-  >>> failed_candidate.sourcepackagerelease.name
+  >>> failed_candidate.source_package_release.name
   u'pmount'
-  >>> failed_candidate.buildstate.name
+  >>> failed_candidate.status.name
   'FAILEDTOBUILD'
-  >>> failed_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  >>> failed_candidate.source_package_release.creator.name
+  u'mark'
 
   >>> failed_candidate.notify()
 
@@ -53,7 +55,7 @@ The maintainer is notified:
 
   >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'mark@example.com'
 
 Checking subject and extra headers. Build notifications have a set of
 special headers to help filtering on users' mailboxes, they are:
@@ -83,7 +85,7 @@ special headers to help filtering on users' mailboxes, they are:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #9] i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -129,12 +131,12 @@ This same basic content applies to all types of notification.
 Notification for a pending (NEEDSBUILD) build record:
 
   >>> pending_candidate = buildset.getByBuildID(11)
-  >>> pending_candidate.sourcepackagerelease.name
+  >>> pending_candidate.source_package_release.name
   u'alsa-utils'
-  >>> pending_candidate.buildstate.name
+  >>> pending_candidate.status.name
   'NEEDSBUILD'
-  >>> pending_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  >>> pending_candidate.source_package_release.creator.name
+  u'mark'
 
   >>> pending_candidate.notify()
 
@@ -156,13 +158,13 @@ The maintainer is notified:
 
   >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'mark@example.com'
 
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: NEEDSBUILD
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -197,12 +199,12 @@ Check the notification content:
 Notification for a BUILDING build record:
 
   >>> building_candidate = buildset.getByBuildID(8)
-  >>> building_candidate.sourcepackagerelease.name
+  >>> building_candidate.source_package_release.name
   u'mozilla-firefox'
-  >>> building_candidate.buildstate.name
+  >>> building_candidate.status.name
   'BUILDING'
-  >>> building_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  >>> building_candidate.source_package_release.creator.name
+  u'mark'
 
   >>> building_candidate.notify()
 
@@ -224,13 +226,13 @@ The maintainer is notified:
 
   >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'mark@example.com'
 
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: BUILDING
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -265,12 +267,12 @@ Check the notification content:
 Notification for a SUPERSEDED build record:
 
   >>> superseded_candidate = buildset.getByBuildID(15)
-  >>> superseded_candidate.sourcepackagerelease.name
+  >>> superseded_candidate.source_package_release.name
   u'at'
-  >>> superseded_candidate.buildstate.name
+  >>> superseded_candidate.status.name
   'SUPERSEDED'
-  >>> superseded_candidate.sourcepackagerelease.creator.name
-  u'sabdfl'
+  >>> superseded_candidate.source_package_release.creator.name
+  u'mark'
 
   >>> superseded_candidate.notify()
 
@@ -292,13 +294,13 @@ The maintainer is notified:
 
   >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'mark@example.com'
 
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: SUPERSEDED
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -379,7 +381,7 @@ Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: SUPERSEDED
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -414,10 +416,10 @@ in the main archive, the important differences are:
    they are in the team owning the PPA (to avoid spamming the innocent
    when PPA users upload unchanged source packages).
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> from lp.buildmaster.enums import BuildStatus
   >>> failed_candidate = cprov.archive.getBuildRecords(
   ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
@@ -426,7 +428,7 @@ in the main archive, the important differences are:
 Was this package copied?
 
     >>> (failed_candidate.archive !=
-    ... failed_candidate.sourcepackagerelease.upload_archive)
+    ... failed_candidate.source_package_release.upload_archive)
     True
 
 Since the package *was* copied, only the owner of the destination
@@ -463,7 +465,7 @@ Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
   Subject: [Build #26] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE (cprov PPA)
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
@@ -481,12 +483,12 @@ we will change the 'failed_candidate' source, setting its
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
-  >>> naked_sourcepackagerelease = naked_candidate.sourcepackagerelease
+  >>> naked_sourcepackagerelease = naked_candidate.source_package_release
   >>> naked_sourcepackagerelease.upload_archive = failed_candidate.archive
 
 We also make 'Foo Bar' the source signer.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> gpgkey = getUtility(IGPGKeySet).get(1)
   >>> print gpgkey.owner.name
   name16
@@ -495,11 +497,11 @@ We also make 'Foo Bar' the source signer.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-Since 'sabdfl' is the 'creator' it makes the failed-to-build source
+Since 'mark' is the 'creator' it makes the failed-to-build source
 look like a 'sponsored' upload.
 
-  >>> print failed_candidate.sourcepackagerelease.creator.name
-  sabdfl
+  >>> print failed_candidate.source_package_release.creator.name
+  mark
 
 Finally we issue the notification.
 
@@ -511,7 +513,7 @@ people involved with the source are notified.
  * 'cprov' who owns the PPA where the source is being built;
  * 'name16' who signed the source upload;
 
-However, 'sabdfl' who was listed as the creator of the source revision is
+However, 'mark' who was listed as the creator of the source revision is
 not notified because he is not in the PPA team or its owner.
 
   >>> notifications = pop_notifications()
@@ -523,19 +525,19 @@ not notified because he is not in the PPA team or its owner.
   celso.providelo@canonical.com
   foo.bar@canonical.com
 
-If the failed build candidate is for a PPA where sabdfl is a member,
+If the failed build candidate is for a PPA where mark is a member,
 he will be notified.
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> team = factory.makeTeam(owner=cprov, email="team@example.com")
-  >>> sabdfl = failed_candidate.sourcepackagerelease.creator
-  >>> team.addMember(sabdfl, sabdfl)
+  >>> mark = failed_candidate.source_package_release.creator
+  >>> ignored = team.addMember(mark, mark)
   >>> discard = pop_notifications() # Discard team join email.
   >>> team_ppa = factory.makeArchive(owner=team)
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
   >>> naked_candidate.archive = team_ppa
-  >>> naked_candidate.sourcepackagerelease.upload_archive = team_ppa
+  >>> naked_candidate.source_package_release.upload_archive = team_ppa
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
@@ -552,7 +554,7 @@ team's contact address (team@example.com).
   >>> for notification in notifications:
   ...     print notification['To']
   foo.bar@canonical.com
-  mark@hbd.com
+  mark@example.com
   team@example.com
 
 
@@ -566,8 +568,8 @@ a just created named-ppa for Celso.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-  >>> from lp.soyuz.interfaces.archive import (
-  ...     ArchivePurpose, IArchiveSet)
+  >>> from lp.soyuz.enums import ArchivePurpose
+  >>> from lp.soyuz.interfaces.archive import IArchiveSet
   >>> named_ppa = getUtility(IArchiveSet).new(
   ...     owner=cprov, name='testing', purpose=ArchivePurpose.PPA)
 
@@ -593,7 +595,7 @@ to the named-ppa, 'cprov-testing'.
   >>> build_notification = notifications.pop(0)
   >>> dump_build_notification(build_notification)
   Subject: [Build #26] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE (cprov-testing PPA)
-  X-Creator-Recipient: mark@hbd.com
+  X-Creator-Recipient: mark@example.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386

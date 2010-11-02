@@ -1,0 +1,92 @@
+Launchpad Migrater
+===================
+
+This tool moves modules, tests, and configuration from the
+canonical.launchpad tree to the lp tree. The tool uses a configuration
+file that maps files to applications.
+
+This script does most of the migration work, but it is not intended to do a
+complete migration. The goal of the script is to automate most of the
+mechanical work so that a developer can make the needed manual changes to
+land the branch in 2 days.
+
+It performs a number of updates for the migration and when a file is moved.
+
+    * Builds a tree with the new directory names. Such as
+      database => model
+      pagetests => stories
+    * Some files are renamed, such as tests that end in '-pages' will be
+      named as '-views'.
+    * Update imports of the moved module in other modules, tests and zcml.
+    * Convert the interface glob imports in the moved module to
+      specific imports.
+    * Extract all browser zcml instructions to browser/configure.zcml
+    * Merge all object zcml into <app>/configure.zcml
+
+test harnesses are installed to run the tests in doc/ and browser/test
+The test_doc.py module is constructed from functions and configuration in
+canonical/launchpad/ftests/test_system_documentation.py. 
+
+
+What is missing?
+----------------
+
+The tool does not know how to separate the modules, tests and zcml into
+app/ and coop/ directories. You can either add these rules, or do it by hand.
+The registry app has a lot coop/ code in its model and browser modules, though
+it should not have a coop/ directory. The separation of application from
+the pillar models and views must be done after the migration has run, and
+probably in a separate branch.
+
+
+Using migrater.py to extract an application
+-------------------------------------------
+
+The migration script will probably be run many times over a pristine
+launchpad branch. Each pass you will strive to reconcile warnings, and
+add rules to migrate unhandled files.
+
+* Update file-ownership.txt
+    * Add missing files.
+      * Page templates do not need to be marked; their migration list is
+        built from the moved zcml and browser modules.
+    * Prefix the application code to each file that you want to migrate.
+      eg. reg canonical/launchpad/database/distribution.py
+
+* Run the script (takes about 5 minutes)
+    cd pristine-launchpad-branch
+    ../migrater/migrate.py ../migrater/file-ownership.txt <code|reg|soy>
+
+* Review the script's output
+    * Update file-ownership.txt to reconcile modules that the zcml
+      configuration indicates are missing.
+    * Examine the templates that are shared by multiple files. Are these
+      templates are from a module or zcml that should also be be migrated?
+      You may choose to add an exception to migrations rules, or update the
+      zcml and module to share a template.
+    * Consider the files that were not moved. Do you want to add rules
+      to the migration script to handle them?
+
+* Run lint over lib/lp/<app>/tests/test_doc,py and
+  lib/lp/<app>/tests/browser/test_views.py.
+    * Update the imports in the migrater/ test_doc.py and test_views.py files
+      because you may run the script many times, and you will want to test
+      often without the need to make repeated fixes to the test harnesses.
+
+* Test
+  test.py -vv -module=lp.<app>
+  * You will probably see circular import issues until the warnings from the
+    migration script are resolved. If the problem persists, you may choose
+    to make this a manual migration task, or postpone migration of the
+    problem module.
+  * Examine the failures. Consider making changes to the failing code and
+    tests in a tree /before/ the migration script makes its changes.
+
+* Revert the migration changes.
+  * Update code, test, and zcml to work to be compatible with the old and
+    new tree. Commit.
+  * Update the migration script to handle exceptional moves and unsupported
+    files. Commit.
+
+* Repeat until you believe the remaining migration work can be done my hand
+  in a short time.

@@ -37,13 +37,14 @@
                 <img src="images/hosting/main-image.jpg" alt="Collaborate with free software communities." />
             </p>
             <p class="intro-text">
-                <strong>You want to ensure that anybody who is interested can contribute code to your project, in a simple way, with full version control.</strong> And of course, you also want to maintain strict control of who can actually land code in your development trunk.
+                <strong>Launchpad and Bazaar make it easy for anyone to get your project's code, make their own changes with full version control, and then propose their work for merging back into your trunk.</strong>
+            </p>
+
+            <p class="intro-text">
+                Full control of who can land code in your project's trunk remains with you. And thanks to public code reviews, you can share the work of vetting proposed changes.
             </p>
             <p class="intro-text">
-                With Launchpad and Bazaar, anyone can create their own line of development, with full version control, to be published alongside your official branches. From experimental lines of development by entirely new contributors, to work on the the next major release, all code related to your project - whether hosted on Launchpad or elsewhere - is catalogued and can be downloaded with just a few key strokes.
-            </p>
-            <p class="intro-text">
-               If your code's not in Bazaar, Launchpad will even run a continuous import of Subversion and CVS repositories directly into a Bazaar branch.
+                From experimental lines of development by entirely new contributors, to your official trunk, all code related to your project &mdash; whether hosted on Launchpad or elsewhere, even in Git, Subversion or CVS &mdash; is catalogued and can be downloaded with just a few key strokes.
             </p>
             <div id="link-holder"><a href="https://code.launchpad.net/">Visit Launchpad Code &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
@@ -66,8 +67,9 @@
                         <p class="screen-holder">
                             <img src="images/hosting/1.png" alt="Drive-by contributions" />                        </p>
                         <p>
-                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches. And because they never touch your trunk they don&rsquo;t need to ask for commit access.
-                        </p>
+                            With Launchpad and Bazaar, contributors can create their own branch of your code, make their changes and then push it all back up to Launchpad to be listed right alongside your official branches.</p><br />
+                       <p> And because they never touch your trunk they don&rsquo;t need to ask for commit access.</p><br />
+                        <p>So, with no extra effort on your part new contributors can submit code to your project and propose it for merging into your trunk.</p>
                     </div>
                     <div class="block odd">
                         <h3>Straightforward code review</h3>
@@ -125,7 +127,7 @@ Thanks to Bazaar&rsquo;s workflow flexibility, all team members can commit to a 
                 <a href="translation" accesskey="g" tabindex="5" title="Read about software translation in Launchpad">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2009 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
+                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

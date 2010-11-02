@@ -8,38 +8,62 @@
 __metaclass__ = type
 
 
+from datetime import datetime
 import httplib
 import logging
 import os
 from StringIO import StringIO
 import unittest
 
-from twisted.internet import reactor, defer
+from lazr.uri import URI
+from sqlobject import SQLObjectNotFound
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
-from sqlobject import SQLObjectNotFound
-
 import canonical
 from canonical.config import config
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
-from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    TwistedLayer,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
-    ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
-    MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
-    InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
-    should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
-    MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
+    _build_request_for_cdimage_file_list,
+    ArchiveMirrorProberCallbacks,
+    BadResponseCode,
+    ConnectionSkipped,
+    InfiniteLoopDetected,
+    LoggingMixin,
+    MAX_REDIRECTS,
+    MIN_REQUEST_TIMEOUT_RATIO,
+    MIN_REQUESTS_TO_CONSIDER_RATIO,
+    MirrorCDImageProberCallbacks,
+    MultiLock,
+    OVERALL_REQUESTS,
+    PER_HOST_REQUESTS,
+    probe_archive_mirror,
+    probe_cdimage_mirror,
+    ProberFactory,
+    ProberTimeout,
+    RedirectAwareProberFactory,
+    RedirectAwareProberProtocol,
+    RequestManager,
+    restore_http_proxy,
+    should_skip_host,
+    UnknownURLScheme,
+    )
 from lp.registry.tests.distributionmirror_http_server import (
-    DistributionMirrorTestHTTPServer)
-from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
+    DistributionMirrorTestHTTPServer,
+    )
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -208,6 +232,25 @@ class TestProberProtocolAndFactory(TrialTestCase):
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
         return self.assertFailure(d, ProberTimeout)
+
+
+    def test_prober_user_agent(self):
+        protocol = RedirectAwareProberProtocol()
+
+        orig_sendHeader = protocol.sendHeader
+        headers = {}
+
+        def mySendHeader(header, value):
+            orig_sendHeader(header, value)
+            headers[header] = value
+
+        protocol.sendHeader = mySendHeader
+
+        protocol.factory = FakeFactory('http://foo.bar/')
+        protocol.makeConnection(FakeTransport())
+        self.assertEquals(
+            'Launchpad Mirror Prober ( https://launchpad.net/ )',
+            headers['User-Agent'])
 
 
 class FakeTimeOutCall:
@@ -712,11 +755,11 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(mirror.cdimage_serieses.count() > 0)
+        self.failUnless(mirror.cdimage_series.count() > 0)
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
         probe_cdimage_mirror(mirror, StringIO(), [], logging)
-        self.failUnlessEqual(mirror.cdimage_serieses.count(), 0)
+        self.failUnlessEqual(mirror.cdimage_series.count(), 0)
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
@@ -792,6 +835,33 @@ class TestCDImageFileListFetching(unittest.TestCase):
         request = _build_request_for_cdimage_file_list(url)
         self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
+
+
+class TestLoggingMixin(unittest.TestCase):
+
+    def _fake_gettime(self):
+        # Fake the current time.
+        fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
+        return fake_time
+
+    def test_logMessage_output(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger._getTime = self._fake_gettime
+        logger.logMessage("Ubuntu Warty Released")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
+        self.failUnlessEqual(
+            'Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+            message)
+
+    def test_logMessage_integration(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger.logMessage("Probing...")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
+        self.assertNotEqual(None, message)
 
 
 def test_suite():
