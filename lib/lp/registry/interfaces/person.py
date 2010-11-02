@@ -27,6 +27,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -60,6 +61,7 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
+    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -1237,6 +1239,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :return: a PPA `IArchive` record corresponding to the name.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False))
+    @export_factory_operation(Interface, []) # Really IArchive.
+    def createPPA(name=None, displayname=None, description=None):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -2158,6 +2177,11 @@ class NoSuchPerson(NameLookupFailed):
 
     _message_prefix = "No such person"
 
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA."""
+
+    webservice_error(400) # Bad Request
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [
