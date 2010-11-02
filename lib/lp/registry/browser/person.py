@@ -231,7 +231,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

@@ -68,7 +68,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,

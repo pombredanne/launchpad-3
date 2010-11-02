@@ -191,7 +191,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
     >>> onezero = firefox.getSeries("1.0")
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
@@ -211,7 +211,7 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
-    >>> from lp.blueprints.interfaces.specification import (
+    >>> from lp.blueprints.enums import (
     ...     SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus,
     ...     )
