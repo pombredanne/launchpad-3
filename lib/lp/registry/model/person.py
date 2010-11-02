@@ -163,7 +163,7 @@ from canonical.launchpad.validators.name import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -218,6 +218,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -276,7 +277,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
@@ -2009,8 +2010,9 @@ class Person(
     # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
+        if not self.is_valid_person:
+            raise AssertionError(
+                "You can only deactivate an account of a valid person.")
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2045,11 +2047,15 @@ class Person(
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
+            changed = False
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
-            elif pillar.driver.id == self.id:
+                changed = True
+            if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = registry_experts
-            else:
+                changed = True
+
+            if not changed:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
                 raise AssertionError(
@@ -2738,6 +2744,18 @@ class Person(
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+
+    def createPPA(self, name=None, displayname=None, description=None):
+        """See `IPerson`."""
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

@@ -20,10 +20,8 @@ from canonical.database.constants import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification,
-    SprintSpecificationStatus,
-    )
+from lp.blueprints.enums import SprintSpecificationStatus
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.registry.interfaces.person import validate_public_person
 
 
