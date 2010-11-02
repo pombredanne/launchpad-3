@@ -25,7 +25,7 @@ from lp.translations.enums import RosettaImportStatus
 
 
 class IHasTranslationImports(Interface):
-    """An entity on which a translation import queue entry is attached.
+    """An entity that has a translation import queue.
 
     Examples include `ProductSeries`, `SourcePackage`, `DistroSeries`,
     and `Person`.

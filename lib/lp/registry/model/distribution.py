@@ -190,7 +190,7 @@ from lp.soyuz.model.publishing import (
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 

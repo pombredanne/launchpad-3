@@ -277,7 +277,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'collect_import_info',
-    'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
     'TranslationImportQueue',
     ]
@@ -75,9 +74,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.hastranslationimports import (
-    IHasTranslationImports,
-    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -1428,25 +1424,3 @@ class TranslationImportQueue:
     def remove(self, entry):
         """See ITranslationImportQueue."""
         TranslationImportQueueEntry.delete(entry.id)
-
-
-class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
-
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(target=self)
-
-    def getTranslationImportQueueEntries(self, import_status=None,
-                                         file_extension=None):
-        """See `IHasTranslationImports`."""
-        if file_extension is None:
-            extensions = None
-        else:
-            extensions = [file_extension]
-        translation_import_queue = getUtility(ITranslationImportQueue)
-        return translation_import_queue.getAllEntries(
-            target=self, import_status=import_status,
-            file_extensions=extensions)
