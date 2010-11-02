@@ -91,12 +91,12 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
     )
 
 

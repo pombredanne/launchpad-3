@@ -204,7 +204,7 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from lp.blueprints.interfaces.specification import SpecificationImplementationStatus
+   >>> from lp.blueprints.enums import SpecificationImplementationStatus
    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
    >>> bug2.is_complete
    False
