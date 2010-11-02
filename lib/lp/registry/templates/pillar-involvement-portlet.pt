@@ -54,6 +54,7 @@
     </tal:show_configuration>
 
     <div id="show-hide-configs"
+      tal:condition="view/configuration_links"
       tal:attributes="class
         python: 'collapsible collapsed'
           if view.registration_done
@@ -62,8 +63,7 @@
            style="margin-bottom: 0.5em">Configuration options</div>
       <table
         style="width: 100%; padding-top: 1em"
-        id="configuration_links"
-        tal:condition="view/configuration_links">
+        id="configuration_links">
         <tal:item repeat="link_status view/configuration_links">
           <tr>
             <td>

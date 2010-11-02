@@ -44,7 +44,7 @@ class TestProductHiddenConfiguration(WindmillTestCase):
 
         # When the "Configuration links" link is clicked and the actual links are
         # shown, the collapsible wrapper collapses, hiding the links.
-        client.click(link=u"Configuration links")
+        client.click(link=u"Configuration options")
         client.waits.forElement(
             classname="collapseWrapper lazr-closed",
             timeout=constants.FOR_ELEMENT)
@@ -77,9 +77,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
 
         # When the "Configuration links" link is clicked and the actual links are
         # hidden, the collapsible wrapper opens, showing the links.
-        client.click(link=u"Configuration links")
+        client.click(link=u"Configuration options")
         client.waits.forElement(
-            classname="lazr-open",
+            classname="lazr-opened",
             timeout=constants.FOR_ELEMENT)
         client.asserts.assertProperty(
             classname='collapseWrapper',
