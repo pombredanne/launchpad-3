@@ -113,6 +113,30 @@ class OnlineStatsCalculator:
         else:
             return math.sqrt(self.variance)
 
+    def __add__(self, other):
+        """Adds this and another OnlineStatsCalculator.
+
+        The result combines the stats of the two objects.
+        """
+        results = OnlineStatsCalculator()
+        results.count = self.count + other.count
+        results.sum = self.sum + other.sum
+        if self.count > 0 and other.count > 0:
+            # This is 2.1b in Chan, Tony F.; Golub, Gene H.; LeVeque, 
+            # Randall J. (1979), "Updating Formulae and a Pairwise Algorithm
+            # for Computing Sample Variances.",
+            # Technical Report STAN-CS-79-773,
+            # Department of Computer Science, Stanford University, 
+            # ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf .
+            results.M2 = self.M2 + other.M2 + (
+                (float(self.count)/(other.count*results.count)) *
+                ((float(other.count)/self.count)*self.sum - other.sum)**2)
+        else:
+            results.M2 = self.M2 + other.M2 # One of them is 0.
+        if results.count > 0:
+            results.mean = float(results.sum)/results.count
+        return results
+
 
 class OnlineApproximateMedian:
     """Approximate the median of a set of elements.

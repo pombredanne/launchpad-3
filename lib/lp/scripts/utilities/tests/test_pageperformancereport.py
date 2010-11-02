@@ -248,6 +248,36 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(6, self.stats.variance)
         self.assertEquals("2.45", "%.2f" % self.stats.std)
 
+    def test_add_two_empty(self):
+        stats2 =  OnlineStatsCalculator()
+        results = self.stats + stats2
+        self.assertEquals(0, results.count)
+        self.assertEquals(0, results.sum)
+        self.assertEquals(0, results.mean)
+        self.assertEquals(0, results.variance)
+
+    def test_add_empty(self):
+        stats2 =  OnlineStatsCalculator()
+        for x in [1, 2, 3]:
+            self.stats.update(x)
+        results = self.stats + stats2
+        self.assertEquals(3, results.count)
+        self.assertEquals(6, results.sum)
+        self.assertEquals(2, results.mean)
+        self.assertEquals(2, results.M2)
+
+    def test_add(self):
+        stats2 = OnlineStatsCalculator()
+        for x in [3, 6, 9]:
+            self.stats.update(x)
+        for x in [1, 2, 3]:
+            stats2.update(x)
+        results = self.stats + stats2
+        self.assertEquals(6, results.count)
+        self.assertEquals(24, results.sum)
+        self.assertEquals(4, results.mean)
+        self.assertEquals(44, results.M2)
+
 
 SHUFFLE_RANGE_100 = [
     25, 79, 99, 76, 60, 63, 87, 77, 51, 82, 42, 96, 93, 58, 32, 66, 75,
