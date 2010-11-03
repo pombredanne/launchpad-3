@@ -9,11 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchmergequeuecollection import (
     IAllBranchMergeQueues,
@@ -33,8 +29,7 @@ class TestGenericBranchMergeQueueCollection(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IMasterStore(BranchMergeQueue)
 
     def test_provides_branchmergequeuecollection(self):
         # `GenericBranchMergeQueueCollection`

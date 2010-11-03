@@ -22,7 +22,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.component._api import getUtility
+from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
     Datetime,
