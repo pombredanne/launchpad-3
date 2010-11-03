@@ -1539,8 +1539,14 @@ source publication set size:
     >>> cprov_published_sources.count()
     4
 
-    >>> len(list(decorated_set))
+    >>> decorated_sources_list = list(decorated_set)
+    >>> len(decorated_sources_list)
     4
+
+The objects loaded have their newer_distroseries_version preloaded.
+
+    >>> actual_pub = decorated_sources_list[0].context
+    >>> get_property_cache(actual_pub).newer_distroseries_version
 
 The decorated objects are returned in the same order used in the given
 'source_publications'.
