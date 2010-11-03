@@ -119,7 +119,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -182,7 +182,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Owner').displayValue = ['Good Chefs']
         browser.getControl('Create Recipe').click()
 
@@ -277,7 +277,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
 
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[2]),
