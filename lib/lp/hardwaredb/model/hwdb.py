@@ -451,6 +451,8 @@ class HWSubmissionSet:
             clauses.append(In(Bug.id, bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
+            # Handle callsites sending bug tags as ASCII strings.
+            bug_tags = [unicode(tag) for tag in bug_tags]
             clauses.extend([
                 Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
             tables.append(BugTag)
@@ -524,6 +526,8 @@ class HWSubmissionSet:
             clauses.append(In(Bug.id, bug_ids))
 
         if bug_tags is not None and bug_tags is not []:
+            # Handle callsites sending bug tags as ASCII strings.
+            bug_tags = [unicode(tag) for tag in bug_tags]
             clauses.extend([Bug.id == BugTag.bugID, In(BugTag.tag, bug_tags)])
 
         clauses.append(_userCanAccessSubmissionStormClause(user))
