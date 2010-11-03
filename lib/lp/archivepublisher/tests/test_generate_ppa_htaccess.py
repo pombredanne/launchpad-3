@@ -650,7 +650,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         script_start_time = now - timedelta(seconds=2)
         script_end_time = now
-        earliest_with_ntp_skew = script_start_time - timedelta(milliseconds=500)
+        earliest_with_ntp_skew = script_start_time - timedelta(
+            milliseconds=500)
 
         tokens = self.setupDummyTokens()[1]
         getUtility(IScriptActivitySet).recordSuccess(
