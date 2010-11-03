@@ -324,7 +324,7 @@ to delete the archives of an INACTIVE list, this must be done manually.
     ...     print mailing_list.status.name
     ...     logout()
 
-The team owner cannot purge a mailing list.
+The team owner can see that he can purge or reactivate mailing list.
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> user_browser.getControl('Apply for Mailing List').click()
@@ -345,13 +345,12 @@ The team owner cannot purge a mailing list.
 
     >>> user_browser.getLink(url='+mailinglist').click()
     >>> print purge_text(user_browser)
-    None
-
-But a Launchpad administrator can purge a list.
-
-    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> print purge_text(admin_browser)
     You can purge this mailing list...
+
+    >>> user_browser.getControl('Reactivate this Mailing List')
+    <SubmitControl name='field.actions.reactivate_list' type='submit'>
+    >>> user_browser.getControl('Purge this Mailing List')
+    <SubmitControl name='field.actions.reactivate_list' type='submit'>
 
 Mailing list experts can also purge mailing lists.  Sample Person is
 trustworthy enough to become a mailing list expert, but not a Launchpad
@@ -468,31 +467,9 @@ A purged list acts as if it doesn't even exist.
     >>> expert_browser.getControl('Apply for Mailing List')
     <SubmitControl name='field.actions.request_list_creation' type='submit'>
 
-To the team owner, an inactive list can merely be reactivated, it still cannot
-be purged.
+The team owner can see that an inactive list can be reactivated or purged.
 
     >>> set_list_state('aardvarks', MailingListStatus.INACTIVE)
-
-    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> user_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(user_browser)
-    None
-
-However to the LP administrator or mailing list expert, the list can also be
-purged.
-
-    >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> expert_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(expert_browser)
-    You can purge this mailing list...
-
-    >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
-    >>> admin_browser.getControl('Reactivate this Mailing List')
-    <SubmitControl name='field.actions.reactivate_list' type='submit'>
-    >>> print purge_text(admin_browser)
-    You can purge this mailing list...
 
 
 Actions on purged mailing lists
