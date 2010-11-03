@@ -62,7 +62,7 @@ We create the POFile object where we are going to attach the .po file.
 
     >>> pofile = potemplate.newPOFile('cy')
 
-And now, we import a .po file, as not coming from upstream, that lacks the
+And now, we import a .po file, not uploaded by the maintainer, that lacks the
 header 'X-Rosetta-Export-Date'. That header is the one that notes that the
 file comes from a previous export from Rosetta and when did it happen.
 
@@ -76,9 +76,9 @@ file comes from a previous export from Rosetta and when did it happen.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> from_upstream = False
+    >>> from_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_upstream, person,
+    ...     pofile.path, pofile_contents, from_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -146,9 +146,9 @@ commit.
 
 Now, attach the file again, but this time as coming from upstream.
 
-    >>> from_upstream = True
+    >>> from_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_upstream, person,
+    ...     pofile.path, pofile_contents, from_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 

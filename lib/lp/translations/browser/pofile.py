@@ -718,8 +718,8 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # Uploads on this form are never from upstream.
-        from_upstream = False
+        # Uploads on this form are never done by the maintainer.
+        from_maintainer = False
 
         if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
@@ -728,7 +728,7 @@ class POFileUploadView(POFileView):
             path = self.context.path
         # Add it to the queue.
         translation_import_queue.addOrUpdateEntry(
-            path, content, from_upstream, self.user,
+            path, content, from_maintainer, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
