@@ -111,6 +111,10 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICveSet,
+    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -3226,6 +3230,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         request_token = self.makeOAuthRequestToken(
             consumer, reviewed_by=owner, access_level=access_level)
         return request_token.createAccessToken()
+
+    def makeCVE(self, sequence, description=None,
+                cvestate=CveStatus.CANDIDATE):
+        """Create a new CVE record."""
+        if description is None:
+            description = self.getUniqueString()
+        return getUtility(ICveSet).new(sequence, description, cvestate)
 
 
 # Some factory methods return simple Python types. We don't add
