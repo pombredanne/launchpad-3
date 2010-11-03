@@ -1501,7 +1501,7 @@ class IPersonEditRestricted(Interface):
         :return: A tuple containing a boolean indicating when the
             membership status changed and the current `TeamMembershipStatus`.
             This depends on the desired status passed as an argument, the
-            subscription policy and the user's priveleges.
+            subscription policy and the user's privileges.
         """
 
     @operation_parameters(
