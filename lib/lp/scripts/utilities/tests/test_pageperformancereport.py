@@ -315,6 +315,14 @@ class TestOnlineApproximateMedian(TestCase):
         # True median is 50, 52 is good enough :-)
         self.assertEquals(52, self.estimator.median)
 
+    def test_add(self):
+        median1 = OnlineApproximateMedian(3)
+        median1.buckets = [[1, 3], [4, 5 ], [6, 3]]
+        median2 = OnlineApproximateMedian(3)
+        median2.buckets = [[], [3, 6], [3, 7 ]]
+        results = median1 + median2
+        self.assertEquals([[1, 3], [6], [3, 7], [4]], results.buckets)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

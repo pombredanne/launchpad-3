@@ -9,6 +9,7 @@ __all__ = ['main']
 import bz2
 import cPickle
 from cgi import escape as html_quote
+import copy
 from ConfigParser import RawConfigParser
 import csv
 from datetime import datetime
@@ -163,23 +164,22 @@ class OnlineApproximateMedian:
 
         The bucket size should be a low odd-integer.
         """
-        self.count = 0
         self.bucket_size = bucket_size
         # Index of the median in a completed bucket.
         self.median_idx = bucket_size/2
         self.buckets = []
 
-    def update(self, x):
+    def update(self, x, order=0):
         """Update with x."""
         if x is None:
             return
 
-        self.count += 1
-        i = 0
+        i = order
         while True:
             # Create bucket on demand.
-            if i == len(self.buckets):
-                self.buckets.append([])
+            if i >= len(self.buckets):
+                for n in range((i+1)-len(self.buckets)):
+                    self.buckets.append([])
             bucket = self.buckets[i]
             bucket.append(x)
             if len(bucket) == self.bucket_size:
@@ -195,9 +195,6 @@ class OnlineApproximateMedian:
     @property
     def median(self):
         """Return the median."""
-        if self.count == 0:
-            return 0
-
         # Find the 'weighted' median by assigning a weight to each
         # element proportional to how far they have been selected.
         candidates = []
@@ -207,11 +204,29 @@ class OnlineApproximateMedian:
             for x in bucket:
                 total_weight += weight
                 candidates.append([weight, x])
+
+        if len(candidates) == 0:
+            return 0
         # Make weight relative.
         candidates = [
             ((float(weight)/total_weight)*x, x)
             for weight, x in candidates]
         return sorted(candidates)[(len(candidates)-1)/2][1]
+
+    def __add__(self, other):
+        """Merge two approximator together.
+
+        All candidates from the other are merged through the standard
+        algorithm, starting at the same level. So an item that went through
+        two rounds of selection, will be compared with other items having
+        gone through the same number of rounds.
+        """
+        results = OnlineApproximateMedian(self.bucket_size)
+        results.buckets = copy.deepcopy(self.buckets)
+        for i, bucket  in enumerate(other.buckets):
+            for x in bucket:
+                results.update(x, i)
+        return results
 
 
 class Stats:
