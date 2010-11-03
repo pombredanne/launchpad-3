@@ -197,6 +197,25 @@ class TestRequestTimes(TestCase):
         pageid_times = self.db.get_pageid_times()
         self.assertStatsAreEquals(PAGEID_STATS, pageid_times)
 
+    def test___add__(self):
+        # Ensure that adding two RequestTimes together results in
+        # a merge of their constituency.
+        db1 = self.db
+        db2 = RequestTimes(self.categories, FakeOptions())
+        db1.add_request(FakeRequest('/', 1.5, 5, 1.0, '+root'))
+        db1.add_request(FakeRequest('/bugs', 3.5, 15, 1.0, '+bugs'))
+        db2.add_request(FakeRequest('/bugs/1', 5.0, 30, 4.0, '+bug'))
+        results = db1 + db2
+        self.assertEquals(3, results.category_times[0][1].total_hits)
+        self.assertEquals(0, results.category_times[1][1].total_hits)
+        self.assertEquals(2, results.category_times[2][1].total_hits)
+        self.assertEquals(1, results.pageid_times['+root'].total_hits)
+        self.assertEquals(1, results.pageid_times['+bugs'].total_hits)
+        self.assertEquals(1, results.pageid_times['+bug'].total_hits)
+        self.assertEquals(1, results.url_times['/'].total_hits)
+        self.assertEquals(1, results.url_times['/bugs'].total_hits)
+        self.assertEquals(1, results.url_times['/bugs/1'].total_hits)
+
 
 class TestStats(TestCase):
     """Tests for the Stats class."""
@@ -215,7 +234,7 @@ class TestStats(TestCase):
 class TestOnlineStats(TestCase):
     """Tests for the OnlineStats class."""
 
-    def test_add(self):
+    def test___add__(self):
         # Ensure that adding two OnlineStats merge all its constituency.
         stats1 = OnlineStats(4)
         stats1.update(FakeRequest('/', 2.0, 5, 1.5))
@@ -269,7 +288,7 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(6, self.stats.variance)
         self.assertEquals("2.45", "%.2f" % self.stats.std)
 
-    def test_add_two_empty(self):
+    def test___add___two_empty(self):
         stats2 =  OnlineStatsCalculator()
         results = self.stats + stats2
         self.assertEquals(0, results.count)
@@ -277,7 +296,7 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(0, results.mean)
         self.assertEquals(0, results.variance)
 
-    def test_add_empty(self):
+    def test___add___empty(self):
         stats2 =  OnlineStatsCalculator()
         for x in [1, 2, 3]:
             self.stats.update(x)
@@ -287,7 +306,7 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(2, results.mean)
         self.assertEquals(2, results.M2)
 
-    def test_add(self):
+    def test___add__(self):
         stats2 = OnlineStatsCalculator()
         for x in [3, 6, 9]:
             self.stats.update(x)
@@ -336,7 +355,7 @@ class TestOnlineApproximateMedian(TestCase):
         # True median is 50, 52 is good enough :-)
         self.assertEquals(52, self.estimator.median)
 
-    def test_add(self):
+    def test___add__(self):
         median1 = OnlineApproximateMedian(3)
         median1.buckets = [[1, 3], [4, 5 ], [6, 3]]
         median2 = OnlineApproximateMedian(3)

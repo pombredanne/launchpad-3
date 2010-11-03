@@ -70,6 +70,11 @@ class Category:
     def __cmp__(self, other):
         return cmp(self.title.lower(), other.title.lower())
 
+    def __deepcopy__(self, memo):
+        # We provide __deepcopy__ because the module doesn't handle
+        # compiled regular expression by default.
+        return Category(self.title, self.regexp)
+
 
 class OnlineStatsCalculator:
     """Object that can compute count, sum, mean, variance and median.
@@ -457,6 +462,37 @@ class RequestTimes:
         """Return the times for the pageids."""
         # Sort the result by pageid
         return sorted(self.pageid_times.items())
+
+    def __add__(self, other):
+        """Merge two RequestTimes together."""
+        results = copy.deepcopy(self)
+        for other_category, other_stats in other.category_times:
+            found = False
+            for i, (category, stats) in enumerate(self.category_times):
+                if category.title == other_category.title:
+                    results.category_times[i] = (
+                        category, stats + other_stats)
+                    found = True
+                    break
+            if not found:
+                results.category_times.append(
+                    (other_category, copy.deepcopy(other_stats)))
+
+        url_times = results.url_times
+        for url, stats in other.url_times.items():
+            if url in url_times:
+                url_times[url] += stats
+            else:
+                url_times[url] = copy.deepcopy(stats)
+
+        pageid_times = results.pageid_times
+        for pageid, stats in other.pageid_times.items():
+            if pageid in pageid_times:
+                pageid_times[pageid] += stats
+            else:
+                pageid_times[pageid] = copy.deepcopy(stats)
+
+        return results
 
 
 def main():
