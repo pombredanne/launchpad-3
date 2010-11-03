@@ -694,6 +694,7 @@
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
+                    getSubscriptionForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
