@@ -574,6 +574,32 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "Regards,\n"
             "The Launchpad team")
 
+    def test_getNewPrivatePPAs_no_previous_run(self):
+        # All private PPAs are returned if there was no previous run.
+        # This happens even if they have no tokens.
+
+        # Create a public PPA that should not be in the list.
+        public_ppa = self.factory.makeArchive(private=False)
+
+        script = self.getScript()
+        self.assertContentEqual([self.ppa.id], script.getNewPrivatePPAs())
+
+    def test_getNewPrivatePPAs_only_those_since_last_run(self):
+        # Only private PPAs created since the last run are returned.
+        # This happens even if they have no tokens.
+
+        now = datetime.now(pytz.UTC)
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
+        removeSecurityProxy(self.ppa).date_created = (
+            now - timedelta(minutes=4))
+
+        # Create a new PPA that should show up.
+        new_ppa = self.factory.makeArchive(private=True)
+
+        script = self.getScript()
+        self.assertContentEqual([new_ppa.id], script.getNewPrivatePPAs())
+
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
         now = datetime.now(pytz.UTC)

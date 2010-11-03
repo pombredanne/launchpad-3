@@ -288,6 +288,25 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
 
         return affected_ppas_with_tokens
 
+    def getNewPrivatePPAs(self):
+        """Return the recently created private PPAs."""
+        # Avoid circular import.
+        from lp.soyuz.model.archive import Archive
+        store = IStore(Archive)
+        # If we don't know when we last ran, we include all active
+        # tokens by default.
+        last_success = getUtility(IScriptActivitySet).getLastActivity(
+            'generate-ppa-htaccess')
+        extra_expr = []
+        if last_success:
+            extra_expr = [
+                Archive.date_created >= last_success.date_completed]
+
+        new_archives = store.find(
+            Archive, Archive.private == True, *extra_expr)
+
+        return [archive.id for archive in new_archives]
+
     def main(self):
         """Script entry point."""
         self.logger.info('Starting the PPA .htaccess generation')
