@@ -112,7 +112,6 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -443,7 +442,7 @@ class IllegalRelatedBugTasksParams(Exception):
     webservice_error(400) #Bad request.
 
 
-class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
+class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -656,20 +655,22 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        this method should be deletable. When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     def isSubscribed(person):
         """Return True if the person is an explicit subscriber to the
         underlying bug for this bugtask.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        then this method should be deletable.  When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     @mutator_for(milestone)
