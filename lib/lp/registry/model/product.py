@@ -1567,7 +1567,7 @@ class ProductSet:
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product.official_rosetta == True,
+            Product.translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID,
             ).config(distinct=True).order_by(Product.title)
 
@@ -1587,12 +1587,12 @@ class ProductSet:
                         ProductSeries.Product = Product.id
                     JOIN POTemplate ON
                         POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.official_rosetta
+                    WHERE Product.active AND Product.translations_usage = %s
                     ORDER BY place
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(maximumproducts),
+            ''' % quote(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

@@ -262,9 +262,6 @@ class TranslationsPerson:
         The added joins may make the overall query non-distinct, so be
         sure to enforce distinctness.
         """
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this query needs to be updated
-        # to check for the translations_usage, not official_rosetta.
 
         POTemplateJoin = Join(POTemplate, And(
             POTemplate.id == POFile.potemplateID,
@@ -282,7 +279,7 @@ class TranslationsPerson:
         # translation focus.
         distrojoin_conditions = And(
             Distribution.id == DistroSeries.distributionID,
-            Distribution.official_rosetta == True,
+            Distribution.translations_usage == ServiceUsage.LAUNCHPAD,
             Distribution.translation_focusID == DistroSeries.id)
 
         DistroJoin = LeftJoin(Distribution, distrojoin_conditions)
@@ -291,7 +288,7 @@ class TranslationsPerson:
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
-            Product.official_rosetta == True))
+            Product.translations_usage == ServiceUsage.LAUNCHPAD))
 
         ProjectJoin = LeftJoin(
             ProjectGroup, ProjectGroup.id == Product.projectID)

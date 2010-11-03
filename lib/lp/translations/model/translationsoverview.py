@@ -7,6 +7,7 @@ __all__ = ['TranslationsOverview']
 from zope.interface import implements
 
 from canonical.database.sqlbase import cursor
+from lp.app.enums import ServiceUsage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.product import Product
 from lp.translations.interfaces.translationsoverview import (
@@ -45,9 +46,6 @@ class TranslationsOverview:
     def getMostTranslatedPillars(self, limit=50):
         """See `ITranslationsOverview`."""
 
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated
-        # to check for the translations_usage, not official_rosetta.
         query = """
         SELECT LOWER(COALESCE(product_name, distro_name)) AS name,
                product_id,
@@ -67,14 +65,16 @@ class TranslationsOverview:
                      distribution=distribution.id
               WHERE category=3 AND
                     (product IS NOT NULL OR distribution IS NOT NULL) AND
-                    (product.official_rosetta OR
-                        distribution.official_rosetta)
+                    (product.translations_usage = %s OR
+                        distribution.tranlsations_usage = %s)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
               HAVING SUM(karmavalue) > 0
               ORDER BY total_karma DESC
               LIMIT %d) AS something
-          ORDER BY name""" % int(limit)
+          ORDER BY name""" % (ServiceUsage.LAUNCHPAD,
+                              ServiceUsage.LAUNCHPAD,
+                              int(limit))
         cur = cursor()
         cur.execute(query)
 

@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
     QuestionStatus,
     )
 from lp.answers.model.question import Question
+from lp.app.enums import ServiceUsage
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.product import Product
@@ -165,7 +166,7 @@ class LaunchpadStatisticSet:
     def _updateRosettaStatistics(self, ztm):
         self.update(
                 'products_using_rosetta',
-                Product.selectBy(official_rosetta=True).count()
+                Product.selectBy(translations_usage=ServiceUsage.LAUNCHPAD).count()
                 )
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
