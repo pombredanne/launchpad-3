@@ -1262,7 +1262,7 @@
             permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
-            template="../../app/templates/generic-edit.pt"/>
+            template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
