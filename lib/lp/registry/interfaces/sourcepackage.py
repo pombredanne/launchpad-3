@@ -55,12 +55,15 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.soyuz.interfaces.component import IComponent
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                      IHasOfficialBugTags, IHasCodeImports,
-                     IHasTranslationTemplates):
+                     IHasTranslationImports, IHasTranslationTemplates):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less

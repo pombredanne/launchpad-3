@@ -76,7 +76,6 @@ from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -97,6 +96,9 @@ from lp.services.fields import (
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
 
@@ -127,9 +129,9 @@ class IDistributionDriverRestricted(Interface):
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, ITranslationPolicy,
-    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IHasBuildRecords, IHasDrivers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
     ISpecificationTarget):
     """Public IDistribution properties."""

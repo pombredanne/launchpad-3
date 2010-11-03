@@ -15,7 +15,7 @@ from zope.interface import implements
 from canonical.database.sqlbase import sqlvalues
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
@@ -43,7 +43,7 @@ class DistroSeriesBinaryPackage:
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
         if cache is not None:
-            IPropertyCache(self).cache = cache
+            get_property_cache(self).cache = cache
 
     @property
     def name(self):

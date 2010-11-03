@@ -108,7 +108,7 @@ from lp.services.mail import stub
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -126,5 +126,3 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.publication import get_request_and_publication
-
-

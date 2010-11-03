@@ -233,7 +233,9 @@ class BugTracker(SQLBase):
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
             "group_id=%(group_id)s&atid=%(at_id)s"),
-        BugTrackerType.TRAC: "%(base_url)s/newticket",
+        BugTrackerType.TRAC: (
+            "%(base_url)s/newticket?summary=%(summary)s&"
+            "description=%(description)s"),
         }
 
     _search_url_patterns = {

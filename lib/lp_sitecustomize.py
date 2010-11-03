@@ -9,6 +9,8 @@ import os
 import warnings
 import logging
 
+from twisted.internet.defer import Deferred
+
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
 from lp.services.log.mappingfilter import MappingFilter
@@ -102,6 +104,7 @@ def main(instance_name):
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
     # The itertools._grouper type is not exposed by name, so we must get it
     # through actually using itertools.groupby.

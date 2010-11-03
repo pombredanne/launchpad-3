@@ -7,8 +7,6 @@ This would normally be done in a doctest but TestCaseWithFactory has all the
 provisions to handle Bazaar branches.
 """
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from unittest import TestLoader
@@ -23,9 +21,9 @@ from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

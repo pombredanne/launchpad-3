@@ -3,8 +3,6 @@
 
 """The entry point for the 'ec2' utility."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'main',
