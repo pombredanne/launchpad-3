@@ -102,6 +102,23 @@
             interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
     </class>
 
+    <!-- INameBlackList -->
+    <securedutility
+        component="lp.registry.model.nameblacklist.NameBlackListSet"
+        provides="lp.registry.interfaces.nameblacklist.INameBlackListSet">
+        <allow
+            interface="lp.registry.interfaces.nameblacklist.INameBlackListSet"/>
+    </securedutility>
+
+    <class class="lp.registry.model.nameblacklist.NameBlackList">
+        <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.nameblacklist.INameBlackList"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.nameblacklist.INameBlackList"/>
+    </class>
+
     <!-- Location -->
 
     <class
