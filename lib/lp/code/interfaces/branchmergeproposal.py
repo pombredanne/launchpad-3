@@ -62,6 +62,7 @@ from zope.schema import (
     TextLine,
     )
 
+from canonical.database.constants import DEFAULT
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -430,13 +431,24 @@ class IBranchMergeProposal(IPrivacy):
         :type merge_reporter: ``Person``
         """
 
-    def resubmit(registrant):
+    def resubmit(registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
         user-entered data like the whiteboard.  All the current proposal's
         reviewers, including those who have only been nominated, are requested
         to review the new proposal.
+
+        :param registrant: The person registering the new proposal.
+        :param source_branch: The source_branch for the new proposal (defaults
+            to the current source_branch).
+        :param target_branch: The target_branch for the new proposal (defaults
+            to the current target_branch).
+        :param prerequisite_branch: The prerequisite_branch for the new
+            proposal (defaults to the current prerequisite_branch).
+        :param description: The description for the new proposal (defaults to
+            the current description).
         """
 
     def isMergable():

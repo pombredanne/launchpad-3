@@ -1660,6 +1660,9 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
             bmp2.queue_status, BranchMergeProposalStatus.NEEDS_REVIEW)
         self.assertEqual(
             bmp2, bmp1.superseded_by)
+        self.assertEqual(bmp1.source_branch, bmp2.source_branch)
+        self.assertEqual(bmp1.target_branch, bmp2.target_branch)
+        self.assertEqual(bmp1.prerequisite_branch, bmp2.prerequisite_branch)
 
     def test_resubmit_re_requests_review(self):
         """Resubmit should request new reviews.
@@ -1679,6 +1682,35 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         self.assertEqual(
             set([(nominee, 'nominee'), (reviewer, 'specious')]),
             set((vote.reviewer, vote.review_type) for vote in bmp2.votes))
+
+    def test_resubmit_changes_branches(self):
+        """Resubmit changes branches, if specified."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        branch_target = original.source_branch.target
+        new_source = self.factory.makeBranchTargetBranch(branch_target)
+        new_target = self.factory.makeBranchTargetBranch(branch_target)
+        new_prerequisite = self.factory.makeBranchTargetBranch(branch_target)
+        revised = original.resubmit(original.registrant, new_source,
+                new_target, new_prerequisite)
+        self.assertEqual(new_source, revised.source_branch)
+        self.assertEqual(new_target, revised.target_branch)
+        self.assertEqual(new_prerequisite, revised.prerequisite_branch)
+
+    def test_resubmit_changes_description(self):
+        """Resubmit changes description, if specified."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        revised = original.resubmit(original.registrant, description='foo')
+        self.assertEqual('foo', revised.description)
+
+    def test_resubmit_breaks_link(self):
+        """Resubmit breaks link, if specified."""
+        original = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(original.registrant))
+        revised = original.resubmit(
+            original.registrant, break_link=True)
+        self.assertIs(None, original.superseded_by)
 
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):
