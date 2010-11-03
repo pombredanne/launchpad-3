@@ -31,6 +31,7 @@ class FakeOptions:
 
 
 class FakeRequest:
+
     def __init__(self, url, app_seconds, sql_statements=None,
                  sql_seconds=None, pageid=None):
         self.url = url
@@ -41,6 +42,7 @@ class FakeRequest:
 
 
 class FakeStats(Stats):
+
     def __init__(self, **kwargs):
         # Override the constructor to just store the values.
         self.__dict__.update(kwargs)
@@ -198,8 +200,8 @@ class TestRequestTimes(TestCase):
         self.assertStatsAreEquals(PAGEID_STATS, pageid_times)
 
     def test___add__(self):
-        # Ensure that adding two RequestTimes together results in
-        # a merge of their constituency.
+        # Ensure that adding two RequestTimes together result in
+        # a merge of their constituencies.
         db1 = self.db
         db2 = RequestTimes(self.categories, FakeOptions())
         db1.add_request(FakeRequest('/', 1.5, 5, 1.0, '+root'))
@@ -235,7 +237,7 @@ class TestOnlineStats(TestCase):
     """Tests for the OnlineStats class."""
 
     def test___add__(self):
-        # Ensure that adding two OnlineStats merge all its constituency.
+        # Ensure that adding two OnlineStats merge all their constituencies.
         stats1 = OnlineStats(4)
         stats1.update(FakeRequest('/', 2.0, 5, 1.5))
         stats2 = OnlineStats(4)
@@ -288,16 +290,16 @@ class TestOnlineStatsCalculator(TestCase):
         self.assertEquals(6, self.stats.variance)
         self.assertEquals("2.45", "%.2f" % self.stats.std)
 
-    def test___add___two_empty(self):
-        stats2 =  OnlineStatsCalculator()
+    def test___add___two_empty_together(self):
+        stats2 = OnlineStatsCalculator()
         results = self.stats + stats2
         self.assertEquals(0, results.count)
         self.assertEquals(0, results.sum)
         self.assertEquals(0, results.mean)
         self.assertEquals(0, results.variance)
 
-    def test___add___empty(self):
-        stats2 =  OnlineStatsCalculator()
+    def test___add___one_empty(self):
+        stats2 = OnlineStatsCalculator()
         for x in [1, 2, 3]:
             self.stats.update(x)
         results = self.stats + stats2
@@ -321,11 +323,11 @@ class TestOnlineStatsCalculator(TestCase):
 
 SHUFFLE_RANGE_100 = [
     25, 79, 99, 76, 60, 63, 87, 77, 51, 82, 42, 96, 93, 58, 32, 66, 75,
-     2, 26, 22, 11, 73, 61, 83, 65, 68, 44, 81, 64,  3, 33, 34, 15,  1,
+     2, 26, 22, 11, 73, 61, 83, 65, 68, 44, 81, 64, 3, 33, 34, 15, 1,
     92, 27, 90, 74, 46, 57, 59, 31, 13, 19, 89, 29, 56, 94, 50, 49, 62,
     37, 21, 35, 5, 84, 88, 16, 8, 23, 40, 6, 48, 10, 97, 0, 53, 17, 30,
     18, 43, 86, 12, 71, 38, 78, 36, 7, 45, 47, 80, 54, 39, 91, 98, 24,
-    55, 14, 52, 20, 69, 85, 95, 28, 4, 9, 67, 70, 41, 72
+    55, 14, 52, 20, 69, 85, 95, 28, 4, 9, 67, 70, 41, 72,
     ]
 
 
@@ -357,9 +359,9 @@ class TestOnlineApproximateMedian(TestCase):
 
     def test___add__(self):
         median1 = OnlineApproximateMedian(3)
-        median1.buckets = [[1, 3], [4, 5 ], [6, 3]]
+        median1.buckets = [[1, 3], [4, 5], [6, 3]]
         median2 = OnlineApproximateMedian(3)
-        median2.buckets = [[], [3, 6], [3, 7 ]]
+        median2.buckets = [[], [3, 6], [3, 7]]
         results = median1 + median2
         self.assertEquals([[1, 3], [6], [3, 7], [4]], results.buckets)
 

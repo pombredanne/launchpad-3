@@ -128,11 +128,11 @@ class OnlineStatsCalculator:
         results.count = self.count + other.count
         results.sum = self.sum + other.sum
         if self.count > 0 and other.count > 0:
-            # This is 2.1b in Chan, Tony F.; Golub, Gene H.; LeVeque, 
+            # This is 2.1b in Chan, Tony F.; Golub, Gene H.; LeVeque,
             # Randall J. (1979), "Updating Formulae and a Pairwise Algorithm
             # for Computing Sample Variances.",
             # Technical Report STAN-CS-79-773,
-            # Department of Computer Science, Stanford University, 
+            # Department of Computer Science, Stanford University,
             # ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf .
             results.M2 = self.M2 + other.M2 + (
                 (float(self.count)/(other.count*results.count)) *
@@ -219,7 +219,7 @@ class OnlineApproximateMedian:
         return sorted(candidates)[(len(candidates)-1)/2][1]
 
     def __add__(self, other):
-        """Merge two approximator together.
+        """Merge two approximators together.
 
         All candidates from the other are merged through the standard
         algorithm, starting at the same level. So an item that went through
@@ -228,7 +228,7 @@ class OnlineApproximateMedian:
         """
         results = OnlineApproximateMedian(self.bucket_size)
         results.buckets = copy.deepcopy(self.buckets)
-        for i, bucket  in enumerate(other.buckets):
+        for i, bucket in enumerate(other.buckets):
             for x in bucket:
                 results.update(x, i)
         return results
@@ -445,7 +445,6 @@ class RequestTimes:
                     sorted(self.url_times.items(),
                     key=lambda x: x[1].total_time,
                     reverse=True)[:cutoff])
-
 
     def get_category_times(self):
         """Return the times for each category."""
