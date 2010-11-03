@@ -1528,11 +1528,6 @@ class IPersonEditRestricted(Interface):
         to INVITATION_DECLINED.
         """
 
-    @call_with(user=REQUEST_USER)
-    @operation_parameters(
-        team=copy_field(ITeamMembership['team']),
-        comment=Text())
-    @export_write_operation()
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
