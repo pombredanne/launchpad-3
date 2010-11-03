@@ -1236,21 +1236,12 @@ multiple bug tasks in one go.
     >>> print_badge_properties(badge_properties)
     Properties for bug 2:
      has_branch: False
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
     Properties for bug 3:
      has_branch: False
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
-
-If a mentoring offer gets made...
-
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> bug_two.offerMentoring(no_priv, ubuntu_team)
-    <MentoringOffer at ...>
 
 ..., a specification gets linked...
 
@@ -1272,12 +1263,10 @@ If a mentoring offer gets made...
     >>> print_badge_properties(badge_properties)
     Properties for bug 2:
      has_branch: False
-     has_mentoring_offer: True
      has_patch: False
      has_specification: True
     Properties for bug 3:
      has_branch: True
-     has_mentoring_offer: False
      has_patch: False
      has_specification: False
 

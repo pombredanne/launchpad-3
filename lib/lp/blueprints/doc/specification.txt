@@ -10,9 +10,10 @@ All Milestone creation and retrieval is done through IMilestoneSet.
 IMilestoneSet can be accessed as a utility.
 
     >>> from zope.component import getUtility
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     ISpecificationSet, SpecificationDefinitionStatus,
+    >>> from lp.blueprints.enums import (
+    ...     SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus, SpecificationPriority)
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> specset = getUtility(ISpecificationSet)
 
 To create a new Specification, use ISpecificationSet.new:
