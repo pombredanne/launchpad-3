@@ -2391,7 +2391,7 @@ class BugTaskSet:
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
-                              bug=None, target=None):
+                              bug=None, target=None, limit=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -2457,6 +2457,8 @@ class BugTaskSet:
             unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
+        if limit is not None:
+            expirable_bugtasks = expirable_bugtasks.limit(limit)
 
         return expirable_bugtasks
 
