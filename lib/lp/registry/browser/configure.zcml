@@ -1473,7 +1473,7 @@
         template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.product.ProductSeriesView"
+        class="lp.registry.browser.product.ProductSeriesSetView"
         name="+series"
         facet="overview"
         permission="zope.Public"
