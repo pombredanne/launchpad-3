@@ -81,7 +81,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
@@ -191,7 +190,7 @@ def optional_message_subject_field():
     return subject_field
 
 
-class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
+class IBug(IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 

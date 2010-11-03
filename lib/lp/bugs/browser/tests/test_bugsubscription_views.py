@@ -69,14 +69,13 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             "actually %s." % (
                 level.name, subscription.bug_notification_level.name))
 
-        # XXX 2010-11-01 gmb bug=668334:
-        #     This should be in its own test but at the moment the above
-        #     bug causes it to fail because of feature flag
-        #     inconsistencies. It should be moved to its own test when
-        #     the above bug is resolved.
+    def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
         # someone is trying to subscribe.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
         with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
             with person_logged_in(person):
                 level = BugNotificationLevel.NOTHING
                 harness = LaunchpadFormHarness(
@@ -90,5 +89,5 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertEqual(
                     'Invalid value',
                     harness.getFieldError('bug_notification_level'),
-                    "The view should treat BugNotificationLevel.NOTHING as an "
-                    "invalid value.")
+                    "The view should treat BugNotificationLevel.NOTHING "
+                    "as an invalid value.")

@@ -79,7 +79,6 @@ class CVEReportView(LaunchpadView):
             # queries being issues when trying to render the badges.
             bugtask = BugTaskListingItem(
                 bugtask,
-                has_mentoring_offer=badges['has_mentoring_offer'],
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
                 has_patch=badges['has_patch'])

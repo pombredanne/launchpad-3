@@ -148,8 +148,6 @@
             tal:attributes="src string:${yui}/overlay/overlay.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
-     <script type="text/javascript"
-            tal:attributes="src string:${yui}/collection/collection.js"></script>
 
     <script type="text/javascript"
             tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>

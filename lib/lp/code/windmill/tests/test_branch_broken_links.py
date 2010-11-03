@@ -12,16 +12,14 @@ import transaction
 import windmill
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.constants import SLEEP
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import (
-    login,
-    WindmillTestCase,
-    )
+from lp.testing import WindmillTestCase
 
 
-LOGIN_LINK = (
-    u'//div[@id="add-comment-login-first"]')
+ADD_COMMENT_BUTTON = (
+    u'//input[@id="field.actions.save" and contains(@class, "button")]')
 
 
 class TestBranchLinks(WindmillTestCase):
@@ -53,32 +51,21 @@ class TestBranchLinks(WindmillTestCase):
         ])
 
     def make_invalid_links(self):
-        product = self.factory.makeProduct()
-        distro = self.factory.makeDistribution()
-        person = self.factory.makePerson()
-        branch = self.factory.makeBranch(private=True, owner=person)
-        naked_branch = removeSecurityProxy(branch)
-        return dict([
-            (self.BRANCH_URL_TEMPLATE % 'foo', "No such product: 'foo'."),
-            (self.BRANCH_URL_TEMPLATE % product.name,
-                "%s has no linked branch." % product.name),
-            (self.BRANCH_URL_TEMPLATE % ('%s/bar' % product.name),
-                "No such product series: 'bar'."),
-            (self.BRANCH_URL_TEMPLATE % ('%s' % naked_branch.unique_name),
-                "No such branch: '%s'." % naked_branch.unique_name),
-            (self.BRANCH_URL_TEMPLATE % distro.name,
-                "%s cannot have linked branches." % distro.name),
-            ])
+        return [
+            self.BRANCH_URL_TEMPLATE % 'foo',
+            self.BRANCH_URL_TEMPLATE % 'bar',
+            ]
 
     def test_invalid_url_rendering(self):
+        """Link a bug from the branch page."""
+        client = self.client
+
+        lpuser.FOO_BAR.ensure_login(client)
+
         naked_product, valid_links = self.make_product_and_valid_links()
         invalid_links = self.make_invalid_links()
-
-        from lp.testing import ANONYMOUS
-        login(ANONYMOUS)
-        client = self.client
         bug_description = self.BUG_TEXT_TEMPLATE % (
-            ', '.join(valid_links), ', '.join(invalid_links.keys()))
+            ', '.join(valid_links), ', '.join(invalid_links))
         bug = self.factory.makeBug(product=naked_product,
                                         title="The meaning of life is broken",
                                         description=bug_description)
@@ -88,7 +75,7 @@ class TestBranchLinks(WindmillTestCase):
             windmill.settings['TEST_URL'] + '%s/+bug/%s'
             % (naked_product.name, bug.id))
         client.open(url=bug_url)
-        client.waits.forElement(xpath=LOGIN_LINK)
+        client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
 
         # Let the Ajax call run
         client.waits.sleep(milliseconds=SLEEP)
@@ -103,9 +90,9 @@ class TestBranchLinks(WindmillTestCase):
 
             var bad_a = windmill.testWin().document.getElementsByClassName(
                             'invalid-link', 'a');
-            var bad_links = {};
+            var bad_links = [];
             for( i=0; i<bad_a.length; i++ ) {
-                bad_links[bad_a[i].innerHTML] = bad_a[i].title;
+                bad_links.push(bad_a[i].innerHTML);
             }
 
 
@@ -114,14 +101,11 @@ class TestBranchLinks(WindmillTestCase):
             result.bad = bad_links;
             result
         """
-        raw_result = client.commands.execJS(js=code)
+        raw_result = self.client.commands.execJS(js=code)
         result = raw_result['result']
         result_valid_links = result['good']
         result_invalid_links = result['bad']
-        self.assertEqual(set(invalid_links.keys()),
-                         set(result_invalid_links.keys()))
-        for (href, title) in invalid_links.items():
-            self.assertEqual(title, result_invalid_links[href])
+        self.assertEqual(set(invalid_links), set(result_invalid_links))
         self.assertEqual(set(valid_links), set(result_valid_links))
 
 

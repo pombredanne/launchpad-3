@@ -3,9 +3,6 @@
 
 """Tests for the feature flags test helpers."""
 
-from __future__ import with_statement
-
-
 __metaclass__ = type
 __all__ = []
 
