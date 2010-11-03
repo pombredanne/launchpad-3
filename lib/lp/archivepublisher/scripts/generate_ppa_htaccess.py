@@ -319,6 +319,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         for token in self.getNewTokensSinceLastRun():
             affected_ppa_ids.add(token.archive_id)
 
+        affected_ppa_ids.update(self.getNewPrivatePPAs())
+
         affected_ppas_with_tokens = {}
         if affected_ppa_ids:
             affected_ppas_with_tokens = self._getValidTokensForPPAIDs(

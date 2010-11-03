@@ -669,3 +669,20 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+
+    def test_processes_PPAs_without_subscription(self):
+        # A .htaccess file is written for Private PPAs even if they don't have
+        # any subscriptions.
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        import pdb; pdb.set_trace()
+        # Call the script and check that we have a .htaccess and a
+        # .htpasswd.
+        return_code, stdout, stderr = self.runScript()
+        self.assertEqual(
+            return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
+                (return_code, stderr))
+        self.assertTrue(os.path.isfile(htaccess))
+        self.assertTrue(os.path.isfile(htpasswd))
+        os.remove(htaccess)
+        os.remove(htpasswd)
