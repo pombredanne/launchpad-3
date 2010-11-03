@@ -706,7 +706,6 @@
                     getSubscribersForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
-                    getStructuralSubscribers
                     getBugWatch
                     canBeNominatedFor
                     getNominationFor

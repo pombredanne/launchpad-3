@@ -181,20 +181,6 @@ class IStructuralSubscriptionTargetRead(Interface):
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
-    def getBugNotificationsRecipients(recipients=None, level=None):
-        """Return the set of bug subscribers to this target.
-
-        :param recipients: If recipients is not None, a rationale
-            is added for each subscriber.
-        :type recipients: `INotificationRecipientSet`
-        'param level: If level is not None, only strucutral
-            subscribers with a subscrition level greater or equal
-            to the given value are returned.
-        :type level: `BugNotificationLevel`
-        :return: An `INotificationRecipientSet` instance containing
-            the bug subscribers.
-        """
-
     target_type_display = Attribute("The type of the target, for display.")
 
     def userHasBugSubscriptions(user):

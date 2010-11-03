@@ -25,7 +25,7 @@ class ScopesFromRequest(object):
 
         Currently supports the following scopes:
          - default
-         - is_edge/is_lpnet etc (thunks through to the config)
+         - server.lpnet etc (thunks through to the config is_lpnet)
          - pageid:
            This scope works on a namespace model: for a page
            with pageid SomeType:+view#subselector

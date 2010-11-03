@@ -3,8 +3,6 @@
 
 """Tests for branch merge proposal jobs."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import (
@@ -359,7 +357,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
     def test_iterReady_supports_review_requested(self):
         # iterReady will also return pending ReviewRequestedEmailJobs.
-        bmp = self.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         self.completePendingJobs()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
@@ -382,7 +381,8 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
 
     def test_iterReady_supports_updated_emails(self):
         # iterReady will also return pending MergeProposalUpdatedEmailJob.
-        bmp = self.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         self.completePendingJobs()
         old_merge_proposal = BranchMergeProposalDelta.snapshot(bmp)
         bmp.commit_message = 'new commit message'

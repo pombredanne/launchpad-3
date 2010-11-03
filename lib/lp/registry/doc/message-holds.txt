@@ -292,10 +292,10 @@ Here are some helper functions.
     ...     print message_id, list_name, subject
 
     >>> def print_messages(status):
-    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
-    ...                            key=attrgetter('message_id'))
-    ...     for message_hold in held_messages:
-    ...         print_hold(message_hold)
+    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status))
+    ...     for message_id, team_name in held_messages:
+    ...         held_message = hold_set.getMessageByMessageID(message_id)
+    ...         print_hold(held_message)
 
 Here are all the messages pending approval...
 

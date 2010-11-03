@@ -27,7 +27,7 @@ WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
 ADD_COMMENT_BUTTON = (
-    u'//input[@id="field.actions.add" and @class="button js-action"]')
+    u'//input[@id="field.actions.add" and contains(@class, "button")]')
 
 
 class TestRequestReview(WindmillTestCase):
