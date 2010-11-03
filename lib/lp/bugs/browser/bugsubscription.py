@@ -175,12 +175,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             default=BugNotificationLevel.COMMENTS)
         return bug_notification_level_field
 
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
-        if self.user is None:
-            return
-
+    @cachedproperty
+    def _subscription_field(self):
         subscription_terms = []
         self_subscribed = False
         for person in self._subscribers_for_current_user:
@@ -208,16 +204,23 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             __name__='subscription', title=_("Subscription options"),
             vocabulary=subscription_vocabulary, required=True,
             default=default_subscription_value)
+        return subscription_field
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
+        if self.user is None:
+            return
 
         if self._use_advanced_features:
             self.form_fields = self.form_fields.omit('bug_notification_level')
-            self.form_fields += formlib.form.Fields(subscription_field)
+            self.form_fields += formlib.form.Fields(self._subscription_field)
             self.form_fields += formlib.form.Fields(
                 self._bug_notification_level_field)
             self.form_fields['bug_notification_level'].custom_widget = (
                 CustomWidgetFactory(RadioWidget))
         else:
-            self.form_fields += formlib.form.Fields(subscription_field)
+            self.form_fields += formlib.form.Fields(self._subscription_field)
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
