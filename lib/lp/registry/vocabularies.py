@@ -187,13 +187,11 @@ class BasePersonVocabulary:
         If the token contains an '@', treat it like an email. Otherwise,
         treat it like a name.
         """
+        token = unicode(token)
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            # We retrieve the email address via the main store, so
-            # we can easily traverse to email.person to retrieve the
-            # result from the main Store as expected by our call sites.
-            email = IStore(Person).find(
+            email = IStore(EmailAddress).find(
                 EmailAddress,
                 EmailAddress.email.lower() == token.strip().lower()).one()
             if email is None:
