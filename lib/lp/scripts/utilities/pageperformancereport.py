@@ -484,6 +484,12 @@ class RequestTimes:
                 url_times[url] += stats
             else:
                 url_times[url] = copy.deepcopy(stats)
+        # Only keep top_urls_cache_size entries.
+        if len(self.url_times) > self.top_urls_cache_size:
+            self.url_times = dict(
+                sorted(url_times.items(),
+                key=lambda x: x[1].total_time,
+                reverse=True)[:self.top_urls_cache_size])
 
         pageid_times = results.pageid_times
         for pageid, stats in other.pageid_times.items():
