@@ -283,7 +283,6 @@ If the distribution officially uses the application, its portlet does appear.
     >>> distribution.official_malone = True
 
     >>> view = create_view(distribution, name='+index', principal=owner)
-    >>> import pdb; pdb.set_trace()
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print find_tag_by_id(content, 'portlet-latest-faqs')['id']
     portlet-latest-faqs
