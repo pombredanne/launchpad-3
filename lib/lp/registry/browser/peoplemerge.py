@@ -34,7 +34,10 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.interfaces.mailinglist import PURGE_STATES
+from lp.registry.interfaces.mailinglist import (
+    MailingListStatus,
+    PURGE_STATES,
+    )
 from lp.registry.interfaces.person import (
     IAdminPeopleMergeSchema,
     IAdminTeamMergeSchema,
@@ -215,9 +218,11 @@ class AdminTeamMergeView(AdminMergeBaseView):
     schema = IAdminTeamMergeSchema
 
     def hasMailingList(self, team):
+        unused_states = [state for state in PURGE_STATES]
+        unused_states.append(MailingListStatus.PURGED)
         return (
             team.mailing_list is not None
-            and team.mailing_list.status not in PURGE_STATES)
+            and team.mailing_list.status not in unused_states)
 
     @cachedproperty
     def registry_experts(self):
@@ -227,7 +232,9 @@ class AdminTeamMergeView(AdminMergeBaseView):
         """Purge the non-transferable team data and merge."""
         # A team cannot have more than one mailing list. The old list will
         # remain in the archive.
-        if self.dupe_person.mailing_list is not None:
+        purge_list = (self.dupe_person.mailing_list is not None
+            and self.dupe_person.mailing_list.status in PURGE_STATES)
+        if purge_list:
             self.dupe_person.mailing_list.purge()
         # Team email addresses are not transferable.
         self.dupe_person.setContactAddress(None)
