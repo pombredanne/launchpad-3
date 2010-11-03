@@ -15,6 +15,7 @@ __all__ = [
 from cStringIO import StringIO
 import logging
 
+import apt_pkg
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -119,7 +120,10 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1505,6 +1509,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.getSourcePackageRelease(spr) for spr in last_uploads]
 
         return distro_sprs
+
+    @staticmethod
+    def setNewerDistroSeriesVersions(spphs):
+        """Set the newer_distroseries_version attribute on the spph entries.
+
+        :param spphs: The objects to set the
+            newer_distroseries_version attribute on.
+        """
+        for spph in spphs:
+            latest_releases = spph.distroseries.getCurrentSourceReleases(
+                [spph.sourcepackagerelease.sourcepackagename])
+            latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+
+            if latest_release is not None and apt_pkg.VersionCompare(
+                latest_release.version, spph.source_package_version) > 0:
+                version = latest_release
+            else:
+                version = None
+            get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive, signing_key=None):

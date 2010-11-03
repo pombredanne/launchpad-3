@@ -19,6 +19,7 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
