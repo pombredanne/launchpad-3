@@ -3,20 +3,29 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.translations.browser.productseries import ProductSeriesView
 from lp.translations.browser.serieslanguage import ProductSeriesLanguageView
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class TestProductSeriesView(TestCaseWithFactory):
     """Test ProductSeries view in translations facet."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a productseries that uses translations.
@@ -147,10 +156,98 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.assertEquals([], self._getProductserieslanguages(view))
 
 
+class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
+    """Test ProductSeries view in translations facet."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Create a productseries that uses translations.
+        # Strip off the security proxy to allow customization.
+        super(TestProductSeriesViewBzrUsage, self).setUp()
+        self.secured_productseries = self.factory.makeProductSeries()
+        self.productseries = removeSecurityProxy(self.secured_productseries)
+
+    def _createView(self):
+        # The view operates on the secured product series!
+        view = ProductSeriesView(
+            self.secured_productseries, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_has_imports_enabled_no_branch(self):
+        view = self._createView()
+        self.assertFalse(view.has_imports_enabled)
+
+    def test_has_exports_enabled_no_branch(self):
+        view = self._createView()
+        self.assertFalse(view.has_exports_enabled)
+
+    def test_has_imports_enabled_with_branch_imports_disabled(self):
+        self.productseries.branch = self.factory.makeBranch()
+        self.productseries.translations_autoimport_mode = (
+                TranslationsBranchImportMode.NO_IMPORT)
+        view = self._createView()
+        self.assertFalse(view.has_imports_enabled)
+
+    def test_has_imports_enabled_with_branch_template_imports_enabled(self):
+        self.productseries.branch = self.factory.makeBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        view = self._createView()
+        self.assertTrue(view.has_imports_enabled)
+
+    def test_has_imports_enabled_with_branch_trans_imports_enabled(self):
+        self.productseries.branch = self.factory.makeBranch()
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+        view = self._createView()
+        self.assertTrue(view.has_imports_enabled)
+
+    def test_has_imports_enabled_private_branch_non_privileged(self):
+        # Private branches are hidden from non-privileged users. The view
+        # pretends that it is not used for imports.
+        self.productseries.branch = self.factory.makeBranch(private=True)
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+        view = self._createView()
+        self.assertFalse(view.has_imports_enabled)
+
+    def test_has_imports_enabled_private_branch_privileged(self):
+        # Private branches are visible for privileged users.
+        self.productseries.branch = self.factory.makeBranch(private=True)
+        self.productseries.translations_autoimport_mode = (
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+        with person_logged_in(self.productseries.branch.owner):
+            view = self._createView()
+            self.assertTrue(view.has_imports_enabled)
+
+    def test_has_exports_enabled_with_branch(self):
+        self.productseries.translations_branch = self.factory.makeBranch()
+        view = self._createView()
+        self.assertTrue(view.has_exports_enabled)
+
+    def test_has_exports_enabled_private_branch_non_privileged(self):
+        # Private branches are hidden from non-privileged users. The view
+        # pretends that it is not used for exports.
+        self.productseries.translations_branch = self.factory.makeBranch(
+            private=True)
+        view = self._createView()
+        self.assertFalse(view.has_exports_enabled)
+
+    def test_has_exports_enabled_private_branch_privileged(self):
+        # Private branches are visible for privileged users.
+        self.productseries.translations_branch = self.factory.makeBranch(
+            private=True)
+        with person_logged_in(self.productseries.translations_branch.owner):
+            view = self._createView()
+            self.assertTrue(view.has_exports_enabled)
+
+
 class TestProductSeriesLanguageView(TestCaseWithFactory):
     """Test ProductSeriesLanguage view."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a productseries that uses translations.

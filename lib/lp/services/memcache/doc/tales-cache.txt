@@ -397,9 +397,9 @@ Memcache in templates can be disabled entirely by setting the memcache flag to
 'disabled'.
 
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features import per_thread
-    >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features.webapp import ScopesFromRequest
+    >>> from lp.services.features.flags import FeatureController
+    >>> from lp.services.features import per_thread
     >>> ignore = getFeatureStore().add(FeatureFlag(
     ...     scope=u'default', flag=u'memcache', value=u'disabled',
     ...     priority=1))
