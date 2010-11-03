@@ -30,14 +30,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         with feature_flags():
             set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
 
-    def _getBugSubscriptionForUserAndBug(self, user, bug):
-        """Return the BugSubscription for a given user, bug combination."""
-        store = Store.of(bug)
-        return store.find(
-            BugSubscription,
-            BugSubscription.person == user,
-            BugSubscription.bug == bug).one()
-
     def test_subscribe_uses_bug_notification_level(self):
         # When a user subscribes to a bug using the advanced features on
         # the Bug +subscribe page, the bug notification level they
@@ -65,8 +57,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         }
                     harness.submit('continue', form_data)
 
-        subscription = self._getBugSubscriptionForUserAndBug(
-            person, bug)
+        subscription = bug.getSubscriptionForPerson(person)
         self.assertEqual(
             level, subscription.bug_notification_level,
             "Bug notification level of subscription should be %s, is "
@@ -94,3 +85,36 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     harness.getFieldError('bug_notification_level'),
                     "The view should treat BugNotificationLevel.NOTHING "
                     "as an invalid value.")
+
+    def test_user_can_update_subscription(self):
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                # First, create a COMMENTS-level subscription for the
+                # person.
+                level = BugNotificationLevel.COMMENTS
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': person.name,
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+
+                # Now the person updates their subscription so they're
+                # subscribed at the METADATA level.
+                level = BugNotificationLevel.METADATA
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+                self.assertFalse(harness.hasErrors())
+
+        subscription = bug.getSubscriptionForPerson(person)
+        self.assertEqual(
+            BugNotificationLevel.METADATA,
+            subscription.bug_notification_level,
+            "Bug notification level of subscription should be METADATA, is "
+            "actually %s." % subscription.bug_notification_level.name)
