@@ -25,6 +25,11 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        super(BugSubscriptionAdvancedFeaturesTestCase, self).setUp()
+        with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
+
     def _getBugSubscriptionForUserAndBug(self, user, bug):
         """Return the BugSubscription for a given user, bug combination."""
         store = Store.of(bug)
@@ -46,7 +51,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         # We don't display BugNotificationLevel.NOTHING as an option.
         # This is tested below.
         with feature_flags():
-            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
             displayed_levels = [
                 level for level in BugNotificationLevel.items
                 if level != BugNotificationLevel.NOTHING]
@@ -75,7 +79,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
         with feature_flags():
-            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
             with person_logged_in(person):
                 level = BugNotificationLevel.NOTHING
                 harness = LaunchpadFormHarness(
