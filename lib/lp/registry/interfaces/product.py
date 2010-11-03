@@ -108,7 +108,6 @@ from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -408,7 +407,7 @@ class IProductModerateRestricted(Interface):
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasLogo, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
     IHasTranslationImports, ITranslationPolicy, IKarmaContext,
     ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,

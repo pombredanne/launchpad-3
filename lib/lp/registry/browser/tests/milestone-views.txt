@@ -127,7 +127,6 @@ is used by the decorator.
     ...         print '%s: %s' % (key, badge_dict[key])
     <BugTask ...>
         has_branch: False
-        has_mentoring_offer: False
         has_patch: False
         has_specification: False
 
