@@ -187,7 +187,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self_subscribed = False
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                subscription_terms.append(self._update_subscription_term)
+                if self._use_advanced_features:
+                    subscription_terms.append(self._update_subscription_term)
                 subscription_terms.append(
                     SimpleTerm(
                         person, person.name,
@@ -205,11 +206,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        if self.user_is_subscribed:
+        if self.user_is_subscribed and self._use_advanced_features:
             default_subscription_value = self._update_subscription_term.value
         else:
-            default_subscription_value = subscription_vocabulary.getTermByToken(
-                self.user.name).value
+            default_subscription_value = (
+                subscription_vocabulary.getTermByToken(self.user.name).value)
         subscription_field = Choice(
             __name__='subscription', title=_("Subscription options"),
             vocabulary=subscription_vocabulary, required=True,
@@ -238,19 +239,16 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         if self._use_advanced_features:
-            if self.user_is_subscribed:
-                self.widgets['bug_notification_level'].visible = False
+            if self._subscriber_count_for_current_user == 0:
+                # We hide the subscription widget if the user isn't
+                # subscribed, since we know who the subscriber is and we
+                # don't need to present them with a single radio button.
+                self.widgets['subscription'].visible = False
             else:
-                if self._subscriber_count_for_current_user == 0:
-                    # We hide the subscription widget if the user isn't
-                    # subscribed, since we know who the subscriber is and we
-                    # don't need to present them with a single radio button.
-                    self.widgets['subscription'].visible = False
-                else:
-                    # We show the subscription widget when the user is
-                    # subscribed via a team, because they can either
-                    # subscribe theirself or unsubscribe their team.
-                    self.widgets['subscription'].visible = True
+                # We show the subscription widget when the user is
+                # subscribed via a team, because they can either
+                # subscribe theirself or unsubscribe their team.
+                self.widgets['subscription'].visible = True
 
     @cachedproperty
     def user_is_subscribed(self):
@@ -279,16 +277,15 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def subscribe_action(self, action, data):
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
+        if self._use_advanced_features:
+            bug_notification_level = data['bug_notification_level']
+        else:
+            bug_notification_level = None
         if (subscription_person == self._update_subscription_term.value and
             self.user_is_subscribed):
-            self._handleUpdateSubscription(
-                level=data['bug_notification_level'])
+            self._handleUpdateSubscription(level=bug_notification_level)
         elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
-            if self._use_advanced_features:
-                bug_notification_level = data['bug_notification_level']
-            else:
-                bug_notification_level = None
             self._handleSubscribe(bug_notification_level)
         else:
             self._handleUnsubscribe(subscription_person)
