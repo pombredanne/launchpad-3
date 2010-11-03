@@ -290,10 +290,12 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        conditions = [EmailAddress.account == Account.id,
-                      EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
-        account = store.find(Account, *conditions).one()
+        account = store.find(
+            Account,
+            EmailAddress.account == Account.id,
+            EmailAddress.email.lower()
+                == unicode(email).strip().lower()).one()
         if account is None:
             raise LookupError(email)
         return account

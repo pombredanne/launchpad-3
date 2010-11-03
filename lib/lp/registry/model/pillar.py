@@ -127,6 +127,7 @@ class PillarNameSet:
             """
         if ignore_inactive:
             query += " AND active IS TRUE"
+        name = unicode(name)
         result = store.execute(query, [name, name])
         row = result.get_one()
         if row is None:
