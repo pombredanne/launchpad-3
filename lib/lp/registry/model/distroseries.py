@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesSet',
     ]
 
+import collections
 from cStringIO import StringIO
 import logging
 
@@ -1517,17 +1518,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         :param spphs: The objects to set the
             newer_distroseries_version attribute on.
         """
+        # Partition by distro series to use getCurrentSourceReleases
+        distro_series = collections.defaultdict(list)
         for spph in spphs:
-            latest_releases = spph.distroseries.getCurrentSourceReleases(
-                [spph.sourcepackagerelease.sourcepackagename])
-            latest_release = latest_releases.get(spph.meta_sourcepackage, None)
-
-            if latest_release is not None and apt_pkg.VersionCompare(
-                latest_release.version, spph.source_package_version) > 0:
-                version = latest_release
-            else:
-                version = None
-            get_property_cache(spph).newer_distroseries_version = version
+            distro_series[spph.distroseries].append(spph)
+        for series, spphs in distro_series.items():
+            packagenames = set()
+            for spph in spphs:
+                packagenames.add(spph.sourcepackagerelease.sourcepackagename)
+            latest_releases = series.getCurrentSourceReleases(
+                packagenames)
+            for spph in spphs:
+                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                if latest_release is not None and apt_pkg.VersionCompare(
+                    latest_release.version, spph.source_package_version) > 0:
+                    version = latest_release
+                else:
+                    version = None
+                get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive, signing_key=None):
