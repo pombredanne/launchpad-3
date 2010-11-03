@@ -152,6 +152,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         super(BugSubscriptionSubscribeSelfView, self).initialize()
 
     @cachedproperty
+    def current_user_subscription(self):
+        return self.context.bug.getSubscriptionForPerson(self.user)
+
+    @cachedproperty
     def _bug_notification_level_field(self):
         """Return a custom form field for bug_notification_level."""
         # We rebuild the items that we show in the field so that the
@@ -169,10 +173,17 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             ]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
+
+        if self.current_user_subscription is not None:
+            default_value = (
+                self.current_user_subscription.bug_notification_level)
+        else:
+            default_value = BugNotificationLevel.COMMENTS
+
         bug_notification_level_field = Choice(
             __name__='bug_notification_level', title=_("Tell me when"),
             vocabulary=bug_notification_vocabulary, required=True,
-            default=BugNotificationLevel.COMMENTS)
+            default=default_value)
         return bug_notification_level_field
 
     @cachedproperty
@@ -278,9 +289,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
         if self._use_advanced_features:
-            bug_notification_level = data['bug_notification_level']
+            bug_notification_level = data.get('bug_notification_level', None)
         else:
             bug_notification_level = None
+
         if (subscription_person == self._update_subscription_term.value and
             self.user_is_subscribed):
             self._handleUpdateSubscription(level=bug_notification_level)
@@ -310,7 +322,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         when the bug is private. The user must be unsubscribed from all dupes
         too, or they would keep getting mail about this bug!
         """
-
         # ** Important ** We call unsubscribeFromDupes() before
         # unsubscribe(), because if the bug is private, the current user
         # will be prevented from calling methods on the main bug after
@@ -347,9 +358,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     def _handleUpdateSubscription(self, level):
         """Handle updating a user's subscription."""
-        bug = self.context.bug
-        subscription = bug.getSubscriptionForPerson(self.user)
+        subscription = self.current_user_subscription
         subscription.bug_notification_level = level
+        self.request.response.addNotification(
+            "Your subscription to this bug has been updated.")
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.

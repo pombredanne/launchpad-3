@@ -87,24 +87,18 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     "as an invalid value.")
 
     def test_user_can_update_subscription(self):
+        # A user can update their bug subscription using the
+        # BugSubscriptionSubscribeSelfView.
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
         with feature_flags():
             with person_logged_in(person):
-                # First, create a COMMENTS-level subscription for the
-                # person.
-                level = BugNotificationLevel.COMMENTS
-                harness = LaunchpadFormHarness(
-                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
-                form_data = {
-                    'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
-                    }
-                harness.submit('continue', form_data)
-
+                bug.subscribe(person, person, BugNotificationLevel.COMMENTS)
                 # Now the person updates their subscription so they're
                 # subscribed at the METADATA level.
                 level = BugNotificationLevel.METADATA
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': 'update-subscription',
                     'field.bug_notification_level': level.name,
@@ -118,3 +112,59 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             subscription.bug_notification_level,
             "Bug notification level of subscription should be METADATA, is "
             "actually %s." % subscription.bug_notification_level.name)
+
+    def test_user_can_unsubscribe(self):
+        # A user can unsubscribe from a bug using the
+        # BugSubscriptionSubscribeSelfView.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                bug.subscribe(person, person)
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': person.name,
+                    }
+                harness.submit('continue', form_data)
+
+        subscription = bug.getSubscriptionForPerson(person)
+        self.assertIs(
+            None, subscription,
+            "There should be no BugSubscription for this person.")
+
+    def test_field_values_set_correctly_for_existing_subscriptions(self):
+        # When a user who is already subscribed to a bug visits the
+        # BugSubscriptionSubscribeSelfView, its bug_notification_level
+        # field will be set according to their current susbscription
+        # level.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                # We subscribe using the harness rather than doing it
+                # directly so that we don't have to commit() between
+                # subscribing and checking the default value.
+                level = BugNotificationLevel.METADATA
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': person.name,
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+
+                # The default value for the bug_notification_level field
+                # should now be the same as the level used to subscribe
+                # above.
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                bug_notification_level_widget = (
+                    harness.view.widgets['bug_notification_level'])
+                default_notification_level_value = (
+                    bug_notification_level_widget._getDefault())
+                self.assertEqual(
+                    BugNotificationLevel.METADATA,
+                    default_notification_level_value,
+                    "Default value for bug_notification_level should be "
+                    "METADATA, is actually %s" % default_notification_level_value)
