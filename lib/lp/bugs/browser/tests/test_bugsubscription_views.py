@@ -5,13 +5,10 @@
 
 __metaclass__ = type
 
-from storm.store import Store
-
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import BugSubscriptionSubscribeSelfView
-from lp.bugs.model.bugsubscription import BugSubscription
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
