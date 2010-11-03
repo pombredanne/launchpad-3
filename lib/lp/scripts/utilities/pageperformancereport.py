@@ -531,6 +531,11 @@ def main():
         # Default to 12: the staging timeout.
         default=12, type="int",
         help="The configured timeout value : determines high risk page ids.")
+    parser.add_option(
+        "--merge", dest="merge",
+        default=False, action='store_true',
+        help="Files are interpreted as pickled stats and are aggregated for" +
+        "the report.")
 
     options, args = parser.parse_args()
 
@@ -545,6 +550,9 @@ def main():
             parser.error(
                 "--from timestamp %s is before --until timestamp %s"
                 % (options.from_ts, options.until_ts))
+    if options.from_ts is not None or options.until_ts is not None:
+        if options.merge:
+            parser.error('--from and --until cannot be used with --merge')
 
     for filename in args:
         if not os.path.exists(filename):
@@ -573,7 +581,14 @@ def main():
 
     times = RequestTimes(categories, options)
 
-    parse(args, times, options)
+    if options.merge:
+        for filename in args:
+            log.info('Merging %s...' % filename)
+            f = bz2.BZ2File(filename, 'r')
+            times += cPickle.load(f)
+            f.close()
+    else:
+        parse(args, times, options)
 
     category_times = times.get_category_times()
 
