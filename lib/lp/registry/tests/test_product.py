@@ -27,8 +27,12 @@ from lp.registry.interfaces.product import (
     IProduct,
     License,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product, UnDeactivateable
+from lp.registry.model.product import (
+    Product,
+    UnDeactivateable,
+    )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import TestCaseWithFactory
 
@@ -135,6 +139,32 @@ class TestProduct(TestCaseWithFactory):
         self.assertEqual(
             expected_milestones,
             timeline_milestones)
+
+    def test_getVersionSortedSeries(self):
+        # The product series should be sorted with the development focus
+        # series first, the series starting with a number in descending
+        # order, and then the series starting with a letter in
+        # descending order.
+        product = self.factory.makeProduct()
+        for name in ('1', '2', '3', '3a', '3b', 'alpha', 'beta'):
+            self.factory.makeProductSeries(product=product, name=name)
+        self.assertEqual(
+            [u'trunk', u'3b', u'3a', u'3', u'2', u'1', u'beta', u'alpha'],
+            [series.name for series in product.getVersionSortedSeries()])
+
+    def test_getVersionSortedSeries_filter_obsolete(self):
+        # The obsolete series should not be included in the results if
+        # the filter_obsolete argument is set to True.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.factory.makeProductSeries(product=product, name='active-series')
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='obsolete-series')
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        active_series = product.getVersionSortedSeries(filter_obsolete=True)
+        self.assertEqual(
+            [u'trunk', u'active-series'],
+            [series.name for series in active_series])
 
 
 class TestProductFiles(unittest.TestCase):

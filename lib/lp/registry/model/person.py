@@ -218,6 +218,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -2009,8 +2010,9 @@ class Person(
     # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
+        if not self.is_valid_person:
+            raise AssertionError(
+                "You can only deactivate an account of a valid person.")
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2045,11 +2047,15 @@ class Person(
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
+            changed = False
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
-            elif pillar.driver.id == self.id:
+                changed = True
+            if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = registry_experts
-            else:
+                changed = True
+
+            if not changed:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
                 raise AssertionError(
@@ -2745,6 +2751,18 @@ class Person(
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+
+    def createPPA(self, name=None, displayname=None, description=None):
+        """See `IPerson`."""
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3773,7 +3791,7 @@ class PersonSet:
                         'AND team = %s'
                         % sqlvalues(to_id, team_id))
             result = cur.fetchone()
-            if result:
+            if result is not None:
                 current_status = result[0]
                 # Now we can safely delete from_person's membership record,
                 # because we know to_person has a membership entry for this
@@ -3818,6 +3836,45 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_id, team_id))
 
+    def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
+        # Merge the karma total cache so the user does not think the karma
+        # was lost.
+        if from_karma > 0:
+            cur.execute('''
+                SELECT karma_total FROM KarmaTotalCache
+                WHERE person = %(to_id)d
+                ''' % vars())
+            result = cur.fetchone()
+            if result is not None:
+                # Add the karma to the remaining user.
+                karma_total = from_karma + result[0]
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
+                    WHERE person = %(to_id)d
+                    ''' % vars())
+            else:
+                # Make the existing karma belong to the remaining user.
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET person = %(to_id)d
+                    WHERE person = %(from_id)d
+                    ''' % vars())
+        # Delete the old caches; the daily job will build them later.
+        cur.execute('''
+            DELETE FROM KarmaTotalCache WHERE person = %(from_id)d
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM KarmaCache WHERE person = %(from_id)d
+            ''' % vars())
+
+    def _mergeDateCreated(self, cur, from_id, to_id):
+        cur.execute('''
+            UPDATE Person
+            SET datecreated = (
+                SELECT MIN(datecreated) FROM Person
+                WHERE id in (%(to_id)d, %(from_id)d) LIMIT 1)
+            WHERE id = %(to_id)d
+            ''' % vars())
+
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
@@ -3856,8 +3913,6 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
-            ('karmacache', 'person'),
-            ('karmatotalcache', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
@@ -3991,6 +4046,12 @@ class PersonSet:
 
         self._mergeWebServiceBan(cur, from_id, to_id)
         skip.append(('webserviceban', 'person'))
+
+        self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
+        skip.append(('karmacache', 'person'))
+        skip.append(('karmatotalcache', 'person'))
+
+        self._mergeDateCreated(cur, from_id, to_id)
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
