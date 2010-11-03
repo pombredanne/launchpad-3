@@ -1711,9 +1711,22 @@ class ITeamPublic(Interface):
 
 
 class ITeam(IPerson, ITeamPublic):
-    """ITeam extends IPerson.
+    """A group of people and other teams.
 
-    The teamowner should never be None.
+    Launchpadlib example of getting the date a user joined a team::
+
+        def get_join_date(team, user):
+            team = launchpad.people[team]
+            members = team.members_details
+            for member in members:
+                if member.member.name == user:
+                    return member.date_joined
+            return None
+
+    Implementation notes:
+
+    - ITeam extends IPerson.
+    - The teamowner should never be None.
     """
     export_as_webservice_entry('team')
 
