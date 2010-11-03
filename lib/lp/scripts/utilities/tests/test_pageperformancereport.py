@@ -12,6 +12,7 @@ from lp.testing import TestCase
 from lp.scripts.utilities.pageperformancereport import (
     Category,
     OnlineApproximateMedian,
+    OnlineStats,
     OnlineStatsCalculator,
     RequestTimes,
     Stats,
@@ -198,7 +199,7 @@ class TestRequestTimes(TestCase):
 
 
 class TestStats(TestCase):
-    """Tests for the stats class."""
+    """Tests for the Stats class."""
 
     def test_relative_histogram(self):
         # Test that relative histogram gives an histogram using
@@ -209,6 +210,26 @@ class TestStats(TestCase):
         self.assertEquals(
             [[0, 0.5], [1, .1], [2, .33], [3, 0], [4, 0], [5, .07]],
             stats.relative_histogram)
+
+
+class TestOnlineStats(TestCase):
+    """Tests for the OnlineStats class."""
+
+    def test_add(self):
+        # Ensure that adding two OnlineStats merge all its constituency.
+        stats1 = OnlineStats(4)
+        stats1.update(FakeRequest('/', 2.0, 5, 1.5))
+        stats2 = OnlineStats(4)
+        stats2.update(FakeRequest('/', 1.5, 2, 3.0))
+        stats2.update(FakeRequest('/', 5.0, 2, 2.0))
+        results = stats1 + stats2
+        self.assertEquals(3, results.total_hits)
+        self.assertEquals(2, results.median)
+        self.assertEquals(9, results.total_sqlstatements)
+        self.assertEquals(2, results.median_sqlstatements)
+        self.assertEquals(6.5, results.total_sqltime)
+        self.assertEquals(2.0, results.median_sqltime)
+        self.assertEquals([[0, 0], [1, 1], [2, 1], [3, 1]], results.histogram)
 
 
 class TestOnlineStatsCalculator(TestCase):

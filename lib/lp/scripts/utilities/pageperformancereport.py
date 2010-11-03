@@ -373,6 +373,21 @@ class OnlineStats(Stats):
         idx = int(min(len(self.histogram)-1, request.app_seconds))
         self.histogram[idx][1] += 1
 
+    def __add__(self, other):
+        """Merge another OnlineStats with this one."""
+        results = copy.deepcopy(self)
+        results.time_stats += other.time_stats
+        results.time_median_approximate += other.time_median_approximate
+        results.sql_time_stats += other.sql_time_stats
+        results.sql_time_median_approximate += (
+            other.sql_time_median_approximate)
+        results.sql_statements_stats += other.sql_statements_stats
+        results.sql_statements_median_approximate += (
+            other.sql_statements_median_approximate)
+        for i, (n, f) in enumerate(other._histogram):
+            results._histogram[i][1] += f
+        return results
+
 
 class RequestTimes:
     """Collect the """
