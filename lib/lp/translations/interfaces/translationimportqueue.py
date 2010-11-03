@@ -252,8 +252,10 @@ class ITranslationImportQueueEntry(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    from_upstream = Bool(
-        title=_("This import comes from an upstream project."),
+    by_maintainer = Bool(
+        title=_(
+            "This upload was done by the maintainer "
+            "of the project or package."),
         description=_(
             "If checked, the translations in this import will be marked "
             "as is_current_upstream."),
@@ -386,15 +388,15 @@ class ITranslationImportQueue(Interface):
     def countEntries():
         """Return the number of `TranslationImportQueueEntry` records."""
 
-    def addOrUpdateEntry(path, content, from_upstream, importer,
+    def addOrUpdateEntry(path, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
-        :arg path: is the path, with the filename, of the file imported.
+        :arg path: is the path, with the filename, of the uploaded file.
         :arg content: is the file content.
-        :arg from_upstream: indicates if the imported file is coming from an
-            upstream project.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
@@ -409,14 +411,14 @@ class ITranslationImportQueue(Interface):
         only one of them can be specified.
         """
 
-    def addOrUpdateEntriesFromTarball(content, from_upstream, importer,
+    def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
-        :arg from_upstream: indicates if the imported file is coming from an
-            upstream project.
+        :arg by_maintainer: indicates if the file was uploaded by the
+            maintainer of the project or package.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.

@@ -380,7 +380,7 @@ class MozillaXpiImporter:
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
-        self.from_upstream = False
+        self.by_maintainer = False
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -406,7 +406,7 @@ class MozillaXpiImporter:
         self.distroseries = translation_import_queue_entry.distroseries
         self.sourcepackagename = (
             translation_import_queue_entry.sourcepackagename)
-        self.from_upstream = translation_import_queue_entry.from_upstream
+        self.by_maintainer = translation_import_queue_entry.by_maintainer
 
         librarian_client = getUtility(ILibrarianClient)
         content = librarian_client.getFileByAlias(
