@@ -877,10 +877,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
         return self.icon_template % (alt, title, css)
 
-    def _hasMentoringOffer(self):
-        """Return whether the bug has a mentoring offer."""
-        return self._context.bug.mentoring_offers.count() > 0
-
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
         return self._context.bug.linked_branches.count() > 0
@@ -898,10 +894,6 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         if self._context.bug.private:
             badges.append(self.icon_template % (
                 "private", "Private", "sprite private"))
-
-        if self._hasMentoringOffer():
-            badges.append(self.icon_template % (
-                "mentoring", "Mentoring offered", "sprite mentoring"))
 
         if self._hasBugBranch():
             badges.append(self.icon_template % (
@@ -934,10 +926,6 @@ class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     should be displayed, which don't require a DB query when they are
     accessed.
     """
-
-    def _hasMentoringOffer(self):
-        """See `BugTaskImageDisplayAPI`"""
-        return self._context.has_mentoring_offer
 
     def _hasBugBranch(self):
         """See `BugTaskImageDisplayAPI`"""
@@ -981,9 +969,6 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     def badges(self):
 
         badges = ''
-        if self._context.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "sprite mentoring")
 
         if self._context.linked_branches.count() > 0:
             badges += self.icon_template % (

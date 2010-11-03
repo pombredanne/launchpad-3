@@ -240,7 +240,6 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -620,8 +619,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
-                  FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
@@ -2086,12 +2084,11 @@ class BugTaskListingItem:
     """
     delegates(IBugTask, 'bugtask')
 
-    def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
+    def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, request=None,
                  target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
-        self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
@@ -2141,7 +2138,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
             target_context = self.target_context
         return BugTaskListingItem(
             bugtask,
-            badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],

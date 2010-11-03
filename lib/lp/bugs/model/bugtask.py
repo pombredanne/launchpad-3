@@ -359,37 +359,6 @@ class BugTaskMixin:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
 
-    @property
-    def mentoring_offers(self):
-        """See `IHasMentoringOffers`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.mentoring_offers
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.canMentor(user)
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.isMentor(user)
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.offerMentoring(user, team)
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.retractMentoring(user)
-
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -1520,11 +1489,8 @@ class BugTaskSet:
         from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
-        from lp.registry.model.mentoringoffer import MentoringOffer
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
-        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
-                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
                 SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
@@ -1538,8 +1504,6 @@ class BugTaskSet:
         for bugtask in bugtasks:
             bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
-                'has_mentoring_offer':
-                    bug.id in bug_ids_with_mentoring_offers,
                 'has_specification':
                     bug.id in bug_ids_with_specifications,
                 'has_branch':
