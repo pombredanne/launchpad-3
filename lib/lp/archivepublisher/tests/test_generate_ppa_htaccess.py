@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import transaction
 
 import pytz
 from zope.component import getUtility
@@ -582,7 +583,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         public_ppa = self.factory.makeArchive(private=False)
 
         script = self.getScript()
-        self.assertContentEqual([self.ppa.id], script.getNewPrivatePPAs())
+        self.assertContentEqual([self.ppa], script.getNewPrivatePPAs())
 
     def test_getNewPrivatePPAs_only_those_since_last_run(self):
         # Only private PPAs created since the last run are returned.
@@ -598,7 +599,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         new_ppa = self.factory.makeArchive(private=True)
 
         script = self.getScript()
-        self.assertContentEqual([new_ppa.id], script.getNewPrivatePPAs())
+        self.assertContentEqual([new_ppa], script.getNewPrivatePPAs())
 
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
@@ -675,7 +676,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # any subscriptions.
         htaccess, htpasswd = self.ensureNoFiles()
 
-        import pdb; pdb.set_trace()
+        transaction.commit()
+
         # Call the script and check that we have a .htaccess and a
         # .htpasswd.
         return_code, stdout, stderr = self.runScript()
