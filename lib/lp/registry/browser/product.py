@@ -473,6 +473,11 @@ class ProductInvolvementView(PillarView):
         undone = scale - done
         return dict(done=done, undone=undone)
 
+    @property
+    def registration_done(self):
+        """A boolean indicating that the services are fully configured."""
+        return (self.registration_completeness['done'] == 100)
+
 
 class ProductNavigationMenu(NavigationMenu):
 
