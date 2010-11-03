@@ -396,7 +396,8 @@ class TestPersonStates(TestCaseWithFactory):
             'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'unmapped_participants',
+            'proposedmembers', 'unmapped_participants', 'longitude',
+            'latitude', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:

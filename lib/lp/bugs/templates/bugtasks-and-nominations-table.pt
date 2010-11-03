@@ -103,7 +103,8 @@
     <tal:addupstream
         define="link context_menu/addupstream"
         condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure link/render" /><a href="/+help/also-affects-project-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">(?)</span></a>
     <tal:adddistro
         define="link context_menu/adddistro"
         condition="link/enabled"
@@ -113,6 +114,7 @@
         condition="link/enabled"
         replace="structure link/render" />
   </tal:also-affects-links>
+
 </div>
 
 </tal:root>

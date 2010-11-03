@@ -196,8 +196,6 @@
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
-                    isMentor
-                    canMentor
                     isSubscribed
                     getPackageComponent
                     userCanEditImportance
@@ -257,11 +255,6 @@
             <require
                 permission="launchpad.Edit"
                 set_attributes="product productseries sourcepackagename distribution                                                                                                                 distroseries milestone statusexplanation                                                                                                                 importance bugwatch datecreated                                                                                                                 age owner targetname title related_tasks                                                                                                                 statusdisplayhtml statuselsewhere                                                                                                                 setStatusFromDebbugs setImportanceFromDebbugs"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
         </class>
         <adapter
             provides="canonical.lazr.interfaces.IObjectPrivacy"
@@ -648,9 +641,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    mentoring_offers
-                    canMentor
-                    isMentor
                     getNullBugTask
                     is_complete
                     official_tags
@@ -780,11 +770,6 @@
                     tags
                     title description
                     who_made_private"/>
-            <require
-                permission="launchpad.AnyPerson"
-                attributes="
-                    offerMentoring
-                    retractMentoring"/>
             <require
                 permission="launchpad.Admin"
                 attributes="

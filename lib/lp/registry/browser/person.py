@@ -231,7 +231,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -2349,14 +2349,16 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         return self.getSearchPageHeading()
 
 
-class PersonSubscriptionsView(BugTaskSearchListingView):
+class PersonSubscriptionsView(LaunchpadView):
     """All the subscriptions for a person."""
 
     page_title = 'Subscriptions'
 
     def subscribedBugTasks(self):
-        """Return a BatchNavigator for distinct bug tasks to which the
-        person is subscribed."""
+        """
+        Return a BatchNavigator for distinct bug tasks to which the person is
+        subscribed.
+        """
         bug_tasks = self.context.searchTasks(None, user=self.user,
             order_by='-date_last_updated',
             status=(BugTaskStatus.NEW,
@@ -2369,37 +2371,36 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
             bug_subscriber=self.context)
 
         sub_bug_tasks = []
-        sub_bugs = []
+        sub_bugs = set()
 
+        # XXX: GavinPanella 2010-10-08 bug=656904: This materializes the
+        # entire result set. It would probably be more efficient implemented
+        # with a pre_iter_hook on a DecoratedResultSet.
         for task in bug_tasks:
+            # We order the bugtasks by date_last_updated but we always display
+            # the default task for the bug. This is to avoid ordering issues
+            # in tests and also prevents user confusion (because nothing is
+            # more confusing than your subscription targets changing seemingly
+            # at random).
             if task.bug not in sub_bugs:
-                # We order the bugtasks by date_last_updated but we
-                # always display the default task for the bug. This is
-                # to avoid ordering issues in tests and also prevents
-                # user confusion (because nothing is more confusing than
-                # your subscription targets changing seemingly at
-                # random).
+                # XXX: GavinPanella 2010-10-08 bug=656904: default_bugtask
+                # causes a query to be executed. It would be more efficient to
+                # get the default bugtask in bulk, in a pre_iter_hook on a
+                # DecoratedResultSet perhaps.
                 sub_bug_tasks.append(task.bug.default_bugtask)
-                sub_bugs.append(task.bug)
+                sub_bugs.add(task.bug)
+
         return BatchNavigator(sub_bug_tasks, self.request)
 
     def canUnsubscribeFromBugTasks(self):
-        viewed_person = self.context
-        if self.user is None:
-            return False
-        elif viewed_person == self.user:
-            return True
-        elif (viewed_person.is_team and
-              self.user.inTeam(viewed_person)):
-            return True
-
-    def getSubscriptionsPageHeading(self):
-        """The header for the subscriptions page."""
-        return "Subscriptions for %s" % self.context.displayname
+        """Can the current user unsubscribe from the bug tasks shown?"""
+        return (self.user is not None and
+                self.user.inTeam(self.context))
 
     @property
     def label(self):
-        return self.getSubscriptionsPageHeading()
+        """The header for the subscriptions page."""
+        return "Subscriptions for %s" % self.context.displayname
 
 
 class PersonVouchersView(LaunchpadFormView):
