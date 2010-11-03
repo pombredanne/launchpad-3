@@ -113,11 +113,11 @@ packages matching (substring) the given text.
 
     >>> for entry in alsa_results['entries']:
     ...     print entry['self_link']
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/commercialpackage
+    http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/mozilla-firefox
     http://.../ubuntu/+source/netapplet
-    http://.../ubuntu/+source/alsa-utils
-    http://.../ubuntu/+source/foobar
-    http://.../ubuntu/+source/commercialpackage
 
 "getArchive" returns a distribution archive (not a PPA) with the given name.
 
