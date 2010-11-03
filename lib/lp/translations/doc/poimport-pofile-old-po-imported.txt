@@ -77,9 +77,9 @@ First, we do a valid import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> from_maintainer = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -125,9 +125,9 @@ field with a date older than a previous .po import.
     ... msgid "foo"
     ... msgstr "blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> from_maintainer = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -188,9 +188,9 @@ The code also generated an email about the error we produced.
 Finally we are going to import the same po file with the old
 'PO-Revision-Date' field but mark it as a file uploaded by the maintainer.
 
-    >>> from_maintainer = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 

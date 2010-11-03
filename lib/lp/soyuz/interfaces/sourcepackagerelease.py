@@ -194,12 +194,12 @@ class ISourcePackageRelease(Interface):
         argument remains untouched.
         """
 
-    def attachTranslationFiles(tarball_alias, from_maintainer, importer=None):
+    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :from_maintainer: indicates if the imported files where uploaded by
+        :by_maintainer: indicates if the imported files where uploaded by
             the maintainer of the project or package.
         :importer: is the person that did the import.
 

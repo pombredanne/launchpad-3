@@ -469,7 +469,7 @@ class FileImporter(object):
         if traits.side == TranslationSide.UPSTREAM:
             return True
         # Maintainer uploads are always shared with Ubuntu.
-        if self.translation_import_queue_entry.from_maintainer:
+        if self.translation_import_queue_entry.by_maintainer:
             return True
         # Find the sharing POFile and check permissions.
         productseries = self.potemplate.distroseries.getSourcePackage(
@@ -501,7 +501,7 @@ class FileImporter(object):
 
     def _storeCredits(self, potmsgset, credits):
         """Store credits but only those provided by the maintainer."""
-        if not self.translation_import_queue_entry.from_maintainer:
+        if not self.translation_import_queue_entry.by_maintainer:
             return None
         return potmsgset.setCurrentTranslation(
             self.pofile, self.last_translator, credits,
@@ -587,7 +587,7 @@ class FileImporter(object):
         if validation_ok and self.is_editor:
             return self._approveMessage(potmsgset, new_message, message_data)
 
-        if self.translation_import_queue_entry.from_maintainer:
+        if self.translation_import_queue_entry.by_maintainer:
             # XXX: henninge 2010-09-21: Mixed models!
             # This is mimicking the old behavior to still mark these messages
             # as "imported". Will have to be removed when
@@ -756,7 +756,7 @@ class POTFileImporter(FileImporter):
         # Update translation_message's comments and flags.
         if translation_message is not None:
             translation_message.comment = message.comment
-            if self.translation_import_queue_entry.from_maintainer:
+            if self.translation_import_queue_entry.by_maintainer:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
 
@@ -781,7 +781,7 @@ class POFileImporter(FileImporter):
         if upload_header is not None:
             # Check whether we are importing a new version.
             if self.pofile.isTranslationRevisionDateOlder(upload_header):
-                if translation_import_queue_entry.from_maintainer:
+                if translation_import_queue_entry.by_maintainer:
                     # Files uploaded by the maintainer can be older than the
                     # last import and still be imported. They don't update
                     # header information, though, so this is deleted here.
@@ -804,7 +804,7 @@ class POFileImporter(FileImporter):
             self.lock_timestamp = (
                 upload_header.launchpad_export_date)
 
-        if (not self.translation_import_queue_entry.from_maintainer and
+        if (not self.translation_import_queue_entry.by_maintainer and
             self.lock_timestamp is None):
             # We got a translation file from offline translation (not from
             # the maintainer) and it misses the export time so we don't have a
@@ -826,7 +826,7 @@ class POFileImporter(FileImporter):
             self.last_translator = (
                 self.translation_import_queue_entry.importer)
 
-        if self.translation_import_queue_entry.from_maintainer:
+        if self.translation_import_queue_entry.by_maintainer:
             # The maintainer always has edit rights.
             # For Soyuz uploads, the "importer" reflects the package upload
             # not the translations upload.
@@ -839,9 +839,9 @@ class POFileImporter(FileImporter):
                 self.pofile.canEditTranslations(
                     self.translation_import_queue_entry.importer))
 
-        from_maintainer = self.translation_import_queue_entry.from_maintainer
+        by_maintainer = self.translation_import_queue_entry.by_maintainer
         self.pofile_in_db = ExistingPOFileInDatabase(
-            self.pofile, is_current_upstream=from_maintainer)
+            self.pofile, is_current_upstream=by_maintainer)
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
@@ -875,7 +875,7 @@ class POFileImporter(FileImporter):
         """See FileImporter."""
         # Mark this message as seen in the import
         self.pofile_in_db.markMessageAsSeen(message)
-        if self.translation_import_queue_entry.from_maintainer:
+        if self.translation_import_queue_entry.by_maintainer:
             if self.pofile_in_db.isAlreadyTranslatedTheSameUpstream(message):
                 return
         else:
@@ -899,7 +899,7 @@ class POFileImporter(FileImporter):
         # Update translation_message's comments and flags.
         if translation_message is not None:
             translation_message.comment = message.comment
-            if self.translation_import_queue_entry.from_maintainer:
+            if self.translation_import_queue_entry.by_maintainer:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
 

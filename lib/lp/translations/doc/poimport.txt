@@ -719,9 +719,9 @@ approve and import it.
     ... msgstr "blah"
     ... '''
     >>> pofile = factory.makePOFile('sr', potemplate=potemplate)
-    >>> from_maintainer = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
     ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
@@ -742,7 +742,7 @@ For syntax errors, failure notification is still sent out.
 
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
     ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()

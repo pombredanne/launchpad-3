@@ -1185,7 +1185,7 @@ class POFile(SQLBase, POFileMixIn):
             entry_to_import.setStatus(RosettaImportStatus.FAILED,
                                       rosetta_experts)
         else:
-            if (entry_to_import.from_maintainer and
+            if (entry_to_import.by_maintainer and
                 not needs_notification_for_imported):
                 # If it's an upload by the maintainer of the project or
                 # package, do not send success notifications unless they
@@ -1197,7 +1197,7 @@ class POFile(SQLBase, POFileMixIn):
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert user) and
             # was done by the maintainer.
-            if (entry_to_import.from_maintainer and
+            if (entry_to_import.by_maintainer and
                 entry_to_import.importer.id != rosetta_experts.id):
                 entry_to_import.importer.assignKarma(
                     'translationimportupstream',

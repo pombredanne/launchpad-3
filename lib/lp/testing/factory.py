@@ -2529,7 +2529,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                         potemplate=None, content=None,
                                         uploader=None, pofile=None,
                                         format=None, status=None,
-                                        from_maintainer=False):
+                                        by_maintainer=False):
         """Create a `TranslationImportQueueEntry`."""
         if path is None:
             path = self.getUniqueString() + '.pot'
@@ -2571,7 +2571,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             path=path, productseries=productseries, distroseries=distroseries,
             sourcepackagename=sourcepackagename, importer=uploader,
             content=content_reference, status=status, format=format,
-            from_maintainer=from_maintainer)
+            by_maintainer=by_maintainer)
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

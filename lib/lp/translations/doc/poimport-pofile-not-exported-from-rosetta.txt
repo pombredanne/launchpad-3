@@ -76,9 +76,9 @@ file comes from a previous export from Rosetta and when did it happen.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> from_maintainer = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -146,9 +146,9 @@ commit.
 
 Now, attach the file again, but this time as coming from upstream.
 
-    >>> from_maintainer = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_maintainer, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
