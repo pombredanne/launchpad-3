@@ -1515,7 +1515,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def setNewerDistroSeriesVersions(spphs):
         """Set the newer_distroseries_version attribute on the spph entries.
 
-        :param spphs: The objects to set the
+        :param spphs: The SourcePackagePublishingHistory objects to set the
             newer_distroseries_version attribute on.
         """
         # Partition by distro series to use getCurrentSourceReleases
