@@ -49,6 +49,19 @@ Require            valid-user
 BUILDD_USER_NAME = "buildd"
 
 
+def write_htaccess(htaccess_filename, distroot):
+    """Write a htaccess file for a private PPA.
+
+    :param htaccess_filename: Filename of the htaccess file.
+    :param distroot: Archive root path
+    """
+    interpolations = {"path": distroot}
+    file = open(htaccess_filename, "w")
+    try:
+        file.write(HTACCESS_TEMPLATE % interpolations)
+    finally:
+        file.close()
+
 
 def write_htpasswd(filename, list_of_users):
     """Write out a new htpasswd file.
@@ -98,10 +111,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # It's not there, so create it.
             if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
-            interpolations = {"path": pub_config.htaccessroot}
-            file = open(htaccess_filename, "w")
-            file.write(HTACCESS_TEMPLATE % interpolations)
-            file.close()
+            write_htaccess(htaccess_filename, pub_config.htaccessroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa, tokens):

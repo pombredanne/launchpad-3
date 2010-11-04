@@ -42,6 +42,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.archivepublisher.scripts.generate_ppa_htaccess
 
 
 def reorder_components(components):
@@ -103,6 +104,21 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         raise
 
     disk_pool = _getDiskPool(pubconf, log)
+
+    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+
+    if archive.private:
+        if os.path.exists(htaccess_path):
+            log.debug("Removing htaccess and htpasswd files.")
+            os.remove(htaccess_path)
+            os.remove(htpasswd_path)
+    else:
+        if not os.path.exists(htaccess_path):
+            log.debug("Writing htaccess file.")
+            write_htaccess(htpasswd_path, pub_config.htaccessroot)
+            write_htpasswd(htpasswd_path, [
+                BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
 
     if distsroot is not None:
         log.debug("Overriding dists root with %s." % distsroot)
