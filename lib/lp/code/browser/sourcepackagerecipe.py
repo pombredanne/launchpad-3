@@ -274,10 +274,16 @@ class ISourcePackageAddEditSchema(Interface):
         'build_daily',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
-        title=u'Daily build archive')
+        title=u'Daily build archive',
+        description=(
+            u'If built daily, this the archive where the package '
+            u'will be uploaded.'))
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default distribution series')
+        title=u'Default distribution series',
+        description=(
+            u'If built daily, these are the distribution versions that '
+            u'the recipe will be built for.'))
     recipe_text = Text(
         title=u'Recipe text', required=True,
         description=u'The text of the recipe.')
