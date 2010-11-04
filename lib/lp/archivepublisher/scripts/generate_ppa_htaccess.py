@@ -49,6 +49,26 @@ Require            valid-user
 BUILDD_USER_NAME = "buildd"
 
 
+
+def write_htpasswd(filename, list_of_users):
+    """Write out a new htpasswd file.
+
+    :param filename: The file to create.
+    :param list_of_users: A list of (user, password, salt) tuples.
+    """
+    if os.path.isfile(filename):
+        os.remove(filename)
+
+    file = open(filename, "a")
+    try:
+        for entry in list_of_users:
+            user, password, salt = entry
+            encrypted = crypt.crypt(password, salt)
+            file.write("%s:%s\n" % (user, encrypted))
+    finally:
+        file.close()
+
+
 class HtaccessTokenGenerator(LaunchpadCronScript):
     """Helper class for generating .htaccess files for private PPAs."""
     blacklist = BLACKLISTED_PPAS
@@ -64,23 +84,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             "-d", "--no-deactivation", action="store_true",
             dest="no_deactivation", default=False,
             help="If set, tokens are not deactivated.")
-
-    def writeHtpasswd(self, filename, list_of_users):
-        """Write out a new htpasswd file.
-
-        :param filename: The file to create.
-        :param list_of_users: A list of (user, password, salt) tuples.
-        """
-        if os.path.isfile(filename):
-            os.remove(filename)
-
-        file = open(filename, "a")
-        for entry in list_of_users:
-            user, password, salt = entry
-            encrypted = crypt.crypt(password, salt)
-            file.write("%s:%s\n" % (user, encrypted))
-
-        file.close()
 
     def ensureHtaccess(self, ppa):
         """Generate a .htaccess for `ppa`."""
@@ -124,7 +127,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             entry = (token.person.name, token.token, token.person.name[:2])
             list_of_users.append(entry)
 
-        self.writeHtpasswd(temp_filename, list_of_users)
+        write_htpasswd(temp_filename, list_of_users)
 
         return temp_filename
 
