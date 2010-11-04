@@ -37,10 +37,8 @@ class TestCronGerminate(TestCase):
             self.archive_dir, "ubuntu-germinate")
         # This is what we pretend to be our current development distro, it
         # needs to be in sync with the mock lp-query-distro.py.
-        self.populate_mock_archive_environment(self.archive_dir,
-                                               self.COMPONENTS,
-                                               self.ARCHES,
-                                               "natty")
+        self.populate_mock_archive_environment(
+            self.archive_dir, self.COMPONENTS, self.ARCHES, "natty")
 
     def tearDown(self):
         shutil.rmtree(self.archive_dir)
