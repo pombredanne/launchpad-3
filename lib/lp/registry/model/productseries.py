@@ -47,7 +47,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -89,6 +89,9 @@ from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
@@ -96,9 +99,6 @@ from lp.translations.model.potemplate import (
     TranslationTemplatesCollection,
     )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
-    )
 
 
 MAX_TIMELINE_MILESTONES = 20

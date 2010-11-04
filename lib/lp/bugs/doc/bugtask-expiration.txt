@@ -350,6 +350,16 @@ bugtasks that can expire if they are not confirmed.
     hoary        True    351  Incomplete  False     False  False  False
     recent       False    31  Incomplete  False     False  False  False
 
+findExpirableBugTasks also accepts a limit argument, which allows for limiting
+the number of bugtasks returned.
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, None, target=ubuntu, limit=2)
+    >>> summarize_bugtasks(expirable_bugtasks)
+    ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu       True    351  Incomplete  False     False  False  False
+    hoary        True    351  Incomplete  False     False  False  False
+
 Thunderbird has not enabled bug expiration. Even when the min_days_old
 is set to 0, no bugtasks are replaced.
 

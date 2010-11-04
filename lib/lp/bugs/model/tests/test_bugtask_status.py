@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
 from lp.bugs.model.bugtask import BugTaskStatus
 from lp.testing import (
@@ -21,7 +21,7 @@ from lp.testing import (
 class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
     """Test bugtask status transitions for a regular logged in user."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskStatusTransitionForUser, self).setUp()
@@ -148,10 +148,51 @@ class TestBugTaskStatusTransitionForUser(TestCaseWithFactory):
             False)
 
 
+class TestBugTaskStatusTransitionForReporter(TestCaseWithFactory):
+    """Tests for bug reporter status transitions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskStatusTransitionForReporter, self).setUp()
+        self.task = self.factory.makeBugTask()
+        self.reporter = self.task.bug.owner
+
+    def test_reporter_can_unset_fix_released_status(self):
+        # The bug reporter can transition away from Fix Released.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.reporter):
+            self.task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter)
+            self.assertEqual(self.task.status, BugTaskStatus.CONFIRMED)
+
+    def test_reporter_canTransitionToStatus(self):
+        # The bug reporter can transition away from Fix Released, so
+        # canTransitionToStatus should always return True.
+        removeSecurityProxy(self.task).status = BugTaskStatus.FIXRELEASED
+        self.assertEqual(
+            self.task.canTransitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter),
+            True)
+
+    def test_reporter_team_can_unset_fix_released_status(self):
+        # The bug reporter can be a team in the case of bug imports
+        # and needs to be able to transition away from Fix Released.
+        team = self.factory.makeTeam(members=[self.reporter])
+        team_bug = self.factory.makeBug(owner=team)
+        naked_task = removeSecurityProxy(team_bug.default_bugtask)
+        naked_task.status = BugTaskStatus.FIXRELEASED
+        with person_logged_in(self.reporter):
+            team_bug.default_bugtask.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.reporter)
+            self.assertEqual(
+                team_bug.default_bugtask.status, BugTaskStatus.CONFIRMED)
+
+
 class TestBugTaskStatusTransitionForPrivilegedUserBase:
     """Base class used to test privileged users and status transitions."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskStatusTransitionForPrivilegedUserBase, self).setUp()
