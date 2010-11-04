@@ -17,7 +17,6 @@ import gzip
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import unittest
 
@@ -34,7 +33,8 @@ class TestCronGerminate(TestCase):
         # sub-directories.
         self.archive_dir = self.setup_mock_archive_environment()
         self.ubuntu_misc_dir = os.path.join(self.archive_dir, "ubuntu-misc")
-        self.ubuntu_germinate_dir = os.path.join(self.archive_dir, "ubuntu-germinate")
+        self.ubuntu_germinate_dir = os.path.join(
+            self.archive_dir, "ubuntu-germinate")
         # This is what we pretend to be our current development distro, it
         # needs to be in sync with the mock lp-query-distro.py.
         self.populate_mock_archive_environment(self.archive_dir,
@@ -51,7 +51,7 @@ class TestCronGerminate(TestCase):
             os.makedirs(directory)
 
     def create_directory_list_if_missing(self, directory_list):
-        """Create the given directories from the list if they does not exist."""
+        """Create the given directories from the list if they don't exist."""
         for directory in directory_list:
             self.create_directory_if_missing(directory)
 
@@ -93,18 +93,21 @@ class TestCronGerminate(TestCase):
         for component in components_list:
             # Create the environment for the source packages.
             targetdir = os.path.join(archive_dir,
-                                     "ubuntu/dists/%s/%s/source" % (current_devel_distro, component))
+                                     "ubuntu/dists/%s/%s/source" % (
+                    current_devel_distro, component))
             self.create_directory_if_missing(targetdir)
             self.create_gzip_file(os.path.join(targetdir, "Sources.gz"))
-            
+
             # Create the environment for the binary packages.
             for arch in arches_list:
                 for subpath in ["", "debian-installer"]:
                     targetdir = os.path.join(
                         self.archive_dir,
-                        "ubuntu/dists/%s/%s/%s/binary-%s" % (current_devel_distro, component, subpath, arch))
+                        "ubuntu/dists/%s/%s/%s/binary-%s" % (
+                            current_devel_distro, component, subpath, arch))
                     self.create_directory_if_missing(targetdir)
-                    self.create_gzip_file(os.path.join(targetdir, "Packages.gz"))
+                    self.create_gzip_file(os.path.join(
+                            targetdir, "Packages.gz"))
 
     def create_fake_environment(self, basepath, archive_dir):
         """Create a fake process envirionment based on os.environ that
@@ -136,14 +139,15 @@ class TestCronGerminate(TestCase):
         # mucked around.
         canary = "abrowser Task mock\n"
         # Build fake environment based on the real one.
-        fake_environ = self.create_fake_environment(self.BASEPATH, self.archive_dir)
+        fake_environ = self.create_fake_environment(
+            self.BASEPATH, self.archive_dir)
         # Create mock override data files that include the canary string
         # so that we can test later if it is still there.
         for dist in self.DISTS:
             self.create_file(
-                os.path.join(self.ubuntu_misc_dir, "more-extra.override.%s.main" % dist),
+                os.path.join(self.ubuntu_misc_dir,
+                             "more-extra.override.%s.main" % dist),
                 canary)
-                             
 
         # Run cron.germinate in the fake environment.
         cron_germinate_path = os.path.join(
@@ -154,11 +158,11 @@ class TestCronGerminate(TestCase):
         # And check the output it generated for correctness.
         for dist in self.DISTS:
             supported_override_file = os.path.join(
-                self.ubuntu_misc_dir, 
+                self.ubuntu_misc_dir,
                 "more-extra.override.%s.main.supported" % dist)
             self.assertTrue(os.path.exists(supported_override_file))
             main_override_file = os.path.join(
-                self.ubuntu_misc_dir, 
+                self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
             self.assertTrue(canary in open(main_override_file).read())
 
