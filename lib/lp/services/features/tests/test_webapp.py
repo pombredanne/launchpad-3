@@ -7,7 +7,11 @@ __metaclass__ = type
 
 from canonical.testing import layers
 from lp.services.features import webapp
-from lp.testing import TestCase
+from lp.testing import (
+    login_as,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -39,3 +43,22 @@ class TestScopesFromRequest(TestCase):
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
         self.assertFalse(scopes.lookup('pageid:foo'))
+
+
+class TestDBScopes(TestCaseWithFactory):
+
+    layer = layers.LaunchpadFunctionalLayer
+
+    def test_team_scope_outside_team(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        self.factory.loginAsAnyone()
+        self.assertFalse(scopes.lookup('team:nonexistent'))
+
+    def test_team_scope_in_team(self):
+        request = LaunchpadTestRequest()
+        scopes = webapp.ScopesFromRequest(request)
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[member])
+        login_as(member)
+        self.assertTrue(scopes.lookup('team:%s' % team.name))
