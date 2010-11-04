@@ -815,7 +815,7 @@ But if a non-existing entry is requested, a KeyError is raised:
     >>> test_tales('view/menu:foo/broken', view=view)
     Traceback (most recent call last):
     ...
-    KeyError: 'broken'
+    KeyError: ..., 'broken')
 
 We also report when the selected facet does not exist with a
 LocationError exception:
