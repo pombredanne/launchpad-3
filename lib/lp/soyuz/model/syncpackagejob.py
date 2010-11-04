@@ -7,12 +7,11 @@ __all__ = [
     "SyncPackageJob",
 ]
 
-from storm.expr import (
-    And,
-    )
-
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
