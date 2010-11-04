@@ -6,9 +6,12 @@
 
 import sys
 
+
 def error_and_exit():
-        sys.stderr.write("ERROR: I'm a mock, I only support 'development' and 'supported' as argument\n")
+        sys.stderr.write("ERROR: I'm a mock, I only support 'development' "
+                         "and 'supported' as argument\n")
         sys.exit(1)
+
 
 if __name__ == "__main__":
         # There is only a very limited subset of arguments that we support,
