@@ -153,7 +153,7 @@ class SearchTestBase:
                 subscriber, subscribed_by=subscriber)
 
     def _findBugtaskForOtherProduct(self, bugtask, main_product):
-        # Return the bugtask for the product that not related to the
+        # Return the bugtask for the product that is not related to the
         # main bug target.
         #
         # The default bugtasks of this test suite are created by
@@ -175,7 +175,7 @@ class SearchTestBase:
             'the main test bugtask.')
 
     def findBugtaskForOtherProduct(self, bugtask):
-        # Return the bugtask for the product that not related to the
+        # Return the bugtask for the product that is not related to the
         # main bug target.
         #
         # This method must ober overridden for product related tests.
@@ -579,7 +579,7 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
         return self.factory.makeProductSeries(product=self.searchtarget)
 
     def findBugtaskForOtherProduct(self, bugtask):
-        # Return the bugtask for the product that not related to the
+        # Return the bugtask for the product that is not related to the
         # main bug target.
         return self._findBugtaskForOtherProduct(bugtask, self.searchtarget)
 
@@ -614,7 +614,7 @@ class ProductSeriesTarget(BugTargetTestBase):
         # of the series. Hence we must set the status for all products
         # in order to avoid a failure of test_upstream_status().
         bug = bugtask.bug
-        for other_task in bug.bugtasks:
+        for other_task in bugtask.related_tasks:
             other_target = other_task.target
             if IProduct.providedBy(other_target):
                 with person_logged_in(other_target.owner):
