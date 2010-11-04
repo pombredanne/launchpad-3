@@ -7,10 +7,17 @@ __all__ = [
     "SyncPackageJob",
 ]
 
+from storm.expr import (
+    And,
+    )
+
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -37,7 +44,7 @@ class SyncPackageJob(DistributionJobDerived):
     def create(cls, source_archive, target_archive, distroseries,
         pocket, source_package_name, source_package_version,
         include_binaries):
-        """See `ISyncPackageJob`."""
+        """See `ISyncPackageJobSource`."""
         metadata = {
             'source_archive_id': source_archive.id,
             'target_archive_id': target_archive.id,
@@ -51,6 +58,19 @@ class SyncPackageJob(DistributionJobDerived):
             metadata)
         IMasterStore(DistributionJob).add(job)
         return cls(job)
+
+    @classmethod
+    def getActiveJobs(cls, archive):
+        """See `ISyncPackageJobSource`."""
+        # TODO: JRV 20101104. This iterates manually over all active
+        # SyncPackageJobs. Archive will need to be moved out of metadata
+        # so it's possible to search for it instead.
+        jobs = IStore(DistributionJob).find(
+            DistributionJob,
+            DistributionJob.job_type == cls.class_job_type,
+            DistributionJob.distribution == archive.distribution)
+        jobs = [cls(job) for job in jobs]
+        return (job for job in jobs if job.target_archive == archive)
 
     @property
     def source_archive(self):

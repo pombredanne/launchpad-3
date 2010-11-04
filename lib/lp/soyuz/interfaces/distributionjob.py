@@ -92,6 +92,9 @@ class ISyncPackageJobSource(IJobSource):
         source_package_name, version, include_binaries):
         """Create a new sync package job."""
 
+    def getActiveJobs(archive):
+        """Retrieve all active sync jobs for an archive."""
+
 
 class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
@@ -101,7 +104,7 @@ class ISyncPackageJob(IRunnableJob):
     """A Job that synchronizes packages."""
 
     pocket = Int(
-            title=_('Package publishing pocket'), required=True,
+            title=_('Target package publishing pocket'), required=True,
             readonly=True,
             )
 
@@ -110,7 +113,7 @@ class ISyncPackageJob(IRunnableJob):
             )
 
     target_archive = Int(
-            title=_('Source Archive ID'), required=True, readonly=True,
+            title=_('Target Archive ID'), required=True, readonly=True,
             )
 
     source_package_name = TextLine(
