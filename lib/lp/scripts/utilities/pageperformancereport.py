@@ -118,7 +118,7 @@ class OnlineApproximateMedian:
     """Approximate the median of a set of elements.
 
     This implements a space-efficient algorithm which only sees each value
-    once. (It will hold in memory log B of n elements.)
+    once. (It will hold in memory log bucket_size of n elements.)
 
     It was described and analysed in
     D. Cantone and  M.Hofri,
@@ -135,14 +135,14 @@ class OnlineApproximateMedian:
 
         It approximates the median by finding the median among each
         successive bucket_size element. And then using these medians for other
-        round of selection.
+        rounds of selection.
 
         The bucket size should be a low odd-integer.
         """
         self.count = 0
         self.bucket_size = bucket_size
         # Index of the median in a completed bucket.
-        self.median_idx = bucket_size/2
+        self.median_idx = (bucket_size-1)//2
         self.buckets = []
 
     def update(self, x):
@@ -343,12 +343,20 @@ class OnlineStats(Stats):
 
 
 class RequestTimes:
-    """Collect the """
+    """Collect statistics from requests.
+
+    Statistics are updated by calling the add_request() method.
+
+    Statistics for mean/stddev/total/median for request times, SQL times and
+    number of SQL statements are collected.
+
+    They are grouped by Category, URL or PageID.
+    """
 
     def __init__(self, categories, options):
         self.by_pageids = options.pageids
         self.top_urls = options.top_urls
-        # We only keep in memory 20 times the number of URLs we want to
+        # We only keep in memory 50 times the number of URLs we want to
         # return. The number of URLs can go pretty high (because of the
         # distinct query parameters).
         #
@@ -359,6 +367,9 @@ class RequestTimes:
         #
         # Keeping 10 times or culling at 90% generated a near-identical report
         # (it differed a little in the tail.)
+        #
+        # The size/cull parameters might need to change if the requests
+        # distribution become very different than what it currently is.
         self.top_urls_cache_size = self.top_urls * 50
 
         # Histogram has a bin per second up to 1.5 our timeout.
@@ -370,7 +381,7 @@ class RequestTimes:
         self.pageid_times = {}
 
     def add_request(self, request):
-        """Add a request to the ."""
+        """Add request to the set of requests we collect stats for."""
         for category, stats in self.category_times:
             if category.match(request):
                 stats.update(request)
