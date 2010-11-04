@@ -8,9 +8,12 @@ import subprocess
 import sys
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
+
+from lp.registry.errors import NoSuchSourcePackageName
 
 from lp.soyuz.interfaces.distributionjob import (
     ISyncPackageJob,
@@ -62,3 +65,29 @@ class SyncPackageJobTests(TestCaseWithFactory):
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0)
+
+    def test_run_unknown_package(self):
+        # A job properly records failure.
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        source = getUtility(ISyncPackageJobSource)
+        job = source.create(archive1, archive2, distroseries,
+                PackagePublishingPocket.RELEASE,
+                "foo", "1.0-1", include_binaries=False)
+        self.assertRaises(NoSuchSourcePackageName, job.run)
+
+    def test_getOopsVars(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        source = getUtility(ISyncPackageJobSource)
+        job = source.create(archive1, archive2, distroseries,
+                PackagePublishingPocket.RELEASE,
+                "foo", "1.0-1", include_binaries=False)
+        vars = job.getOopsVars()
+        naked_job = removeSecurityProxy(job)
+        self.assertIn(
+            ('distribution_id', distroseries.distribution.id), vars)
+        self.assertIn(('distroseries_id', distroseries.id), vars)
+        self.assertIn(('distribution_job_id', naked_job.context.id), vars)
