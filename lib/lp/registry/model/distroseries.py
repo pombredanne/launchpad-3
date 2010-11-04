@@ -12,9 +12,11 @@ __all__ = [
     'DistroSeriesSet',
     ]
 
+import collections
 from cStringIO import StringIO
 import logging
 
+import apt_pkg
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -68,7 +70,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -119,7 +121,10 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -179,6 +184,9 @@ from lp.translations.model.distroserieslanguage import (
     DistroSeriesLanguage,
     DummyDistroSeriesLanguage,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
@@ -186,9 +194,6 @@ from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
-    )
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
     )
 
 
@@ -1505,6 +1510,32 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.getSourcePackageRelease(spr) for spr in last_uploads]
 
         return distro_sprs
+
+    @staticmethod
+    def setNewerDistroSeriesVersions(spphs):
+        """Set the newer_distroseries_version attribute on the spph entries.
+
+        :param spphs: The SourcePackagePublishingHistory objects to set the
+            newer_distroseries_version attribute on.
+        """
+        # Partition by distro series to use getCurrentSourceReleases
+        distro_series = collections.defaultdict(list)
+        for spph in spphs:
+            distro_series[spph.distroseries].append(spph)
+        for series, spphs in distro_series.items():
+            packagenames = set()
+            for spph in spphs:
+                packagenames.add(spph.sourcepackagerelease.sourcepackagename)
+            latest_releases = series.getCurrentSourceReleases(
+                packagenames)
+            for spph in spphs:
+                latest_release = latest_releases.get(spph.meta_sourcepackage, None)
+                if latest_release is not None and apt_pkg.VersionCompare(
+                    latest_release.version, spph.source_package_version) > 0:
+                    version = latest_release
+                else:
+                    version = None
+                get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive, signing_key=None):

@@ -27,6 +27,7 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
+    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -60,6 +61,7 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
+    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -127,7 +129,6 @@ from lp.registry.interfaces.location import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
     )
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
     ITeamMembership,
@@ -147,6 +148,9 @@ from lp.services.fields import (
     StrippedTextLine,
     )
 from lp.services.worlddata.interfaces.language import ILanguage
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 
 
 PRIVATE_TEAM_PREFIX = 'private-'
@@ -504,10 +508,10 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
+class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
-                    IPrivacy, IHasBugs, IHasRecipes):
+                    IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -718,8 +722,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     assigned_specs_in_progress = Attribute(
         "Specifications assigned to this person whose implementation is "
         "started but not yet completed, sorted newest first.")
-    team_mentorships = Attribute(
-        "All the offers of mentoring which are relevant to this team.")
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
@@ -1237,6 +1239,23 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :return: a PPA `IArchive` record corresponding to the name.
         """
 
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False))
+    @export_factory_operation(Interface, []) # Really IArchive.
+    def createPPA(name=None, displayname=None, description=None):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
+        """
+
 
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
@@ -1435,14 +1454,11 @@ class IPersonEditRestricted(Interface):
     def leave(team):
         """Leave the given team.
 
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
+        This is a convenience method for retractTeamMembership() that allows
+        a user to leave the given team, or to cancel a PENDING membership
+        request.
 
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
+        :param team: The team to leave.
         """
 
     @operation_parameters(
@@ -1504,7 +1520,7 @@ class IPersonEditRestricted(Interface):
         :return: A tuple containing a boolean indicating when the
             membership status changed and the current `TeamMembershipStatus`.
             This depends on the desired status passed as an argument, the
-            subscription policy and the user's priveleges.
+            subscription policy and the user's privileges.
         """
 
     @operation_parameters(
@@ -1529,6 +1545,22 @@ class IPersonEditRestricted(Interface):
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
+        """
+
+    def retractTeamMembership(team, user, comment=None):
+        """Retract this team's membership in the given team.
+
+        If there's a membership entry for this team on the given team and
+        its status is either APPROVED, ADMIN, PENDING, or INVITED, the status
+        is changed and the relevant entries in TeamParticipation.
+
+        APPROVED and ADMIN status are changed to DEACTIVATED.
+        PENDING status is changed to DECLINED.
+        INVITED status is changes to INVITATION_DECLINED.
+
+        :param team: The team to leave.
+        :param user: The user making the retraction.
+        :param comment: An optional explanation about why the change was made.
         """
 
     def renewTeamMembership(team):
@@ -1692,9 +1724,22 @@ class ITeamPublic(Interface):
 
 
 class ITeam(IPerson, ITeamPublic):
-    """ITeam extends IPerson.
+    """A group of people and other teams.
 
-    The teamowner should never be None.
+    Launchpadlib example of getting the date a user joined a team::
+
+        def get_join_date(team, user):
+            team = launchpad.people[team]
+            members = team.members_details
+            for member in members:
+                if member.member.name == user:
+                    return member.date_joined
+            return None
+
+    Implementation notes:
+
+    - ITeam extends IPerson.
+    - The teamowner should never be None.
     """
     export_as_webservice_entry('team')
 
@@ -2158,6 +2203,11 @@ class NoSuchPerson(NameLookupFailed):
 
     _message_prefix = "No such person"
 
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA."""
+
+    webservice_error(400) # Bad Request
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [

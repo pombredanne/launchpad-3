@@ -68,7 +68,6 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -110,7 +109,7 @@ class IProjectGroupModerate(IPillar):
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
     IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
     """Public IProjectGroup properties."""

@@ -3,13 +3,22 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from new import classobj
+import pytz
 import sys
 import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    greater_than,
+    )
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
@@ -21,7 +30,14 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -173,6 +189,204 @@ class SearchTestBase:
         expected = self.resultValuesForBugtasks(self.bugtasks[:2])
         self.assertEqual(expected, search_result)
 
+    def setUpFullTextSearchTests(self):
+        # Set text fields indexed by Bug.fti, BugTask.fti or
+        # MessageChunk.fti to values we can search for.
+        for bugtask, number in zip(self.bugtasks, ('one', 'two', 'three')):
+            commenter = self.bugtasks[0].bug.owner
+            with person_logged_in(commenter):
+                bugtask.statusexplanation = 'status explanation %s' % number
+                bugtask.bug.title = 'bug title %s' % number
+                bugtask.bug.newMessage(
+                    owner=commenter, content='comment %s' % number)
+
+    def test_fulltext_search(self):
+        # Full text searches find text indexed by Bug.fti...
+        self.setUpFullTextSearchTests()
+        params = self.getBugTaskSearchParams(
+            user=None, searchtext='one title')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+        # ... by BugTask.fti ...
+        params = self.getBugTaskSearchParams(
+            user=None, searchtext='two explanation')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
+        self.assertEqual(expected, search_result)
+        # ...and by MessageChunk.fti
+        params = self.getBugTaskSearchParams(
+            user=None, searchtext='three comment')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[2:3])
+        self.assertEqual(expected, search_result)
+
+    def test_fast_fulltext_search(self):
+        # Fast full text searches find text indexed by Bug.fti...
+        self.setUpFullTextSearchTests()
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='one title')
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+        # ... but not text indexed by BugTask.fti ...
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='two explanation')
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+        # ..or by MessageChunk.fti
+        params = self.getBugTaskSearchParams(
+            user=None, fast_searchtext='three comment')
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+
+    def test_has_no_upstream_bugtask(self):
+        # Search results can be limited to bugtasks of bugs that do
+        # not have a related upstream task.
+        #
+        # All bugs created in makeBugTasks() have at least one
+        # bug task for a product: The default bug task created
+        # by lp.testing.factory.Factory.makeBug() if neither a
+        # product nor a distribution is specified. For distribution
+        # related tests we need another bug which does not have
+        # an upstream (aka product) bug task, otherwise the set of
+        # bugtasks returned for a search for has_no_upstream_bugtask
+        # would always be empty.
+        if (IDistribution.providedBy(self.searchtarget) or
+            IDistroSeries.providedBy(self.searchtarget) or
+            ISourcePackage.providedBy(self.searchtarget) or
+            IDistributionSourcePackage.providedBy(self.searchtarget)):
+            if IDistribution.providedBy(self.searchtarget):
+                bug = self.factory.makeBug(distribution=self.searchtarget)
+                expected = self.resultValuesForBugtasks([bug.default_bugtask])
+            else:
+                bug = self.factory.makeBug(
+                    distribution=self.searchtarget.distribution)
+                bugtask = self.factory.makeBugTask(
+                    bug=bug, target=self.searchtarget)
+                expected = self.resultValuesForBugtasks([bugtask])
+        else:
+            # Bugs without distribution related bugtasks have always at
+            # least one product related bugtask, hence a
+            # has_no_upstream_bugtask search will always return an
+            # empty result set.
+            expected = []
+        params = self.getBugTaskSearchParams(
+            user=None, has_no_upstream_bugtask=True)
+        search_result = self.runSearch(params)
+        self.assertEqual(expected, search_result)
+
+    def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
+        # Change the status of another bugtask of the same bug to the
+        # given status.
+        bug = bugtask.bug
+        for other_task in bug.bugtasks:
+            other_target = other_task.target
+            if other_task != bugtask and IProduct.providedBy(other_target):
+                with person_logged_in(other_target.owner):
+                    other_task.transitionToStatus(
+                        new_status, other_target.owner)
+                return
+        self.fail(
+            'No bug task found for a product that is not the target of '
+            'the main test bugtask.')
+
+    def test_upstream_status(self):
+        # Search results can be filtered by the status of an upstream
+        # bug task.
+        #
+        # The bug task status of the default test data has only bug tasks
+        # with status NEW for the "other" product, hence all bug tasks
+        # will be returned in a search for bugs that are open upstream.
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks)
+        self.assertEqual(expected, search_result)
+        # A search for tasks resolved upstream does not yield any bugtask.
+        params = self.getBugTaskSearchParams(
+            user=None, resolved_upstream=True)
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+        # But if we set upstream bug tasks to "fix committed" or "fix
+        # released", the related bug tasks for our test target appear in
+        # the search result.
+        self.changeStatusOfBugTaskForOtherProduct(
+            self.bugtasks[0], BugTaskStatus.FIXCOMMITTED)
+        self.changeStatusOfBugTaskForOtherProduct(
+            self.bugtasks[1], BugTaskStatus.FIXRELEASED)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
+        self.assertEqual(expected, search_result)
+        # A search for bug tasks open upstream now returns only one
+        # test task.
+        params = self.getBugTaskSearchParams(user=None, open_upstream=True)
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
+
+    def test_tags(self):
+        # Search results can be limited to bugs having given tags.
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.tags = ['tag1', 'tag2']
+            self.bugtasks[1].bug.tags = ['tag1', 'tag3']
+        params = self.getBugTaskSearchParams(
+            user=None, tag=any('tag2', 'tag3'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
+        self.assertEqual(expected, search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('tag2', 'tag3'))
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('tag1', 'tag3'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
+        self.assertEqual(expected, search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('tag1', '-tag3'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
+        self.assertEqual(expected, search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('-tag1'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
+        self.assertEqual(expected, search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('*'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
+        self.assertEqual(expected, search_result)
+
+        params = self.getBugTaskSearchParams(
+            user=None, tag=all('-*'))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
+        self.assertEqual(expected, search_result)
+
+    def test_date_closed(self):
+        # Search results can be filtered by the date_closed time
+        # of a bugtask.
+        with person_logged_in(self.owner):
+            self.bugtasks[2].transitionToStatus(
+                BugTaskStatus.FIXRELEASED, self.owner)
+        utc_now = datetime.now(pytz.timezone('UTC'))
+        self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
+        params = self.getBugTaskSearchParams(
+            user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
+        self.assertEqual(expected, search_result)
+        params = self.getBugTaskSearchParams(
+            user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
+        search_result = self.runSearch(params)
+        self.assertEqual([], search_result)
+
 
 class ProductAndDistributionTests:
     """Tests which are useful for distributions and products."""
@@ -190,8 +404,7 @@ class ProductAndDistributionTests:
         with person_logged_in(self.owner):
             self.bugtasks[0].bug.addNomination(nominator, series1)
             self.bugtasks[1].bug.addNomination(nominator, series2)
-        params = self.getBugTaskSearchParams(
-            user=None, nominated_for=series1)
+        params = self.getBugTaskSearchParams(user=None, nominated_for=series1)
         search_result = self.runSearch(params)
         expected = self.resultValuesForBugtasks(self.bugtasks[:1])
         self.assertEqual(expected, search_result)
@@ -323,6 +536,8 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
 
             product = self.factory.makeProduct(owner=self.owner)
             product.project = self.searchtarget
+            self.bugtasks.append(
+                self.factory.makeBugTask(target=product))
             self.bugtasks[-1].importance = BugTaskImportance.LOW
             self.bugtasks[-1].transitionToStatus(
             BugTaskStatus.NEW, self.owner)
