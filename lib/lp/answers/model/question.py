@@ -681,7 +681,7 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.answers_usage = %s 
+                    (Product.answers_usage = %s
                     OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')

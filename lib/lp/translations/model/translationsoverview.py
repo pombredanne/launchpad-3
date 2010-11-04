@@ -72,7 +72,7 @@ class TranslationsOverview:
               HAVING SUM(karmavalue) > 0
               ORDER BY total_karma DESC
               LIMIT %d) AS something
-          ORDER BY name""" % (ServiceUsage.LAUNCHPAD,
+          ORDER BY name""" % sqlvalues(ServiceUsage.LAUNCHPAD,
                               ServiceUsage.LAUNCHPAD,
                               int(limit))
         cur = cursor()

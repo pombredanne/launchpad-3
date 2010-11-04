@@ -178,7 +178,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getConfigurableProducts(self):
         return [product for product in self.products
                 if check_permission('launchpad.Edit', product)]
-                    
+
     @property
     def drivers(self):
         """See `IHasDrivers`."""
@@ -211,14 +211,15 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        return Product.select('''
-            Product.project = %s AND
-            Product.translations_usage = %s AND
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
-            ''' % sqlvalues(self, ServiceUsage.LAUNCHPAD),
-            clauseTables=['ProductSeries', 'POTemplate'],
-            distinct=True)
+        store = Store.of(self)
+        results = store.find(
+                Product,
+                AND(
+                    Product.project == self.id,
+                    Product.translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product == ProductSeries.product,
+                    POTemplate.productseries == ProductSeries.id))
+        return results.config(distinct=True)
 
     def has_translatable(self):
         """See `IProjectGroup`."""
@@ -226,7 +227,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # converted to use is_empty but the implementation in storm's
         # sqlobject wrapper is broken.
         # return not self.translatables().is_empty()
-        return self.translatables().count() != 0
+        return self.translatables().is_empty()
 
     def has_branches(self):
         """ See `IProjectGroup`."""
