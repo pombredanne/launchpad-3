@@ -857,11 +857,14 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id or
-            user.id == celebrities.janitor.id):
+        if (self.status == BugTaskStatus.FIXRELEASED and
+           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+            return True
+        elif (user.inTeam(self.pillar.bug_supervisor) or
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
             return True
         else:
             return (self.status not in (
@@ -2391,7 +2394,7 @@ class BugTaskSet:
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
-                              bug=None, target=None):
+                              bug=None, target=None, limit=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -2457,6 +2460,8 @@ class BugTaskSet:
             unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
+        if limit is not None:
+            expirable_bugtasks = expirable_bugtasks.limit(limit)
 
         return expirable_bugtasks
 
