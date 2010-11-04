@@ -182,12 +182,19 @@ class OnlineApproximateMedian:
             weight = self.bucket_size ** i
             for x in bucket:
                 total_weight += weight
-                candidates.append([weight, x])
-        # Make weight relative.
-        candidates = [
-            ((float(weight)/total_weight)*x, x)
-            for weight, x in candidates]
-        return sorted(candidates)[(len(candidates)-1)/2][1]
+                candidates.append([x, weight])
+        # Each weight is the equivalent of having the candidates appear
+        # that number of times in the array.
+        # So buckets like [[1, 2], [2, 3], [4, 2]] would be expanded to
+        # [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4,
+        # 4, 4, 4, 4, 4] and we find the median of that list (2).
+        # We don't expand the items to conserve memory.
+        median = (total_weight-1) / 2
+        weighted_idx = 0
+        for x, weight in sorted(candidates):
+            weighted_idx += weight
+            if weighted_idx > median:
+                return x
 
 
 class Stats:
