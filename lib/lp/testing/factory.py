@@ -67,10 +67,6 @@ from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
     )
-from canonical.launchpad.interfaces import (
-    IMasterStore,
-    IStore,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -83,6 +79,10 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
