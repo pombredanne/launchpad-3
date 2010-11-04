@@ -276,7 +276,7 @@ class ISourcePackageAddEditSchema(Interface):
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive',
         description=(
-            u'If built daily, this the archive where the package '
+            u'If built daily, this is the archive where the package '
             u'will be uploaded.'))
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
