@@ -42,12 +42,12 @@ class TestScopesFromRequest(TestCase):
         scopes = webapp.ScopesFromRequest(request)
         self.assertTrue(scopes.lookup('pageid:'))
         self.assertFalse(scopes.lookup('pageid:foo'))
-        self.assertFalse(scopes.lookup('pageid:foo'))
+        self.assertFalse(scopes.lookup('pageid:foo:bar'))
 
 
 class TestDBScopes(TestCaseWithFactory):
 
-    layer = layers.LaunchpadFunctionalLayer
+    layer = layers.DatabaseFunctionalLayer
 
     def test_team_scope_outside_team(self):
         request = LaunchpadTestRequest()

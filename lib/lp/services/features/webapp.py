@@ -37,6 +37,9 @@ class ScopesFromRequest(object):
              - pageid:SomeType
              - pageid:SomeType:+view
              - pageid:SomeType:+view#subselector
+         - team:
+           This scope looks up a team. For instance
+             - team:launchpad-beta-users
         """
         if scope_name == 'default':
             return True
