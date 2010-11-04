@@ -57,6 +57,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Int,
     Text,
@@ -965,24 +966,40 @@ class MergeProposalEditView(LaunchpadEditFormView,
                         % revision_name)
 
 
+class ResubmitSchema(IBranchMergeProposal):
+
+    break_link = Bool(
+        title=u'Break link',
+        description=u'Do not link new proposal to old one.',
+        default=False,)
+
+
 class BranchMergeProposalResubmitView(MergeProposalEditView,
                                       UnmergedRevisionsMixin):
     """The view to resubmit a proposal to merge."""
 
-    schema = IBranchMergeProposal
+    schema = ResubmitSchema
+    render_context = False
     for_input = True
     page_title = label = "Resubmit proposal to merge"
     field_names = [
         'source_branch', 'target_branch', 'prerequisite_branch',
-        'description'
+        'description', 'break_link'
         ]
+    @property
+    def initial_values(self):
+        UNSET = object()
+        values = ((key, getattr(self.context, key, UNSET)) for key in
+                  self.field_names if key != 'break_link')
+        return dict(item for item in values if item[1] is not UNSET)
 
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
         proposal = self.context.resubmit(
             self.user, data['source_branch'], data['target_branch'],
-            data['prerequisite_branch'], data['description'])
+            data['prerequisite_branch'], data['description'],
+            data['break_link'])
         self.next_url = canonical_url(proposal)
         return proposal
 

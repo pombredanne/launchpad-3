@@ -497,6 +497,7 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
              'target_branch': context.target_branch,
              'prerequisite_branch': context.prerequisite_branch,
              'description': None,
+             'break_link': False,
             })
         self.assertEqual(new_proposal.supersedes, context)
         self.assertEqual(new_proposal.source_branch, context.source_branch)
@@ -513,11 +514,25 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         new_proposal = view.resubmit_action.success(
             {'source_branch': new_source, 'target_branch': new_target,
              'prerequisite_branch': new_prerequisite,
-             'description': 'description'})
+             'description': 'description',
+             'break_link': False,
+             })
         self.assertEqual(new_proposal.supersedes, view.context)
         self.assertEqual(new_proposal.source_branch, new_source)
         self.assertEqual(new_proposal.target_branch, new_target)
         self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
+
+    def test_resubmit_action_break_link(self):
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+             'break_link': True,
+            })
+        self.assertIs(None, new_proposal.supersedes)
 
 
 class TestResubmitBrowser(BrowserTestCase):
