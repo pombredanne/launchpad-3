@@ -28,8 +28,8 @@ class INameBlackList(Interface):
     comment = Text(title=_('Comment'), required=False)
 
 
-class INameBlackList(Interface):
-    """The set of Persons."""
+class INameBlackListSet(Interface):
+    """The set of INameBlackList objects."""
 
     def create(regexp, comment=None):
         """Create and return a new NameBlackList with given arguments."""

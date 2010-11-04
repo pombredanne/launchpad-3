@@ -5,15 +5,27 @@
 
 __metaclass__ = type
 
-import unittest
+from lp.testing import TestCase
 
-from canonical.testing.layers import LaunchpadLayer
+from zope.component import getUtility
+from zope.interface.verify import verifyObject
 
 
-class TestNameBlacklist(unittest.TestCase):
-    layer = LaunchpadLayer
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.ftests import login
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.registry.interfaces.nameblacklist import (
+    INameBlackList,
+    INameBlackListSet,
+    )
+from lp.testing.sampledata import ADMIN_EMAIL
+
+
+class TestNameBlacklist(TestCase):
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
+        super(TestNameBlacklist, self).setUp()
         self.con = self.layer.connect()
         self.cur = self.con.cursor()
 
@@ -29,6 +41,7 @@ class TestNameBlacklist(unittest.TestCase):
             """)
 
     def tearDown(self):
+        super(TestNameBlacklist, self).tearDown()
         self.con.close()
 
     def name_blacklist_match(self, name):
@@ -85,5 +98,31 @@ class TestNameBlacklist(unittest.TestCase):
         self.failUnless(self.is_blacklisted_name("verbose") is True)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestNameBlackListSet(TestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_create_with_one_arg(self):
+        login(ADMIN_EMAIL)
+        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist = nameblacklist_set.create(u'foo')
+        self.assertTrue(verifyObject(INameBlackList, nameblacklist))
+        self.assertEquals(u'foo', nameblacklist.regexp)
+        self.assertIs(None, nameblacklist.comment)
+
+    def test_create_with_two_args(self):
+        login(ADMIN_EMAIL)
+        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist = nameblacklist_set.create(u'foo', u'bar')
+        self.assertTrue(verifyObject(INameBlackList, nameblacklist))
+        self.assertEquals(u'foo', nameblacklist.regexp)
+        self.assertEquals(u'bar', nameblacklist.comment)
+
+    def test_get(self):
+        login(ADMIN_EMAIL)
+        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist = nameblacklist_set.create(u'foo', u'bar')
+        store = IStore(nameblacklist)
+        store.flush()
+        retrieved = nameblacklist_set.get(nameblacklist.id)
+        self.assertEquals(nameblacklist, retrieved)

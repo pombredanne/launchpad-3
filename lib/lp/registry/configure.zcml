@@ -104,11 +104,17 @@
 
     <!-- INameBlackList -->
     <securedutility
-        component="lp.registry.model.nameblacklist.NameBlackListSet"
+        class="lp.registry.model.nameblacklist.NameBlackListSet"
         provides="lp.registry.interfaces.nameblacklist.INameBlackListSet">
         <allow
             interface="lp.registry.interfaces.nameblacklist.INameBlackListSet"/>
     </securedutility>
+
+    <class class="lp.registry.model.nameblacklist.NameBlackListSet">
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.nameblacklist.INameBlackListSet"/>
+    </class>
 
     <class class="lp.registry.model.nameblacklist.NameBlackList">
         <require
