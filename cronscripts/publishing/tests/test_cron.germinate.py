@@ -65,7 +65,7 @@ class TestCronGerminate(TestCase):
         """Create a file in the given path with the given content.
            If not content is given a empty file is created.
         """
-        f=open(filepath, "w")
+        f = open(filepath, "w")
         f.write(content)
         f.close()
 

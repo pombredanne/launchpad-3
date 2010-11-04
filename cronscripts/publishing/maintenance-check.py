@@ -135,7 +135,7 @@ def create_and_update_deb_src_source_list(distroseries):
     :raises: IOError: When cache update fails.
     """
     # apt root dir
-    rootdir="./aptroot.%s" % distroseries
+    rootdir = "./aptroot.%s" % distroseries
     sources_list_dir = os.path.join(rootdir, "etc", "apt")
     if not os.path.exists(sources_list_dir):
         os.makedirs(sources_list_dir)
