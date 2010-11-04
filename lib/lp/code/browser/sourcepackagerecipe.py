@@ -277,7 +277,7 @@ class ISourcePackageAddEditSchema(Interface):
         title=u'Daily build archive')
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default Distribution series')
+        title=u'Default distribution series')
     recipe_text = Text(
         title=u'Recipe text', required=True,
         description=u'The text of the recipe.')
