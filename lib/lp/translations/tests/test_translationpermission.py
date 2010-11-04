@@ -99,6 +99,10 @@ class TestTranslationPermission(TestCaseWithFactory):
 
         If `product` is part of a project group, the project group's
         translation permissions are set to Closed as well.
+
+        This is useful for showing that a particular person has
+        rights to work on a translation despite it being generally
+        closed to the public.
         """
         product.translationpermission = TranslationPermission.CLOSED
         if product.project is not None:

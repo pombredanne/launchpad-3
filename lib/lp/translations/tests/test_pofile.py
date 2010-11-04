@@ -2016,7 +2016,12 @@ class TestPOFilePermissions(TestCaseWithFactory):
             return template.distroseries.distribution
 
     def closeTranslations(self):
-        """Set translation permissions for `self.pofile` to CLOSED."""
+        """Set translation permissions for `self.pofile` to CLOSED.
+
+        This is useful for showing that a particular person has rights
+        to work on a translation despite it being generally closed to
+        the public.
+        """
         self.getTranslationPillar().translationpermission = (
             TranslationPermission.CLOSED)
 
