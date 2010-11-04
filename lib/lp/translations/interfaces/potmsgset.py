@@ -135,14 +135,13 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
-    def getCurrentDummyTranslationMessage(potemplate, language):
-        """Return a DummyTranslationMessage for this message language.
+    def getCurrentTranslationMessageOrDummy(pofile):
+        """Return the current `TranslationMessage`, or a dummy.
 
-        :param potemplate: PO template you want a translation message for.
-        :param language: language we want a dummy translations for.
-
-        If a TranslationMessage for this language already exists,
-        an exception is raised.
+        :param pofile: PO template you want a translation message for.
+        :return: The current translation for `self` in `pofile`, if
+            there is one.  Otherwise, a `DummyTranslationMessage` for
+            `self` in `pofile`.
         """
 
     def getCurrentTranslationMessage(potemplate, language):

@@ -168,9 +168,9 @@ navigation.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     # Evolution uses Restricted mode, so a translation without reviewer

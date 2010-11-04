@@ -292,10 +292,10 @@ Here are some helper functions.
     ...     print message_id, list_name, subject
 
     >>> def print_messages(status):
-    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
-    ...                            key=attrgetter('message_id'))
-    ...     for message_hold in held_messages:
-    ...         print_hold(message_hold)
+    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status))
+    ...     for message_id, team_name in held_messages:
+    ...         held_message = hold_set.getMessageByMessageID(message_id)
+    ...         print_hold(held_message)
 
 Here are all the messages pending approval...
 
@@ -483,8 +483,8 @@ twice, once as posted from Malone, and once as held by Mailman.
     ...         return self
     ...     signature = object()
 
-    >>> from email import message_from_string
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> from email import message_from_string
     >>> malone_msg = message_from_string(message_text, _class=SignedMessage)
 
     # Tweak the Subject so we can tell the two message apart.

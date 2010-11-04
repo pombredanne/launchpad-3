@@ -2,8 +2,10 @@ This file lists all the karma events that Malone produces. First let's
 import some stuff and define a function to help us make the
 documentation cleaner:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, IKarmaActionSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
 Setup an event listener to help ensure karma is assigned when it should.
@@ -70,8 +72,10 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IDistroBugTask)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IDistroBugTask,
+    ...     )
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
@@ -101,7 +105,7 @@ Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.INVALID, bugtask.target.owner)
     >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 

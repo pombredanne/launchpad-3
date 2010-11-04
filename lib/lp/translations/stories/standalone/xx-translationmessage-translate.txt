@@ -4,6 +4,16 @@ Here is the story for translating a single message
 Here we are going to check the basic behaviour of the translation form
 when we render just one message with all available information for it.
 
+The suggestive-templates cache needs to be up to date.
+
+    >>> from zope.component import getUtility
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
 
 Getting there
 -------------
@@ -525,8 +535,8 @@ we do it directly in the database.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet

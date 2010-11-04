@@ -3,8 +3,6 @@
 
 """Tests for the BranchSubscrptions model object.."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest

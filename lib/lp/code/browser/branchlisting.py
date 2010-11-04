@@ -94,6 +94,7 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -532,7 +533,8 @@ class BranchListingBatchNavigator(TableBatchNavigator,
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView, FeedsMixin):
+class BranchListingView(LaunchpadFormView, FeedsMixin,
+                        BranchVisibilityPolicyMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
@@ -975,6 +977,16 @@ class PersonProductBranchesMenu(PersonBranchesMenu):
 
 class PersonBaseBranchListingView(BranchListingView):
     """Base class used for different person listing views."""
+
+    @property
+    def show_action_menu(self):
+        if self.user is not None:
+            return self.user.inTeam(self.context)
+        return False
+
+    @property
+    def show_junk_directions(self):
+        return self.user == self.context
 
     @property
     def initial_values(self):
@@ -1671,6 +1683,7 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
     """A base view used for other person-product branch listings."""
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.PRODUCT)
+    show_action_menu = False
 
     @property
     def person(self):

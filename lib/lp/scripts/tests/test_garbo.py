@@ -32,13 +32,8 @@ from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts.garbo import (
-    DailyDatabaseGarbageCollector,
-    HourlyDatabaseGarbageCollector,
-    OpenIDConsumerAssociationPruner,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -60,14 +55,21 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.code.enums import CodeImportResultStatus
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.model.branchjob import (
     BranchJob,
     BranchUpgradeJob,
     )
+from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
+    )
+from lp.scripts.garbo import (
+    DailyDatabaseGarbageCollector,
+    HourlyDatabaseGarbageCollector,
+    OpenIDConsumerAssociationPruner,
     )
 from lp.services.job.model.job import Job
 from lp.testing import (
@@ -255,6 +257,35 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(
             store.find(
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=30))
+
+    def test_CodeImportEventPruner(self):
+        now = datetime.utcnow().replace(tzinfo=UTC)
+        store = IMasterStore(CodeImportResult)
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        machine = self.factory.makeCodeImportMachine()
+        requester = self.factory.makePerson()
+        # Create 6 code import events for this machine, 3 on each side of 30
+        # days. Use the event set to the extra event data rows get created
+        # too.
+        event_set = getUtility(ICodeImportEventSet)
+        for age in (35, 33, 31, 29, 27, 15):
+            event_set.newOnline(
+                machine, user=requester, message='Hello',
+                _date_created=(now - timedelta(days=age)))
+        transaction.commit()
+
+        # Run the garbage collector
+        self.runDaily()
+
+        # Only the three most recent results are left.
+        events = list(machine.events)
+        self.assertEqual(3, len(events))
+        # We now have no CodeImportEvents older than 30 days
+        self.failUnless(
+            store.find(
+                Min(CodeImportEvent.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
 
     def test_OpenIDConsumerAssociationPruner(self):

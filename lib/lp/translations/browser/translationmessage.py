@@ -69,9 +69,6 @@ from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.utilities.validate import GettextValidationError
 
-#
-# Exceptions and helper classes
-#
 
 class POTMsgSetBatchNavigator(BatchNavigator):
 
@@ -144,10 +141,6 @@ class CustomDropdownWidget(DropdownWidget):
         return contents
 
 
-#
-# Standard UI classes
-#
-
 class CurrentTranslationMessageFacets(POTemplateFacets):
     usedfor = ITranslationMessage
 
@@ -177,10 +170,6 @@ class CurrentTranslationMessageAppMenus(ApplicationMenu):
         text = 'Download'
         return Link('../+export', text, icon='download')
 
-
-#
-# Views
-#
 
 class CurrentTranslationMessageIndexView:
     """A view to forward to the translation form."""
@@ -493,8 +482,9 @@ class BaseTranslationView(LaunchpadView):
                 return False
         return True
 
-    def _prepareView(self, view_class, current_translation_message, error):
-        """Collect data and build a TranslationMessageView for display."""
+    def _prepareView(self, view_class, current_translation_message,
+                     pofile, can_edit, error=None):
+        """Collect data and build a `TranslationMessageView` for display."""
         # XXX: kiko 2006-09-27:
         # It would be nice if we could easily check if this is being
         # called in the right order, after _storeTranslations().
@@ -539,7 +529,7 @@ class BaseTranslationView(LaunchpadView):
             current_translation_message, self.request,
             plural_indices_to_store, translations, force_suggestion,
             force_diverge, error, self.second_lang_code,
-            self.form_is_writeable)
+            self.form_is_writeable, pofile=pofile, can_edit=can_edit)
 
     #
     # Internals
@@ -706,12 +696,8 @@ class BaseTranslationView(LaunchpadView):
                 # current translation, suggestion or the new translation
                 # field.
                 current_translation_message = (
-                    potmsgset.getCurrentTranslationMessage(
-                        self.pofile.potemplate, self.pofile.language))
-                if current_translation_message is None:
-                    current_translation_message = (
-                        potmsgset.getCurrentDummyTranslationMessage(
-                            self.pofile.potemplate, self.pofile.language))
+                    potmsgset.getCurrentTranslationMessageOrDummy(
+                        self.pofile))
                 if (selected_translation_key !=
                     msgset_ID_LANGCODE_translation_PLURALFORM_new):
                     # It's either current translation or an existing
@@ -859,8 +845,11 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
 
     def _initializeTranslationMessageViews(self):
         """See `BaseTranslationView._initializeTranslationMessageViews`."""
+        pofile = self.pofile
+        can_edit = pofile.canEditTranslations(self.user)
         self.translationmessage_view = self._prepareView(
-            CurrentTranslationMessageZoomedView, self.context, self.error)
+            CurrentTranslationMessageZoomedView, self.context, pofile=pofile,
+            can_edit=can_edit, error=self.error)
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
@@ -911,17 +900,10 @@ class CurrentTranslationMessageView(LaunchpadView):
     template = ViewPageTemplateFile(
         '../templates/currenttranslationmessage-translate-one.pt')
 
-    # Relevant instance variables:
-    #   self.translations
-    #   self.error
-    #   self.sec_lang
-    #   self.second_lang_potmsgset
-    #   self.suggestion_blocks
-    #   self.pluralform_indices
-
     def __init__(self, current_translation_message, request,
                  plural_indices_to_store, translations, force_suggestion,
-                 force_diverge, error, second_lang_code, form_is_writeable):
+                 force_diverge, error, second_lang_code, form_is_writeable,
+                 pofile, can_edit):
         """Primes the view with information that is gathered by a parent view.
 
         :param plural_indices_to_store: A dictionary that indicates whether
@@ -937,17 +919,18 @@ class CurrentTranslationMessageView(LaunchpadView):
             field.alternative_value.
         :param form_is_writeable: Whether the form should accept write
             operations
+        :param pofile: The `POFile` that's being displayed or edited.
+        :param can_edit: Whether the user has editing privileges on `pofile`.
         """
         LaunchpadView.__init__(self, current_translation_message, request)
 
-        self.pofile = self.context.browser_pofile
+        self.pofile = pofile
         self.plural_indices_to_store = plural_indices_to_store
         self.translations = translations
         self.error = error
         self.force_suggestion = force_suggestion
         self.force_diverge = force_diverge
-        self.user_is_official_translator = (
-            self.pofile.canEditTranslations(self.user))
+        self.user_is_official_translator = can_edit
         self.form_is_writeable = form_is_writeable
         if self.context.is_current_upstream:
             # The imported translation matches the current one.
@@ -1552,10 +1535,6 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
     def max_entries(self):
         return None
 
-
-#
-# Pseudo-content class
-#
 
 class TranslationMessageSuggestions:
     """See `ITranslationMessageSuggestions`."""

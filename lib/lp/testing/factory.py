@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Testing infrastructure for the Launchpad application.
 
 This module should not contain tests (but it should be tested).
@@ -33,9 +31,13 @@ from email.utils import (
     make_msgid,
     )
 from itertools import count
-from operator import isSequenceType
+from operator import (
+    isMappingType,
+    isSequenceType,
+    )
 import os
 from random import randint
+import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -82,6 +84,7 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
     )
@@ -91,6 +94,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
+    OAuthPermission,
     )
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
@@ -127,7 +131,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -215,7 +219,7 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import IPropertyCacheManager
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -237,17 +241,13 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet,
-    )
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.model.packagediff import (
-    PackageDiff,
-    )
+from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     ANONYMOUS,
@@ -733,8 +733,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             PollSecrecy.SECRET, allowspoilt=True,
             poll_type=poll_type)
 
-    def makeTranslationGroup(
-        self, owner=None, name=None, title=None, summary=None, url=None):
+    def makeTranslationGroup(self, owner=None, name=None, title=None,
+                             summary=None, url=None):
         """Create a new, arbitrary `TranslationGroup`."""
         if owner is None:
             owner = self.makePerson()
@@ -747,10 +747,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeTranslator(
-        self, language_code, group=None, person=None, license=True):
+    def makeTranslator(self, language_code=None, group=None, person=None,
+                       license=True, language=None):
         """Create a new, arbitrary `Translator`."""
-        language = getUtility(ILanguageSet).getLanguageByCode(language_code)
+        assert language_code is None or language is None, (
+            "Please specifiy only one of language_code and language.")
+        if language_code is None:
+            if language is None:
+                language = self.makeLanguage()
+            language_code = language.code
+        else:
+            language = getUtility(ILanguageSet).getLanguageByCode(
+                language_code)
+            if language is None:
+                language = self.makeLanguage(language_code=language_code)
+
         if group is None:
             group = self.makeTranslationGroup()
         if person is None:
@@ -759,8 +770,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         tx_person.translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
-    def makeMilestone(
-        self, product=None, distribution=None, productseries=None, name=None):
+    def makeMilestone(self, product=None, distribution=None,
+                      productseries=None, name=None):
         if product is None and distribution is None and productseries is None:
             product = self.makeProduct()
         if distribution is None:
@@ -814,8 +825,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        return getUtility(IProcessorFamilySet).new(name, title, description,
+        family = getUtility(IProcessorFamilySet).new(name, title, description,
             restricted=restricted)
+        # Make sure there's at least one processor in the family, so that
+        # other things can have a default processor.
+        self.makeProcessor(family=family)
+        return family
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1100,6 +1115,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
+    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
+                             description=None, configuration=None):
+        """Create a BranchMergeQueue."""
+        if name is None:
+            name = unicode(self.getUniqueString('queue'))
+        if owner is None:
+            owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
+        if description is None:
+            description = unicode(self.getUniqueString('queue-description'))
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({
+                self.getUniqueString('key'): self.getUniqueString('value')}))
+
+        queue = getUtility(IBranchMergeQueueSource).new(
+            name, registrant, owner, description, configuration)
+        return queue
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
@@ -1136,16 +1170,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch,
             ubuntu_branches.teamowner)
         return branch
-
-    def makeBranchMergeQueue(self, name=None):
-        """Create a new multi branch merge queue."""
-        if name is None:
-            name = self.getUniqueString('name')
-        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
-            registrant=self.makePerson(),
-            owner=self.makePerson(),
-            name=name,
-            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
@@ -1313,8 +1337,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None):
-        revision = self.makeRevision(rev_id=revision_id)
+    def makeBranchRevision(self, branch, revision_id, sequence=None,
+                           parent_ids=None):
+        revision = self.makeRevision(
+            rev_id=revision_id, parent_ids=parent_ids)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
@@ -1407,7 +1433,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if bug_tracker is None:
             bug_tracker = self.makeBugTracker()
 
@@ -1418,7 +1444,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 custom=None):
         """Make a new bug tracker component."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if component_group is None:
             component_group = self.makeBugTrackerComponentGroup()
         if custom is None:
@@ -1854,24 +1880,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             expires=expires, restricted=restricted)
         return library_file_alias
 
-    def makePackageDiff(self, from_spr=None, to_spr=None):
-        """Make a completed package diff."""
-        if from_spr is None:
-            from_spr = self.makeSourcePackageRelease()
-        if to_spr is None:
-            to_spr = self.makeSourcePackageRelease()
-
-        diff = from_spr.requestDiffTo(
-            from_spr.creator, to_spr)
-
-        naked_diff = removeSecurityProxy(diff)
-        naked_diff.status = PackageDiffStatus.COMPLETED
-        naked_diff.diff_content = self.makeLibraryFileAlias()
-        naked_diff.date_fulfilled = UTC_NOW
-        return diff
-
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None):
+                         members=None, title=None, aliases=None,
+                         bug_supervisor=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -1891,6 +1902,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members, owner)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
+        if bug_supervisor is not None:
+            naked_distro = removeSecurityProxy(distro)
+            naked_distro.bug_supervisor = bug_supervisor
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
@@ -1952,6 +1966,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if versions is None:
             versions = {}
 
+        base_version = versions.get('base')
+        if base_version is not None:
+            for series in [derived_series, derived_series.parent_series]:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=base_version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.SUPERSEDED)
+
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
@@ -1971,12 +1994,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name, difference_type,
-            status=status)
+            derived_series, source_package_name)
+
+        removeSecurityProxy(diff).status = status
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
-        IPropertyCacheManager(diff).clear()
+        clear_property_cache(diff)
         return diff
 
     def makeDistroSeriesDifferenceComment(
@@ -2001,7 +2025,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         if processorfamily is None:
-            processorfamily = ProcessorFamilySet().getByName('powerpc')
+            processorfamily = self.makeProcessorFamily()
         if owner is None:
             owner = self.makePerson()
         # XXX: architecturetag & processerfamily are tightly coupled. It's
@@ -2172,6 +2196,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
+            arch = self.makeDistroArchSeries(distroseries=distroseries)
+            removeSecurityProxy(distroseries).nominatedarchindep = arch
         if requester is None:
             requester = self.makePerson()
         spr_build = getUtility(ISourcePackageRecipeBuildSource).new(
@@ -2305,9 +2331,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makePOFile(language_code, template, template.owner)
         return template
 
-    def makePOFile(self, language_code, potemplate=None, owner=None,
-                   create_sharing=False, variant=None):
+    def makePOFile(self, language_code=None, potemplate=None, owner=None,
+                   create_sharing=False, language=None, variant=None):
         """Make a new translation file."""
+        assert language_code is None or language is None, (
+            "Please specifiy only one of language_code and language.")
+        if language_code is None:
+            if language is None:
+                language = self.makeLanguage()
+            language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         pofile = potemplate.newPOFile(language_code,
@@ -2774,7 +2806,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = self.makePerson()
 
         if version is None:
-            version = self.getUniqueString('version')
+            version = unicode(self.getUniqueInteger()) + 'version'
 
         return distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=sourcepackagename,
@@ -3299,8 +3331,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None):
         if person is None:
             person = self.makePerson()
+        from canonical.testing import BaseLayer
         launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
+            service_root=BaseLayer.appserver_root_url("api"))
         login_person(person)
         return launchpad
 
@@ -3327,13 +3360,57 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 to_source=to_source, date_fulfilled=date_fulfilled,
                 status=status, diff_content=lfa))
 
+    # Factory methods for OAuth tokens.
+    def makeOAuthConsumer(self, key=None, secret=None):
+        if key is None:
+            key = self.getUniqueString("oauthconsumerkey")
+        if secret is None:
+            secret = ''
+        return getUtility(IOAuthConsumerSet).new(key, secret)
+
+    def makeOAuthRequestToken(self, consumer=None, date_created=None,
+                              reviewed_by=None,
+                              access_level=OAuthPermission.READ_PUBLIC):
+        """Create a (possibly reviewed) OAuth request token."""
+        if consumer is None:
+            consumer = self.makeOAuthConsumer()
+        token = consumer.newRequestToken()
+
+        if reviewed_by is not None:
+            # Review the token before modifying the date_created,
+            # since the date_created can be used to simulate an
+            # expired token.
+            token.review(reviewed_by, access_level)
+
+        if date_created is not None:
+            unwrapped_token = removeSecurityProxy(token)
+            unwrapped_token.date_created = date_created
+        return token
+
+    def makeOAuthAccessToken(self, consumer=None, owner=None,
+                             access_level=OAuthPermission.READ_PUBLIC):
+        """Create an OAuth access token."""
+        if owner is None:
+            owner = self.makePerson()
+        request_token = self.makeOAuthRequestToken(
+            consumer, reviewed_by=owner, access_level=access_level)
+        return request_token.createAccessToken()
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
 # other Python libraries.
-unwrapped_types = (
-    BaseRecipeBranch, DSCFile, InstanceType, MergeDirective2, Message,
-    datetime, int, str, unicode)
+unwrapped_types = frozenset((
+        BaseRecipeBranch,
+        DSCFile,
+        InstanceType,
+        MergeDirective2,
+        Message,
+        datetime,
+        int,
+        str,
+        unicode,
+        ))
 
 
 def is_security_proxied_or_harmless(obj):
@@ -3344,11 +3421,15 @@ def is_security_proxied_or_harmless(obj):
         return True
     if type(obj) in unwrapped_types:
         return True
-    if isSequenceType(obj):
-        for element in obj:
-            if not is_security_proxied_or_harmless(element):
-                return False
-        return True
+    if isSequenceType(obj) or isinstance(obj, (set, frozenset)):
+        return all(
+            is_security_proxied_or_harmless(element)
+            for element in obj)
+    if isMappingType(obj):
+        return all(
+            (is_security_proxied_or_harmless(key) and
+             is_security_proxied_or_harmless(obj[key]))
+            for key in obj)
     return False
 
 

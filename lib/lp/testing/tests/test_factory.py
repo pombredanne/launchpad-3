@@ -26,8 +26,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
 from lp.services.worlddata.interfaces.language import ILanguage
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
@@ -35,9 +33,9 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.binarypackagerelease import (
-    IBinaryPackageRelease,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile,
     ISourcePackageReleaseFile,
@@ -47,9 +45,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     PackagePublishingPocket,
     )
-from lp.soyuz.interfaces.queue import (
-    IPackageUpload,
-    )
+from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
@@ -740,17 +736,47 @@ class IsSecurityProxiedOrHarmlessTests(TestCaseWithFactory):
         self.assertFalse(is_security_proxied_or_harmless(unproxied_person))
 
     def test_is_security_proxied_or_harmless__sequence_harmless_content(self):
-        # is_security_proxied_or_harmless() checks all elements
-        # of a sequence. If all elements are harmless, so is the
-        # sequence.
+        # is_security_proxied_or_harmless() checks all elements of a sequence
+        # (including set and frozenset). If all elements are harmless, so is
+        # the sequence.
         proxied_person = self.factory.makePerson()
         self.assertTrue(
             is_security_proxied_or_harmless([1, '2', proxied_person]))
+        self.assertTrue(
+            is_security_proxied_or_harmless(
+                set([1, '2', proxied_person])))
+        self.assertTrue(
+            is_security_proxied_or_harmless(
+                frozenset([1, '2', proxied_person])))
 
     def test_is_security_proxied_or_harmless__sequence_harmful_content(self):
-        # is_security_proxied_or_harmless() checks all elements
-        # of a sequence. If at least one element is harmful, so is the
-        # sequence.
+        # is_security_proxied_or_harmless() checks all elements of a sequence
+        # (including set and frozenset). If at least one element is harmful,
+        # so is the sequence.
         unproxied_person = removeSecurityProxy(self.factory.makePerson())
         self.assertFalse(
             is_security_proxied_or_harmless([1, '2', unproxied_person]))
+        self.assertFalse(
+            is_security_proxied_or_harmless(
+                set([1, '2', unproxied_person])))
+        self.assertFalse(
+            is_security_proxied_or_harmless(
+                frozenset([1, '2', unproxied_person])))
+
+    def test_is_security_proxied_or_harmless__mapping_harmless_content(self):
+        # is_security_proxied_or_harmless() checks all keys and values in a
+        # mapping. If all elements are harmless, so is the mapping.
+        proxied_person = self.factory.makePerson()
+        self.assertTrue(
+            is_security_proxied_or_harmless({1: proxied_person}))
+        self.assertTrue(
+            is_security_proxied_or_harmless({proxied_person: 1}))
+
+    def test_is_security_proxied_or_harmless__mapping_harmful_content(self):
+        # is_security_proxied_or_harmless() checks all keys and values in a
+        # mapping. If at least one element is harmful, so is the mapping.
+        unproxied_person = removeSecurityProxy(self.factory.makePerson())
+        self.assertFalse(
+            is_security_proxied_or_harmless({1: unproxied_person}))
+        self.assertFalse(
+            is_security_proxied_or_harmless({unproxied_person: 1}))
