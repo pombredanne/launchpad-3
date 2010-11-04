@@ -97,8 +97,4 @@ class SyncPackageJob(DistributionJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-        self.target_archive.syncSource(
-            self.source_package_name, self.source_package_version,
-            self.source_archive, to_pocket=self.pocket,
-            to_series=self.distroseries,
-            include_binaries=self.include_binaries)
+        raise NotImplementedError(self.run)
