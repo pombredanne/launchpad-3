@@ -243,10 +243,11 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
+            text = unicode(text).lower()
             results = ISlaveStore(Language).find(
                 Language, Or(
-                    CONTAINSSTRING(Language.code.lower(), text.lower()),
-                    CONTAINSSTRING(Language.englishname.lower(), text.lower())
+                    CONTAINSSTRING(Language.code.lower(), text),
+                    CONTAINSSTRING(Language.englishname.lower(), text)
                     )).order_by(Language.englishname)
         else:
             results = None
