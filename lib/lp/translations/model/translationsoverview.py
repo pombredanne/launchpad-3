@@ -6,7 +6,10 @@ __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from lp.app.enums import ServiceUsage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.product import Product
@@ -66,15 +69,15 @@ class TranslationsOverview:
               WHERE category=3 AND
                     (product IS NOT NULL OR distribution IS NOT NULL) AND
                     (product.translations_usage = %s OR
-                        distribution.tranlsations_usage = %s)
+                        distribution.translations_usage = %s)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
               HAVING SUM(karmavalue) > 0
               ORDER BY total_karma DESC
-              LIMIT %d) AS something
+              LIMIT %s) AS something
           ORDER BY name""" % sqlvalues(ServiceUsage.LAUNCHPAD,
                               ServiceUsage.LAUNCHPAD,
-                              int(limit))
+                              limit)
         cur = cursor()
         cur.execute(query)
 
