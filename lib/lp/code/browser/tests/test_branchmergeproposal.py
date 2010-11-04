@@ -519,10 +519,12 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
 
 
 class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
+    """Test BranchMergeProposalResubmitView."""
 
     layer = DatabaseFunctionalLayer
 
     def createView(self):
+        """Create the required view."""
         context = self.factory.makeBranchMergeProposal()
         self.useContext(person_logged_in(context.registrant))
         view = BranchMergeProposalResubmitView(
@@ -531,6 +533,7 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         return view
 
     def test_resubmit_action(self):
+        """resubmit_action resubmits the proposal."""
         view = self.createView()
         context = view.context
         new_proposal = view.resubmit_action.success(
@@ -547,6 +550,7 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
             new_proposal.prerequisite_branch, context.prerequisite_branch)
 
     def test_resubmit_action_change_branches(self):
+        """Changing the branches changes the branches in the new proposal."""
         view = self.createView()
         target = view.context.source_branch.target
         new_source = self.factory.makeBranchTargetBranch(target)
@@ -564,6 +568,7 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
 
     def test_resubmit_action_break_link(self):
+        """Enabling break_link prevents linking the old and new proposals."""
         view = self.createView()
         context = view.context
         new_proposal = view.resubmit_action.success(
@@ -577,10 +582,12 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
 
 
 class TestResubmitBrowser(BrowserTestCase):
+    """Browser tests for resubmitting branch merge proposals."""
 
     layer = DatabaseFunctionalLayer
 
     def test_resubmit_text(self):
+        """The text of the resubmit page is as expected."""
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
         text = self.getMainText(bmp, '+resubmit')
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -588,9 +595,11 @@ class TestResubmitBrowser(BrowserTestCase):
             'Source Branch:.*'
             'Target Branch:.*'
             'Prerequisite Branch:.*'
-            'Description.*', text)
+            'Description.*'
+            'Break link.*', text)
 
     def test_resubmit_controls(self):
+        """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
         browser.getControl('Description').value = 'flibble'
