@@ -69,11 +69,11 @@ CATEGORY_STATS = [
     # Median is an approximation.
     # Real values are: 2.50, 2.20, 30
     (Category('All', ''), FakeStats(
-        total_hits=12, total_time=62.60, mean=5.22, median=1.0, std=5.99,
-        total_sqltime=42, mean_sqltime=3.82, median_sqltime=1.3,
+        total_hits=12, total_time=62.60, mean=5.22, median=4.20, std=5.99,
+        total_sqltime=42, mean_sqltime=3.82, median_sqltime=3.0,
         std_sqltime=3.89,
         total_sqlstatements=1392, mean_sqlstatements=126.55,
-        median_sqlstatements=16, std_sqlstatements=208.94,
+        median_sqlstatements=56, std_sqlstatements=208.94,
         histogram=[[0, 2], [1, 2], [2, 2], [3, 1], [4, 2], [5, 3]],
         )),
     (Category('Test', ''), FakeStats()),
@@ -354,8 +354,8 @@ class TestOnlineApproximateMedian(TestCase):
     def test_approximage_median_is_good_enough(self):
         for x in SHUFFLE_RANGE_100:
             self.estimator.update(x)
-        # True median is 50, 52 is good enough :-)
-        self.assertEquals(52, self.estimator.median)
+        # True median is 50, 49 is good enough :-)
+        self.assertIn(self.estimator.median, range(49,52))
 
     def test___add__(self):
         median1 = OnlineApproximateMedian(3)
