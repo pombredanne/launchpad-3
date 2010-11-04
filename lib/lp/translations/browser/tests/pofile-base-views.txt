@@ -4,8 +4,8 @@ POFileBaseView
 POFileBaseView provides different basic information about a POFile and a list
 of its content as TranslatableMessage objects.
 
-    >>> from lp.translations.browser.pofile import POFileBaseView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.translations.browser.pofile import POFileBaseView
 
     >>> potemplate = factory.makePOTemplate()
     >>> pofile = factory.makePOFile('eo', potemplate)

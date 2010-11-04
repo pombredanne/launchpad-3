@@ -71,7 +71,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
-
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -138,6 +137,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -161,7 +161,7 @@ from lp.registry.model.structuralsubscription import (
 from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -538,7 +538,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 purchaser=purchaser,
                 sales_system_id=voucher,
                 whiteboard=whiteboard)
-            IPropertyCache(self).commercial_subscription = subscription
+            get_property_cache(self).commercial_subscription = subscription
         else:
             if current_datetime <= self.commercial_subscription.date_expires:
                 # Extend current subscription.
@@ -980,6 +980,30 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return sorted(
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
+
+    def getVersionSortedSeries(self, filter_obsolete=False):
+        """See `IProduct`."""
+        store = Store.of(self)
+        dev_focus = store.find(
+            ProductSeries,
+            ProductSeries.id == self.development_focus.id)
+        other_series_conditions = [
+            ProductSeries.product == self,
+            ProductSeries.id != self.development_focus.id,
+            ]
+        if filter_obsolete is True:
+            other_series_conditions.append(
+                ProductSeries.status != SeriesStatus.OBSOLETE)
+        other_series = store.find(ProductSeries, other_series_conditions)
+        # The query will be much slower if the version_sort_key is not
+        # the first thing that is sorted, since it won't be able to use
+        # the productseries_name_sort index.
+        other_series.order_by(SQL('version_sort_key(name) DESC'))
+        # UNION ALL must be used to preserve the sort order from the
+        # separate queries. The sorting should not be done after
+        # unioning the two queries, because that will prevent it from
+        # being able to use the productseries_name_sort index.
+        return dev_focus.union(other_series, all=True)
 
     @property
     def obsolete_translatable_series(self):

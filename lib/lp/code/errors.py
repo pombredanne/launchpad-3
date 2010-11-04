@@ -26,6 +26,7 @@ __all__ = [
     'CodeImportNotInReviewedState',
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
+    'InvalidMergeQueueConfig',
     'InvalidNamespace',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -291,3 +292,13 @@ class BuildNotAllowedForDistro(RecipeBuildException):
         RecipeBuildException.__init__(
             self, recipe, distroseries,
             'A build against this distro is not allowed.')
+
+
+class InvalidMergeQueueConfig(Exception):
+    """The config specified is not a valid JSON string."""
+
+    webservice_error(400)
+
+    def __init__(self):
+        message = ('The configuration specified is not a valid JSON string.')
+        Exception.__init__(self, message)

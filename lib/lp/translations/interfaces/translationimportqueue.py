@@ -175,8 +175,8 @@ class SpecialTranslationImportTargetFilter(DBEnumeratedType):
 class IHasTranslationImports(Interface):
     """An entity on which a translation import queue entry is attached.
 
-    Examples include an IProductSeries, ISourcePackage, IDistroSeries and
-    IPerson.
+    Examples include ProductSeries, SourcePackage, DistroSeries, and
+    Person.
     """
     export_as_webservice_entry(
         singular_name='object_with_translation_imports',
@@ -185,7 +185,21 @@ class IHasTranslationImports(Interface):
     def getFirstEntryToImport():
         """Return the first entry of the queue ready to be imported."""
 
-    def getTranslationImportQueueEntries(imports_status=None,
+    @operation_parameters(
+        import_status=Choice(
+            title=_("Status"),
+            description=_("Show only entries with this status"),
+            vocabulary=RosettaImportStatus,
+            required=False),
+        file_extension=TextLine(
+            title=_("Filename extension"),
+            description=_("Show only entries with this filename suffix"),
+            required=False))
+    # Really ITranslationImportQueueEntry.  Fixed up in
+    # _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getTranslationImportQueueEntries(import_status=None,
                                          file_extension=None):
         """Return entries in the translation import queue for this entity.
 
@@ -274,7 +288,7 @@ class ITranslationImportQueueEntry(Interface):
     status = exported(
         Choice(
             title=_("The status of the import."),
-            values=RosettaImportStatus.items,
+            vocabulary=RosettaImportStatus,
             required=True,
             readonly=True))
 

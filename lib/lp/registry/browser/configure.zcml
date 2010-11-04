@@ -494,7 +494,7 @@
         template="../templates/distributionsourcepackage-changelog.pt"/>
     <browser:page
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        permission="launchpad.Edit"
+        permission="launchpad.BugSupervisor"
         class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageEditView"
         name="+edit"
         facet="overview"
@@ -1473,7 +1473,7 @@
         template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.product.ProductSeriesView"
+        class="lp.registry.browser.product.ProductSeriesSetView"
         name="+series"
         facet="overview"
         permission="zope.Public"

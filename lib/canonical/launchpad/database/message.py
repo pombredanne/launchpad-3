@@ -236,8 +236,8 @@ class MessageSet:
         If the header isn't encoded properly, the characters that can't
         be decoded are replaced with unicode question marks.
 
-            >>> MessageSet()._decode_header('=?utf-8?q?F=F6=F6_b=E4r?=')
-            u'F\ufffd\ufffd'
+            >>> MessageSet()._decode_header('=?utf-8?q?F=F6?=')
+            u'F\ufffd'
         """
         # Unfold the header before decoding it.
         header = ''.join(header.splitlines())

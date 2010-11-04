@@ -131,13 +131,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     implements(ITranslationMessage)
 
     def __init__(self, pofile, potmsgset):
-        # Check whether we already have a suitable TranslationMessage, in
-        # which case, the dummy one must not be used.
-        assert potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate,
-            pofile.language) is None, (
-                'This translation message already exists in the database.')
-
         self.id = None
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate

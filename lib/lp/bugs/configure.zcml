@@ -369,7 +369,6 @@
                     baseurl
                     bugtrackertype
                     componentForDistroSourcePackage
-                    component_groups
                     contactdetails
                     getAllRemoteComponentGroups
                     getBugFilingAndSearchLinks
@@ -395,10 +394,10 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addRemoteComponentGroup
                     destroySelf
                     ensurePersonForSelf
                     linkPersonToSelf
-                    addRemoteComponentGroup
                     "
                 set_attributes="
                     aliases
@@ -477,12 +476,15 @@
                     name
                     is_visible
                     is_custom
+                    distro_source_package
+                    component_group
                     "/>
             <require
                 permission="launchpad.AnyPerson"
                 set_attributes="
                     is_visible
                     is_custom
+                    distro_source_package
                     "/>
             <implements
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"/>
@@ -706,7 +708,6 @@
                     getSubscribersForPerson
                     indexed_messages
                     getAlsoNotifiedSubscribers
-                    getStructuralSubscribers
                     getBugWatch
                     canBeNominatedFor
                     getNominationFor
@@ -731,35 +732,35 @@
             <require
                 permission="launchpad.Edit"
                 attributes="
+                    addAttachment
+                    addChange
                     addChangeNotification
                     addCommentNotification
+                    addNomination
+                    addTask
                     addWatch
-                    removeWatch
+                    convertToQuestion
+                    expireNotifications
+                    findCvesInText
+                    linkAttachment
+                    linkBranch
                     linkCVE
                     linkCVEAndReturnNothing
-                    unlinkCVE
-                    findCvesInText
-                    newMessage
+                    linkHWSubmission
                     linkMessage
-                    addAttachment
-                    unsubscribeFromDupes
-                    subscribe
-                    unsubscribe
-                    addNomination
-                    expireNotifications
-                    setStatus
+                    markAsDuplicate
+                    markUserAffected
+                    newMessage
+                    removeWatch
                     setPrivate
                     setSecurityRelated
-                    convertToQuestion
-                    markUserAffected
-                    addTask
-                    addChange
-                    markAsDuplicate
-                    linkHWSubmission
-                    unlinkHWSubmission
-                    linkBranch
+                    setStatus
+                    subscribe
                     unlinkBranch
-                    linkAttachment
+                    unlinkCVE
+                    unlinkHWSubmission
+                    unsubscribe
+                    unsubscribeFromDupes
                     updateHeat"
                 set_attributes="
                     activity initial_message
@@ -1034,6 +1035,12 @@
         name="bugs"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.projectgroup.IProjectGroup"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
 

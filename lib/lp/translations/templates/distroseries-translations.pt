@@ -10,10 +10,8 @@
       use-macro="context/@@+translations-macros/translations-js" />
     <metal:languages-table-js
       use-macro="context/@@+translations-macros/languages-table-js" />
-    <tal:robots
-      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
-      <meta name="robots" content="noindex,nofollow" />
-    </tal:robots>
+    <meta tal:condition="not:context/translations_usage/enumvalue:LAUNCHPAD"
+          name="robots" content="noindex,nofollow" />
   </div>
   </head>
   <body>
@@ -156,4 +154,3 @@
     </div>
   </body>
 </html>
-

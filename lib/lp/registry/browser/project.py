@@ -254,7 +254,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download-icon')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')

@@ -974,12 +974,6 @@
       permission="zope.Public"
       name="+portlet-product-codestatistics"
       template="../templates/product-portlet-codestatistics.pt"/>
-   <browser:page
-      for="lp.registry.interfaces.product.IProduct"
-      class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
-      permission="zope.Public"
-      name="+portlet-product-codestatistics-content"
-      template="../templates/product-portlet-codestatistics-content.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.code.publisher.CodeLayer"
@@ -1072,7 +1066,7 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1081,7 +1075,7 @@
         permission="zope.Public"
         facet="branches"
         name="+subscribedbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1090,7 +1084,7 @@
         permission="zope.Public"
         facet="branches"
         name="+registeredbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1325,5 +1319,11 @@
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
     </facet>
+
+    <browser:url
+        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+        attribute_to_parent="owner"
+        path_expression="string:+merge-queues/${name}"
+        rootsite="code" />
 
 </configure>

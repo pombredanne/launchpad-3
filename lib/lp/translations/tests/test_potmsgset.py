@@ -13,10 +13,7 @@ from datetime import (
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
@@ -26,8 +23,9 @@ from canonical.testing.layers import (
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
@@ -71,6 +69,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Refresh the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_TranslationTemplateItem(self):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -167,37 +169,26 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             translations=[DIVERGED_ENGLISH_STRING], force_diverged=True)
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
-    def test_getCurrentDummyTranslationMessage(self):
-        """Test that a DummyTranslationMessage is correctly returned."""
+    def test_getCurrentTranslationMessageOrDummy_returns_real_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, current_other=True)
 
-        # When there is no POFile, we get a DummyTranslationMessage inside
-        # a DummyPOFile.
-        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+        self.assertEqual(
+            message,
+            message.potmsgset.getCurrentTranslationMessageOrDummy(pofile))
 
-        # If a POFile exists, but there is no current translation message,
-        # a dummy translation message is returned.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+    def test_getCurrentTranslationMessageOrDummy_returns_dummy_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
 
-        # When there is a current translation message, an exception
-        # is raised.
-        translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertTrue(translation.is_current_ubuntu)
-        self.assertRaises(AssertionError,
-                          self.potmsgset.getCurrentDummyTranslationMessage,
-                          self.devel_potemplate, serbian)
+        message = potmsgset.getCurrentTranslationMessageOrDummy(pofile)
+        self.assertIsInstance(message, DummyTranslationMessage)
 
-    def test_getCurrentDummyTranslationMessage_is_current(self):
+    def test_getCurrentTranslationMessageOrDummy_dummy_is_current(self):
         # getCurrentDummyTranslationMessage returns a current message.
-        frysian = getUtility(ILanguageSet).getLanguageByCode('fy')
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, frysian)
+        pofile = self.factory.makePOFile('fy')
+        dummy = self.potmsgset.getCurrentTranslationMessageOrDummy(pofile)
         self.assertTrue(dummy.is_current_upstream)
 
     def test_getCurrentTranslationMessage(self):
@@ -346,6 +337,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 
@@ -405,6 +397,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 
