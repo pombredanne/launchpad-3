@@ -974,12 +974,11 @@ class ResubmitSchema(IBranchMergeProposal):
         default=False,)
 
 
-class BranchMergeProposalResubmitView(MergeProposalEditView,
+class BranchMergeProposalResubmitView(LaunchpadFormView,
                                       UnmergedRevisionsMixin):
     """The view to resubmit a proposal to merge."""
 
     schema = ResubmitSchema
-    render_context = False
     for_input = True
     page_title = label = "Resubmit proposal to merge"
     field_names = [
