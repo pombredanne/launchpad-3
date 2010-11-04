@@ -1,9 +1,17 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Tests for sync package jobs."""
+
+import os
+import subprocess
+import sys
+
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
+
 from lp.soyuz.interfaces.distributionjob import (
     ISyncPackageJob,
     ISyncPackageJobSource,
@@ -45,3 +53,12 @@ class SyncPackageJobTests(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
+
+    def test_cronscript(self):
+        script = os.path.join(
+            config.root, 'cronscripts', 'sync_packages.py')
+        args = [sys.executable, script, '-v']
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0)
