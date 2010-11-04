@@ -1,12 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Classes for managing the NameBlackList table."""
+"""Classes for managing the NameBlacklist table."""
 
 __metaclass__ = type
 __all__ = [
-    'NameBlackList',
-    'NameBlackListSet',
+    'NameBlacklist',
+    'NameBlacklistSet',
     ]
 
 
@@ -21,38 +21,38 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.registry.interfaces.nameblacklist import (
-    INameBlackList,
-    INameBlackListSet,
+    INameBlacklist,
+    INameBlacklistSet,
     )
 
 
-class NameBlackList(Storm):
-    """Class for the NameBlackList table."""
+class NameBlacklist(Storm):
+    """Class for the NameBlacklist table."""
 
-    implements(INameBlackList)
+    implements(INameBlacklist)
 
-    __storm_table__ = 'NameBlackList'
+    __storm_table__ = 'NameBlacklist'
 
     id = Int(primary=True)
     regexp = Unicode(name='regexp', allow_none=False)
     comment = Unicode(name='comment', allow_none=True)
 
 
-class NameBlackListSet:
-    """Class for creating and retrieving NameBlackList objects."""
+class NameBlacklistSet:
+    """Class for creating and retrieving NameBlacklist objects."""
 
-    implements(INameBlackListSet)
+    implements(INameBlacklistSet)
 
     def create(self, regexp, comment=None):
-        """See `INameBlackListSet`."""
-        nameblacklist = NameBlackList()
+        """See `INameBlacklistSet`."""
+        nameblacklist = NameBlacklist()
         nameblacklist.regexp = regexp
         nameblacklist.comment = comment
-        store = IStore(NameBlackList)
+        store = IStore(NameBlacklist)
         store.add(nameblacklist)
         return nameblacklist
 
     def get(self, id):
-        """See `INameBlackListSet`."""
-        store = IStore(NameBlackList)
-        return store.find(NameBlackList, NameBlackList.id == id).one()
+        """See `INameBlacklistSet`."""
+        store = IStore(NameBlacklist)
+        return store.find(NameBlacklist, NameBlacklist.id == id).one()

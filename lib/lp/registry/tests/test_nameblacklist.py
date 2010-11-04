@@ -15,8 +15,8 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.nameblacklist import (
-    INameBlackList,
-    INameBlackListSet,
+    INameBlacklist,
+    INameBlacklistSet,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
@@ -98,29 +98,29 @@ class TestNameBlacklist(TestCase):
         self.failUnless(self.is_blacklisted_name("verbose") is True)
 
 
-class TestNameBlackListSet(TestCase):
+class TestNameBlacklistSet(TestCase):
 
     layer = ZopelessDatabaseLayer
 
     def test_create_with_one_arg(self):
         login(ADMIN_EMAIL)
-        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist_set = getUtility(INameBlacklistSet)
         nameblacklist = nameblacklist_set.create(u'foo')
-        self.assertTrue(verifyObject(INameBlackList, nameblacklist))
+        self.assertTrue(verifyObject(INameBlacklist, nameblacklist))
         self.assertEquals(u'foo', nameblacklist.regexp)
         self.assertIs(None, nameblacklist.comment)
 
     def test_create_with_two_args(self):
         login(ADMIN_EMAIL)
-        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist_set = getUtility(INameBlacklistSet)
         nameblacklist = nameblacklist_set.create(u'foo', u'bar')
-        self.assertTrue(verifyObject(INameBlackList, nameblacklist))
+        self.assertTrue(verifyObject(INameBlacklist, nameblacklist))
         self.assertEquals(u'foo', nameblacklist.regexp)
         self.assertEquals(u'bar', nameblacklist.comment)
 
     def test_get(self):
         login(ADMIN_EMAIL)
-        nameblacklist_set = getUtility(INameBlackListSet)
+        nameblacklist_set = getUtility(INameBlacklistSet)
         nameblacklist = nameblacklist_set.create(u'foo', u'bar')
         store = IStore(nameblacklist)
         store.flush()
