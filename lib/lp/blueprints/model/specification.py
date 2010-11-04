@@ -12,7 +12,6 @@ __all__ = [
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
-    ObjectDeletedEvent,
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.objectdelta import ObjectDelta
@@ -24,11 +23,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import (
-    LeftJoin,
-    )
 from storm.locals import (
-    ClassAlias,
     Desc,
     SQL,
     )
