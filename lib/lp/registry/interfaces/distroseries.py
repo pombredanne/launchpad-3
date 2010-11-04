@@ -86,6 +86,9 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
@@ -179,7 +182,8 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords, IHasTranslationTemplates, IServiceUsage):
+    IHasBuildRecords, IHasTranslationImports, IHasTranslationTemplates,
+    IServiceUsage):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")

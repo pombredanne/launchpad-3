@@ -99,10 +99,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -260,14 +258,12 @@ from lp.testing import (
     temp_dir,
     time_counter,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -1128,7 +1124,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = getUtility(IBranchMergeQueueSource).new(
-            name, registrant, owner, description, configuration)
+            name, owner, registrant, description, configuration)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
@@ -1343,19 +1339,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
-                status=None):
+                status=None, distribution=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
 
-        :param product: If the product is not set, one is created
-            and this is used as the primary bug target.
+        :param product: If the product is not set, and if the parameter
+            distribution is not set, a product is created and this is
+            used as the primary bug target.
         :param owner: The reporter of the bug. If not set, one is created.
         :param bug_watch_url: If specified, create a bug watch pointing
             to this URL.
+        :param distribution: If set, the distribution is used as the
+            default bug target.
+
+        At least one of the parameters distribution and product must be
+        None, otherwise, an assertion error will be raised.
         """
-        if product is None:
+        if product is None and distribution is None:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
@@ -1367,7 +1369,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner, title, comment=comment, private=private,
             datecreated=date_created, description=description,
             status=status)
-        create_bug_params.setBugTarget(product=product)
+        create_bug_params.setBugTarget(
+            product=product, distribution=distribution)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
