@@ -78,9 +78,11 @@ class TestCronGerminate(TestCase):
         ubuntu_misc_dir = os.path.join(archive_dir, "ubuntu-misc")
         ubuntu_germinate_dir = os.path.join(archive_dir, "ubuntu-germinate")
         ubuntu_dists_dir = os.path.join(archive_dir, "ubuntu", "dists")
-        self.create_directory_list_if_missing(
-            [archive_dir, ubuntu_misc_dir, ubuntu_germinate_dir,
-             ubuntu_dists_dir])
+        self.create_directory_list_if_missing([
+                archive_dir,
+                ubuntu_misc_dir,
+                ubuntu_germinate_dir,
+                ubuntu_dists_dir])
         return archive_dir
 
     def populate_mock_archive_environment(self, archive_dir, components_list,
@@ -90,8 +92,9 @@ class TestCronGerminate(TestCase):
         """
         for component in components_list:
             # Create the environment for the source packages.
-            targetdir = os.path.join(archive_dir,
-                                     "ubuntu/dists/%s/%s/source" % (
+            targetdir = os.path.join(
+                archive_dir,
+                "ubuntu/dists/%s/%s/source" % (
                     current_devel_distro, component))
             self.create_directory_if_missing(targetdir)
             self.create_gzip_file(os.path.join(targetdir, "Sources.gz"))
@@ -150,8 +153,8 @@ class TestCronGerminate(TestCase):
         # Run cron.germinate in the fake environment.
         cron_germinate_path = os.path.join(
             self.BASEPATH, "..", "cron.germinate")
-        subprocess.call([cron_germinate_path],
-                        env=fake_environ, cwd=self.BASEPATH)
+        subprocess.call(
+            [cron_germinate_path], env=fake_environ, cwd=self.BASEPATH)
 
         # And check the output it generated for correctness.
         for dist in self.DISTS:
@@ -162,7 +165,9 @@ class TestCronGerminate(TestCase):
             main_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
-            self.assertTrue(canary in open(main_override_file).read())
+            self.assertTrue(canary in open(main_override_file).read(),
+                            msg="canary '%s' is not in file '%s'" % (
+                    canary, main_override_file))
 
         # Check here if we got the data from maintenance-check.py that
         # we expected. This is a kernel name from lucid-updates and it
