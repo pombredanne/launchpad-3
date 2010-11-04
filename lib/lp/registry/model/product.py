@@ -1565,14 +1565,21 @@ class ProductSet:
 
     def getTranslatables(self):
         """See `IProductSet`"""
+        # XXX j.c.sackett 627631 11.4.2010 This needs to be changed to use
+        # translations usage, but storm is showing weirdness with the 
+        # commented out conditional. Specifically, it's swapping it out with
+        # False.
         results = IStore(Product).find(
             (Product, Person),
-            Product.active == True,
-            Product.id == ProductSeries.productID,
-            POTemplate.productseriesID == ProductSeries.id,
-            Product.translations_usage == ServiceUsage.LAUNCHPAD,
-            Person.id == Product._ownerID,
-            ).config(distinct=True).order_by(Product.title)
+            And(
+                Product.active == True,
+                Product.id == ProductSeries.productID,
+                POTemplate.productseriesID == ProductSeries.id,
+                Product.official_rosetta == True,
+                # Product.translations_usage == ServiceUsage.LAUNCHPAD.value,
+                Person.id == Product._ownerID)).config(
+                        distinct=True).order_by(Product.title)
+
 
         # We only want Product - the other tables are just to populate
         # the cache.
@@ -1595,7 +1602,7 @@ class ProductSet:
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(ServiceUsage.LAUNCHPAD, maximumproducts),
+            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

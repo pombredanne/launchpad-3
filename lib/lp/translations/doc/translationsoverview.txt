@@ -74,10 +74,6 @@ The following demo assumes the test data has official_translations set.
 Let's set that up.
 
     >>> from lp.app.enums import ServiceUsage
-    >>> from lp.testing import (
-    ...     login,
-    ...     logout,
-    ...     )
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
