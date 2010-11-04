@@ -563,6 +563,8 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        if hasattr(naked_user, '_password_cleartext_cached'):
+            password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
