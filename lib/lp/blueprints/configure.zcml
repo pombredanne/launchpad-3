@@ -189,6 +189,18 @@
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="canonical.launchpad.subscribers.karma.spec_modified"/>
+  <subscriber
+      for="lp.blueprints.interfaces.specification.ISpecification
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
+      handler="lp.blueprints.subscribers.specification_update_lifecycle_status"/>
+  <subscriber
+      for="lp.blueprints.interfaces.specification.ISpecification
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
+      handler="lp.blueprints.subscribers.specification_goalstatus"/>
+  <subscriber
+      for="lp.blueprints.interfaces.specification.ISpecification
+           lazr.lifecycle.interfaces.IObjectModifiedEvent"
+      handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
 
   <!-- SpecificationSet -->
 
@@ -225,14 +237,5 @@
       provides="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet">
     <allow interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet"/>
   </securedutility>
-
-  <subscriber
-      for="lp.blueprints.interfaces.specification.ISpecification
-           lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.blueprints.subscribers.specification_goalstatus"/>
-  <subscriber
-      for="lp.blueprints.interfaces.specification.ISpecification
-           lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.notify_specification_modified"/>
 
 </configure>

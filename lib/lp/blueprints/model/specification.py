@@ -386,6 +386,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
                     (self.definition_status ==
                      SpecificationDefinitionStatus.APPROVED)))
 
+    @property
+    def lifecycle_status(self):
+        """Combine the is_complete and is_started emergent properties."""
+        if self.is_complete:
+            return SpecificationLifecycleStatus.COMPLETE
+        elif self.is_started:
+            return SpecificationLifecycleStatus.STARTED
+        else:
+            return SpecificationLifecycleStatus.NOTSTARTED
+
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None
