@@ -625,7 +625,19 @@ class IDistributionPublic(
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
     IRootContext, IStructuralSubscriptionTarget):
-    """An operating system distribution."""
+    """An operating system distribution.
+
+    Launchpadlib example: retrieving the current version of a package in a
+    particular distroseries.
+
+    ::
+
+        ubuntu = launchpad.distributions["ubuntu"]
+        archive = ubuntu.main_archive
+        series = ubuntu.current_series
+        print archive.getPublishedSources(exact_match=True,
+            source_name="apport", distro_series=series)[0].source_package_version
+    """
     export_as_webservice_entry()
 
 
