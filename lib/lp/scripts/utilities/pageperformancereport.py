@@ -135,12 +135,12 @@ class OnlineStatsCalculator:
             # Department of Computer Science, Stanford University,
             # ftp://reports.stanford.edu/pub/cstr/reports/cs/tr/79/773/CS-TR-79-773.pdf .
             results.M2 = self.M2 + other.M2 + (
-                (float(self.count)/(other.count*results.count)) *
-                ((float(other.count)/self.count)*self.sum - other.sum)**2)
+                (float(self.count) / (other.count * results.count)) *
+                ((float(other.count) / self.count) * self.sum - other.sum)**2)
         else:
             results.M2 = self.M2 + other.M2 # One of them is 0.
         if results.count > 0:
-            results.mean = float(results.sum)/results.count
+            results.mean = float(results.sum) / results.count
         return results
 
 
@@ -461,7 +461,7 @@ class RequestTimes:
                 cutoff = int(self.top_urls_cache_size*0.90)
                 self.url_times = dict(
                     sorted(self.url_times.items(),
-                    key=lambda x: x[1].total_time,
+                    key=lambda (url, stats): stats.total_time,
                     reverse=True)[:cutoff])
 
     def get_category_times(self):
@@ -473,7 +473,8 @@ class RequestTimes:
         # Sort the result by total time
         return sorted(
             self.url_times.items(),
-            key=lambda x: x[1].total_time, reverse=True)[:self.top_urls]
+            key=lambda (url, stats): stats.total_time,
+            reverse=True)[:self.top_urls]
 
     def get_pageid_times(self):
         """Return the times for the pageids."""
@@ -484,14 +485,12 @@ class RequestTimes:
         """Merge two RequestTimes together."""
         results = copy.deepcopy(self)
         for other_category, other_stats in other.category_times:
-            found = False
             for i, (category, stats) in enumerate(self.category_times):
                 if category.title == other_category.title:
                     results.category_times[i] = (
                         category, stats + other_stats)
-                    found = True
                     break
-            if not found:
+            else:
                 results.category_times.append(
                     (other_category, copy.deepcopy(other_stats)))
 
@@ -504,9 +503,10 @@ class RequestTimes:
         # Only keep top_urls_cache_size entries.
         if len(self.url_times) > self.top_urls_cache_size:
             self.url_times = dict(
-                sorted(url_times.items(),
-                key=lambda x: x[1].total_time,
-                reverse=True)[:self.top_urls_cache_size])
+                sorted(
+                    url_times.items(),
+                    key=lambda (url, stats): stats.total_time,
+                    reverse=True)[:self.top_urls_cache_size])
 
         pageid_times = results.pageid_times
         for pageid, stats in other.pageid_times.items():
@@ -674,16 +674,14 @@ def main():
 
     for option in script_config.options('metrics'):
         name = script_config.get('metrics', option)
-        found = False
         for category, stats in category_times:
             if category.title == name:
                 writer.writerows([
                     ("%s_99" % option, "%f@%d" % (
                         stats.ninetyninth_percentile_time, date)),
                     ("%s_mean" % option, "%f@%d" % (stats.mean, date))])
-                found = True
                 break
-        if not found:
+        else:
             log.warning("Can't find category %s for metric %s" % (
                 option, name))
     metrics_file.close()
