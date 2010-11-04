@@ -163,7 +163,7 @@ from canonical.launchpad.validators.name import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -218,6 +218,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
+    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -250,7 +251,6 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.structuralsubscription import StructuralSubscription
@@ -276,7 +276,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
@@ -664,53 +664,6 @@ class Person(
             AND NOT (%(completed_clause)s)
             """ % replacements
         return Specification.select(query, orderBy=['-date_started'], limit=5)
-
-    # mentorship
-    @property
-    def mentoring_offers(self):
-        """See `IPerson`"""
-        return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT MentoringOffer.id
-            FROM MentoringOffer
-            LEFT OUTER JOIN BugTask ON
-                MentoringOffer.bug = BugTask.bug
-            LEFT OUTER JOIN Bug ON
-                BugTask.bug = Bug.id
-            LEFT OUTER JOIN Specification ON
-                MentoringOffer.specification = Specification.id
-            WHERE
-                MentoringOffer.owner = %s
-                """ % sqlvalues(self.id) + """ AND (
-                BugTask.id IS NULL OR NOT
-                (Bug.private IS TRUE OR
-                  (""" + BugTask.completeness_clause +"""))) AND (
-                Specification.id IS NULL OR NOT
-                (""" + Specification.completeness_clause +")))",
-            )
-
-    @property
-    def team_mentorships(self):
-        """See `IPerson`"""
-        return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT MentoringOffer.id
-            FROM MentoringOffer
-            JOIN TeamParticipation ON
-                MentoringOffer.team = TeamParticipation.person
-            LEFT OUTER JOIN BugTask ON
-                MentoringOffer.bug = BugTask.bug
-            LEFT OUTER JOIN Bug ON
-                BugTask.bug = Bug.id
-            LEFT OUTER JOIN Specification ON
-                MentoringOffer.specification = Specification.id
-            WHERE
-                TeamParticipation.team = %s
-                """ % sqlvalues(self.id) + """ AND (
-                BugTask.id IS NULL OR NOT
-                (Bug.private IS TRUE OR
-                  (""" + BugTask.completeness_clause +"""))) AND (
-                Specification.id IS NULL OR NOT
-                (""" + Specification.completeness_clause +")))",
-            )
 
     @property
     def unique_displayname(self):
@@ -2751,6 +2704,18 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
+    def createPPA(self, name=None, displayname=None, description=None):
+        """See `IPerson`."""
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
+
     def isBugContributor(self, user=None):
         """See `IPerson`."""
         search_params = BugTaskSearchParams(user=user, assignee=self)
@@ -3538,40 +3503,6 @@ class PersonSet:
             DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
 
-    def _mergeMentoringOffer(self, cur, from_id, to_id):
-        # Update only the MentoringOffers that will not conflict.
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET owner=%(to_id)d
-            WHERE owner=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-            ''' % vars())
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET team=%(to_id)d
-            WHERE team=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM MentoringOffer
-            WHERE owner=%(from_id)d OR team=%(from_id)d
-            ''' % vars())
-
     def _mergeBugNotificationRecipient(self, cur, from_id, to_id):
         # Update BugNotificationRecipient entries that will not conflict.
         cur.execute('''
@@ -3771,7 +3702,7 @@ class PersonSet:
                         'AND team = %s'
                         % sqlvalues(to_id, team_id))
             result = cur.fetchone()
-            if result:
+            if result is not None:
                 current_status = result[0]
                 # Now we can safely delete from_person's membership record,
                 # because we know to_person has a membership entry for this
@@ -3816,6 +3747,45 @@ class PersonSet:
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
                     'team = %s' % sqlvalues(from_id, team_id))
 
+    def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
+        # Merge the karma total cache so the user does not think the karma
+        # was lost.
+        if from_karma > 0:
+            cur.execute('''
+                SELECT karma_total FROM KarmaTotalCache
+                WHERE person = %(to_id)d
+                ''' % vars())
+            result = cur.fetchone()
+            if result is not None:
+                # Add the karma to the remaining user.
+                karma_total = from_karma + result[0]
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
+                    WHERE person = %(to_id)d
+                    ''' % vars())
+            else:
+                # Make the existing karma belong to the remaining user.
+                cur.execute('''
+                    UPDATE KarmaTotalCache SET person = %(to_id)d
+                    WHERE person = %(from_id)d
+                    ''' % vars())
+        # Delete the old caches; the daily job will build them later.
+        cur.execute('''
+            DELETE FROM KarmaTotalCache WHERE person = %(from_id)d
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM KarmaCache WHERE person = %(from_id)d
+            ''' % vars())
+
+    def _mergeDateCreated(self, cur, from_id, to_id):
+        cur.execute('''
+            UPDATE Person
+            SET datecreated = (
+                SELECT MIN(datecreated) FROM Person
+                WHERE id in (%(to_id)d, %(from_id)d) LIMIT 1)
+            WHERE id = %(to_id)d
+            ''' % vars())
+
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
@@ -3854,8 +3824,6 @@ class PersonSet:
             ('personlanguage', 'person'),
             ('person', 'merged'),
             ('emailaddress', 'person'),
-            ('karmacache', 'person'),
-            ('karmatotalcache', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
             # We can safely ignore the mailinglist table as there's a sanity
@@ -3938,7 +3906,7 @@ class PersonSet:
         self._mergeQuestionSubscription(cur, from_id, to_id)
         skip.append(('questionsubscription', 'person'))
 
-        self._mergeMentoringOffer(cur, from_id, to_id)
+        # DELETE when the mentoring table is deleted.
         skip.append(('mentoringoffer', 'owner'))
         skip.append(('mentoringoffer', 'team'))
 
@@ -3989,6 +3957,12 @@ class PersonSet:
 
         self._mergeWebServiceBan(cur, from_id, to_id)
         skip.append(('webserviceban', 'person'))
+
+        self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
+        skip.append(('karmacache', 'person'))
+        skip.append(('karmatotalcache', 'person'))
+
+        self._mergeDateCreated(cur, from_id, to_id)
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

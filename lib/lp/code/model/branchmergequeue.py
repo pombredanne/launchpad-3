@@ -72,6 +72,9 @@ class BranchMergeQueue(Storm):
         """See `IBranchMergeQueueSource`."""
         store = IMasterStore(BranchMergeQueue)
 
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({}))
+
         queue = cls()
         queue.name = name
         queue.owner = owner

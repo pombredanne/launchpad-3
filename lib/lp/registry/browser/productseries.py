@@ -92,10 +92,8 @@ from lp.app.errors import (
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationImplementationStatus,
-    )
+from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,

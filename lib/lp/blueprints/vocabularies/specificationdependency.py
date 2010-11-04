@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.pillar import IPillarNameSet
 

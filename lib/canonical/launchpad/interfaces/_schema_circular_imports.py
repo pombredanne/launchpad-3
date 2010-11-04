@@ -118,6 +118,9 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -125,7 +128,6 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSubset,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueueEntry,
     )
 
@@ -212,6 +214,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[

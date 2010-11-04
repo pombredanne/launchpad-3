@@ -176,7 +176,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import (
     Person,
     ValidPersonCache,
@@ -320,8 +319,6 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    mentoring_offers = SQLMultipleJoin(
-            'MentoringOffer', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -957,6 +954,14 @@ BugMessage""" % sqlvalues(self.id))
             ).order_by(Person.name),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
+    def getSubscriptionForPerson(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        return store.find(
+            BugSubscription,
+            BugSubscription.person == person,
+            BugSubscription.bug == self).one()
+
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
@@ -1388,42 +1393,6 @@ BugMessage""" % sqlvalues(self.id))
     def getQuestionCreatedFromBug(self):
         """See `IBug`."""
         return self._question_from_bug
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        if user is None:
-            return False
-        if self.duplicateof is not None or self.is_complete:
-            return False
-        if bool(self.isMentor(user)):
-            return False
-        if not user.teams_participated_in:
-            return False
-        return True
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # if an offer exists, then update the team
-        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
-        if mentoringoffer is not None:
-            mentoringoffer.team = team
-            return mentoringoffer
-        # if no offer exists, create one from scratch
-        mentoringoffer = MentoringOffer(owner=user, team=team,
-            bug=self)
-        notify(ObjectCreatedEvent(mentoringoffer, user=user))
-        return mentoringoffer
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
-        if mentoringoffer is not None:
-            notify(ObjectDeletedEvent(mentoringoffer, user=user))
-            MentoringOffer.delete(mentoringoffer.id)
 
     def getMessageChunks(self):
         """See `IBug`."""
