@@ -17,13 +17,21 @@
       in your chosen PPA. (<a href="https://help.launchpad.net/Packaging/SourceBuilds" target="_blank">Read more</a>)
     </p>
 
-    <p>A "recipe" is a description of the steps bzr-builder should take to
-      construct a source package from the various bzr branches. Its format
-      specifies:</p>
+    <p>A "recipe" is a description of the steps Launchpad's package builder
+      should take to construct a source package from a set of Bazaar branches
+      that you specify.
+    </p>
+
+    <p>
+      Using a recipe, you tell Launchpad:
+    </p>
     <ul class="bulleted">
-      <li>where to use the code from (trunk branch, beta branch, etc.), where to get the packaging from (separate branch? ubuntu branch?)</li>
-      <li>the correct package version (so users will still be able to upgrade to the stable version of the distro once it gets released)</li>
-      <li>what to modify to make the source build properly</li>
+      <li>in which branch to find the code</li>
+      <li>where to find the packaging information &mdash; e.g. in a separate
+      branch or in an existing Ubuntu package branch</li>
+      <li>the correct package version (so users will still be able to upgrade
+      to the stable version of the distro once it gets released)</li>
+      <li>any modifications necessary to make the source build properly</li>
     </ul>
 
   </body>
