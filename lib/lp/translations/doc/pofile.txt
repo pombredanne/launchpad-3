@@ -396,6 +396,7 @@ for example).
 When the language has number of plural forms defined, that value is
 used.
 
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
@@ -426,6 +427,7 @@ This method serializes an IPOFile as a .po file.
 
 Get a concrete POFile we know doesn't have a UTF-8 encoding.
 
+    >>> from lp.translations.model.pofile import POFile
     >>> pofile = POFile.get(24)
     >>> print pofile.header
     Project-Id-Version: PACKAGE VERSION
@@ -481,8 +483,9 @@ singular remains unchanged.
 
 So for a concrete export, we have a message like:
 
+    >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> print pofile_es.export(force_utf8=True).decode('utf8')
-    # traducci...
+    # ...
     ...
     #: addressbook/gui/widgets/foo.c:345
     #, c-format
@@ -512,7 +515,7 @@ When it changes...
 ...the export reflects that change.
 
     >>> print pofile_es.export(force_utf8=True).decode('utf8')
-    # traducci...
+    # ...
     ...
     #: addressbook/gui/widgets/foo.c:345
     #, c-format
@@ -529,7 +532,7 @@ The POTMsgSet that are untranslated are the ones that are not complete.
 
     >>> untranslated_potmsgset = pofile_es.getPOTMsgSetUntranslated()
     >>> untranslated_potmsgset.count()
-    14
+    15
 
     >>> for potmsgset in untranslated_potmsgset:
     ...     pomsgset = potmsgset.getCurrentTranslationMessage(
@@ -560,8 +563,12 @@ Now, just to be sure that this entry doesn't exist yet:
     ...     pofile_sr.potemplate, pofile_sr.language)
     None
 
-Is time to create it.
+Is time to create it.  We need some extra privileges here.
 
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login('carlos@canonical.com')
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> translations = {0: u''}
     >>> is_imported = False
     >>> lock_timestamp = datetime.datetime.now(UTC)
@@ -580,13 +587,7 @@ As we can see, is the msgid we were looking for.
     >>> print translation_message.language.code
     sr
 
-This entry is in fact one that is not used anymore, that means, its
-sequence is zero.
-
-    >>> translation_message.potmsgset.sequence
-    0
-
-Also, we created it without translations.
+We created it without translations.
 
     >>> translation_message.translations
     [None, None, None]
@@ -731,10 +732,6 @@ Lets get Evolution Spanish translation in distribution Hoary.
 
     >>> noneditor = person_set.getByName('no-priv')
     >>> editor = person_set.getByName('carlos')
-
-    # Make sure the translation permission mode is restricted
-
-    >>> product.translationpermission = TranslationPermission.RESTRICTED
 
 Non-editor can only submit a new suggestion on untranslated message.
 
