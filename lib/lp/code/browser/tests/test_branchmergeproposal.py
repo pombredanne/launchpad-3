@@ -504,7 +504,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertOnePendingReview(proposal, reviewer)
         self.assertIs(None, proposal.description)
 
-    def test_register_request_review_type(self):
+    def test_register_request_review_type_branch_reviewer(self):
         # We can ask for a specific review type. The target branch has a
         # reviewer so that reviewer should be used.
         target_branch, reviewer = self._makeTargetBranchWithReviewer()
