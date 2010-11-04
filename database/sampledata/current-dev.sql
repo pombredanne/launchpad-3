@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.5
+-- Created using pg_dump (PostgreSQL) 8.4.3
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,27 +10,6 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1976,10 +1955,10 @@ ALTER TABLE product DISABLE TRIGGER ALL;
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (1, 1, 17, 'tomcat', 'Tomcat', 'Tomcat', 'The servlet container that is used in the official Reference Implementation for the Java Servlet and JavaServer Pages technologies.', 'Apache Tomcat is developed in an open and participatory environment and released under the Apache Software License. This project has nothing to do with Ubuntu, but this description uses the word "Ubuntu" for the purpose of testing search results.', '2004-09-24 20:58:00.655518', 'http://tomcat.apache.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 17, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://archive.apache.org/dist/tomcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 2, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 2, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 20, 10, 10);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
-The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 20);
+The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, 2, 14, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, 'gnome-terminal', NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 13, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
@@ -1991,11 +1970,11 @@ INSERT INTO product (id, project, owner, name, displayname, title, summary, desc
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 6, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 16, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 16, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 1, NULL, NULL, NULL, NULL, NULL, 10, 10, 20);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 1, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
 
 The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 9, NULL, NULL, NULL, NULL, false, true, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 20, 10, 10);
+INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL, true, false, false, NULL, false, false, NULL, NULL, false, 12, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (18, NULL, 37, 'upstart', 'Upstart', 'The Upstart System Initialisation Process', 'Event-based init daemon.', 'upstart is a replacement for the /sbin/init daemon which handles starting of tasks and services during boot, stopping them during shutdown and supervising them while the system is running.', '2007-03-14 18:47:04.891546', 'http://upstart.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 20, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL, false, 37, NULL, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO product (id, project, owner, name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bug_supervisor, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, license_approved, registrant, remote_product, translation_focus, max_bug_heat, date_next_suggest_packaging, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (19, NULL, 28, 'aptoncd', 'APTonCD', 'APTonCD, Get APT Anywhere', 'A simple yet powerful tool which allows you to create one (or more) CD/DVD-Repository containing all of the packages downloaded via apt-get or aptitude.', 'A GUI-based tool that allows you to create a CD/DVD with all downloaded packages with APT-GET, creating a removable-repository.
 
@@ -3354,42 +3333,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (1, 2, 1, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (2, 1, 3, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (3, 1, 4, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (4, 2, 5, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (5, 2, 6, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (6, 4, 7, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (7, 5, 8, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (8, 6, 9, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (9, 3, 10, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (10, 7, 11, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (11, 8, 14, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (12, 9, 15, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (13, 10, 17, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (14, 10, 16, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (15, 11, 24, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (16, 11, 25, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (17, 11, 26, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (18, 11, 27, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (19, 11, 28, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (20, 11, 29, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (21, 11, 30, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (22, 12, 31, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (23, 12, 33, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (24, 12, 34, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (25, 12, 35, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (26, 12, 36, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (27, 13, 37, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3820,6 +3799,13 @@ ALTER TABLE bugtrackercomponentgroup DISABLE TRIGGER ALL;
 ALTER TABLE bugtrackercomponentgroup ENABLE TRIGGER ALL;
 
 
+ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugtrackercomponent DISABLE TRIGGER ALL;
 
 
@@ -4028,13 +4014,6 @@ INSERT INTO distributionbounty (id, bounty, distribution, date_created) VALUES (
 ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distributionjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE distributionjob ENABLE TRIGGER ALL;
-
-
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
@@ -4050,13 +4029,6 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
@@ -6325,13 +6297,6 @@ ALTER TABLE personnotification DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personnotification ENABLE TRIGGER ALL;
-
-
-ALTER TABLE persontransferjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE persontransferjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pocketchroot DISABLE TRIGGER ALL;
@@ -9850,13 +9815,6 @@ ALTER TABLE questionbug DISABLE TRIGGER ALL;
 ALTER TABLE questionbug ENABLE TRIGGER ALL;
 
 
-ALTER TABLE questionjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE questionjob ENABLE TRIGGER ALL;
-
-
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
 INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
@@ -11277,13 +11235,6 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
-
-
-ALTER TABLE translationtemplatesbuild DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE translationtemplatesbuild ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translator DISABLE TRIGGER ALL;
