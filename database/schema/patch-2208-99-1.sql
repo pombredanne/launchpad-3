@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE TranslationImportQueueEntry
-    RENAME COLUMN is_published TO from_upstream;
+    RENAME COLUMN is_published TO by_maintainer;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 1);
