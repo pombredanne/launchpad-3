@@ -1555,6 +1555,33 @@
         permission="launchpad.Moderate"
         template="../templates/product-review-license.pt"/>
     <browser:page
+        for="lp.registry.interfaces.nameblacklist.INameBlacklist"
+        permission="launchpad.Edit"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistEditView"
+        name="+edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        path_expression="string:+nameblacklists"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        rootsite="mainsite"/>
+    <browser:defaultView
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        name="+index"/>
+    <browser:pages
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        permission="launchpad.Edit"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistSetView">
+        <browser:page
+            name="+index"
+            template="../templates/nameblacklists-index.pt"/>
+        <browser:page
+            name="+add"
+            template="../../app/templates/generic-edit.pt"/>
+    </browser:pages>
+    <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
         class="lp.registry.browser.product.ProductAddSeriesView"

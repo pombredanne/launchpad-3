@@ -131,6 +131,7 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -583,6 +584,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        '+nameblacklists': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
