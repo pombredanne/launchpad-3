@@ -34,6 +34,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalChangeStatusView,
     BranchMergeProposalContextMenu,
     BranchMergeProposalMergedView,
+    BranchMergeProposalResubmitView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
     ICodeReviewNewRevisions,
@@ -50,7 +51,9 @@ from lp.code.model.diff import (
     )
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
+    BrowserTestCase,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     time_counter,
     )
@@ -472,6 +475,71 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertEqual(proposal.description, "This is the description.")
+
+
+class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def createView(self):
+        context = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(context.registrant))
+        view = BranchMergeProposalResubmitView(
+            context, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_resubmit_action(self):
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+            })
+        self.assertEqual(new_proposal.supersedes, context)
+        self.assertEqual(new_proposal.source_branch, context.source_branch)
+        self.assertEqual(new_proposal.target_branch, context.target_branch)
+        self.assertEqual(
+            new_proposal.prerequisite_branch, context.prerequisite_branch)
+
+    def test_resubmit_action_change_branches(self):
+        view = self.createView()
+        target = view.context.source_branch.target
+        new_source = self.factory.makeBranchTargetBranch(target)
+        new_target = self.factory.makeBranchTargetBranch(target)
+        new_prerequisite = self.factory.makeBranchTargetBranch(target)
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': new_source, 'target_branch': new_target,
+             'prerequisite_branch': new_prerequisite,
+             'description': 'description'})
+        self.assertEqual(new_proposal.supersedes, view.context)
+        self.assertEqual(new_proposal.source_branch, new_source)
+        self.assertEqual(new_proposal.target_branch, new_target)
+        self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
+
+
+class TestResubmitBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_resubmit_text(self):
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        text = self.getMainText(bmp, '+resubmit')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Resubmit proposal to merge.*'
+            'Source Branch:.*'
+            'Target Branch:.*'
+            'Prerequisite Branch:.*'
+            'Description.*', text)
+
+    def test_resubmit_controls(self):
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Description').value = 'flibble'
+        browser.getControl('Resubmit').click()
+        self.assertEqual('flibble', bmp.superseded_by.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):

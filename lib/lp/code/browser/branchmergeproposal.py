@@ -970,15 +970,21 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
     """The view to resubmit a proposal to merge."""
 
     schema = IBranchMergeProposal
+    for_input = True
     page_title = label = "Resubmit proposal to merge"
-    field_names = []
+    field_names = [
+        'source_branch', 'target_branch', 'prerequisite_branch',
+        'description'
+        ]
 
     @action('Resubmit', name='resubmit')
-    @update_and_notify
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(self.user)
+        proposal = self.context.resubmit(
+            self.user, data['source_branch'], data['target_branch'],
+            data['prerequisite_branch'], data['description'])
         self.next_url = canonical_url(proposal)
+        return proposal
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):

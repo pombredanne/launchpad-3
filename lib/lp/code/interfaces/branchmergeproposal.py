@@ -45,6 +45,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from zope.event import notify
 from zope.interface import (
@@ -113,25 +114,26 @@ class IBranchMergeProposal(IPrivacy):
             description=_('The person who registered the landing target.')))
 
     source_branch = exported(
-        Reference(
-            title=_('Source Branch'), schema=IBranch,
+        ReferenceChoice(
+            title=_('Source Branch'), schema=IBranch, vocabulary='Branch',
             required=True, readonly=True,
             description=_("The branch that has code to land.")))
 
     target_branch = exported(
-        Reference(
+        ReferenceChoice(
             title=_('Target Branch'),
-            schema=IBranch, required=True, readonly=True,
+            schema=IBranch, vocabulary='Branch', required=True, readonly=True,
             description=_(
                 "The branch that the source branch will be merged into.")))
 
     prerequisite_branch = exported(
-        Reference(
-            title=_('Dependent Branch'),
-            schema=IBranch, required=False, readonly=True,
-            description=_("The branch that the source branch branched from. "
-                          "If this is the same as the target branch, then "
-                          "leave this field blank.")))
+        ReferenceChoice(
+            title=_('Prerequisite Branch'),
+            schema=IBranch, vocabulary='Branch', required=False,
+            readonly=True, description=_(
+                "The branch that the source branch branched from. "
+                "If this is the same as the target branch, then "
+                "leave this field blank.")))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is determined by the involved branches.
