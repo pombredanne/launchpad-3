@@ -252,7 +252,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = query.lower()
+            query = unicode(query).lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
@@ -297,7 +297,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = query.lower()
+            query = unicode(query).lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
@@ -374,7 +374,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(text.lower())
+        return self._select(unicode(text).lower())
 
 
 class PersonAccountToMergeVocabulary(
@@ -407,7 +407,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = text.lower()
+        text = unicode(text).lower()
         return self._select(text)
 
 
@@ -1405,7 +1405,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
+        query = unicode(query).lower()
         objs = self._table.select(
                 AND(
                     Distribution.q.id == DistroSeries.q.distributionID,

@@ -351,7 +351,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     def search(self, query):
         """Return terms where query is a subtring of the name."""
         if query:
-            clause = CONTAINSSTRING(self._table.q.name, query)
+            clause = CONTAINSSTRING(self._table.q.name, unicode(query))
             if self._filter:
                 clause = AND(clause, self._filter)
             return self._table.select(clause, orderBy=self._orderBy)
@@ -384,7 +384,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
+        query = unicode(query).lower()
         clause = CONTAINSSTRING(self._table.q.name, query)
         if self._filter:
             clause = AND(clause, self._filter)
