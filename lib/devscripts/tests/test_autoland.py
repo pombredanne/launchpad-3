@@ -59,6 +59,10 @@ class FakeLPMergeProposal:
 
     def __init__(self, root=None):
         self._root = root
+        self.commit_message = None
+
+    def lp_save(self):
+        pass
 
 
 class TestPQMRegexAcceptance(unittest.TestCase):
@@ -236,6 +240,17 @@ class TestGetCommitMessage(unittest.TestCase):
             "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
             self.mp.get_commit_message("Foobaring the sbrubble.", 
                 rollback=123))
+
+
+class TestSetCommitMessage(unittest.TestCase):
+
+    def setUp(self):
+        self.mp = MergeProposal(FakeLPMergeProposal())
+
+    def test_set_commit_message(self):
+        commit_message = "Foobaring the sbrubble."
+        self.mp.set_commit_message(commit_message)
+        self.assertEqual(self.mp._mp.commit_message, commit_message)
 
 
 class TestGetTestfixClause(unittest.TestCase):

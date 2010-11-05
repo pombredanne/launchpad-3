@@ -428,6 +428,15 @@ class cmd_land(EC2Command):
                 "--incremental option requires bugs linked to the branch. "
                 "Link the bugs or remove the --incremental option.")
 
+        # Override the commit message in the MP with the commit message built
+        # with the proper tags.
+        try:
+            mp.set_commit_message(commit_message)
+        except Exception, e:
+            raise BzrCommandError(
+                "Unable to set the commit message in the merge proposal.\n"
+                "Got: %s" % e)
+
         if print_commit:
             print commit_message
             return

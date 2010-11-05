@@ -176,6 +176,11 @@ class MergeProposal:
 
         return '%s %s' % (tags, commit_text)
 
+    def set_commit_message(self, commit_message):
+        """Set the Launchpad-style commit message for a merge proposal."""
+        self._mp.commit_message = commit_message
+        self._mp.lp_save()
+
 
 def get_testfix_clause(testfix=False):
     """Get the testfix clause."""
