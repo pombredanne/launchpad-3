@@ -47,13 +47,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     IEditTranslationImportQueueEntry,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationFileType,
     )

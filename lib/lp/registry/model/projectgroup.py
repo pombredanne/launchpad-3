@@ -55,12 +55,10 @@ from lp.answers.model.faq import (
 from lp.answers.model.question import QuestionTargetSearch
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,
-    )
-from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus,
     )
 from lp.blueprints.model.specification import (
@@ -94,7 +92,6 @@ from lp.registry.interfaces.projectgroup import (
     )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
@@ -185,29 +182,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.driver is not None:
             return [self.driver]
         return []
-
-    @property
-    def mentoring_offers(self):
-        """See `IProjectGroup`."""
-        via_specs = MentoringOffer.select("""
-            Product.project = %s AND
-            Specification.product = Product.id AND
-            Specification.id = MentoringOffer.specification
-            """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause +")",
-            clauseTables=['Product', 'Specification'],
-            distinct=True)
-        via_bugs = MentoringOffer.select("""
-            Product.project = %s AND
-            BugTask.product = Product.id AND
-            BugTask.bug = MentoringOffer.bug AND
-            BugTask.bug = Bug.id AND
-            Bug.private IS FALSE
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + BugTask.completeness_clause + ")",
-            clauseTables=['Product', 'BugTask', 'Bug'],
-            distinct=True)
-        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
         """See `IProjectGroup`."""

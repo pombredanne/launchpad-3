@@ -543,7 +543,7 @@ Interface implementation
 SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True

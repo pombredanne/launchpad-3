@@ -597,10 +597,10 @@ class POTMsgSet(SQLBase):
 
         if len(matches) > 0:
             if len(matches) > 1:
-                logging.warn(
-                    "Translation for POTMsgSet %s into '%s' "
-                    "matches %s existing translations.",
-                        self.id, pofile.language.code, len(matches))
+                logging.info(
+                    "Translation for POTMsgSet %s into %s "
+                    "matches %s existing translations." % sqlvalues(
+                        self, pofile.language.code, len(matches)))
             return matches[0]
         else:
             return None

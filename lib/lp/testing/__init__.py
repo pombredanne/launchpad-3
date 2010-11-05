@@ -107,6 +107,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
+from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -507,6 +508,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.oopses = []
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -573,6 +575,8 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        if hasattr(naked_user, '_password_cleartext_cached'):
+            password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
@@ -1007,7 +1011,10 @@ def set_feature_flag(name, value, scope=u'default', priority=1):
     assert getattr(features.per_thread, 'features', None) is not None
     flag = FeatureFlag(
         scope=scope, flag=name, value=value, priority=priority)
-    getFeatureStore().add(flag)
+    store = getFeatureStore()
+    store.add(flag)
+    # Make sure that the feature is saved into the db right now.
+    store.flush()
 
 
 def validate_mock_class(mock_class):

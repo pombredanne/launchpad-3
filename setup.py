@@ -25,6 +25,7 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'BeautifulSoup',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
@@ -63,6 +64,7 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
         'testtools',

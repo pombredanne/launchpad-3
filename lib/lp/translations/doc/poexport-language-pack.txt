@@ -162,8 +162,9 @@ Sample data initialisation
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
 
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.utilities.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
 

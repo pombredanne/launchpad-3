@@ -75,6 +75,7 @@ from lp.services.database.collection import Collection
 from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IHasTranslationTemplates,
@@ -99,9 +100,6 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError,
-    )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
     )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pomsgid import POMsgID
