@@ -63,7 +63,7 @@ class SyncPackageJob(DistributionJobDerived):
         """See `ISyncPackageJobSource`."""
         # TODO: JRV 20101104. This iterates manually over all active
         # SyncPackageJobs. This should usually be a short enough list,
-        # but if it really becomes and issue target_archive should
+        # but if it really becomes an issue target_archive should
         # be moved into a separate database field.
         jobs = IStore(DistributionJob).find(
             DistributionJob,
