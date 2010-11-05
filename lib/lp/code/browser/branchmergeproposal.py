@@ -969,8 +969,10 @@ class MergeProposalEditView(LaunchpadEditFormView,
 class ResubmitSchema(IBranchMergeProposal):
 
     break_link = Bool(
-        title=u'Break link',
-        description=u'Do not link new proposal to old one.',
+        title=u'Start afresh',
+        description=(
+            u'Do not show old conversation and do not link to superseded'
+            ' proposal.'),
         default=False,)
 
 

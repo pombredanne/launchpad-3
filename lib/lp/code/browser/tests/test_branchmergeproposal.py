@@ -596,7 +596,7 @@ class TestResubmitBrowser(BrowserTestCase):
             'Target Branch:.*'
             'Prerequisite Branch:.*'
             'Description.*'
-            'Break link.*')
+            'Start afresh.*')
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_resubmit_controls(self):
