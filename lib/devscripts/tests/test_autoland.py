@@ -95,7 +95,7 @@ class TestPQMRegexAcceptance(unittest.TestCase):
             raise self.failureException(msg)
 
     def _test_commit_message_match(self, incr, no_qa, testfix):
-        commit_message = self.mp.get_commit_message("Foobaring the sbrubble.",
+        commit_message = self.mp.build_commit_message("Foobaring the sbrubble.",
             testfix, no_qa, incr)
         self.assertRegexpMatches(commit_message, self.devel_open_re)
         self.assertRegexpMatches(commit_message, self.dbdevel_normal_re)
@@ -154,7 +154,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_no_bugs_no_noqa(self):
@@ -165,7 +165,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertRaises(MissingBugsError, self.mp.get_commit_message,
+        self.assertRaises(MissingBugsError, self.mp.build_commit_message,
             testfix, no_qa, incr)
 
     def test_commit_no_bugs_with_noqa(self):
@@ -177,7 +177,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_bugs_with_noqa(self):
@@ -190,7 +190,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_bugs_with_incr(self):
@@ -203,7 +203,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_no_bugs_with_incr(self):
@@ -216,7 +216,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_with_noqa_and_incr(self):
@@ -229,7 +229,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][no-qa][incr] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.", 
+            self.mp.build_commit_message("Foobaring the sbrubble.", 
                 testfix, no_qa, incr))
 
     def test_commit_with_rollback(self):
@@ -238,7 +238,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.", 
+            self.mp.build_commit_message("Foobaring the sbrubble.", 
                 rollback=123))
 
 

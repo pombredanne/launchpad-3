@@ -411,7 +411,7 @@ class cmd_land(EC2Command):
         if rollback and (no_qa or incremental):
             print "--rollback option used. Ignoring --no-qa and --incremental."
         try:
-            commit_message = mp.get_commit_message(
+            commit_message = mp.build_commit_message(
                 commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(

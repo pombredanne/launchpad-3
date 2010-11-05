@@ -160,7 +160,7 @@ class MergeProposal:
         # URL. Do it ourselves.
         return URI(scheme='bzr+ssh', host=host, path='/' + branch.unique_name)
 
-    def get_commit_message(self, commit_text, testfix=False, no_qa=False,
+    def build_commit_message(self, commit_text, testfix=False, no_qa=False,
                            incremental=False, rollback=None):
         """Get the Launchpad-style commit message for a merge proposal."""
         reviews = self.get_reviews()
