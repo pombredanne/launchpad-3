@@ -77,8 +77,50 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
+class AdvancedSubscriptionMixin:
+    """A mixin of advanced subscription code for views."""
+
+    @cachedproperty
+    def _use_advanced_features(self):
+        """Return True if advanced subscriptions features are enabled."""
+        return features.getFeatureFlag(
+            'malone.advanced-subscriptions.enabled')
+
+    @cachedproperty
+    def _bug_notification_level_field(self):
+        """Return a custom form field for bug_notification_level."""
+        # We rebuild the items that we show in the field so that the
+        # labels shown are human readable and specific to the +subscribe
+        # form. The BugNotificationLevel descriptions are too generic.
+        bug_notification_level_terms = [
+            SimpleTerm(
+                level, level.name,
+                self._bug_notification_level_descriptions[level])
+            # We reorder the items so that COMMENTS comes first. We also
+            # drop the NOTHING option since it just makes the UI
+            # confusing.
+            for level in sorted(BugNotificationLevel.items, reverse=True)
+                if level != BugNotificationLevel.NOTHING
+            ]
+        bug_notification_vocabulary = SimpleVocabulary(
+            bug_notification_level_terms)
+
+        if self.current_user_subscription is not None:
+            default_value = (
+                self.current_user_subscription.bug_notification_level)
+        else:
+            default_value = BugNotificationLevel.COMMENTS
+
+        bug_notification_level_field = Choice(
+            __name__='bug_notification_level', title=_("Tell me when"),
+            vocabulary=bug_notification_vocabulary, required=True,
+            default=default_value)
+        return bug_notification_level_field
+
+
 class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
-                                       ReturnToReferrerMixin):
+                                       ReturnToReferrerMixin,
+                                       AdvancedSubscriptionMixin):
     """A view to handle the +subscribe page for a bug."""
 
     schema = IBugSubscription
@@ -139,12 +181,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
-    @cachedproperty
-    def _use_advanced_features(self):
-        """Return True if advanced subscriptions features are enabled."""
-        return features.getFeatureFlag(
-            'malone.advanced-subscriptions.enabled')
-
     def initialize(self):
         """See `LaunchpadFormView`."""
         self._subscriber_count_for_current_user = 0
@@ -156,41 +192,16 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         return self.context.bug.getSubscriptionForPerson(self.user)
 
     @cachedproperty
-    def _bug_notification_level_field(self):
-        """Return a custom form field for bug_notification_level."""
-        # We rebuild the items that we show in the field so that the
-        # labels shown are human readable and specific to the +subscribe
-        # form. The BugNotificationLevel descriptions are too generic.
-        bug_notification_level_terms = [
-            SimpleTerm(
-                level, level.name,
-                self._bug_notification_level_descriptions[level])
-            # We reorder the items so that COMMENTS comes first. We also
-            # drop the NOTHING option since it just makes the UI
-            # confusing.
-            for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level != BugNotificationLevel.NOTHING
-            ]
-        bug_notification_vocabulary = SimpleVocabulary(
-            bug_notification_level_terms)
-
-        if self.current_user_subscription is not None:
-            default_value = (
-                self.current_user_subscription.bug_notification_level)
-        else:
-            default_value = BugNotificationLevel.COMMENTS
-
-        bug_notification_level_field = Choice(
-            __name__='bug_notification_level', title=_("Tell me when"),
-            vocabulary=bug_notification_vocabulary, required=True,
-            default=default_value)
-        return bug_notification_level_field
-
-    @cachedproperty
     def _update_subscription_term(self):
         return SimpleTerm(
             'update-subscription', 'update-subscription',
             'Update my current subscription')
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
+        if self.user is None:
+            return
 
     @cachedproperty
     def _subscription_field(self):
