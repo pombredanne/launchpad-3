@@ -214,13 +214,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checkSignerIsUbuntuCodeOfConductSignee(self, upload):
-        """Reject the upload if not signed by an Ubuntu CoC signer."""
-        if not upload.changes.signer.is_ubuntu_coc_signer:
-            upload.reject(
-                'PPA uploads must be signed by an Ubuntu '
-                'Code of Conduct signer.')
-
     def checkArchiveSizeQuota(self, upload):
         """Reject the upload if target archive size quota will be exceeded.
 
@@ -267,12 +260,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         Ubuntu Code of Conduct signer.
         """
         if upload.is_ppa:
-            # XXX cprov 2007-06-13: checks for PPA uploads are not yet
-            # established. We may decide for only one of the checks.  Either
-            # in a specific team or having an Ubuntu CoC signer (or similar
-            # flag). This code will be revisited before releasing PPA
-            # publicly.
-            self.checkSignerIsUbuntuCodeOfConductSignee(upload)
             self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
