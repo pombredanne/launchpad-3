@@ -351,7 +351,7 @@ class TestOnlineApproximateMedian(TestCase):
         self.estimator.update(None)
         self.assertEquals(1, self.estimator.median)
 
-    def test_approximage_median_is_good_enough(self):
+    def test_approximate_median_is_good_enough(self):
         for x in SHUFFLE_RANGE_100:
             self.estimator.update(x)
         # True median is 50, 49 is good enough :-)
