@@ -19,6 +19,7 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
@@ -163,6 +164,7 @@ class ArchiveSourcePublications:
         builds_by_source = self.getBuildsBySource()
         unpublished_builds_by_source = self.getUnpublishedBuildsBySource()
         changesfiles_by_source = self.getChangesFileBySource()
+        DistroSeries.setNewerDistroSeriesVersions(self._source_publications)
 
         # Build the decorated object with the information we have.
         for pub in self._source_publications:
