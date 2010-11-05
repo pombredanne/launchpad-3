@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import transaction
 
 import pytz
 from zope.component import getUtility
@@ -574,6 +575,32 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             "Regards,\n"
             "The Launchpad team")
 
+    def test_getNewPrivatePPAs_no_previous_run(self):
+        # All private PPAs are returned if there was no previous run.
+        # This happens even if they have no tokens.
+
+        # Create a public PPA that should not be in the list.
+        public_ppa = self.factory.makeArchive(private=False)
+
+        script = self.getScript()
+        self.assertContentEqual([self.ppa], script.getNewPrivatePPAs())
+
+    def test_getNewPrivatePPAs_only_those_since_last_run(self):
+        # Only private PPAs created since the last run are returned.
+        # This happens even if they have no tokens.
+
+        now = datetime.now(pytz.UTC)
+        getUtility(IScriptActivitySet).recordSuccess(
+            'generate-ppa-htaccess', now, now - timedelta(minutes=3))
+        removeSecurityProxy(self.ppa).date_created = (
+            now - timedelta(minutes=4))
+
+        # Create a new PPA that should show up.
+        new_ppa = self.factory.makeArchive(private=True)
+
+        script = self.getScript()
+        self.assertContentEqual([new_ppa], script.getNewPrivatePPAs())
+
     def test_getNewTokensSinceLastRun_no_previous_run(self):
         """All valid tokens returned if there is no record of previous run."""
         now = datetime.now(pytz.UTC)
@@ -623,7 +650,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         script_start_time = now - timedelta(seconds=2)
         script_end_time = now
-        earliest_with_ntp_skew = script_start_time - timedelta(milliseconds=500)
+        earliest_with_ntp_skew = script_start_time - timedelta(
+            milliseconds=500)
 
         tokens = self.setupDummyTokens()[1]
         getUtility(IScriptActivitySet).recordSuccess(
@@ -643,3 +671,21 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokensSinceLastRun())
+
+    def test_processes_PPAs_without_subscription(self):
+        # A .htaccess file is written for Private PPAs even if they don't have
+        # any subscriptions.
+        htaccess, htpasswd = self.ensureNoFiles()
+
+        transaction.commit()
+
+        # Call the script and check that we have a .htaccess and a
+        # .htpasswd.
+        return_code, stdout, stderr = self.runScript()
+        self.assertEqual(
+            return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
+                (return_code, stderr))
+        self.assertTrue(os.path.isfile(htaccess))
+        self.assertTrue(os.path.isfile(htpasswd))
+        os.remove(htaccess)
+        os.remove(htpasswd)

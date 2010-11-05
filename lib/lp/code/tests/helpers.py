@@ -8,6 +8,7 @@ __all__ = [
     'add_revision_to_branch',
     'make_erics_fooix_project',
     'make_linked_package_branch',
+    'make_merge_proposal_without_reviewers',
     'make_official_package_branch',
     'make_project_branch_with_revisions',
     'make_project_cloud_data',
@@ -313,3 +314,11 @@ def recipe_parser_newest_version(version):
         yield
     finally:
         RecipeParser.NEWEST_VERSION = old_version
+
+
+def make_merge_proposal_without_reviewers(factory, **kwargs):
+    """Make a merge proposal and strip of any review votes."""
+    proposal = factory.makeBranchMergeProposal(**kwargs)
+    for vote in proposal.votes:
+        removeSecurityProxy(vote).destroySelf()
+    return proposal

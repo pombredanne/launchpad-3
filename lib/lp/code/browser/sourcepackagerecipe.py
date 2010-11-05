@@ -26,6 +26,7 @@ from lazr.restful.interface import use_template
 from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,
@@ -54,6 +55,7 @@ from canonical.launchpad.webapp import (
     stepthrough,
     structured,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.code.errors import (
@@ -379,6 +381,26 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def setUpFields(self):
+        super(SourcePackageRecipeEditView, self).setUpFields()
+
+        if check_permission('launchpad.Admin', self.context):
+            # Exclude the PPA archive dropdown.
+            self.form_fields = self.form_fields.omit('daily_build_archive')
+
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description=(u"As an administrator you are able to reassign"
+                             u" this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
+
 
     @property
     def initial_values(self):

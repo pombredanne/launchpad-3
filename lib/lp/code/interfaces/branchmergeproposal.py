@@ -697,7 +697,9 @@ class ICodeReviewCommentEmailJobSource(Interface):
 class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
-    reviewer = Attribute('The person or team asked to do the review.')
+    reviewer = Attribute('The person or team asked to do the review. '
+                         'If left blank, then the default reviewer for the '
+                         'selected target branch will be used.')
     requester = Attribute('The person who has asked for the review.')
 
 
@@ -731,6 +733,9 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
         """
 
 
+# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
+# should be moved there.
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 
@@ -740,8 +745,6 @@ def notify_modified(proposal, func, *args, **kwargs):
     :param kwargs: Keyword arguments for the method.
     :return: The return value of the method.
     """
-    # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps
-    # it should be moved there.
     from lp.code.adapters.branch import BranchMergeProposalDelta
     snapshot = BranchMergeProposalDelta.snapshot(proposal)
     result = func(*args, **kwargs)

@@ -396,16 +396,9 @@ Disabling
 Memcache in templates can be disabled entirely by setting the memcache flag to
 'disabled'.
 
-    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> from lp.services.features.flags import FeatureController
-    >>> from lp.services.features import per_thread
-    >>> ignore = getFeatureStore().add(FeatureFlag(
-    ...     scope=u'default', flag=u'memcache', value=u'disabled',
-    ...     priority=1))
-    >>> empty_request = LaunchpadTestRequest()
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture({'memcache': 'disabled'})
+    >>> fixture.setUp()
 
 And now what cached before will not cache.
 
@@ -422,3 +415,6 @@ And now what cached before will not cache.
     <div>
         <span>second</span>
     </div>
+
+    # Clean up our custom flag settings.
+    >>> fixture.cleanUp()
