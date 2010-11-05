@@ -1627,7 +1627,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW):
+                          status=SpecificationDefinitionStatus.NEW,
+                          implementation_status=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1643,7 +1644,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        return getUtility(ISpecificationSet).new(
+        spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
@@ -1652,6 +1653,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner=owner,
             product=product,
             distribution=distribution)
+        if implementation_status is not None:
+            naked_spec = removeSecurityProxy(spec)
+            naked_spec.implementation_status = implementation_status
+            naked_spec.updateLifecycleStatus(owner)
+        return spec
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
