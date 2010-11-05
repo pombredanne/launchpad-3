@@ -55,7 +55,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def makeProposalWithSubscriber(self, diff_text=None,
                                    initial_comment=None,
                                    prerequisite=False,
-                                   needs_review=True):
+                                   needs_review=True,
+                                   reviewer=None):
         if diff_text is not None:
             preview_diff = PreviewDiff.create(
                 diff_text,
@@ -80,7 +81,8 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             registrant=registrant, product=product,
             set_state=initial_status,
             prerequisite_branch=prerequisite_branch,
-            preview_diff=preview_diff, initial_comment=initial_comment)
+            preview_diff=preview_diff, initial_comment=initial_comment,
+            reviewer=reviewer)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -106,14 +108,18 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        reviewer = bmp.target_branch.owner
         self.assertEqual("""\
 Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
 
+Requested reviews:
+  %s
 
 --\x20
 %s
 %s
-""" % (canonical_url(bmp), reason.getReason()), ctrl.body)
+""" % (reviewer.unique_displayname, canonical_url(bmp),reason.getReason()),
+       ctrl.body)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar', ctrl.subject)
@@ -125,8 +131,9 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
              'Reply-To': bmp.address,
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
-        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
-        self.assertEqual([bmp.address], ctrl.to_addrs)
+        self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)        
+        reviewer_id = mailer._format_user_address(reviewer)
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
 
     def test_forCreation_with_bugs(self):
@@ -152,8 +159,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 
     def test_forCreation_with_review_request(self):
         """Correctly format list of reviewers."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
         reviewer = self.factory.makePerson(name='review-person')
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)        
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
@@ -165,10 +172,10 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 
     def test_forCreation_with_review_request_and_bug(self):
         """Correctly format list of reviewers and bug info."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        bug = self.factory.makeBug(title='I am a bug')
-        bmp.source_branch.linkBug(bug, bmp.registrant)
         reviewer = self.factory.makePerson(name='review-person')
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
+        bug = self.factory.makeBug(title='I am a bug')
+        bmp.source_branch.linkBug(bug, bmp.registrant)        
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
@@ -200,8 +207,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                                     bmp.registrant.preferredemail.email)
         reviewer = request.recipient
         reviewer_id = mailer._format_user_address(reviewer)
-        self.assertEqual(set([reviewer_id, bmp.address]),
-                         set(ctrl.to_addrs))
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_team_reviewers(self):
         """Addresses for the to header exclude requested team reviewers."""
@@ -212,7 +218,9 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
                                     subscriber.preferredemail.email)
-        self.assertEqual([bmp.address], ctrl.to_addrs)
+        reviewer = bmp.target_branch.owner
+        reviewer_id = mailer._format_user_address(reviewer)
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_people_with_hidden_addresses(self):
         """The to header excludes those with hidden addresses."""
@@ -419,15 +427,13 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 
     def makeReviewRequest(self):
         diff_text = ''.join(unified_diff('', "Make a diff."))
-        merge_proposal, subscriber_ = self.makeProposalWithSubscriber(
-            diff_text=diff_text, initial_comment="Initial comment")
         candidate = self.factory.makePerson(
             displayname='Candidate', email='candidate@example.com')
+        merge_proposal, subscriber_ = self.makeProposalWithSubscriber(
+            diff_text=diff_text, initial_comment="Initial comment",
+            reviewer=candidate)
         requester = self.factory.makePerson(
             displayname='Requester', email='requester@example.com')
-        CodeReviewVoteReference(
-            branch_merge_proposal=merge_proposal, reviewer=candidate,
-            registrant=requester)
         reason = RecipientReason.forReviewer(merge_proposal, True, candidate)
         return reason, requester
 

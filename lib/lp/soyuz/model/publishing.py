@@ -70,6 +70,10 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     BinaryPackageFormat,
@@ -446,18 +450,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             return self.sourcepackagerelease.dscsigningkey.owner
         return None
 
-    @property
+    @cachedproperty
     def newer_distroseries_version(self):
         """See `ISourcePackagePublishingHistory`."""
-        latest_releases = self.distroseries.getCurrentSourceReleases(
-            [self.sourcepackagerelease.sourcepackagename])
-        latest_release = latest_releases.get(self.meta_sourcepackage, None)
-
-        if latest_release is not None and apt_pkg.VersionCompare(
-            latest_release.version, self.source_package_version) > 0:
-            return latest_release
-        else:
-            return None
+        self.distroseries.setNewerDistroSeriesVersions([self])
+        return get_property_cache(self).newer_distroseries_version
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
