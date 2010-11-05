@@ -159,7 +159,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Search for web bug trackers."""
-        query = query.lower()
+        query = unicode(query).lower()
         results = IStore(self._table).find(
             self._table, And(
             self._filter,
