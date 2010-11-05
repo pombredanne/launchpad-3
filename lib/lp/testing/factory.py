@@ -1391,7 +1391,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
 
         if IProductSeries.providedBy(target):
-            # We can't have a series task without a distribution task.
+            # We can't have a series task without a product task.
             self.makeBugTask(bug, target.product)
         if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
