@@ -107,7 +107,7 @@ is revealed by Y.lp.app.picker.addPickerPatcher.
     False
     >>> print widget()
     <span id="inline-picker-activator-id-...">...
-    <div class="yui-activator-message-box yui-activator-hidden" />
+    <div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
 
 The foo.bar user can see the activator's edit button.
@@ -118,7 +118,7 @@ The foo.bar user can see the activator's edit button.
     True
     >>> print widget()
     <span id="inline-picker-activator-id-...">
-    ...<div class="yui-activator-message-box yui-activator-hidden" />
+    ...<div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
     ...Y.lp.app.picker.addPickerPatcher(...
 

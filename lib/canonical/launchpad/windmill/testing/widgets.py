@@ -244,7 +244,7 @@ class InlinePickerWidgetSearchTest:
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
-             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             "/button[not(contains(@class, 'yui3-activator-hidden'))]"
              % self.activator_id)
         client.waits.forElement(
             xpath=button_xpath,
@@ -313,7 +313,7 @@ class InlinePickerWidgetButtonTest:
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
-             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             "/button[not(contains(@class, 'yui3-activator-hidden'))]"
              % self.activator_id)
         client.waits.forElement(xpath=button_xpath, timeout=u'25000')
         client.click(xpath=button_xpath)
@@ -329,7 +329,7 @@ class InlinePickerWidgetButtonTest:
 
         # Verify removal.
         client.asserts.assertText(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             validator=self.new_value)
 
@@ -339,11 +339,11 @@ class InlinePickerWidgetButtonTest:
 
         # Verify removal, again.
         client.waits.forElement(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             timeout=u'25000')
         client.asserts.assertText(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             validator=self.new_value)
 
