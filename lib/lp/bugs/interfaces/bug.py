@@ -505,6 +505,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         :return: An IResultSet.
         """
 
+    def getSubscriptionForPerson(person):
+        """Return the `BugSubscription` for a `Person` to this `Bug`.
+
+        If no such `BugSubscription` exists, return None.
+        """
+
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
