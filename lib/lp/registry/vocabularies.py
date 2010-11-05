@@ -95,7 +95,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -684,7 +683,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
-                StartsWith(Lower(EmailAddress.email), text))
+                EmailAddress.email.lower().startswith(text))
             email_subquery = Alias(email_storm_query._get_select(),
                                    'EmailAddress')
             tables += [

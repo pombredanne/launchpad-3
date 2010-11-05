@@ -114,7 +114,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent,
     ITeamInvitationEvent,
@@ -3135,7 +3134,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(text))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -3170,7 +3169,7 @@ class PersonSet:
             EmailAddress.person == Person.id,
             Person.account == Account.id,
             Not(Account.status.is_in(inactive_statuses)),
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(text))
 
         store = IStore(Person)
 
@@ -3249,7 +3248,7 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(text))
 
         name_query = And(
             base_query,
