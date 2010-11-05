@@ -1489,9 +1489,8 @@ class PublishingSet:
         # with an active publishing status then we need to further restrict
         # the join.
         if active_binaries_only:
-            join.append(
-                BinaryPackagePublishingHistory.status.is_in(
-                    enum.value for enum in active_publishing_status))
+            join.append(BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status))
 
         return join
 
