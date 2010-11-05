@@ -227,7 +227,7 @@ class TestInlineSubscribing(WindmillTestCase):
         # Now back to bug 5. Confirm there are 2 subscriptions.
         client.open(url=BUG_URL % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        client.asserts.assertNode(
+        client.waits.forElement(
             id='direct-subscriber-12', timeout=FOR_ELEMENT)
         # The first click unsubscribes the direct subscription, leaving
         # the duplicate subscription.
