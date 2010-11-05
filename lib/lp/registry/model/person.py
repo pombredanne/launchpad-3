@@ -53,7 +53,6 @@ from storm.expr import (
     And,
     Desc,
     Exists,
-    In,
     Join,
     LeftJoin,
     Lower,
@@ -180,10 +179,7 @@ from lp.bugs.interfaces.bugtask import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.model.bugtask import (
-    BugTask,
-    get_related_bugtasks_search_params,
-    )
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -3173,7 +3169,7 @@ class PersonSet:
             Person.merged == None,
             EmailAddress.person == Person.id,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
+            Not(Account.status.is_in(inactive_statuses)),
             StartsWith(Lower(EmailAddress.email), text))
 
         store = IStore(Person)
@@ -3191,7 +3187,7 @@ class PersonSet:
             Person.teamowner == None,
             Person.merged == None,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
+            Not(Account.status.is_in(inactive_statuses)),
             SQL("Person.fti @@ ftq(?)", (text, ))
             )
 
@@ -3226,7 +3222,7 @@ class PersonSet:
             base_query = And(
                 base_query,
                 Person.account == Account.id,
-                Not(In(Account.status, inactive_statuses)))
+                Not(Account.status.is_in(inactive_statuses)))
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables

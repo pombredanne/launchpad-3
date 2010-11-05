@@ -37,7 +37,6 @@ from storm.expr import (
     And,
     AutoTables,
     Desc,
-    In,
     Join,
     LeftJoin,
     Or,
@@ -1322,6 +1321,7 @@ def _make_cache_user_can_view_bug(user):
     :seealso: get_bug_privacy_filter_with_decorator
     """
     userid = user.id
+
     def cache_user_can_view_bug(bugtask):
         get_property_cache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
@@ -1495,13 +1495,14 @@ class BugTaskSet:
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+            SpecificationBug.bugID,
+            SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
-                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+                BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
         # Cache all bugs at once to avoid one query per bugtask. We
         # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
 
         badge_properties = {}
         for bugtask in bugtasks:
@@ -1744,7 +1745,8 @@ class BugTaskSet:
                   BugTask.productseries = StructuralSubscription.productseries
                   AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                SELECT BugTask.id
+                FROM BugTask, StructuralSubscription, Product
                 WHERE
                   BugTask.product = Product.id
                   AND Product.project = StructuralSubscription.project
@@ -1926,6 +1928,7 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2221,6 +2224,7 @@ class BugTaskSet:
             # This may need revisiting if e.g. searches on behalf of different
             # users are combined.
             decorators.append(decorator)
+
         def decorator(row):
             bugtask = row[0]
             for decorator in decorators:
@@ -2288,7 +2292,7 @@ class BugTaskSet:
             else:
                 store = search_results._store
             milestones = store.find(
-                Milestone, In(Milestone.id, milestone_ids))
+                Milestone, Milestone.id.is_in(milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
@@ -2854,8 +2858,9 @@ class BugTaskSet:
                 for subscription in subscriptions))
 
         if recipients is not None:
-            # We need to process subscriptions, so pull all the subscribes into
-            # the cache, then update recipients with the subscriptions.
+            # We need to process subscriptions, so pull all the
+            # subscribes into the cache, then update recipients with
+            # the subscriptions.
             subscribers = list(subscribers)
             for subscription in subscriptions:
                 recipients.addStructuralSubscriber(

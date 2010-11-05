@@ -30,7 +30,6 @@ from sqlobject import (
     )
 from storm.expr import (
     Desc,
-    In,
     LeftJoin,
     Sum,
     )
@@ -111,6 +110,7 @@ PUBLISHED = PackagePublishingStatus.PUBLISHED
 
 
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
+
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
     from lp.archivepublisher.diskpool import poolify
@@ -132,7 +132,8 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        action = diskpool.addFile(component, source, filename, sha1, filealias)
+        action = diskpool.addFile(
+            component, source, filename, sha1, filealias)
         if action == diskpool.results.FILE_ADDED:
             log.debug("Added %s from library" % path)
         elif action == diskpool.results.SYMLINK_ADDED:
@@ -290,7 +291,7 @@ class ArchivePublisherBase:
             for pub_file in self.files:
                 pub_file.publish(diskpool, log)
         except PoolFileOverwriteError, e:
-            message = "PoolFileOverwriteError: %s, skipping." %  e
+            message = "PoolFileOverwriteError: %s, skipping." % e
             properties = [('error-explanation', message)]
             request = ScriptRequest(properties)
             error_utility = ErrorReportingUtility()
@@ -639,22 +640,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def meta_sourcepackage(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackage(
-            self.sourcepackagerelease.sourcepackagename
-            )
+            self.sourcepackagerelease.sourcepackagename)
 
     @property
     def meta_sourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.distribution.getSourcePackageRelease(
-            self.sourcepackagerelease
-            )
+            self.sourcepackagerelease)
 
     @property
     def meta_distroseriessourcepackagerelease(self):
         """see `ISourcePackagePublishingHistory`."""
         return self.distroseries.getSourcePackageRelease(
-            self.sourcepackagerelease
-            )
+            self.sourcepackagerelease)
 
     @property
     def meta_supersededby(self):
@@ -662,8 +660,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if not self.supersededby:
             return None
         return self.distroseries.distribution.getSourcePackageRelease(
-            self.supersededby
-            )
+            self.supersededby)
 
     @property
     def source_package_name(self):
@@ -782,8 +779,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroseries,
             self.component,
             self.section,
-            pocket
-            )
+            pocket)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1010,7 +1006,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         by new overrides from superseding itself.
         """
         available_architectures = [
-            das.id for das in self.distroarchseries.distroseries.architectures]
+            das.id for das in
+                self.distroarchseries.distroseries.architectures]
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
@@ -1374,8 +1371,7 @@ class PublishingSet:
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 BinaryPackageBuild.source_package_release_id,
-            In(SourcePackagePublishingHistory.id, source_publication_ids)
-            )
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
@@ -1490,16 +1486,15 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids)
-            ]
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids)]
 
         # If the call-site requested to join only on binaries published
         # with an active publishing status then we need to further restrict
         # the join.
         if active_binaries_only:
             join.append(
-                In(BinaryPackagePublishingHistory.status,
-                    [enum.value for enum in active_publishing_status]))
+                BinaryPackagePublishingHistory.status.is_in(
+                    enum.value for enum in active_publishing_status))
 
         return join
 
@@ -1523,11 +1518,9 @@ class PublishingSet:
             one_or_more_source_publications)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        published_builds = store.find((
-            SourcePackagePublishingHistory,
-            BinaryPackageBuild,
-            DistroArchSeries
-            ),
+        published_builds = store.find(
+            (SourcePackagePublishingHistory, BinaryPackageBuild,
+                DistroArchSeries),
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
@@ -1571,7 +1564,7 @@ class PublishingSet:
                 BinaryPackageRelease.id,
             BinaryPackagePublishingHistory.archiveID ==
                 SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         return binary_result.order_by(LibraryFileAlias.id)
 
@@ -1588,7 +1581,7 @@ class PublishingSet:
             LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
             SourcePackageReleaseFile.sourcepackagerelease ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         binary_result = self.getBinaryFilesForSources(
             one_or_more_source_publications)
@@ -1642,7 +1635,7 @@ class PublishingSet:
              LibraryFileAlias, LibraryFileContent),
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 PackageDiff.to_sourceID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1680,7 +1673,7 @@ class PublishingSet:
                 SourcePackageRelease.id,
             SourcePackageRelease.id ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
 
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
@@ -1753,8 +1746,7 @@ class PublishingSet:
             if unpublished_builds:
                 augmented_summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': unpublished_builds
-                }
+                    'builds': unpublished_builds}
         return augmented_summary
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
