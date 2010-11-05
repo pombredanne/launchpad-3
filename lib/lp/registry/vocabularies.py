@@ -70,7 +70,6 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
-    Lower,
     Not,
     Or,
     SQL,
@@ -638,7 +637,7 @@ class ValidPersonOrTeamVocabulary(
             else:
                 return self.emptySelectResults()
 
-        text = text.lower()
+        text = unicode(text).lower()
         return self._doSearch(text=text)
 
     def searchForTerms(self, query=None):
@@ -1008,7 +1007,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
+        query = unicode(query).lower()
         objs = self._table.select(
             AND(
                 Milestone.q.id == ProductRelease.q.milestoneID,
@@ -1063,7 +1062,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower().strip('/')
+        query = unicode(query).lower().strip('/')
         # If there is a slash splitting the product and productseries
         # names, they must both match. If there is no slash, we don't
         # know whether it is matching the product or the productseries

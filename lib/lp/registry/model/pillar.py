@@ -85,6 +85,7 @@ class PillarNameSet:
     def __contains__(self, name):
         """See `IPillarNameSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        name = unicode(name)
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
@@ -178,7 +179,7 @@ class PillarNameSet:
                  Distribution.fti @@ ftq(%(text)s) OR
                  lower(Distribution.title) = lower(%(text)s)
                 )
-            ''' % sqlvalues(text=text))
+            ''' % sqlvalues(text=unicode(text)))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
             PillarName, OtherPillarName, Product, ProjectGroup, Distribution]

@@ -330,7 +330,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         if not self.products:
             return []
-        product_ids = sqlvalues(*self.products)
+        product_ids = [product.id for product in self.products]
         return get_bug_tags_open_count(
             BugTask.productID.is_in(product_ids), user)
 

@@ -1071,12 +1071,12 @@ class Branch(SQLBase, BzrIdentityMixin):
             name = "date_trunc"
 
         results = Store.of(self).find(
-            (DateTrunc('day', Revision.revision_date), Count(Revision.id)),
+            (DateTrunc(u'day', Revision.revision_date), Count(Revision.id)),
             Revision.id == BranchRevision.revision_id,
             Revision.revision_date > since,
             BranchRevision.branch == self)
         results = results.group_by(
-            DateTrunc('day', Revision.revision_date))
+            DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
     @property
