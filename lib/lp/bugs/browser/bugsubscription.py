@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AdvancedSubscriptionMixin',
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
@@ -78,7 +79,18 @@ class BugSubscriptionAddView(LaunchpadFormView):
 
 
 class AdvancedSubscriptionMixin:
-    """A mixin of advanced subscription code for views."""
+    """A mixin of advanced subscription code for views.
+
+    In order to use this mixin in a view the view must:
+     - Define a current_user_subscription property which returns the
+       current BugSubscription or StructuralSubscription for request.user.
+     - Define a dict, _bug_notification_level_descriptions, which maps
+       BugNotificationLevel values to string descriptions for the
+       current context (see `BugSubscriptionSubscribeSelfView` for an
+       example).
+     - Update the view's setUpFields() to call
+       _setUpBugNotificationLevelField().
+    """
 
     @cachedproperty
     def _use_advanced_features(self):
@@ -116,6 +128,14 @@ class AdvancedSubscriptionMixin:
             vocabulary=bug_notification_vocabulary, required=True,
             default=default_value)
         return bug_notification_level_field
+
+    def _setUpBugNotificationLevelField(self):
+        """Set up the bug_notification_level field."""
+        self.form_fields = self.form_fields.omit('bug_notification_level')
+        self.form_fields += formlib.form.Fields(
+            self._bug_notification_level_field)
+        self.form_fields['bug_notification_level'].custom_widget = (
+            CustomWidgetFactory(RadioWidget))
 
 
 class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
@@ -246,12 +266,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             return
 
         if self._use_advanced_features:
-            self.form_fields = self.form_fields.omit('bug_notification_level')
             self.form_fields += formlib.form.Fields(self._subscription_field)
-            self.form_fields += formlib.form.Fields(
-                self._bug_notification_level_field)
-            self.form_fields['bug_notification_level'].custom_widget = (
-                CustomWidgetFactory(RadioWidget))
+            self._setUpBugNotificationLevelField()
         else:
             self.form_fields += formlib.form.Fields(self._subscription_field)
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
