@@ -62,8 +62,9 @@ class SyncPackageJob(DistributionJobDerived):
     def getActiveJobs(cls, archive):
         """See `ISyncPackageJobSource`."""
         # TODO: JRV 20101104. This iterates manually over all active
-        # SyncPackageJobs. Archive will need to be moved out of metadata
-        # so it's possible to search for it instead.
+        # SyncPackageJobs. This should usually be a short enough list,
+        # but if it really becomes and issue target_archive should
+        # be moved into a separate database field.
         jobs = IStore(DistributionJob).find(
             DistributionJob,
             DistributionJob.job_type == cls.class_job_type,
