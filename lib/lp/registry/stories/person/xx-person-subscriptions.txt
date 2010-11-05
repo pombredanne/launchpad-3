@@ -178,10 +178,10 @@ followed by a link to edit the subscription.
 The links to modify subscriptions are only shown when the user has
 permission to modify those subscriptions.
 
-    >>> sample_browser.open(
+    >>> subscriber_browser.open(
     ...     "http://launchpad.dev/~name16/+structural-subscriptions")
     >>> subscriptions = find_tag_by_id(
-    ...     sample_browser.contents, 'structural-subscriptions')
+    ...     subscriber_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
     ...     [structure_link] = subscription.findAll("a")
     ...     print "%s <%s>" % (
@@ -198,8 +198,8 @@ subscriptions page.
 A simple explanatory message is shown when the user doesn't have any
 structural subscriptions.
 
-    >>> sample_browser.open(
+    >>> subscriber_browser.open(
     ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, "structural-subscriptions"))
-    Sample Person does not have any structural subscriptions.
+    ...     subscriber_browser.contents, "structural-subscriptions"))
+    Webster does not have any structural subscriptions.
