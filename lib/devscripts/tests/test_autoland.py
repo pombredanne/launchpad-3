@@ -241,6 +241,16 @@ class TestGetCommitMessage(unittest.TestCase):
             self.mp.build_commit_message("Foobaring the sbrubble.", 
                 rollback=123))
 
+    def test_takes_into_account_existing_tags_on_commit_text(self):
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+            self.mp.build_commit_message(
+                "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+                rollback=123))
+
 
 class TestSetCommitMessage(unittest.TestCase):
 
