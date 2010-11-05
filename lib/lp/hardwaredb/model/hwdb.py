@@ -459,6 +459,9 @@ class HWSubmissionSet:
         # So let's run the queries separately and join the results
         # on Python level.
 
+        # This would be quicker still if we did it as a single query
+        # using UNION.
+
         owner_query = Select(
             columns=[HWSubmission.ownerID], tables=tables,
             where=And(*(clauses + [Bug.ownerID == HWSubmission.ownerID])))
@@ -492,6 +495,7 @@ class HWSubmissionSet:
         if len(user_ids) == 0:
             result = store.find(Person, False)
         else:
+            user_ids = [row[0] for row in user_ids]
             result = store.find(Person, Person.id.is_in(user_ids))
         result.order_by(Person.displayname)
         return result
