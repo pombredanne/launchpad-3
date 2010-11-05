@@ -1683,6 +1683,12 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
                  (reviewer, 'specious')]),
             set((vote.reviewer, vote.review_type) for vote in bmp2.votes))
 
+    def test_resubmit_no_reviewers(self):
+        """Resubmitting a proposal with no reviewers should work."""
+        bmp = make_merge_proposal_without_reviewers(self.factory)
+        with person_logged_in(bmp.registrant):
+            bmp2 = bmp.resubmit(bmp.registrant)
+
     def test_resubmit_changes_branches(self):
         """Resubmit changes branches, if specified."""
         original = self.factory.makeBranchMergeProposal()

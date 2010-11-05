@@ -564,8 +564,8 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
-        review_requests = set(
-            (vote.reviewer, vote.review_type) for vote in self.votes)
+        review_requests = list(set(
+            (vote.reviewer, vote.review_type) for vote in self.votes))
         proposal = source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=target_branch,
