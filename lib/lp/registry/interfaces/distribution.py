@@ -97,7 +97,7 @@ from lp.services.fields import (
     Title,
     )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):
