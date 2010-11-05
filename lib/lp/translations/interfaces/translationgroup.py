@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
     'TranslationPermission',
@@ -23,7 +22,6 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
-    Choice,
     Datetime,
     Int,
     TextLine,
@@ -87,23 +85,6 @@ class TranslationPermission(DBEnumeratedType):
         project, or by getting permission to start a new team for a new
         language. People who are not designated translators will not be able
         to add suggestions.""")
-
-
-class ITranslationPolicy(Interface):
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group that helps review "
-            " translations for this project or distribution. The group's "
-            " role depends on the permissions policy selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-
-    translationpermission = Choice(
-        title=_("Translation permissions policy"),
-        description=_("The policy this project or distribution uses to "
-            " balance openness and control for their translations."),
-        required=True,
-        vocabulary=TranslationPermission)
 
 
 class ITranslationGroup(IHasOwner):
