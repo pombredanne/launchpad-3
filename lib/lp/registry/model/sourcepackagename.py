@@ -62,6 +62,7 @@ class SourcePackageNameSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        name = unicode(name)
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
