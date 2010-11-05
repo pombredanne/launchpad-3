@@ -65,7 +65,7 @@ class InitialiseDistroSeries:
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
-        self.packagesets = packagesets
+        self.packagesets = [unicode(packageset) for packageset in packagesets]
         self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 

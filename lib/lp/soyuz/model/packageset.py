@@ -292,6 +292,8 @@ class Packageset(Storm):
 
     def addSources(self, names):
         """See `IPackageset`."""
+        if isinstance(names, basestring):
+            names = [unicode(names)]
         clauses = (SourcePackageName, SourcePackageName.name.is_in(names))
         self._api_add_or_remove(clauses, self._addSourcePackageNames)
 
@@ -378,7 +380,7 @@ class PackagesetSet:
         if not isinstance(name, unicode):
             name = unicode(name, 'utf-8')
 
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        ubuntu = getUtility(IDistributionSet).getByName(u'ubuntu')
         extra_args = []
         if distroseries is not None:
             # If the user just passed a distro series name, look it up.
