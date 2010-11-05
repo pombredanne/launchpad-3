@@ -55,7 +55,6 @@ from storm.expr import (
     Exists,
     Join,
     LeftJoin,
-    Lower,
     Min,
     Not,
     Or,
@@ -2828,11 +2827,10 @@ class PersonSet:
             join = store.using(
                 EmailAddress,
                 LeftJoin(Account, EmailAddress.accountID == Account.id))
-            email, account = (
-                join.find(
+            email, account = join.find(
                     (EmailAddress, Account),
-                    Lower(EmailAddress.email) == Lower(email_address)).one()
-                or (None, None))
+                    EmailAddress.email.lower() ==
+                        unicode(email_address).lower()).one() or (None, None)
             identifier = store.find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
 
@@ -3134,7 +3132,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            EmailAddress.email.lower().startswith(text))
+            EmailAddress.email.lower().startswith(unicode(text)))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -3157,9 +3155,7 @@ class PersonSet:
             return EmptyResultSet()
 
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
+        text = unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3168,7 +3164,7 @@ class PersonSet:
             Person.merged == None,
             EmailAddress.person == Person.id,
             Person.account == Account.id,
-            Not(Account.status.is_in(inactive_statuses)),
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
             EmailAddress.email.lower().startswith(text))
 
         store = IStore(Person)
@@ -3186,7 +3182,7 @@ class PersonSet:
             Person.teamowner == None,
             Person.merged == None,
             Person.account == Account.id,
-            Not(Account.status.is_in(inactive_statuses)),
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
             SQL("Person.fti @@ ftq(?)", (text, ))
             )
 
@@ -3208,8 +3204,6 @@ class PersonSet:
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         store = IStore(Person)
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
         base_query = And(
             Person.teamowner == None,
             Person.merged == None)
@@ -3221,7 +3215,7 @@ class PersonSet:
             base_query = And(
                 base_query,
                 Person.account == Account.id,
-                Not(Account.status.is_in(inactive_statuses)))
+                Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)))
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
@@ -3248,7 +3242,7 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            EmailAddress.email.lower().startswith(text))
+            EmailAddress.email.lower().startswith(unicode(text)))
 
         name_query = And(
             base_query,
@@ -3286,7 +3280,7 @@ class PersonSet:
         return IStore(Person).find(
             Person,
             Person.id == EmailAddress.personID,
-            Lower(EmailAddress.email) == email).one()
+            EmailAddress.email.lower() == email).one()
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
