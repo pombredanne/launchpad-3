@@ -656,7 +656,7 @@
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
-    var LPS = YUI();
+    var LPS = YUI({fetchCSS: false});
   </script>
 </metal:load-javascript>
 
