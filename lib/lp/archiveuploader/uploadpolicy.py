@@ -221,19 +221,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 'PPA uploads must be signed by an Ubuntu '
                 'Code of Conduct signer.')
 
-    def checkSignerIsBetaTester(self, upload):
-        """Reject the upload if the upload signer is not a 'beta-tester'.
-
-        For being a 'beta-tester' a person must be a valid member of
-        launchpad-beta-tester team/celebrity.
-        """
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        if not upload.changes.signer.inTeam(beta_testers):
-            upload.reject(
-                "PPA is only allowed for members of "
-                "launchpad-beta-testers team.")
-
     def checkArchiveSizeQuota(self, upload):
         """Reject the upload if target archive size quota will be exceeded.
 
@@ -277,8 +264,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """The insecure policy does not allow SECURITY uploads for now.
 
         If the upload is targeted to any PPA, checks if the signer is an
-        Ubuntu Code of Conduct signer, and if so is a member of
-        'launchpad-beta-tests'.
+        Ubuntu Code of Conduct signer.
         """
         if upload.is_ppa:
             # XXX cprov 2007-06-13: checks for PPA uploads are not yet
@@ -287,7 +273,6 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # flag). This code will be revisited before releasing PPA
             # publicly.
             self.checkSignerIsUbuntuCodeOfConductSignee(upload)
-            #self.checkSignerIsBetaTester(upload)
             self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
