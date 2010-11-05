@@ -810,7 +810,6 @@ class IDistroSeriesPublic(
         description=copy_field(description, required=False),
         version=copy_field(version, required=False),
         distribution=copy_field(distribution, required=False),
-        status=copy_field(status, required=False),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),
@@ -827,7 +826,7 @@ class IDistroSeriesPublic(
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def deriveDistroSeries(user, name, displayname, title, summary,
-                           description, version, distribution, status,
+                           description, version, distribution,
                            architectures, packagesets, rebuild):
         """Derive a distroseries from this one.
 
@@ -851,9 +850,6 @@ class IDistroSeriesPublic(
         :param distribution: The distribution the derived series will
             belong to. If it isn't specified this distroseries'
             distribution is used.
-        :param status: The status the new distroseries will be created
-            in. If the distroseries isn't specified, this parameter will
-            be ignored. Defaults to FROZEN.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.
         :param packagesets: The packagesets to copy to the derived series.
