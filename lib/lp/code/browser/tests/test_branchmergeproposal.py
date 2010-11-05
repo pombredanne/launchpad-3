@@ -590,13 +590,14 @@ class TestResubmitBrowser(BrowserTestCase):
         """The text of the resubmit page is as expected."""
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
         text = self.getMainText(bmp, '+resubmit')
-        self.assertTextMatchesExpressionIgnoreWhitespace(
+        expected = (
             'Resubmit proposal to merge.*'
             'Source Branch:.*'
             'Target Branch:.*'
             'Prerequisite Branch:.*'
             'Description.*'
-            'Break link.*', text)
+            'Break link.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
 
     def test_resubmit_controls(self):
         """Proposals can be resubmitted using the browser."""

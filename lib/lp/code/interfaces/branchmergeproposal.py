@@ -132,7 +132,7 @@ class IBranchMergeProposal(IPrivacy):
             schema=IBranch, vocabulary='Branch', required=False,
             readonly=True, description=_(
                 "The branch that the source branch branched from. "
-                "If this is the same as the target branch, then "
+                "If this branch is the same as the target branch, then "
                 "leave this field blank.")))
 
     # This is redefined from IPrivacy.private because the attribute is

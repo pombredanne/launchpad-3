@@ -982,15 +982,23 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     for_input = True
     page_title = label = "Resubmit proposal to merge"
     field_names = [
-        'source_branch', 'target_branch', 'prerequisite_branch',
-        'description', 'break_link'
+        'source_branch',
+        'target_branch',
+        'prerequisite_branch',
+        'description',
+        'break_link',
         ]
+
+    def initialize(self):
+        self.cancel_url = canonical_url(self.context)
+        super(BranchMergeProposalResubmitView, self).initialize()
+
     @property
     def initial_values(self):
         UNSET = object()
-        values = ((key, getattr(self.context, key, UNSET)) for key in
+        items = ((key, getattr(self.context, key, UNSET)) for key in
                   self.field_names if key != 'break_link')
-        return dict(item for item in values if item[1] is not UNSET)
+        return dict(item for item in items if item[1] is not UNSET)
 
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
