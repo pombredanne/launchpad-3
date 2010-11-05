@@ -144,8 +144,6 @@ has been narrowed - see bug 612384.
 findSimilarBugs() does not include the bug of the bugtask upon which
 it is invoked.
 
-XXX bdmurray 2010-11-05: This would be more appropriate as a unit test.
-
     >>> orig_bug = factory.makeBug(
     ...     title="So you walk into this restaurant",
     ...     owner=firefox.owner, product=firefox)
