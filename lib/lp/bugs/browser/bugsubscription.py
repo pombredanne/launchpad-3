@@ -84,6 +84,8 @@ class AdvancedSubscriptionMixin:
     In order to use this mixin in a view the view must:
      - Define a current_user_subscription property which returns the
        current BugSubscription or StructuralSubscription for request.user.
+       If there's no subscription for the given user in the given
+       context, current_user_subscription must return None.
      - Define a dict, _bug_notification_level_descriptions, which maps
        BugNotificationLevel values to string descriptions for the
        current context (see `BugSubscriptionSubscribeSelfView` for an
@@ -216,12 +218,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         return SimpleTerm(
             'update-subscription', 'update-subscription',
             'Update my current subscription')
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
-        if self.user is None:
-            return
 
     @cachedproperty
     def _subscription_field(self):
