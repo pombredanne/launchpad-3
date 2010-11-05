@@ -11,7 +11,6 @@ __all__ = [
     'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
-    'TranslationPermission',
     ]
 
 from zope.interface import (
