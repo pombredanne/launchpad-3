@@ -361,14 +361,11 @@ class BugWatch(SQLBase):
 
     @property
     def failed_activity(self):
-        store = Store.of(self)
-        success_status_ids = [
-            status.value for status in BUG_WATCH_ACTIVITY_SUCCESS_STATUSES]
-
-        return store.find(
+        return Store.of(self).find(
             BugWatchActivity,
             BugWatchActivity.bug_watch == self,
-            Not(BugWatchActivity.result.is_in(success_status_ids))).order_by(
+            Not(BugWatchActivity.result.is_in(
+                BUG_WATCH_ACTIVITY_SUCCESS_STATUSES))).order_by(
                 Desc('activity_date'))
 
     def setNextCheck(self, next_check):
