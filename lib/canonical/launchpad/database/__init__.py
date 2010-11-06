@@ -1,14 +1,9 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301
+"""Database / model code for bits of Launchpad that don't fit anywhere else.
 
-from canonical.launchpad.database.account import *
-from canonical.launchpad.database.emailaddress import *
-from canonical.launchpad.database.librarian import *
-from canonical.launchpad.database.logintoken import *
-from canonical.launchpad.database.message import *
-from canonical.launchpad.database.oauth import *
-from canonical.launchpad.database.temporaryblobstorage import *
-from lp.services.worlddata.model.language import *
-from lp.services.worlddata.model.spokenin import *
+DEPRECATED: This package is deprecated.  Do not add any new modules to this
+package.  Where possible, move things out of this package into better
+locations under the 'lp' package.  See the `lp` docstring for more details.
+"""
