@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database import Component
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -41,6 +40,7 @@ from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.mail_helpers import run_mail_jobs
