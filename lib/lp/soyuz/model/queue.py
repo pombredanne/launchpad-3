@@ -1894,11 +1894,11 @@ class PackageUploadSet:
         # method can be removed and call sites updated to use this one.
         store = Store.of(distroseries)
 
-        def dbitem_values_tuple(item_or_list):
+        def dbitem_tuple(item_or_list):
             if not isinstance(item_or_list, list):
-                return (item_or_list.value,)
+                return (item_or_list,)
             else:
-                return tuple(item.value for item in item_or_list)
+                return tuple(item_or_list)
 
         timestamp_query_clause = ()
         if created_since_date is not None:
@@ -1907,7 +1907,7 @@ class PackageUploadSet:
 
         status_query_clause = ()
         if status is not None:
-            status = dbitem_values_tuple(status)
+            status = dbitem_tuple(status)
             status_query_clause = (PackageUpload.status.is_in(status),)
 
         archives = distroseries.distribution.getArchiveIDList(archive)
@@ -1915,12 +1915,12 @@ class PackageUploadSet:
 
         pocket_query_clause = ()
         if pocket is not None:
-            pocket = dbitem_values_tuple(pocket)
+            pocket = dbitem_tuple(pocket)
             pocket_query_clause = (PackageUpload.pocket.is_in(pocket),)
 
         custom_type_query_clause = ()
         if custom_type is not None:
-            custom_type = dbitem_values_tuple(custom_type)
+            custom_type = dbitem_tuple(custom_type)
             custom_type_query_clause = (
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
                 PackageUploadCustom.customformat.is_in(custom_type))
