@@ -1254,7 +1254,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
         search_vector_column = DistroSeriesPackageCache.fti
-        query_function = FTQ(package_name)
+        query_function = FTQ(unicode(package_name))
         rank = RANK(search_vector_column, query_function)
 
         extra_clauses = (
