@@ -4,7 +4,7 @@ SourcePackagePublishingHistory
 
 This class provides public access to publishing records via a SQL view.
 
-    >>> from canonical.launchpad.database import (
+    >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
     ...     SourcePackagePublishingHistory,
     ...     )
