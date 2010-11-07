@@ -393,8 +393,9 @@ Do some needed imports.
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.enums import TranslationPermission
     >>> from lp.translations.interfaces.translationgroup import (
-    ...     ITranslationGroupSet, TranslationPermission)
+    ...     ITranslationGroupSet)
     >>> from canonical.launchpad.ftests import login
     >>> from lp.translations.model.pofile import POFile
     >>> person_set = getUtility(IPersonSet)
