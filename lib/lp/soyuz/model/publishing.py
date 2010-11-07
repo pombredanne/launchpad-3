@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 
+from collections import defaultdict
 from datetime import datetime
 import operator
 import os
@@ -1723,11 +1724,13 @@ class PublishingSet:
         # builds.
         binarypackages = getUtility(IBinaryPackageBuildSet)
         source_build_statuses = {}
+        need_unpublished = set()
         for source_pub in source_pubs:
             source_builds = [build for build in build_info 
                 if build[0].id == source_pub.id]
             builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
+            source_build_statuses[source_pub.id] = summary
 
             # If:
             #   1. the SPPH is in an active publishing state, and
@@ -1737,20 +1740,23 @@ class PublishingSet:
             #   4. There are unpublished builds
             # Then we augment the result with FULLYBUILT_PENDING and attach the
             # unpublished builds.
-            augmented_summary = summary
             if (source_pub.status in active_publishing_status and
                     summary['status'] == BuildSetStatus.FULLYBUILT and
                     not source_pub.archive.is_copy):
+                need_unpublished.add(source_pub)
 
-                unpublished_builds = list(
-                    source_pub.getUnpublishedBuilds())
-
-                if unpublished_builds:
-                    augmented_summary = {
-                        'status': BuildSetStatus.FULLYBUILT_PENDING,
-                        'builds': unpublished_builds
-                    }
-            source_build_statuses[source_pub.id] = augmented_summary
+        if need_unpublished:
+            unpublished = list(self.getUnpublishedBuildsForSources(
+                need_unpublished))
+            unpublished_per_source = defaultdict(list)
+            for source_pub, build, _ in unpublished:
+                unpublished_per_source[source_pub].append(build)
+            for source_pub, builds in unpublished_per_source.items():
+                summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': builds
+                }
+                source_build_statuses[source_pub.id] = summary
 
         return source_build_statuses
 
