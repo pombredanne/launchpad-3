@@ -1699,9 +1699,8 @@ class PublishingSet:
             PackageUploadSource.sourcepackagereleaseID == spr.id)
         return result_set.one()
 
-    def getBuildStatusSummariesForSourceIdsAndArchive(self,
-                                                      source_ids,
-                                                      archive):
+    def getBuildStatusSummariesForSourceIdsAndArchive(self, source_ids,
+        archive, get_builds=None):
         """See `IPublishingSet`."""
         # source_ids can be None or an empty sequence.
         if not source_ids:
@@ -1715,13 +1714,39 @@ class PublishingSet:
 
         source_build_statuses = {}
         for source_pub in source_pubs:
-            status_summary = self.getBuildStatusSummaryForSourcePublication(
-                source_pub)
-            source_build_statuses[source_pub.id] = status_summary
+            if get_builds is not None:
+                builds = get_builds()
+            else:
+                builds = source_pub.getBuilds()
+            summary = getUtility(
+                IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
+
+            # We only augment the result if:
+            #   1. we (the SPPH) are ourselves in an active publishing state, and
+            #   2. all the builds are fully-built, and
+            #   3. we are not being published in a rebuild/copy archive (in
+            #      which case the binaries are not currently published anyway)
+            # In this case we check to see if they are all published, and if
+            # not we return FULLYBUILT_PENDING:
+            augmented_summary = summary
+            if (source_pub.status in active_publishing_status and
+                    summary['status'] == BuildSetStatus.FULLYBUILT and
+                    not source_pub.archive.is_copy):
+
+                unpublished_builds = list(
+                    source_pub.getUnpublishedBuilds())
+
+                if unpublished_builds:
+                    augmented_summary = {
+                        'status': BuildSetStatus.FULLYBUILT_PENDING,
+                        'builds': unpublished_builds
+                    }
+            source_build_statuses[source_pub.id] = augmented_summary
 
         return source_build_statuses
 
-    def getBuildStatusSummaryForSourcePublication(self, source_publication):
+    def getBuildStatusSummaryForSourcePublication(self, source_publication,
+        get_builds=None):
         """See `ISourcePackagePublishingHistory`.getStatusSummaryForBuilds.
 
         This is provided here so it can be used by both the SPPH as well
@@ -1729,31 +1754,9 @@ class PublishingSet:
         the same interface but uses cached results for builds and binaries
         used in the calculation.
         """
-        builds = source_publication.getBuilds()
-        summary = getUtility(
-            IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
-
-        # We only augment the result if:
-        #   1. we (the SPPH) are ourselves in an active publishing state, and
-        #   2. all the builds are fully-built, and
-        #   3. we are not being published in a rebuild/copy archive (in
-        #      which case the binaries are not currently published anyway)
-        # In this case we check to see if they are all published, and if
-        # not we return FULLYBUILT_PENDING:
-        augmented_summary = summary
-        if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT and
-                not source_publication.archive.is_copy):
-
-            unpublished_builds = list(
-                source_publication.getUnpublishedBuilds())
-
-            if unpublished_builds:
-                augmented_summary = {
-                    'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': unpublished_builds
-                }
-        return augmented_summary
+        source_id = source_publication.id
+        return self.getBuildStatusSummariesForSourceIdsAndArchive([source_id],
+            source_publication.archive, get_builds=get_builds)[source_id]
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
