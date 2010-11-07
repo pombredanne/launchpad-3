@@ -1725,20 +1725,21 @@ class PublishingSet:
             source_pubs = set()
             for row in build_info:
                 source_pubs.add(row[0])
-        
+        # For each source_pub found, provide an aggregate summary of its
+        # builds.
+        binarypackages = getUtility(IBinaryPackageBuildSet)
         source_build_statuses = {}
         for source_pub in source_pubs:
             source_builds = [build for build in build_info 
                 if build[0].id == source_pub.id]
             builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
-            summary = getUtility(
-                IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
+            summary = binarypackages.getStatusSummaryForBuilds(builds)
 
             # We only augment the result if:
-            #   1. we (the SPPH) are ourselves in an active publishing state, and
+            #   1. the SPPH is in an active publishing state, and
             #   2. all the builds are fully-built, and
-            #   3. we are not being published in a rebuild/copy archive (in
-            #      which case the binaries are not currently published anyway)
+            #   3. the SPPH is not being published in a rebuild/copy archive (in
+            #      which case the binaries are not published)
             # In this case we check to see if they are all published, and if
             # not we return FULLYBUILT_PENDING:
             augmented_summary = summary
