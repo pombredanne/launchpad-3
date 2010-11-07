@@ -1715,7 +1715,8 @@ class PublishingSet:
 
         source_build_statuses = {}
         for source_pub in source_pubs:
-            status_summary = source_pub.getStatusSummaryForBuilds()
+            status_summary = self.getBuildStatusSummaryForSourcePublication(
+                source_pub)
             source_build_statuses[source_pub.id] = status_summary
 
         return source_build_statuses
