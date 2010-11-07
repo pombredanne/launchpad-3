@@ -217,7 +217,7 @@ class TestPoppy(TestCaseWithFactory):
 
         transport = self.server.getTransport()
         transport.stat('foo/bar') # .stat will implicity chdir for us
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
@@ -248,7 +248,7 @@ class TestPoppy(TestCaseWithFactory):
         transport.mkdir('foo/bar')
         transport.rmdir('foo/bar')
         transport.rmdir('foo')
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
