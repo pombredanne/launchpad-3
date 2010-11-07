@@ -502,12 +502,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return unique_binary_publications
 
+    @staticmethod
+    def _convertBuilds(builds_for_sources):
+        """Convert from IPublishingSet getBuilds to SPPH getBuilds."""
+        return [build for source, build, arch in builds_for_sources]
+
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getBuildsForSources(self)
-
-        return [build for source, build, arch in result_set]
+        result_set = publishing_set.getBuildsForSources([self])
+        return SourcePackagePublishingHistory._convertBuilds(result_set)
 
     def getUnpublishedBuilds(self, build_states=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -1706,18 +1710,27 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        source_pubs = store.find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id.is_in(source_ids),
-            SourcePackagePublishingHistory.archive == archive)
-
+        if len(source_ids) == 1 and get_builds is not None:
+            # Fake out the DB access for ArchivePublication
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            source_pubs = list(store.find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.id.is_in(source_ids),
+                SourcePackagePublishingHistory.archive == archive))
+            source = source_pubs[0]
+            build_info = [(source, build, None) for build in get_builds()]
+        else:
+            build_info = list(
+                self.getBuildsForSourceIds(source_ids, archive=archive))
+            source_pubs = set()
+            for row in build_info:
+                source_pubs.add(row[0])
+        
         source_build_statuses = {}
         for source_pub in source_pubs:
-            if get_builds is not None:
-                builds = get_builds()
-            else:
-                builds = source_pub.getBuilds()
+            source_builds = [build for build in build_info 
+                if build[0].id == source_pub.id]
+            builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
             summary = getUtility(
                 IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
 
