@@ -518,13 +518,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
-
-        # Create a function that will just return the second item
-        # in the result tuple (the build).
-        def result_to_build(result):
-            return result[1]
-
-        return DecoratedResultSet(result_set, result_to_build)
+        return DecoratedResultSet(result_set, operator.itemgetter(1))
 
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
