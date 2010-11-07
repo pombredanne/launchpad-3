@@ -20,6 +20,7 @@ from bzrlib.tests import (
     multiply_tests,
     )
 from bzrlib.transport import get_transport
+from fixtures import Fixture
 import transaction
 from zope.component import getUtility
 
@@ -32,12 +33,11 @@ from canonical.testing.layers import (
 from lp.poppy.tests.helpers import PoppyTestSetup
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
-    SSHKeyType,
     )
 from lp.testing import TestCaseWithFactory
 
 
-class FTPServer:
+class FTPServer(Fixture):
     """This is an abstraction of connecting to an FTP server."""
 
     def __init__(self, root_dir, factory):
@@ -45,12 +45,11 @@ class FTPServer:
         self.port = 3421
 
     def setUp(self):
+        super(FTPServer, self).setUp()
         self.poppy = PoppyTestSetup(
             self.root_dir, port=self.port, cmd='echo CLOSED')
         self.poppy.startPoppy()
-
-    def cleanUp(self):
-        self.poppy.killPoppy()
+        self.addCleanup(self.poppy.killPoppy)
 
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
@@ -87,7 +86,7 @@ class FTPServer:
         self.poppy.verify_output(['CLOSED'])
 
 
-class SFTPServer:
+class SFTPServer(Fixture):
     """This is an abstraction of connecting to an SFTP server."""
 
     def __init__(self, root_dir, factory):
@@ -112,11 +111,13 @@ class SFTPServer:
             user, os.path.join(os.path.dirname(__file__), 'poppy-sftp.pub'))
         # Set up a temporary home directory for Paramiko's sake
         self._home_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self._home_dir)
         os.mkdir(os.path.join(self._home_dir, '.ssh'))
         os.symlink(
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
         self._current_home = os.environ['HOME']
+        self.addCleanup(os.environ.__setitem__, 'HOME', self._current_home)
         # We'd rather not have an agent interfere
         os.environ.pop('SSH_AUTH_SOCK', None)
         os.environ['HOME'] = self._home_dir
@@ -125,14 +126,11 @@ class SFTPServer:
         os.environ['BZR_SSH'] = 'paramiko'
 
     def setUp(self):
+        super(SFTPServer, self).setUp()
         self.setUpUser('joe')
         self._tac = PoppyTac(self.root_dir)
         self._tac.setUp()
-
-    def cleanUp(self):
-        shutil.rmtree(self._home_dir)
-        os.environ['HOME'] = self._current_home
-        self._tac.tearDown()
+        self.addCleanup(self._tac.tearDown)
 
     def disconnect(self, transport):
         transport._get_connection().close()
