@@ -1735,13 +1735,14 @@ class PublishingSet:
             builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
 
-            # We only augment the result if:
+            # If:
             #   1. the SPPH is in an active publishing state, and
             #   2. all the builds are fully-built, and
             #   3. the SPPH is not being published in a rebuild/copy archive (in
             #      which case the binaries are not published)
-            # In this case we check to see if they are all published, and if
-            # not we return FULLYBUILT_PENDING:
+            #   4. There are unpublished builds
+            # Then we augment the result with FULLYBUILT_PENDING and attach the
+            # unpublished builds.
             augmented_summary = summary
             if (source_pub.status in active_publishing_status and
                     summary['status'] == BuildSetStatus.FULLYBUILT and
