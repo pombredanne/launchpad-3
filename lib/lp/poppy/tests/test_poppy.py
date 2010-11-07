@@ -20,7 +20,10 @@ from bzrlib.tests import (
     multiply_tests,
     )
 from bzrlib.transport import get_transport
-from fixtures import Fixture
+from fixtures import (
+    EnvironmentVariableFixture,
+    Fixture,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -116,21 +119,14 @@ class SFTPServer(Fixture):
         os.symlink(
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
-        self._current_home = os.environ['HOME']
-        self.addCleanup(os.environ.__setitem__, 'HOME', self._current_home)
-        # We'd rather not have an agent interfere
-        os.environ.pop('SSH_AUTH_SOCK', None)
-        os.environ['HOME'] = self._home_dir
-        # XXX: Just blat over the BZR_SSH env var. Restoring env vars is a
-        # little tricky, see lp.testing.TestCaseWithFactory.useTempBzrHome.
-        os.environ['BZR_SSH'] = 'paramiko'
+        self.useFixture(EnvironmentVariableFixture('HOME', self._home_dir))
+        self.useFixture(EnvironmentVariableFixture('SSH_AUTH_SOCK', None))
+        self.useFixture(EnvironmentVariableFixture('BZR_SSH', 'paramiko'))
 
     def setUp(self):
         super(SFTPServer, self).setUp()
         self.setUpUser('joe')
-        self._tac = PoppyTac(self.root_dir)
-        self._tac.setUp()
-        self.addCleanup(self._tac.tearDown)
+        self.useFixture(PoppyTac(self.root_dir))
 
     def disconnect(self, transport):
         transport._get_connection().close()
@@ -359,6 +355,7 @@ class TestPoppy(TestCaseWithFactory):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
 
 def test_suite():
     tests = unittest.TestLoader().loadTestsFromName(__name__)
