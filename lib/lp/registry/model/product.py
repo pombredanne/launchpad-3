@@ -162,10 +162,10 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,

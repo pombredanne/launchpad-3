@@ -140,6 +140,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -382,7 +383,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        if not self.context.private and config.build_from_branch.enabled:
+        if not self.context.private and recipes_enabled():
             enabled = True
         else:
             enabled = False
