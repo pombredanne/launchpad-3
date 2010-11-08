@@ -132,3 +132,21 @@ Now we'll create another branch, and unsubscribe the owner from it.
     2 registered branches
     1 subscribed branch
     0 active reviews
+
+
+Teams do not show registered branches
+=====================================
+
+For a team, showing registered branches does not make sense, so that
+line is omitted.
+
+    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
+    >>> print_tag_with_id(
+    ...     browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    2 subscribed branches
+    0 active reviews
+
+    >>> browser.getLink('registered').click()
+    Traceback (most recent call last):
+    LinkNotFoundError
