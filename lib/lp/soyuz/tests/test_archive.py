@@ -52,6 +52,7 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
@@ -1423,6 +1424,7 @@ class TestComponents(TestCaseWithFactory):
         self.assertEqual(set([ap]),
             set(archive.getComponentsForUploader(person)))
 
+
 class TestvalidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1446,3 +1448,37 @@ class TestvalidatePPA(TestCaseWithFactory):
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
         self.assertEqual(None, Archive.validatePPA(ppa_owner, None))
+
+
+class TestGetComponentsForSeries(TestCaseWithFactory):
+    """Tests for Archive.getComponentsForSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetComponentsForSeries, self).setUp()
+        self.series = self.factory.makeDistroSeries()
+        self.comp1 = self.factory.makeComponent()
+        self.comp2 = self.factory.makeComponent()
+
+    def test_series_components_for_primary_archive(self):
+        # The primary archive uses the series' defined components.
+        archive = self.factory.makeArchive()
+        self.assertEquals(
+            0, archive.getComponentsForSeries(self.series).count())
+
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        ComponentSelection(distroseries=self.series, component=self.comp2)
+
+        self.assertEquals(
+            set((self.comp1, self.comp2)),
+            set(archive.getComponentsForSeries(self.series)))
+
+    def test_partner_component_for_partner_archive(self):
+        # The partner archive always uses only the 'partner' component.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        partner_comp = getUtility(IComponentSet)['partner']
+        self.assertEquals(
+            [partner_comp],
+            list(archive.getComponentsForSeries(self.series)))
