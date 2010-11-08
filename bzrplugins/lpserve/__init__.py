@@ -568,6 +568,10 @@ class LPForkingService(object):
                     self.log(client_addr, 'request timeout failure: %s' % (e,))
                     conn.sendall('FAILURE\nrequest timed out\n')
                     conn.close()
+                except Exception, e:
+                    trace.log_exception_quietly()
+                    self.log(client_addr, 'trapped a failure while handling'
+                                          ' connection: %s' % (e,))
             self._poll_children()
 
     def log(self, client_addr, message):
