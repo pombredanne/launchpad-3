@@ -192,6 +192,7 @@ from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -199,7 +200,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasTranslationImportsMixin, KarmaContextMixin,
                    OfficialBugTagTargetMixin, QuestionTargetMixin,
                    StructuralSubscriptionTargetMixin, HasMilestonesMixin,
-                   HasBugHeatMixin):
+                   HasBugHeatMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,

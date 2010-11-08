@@ -706,10 +706,6 @@ class IProductPublic(
         "groups for a product. There can be several: one from the product, "
         "and potentially one from the project, too.")
 
-    aggregatetranslationpermission = Attribute("The translation permission "
-        "that applies to translations in this product, based on the "
-        "permissions that apply to the product as well as its project.")
-
     commercial_subscription = exported(
         Reference(
             ICommercialSubscription,

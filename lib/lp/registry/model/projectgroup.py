@@ -105,6 +105,7 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -112,7 +113,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin):
+                   HasMilestonesMixin, TranslationPolicyMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
