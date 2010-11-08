@@ -114,11 +114,13 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
             os.remove(htaccess_path)
             os.remove(htpasswd_path)
     else:
+        # After the initial htaccess/htpasswd files
+        # are created generate_ppa_htaccess is responsible for
+        # updating the tokens.
         if not os.path.exists(htaccess_path):
             log.debug("Writing htaccess file.")
             write_htaccess(htpasswd_path, pub_config.htaccessroot)
-            passwords = [(
-                BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])]
+            passwords = htpasswd_credentials_for_ppa(archive)
             write_htpasswd(htpasswd_path, passwords)
 
     if distsroot is not None:

@@ -28,6 +28,7 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
@@ -82,17 +83,21 @@ def write_htpasswd(filename, users):
         file.close()
 
 
-def htpasswd_credentials_for_ppa(ppa, tokens):
+def htpasswd_credentials_for_ppa(archive, tokens=None):
     """Return credentials for a ppa for use with write_htpasswd.
 
-    :param ppa: An `IArchive` (must be private)
-    :param tokens: Iterable of `IArchiveAuthToken`s
+    :param archive: An `IArchive` (must be private)
+    :param tokens: Optional iterable of `IArchiveAuthToken`s.
     :return: Iterable of tuples with (user, password, salt) for use with
         write_htpasswd.
     """
-    assert ppa.private, "Archive %r must be private" % ppa
+    assert archive.private, "Archive %r must be private" % archive
+
+    if tokens is None:
+        tokens = getUtility(IArchiveAuthTokenSet).getByArchive(archive)
+
     # The first .htpasswd entry is the buildd_secret.
-    yield (BUILDD_USER_NAME, ppa.buildd_secret, BUILDD_USER_NAME[:2])
+    yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
 
     # Iterate over tokens and write the appropriate htpasswd
     # entries for them.  Use a consistent sort order so that the
