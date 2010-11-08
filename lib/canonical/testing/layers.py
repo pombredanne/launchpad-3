@@ -276,10 +276,6 @@ class BaseLayer:
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
-        # Ensure our logs directory exists
-        log_folder = 'logs'
-        if not os.path.exists(log_folder):
-            os.mkdir(log_folder)
         cls.fixture = Fixture()
         cls.fixture.setUp()
         cls.fixture.addCleanup(setattr, cls, 'fixture', None)

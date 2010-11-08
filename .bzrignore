@@ -1,6 +1,7 @@
 .tags
 bzr-version-info.py
 logs
+logs/*
 +*
 sourcecode/*
 ./botmaster
