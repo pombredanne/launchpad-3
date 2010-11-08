@@ -1047,25 +1047,19 @@ class TestPublisher(TestPublisherBase):
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
-        htaccess_f = open(htaccess_path, 'r')
-        try:
+        with open(htaccess_path, 'r') as htaccess_f:
             self.assertEquals(htaccess_f.read(), """
 AuthType           Basic
 AuthName           "Token Required"
 AuthUserFile       %s/.htpasswd
 Require            valid-user
 """ % pubconf.htaccessroot)
-        finally:
-            htaccess_f.close()
 
         htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
 
         # Read it back in.
-        htpasswd_f = open(htpasswd_path, "r")
-        try:
+        with open(htpasswd_path, "r") as htpasswd_f:
             file_contents = htpasswd_f.readlines()
-        finally:
-            htpasswd_f.close()
 
         self.assertEquals(1, len(file_contents))
 
