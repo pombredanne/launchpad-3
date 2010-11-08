@@ -1565,22 +1565,39 @@
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         path_expression="string:+nameblacklists"
         parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        rootsite="mainsite"/>
+        />
+    <browser:url
+        for="lp.registry.interfaces.nameblacklist.INameBlacklist"
+        path_expression="string:${id}"
+        parent_utility="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        />
     <browser:defaultView
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         name="+index"/>
-    <browser:pages
+    <browser:page
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        permission="launchpad.View"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistSetView"
+        name="+index"
+        template="../templates/nameblacklists-index.pt"/>
+    <browser:page
         for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
         permission="launchpad.Edit"
         facet="overview"
-        class="lp.registry.browser.nameblacklist.NameBlacklistSetView">
-        <browser:page
-            name="+index"
-            template="../templates/nameblacklists-index.pt"/>
-        <browser:page
-            name="+add"
-            template="../../app/templates/generic-edit.pt"/>
-    </browser:pages>
+        class="lp.registry.browser.nameblacklist.NameBlacklistAddView"
+        name="+add"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:navigation
+        module="lp.registry.browser.nameblacklist"
+        classes="NameBlacklistSetNavigation"/>
+    <browser:menus
+        classes="
+            NameBlacklistNavigationMenu
+            NameBlacklistSetNavigationMenu
+            "
+        module="lp.registry.browser.nameblacklist"/>
+
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"

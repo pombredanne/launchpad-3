@@ -39,3 +39,6 @@ class INameBlacklistSet(Interface):
 
     def get(id):
         """Return the NameBlacklist with the given id or None."""
+
+    def getByRegExp(regexp):
+        """Return the NameBlacklist with the given regexp or None."""

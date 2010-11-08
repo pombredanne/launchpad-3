@@ -61,3 +61,8 @@ class NameBlacklistSet:
         """See `INameBlacklistSet`."""
         store = IStore(NameBlacklist)
         return store.find(NameBlacklist, NameBlacklist.id == id).one()
+
+    def getByRegExp(self, regexp):
+        """See `INameBlacklistSet`."""
+        store = IStore(NameBlacklist)
+        return store.find(NameBlacklist, NameBlacklist.regexp == regexp).one()

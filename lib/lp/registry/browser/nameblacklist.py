@@ -5,18 +5,31 @@ __metaclass__ = type
 __all__ = [
     'NameBlacklistAddView',
     'NameBlacklistEditView',
+    'NameBlacklistNavigationMenu',
+    'NameBlacklistSetNavigationMenu',
     'NameBlacklistSetView',
     ]
 
 import re
 
+from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import action
-from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from canonical.launchpad.webapp.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
+    Navigation,
     )
 
 from lp.registry.browser import RegistryEditFormView
@@ -26,22 +39,53 @@ from lp.registry.interfaces.nameblacklist import (
     )
 
 
-class NameBlacklistEditView(RegistryEditFormView):
-
-    schema = INameBlacklist
+class NameBlacklistValidationMixin:
+    """Validate regular expression when adding or editing."""
 
     def validate(self, data):
         """Validate regular expression."""
         regexp = data['regexp']
-        re.compile(regexp)
+        try:
+            re.compile(regexp)
+            name_blacklist_set = getUtility(INameBlacklistSet)
+            if (INameBlacklistSet.providedBy(self.context)
+                or self.context.regexp != regexp):
+                # Check if the regular expression already exists if a
+                # new expression is being created or if an existing
+                # regular expression has been modified.
+                if name_blacklist_set.getByRegExp(regexp) is not None:
+                    self.setFieldError(
+                        'regexp',
+                        'This regular expression already exists.')
+        except re.error, e:
+            self.setFieldError(
+                'regexp',
+                'Invalid regular expression: %s' % e)
 
 
-class NameBlacklistAddView(LaunchpadFormView):
+class NameBlacklistEditView(NameBlacklistValidationMixin,
+                            RegistryEditFormView):
+    """View for editing a blacklist expression."""
 
     schema = INameBlacklist
-    label = "Register a new distribution"
+    field_names = ['regexp', 'comment']
 
-    '''
+    @property
+    def cancel_url(self):
+        return canonical_url(getUtility(INameBlacklistSet))
+
+    next_url = cancel_url
+
+
+class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
+    """View for adding a blacklist expression."""
+
+    schema = INameBlacklist
+    field_names = ['regexp', 'comment']
+    label = "Add a new blacklist expression"
+
+    custom_widget('regexp', TextWidget, displayWidth=60)
+
     @property
     def page_title(self):
         """The page title."""
@@ -51,15 +95,16 @@ class NameBlacklistAddView(LaunchpadFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-    '''
 
-    @action("Save", name='save')
+    next_url = cancel_url
+
+    @action("Add to blacklist", name='add')
     def save_action(self, action, data):
-        nameblacklist = getUtility(INameBlacklistSet).create(
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        name_blacklist_set.create(
             regexp=data['regexp'],
-            displayname=data['comment'],
+            comment=data['comment'],
             )
-        self.next_url = canonical_url(INameBlacklistSet)
 
 
 class NameBlacklistSetView(LaunchpadView):
@@ -68,3 +113,37 @@ class NameBlacklistSetView(LaunchpadView):
     page_title = (
         'Blacklist for names of Launchpad pillars, persons, and teams')
     label = page_title
+
+
+class NameBlacklistSetNavigation(Navigation):
+
+    usedfor = INameBlacklistSet
+
+    def traverse(self, name):
+        return self.context.get(int(name))
+
+
+class NameBlacklistSetNavigationMenu(NavigationMenu):
+    """Action menu for NameBlacklistSet."""
+    usedfor = INameBlacklistSet
+    facet = 'overview'
+    links = [
+        'add_blacklist_expression',
+        ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_blacklist_expression(self):
+        return Link('+add', 'Add blacklist expression', icon='add')
+
+
+class NameBlacklistNavigationMenu(ApplicationMenu):
+    """Action menu for NameBlacklist."""
+    usedfor = INameBlacklist
+    facet = 'overview'
+    links = [
+        'edit_blacklist_expression',
+        ]
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_blacklist_expression(self):
+        return Link('+edit', 'Edit blacklist expression', icon='edit')
