@@ -87,8 +87,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         os.close(fd)
 
-        write_htpasswd(temp_filename,
-            htpasswd_credentials_for_archive(ppa, tokens))
+        write_htpasswd(
+            temp_filename, htpasswd_credentials_for_archive(ppa, tokens))
 
         return temp_filename
 
