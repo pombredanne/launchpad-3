@@ -130,7 +130,7 @@
     <xmlrpc:view
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         methods="filebug"
-        class="canonical.launchpad.xmlrpc.FileBugAPI"
+        class="lp.bugs.xmlrpc.bug.FileBugAPI"
         permission="launchpad.AnyPerson"/>
 
     <!-- Global Malone portlets -->
