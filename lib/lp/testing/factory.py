@@ -61,7 +61,10 @@ from zope.security.proxy import (
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.message import (
@@ -1269,6 +1272,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
 
+    def makeIncrementalDiff(self, merge_proposal=None, old_revision=None,
+                            new_revision=None):
+        diff = self.makeDiff()
+        if merge_proposal is None:
+            source_branch = self.makeBranch()
+        else:
+            source_branch = merge_proposal.source_branch
+        def make_revision(parent=None):
+            sequence = source_branch.revision_history.count() + 1
+            if parent is None:
+                parent_ids = []
+            else:
+                parent_ids = [parent.revision_id]
+            branch_revision = self.makeBranchRevision(
+                source_branch, sequence=sequence,
+                revision_date=self.getUniqueDate(), parent_ids=parent_ids)
+            return branch_revision.revision
+        if old_revision is None:
+            old_revision = make_revision()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal(
+                date_created=self.getUniqueDate(),
+                source_branch=source_branch)
+        if new_revision is None:
+            new_revision = make_revision(old_revision)
+        return merge_proposal.generateIncrementalDiff(
+            old_revision, new_revision, diff)
+
     def makeStaticDiff(self):
         return StaticDiff.acquireFromText(
             self.getUniqueUnicode(), self.getUniqueUnicode(),
@@ -1337,10 +1368,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None,
-                           parent_ids=None):
+    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+                           parent_ids=None, revision_date=None):
         revision = self.makeRevision(
-            rev_id=revision_id, parent_ids=parent_ids)
+            rev_id=revision_id, parent_ids=parent_ids,
+            revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
@@ -1827,7 +1859,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None):
+                              merge_proposal=None, date_created=DEFAULT):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -1841,7 +1873,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
         return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent)
+            sender, subject, body, vote, vote_tag, parent,
+            _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())

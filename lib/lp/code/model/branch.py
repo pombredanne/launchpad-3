@@ -471,10 +471,18 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
-        jobs = [UpdatePreviewDiffJob.create(target)
-                for target in self.active_landing_targets
-                if target.target_branch.last_scanned_id is not None]
+        from lp.code.model.branchmergeproposaljob import (
+                GenerateIncrementalDiffJob,
+                UpdatePreviewDiffJob,
+            )
+        jobs = []
+        for merge_proposal in self.active_landing_targets:
+            if merge_proposal.target_branch.last_scanned_id is None:
+                continue
+            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+            for old, new in merge_proposal.getMissingIncrementalDiffs():
+                GenerateIncrementalDiffJob.create(
+                    merge_proposal, old.revision_id, new.revision_id)
         return jobs
 
     def addToLaunchBag(self, launchbag):
