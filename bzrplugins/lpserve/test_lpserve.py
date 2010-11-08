@@ -572,19 +572,20 @@ class TestCaseWithLPForkingServiceDaemon(
         # final pid into the pid_filename.
         tnow = time.time()
         tstop_waiting = tnow + 1.0
+        # When this returns, the first fork has completed and the parent has
+        # exited.
         proc.wait()
         while tnow < tstop_waiting:
-            tnow = time.time()
-            f = open(pid_filename, 'rb')
-            try:
-                pid = f.read()
-            finally:
-                f.close()
-            if pid:
-                trace.mutter('found pid: %r' % (pid,))
+            # Wait for the socket to become available
+            if os.path.exists(path):
+                # The service has created the socket for us to communicate
                 break
-            else:
-                time.sleep(0.1)
+            time.sleep(0.1)
+            tnow = time.time()
+
+        with open(pid_filename, 'rb') as f:
+            pid = f.read()
+            trace.mutter('found pid: %r' % (pid,))
         pid = int(pid.strip())
         # This is now the pid of the final daemon
         trace.mutter('lp-forking-service daemon at pid %s' % (pid,))

@@ -781,7 +781,6 @@ class cmd_launchpad_forking_service(Command):
         Upon request, we relinquish our control and switch to daemon mode,
         writing out the final pid of the daemon process.
         """
-        out = '/dev/null'
         # If fork fails, it will bubble out naturally and be reported by the
         # cmd logic
         pid = os.fork()
@@ -789,7 +788,7 @@ class cmd_launchpad_forking_service(Command):
             # Original process exits cleanly
             os._exit(0)
 
-        # Do we need to os.chdir('/') or anything else funky like that?
+        # Disconnect from the parent process
         os.setsid()
 
         # fork again, to truly become a daemon.
@@ -798,11 +797,11 @@ class cmd_launchpad_forking_service(Command):
             os._exit(0)
 
         # Redirect file handles
-        stdin = open(out, 'r')
+        stdin = open('/dev/null', 'r')
         os.dup2(stdin.fileno(), sys.stdin.fileno())
-        stdout = open(out, 'a+')
+        stdout = open('/dev/null', 'a+')
         os.dup2(stdout.fileno(), sys.stdout.fileno())
-        stderr = open(out, 'a+', 0)
+        stderr = open('/dev/null', 'a+', 0)
         os.dup2(stderr.fileno(), sys.stderr.fileno())
 
         # Now that we are a daemon, let people know what pid is running
