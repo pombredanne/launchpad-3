@@ -75,6 +75,7 @@
    <grok:grok package="canonical.launchpad.rest" />
 
    <webservice:register module="canonical.launchpad.interfaces" />
+   <webservice:register module="canonical.launchpad.interfaces.webservice" />
 
    <adapter
        for="zope.schema.interfaces.IChoice
