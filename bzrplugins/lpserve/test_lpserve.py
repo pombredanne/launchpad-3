@@ -1,6 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import errno
 import os
 import signal
 import socket
@@ -560,6 +561,7 @@ class TestCaseWithLPForkingServiceDaemon(
     def _start_subprocess(self, path, env_changes):
         fd, pid_filename = tempfile.mkstemp(prefix='tmp-lp-forking-service-',
                                             suffix='.pid')
+        self.service_pid_filename = pid_filename
         os.close(fd)
         proc = self.start_bzr_subprocess(
             ['lp-service', '--path', path, '--no-preload',
@@ -605,19 +607,58 @@ class TestCaseWithLPForkingServiceDaemon(
             # Ignore a failure to connect, the service must be stopping/stopped
             # already
             response = None
-        if response is None:
-            # We can't poll() or waitpid() to see if the process is alive, so
-            # we just send a close request
-            trace.note('Killing the daemon (pid: %s) manually'
-                       % (self.service_process,))
-            try:
-                os.kill(self.service_process, signal.SIGINT)
-            except (OSError, IOError), e:
-                trace.note('Error trying to kill the daemon: %s' % (e,))
         if response is not None:
             self.assertEqual('ok\nquit command requested... exiting\n',
                              response)
+        # Wait for the process to actually exit, or force it if necessary.
+        tnow = time.time()
+        tend = tnow + 2.0
+        # We'll be nice a couple of times, and then get mean
+        attempts = [None, None, None, signal.SIGTERM, signal.SIGKILL]
+        stopped = False
+        unclean = False
+        while tnow < tend:
+            try:
+                os.kill(self.service_process, 0)
+            except (OSError, IOError), e:
+                if e.errno == errno.ESRCH:
+                    # The process has successfully exited
+                    stopped = True
+                    break
+                raise
+            else:
+                # The process has not exited yet
+                time.sleep(0.1)
+                if attempts:
+                    sig = attempts.pop(0)
+                    if sig is not None:
+                        unclean = True
+                        try:
+                            os.kill(self.service_process, sig)
+                        except (OSError, IOError), e:
+                            if e.errno == errno.ESRCH:
+                                stopped = True
+                                break
+                            raise
+        if not stopped:
+            self.fail('Unable to stop the daemon process (pid %s) after 2.0s'
+                      % (self.service_process,))
+        elif unclean:
+            self.fail('Process (pid %s) had to be shut-down'
+                      % (self.service_process,))
         self.service_process = None
 
     def test_simple_start_and_stop(self):
         pass # All the work is done in setUp()
+
+    def test_starts_and_cleans_up(self):
+        # The service should be up and responsive
+        response = self.send_message_to_service('hello\n')
+        self.assertEqual('ok\nyep, still alive\n', response)
+        self.failUnless(os.path.isfile(self.service_pid_filename))
+        with open(self.service_pid_filename, 'rb') as f:
+            content = f.read()
+        self.assertEqualDiff('%d\n' % (self.service_process,), content)
+        # We're done, shut it down
+        self.stop_service()
+        self.failIf(os.path.isfile(self.service_pid_filename))

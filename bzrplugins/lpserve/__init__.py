@@ -824,6 +824,12 @@ class cmd_launchpad_forking_service(Command):
         service = LPForkingService(path, perms)
         service.WAIT_FOR_CHILDREN_TIMEOUT = children_timeout
         service.main_loop()
+        if pid_file is not None:
+            try:
+                os.remove(pid_file)
+            except (OSError, IOError), e:
+                trace.mutter('Failed to cleanup pid_file: %s\n%s'
+                             % (pid_file, e))
 
 register_command(cmd_launchpad_forking_service)
 
