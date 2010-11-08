@@ -486,22 +486,24 @@ class StructuralSubscriptionTargetMixin:
             ]
 
         # An ARRAY[] expression for the given bug's tags.
-        tag_array = "ARRAY[%s]::TEXT[]" % ",".join(
+        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in bugtask.bug.tags)
 
-        # An expression that is true when there is an intersection between the
-        # given bug's tags and the subscription's tags requested for
-        # inclusion.
+        # The tags a subscription requests for inclusion.
         tags_include_expr = (
             "SELECT tag FROM BugSubscriptionFilterTag "
             "WHERE filter = BugSubscriptionFilter.id AND include")
+        tags_include_array = "ARRAY(%s)" % tags_include_expr
+        tags_include_is_empty = SQL(
+            "ARRAY[]::TEXT[] = ARRAY(%s)" % tags_include_expr)
 
-        # An expression that is true when there is no intersection between the
-        # given bug's tags and the subscription's tags requested for
-        # exclusion.
+        # The tags a subscription requests for exclusion.
         tags_exclude_expr = (
             "SELECT tag FROM BugSubscriptionFilterTag "
             "WHERE filter = BugSubscriptionFilter.id AND NOT include")
+        tags_exclude_array = "ARRAY(%s)" % tags_exclude_expr
+        tags_exclude_is_empty = SQL(
+            "ARRAY[]::TEXT[] = ARRAY(%s)" % tags_exclude_expr)
 
         # Choose the correct expression depending on the find_all_tags flag.
         def tags_find_all_combinator(find_all_expr, find_any_expr):
@@ -513,7 +515,7 @@ class StructuralSubscriptionTargetMixin:
             tag_conditions = [
                 BugSubscriptionFilter.include_any_tags == False,
                 # The subscription's required tags must be an empty set.
-                SQL("%s = ARRAY(%s)" % (tag_array, tags_include_expr)),
+                SQL("%s = %s" % (tags_array, tags_include_array)),
                 # The subscription's excluded tags can be anything.
                 ]
         else:
@@ -521,21 +523,17 @@ class StructuralSubscriptionTargetMixin:
                 BugSubscriptionFilter.exclude_any_tags == False,
                 # The bug's tags must contain the subscription's required tags
                 # if find_all_tags is set, else there must be an intersection.
-                Or(
-                    SQL("ARRAY[]::TEXT[] = ARRAY(%s)" % tags_include_expr),
-                    tags_find_all_combinator(
-                        "%s @> ARRAY(%s)" % (tag_array, tags_include_expr),
-                        "%s && ARRAY(%s)" % (tag_array, tags_include_expr))),
-                # The bug's tags must not intersect with the subscription's
-                # excluded tags if find_all_tags is set, else the bug's tags
-                # must not include the excluded tags.
-                Or(
-                    SQL("ARRAY[]::TEXT[] = ARRAY(%s)" % tags_exclude_expr),
-                    tags_find_all_combinator(
-                        "NOT (%s @> ARRAY(%s))" % (
-                            tag_array, tags_exclude_expr),
-                        "NOT (%s && ARRAY(%s))" % (
-                            tag_array, tags_exclude_expr))),
+                Or(tags_include_is_empty,
+                   tags_find_all_combinator(
+                        "%s @> %s" % (tags_array, tags_include_array),
+                        "%s && %s" % (tags_array, tags_include_array))),
+                # The bug's tags must not contain the subscription's excluded
+                # tags if find_all_tags is set, else there must not be an
+                # intersection.
+                Or(tags_exclude_is_empty,
+                   tags_find_all_combinator(
+                        "NOT (%s @> %s)" % (tags_array, tags_exclude_array),
+                        "NOT (%s && %s)" % (tags_array, tags_exclude_array))),
                 ]
 
         conditions = [
