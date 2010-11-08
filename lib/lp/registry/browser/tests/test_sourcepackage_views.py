@@ -20,7 +20,11 @@ from lp.registry.interfaces.distroseries import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestSourcePackageViewHelpers(TestCaseWithFactory):
@@ -144,3 +148,42 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         params = cgi.parse_qsl(query)
         self.assertEqual((expected_base, expected_params),
                          (base, params))
+
+
+class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageUpstreamConnectionsView, self).setUp()
+        product = self.factory.makeProduct(name='fnord', displayname='Fnord')
+        productseries = self.factory.makeProductSeries(
+            name='1.0', product=product)
+        self.milestone = self.factory.makeMilestone(
+            product=product, productseries=productseries)
+        distribution = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroRelease(
+            distribution=distribution)
+        self.source_package = self.factory.makeSourcePackage(
+            distroseries=distroseries,
+            sourcepackagename='fnord')
+        spn = self.source_package.sourcepackagename
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=spn, version='1.5', distroseries=distroseries)
+        self.source_package.setPackaging(productseries, product.owner)
+
+    def makeUpstreamRelease(self, version):
+        with person_logged_in(self.milestone.productseries.product.owner):
+            self.milestone.name = version
+            self.factory.makeProductRelease(self.milestone)
+
+    def test_current_release_tracking_none(self):
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(True, view.current_release_tracking['None'])
+
+    def test_current_release_tracking_current(self):
+        self.makeUpstreamRelease('1.5')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(True, view.current_release_tracking['current'])

@@ -612,3 +612,18 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         if bugtracker is None:
             return False
         return True
+
+    @property
+    def current_release_tracking(self):
+        """The state of tracking the upstream release version."""
+        tracking = dict(
+            none=None, newer=None, older=None, current=None)
+        upstream_release = self.context.productseries.getLatestRelease()
+        current_release = self.context.currentrelease
+        if upstream_release is None or current_release is None:
+            # There is not enough information to track releases.
+            tracking['None'] = True
+        elif current_release.version.startswith(upstream_release.version):
+            # The upstream release is the base for the current release.
+            tracking['current'] = True
+        return tracking
