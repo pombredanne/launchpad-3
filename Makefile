@@ -227,17 +227,17 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: check_schema inplace stop support_files
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
@@ -251,7 +251,7 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -341,7 +341,7 @@ clean: clean_js clean_buildout
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
