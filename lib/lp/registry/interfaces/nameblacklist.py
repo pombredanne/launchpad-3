@@ -31,6 +31,9 @@ class INameBlacklist(Interface):
 class INameBlacklistSet(Interface):
     """The set of INameBlacklist objects."""
 
+    def getAll():
+        """Return all the name blacklist expressions."""
+
     def create(regexp, comment=None):
         """Create and return a new NameBlacklist with given arguments."""
 

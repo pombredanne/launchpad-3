@@ -126,3 +126,15 @@ class TestNameBlacklistSet(TestCase):
         store.flush()
         retrieved = nameblacklist_set.get(nameblacklist.id)
         self.assertEquals(nameblacklist, retrieved)
+
+    def test_getAll(self):
+        login(ADMIN_EMAIL)
+        nameblacklist_set = getUtility(INameBlacklistSet)
+        result = [
+            (item.regexp, item.comment)
+            for item in nameblacklist_set.getAll()]
+        expected = [
+            ('^admin', None),
+            ('blacklist', 'For testing purposes'),
+            ]
+        self.assertEqual(expected, result)

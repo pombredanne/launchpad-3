@@ -43,6 +43,11 @@ class NameBlacklistSet:
 
     implements(INameBlacklistSet)
 
+    def getAll(self):
+        """See `INameBlacklistSet`."""
+        store = IStore(NameBlacklist)
+        return store.find(NameBlacklist).order_by(NameBlacklist.regexp)
+
     def create(self, regexp, comment=None):
         """See `INameBlacklistSet`."""
         nameblacklist = NameBlacklist()
