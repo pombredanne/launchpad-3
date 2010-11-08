@@ -1705,9 +1705,9 @@ class PublishingSet:
         if not source_ids:
             return {}
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         if len(source_ids) == 1 and get_builds is not None:
             # Fake out the DB access for ArchivePublication
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
             source_pubs = list(store.find(
                 SourcePackagePublishingHistory,
                 SourcePackagePublishingHistory.id.is_in(source_ids),
@@ -1718,8 +1718,22 @@ class PublishingSet:
             build_info = list(
                 self.getBuildsForSourceIds(source_ids, archive=archive))
             source_pubs = set()
+            found_source_ids = set()
             for row in build_info:
                 source_pubs.add(row[0])
+                found_source_ids.add(row[0].id)
+            pubs_without_builds = set(source_ids) - found_source_ids
+            if pubs_without_builds:
+                # Add in source pubs for which no builds were found: we may in
+                # future want to make this a LEFT OUTER JOIN in
+                # getBuildsForSourceIds but to avoid destabilising other code
+                # paths while we fix performance, it is just done as a single
+                # separate query for now.
+                source_pubs.update(store.find(
+                    SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.id.is_in(
+                        pubs_without_builds),
+                    SourcePackagePublishingHistory.archive == archive))
         # For each source_pub found, provide an aggregate summary of its
         # builds.
         binarypackages = getUtility(IBinaryPackageBuildSet)
