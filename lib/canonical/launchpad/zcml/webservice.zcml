@@ -74,8 +74,11 @@
    <grok:grok package="lazr.restful.directives" />
    <grok:grok package="canonical.launchpad.rest" />
 
+   <!-- This section should be revisited once all of the webservice modules
+        have been created. -->
    <webservice:register module="canonical.launchpad.interfaces" />
    <webservice:register module="canonical.launchpad.interfaces.webservice" />
+   <webservice:register module="lp.blueprints.interfaces.webservice" />
 
    <adapter
        for="zope.schema.interfaces.IChoice
