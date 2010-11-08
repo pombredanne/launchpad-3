@@ -117,8 +117,9 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         if not os.path.exists(htaccess_path):
             log.debug("Writing htaccess file.")
             write_htaccess(htpasswd_path, pub_config.htaccessroot)
-            write_htpasswd(htpasswd_path, [
-                BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])
+            passwords = [(
+                BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])]
+            write_htpasswd(htpasswd_path, passwords)
 
     if distsroot is not None:
         log.debug("Overriding dists root with %s." % distsroot)

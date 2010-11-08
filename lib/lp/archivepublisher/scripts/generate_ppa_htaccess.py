@@ -63,23 +63,42 @@ def write_htaccess(htaccess_filename, distroot):
         file.close()
 
 
-def write_htpasswd(filename, list_of_users):
+def write_htpasswd(filename, users):
     """Write out a new htpasswd file.
 
     :param filename: The file to create.
-    :param list_of_users: A list of (user, password, salt) tuples.
+    :param users: Iterabel over (user, password, salt) tuples.
     """
     if os.path.isfile(filename):
         os.remove(filename)
 
     file = open(filename, "a")
     try:
-        for entry in list_of_users:
+        for entry in users:
             user, password, salt = entry
             encrypted = crypt.crypt(password, salt)
             file.write("%s:%s\n" % (user, encrypted))
     finally:
         file.close()
+
+
+def htpasswd_credentials_for_ppa(ppa, tokens):
+    """Return credentials for a ppa for use with write_htpasswd.
+
+    :param ppa: An `IArchive` (must be private)
+    :param tokens: Iterable of `IArchiveAuthToken`s
+    :return: Iterable of tuples with (user, password, salt) for use with
+        write_htpasswd.
+    """
+    assert ppa.private, "Archive %r must be private" % ppa
+    # The first .htpasswd entry is the buildd_secret.
+    yield (BUILDD_USER_NAME, ppa.buildd_secret, BUILDD_USER_NAME[:2])
+
+    # Iterate over tokens and write the appropriate htpasswd
+    # entries for them.  Use a consistent sort order so that the
+    # generated file can be compared to an existing one later.
+    for token in sorted(tokens, key=attrgetter("id")):
+        yield (token.person.name, token.token, token.person.name[:2])
 
 
 class HtaccessTokenGenerator(LaunchpadCronScript):
@@ -126,18 +145,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         os.close(fd)
 
-        # The first .htpasswd entry is the buildd_secret.
-        list_of_users = [
-            (BUILDD_USER_NAME, ppa.buildd_secret, BUILDD_USER_NAME[:2])]
-
-        # Iterate over tokens and write the appropriate htpasswd
-        # entries for them.  Use a consistent sort order so that the
-        # generated file can be compared to an existing one later.
-        for token in sorted(tokens, key=attrgetter("id")):
-            entry = (token.person.name, token.token, token.person.name[:2])
-            list_of_users.append(entry)
-
-        write_htpasswd(temp_filename, list_of_users)
+        write_htpasswd(temp_filename,
+            htpasswd_credentials_for_ppa(ppa, tokens))
 
         return temp_filename
 
