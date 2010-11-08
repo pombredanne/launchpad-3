@@ -557,8 +557,8 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.PillarSetLink"
-        provides="canonical.launchpad.rest.IPillarSetLink">
+        class="canonical.launchpad.rest.pillarset.PillarSetLink"
+        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
