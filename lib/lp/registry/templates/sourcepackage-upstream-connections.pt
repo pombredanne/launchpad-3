@@ -24,13 +24,6 @@
           structure context/menu:overview/remove_packaging/fmt:icon " />
       </span>
     </dd>
-    <tal:upstream-version
-      define="release series/getLatestRelease">
-      <dd tal:condition="release">
-        Lastest version:
-        <tal:version replace="release/version"/>
-      </dd>
-    </tal:upstream-version>
   </dl>
 
   <style>
@@ -63,8 +56,32 @@
         <tal:yes-no replace="structure bool/image:boolean"/>
       </dd>
     </dl>
-
   </div>
+
+  <tal:upstream-version
+    define="release series/getLatestRelease">
+    <p id="no-upstream-release">
+      <span class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
+      There are no registered releases for the
+      <tal:project replace="series/product/displayname" />
+      &rArr; <tal:series replace="series/name" />.
+    </p>
+    <p id="new-upstream-release" tal:condition="release">
+      <span class="sprite info">&nbsp;<span class="invisible-link">info</span></span>
+      <strong><a tal:replace="structure release/fmt:link" />
+      is available for packaging.</strong>
+    </p>
+    <p id="older-upstream-release">
+      <span class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
+      <a tal:replace="structure release/fmt:link" /> is older that the
+      current packaged version.
+    </p>
+    <p id="current-upstream-release" tal:condition="release">
+      <span class="sprite yes">&nbsp;<span class="invisible-link">yes</span></span>
+      Packaging is up-to-date for
+      <a tal:replace="structure release/fmt:link" />.
+    </p>
+  </tal:upstream-version>
 </div>
 
 </tal:root>
