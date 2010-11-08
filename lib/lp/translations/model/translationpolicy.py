@@ -8,11 +8,11 @@ __all__ = [
     'TranslationPolicyMixin',
     ]
 
-from zope.component import getUtility
 from storm.expr import (
     And,
     LeftJoin,
     )
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
