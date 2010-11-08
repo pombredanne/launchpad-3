@@ -55,6 +55,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.services import features
 from lp.services.fields import (
+    Description,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -179,7 +180,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Text(
+    description = Description(
         title=_('Description'), required=True,
         description=_('A short description of the recipe.'))
 
