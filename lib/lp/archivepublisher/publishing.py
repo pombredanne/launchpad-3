@@ -27,6 +27,11 @@ from lp.archivepublisher.config import (
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.ftparchive import FTPArchiveHandler
+from lp.soyuz.archivepublisher.htaccess import (
+    htpasswd_credentials_for_archive,
+    write_htaccess,
+    write_htpasswd,
+    )
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
@@ -42,7 +47,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.archivepublisher.scripts.generate_ppa_htaccess
 
 
 def reorder_components(components):
@@ -119,8 +123,8 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         # updating the tokens.
         if not os.path.exists(htaccess_path):
             log.debug("Writing htaccess file.")
-            write_htaccess(htpasswd_path, pub_config.htaccessroot)
-            passwords = htpasswd_credentials_for_ppa(archive)
+            write_htaccess(htpasswd_path, pubconf.htaccessroot)
+            passwords = htpasswd_credentials_for_archive(archive)
             write_htpasswd(htpasswd_path, passwords)
 
     if distsroot is not None:
