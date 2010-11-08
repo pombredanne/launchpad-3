@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 import bz2
+import crypt
 import gzip
 import os
 import shutil
@@ -1033,6 +1034,48 @@ class TestPublisher(TestPublisherBase):
 
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
+
+    def testHtaccessForPrivatePPA(self):
+        # A htaccess file is created for new private PPA's.
+
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, private=True)
+        ppa.buildd_secret = "geheim"
+
+        # Setup the publisher for it and publish its repository.
+        archive_publisher = getPublisher(ppa, [], self.logger)
+        pubconf = getPubConfig(ppa)
+        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        self.assertTrue(os.path.exists(htaccess_path))
+        htaccess_f = open(htaccess_path, 'r')
+        try:
+            self.assertEquals(htaccess_f.read(), """
+AuthType           Basic
+AuthName           "Token Required"
+AuthUserFile       %s/.htpasswd
+Require            valid-user
+""" % pubconf.htaccessroot)
+        finally:
+            htaccess_f.close()
+
+        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+
+        # Read it back in.
+        htpasswd_f = open(htpasswd_path, "r")
+        try:
+            file_contents = htpasswd_f.readlines()
+        finally:
+            htpasswd_f.close()
+
+        self.assertEquals(1, len(file_contents))
+
+        # The first line should be the buildd_secret.
+        [user, password] = file_contents[0].strip().split(":", 1)
+        self.assertEqual(user, "buildd")
+        # We can re-encrypt the buildd_secret and it should match the
+        # one in the .htpasswd file.
+        encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
+        self.assertEqual(encrypted_secret, password)
 
 
 class TestArchiveIndices(TestPublisherBase):

@@ -3,7 +3,6 @@
 
 """Test htaccess/htpasswd file generation. """
 
-import crypt
 import os
 import tempfile
 

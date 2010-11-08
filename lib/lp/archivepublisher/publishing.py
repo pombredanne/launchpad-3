@@ -27,7 +27,7 @@ from lp.archivepublisher.config import (
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.ftparchive import FTPArchiveHandler
-from lp.soyuz.archivepublisher.htaccess import (
+from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,
     write_htpasswd,
@@ -89,6 +89,27 @@ def _getDiskPool(pubconf, log):
     return dp
 
 
+def _setupHtaccess(archive, pubconf, log):
+    """Setup .htaccess/.htpasswd files for an archive.
+    """
+    if not archive.private:
+        # FIXME: JRV 20101108 leftover .htaccess and .htpasswd files
+        # should be removed when support for making existing 3PA's public
+        # is added; bug=376072
+        return
+
+    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+    # After the initial htaccess/htpasswd files
+    # are created generate_ppa_htaccess is responsible for
+    # updating the tokens.
+    if not os.path.exists(htaccess_path):
+        log.debug("Writing htaccess file.")
+        write_htaccess(htaccess_path, pubconf.htaccessroot)
+        passwords = htpasswd_credentials_for_archive(archive)
+        write_htpasswd(htpasswd_path, passwords)
+
+
 def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance for the given context.
 
@@ -109,23 +130,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
 
     disk_pool = _getDiskPool(pubconf, log)
 
-    htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
-    htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
-
-    if archive.private:
-        if os.path.exists(htaccess_path):
-            log.debug("Removing htaccess and htpasswd files.")
-            os.remove(htaccess_path)
-            os.remove(htpasswd_path)
-    else:
-        # After the initial htaccess/htpasswd files
-        # are created generate_ppa_htaccess is responsible for
-        # updating the tokens.
-        if not os.path.exists(htaccess_path):
-            log.debug("Writing htaccess file.")
-            write_htaccess(htpasswd_path, pubconf.htaccessroot)
-            passwords = htpasswd_credentials_for_archive(archive)
-            write_htpasswd(htpasswd_path, passwords)
+    _setupHtaccess(archive, pubconf, log)
 
     if distsroot is not None:
         log.debug("Overriding dists root with %s." % distsroot)
