@@ -316,37 +316,22 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             return None
 
+    def getTranslationPolicy(self):
+        """See `IPOTemplate`."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return self.distroseries.distribution
+
     @property
     def translationgroups(self):
         """See `IPOTemplate`."""
-        ret = []
-        if self.distroseries:
-            tg = self.distroseries.distribution.translationgroup
-            if tg is not None:
-                ret.append(tg)
-        elif self.productseries:
-            product_tg = self.productseries.product.translationgroup
-            if product_tg is not None:
-                ret.append(product_tg)
-            project = self.productseries.product.project
-            if project is not None:
-                if project.translationgroup is not None:
-                    ret.append(project.translationgroup)
-        else:
-            raise NotImplementedError('Cannot find translation groups.')
-        return ret
+        return self.getTranslationPolicy().getTranslationGroups()
 
     @property
     def translationpermission(self):
         """See `IPOTemplate`."""
-        if self.distroseries:
-            # in the case of a distro template, use the distro translation
-            # permission settings
-            return self.distroseries.distribution.translationpermission
-        elif self.productseries:
-            # for products, use the "most restrictive permission" between
-            # project and product.
-            return self.productseries.product.aggregatetranslationpermission
+        return self.getTranslationPolicy().getEffectiveTranslationPermission()
 
     @property
     def relatives_by_name(self):

@@ -517,6 +517,12 @@ class IPOTemplate(IRosettaStats):
     def awardKarma(person, action_name):
         """Award karma for a translation action on this template."""
 
+    def getTranslationPolicy():
+        """Return the applicable `ITranslationPolicy` object.
+
+        The returned object is either a `Product` or a `Distribution`.
+        """
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
