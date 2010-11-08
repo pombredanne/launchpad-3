@@ -298,12 +298,8 @@ class Publisher(object):
 
                 self.release_files_needed.add((distroseries.name, pocket))
 
-                # Retrieve components from the publisher config because
-                # it gets overridden in getPubConfig to set the
-                # correct components for the archive being used.
-                for component_name in self._config.componentsForSeries(
-                        distroseries.name):
-                    component = getUtility(IComponentSet)[component_name]
+                components = self.archive.getComponentsForSeries(distroseries)
+                for component in components:
                     self._writeComponentIndexes(
                         distroseries, pocket, component)
 
@@ -450,8 +446,11 @@ class Publisher(object):
             # and pocket, don't!
             return
 
-        all_components = self._config.componentsForSeries(distroseries.name)
-        all_architectures = self._config.archTagsForSeries(distroseries.name)
+        all_components = [
+            comp.name for comp in
+            self.archive.getComponentsForSeries(distroseries)]
+        all_architectures = [
+            a.architecturetag for a in distroseries.enabled_architectures]
         all_files = set()
         for component in all_components:
             self._writeSuiteSource(

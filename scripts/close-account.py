@@ -15,9 +15,9 @@ import sys
 
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.launchpad.interfaces import (
-    PersonCreationRationale, QuestionStatus)
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.registry.interfaces.person import PersonCreationRationale
+
 
 def close_account(con, log, username):
     """Close a person's account.
