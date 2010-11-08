@@ -1890,8 +1890,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def deriveDistroSeries(self, user, name, distribution=None,
                            displayname=None, title=None, summary=None,
                            description=None, version=None,
-                           status=SeriesStatus.FROZEN, architectures=(),
-                           packagesets=(), rebuild=False):
+                           architectures=(), packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
         # XXX StevenK bug=643369 This should be in the security adapter
         # This should be allowed if the user is a driver for self.parent
@@ -1925,7 +1924,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
                 version=version, parent_series=self, owner=user)
-            child.status = status
             IStore(self).add(child)
         else:
             if child.parent_series is not self:
