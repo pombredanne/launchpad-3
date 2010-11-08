@@ -105,6 +105,9 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
             regexp=data['regexp'],
             comment=data['comment'],
             )
+        self.request.response.addInfoNotification(
+            'Regular expression "%s" has been added to the name blacklist.'
+            % data['regexp'])
 
 
 class NameBlacklistSetView(LaunchpadView):
