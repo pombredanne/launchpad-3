@@ -33,10 +33,10 @@ from canonical.launchpad.components.tokens import (
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
-    LoginTokenType,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import (
