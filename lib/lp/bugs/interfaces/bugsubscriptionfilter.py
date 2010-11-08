@@ -15,6 +15,7 @@ from zope.schema import (
     Bool,
     Choice,
     FrozenSet,
+    Int,
     Text,
     )
 
@@ -31,6 +32,8 @@ from lp.services.fields import SearchTag
 
 class IBugSubscriptionFilterAttributes(Interface):
     """Attributes of `IBugSubscriptionFilter`."""
+
+    id = Int(required=True, readonly=True)
 
     structural_subscription = Reference(
         IStructuralSubscription,
