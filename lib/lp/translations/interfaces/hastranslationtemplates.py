@@ -12,7 +12,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     operation_returns_collection_of,
     )
-from zope.component import Interface
+from zope.interface import Interface
 from zope.schema import Bool
 
 from canonical.launchpad import _
