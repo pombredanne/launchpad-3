@@ -10,6 +10,7 @@ from storm.expr import (
     And,
     LeftJoin,
     Or,
+    SQL,
     )
 from storm.store import Store
 from zope.component import (
@@ -484,13 +485,57 @@ class StructuralSubscriptionTargetMixin:
                     BugSubscriptionFilter.id)),
             ]
 
+        # An ARRAY[] expression for the given bug's tags.
+        tag_array = "ARRAY[%s]::TEXT[]" % ",".join(
+            quote(tag) for tag in bugtask.bug.tags)
+
+        # An expression that is true when there is an intersection between the
+        # given bug's tags and the subscription's tags requested for
+        # inclusion.
+        tags_include_expr = (
+            "SELECT tag FROM BugSubscriptionFilterTag "
+            "WHERE filter = BugSubscriptionFilter.id AND include")
+
+        # An expression that is true when there is no intersection between the
+        # given bug's tags and the subscription's tags requested for
+        # exclusion.
+        tags_exclude_expr = (
+            "SELECT tag FROM BugSubscriptionFilterTag "
+            "WHERE filter = BugSubscriptionFilter.id AND NOT include")
+
+        # Choose the correct expression depending on the find_all_tags flag.
+        def tags_find_all_combinator(find_all_expr, find_any_expr):
+            return SQL(
+                "CASE WHEN BugSubscriptionFilter.find_all_tags "
+                "THEN (%s) ELSE (%s) END" % (find_all_expr, find_any_expr))
+
         if len(bugtask.bug.tags) == 0:
             tag_conditions = [
                 BugSubscriptionFilter.include_any_tags == False,
+                # The subscription's required tags must be an empty set.
+                SQL("%s = ARRAY(%s)" % (tag_array, tags_include_expr)),
+                # The subscription's excluded tags can be anything.
                 ]
         else:
             tag_conditions = [
                 BugSubscriptionFilter.exclude_any_tags == False,
+                # The bug's tags must contain the subscription's required tags
+                # if find_all_tags is set, else there must be an intersection.
+                Or(
+                    SQL("ARRAY[]::TEXT[] = ARRAY(%s)" % tags_include_expr),
+                    tags_find_all_combinator(
+                        "%s @> ARRAY(%s)" % (tag_array, tags_include_expr),
+                        "%s && ARRAY(%s)" % (tag_array, tags_include_expr))),
+                # The bug's tags must not intersect with the subscription's
+                # excluded tags if find_all_tags is set, else the bug's tags
+                # must not include the excluded tags.
+                Or(
+                    SQL("ARRAY[]::TEXT[] = ARRAY(%s)" % tags_exclude_expr),
+                    tags_find_all_combinator(
+                        "NOT (%s && ARRAY(%s))" % (
+                            tag_array, tags_exclude_expr),
+                        "NOT (%s @> ARRAY(%s))" % (
+                            tag_array, tags_exclude_expr))),
                 ]
 
         conditions = [
