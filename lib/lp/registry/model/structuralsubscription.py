@@ -532,9 +532,9 @@ class StructuralSubscriptionTargetMixin:
                 Or(
                     SQL("ARRAY[]::TEXT[] = ARRAY(%s)" % tags_exclude_expr),
                     tags_find_all_combinator(
-                        "NOT (%s && ARRAY(%s))" % (
-                            tag_array, tags_exclude_expr),
                         "NOT (%s @> ARRAY(%s))" % (
+                            tag_array, tags_exclude_expr),
+                        "NOT (%s && ARRAY(%s))" % (
                             tag_array, tags_exclude_expr))),
                 ]
 
