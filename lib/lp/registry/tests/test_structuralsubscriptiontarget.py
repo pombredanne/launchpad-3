@@ -393,7 +393,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription.bug_notification_level = BugNotificationLevel.COMMENTS
         subscription_filter = subscription.newBugFilter()
 
-        # Looking to exclude the "foo" and "bar" tags.
+        # Looking to exclude the "foo" or "bar" tags.
         subscription_filter.tags = [u"-foo", u"-bar"]
         subscription_filter.find_all_tags = False
 
@@ -404,6 +404,40 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
         # With either tag the subscription is no longer found.
         bugtask.bug.tags = ["foo"]
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([], list(subscriptions_for_bugtask))
+
+    def test_getSubscriptionsForBugTask_with_filter_for_not_all_tags(self):
+        # If a subscription filter specifies that all of one or more specific
+        # tags must not be present, bugs without all of those tags are
+        # matched.
+        bugtask = self.makeBugTask()
+
+        # Create a new subscription on self.target.
+        login_person(self.ordinary_subscriber)
+        subscription = self.target.addSubscription(
+            self.ordinary_subscriber, self.ordinary_subscriber)
+        subscription.bug_notification_level = BugNotificationLevel.COMMENTS
+        subscription_filter = subscription.newBugFilter()
+
+        # Looking to exclude the "foo" and "bar" tags.
+        subscription_filter.tags = [u"-foo", u"-bar"]
+        subscription_filter.find_all_tags = True
+
+        # Without either tag the subscription is found.
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
+
+        # With only one of the excluded tags the subscription is found.
+        bugtask.bug.tags = ["foo"]
+        subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
+            bugtask, BugNotificationLevel.NOTHING)
+        self.assertEqual([subscription], list(subscriptions_for_bugtask))
+
+        # With both tags the subscription is no longer found.
+        bugtask.bug.tags = ["foo", "bar"]
         subscriptions_for_bugtask = self.target.getSubscriptionsForBugTask(
             bugtask, BugNotificationLevel.NOTHING)
         self.assertEqual([], list(subscriptions_for_bugtask))
