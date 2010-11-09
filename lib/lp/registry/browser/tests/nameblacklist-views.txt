@@ -2,11 +2,10 @@ NameBlacklist pages
 ===================
 
     >>> from zope.component import getUtility
-    >>> from lp.testing.sampledata import ADMIN_EMAIL, NO_PRIVILEGE_EMAIL
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.nameblacklist import (
-    ...     INameBlacklist, INameBlacklistSet)
+    >>> from lp.registry.interfaces.nameblacklist import INameBlacklistSet
     >>> name_blacklist_set = getUtility(INameBlacklistSet)
     >>> from canonical.launchpad.testing.pages import (
     ...     extract_text, find_tag_by_id)

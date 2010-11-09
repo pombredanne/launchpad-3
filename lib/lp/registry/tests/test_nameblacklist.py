@@ -5,15 +5,25 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCase
+
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
@@ -21,7 +31,7 @@ from lp.registry.interfaces.nameblacklist import (
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class TestNameBlacklist(TestCase):
+class TestNameBlacklist(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
@@ -94,43 +104,71 @@ class TestNameBlacklist(TestCase):
         self.failUnless(self.is_blacklisted_name("verbose") is True)
 
 
-class TestNameBlacklistSet(TestCase):
+class TestNameBlacklistSet(TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestNameBlacklistSet, self).setUp()
+        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+        registry_expert = self.factory.makePerson()
+        login(ADMIN_EMAIL)
+        registry_experts.addMember(registry_expert, registry_expert)
+        login_person(registry_expert)
+        self.name_blacklist_set = getUtility(INameBlacklistSet)
 
     def test_create_with_one_arg(self):
-        login(ADMIN_EMAIL)
-        name_blacklist_set = getUtility(INameBlacklistSet)
-        name_blacklist = name_blacklist_set.create(u'foo')
+        # Test NameBlacklistSet.create(regexp).
+        name_blacklist = self.name_blacklist_set.create(u'foo')
         self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
         self.assertEquals(u'foo', name_blacklist.regexp)
         self.assertIs(None, name_blacklist.comment)
 
     def test_create_with_two_args(self):
-        login(ADMIN_EMAIL)
-        name_blacklist_set = getUtility(INameBlacklistSet)
-        name_blacklist = name_blacklist_set.create(u'foo', u'bar')
+        # Test NameBlacklistSet.create(regexp, comment).
+        name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
         self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
         self.assertEquals(u'foo', name_blacklist.regexp)
         self.assertEquals(u'bar', name_blacklist.comment)
 
     def test_get(self):
-        login(ADMIN_EMAIL)
-        name_blacklist_set = getUtility(INameBlacklistSet)
-        name_blacklist = name_blacklist_set.create(u'foo', u'bar')
+        # Test NameBlacklistSet.get().
+        name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
         store = IStore(name_blacklist)
         store.flush()
-        retrieved = name_blacklist_set.get(name_blacklist.id)
+        retrieved = self.name_blacklist_set.get(name_blacklist.id)
         self.assertEquals(name_blacklist, retrieved)
 
     def test_getAll(self):
-        login(ADMIN_EMAIL)
-        name_blacklist_set = getUtility(INameBlacklistSet)
+        # Test NameBlacklistSet.getAll().
         result = [
             (item.regexp, item.comment)
-            for item in name_blacklist_set.getAll()]
+            for item in self.name_blacklist_set.getAll()]
         expected = [
             ('^admin', None),
             ('blacklist', 'For testing purposes'),
             ]
         self.assertEqual(expected, result)
+
+    def test_NameBlacklistSet_permissions(self):
+        # Verify that non-registry-experts do not have permission to
+        # access the NameBlacklistSet.
+        self.assertTrue(
+            check_permission('launchpad.View', self.name_blacklist_set))
+        self.assertTrue(
+            check_permission('launchpad.Edit', self.name_blacklist_set))
+        login(ANONYMOUS)
+        self.assertFalse(
+            check_permission('launchpad.View', self.name_blacklist_set))
+        self.assertFalse(
+            check_permission('launchpad.Edit', self.name_blacklist_set))
+
+    def test_NameBlacklist_permissions(self):
+        # Verify that non-registry-experts do not have permission to
+        # access the NameBlacklist.
+        name_blacklist = self.name_blacklist_set.create(u'foo')
+        self.assertTrue(check_permission('launchpad.View', name_blacklist))
+        self.assertTrue(check_permission('launchpad.Edit', name_blacklist))
+        login(ANONYMOUS)
+        self.assertFalse(check_permission('launchpad.View', name_blacklist))
+        self.assertFalse(check_permission('launchpad.Edit', name_blacklist))
