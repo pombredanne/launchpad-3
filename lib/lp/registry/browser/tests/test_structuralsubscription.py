@@ -198,5 +198,22 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                     "is actually %s." % (
                         level.name, subscription.bug_notification_level.name))
 
+    def test_nothing_is_not_a_valid_level(self):
+        # BugNotificationLevel.NOTHING isn't considered valid when a
+        # user is subscribing via the web UI.
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                harness = LaunchpadFormHarness(
+                    self.target, StructuralSubscriptionView)
+                form_data = {
+                    'field.subscribe_me': 'on',
+                    'field.bug_notification_level': (
+                        BugNotificationLevel.NOTHING),
+                    }
+                harness.submit('save', form_data)
+                self.assertTrue(harness.hasErrors())
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
