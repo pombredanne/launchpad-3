@@ -218,10 +218,10 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
+    PPACreationError,
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     validate_public_person,
@@ -1191,6 +1191,9 @@ class Person(
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
+            if team is None:
+                # No team, no membership.
+                return False
 
         if self.id == team.id:
             # A team is always a member of itself.
@@ -1234,17 +1237,7 @@ class Person(
     def leave(self, team):
         """See `IPerson`."""
         assert not ITeam.providedBy(self)
-
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
-        active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        if tm is None or tm.status not in active:
-            # Ok, we're done. You are not an active member and still
-            # not being.
-            return
-
-        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
+        self.retractTeamMembership(team, self)
 
     def join(self, team, requester=None, may_subscribe_to_list=True):
         """See `IPerson`."""
@@ -1396,6 +1389,28 @@ class Person(
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, comment=comment)
+
+    def retractTeamMembership(self, team, user, comment=None):
+        """See `IPerson`"""
+        # Include PROPOSED and INVITED so that teams can retract mistakes
+        # without involving members of the other team.
+        active_and_transitioning = {
+            TeamMembershipStatus.ADMIN: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.APPROVED: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.PROPOSED: TeamMembershipStatus.DECLINED,
+            TeamMembershipStatus.INVITED:
+                TeamMembershipStatus.INVITATION_DECLINED,
+            }
+        constraints = And(
+            TeamMembership.personID == self.id,
+            TeamMembership.teamID == team.id,
+            TeamMembership.status.is_in(active_and_transitioning.keys()))
+        tm = Store.of(self).find(TeamMembership, constraints).one()
+        if tm is not None:
+            # Flush the cache used by the inTeam method.
+            self._inTeam_cache = {}
+            new_status = active_and_transitioning[tm.status]
+            tm.setStatus(new_status, user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.

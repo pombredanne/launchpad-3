@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009-2010 Canonical Ltd.  All rights reserved.
 
 """Test for code review."""
 
@@ -52,6 +52,18 @@ class TestRequestReview(WindmillTestCase):
         client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')
+
+        # Check that the javascript to disable the review_type field when the
+        # reviewer field is empty works.
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|true')
+        client.type(text=u'mark', id=u'field.reviewer')
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|false')
+        client.type(text=u'', id=u'field.reviewer')
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|true')
+
         client.click(id=u'field.actions.register')
 
         client.waits.forPageLoad(timeout=u'10000')

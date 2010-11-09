@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
@@ -65,6 +65,7 @@ from lp.code.model.branchmergeproposaljob import (
     MergeProposalNeedsReviewEmailJob,
     )
 from lp.code.model.diff import PreviewDiff
+from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.codehosting.vfs import get_lp_server
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.runner import JobRunner
@@ -342,9 +343,8 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processWithExistingVote(self):
         """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
-        bmp = self.factory.makeBranchMergeProposal()
         sender = self.factory.makePerson()
-        bmp.nominateReviewer(sender, bmp.registrant)
+        bmp = self.factory.makeBranchMergeProposal(reviewer=sender)
         email_addr = bmp.address
         [vote] = list(bmp.votes)
         self.assertEqual(sender, vote.reviewer)
@@ -691,7 +691,8 @@ class TestCodeHandler(TestCaseWithFactory):
             None, None)
         # To record the diff in the librarian.
         transaction.commit()
-        bmp = self.factory.makeBranchMergeProposal(preview_diff=preview_diff)
+        bmp = make_merge_proposal_without_reviewers(
+            self.factory, preview_diff=preview_diff)
         eric = self.factory.makePerson(name="eric", email="eric@example.com")
         mail = self.factory.makeSignedMessage(body=' reviewer eric')
         email_addr = bmp.address
@@ -1152,6 +1153,7 @@ class TestVoteEmailCommand(TestCase):
 
     def setUp(self):
         super(TestVoteEmailCommand, self).setUp()
+
         class FakeExecutionContext:
             vote = None
             vote_tags = None
@@ -1368,7 +1370,8 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
         super(TestAddReviewerEmailCommand, self).setUp(
             user='test@canonical.com')
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal = (
+            make_merge_proposal_without_reviewers(self.factory))
         # Default the user to be the target branch owner, so they are
         # authorised to update the status.
         self.context = CodeReviewEmailCommandExecutionContext(

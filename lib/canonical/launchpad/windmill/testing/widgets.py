@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test helpers for common AJAX widgets."""
@@ -173,19 +173,9 @@ class InlineEditorWidgetTest:
         client.type(
             xpath=widget_base + '//textarea', text=self.new_value)
         client.click(xpath=widget_base + '//button[last()]')
-        client.asserts.assertNode(
-            xpath=widget_base + '/span[1]')
-        client.asserts.assertText(
-            xpath=widget_base + '/span[1]', validator=self.new_value)
-
-        # And make sure it's actually saved on the server.
-        client.open(url=self.url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            xpath=widget_base + '/span[1]',
+            xpath=widget_base + '/span[1][text()="' + self.new_value + '"]',
             timeout=constants.FOR_ELEMENT)
-        client.asserts.assertText(
-            xpath=widget_base + '/span[1]', validator=self.new_value)
 
 
 def search_picker_widget(client, search_text):

@@ -104,7 +104,7 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
@@ -176,7 +176,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getConfigurableProducts(self):
         return [product for product in self.products
                 if check_permission('launchpad.Edit', product)]
-                    
+
     @property
     def drivers(self):
         """See `IHasDrivers`."""

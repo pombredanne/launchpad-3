@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -386,7 +386,7 @@ patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson

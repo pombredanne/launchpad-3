@@ -658,8 +658,7 @@ or a translation similar to the current one while forcing suggestions.
 
 We need to force timestamp update, since suggestions are submitted too fast.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> pofile = factory.makePOFile('es')
     >>> potemplate = pofile.potemplate
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)

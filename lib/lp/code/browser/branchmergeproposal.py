@@ -88,12 +88,12 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import (
@@ -116,6 +116,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
     Whiteboard,
@@ -559,13 +560,14 @@ class CodeReviewNewRevisions:
     """
     implements(ICodeReviewNewRevisions)
 
-    def __init__(self, revisions, date, branch):
+    def __init__(self, revisions, date, branch, diff):
         self.revisions = revisions
         self.branch = branch
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+        self.diff = diff
 
         # Other standard IComment attributes are not used.
         self.extra_css_class = None
@@ -613,10 +615,21 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return a conversation that is to be rendered."""
         # Sort the comments by date order.
         merge_proposal = self.context
-        groups = merge_proposal.getRevisionsSinceReviewStart()
+        groups = list(merge_proposal.getRevisionsSinceReviewStart())
         source = DecoratedBranch(merge_proposal.source_branch)
-        comments = [CodeReviewNewRevisions(list(revisions), date, source)
-            for date, revisions in groups]
+        comments = []
+        if getFeatureFlag('code.incremental_diffs.enabled'):
+            ranges = [
+                (revisions[0].revision.getLefthandParent(),
+                 revisions[-1].revision)
+                for revisions in groups]
+            diffs = merge_proposal.getIncrementalDiffs(ranges)
+        else:
+            diffs = [None] * len(groups)
+        for revisions, diff in zip(groups, diffs):
+            newrevs = CodeReviewNewRevisions(
+                revisions, revisions[-1].revision.date_created, source, diff)
+            comments.append(newrevs)
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(

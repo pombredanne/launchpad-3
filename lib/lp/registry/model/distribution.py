@@ -188,7 +188,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )

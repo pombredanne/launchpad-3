@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -41,6 +41,7 @@ from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
     SpecificationPriority,
     )
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
@@ -336,6 +337,12 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         'we consider to be "started". This looks at the delivery '
         'attribute, and also considers informational specs to be '
         'started when they are approved.')
+
+    lifecycle_status = Choice(
+        title=_('Lifecycle Status'),
+        vocabulary=SpecificationLifecycleStatus,
+        default=SpecificationLifecycleStatus.NOTSTARTED,
+        readonly=True)
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of

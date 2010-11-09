@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -536,13 +536,14 @@ class SpecificationEditView(LaunchpadEditFormView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        old_status = self.context.lifecycle_status
         self.updateContextFromData(data)
         # We need to ensure that resolution is recorded if the spec is now
         # resolved.
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
+        new_status = self.context.lifecycle_status
+        if new_status != old_status:
             self.request.response.addNotification(
-                'blueprint is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % new_status.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -735,7 +736,7 @@ class SupersededByWidget(DropdownWidget):
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
-    label = _('Mark specification superseded')
+    label = _('Mark blueprint superseded')
     custom_widget('superseded_by', SupersededByWidget)
 
     @property
@@ -762,7 +763,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 description=_(
                     "The blueprint which supersedes this one. Note "
                     "that selecting a blueprint here and pressing "
-                    "Continue will change the specification status "
+                    "Continue will change the blueprint status "
                     "to Superseded.")),
             render_context=self.render_context)
 
@@ -784,7 +785,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
     @property

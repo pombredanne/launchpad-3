@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -667,16 +667,11 @@ class BugTask(SQLBase, BugTaskMixin):
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
 
-        # Make sure to exclude the current BugTask from the list of
-        # matching tasks. We use 4*limit as an arbitrary value here to
-        # make sure we select more than :limit: bugtasks.
-        matching_bugtasks = [
-            bug_task for bug_task in matching_bugtasks[:4*limit]
-            if bug_task != self]
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, user, limit)
-        return matching_bugs
+
+        # Make sure to exclude the bug of the current bugtask.
+        return [bug for bug in matching_bugs if bug.id != self.bugID]
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
