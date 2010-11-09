@@ -99,7 +99,7 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
     next_url = cancel_url
 
     @action("Add to blacklist", name='add')
-    def save_action(self, action, data):
+    def add_action(self, action, data):
         name_blacklist_set = getUtility(INameBlacklistSet)
         name_blacklist_set.create(
             regexp=data['regexp'],

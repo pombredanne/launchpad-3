@@ -1554,6 +1554,7 @@
         class="lp.registry.browser.product.ProductReviewLicenseView"
         permission="launchpad.Moderate"
         template="../templates/product-review-license.pt"/>
+
     <browser:page
         for="lp.registry.interfaces.nameblacklist.INameBlacklist"
         permission="launchpad.Edit"
