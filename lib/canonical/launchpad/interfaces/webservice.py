@@ -26,3 +26,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
     )
+# XXX: JonathanLange 2010-11-09: Legacy work-around for circular import bugs.
+# Break this up into a per-package thing.
+from canonical.launchpad.interfaces import _schema_circular_imports
+_schema_circular_imports

@@ -100,3 +100,7 @@ from lp.registry.interfaces.structuralsubscription import (
     )
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+# XXX: JonathanLange 2010-11-09: Legacy work-around for circular import bugs.
+# Break this up into a per-package thing.
+from canonical.launchpad.interfaces import _schema_circular_imports
+_schema_circular_imports
