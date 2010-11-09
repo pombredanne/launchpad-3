@@ -159,21 +159,17 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSourcePackageUpstreamConnectionsView, self).setUp()
-        product = self.factory.makeProduct(name='fnord', displayname='Fnord')
-        productseries = self.factory.makeProductSeries(
-            name='1.0', product=product)
+        productseries = self.factory.makeProductSeries(name='1.0')
         self.milestone = self.factory.makeMilestone(
-            product=product, productseries=productseries)
-        distribution = self.factory.makeDistribution()
-        distroseries = self.factory.makeDistroRelease(
-            distribution=distribution)
+            product=productseries.product, productseries=productseries)
+        distroseries = self.factory.makeDistroRelease()
         self.source_package = self.factory.makeSourcePackage(
-            distroseries=distroseries,
-            sourcepackagename='fnord')
-        spn = self.source_package.sourcepackagename
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=spn, distroseries=distroseries, version='1.5-1')
-        self.source_package.setPackaging(productseries, product.owner)
+            distroseries=distroseries, sourcepackagename='fnord')
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.source_package.sourcepackagename,
+            distroseries=distroseries, version='1.5-1')
+        self.source_package.setPackaging(
+            productseries, productseries.product.owner)
 
     def makeUpstreamRelease(self, version):
         with person_logged_in(self.milestone.productseries.product.owner):
