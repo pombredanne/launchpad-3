@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -12,7 +12,6 @@ __all__ = [
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
-    ObjectDeletedEvent,
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.objectdelta import ObjectDelta
@@ -24,11 +23,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import (
-    LeftJoin,
-    )
 from storm.locals import (
-    ClassAlias,
     Desc,
     SQL,
     )
@@ -385,6 +380,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
                      SpecificationImplementationStatus.INFORMATIONAL) and
                     (self.definition_status ==
                      SpecificationDefinitionStatus.APPROVED)))
+
+    @property
+    def lifecycle_status(self):
+        """Combine the is_complete and is_started emergent properties."""
+        if self.is_complete:
+            return SpecificationLifecycleStatus.COMPLETE
+        elif self.is_started:
+            return SpecificationLifecycleStatus.STARTED
+        else:
+            return SpecificationLifecycleStatus.NOTSTARTED
 
     def updateLifecycleStatus(self, user):
         """See ISpecification."""

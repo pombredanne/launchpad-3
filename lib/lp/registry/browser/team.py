@@ -44,7 +44,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -61,12 +60,12 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
@@ -78,7 +77,6 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    IPerson,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
@@ -742,15 +740,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
         or INACTIVE states.  Further, the user doing the purging, must be
-        a Launchpad administrator or mailing list expert.
+        an owner, Launchpad administrator or mailing list expert.
         """
-        requester = IPerson(self.request.principal, None)
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (requester is None or
-            (not requester.inTeam(celebrities.admin) and
-             not requester.inTeam(celebrities.mailing_list_experts))):
+        is_moderator = check_permission('launchpad.Moderate', self.context)
+        is_mailing_list_manager = check_permission(
+            'launchpad.MailingListManager', self.context)
+        if is_moderator or is_mailing_list_manager:
+            return self.getListInState(*PURGE_STATES) is not None
+        else:
             return False
-        return self.getListInState(*PURGE_STATES) is not None
 
 
 class TeamMailingListSubscribersView(LaunchpadView):

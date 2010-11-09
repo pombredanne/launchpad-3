@@ -16,6 +16,10 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICve,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.code.enums import (
     BranchType,
@@ -588,6 +592,24 @@ class TestFactory(TestCaseWithFactory):
         self.assertFalse(tm.is_current_upstream)
         self.assertTrue(tm.is_diverged)
         self.assertEqual(pofile.potemplate, tm.potemplate)
+
+    # makeCVE
+    def test_makeCVE_returns_cve(self):
+        cve = self.factory.makeCVE(sequence='2000-1234')
+        self.assertThat(cve, ProvidesAndIsProxied(ICve))
+
+    def test_makeCVE_uses_sequence(self):
+        cve = self.factory.makeCVE(sequence='2000-1234')
+        self.assertEqual('2000-1234', cve.sequence)
+
+    def test_makeCVE_uses_description(self):
+        cve = self.factory.makeCVE(sequence='2000-1234', description='foo')
+        self.assertEqual('foo', cve.description)
+
+    def test_makeCVE_uses_cve_status(self):
+        cve = self.factory.makeCVE(
+            sequence='2000-1234', cvestate=CveStatus.DEPRECATED)
+        self.assertEqual(CveStatus.DEPRECATED, cve.status)
 
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):

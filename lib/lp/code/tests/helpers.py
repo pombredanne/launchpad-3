@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -8,6 +8,7 @@ __all__ = [
     'add_revision_to_branch',
     'make_erics_fooix_project',
     'make_linked_package_branch',
+    'make_merge_proposal_without_reviewers',
     'make_official_package_branch',
     'make_project_branch_with_revisions',
     'make_project_cloud_data',
@@ -18,9 +19,9 @@ from contextlib import contextmanager
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
-import transaction
 
 from bzrlib.plugins.builder.recipe import RecipeParser
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zisinstance,
@@ -313,3 +314,11 @@ def recipe_parser_newest_version(version):
         yield
     finally:
         RecipeParser.NEWEST_VERSION = old_version
+
+
+def make_merge_proposal_without_reviewers(factory, **kwargs):
+    """Make a merge proposal and strip of any review votes."""
+    proposal = factory.makeBranchMergeProposal(**kwargs)
+    for vote in proposal.votes:
+        removeSecurityProxy(vote).destroySelf()
+    return proposal

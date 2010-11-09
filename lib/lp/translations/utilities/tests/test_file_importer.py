@@ -19,11 +19,11 @@ from canonical.testing import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     OutdatedTranslationError,
     )
@@ -32,10 +32,11 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.translation_import import (
-    importers,
     FileImporter,
+    importers,
     POFileImporter,
     POTFileImporter,
     )

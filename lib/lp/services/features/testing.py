@@ -8,16 +8,20 @@ __all__ = ['active_features']
 
 
 from fixtures import Fixture
+
 from lp.services.features import per_thread
 from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import Rule, StormFeatureRuleSource
+from lp.services.features.rulesource import (
+    Rule,
+    StormFeatureRuleSource,
+    )
 
 
 class FeatureFixture(Fixture):
     """A fixture that sets a feature.
 
-    The fixture takes a dictonary as its constructor argument. The keys of the
-    dictionary are features to be set.
+    The fixture takes a dictionary as its constructor argument. The keys of
+    the dictionary are features to be set. All existing flags will be cleared.
 
     Call the fixture's `setUp()' method to install the features with the
     desired values.  Calling `cleanUp()' will restore the original values.
@@ -26,7 +30,7 @@ class FeatureFixture(Fixture):
     `self.useFixture()' method.
 
     The fixture can also be used as a context manager. The value of the
-    feature within the context block is set to the dictonary's key's value.
+    feature within the context block is set to the dictionary's key's value.
     The values are restored when the block exits.
     """
 
@@ -45,11 +49,22 @@ class FeatureFixture(Fixture):
         rule_source = StormFeatureRuleSource()
         self.addCleanup(
             rule_source.setAllRules, rule_source.getAllRulesAsTuples())
+        rule_source.setAllRules(self.makeNewRules())
 
+        original_controller = getattr(per_thread, 'features', None)
+        controller = FeatureController(lambda _: True, rule_source)
+        per_thread.features = controller
+        self.addCleanup(setattr, per_thread, 'features', original_controller)
+
+    def makeNewRules(self):
+        """Make a set of new feature flag rules."""
         # Create a list of the new rules. Note that rules with a None
         # value are quietly dropped, since you can't assign None as a
         # feature flag value (it would come out as u'None') and setting
         # a flag to None essentially means turning it off anyway.
+        #
+        # Flags that are not present in the set of new rules will be deleted
+        # by setAllRules().
         new_rules = [
             Rule(
                 flag=flag_name,
@@ -59,10 +74,4 @@ class FeatureFixture(Fixture):
             for flag_name, value in self.desired_features.iteritems()
                 if value is not None]
 
-        rule_source.setAllRules(new_rules)
-
-
-        original_controller = getattr(per_thread, 'features', None)
-        controller = FeatureController(lambda _: True, rule_source)
-        per_thread.features = controller
-        self.addCleanup(setattr, per_thread, 'features', original_controller)
+        return new_rules

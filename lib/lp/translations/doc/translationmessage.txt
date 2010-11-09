@@ -112,8 +112,7 @@ a single translation group.
     >>> product = productseries.product
     >>> product.translationgroup = factory.makeTranslationGroup(product.owner)
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 
 The only Serbian reviewer in this translation group is 'name16' user.

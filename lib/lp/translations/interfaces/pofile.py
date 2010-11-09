@@ -42,9 +42,9 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 

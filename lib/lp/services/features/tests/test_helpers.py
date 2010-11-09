@@ -7,9 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.testing import layers
-from lp.testing import TestCase
 from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
+from lp.testing import TestCase
 
 
 class TestFeaturesContextManager(TestCase):
@@ -62,3 +62,7 @@ class TestFeaturesFixture(TestCase):
         self.useFixture(FeatureFixture({'one': '5'}))
 
         self.assertEqual(getFeatureFlag('one'), u'5')
+
+    def test_fixture_does_not_set_value_for_flags_that_are_None(self):
+        self.useFixture(FeatureFixture({'nothing': None}))
+        self.assertEqual(getFeatureFlag('nothing'), None)

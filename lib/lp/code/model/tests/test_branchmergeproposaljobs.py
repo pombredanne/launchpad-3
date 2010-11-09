@@ -32,6 +32,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     ICodeReviewCommentEmailJob,
     ICodeReviewCommentEmailJobSource,
+    IGenerateIncrementalDiffJob,
+    IGenerateIncrementalDiffJobSource,
     IMergeProposalNeedsReviewEmailJob,
     IMergeProposalUpdatedEmailJob,
     IMergeProposalUpdatedEmailJobSource,
@@ -45,12 +47,16 @@ from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJobDerived,
     BranchMergeProposalJobType,
     CodeReviewCommentEmailJob,
+    GenerateIncrementalDiffJob,
     MergeProposalNeedsReviewEmailJob,
     MergeProposalUpdatedEmailJob,
     ReviewRequestedEmailJob,
     UpdatePreviewDiffJob,
     )
-from lp.code.model.tests.test_diff import DiffTestCase
+from lp.code.model.tests.test_diff import (
+    create_example_merge,
+    DiffTestCase,
+    )
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
@@ -192,7 +198,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run(self):
         self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
+        bmp = create_example_merge(self)[0]
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
@@ -226,8 +232,71 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_10_minute_lease(self):
         self.useBzrBranches(direct_database=True)
-        bmp = self.createExampleMerge()[0]
+        bmp = create_example_merge(self)[0]
         job = UpdatePreviewDiffJob.create(bmp)
+        job.acquireLease()
+        expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
+        self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
+
+
+def make_runnable_incremental_diff_job(test_case):
+    test_case.useBzrBranches(direct_database=True)
+    bmp, source_rev_id, target_rev_id = create_example_merge(test_case)
+    repository = bmp.source_branch.getBzrBranch().repository
+    parent_id = repository.get_revision(source_rev_id).parent_ids[0]
+    test_case.factory.makeRevision(rev_id=source_rev_id)
+    test_case.factory.makeRevision(rev_id=parent_id)
+    return GenerateIncrementalDiffJob.create(bmp, parent_id, source_rev_id)
+
+
+class TestGenerateIncrementalDiffJob(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_implement_interface(self):
+        """GenerateIncrementalDiffJob implements its interface."""
+        verifyObject(
+            IGenerateIncrementalDiffJobSource, GenerateIncrementalDiffJob)
+
+    def test_providesInterface(self):
+        """MergeProposalCreatedJob provides the expected interfaces."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
+        verifyObject(IGenerateIncrementalDiffJob, job)
+        verifyObject(IBranchMergeProposalJob, job)
+
+    def test_getOperationDescription(self):
+        """The description of the job is sane."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
+        self.assertEqual(
+            'generating an incremental diff for a merge proposal',
+            job.getOperationDescription())
+
+    def test_run(self):
+        """The job runs successfully, and its results can be committed."""
+        job = make_runnable_incremental_diff_job(self)
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        job.run()
+        transaction.commit()
+
+    def test_run_all(self):
+        """The job can be run under the JobRunner successfully."""
+        job = make_runnable_incremental_diff_job(self)
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
+        runner = JobRunner([job])
+        runner.runAll()
+        self.assertEqual([job], runner.completed_jobs)
+
+    def test_10_minute_lease(self):
+        """Newly-created jobs have a ten-minute lease."""
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
+        transaction.commit()
+        self.layer.switchDbUser(config.merge_proposal_jobs.dbuser)
         job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)

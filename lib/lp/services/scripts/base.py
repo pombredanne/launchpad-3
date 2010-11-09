@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,7 +16,11 @@ import logging
 from optparse import OptionParser
 import os.path
 import sys
-from urllib2 import urlopen, HTTPError, URLError
+from urllib2 import (
+    HTTPError,
+    URLError,
+    urlopen,
+    )
 
 from contrib.glock import (
     GlobalLock,
@@ -28,7 +32,6 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
-from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
@@ -36,6 +39,7 @@ from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail,
     )
 from canonical.lp import initZopeless
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 LOCK_PATH = "/var/lock/"

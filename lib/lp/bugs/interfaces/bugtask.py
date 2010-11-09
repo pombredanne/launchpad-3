@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -1188,8 +1188,8 @@ class BugTaskSearchParams:
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
-        self.modified_since = None
-        self.created_since = None
+        self.modified_since = modified_since
+        self.created_since = created_since
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
