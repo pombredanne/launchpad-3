@@ -23,13 +23,7 @@ import os
 import apt_pkg
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet,
-    IDistributionSet,
-    ILibraryFileAliasSet,
-    ISourcePackageNameSet,
-    QueueInconsistentStateError,
-    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
@@ -43,11 +37,11 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.utils import determine_source_file_type
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import (
-    MAIN_ARCHIVE_PURPOSES,
-    )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -595,6 +589,9 @@ class NascentUpload:
         else:
             ancestry_name = uploaded_file.package
 
+        # Avoid cyclic import.
+        from lp.soyuz.interfaces.binarypackagename import (
+            IBinaryPackageNameSet)
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(ancestry_name)
 
@@ -892,6 +889,8 @@ class NascentUpload:
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
 
+        # Avoid cyclic imports.
+        from lp.soyuz.interfaces.queue import QueueInconsistentStateError
         try:
             self.queue_root.setRejected()
         except QueueInconsistentStateError:

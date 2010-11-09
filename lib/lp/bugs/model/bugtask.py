@@ -359,37 +359,6 @@ class BugTaskMixin:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
 
-    @property
-    def mentoring_offers(self):
-        """See `IHasMentoringOffers`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.mentoring_offers
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.canMentor(user)
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.isMentor(user)
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.offerMentoring(user, team)
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.retractMentoring(user)
-
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -888,11 +857,14 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id or
-            user.id == celebrities.janitor.id):
+        if (self.status == BugTaskStatus.FIXRELEASED and
+           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+            return True
+        elif (user.inTeam(self.pillar.bug_supervisor) or
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
             return True
         else:
             return (self.status not in (
@@ -1520,11 +1492,8 @@ class BugTaskSet:
         from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
-        from lp.registry.model.mentoringoffer import MentoringOffer
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
-        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
-                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
                 SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
@@ -1538,8 +1507,6 @@ class BugTaskSet:
         for bugtask in bugtasks:
             bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
-                'has_mentoring_offer':
-                    bug.id in bug_ids_with_mentoring_offers,
                 'has_specification':
                     bug.id in bug_ids_with_specifications,
                 'has_branch':
@@ -2427,7 +2394,7 @@ class BugTaskSet:
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
-                              bug=None, target=None):
+                              bug=None, target=None, limit=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -2493,6 +2460,8 @@ class BugTaskSet:
             unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
+        if limit is not None:
+            expirable_bugtasks = expirable_bugtasks.limit(limit)
 
         return expirable_bugtasks
 

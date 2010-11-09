@@ -168,3 +168,15 @@ class TestProductBugConfigurationView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(
             'new guidelines', self.product.bug_reporting_guidelines)
+
+    def test_bug_supervisor_can_edit(self):
+        logout()
+        login_person(self.bug_supervisor)
+        form = self._makeForm()
+        # Only the bug_reporting_guidelines are different.
+        form['field.bug_reporting_guidelines'] = 'new guidelines'
+        view = create_initialized_view(
+            self.product, name='+configure-bugtracker', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(
+            'new guidelines', self.product.bug_reporting_guidelines)

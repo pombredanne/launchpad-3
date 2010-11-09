@@ -411,7 +411,7 @@ class cmd_land(EC2Command):
         if rollback and (no_qa or incremental):
             print "--rollback option used. Ignoring --no-qa and --incremental."
         try:
-            commit_message = mp.get_commit_message(
+            commit_message = mp.build_commit_message(
                 commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
@@ -427,6 +427,15 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "--incremental option requires bugs linked to the branch. "
                 "Link the bugs or remove the --incremental option.")
+
+        # Override the commit message in the MP with the commit message built
+        # with the proper tags.
+        try:
+            mp.set_commit_message(commit_message)
+        except Exception, e:
+            raise BzrCommandError(
+                "Unable to set the commit message in the merge proposal.\n"
+                "Got: %s" % e)
 
         if print_commit:
             print commit_message

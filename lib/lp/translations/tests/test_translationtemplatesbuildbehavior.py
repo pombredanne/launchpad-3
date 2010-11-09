@@ -5,7 +5,6 @@
 
 import logging
 import os
-from StringIO import StringIO
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -24,7 +23,6 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -37,9 +35,9 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -147,7 +145,7 @@ class TestTranslationTemplatesBuildBehavior(
             branch_url = build_params[-1]['branch_url']
             # The slave receives the public http URL for the branch.
             self.assertEqual(
-                branch_url, 
+                branch_url,
                 behavior.buildfarmjob.branch.composePublicURL())
         return d.addCallback(got_dispatch)
 
@@ -303,7 +301,7 @@ class TestTranslationTemplatesBuildBehavior(
 
         def got_dispatch((status, info)):
             dummy_tar = os.path.join(
-                os.path.dirname(__file__),'dummy_templates.tar.gz')
+                os.path.dirname(__file__), 'dummy_templates.tar.gz')
             # XXX 2010-10-18 bug=662631
             # Change this to do non-blocking IO.
             builder.slave.getFile = lambda sum: open(dummy_tar)
@@ -315,7 +313,7 @@ class TestTranslationTemplatesBuildBehavior(
             slave_status = {
                 'builder_status': status[0],
                 'build_status': status[1],
-                'build_id': status[2]
+                'build_id': status[2],
                 }
             behavior.updateSlaveStatus(status, slave_status)
             return behavior.updateBuild_WAITING(
@@ -327,7 +325,7 @@ class TestTranslationTemplatesBuildBehavior(
             expected_templates = [
                 'po/domain.pot',
                 'po-other/other.pot',
-                'po-thethird/templ3.pot'
+                'po-thethird/templ3.pot',
                 ]
             list1 = sorted(expected_templates)
             list2 = sorted([entry.path for entry in entries])
