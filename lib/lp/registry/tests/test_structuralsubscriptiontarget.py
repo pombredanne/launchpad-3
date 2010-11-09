@@ -32,7 +32,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
@@ -215,8 +214,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.assertEqual([self.subscription], list(subscriptions_for_bugtask))
 
         # Filter the subscription to bugs in the CONFIRMED state.
-        subscription_filter = BugSubscriptionFilter()
-        subscription_filter.structural_subscription = self.subscription
+        subscription_filter = self.subscription.newBugFilter()
         subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
 
         # With the filter the subscription is not found.
@@ -240,8 +238,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.assertEqual([self.subscription], list(subscriptions_for_bugtask))
 
         # Filter the subscription to bugs in the CRITICAL state.
-        subscription_filter = BugSubscriptionFilter()
-        subscription_filter.structural_subscription = self.subscription
+        subscription_filter = self.subscription.newBugFilter()
         subscription_filter.importances = [BugTaskImportance.CRITICAL]
 
         # With the filter the subscription is not found.
@@ -414,8 +411,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.bug.tags = ["foo"]
 
         # Filter the subscription to bugs in the CRITICAL state.
-        subscription_filter = BugSubscriptionFilter()
-        subscription_filter.structural_subscription = self.subscription
+        subscription_filter = self.subscription.newBugFilter()
         subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
         subscription_filter.importances = [BugTaskImportance.CRITICAL]
 
