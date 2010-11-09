@@ -16,6 +16,10 @@ __all__ = [
 
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -25,13 +29,10 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-
-from lazr.enum import EnumeratedType, Item
-
 
 # Number of seconds in an hour (used later)
 HOURS = 3600

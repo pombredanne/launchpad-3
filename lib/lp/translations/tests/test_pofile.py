@@ -49,6 +49,7 @@ def set_relicensing(person, choice):
         default initial choice for any person.
     """
     ITranslationsPerson(person).translations_relicensing_agreement = choice
+<<<<<<< TREE
 
 
 class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
@@ -214,6 +215,8 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
         found_translations = list(
             self.devel_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals(found_translations, [])
+=======
+>>>>>>> MERGE-SOURCE
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -2303,12 +2306,22 @@ class TestPOFilePermissions(TestCaseWithFactory):
         self.assertFalse(self.pofile.canEditTranslations(template.owner))
         self.assertFalse(self.pofile.canAddSuggestions(template.owner))
 
+<<<<<<< TREE
     def test_pofile_owner_gets_no_privileges(self):
         # A POFile owner has no special privileges.
+=======
+    def test_pofile_owner_can_edit(self):
+        # A POFile owner currently has special edit privileges.
+>>>>>>> MERGE-SOURCE
         self.closeTranslations()
         self.pofile.owner = self.factory.makePerson()
+<<<<<<< TREE
         self.assertFalse(self.pofile.canEditTranslations(self.pofile.owner))
         self.assertFalse(self.pofile.canAddSuggestions(self.pofile.owner))
+=======
+        self.assertTrue(self.pofile.canEditTranslations(self.pofile.owner))
+        self.assertTrue(self.pofile.canAddSuggestions(self.pofile.owner))
+>>>>>>> MERGE-SOURCE
 
     def test_product_translation_group_owner_gets_no_privileges(self):
         # A translation group owner manages the translation group

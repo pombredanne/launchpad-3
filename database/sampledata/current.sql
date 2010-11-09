@@ -3942,6 +3942,11 @@ INSERT INTO componentselection (id, distroseries, component, date_created) VALUE
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (12, 1, 3, '2006-10-16 18:31:43.262049');
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (13, 10, 5, '2007-06-24 13:12:05.04436');
 INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (14, 11, 5, '2007-06-24 13:12:10.692827');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (15, 13, 1, '2010-10-15 00:37:06.128465');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (16, 13, 2, '2010-10-15 00:37:07.363901');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (17, 13, 3, '2010-10-15 00:37:08.219902');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (18, 13, 4, '2010-10-15 00:37:09.099819');
+INSERT INTO componentselection (id, distroseries, component, date_created) VALUES (19, 13, 5, '2010-10-15 00:37:09.988375');
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;

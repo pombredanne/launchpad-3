@@ -366,6 +366,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return None
 
     @property
+    def enabled_architectures(self):
+        store = Store.of(self)
+        results = store.find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.enabled == True)
+        return results.order_by(DistroArchSeries.architecturetag)
+
+    @property
     def buildable_architectures(self):
         store = Store.of(self)
         origin = [

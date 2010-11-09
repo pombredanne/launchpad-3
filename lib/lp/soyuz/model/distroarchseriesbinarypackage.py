@@ -18,7 +18,7 @@ from storm.locals import (
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus

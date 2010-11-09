@@ -29,11 +29,9 @@ from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    IGPGKeySet,
-    ISourcePackageNameSet,
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -59,11 +57,13 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     safe_fix_maintainer,
     )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
