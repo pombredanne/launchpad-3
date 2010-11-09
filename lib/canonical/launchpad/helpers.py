@@ -585,7 +585,7 @@ def english_list(items, conjunction='and'):
 
 
 def ensure_unicode(string):
-    r"""Return input as unicode.
+    r"""Return input as unicode. None is passed through unharmed.
 
     Do not use this method. This method exists only to help migration
     of legacy code where str objects were being passed into contexts
@@ -611,8 +611,13 @@ def ensure_unicode(string):
     Traceback (most recent call last):
     ...
     TypeError: 42 is not a basestring (<type 'int'>)
+
+    >>> ensure_unicode(None) is None
+    True
     """
-    if isinstance(string, unicode):
+    if string is None:
+        return None
+    elif isinstance(string, unicode):
         return string
     elif isinstance(string, basestring):
         try:
