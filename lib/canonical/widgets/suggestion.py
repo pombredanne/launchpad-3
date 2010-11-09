@@ -21,6 +21,11 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 class SuggestionWidget(LaunchpadRadioWidget):
+    """Base class for widgets that suggest values.
+
+    Users can pick a suggested value from a radio button list, or use the
+    normal widget to pick any value they could normally pick.
+    """
 
     def __init__(self, field, vocabulary, request):
         # Create the vocabulary and pass that to the radio button
@@ -43,13 +48,15 @@ class SuggestionWidget(LaunchpadRadioWidget):
         if self._renderSuggestions():
             self._autoselect_other()
 
-    def _generateSuggestionVocab(self, context, full_vocabulary):
+    @classmethod
+    def _generateSuggestionVocab(cls, context, full_vocabulary):
         """Generate a vocabulary for the suggestions.
 
         :param context: The context object to generate suggestions for.
         :param full_vocabulary: The vocabulary suggestions may be drawn from.
+            suggestions not present in this vocabulary are ignored.
         """
-        suggestions = self._get_suggestions(context)
+        suggestions = cls._get_suggestions(context)
         terms = [term for term in full_vocabulary if term.value in suggestions]
         return SimpleVocabulary(terms)
 
@@ -112,14 +119,14 @@ class SuggestionWidget(LaunchpadRadioWidget):
         """Render a label for the option based on a branch."""
         return self._renderLabel(self._valueDisplayname(value), index)
 
-    def _valueDisplayname(self, value):
+    @staticmethod
+    def _valueDisplayname(value):
         """Return the displayname for a value."""
         return value.displayname
 
     def renderItems(self, value):
         """Render the items for the selector."""
         field = self.context
-        product = field.context
         if value == self._missing:
             value = field.missing_value
 
@@ -183,7 +190,8 @@ class TargetBranchWidget(SuggestionWidget):
     normal branch selector.
     """
 
-    def _generateSuggestionVocab(self, branch, full_vocabulary):
+    @staticmethod
+    def _generateSuggestionVocab(branch, full_vocabulary):
         """Generate the vocabulary for the radio buttons.
 
         The generated vocabulary contains the branch associated with the
@@ -191,7 +199,7 @@ class TargetBranchWidget(SuggestionWidget):
         branches that the user has specified before as a target for a proposed
         merge.
         """
-        self.default_target = branch.target.default_merge_target
+        default_target = branch.target.default_merge_target
         logged_in_user = getUtility(ILaunchBag).user
         collection = branch.target.collection.targetedBy(logged_in_user)
         collection = collection.visibleByUser(logged_in_user)
@@ -199,10 +207,10 @@ class TargetBranchWidget(SuggestionWidget):
         target_branches = list(branches.config(limit=5))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.
-        if self.default_target is not None:
-            if self.default_target in target_branches:
-                target_branches.remove(self.default_target)
-            target_branches.insert(0, self.default_target)
+        if default_target is not None:
+            if default_target in target_branches:
+                target_branches.remove(default_target)
+            target_branches.insert(0, default_target)
 
         # Make sure the source branch isn't in the target_branches.
         if branch in target_branches:
@@ -215,7 +223,7 @@ class TargetBranchWidget(SuggestionWidget):
 
         return SimpleVocabulary(terms)
 
-    def _renderSelectionLabel(self, branch, index):
+    def _renderSuggestionLabel(self, branch, index):
         """Render a label for the option based on a branch."""
         option_id = '%s.%s' % (self.name, index)
 
@@ -226,7 +234,7 @@ class TargetBranchWidget(SuggestionWidget):
         text = '%s (<a href="%s">branch details</a>)' % (
             branch.displayname, canonical_url(branch))
         # If the branch is the development focus, say so.
-        if branch == self.default_target:
+        if branch == self.context.context.target.default_merge_target:
             text = text + "&ndash; <em>development focus</em>"
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
             option_id, text)
@@ -242,12 +250,14 @@ class RecipeOwnerWidget(SuggestionWidget):
 
     The current user and the base branch owner are suggested.
     """
-    def _get_suggestions(self, branch):
+    @staticmethod
+    def _get_suggestions(branch):
         """Suggest the branch owner and current user."""
         logged_in_user = getUtility(ILaunchBag).user
         return set([branch.owner, logged_in_user])
 
-    def _valueDisplayname(self, value):
+    @staticmethod
+    def _valueDisplayname(value):
         """Provide a specialized displayname for Persons"""
         return value.unique_displayname
 
