@@ -4,6 +4,7 @@
 """All the interfaces that are exposed through the webservice."""
 
 __all__ = [
+    'BugNominationStatusError',
     'IBug',
     'InvalidBugTargetType',
     'InvalidDuplicateValue',
@@ -25,6 +26,8 @@ __all__ = [
     'IMaloneApplication',
     'IllegalRelatedBugTasksParams',
     'IllegalTarget',
+    'NominationError',
+    'NominationSeriesObsoleteError',
     'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
@@ -40,7 +43,12 @@ from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugnomination import (
+    BugNominationStatusError,
+    IBugNomination,
+    NominationError,
+    NominationSeriesObsoleteError,
+    )
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
