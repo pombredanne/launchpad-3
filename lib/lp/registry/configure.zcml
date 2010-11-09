@@ -156,8 +156,6 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
             interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
         <require
             permission="launchpad.Edit"
@@ -318,13 +316,13 @@
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
-            interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            interface="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            set_schema="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -849,8 +847,6 @@
             <allow
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
             <allow
-                interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-            <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
                 interface="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
@@ -1113,8 +1109,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
-        <allow
             interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.View"
@@ -1131,16 +1125,12 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                bug_reported_acknowledgement
-                bug_reporting_guidelines
-                bugtracker
                 commercial_subscription
                 description
                 development_focus
                 displayname
                 downloadurl
                 driver
-                enable_bug_expiration
                 freshmeatproject
                 homepage_content
                 homepageurl
@@ -1152,13 +1142,11 @@
                 official_answers
                 official_blueprints
                 official_codehosting
-                official_malone
                 owner
                 programminglang
                 project
                 redeemSubscriptionVoucher
                 releaseroot
-                remote_product
                 screenshotsurl
                 security_contact
                 sourceforgeproject
@@ -1167,7 +1155,15 @@
                 wikiurl"/>
         <require
             permission="launchpad.BugSupervisor"
-            set_attributes="official_bug_tags"/>
+            set_attributes="
+                bug_reported_acknowledgement
+                bug_reporting_guidelines
+                bugtracker
+                enable_bug_expiration
+                official_bug_tags
+                official_malone
+                remote_product
+                "/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1382,8 +1378,6 @@
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -1447,8 +1441,6 @@
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
-        <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
@@ -1595,8 +1587,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-        <allow
-            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
 
         <!-- IQuestionTarget -->
 
@@ -1814,17 +1804,6 @@
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.distributionmirror.IMirrorProbeRecord" />
     </class>
-    <class
-        class="lp.registry.model.mentoringoffer.MentoringOffer">
-        <allow
-            interface="lp.registry.interfaces.mentoringoffer.IMentoringOffer"/>
-    </class>
-    <securedutility
-        class="lp.registry.model.mentoringoffer.MentoringOfferSet"
-        provides="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet">
-        <allow
-            interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
-    </securedutility>
 
     <!-- Packaging -->
     <class

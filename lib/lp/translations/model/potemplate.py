@@ -8,7 +8,6 @@
 __metaclass__ = type
 __all__ = [
     'get_pofiles_for',
-    'HasTranslationTemplatesMixin',
     'POTemplate',
     'POTemplateSet',
     'POTemplateSubset',
@@ -31,7 +30,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Count,
     Desc,
     In,
     Join,
@@ -66,7 +64,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
@@ -75,9 +72,9 @@ from lp.services.database.collection import Collection
 from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
-    IHasTranslationTemplates,
     IPOTemplate,
     IPOTemplateSet,
     IPOTemplateSharingSubset,
@@ -99,9 +96,6 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError,
-    )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
     )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pomsgid import POMsgID
@@ -318,37 +312,22 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             return None
 
+    def getTranslationPolicy(self):
+        """See `IPOTemplate`."""
+        if self.productseries is not None:
+            return self.productseries.product
+        else:
+            return self.distroseries.distribution
+
     @property
     def translationgroups(self):
         """See `IPOTemplate`."""
-        ret = []
-        if self.distroseries:
-            tg = self.distroseries.distribution.translationgroup
-            if tg is not None:
-                ret.append(tg)
-        elif self.productseries:
-            product_tg = self.productseries.product.translationgroup
-            if product_tg is not None:
-                ret.append(product_tg)
-            project = self.productseries.product.project
-            if project is not None:
-                if project.translationgroup is not None:
-                    ret.append(project.translationgroup)
-        else:
-            raise NotImplementedError('Cannot find translation groups.')
-        return ret
+        return self.getTranslationPolicy().getTranslationGroups()
 
     @property
     def translationpermission(self):
         """See `IPOTemplate`."""
-        if self.distroseries:
-            # in the case of a distro template, use the distro translation
-            # permission settings
-            return self.distroseries.distribution.translationpermission
-        elif self.productseries:
-            # for products, use the "most restrictive permission" between
-            # project and product.
-            return self.productseries.product.aggregatetranslationpermission
+        return self.getTranslationPolicy().getEffectiveTranslationPermission()
 
     @property
     def relatives_by_name(self):
@@ -1671,100 +1650,6 @@ class POTemplateToTranslationFileDataAdapter:
             messages.append(msgset)
 
         return messages
-
-
-class HasTranslationTemplatesMixin:
-    """Helper class for implementing `IHasTranslationTemplates`."""
-    implements(IHasTranslationTemplates)
-
-    def getTemplatesCollection(self):
-        """See `IHasTranslationTemplates`.
-
-        To be provided by derived classes.
-        """
-        raise NotImplementedError(
-            "Child class must provide getTemplatesCollection.")
-
-    def _orderTemplates(self, result):
-        """Apply the conventional ordering to a result set of templates."""
-        return result.order_by(Desc(POTemplate.priority), POTemplate.name)
-
-    def getCurrentTemplatesCollection(self, current_value=True):
-        """See `IHasTranslationTemplates`."""
-        collection = self.getTemplatesCollection()
-
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # translations_usage distinction into browser code.
-        pillar = collection.target_pillar
-        if service_uses_launchpad(pillar.translations_usage):
-            return collection.restrictCurrent(current_value)
-        else:
-            # Product/Distribution does not have translation enabled.
-            # Treat all templates as obsolete.
-            return collection.refine(not current_value)
-
-    def getCurrentTranslationTemplates(self,
-                                       just_ids=False,
-                                       current_value=True):
-        """See `IHasTranslationTemplates`."""
-        if just_ids:
-            selection = POTemplate.id
-        else:
-            selection = POTemplate
-
-        collection = self.getCurrentTemplatesCollection(current_value)
-        return self._orderTemplates(collection.select(selection))
-
-    @property
-    def has_translation_templates(self):
-        """See `IHasTranslationTemplates`."""
-        return bool(self.getTranslationTemplates().any())
-
-    @property
-    def has_current_translation_templates(self):
-        """See `IHasTranslationTemplates`."""
-        return bool(
-            self.getCurrentTranslationTemplates(just_ids=True).any())
-
-    def getCurrentTranslationFiles(self, just_ids=False):
-        """See `IHasTranslationTemplates`."""
-        if just_ids:
-            selection = POFile.id
-        else:
-            selection = POFile
-
-        collection = self.getCurrentTemplatesCollection()
-        return collection.joinPOFile().select(selection)
-
-    @property
-    def has_translation_files(self):
-        """See `IHasTranslationTemplates`."""
-        return bool(
-            self.getCurrentTranslationFiles(just_ids=True).any())
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: This returns a list
-        # whereas the analogous method for current template returns a
-        # result set.  Clean up this mess.
-        return list(self.getCurrentTranslationTemplates(current_value=False))
-
-    def getTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        return self._orderTemplates(self.getTemplatesCollection().select())
-
-    def getTranslationTemplateFormats(self):
-        """See `IHasTranslationTemplates`."""
-        formats_query = self.getCurrentTranslationTemplates().order_by(
-            'source_file_format').config(distinct=True)
-        return helpers.shortlist(
-            formats_query.values(POTemplate.source_file_format), 10)
-
-    def getTemplatesAndLanguageCounts(self):
-        """See `IHasTranslationTemplates`."""
-        join = self.getTemplatesCollection().joinOuterPOFile()
-        result = join.select(POTemplate, Count(POFile.id))
-        return result.group_by(POTemplate)
 
 
 class TranslationTemplatesCollection(Collection):

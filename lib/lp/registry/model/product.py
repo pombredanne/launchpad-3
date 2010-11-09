@@ -90,7 +90,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -143,7 +143,6 @@ from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
@@ -163,18 +162,19 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
     )
-from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -291,7 +291,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin):
+              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
@@ -1045,48 +1045,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return None
 
     @property
-    def mentoring_offers(self):
-        """See `IProduct`"""
-        via_specs = MentoringOffer.select("""
-            Specification.product = %s AND
-            Specification.id = MentoringOffer.specification
-            """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause + ")",
-            clauseTables=['Specification'],
-            distinct=True)
-        via_bugs = MentoringOffer.select("""
-            BugTask.product = %s AND
-            BugTask.bug = MentoringOffer.bug AND
-            BugTask.bug = Bug.id AND
-            Bug.private IS FALSE
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask', 'Bug'],
-            distinct=True)
-        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
-
-    @property
     def translationgroups(self):
-        tg = []
-        if self.translationgroup:
-            tg.append(self.translationgroup)
-        if self.project:
-            if self.project.translationgroup:
-                if self.project.translationgroup not in tg:
-                    tg.append(self.project.translationgroup)
+        return reversed(self.getTranslationGroups())
 
-    @property
-    def aggregatetranslationpermission(self):
-        perms = [self.translationpermission]
-        if self.project:
-            perms.append(self.project.translationpermission)
-        # XXX Carlos Perello Marin 2005-06-02:
-        # Reviewer please describe a better way to explicitly order
-        # the enums. The spec describes the order, and the values make
-        # it work, and there is space left for new values so we can
-        # ensure a consistent sort order in future, but there should be
-        # a better way.
-        return max(perms)
+    def isTranslationsOwner(self, person):
+        """See `ITranslationPolicy`."""
+        # A Product owner gets special translation privileges.
+        return person.inTeam(self.owner)
+
+    def getInheritedTranslationPolicy(self):
+        """See `ITranslationPolicy`."""
+        # A Product inherits parts of it its effective translation
+        # policy from its ProjectGroup, if any.
+        return self.project
 
     @property
     def has_any_specifications(self):

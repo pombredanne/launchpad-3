@@ -473,17 +473,6 @@
         <td><img alt="" src="/@@/meeting-mugshot" /></td>
       </tr>
       <tr>
-        <td>mentoring</td>
-        <td><img alt="" src="/@@/mentoring" /></td>
-        <td rowspan="2">A bug or blueprint for which mentoring has been
-          offered.
-        </td>
-      </tr>
-      <tr>
-        <td>mentoring-large</td>
-        <td><img alt="" src="/@@/mentoring-large" /></td>
-      </tr>
-      <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a

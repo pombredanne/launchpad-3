@@ -503,24 +503,19 @@ class POFileView(LaunchpadView):
         Duplicates are eliminated; every translation group will occur
         at most once.
         """
-        language = self.context.language
         managers = []
-        groups = set()
-        for group in self.context.potemplate.translationgroups:
-            if group not in groups:
-                translator = group.query_translator(language)
-                if translator is None:
-                    team = None
-                    style_guide_url = None
-                else:
-                    team = translator.translator
-                    style_guide_url = translator.style_guide_url
-                managers.append({
-                    'group': group,
-                    'team': team,
-                    'style_guide_url': style_guide_url,
-                    })
-            groups.add(group)
+        policy = self.context.potemplate.getTranslationPolicy()
+        translators = policy.getTranslators(self.context.language)
+        for group, translator, team in reversed(translators):
+            if translator is None:
+                style_guide_url = None
+            else:
+                style_guide_url = translator.style_guide_url
+            managers.append({
+                'group': group,
+                'team': team,
+                'style_guide_url': style_guide_url,
+            })
         return managers
 
 

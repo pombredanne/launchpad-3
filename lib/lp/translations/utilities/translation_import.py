@@ -31,6 +31,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
@@ -46,9 +47,6 @@ from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     NotExportedFromLaunchpad,
     OutdatedTranslationError,
-    )
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,

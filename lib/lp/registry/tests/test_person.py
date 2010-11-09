@@ -223,6 +223,13 @@ class TestPersonTeams(TestCaseWithFactory):
             {},
             removeSecurityProxy(self.user)._inTeam_cache)
 
+    def test_inTeam_person_string_missing_team(self):
+        # If a check against a string is done, the team lookup is implicit:
+        # treat a missing team as an empty team so that any pages that choose
+        # to do this don't blow up unnecessarily. Similarly feature flags 
+        # team: scopes depend on this.
+        self.assertFalse(self.user.inTeam('does-not-exist'))
+
 
 class TestPerson(TestCaseWithFactory):
 
@@ -396,7 +403,8 @@ class TestPersonStates(TestCaseWithFactory):
             'all_members_prepopulated', 'approvedmembers',
             'deactivatedmembers', 'expiredmembers', 'inactivemembers',
             'invited_members', 'member_memberships', 'pendingmembers',
-            'proposedmembers', 'unmapped_participants',
+            'proposedmembers', 'unmapped_participants', 'longitude',
+            'latitude', 'time_zone',
             )
         snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
         for name in omitted:
