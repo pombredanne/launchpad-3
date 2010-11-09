@@ -6,18 +6,13 @@
 
 __metaclass__ = type
 
-# mvo: I would love to use this, but it complains about a missing
-#      import for "fixtures" and I can not find a package that
-#      provides this module
-#from lp.testing import TestCase # or TestCaseWithFactory
-from unittest import TestCase
+from lp.testing import TestCase
 
 import copy
 import gzip
 import os
 import shutil
 import subprocess
-import tempfile
 import unittest
 
 
@@ -29,6 +24,8 @@ class TestCronGerminate(TestCase):
     BASEPATH = os.path.abspath(os.path.dirname(__file__))
 
     def setUp(self):
+        super(TestCronGerminate, self).setUp()
+
         # Setup a temp archive directory and populate it with the right
         # sub-directories.
         self.archive_dir = self.setup_mock_archive_environment()
@@ -39,9 +36,6 @@ class TestCronGerminate(TestCase):
         # needs to be in sync with the mock lp-query-distro.py.
         self.populate_mock_archive_environment(
             self.archive_dir, self.COMPONENTS, self.ARCHES, "natty")
-
-    def tearDown(self):
-        shutil.rmtree(self.archive_dir)
 
     def create_directory_if_missing(self, directory):
         """Create the given directory if it does not exist."""
@@ -73,8 +67,9 @@ class TestCronGerminate(TestCase):
         """Creates a mock archive environment and populate
            it with the subdirectories that germinate will expect.
         """
-        tmpdir = tempfile.mkdtemp(prefix="tmp-cron.germinate-test")
-        archive_dir = os.path.join(tmpdir, "mock-data", "ubuntu-archive")
+        tmpdir = self.makeTemporaryDirectory()
+        archive_dir = os.path.join(
+            tmpdir, "germinate-test-data", "ubuntu-archive")
         ubuntu_misc_dir = os.path.join(archive_dir, "ubuntu-misc")
         ubuntu_germinate_dir = os.path.join(archive_dir, "ubuntu-germinate")
         ubuntu_dists_dir = os.path.join(archive_dir, "ubuntu", "dists")
@@ -119,13 +114,14 @@ class TestCronGerminate(TestCase):
         fake_environ["TEST_ARCHIVEROOT"] = os.path.abspath(
             os.path.join(archive_dir, "ubuntu"))
         fake_environ["TEST_LAUNCHPADROOT"] = os.path.abspath(
-            os.path.join(basepath, "mock-data/mock-lp-root"))
+            os.path.join(basepath, "germinate-test-data/mock-lp-root"))
         # Set the PATH in the fake environment so that our mock germinate
         # is used. We could use the real germinate as well, but that will
         # slow down the tests a lot and its also not interessting for this
         # test as we do not use any of the germinate information.
         fake_environ["PATH"] = "%s:%s" % (
-            os.path.abspath(os.path.join(basepath, "mock-data/mock-bin")),
+            os.path.abspath(os.path.join(
+                basepath, "germinate-test-data/mock-bin")),
             os.environ["PATH"])
         return fake_environ
 
@@ -151,8 +147,10 @@ class TestCronGerminate(TestCase):
                 canary)
 
         # Run cron.germinate in the fake environment.
+        source_root = os.path.normpath(
+            os.path.join(self.BASEPATH, "..", "..", "..", "..", ".."))
         cron_germinate_path = os.path.join(
-            self.BASEPATH, "..", "cron.germinate")
+            source_root, "cronscripts", "publishing", "cron.germinate")
         subprocess.call(
             [cron_germinate_path], env=fake_environ, cwd=self.BASEPATH)
 
@@ -165,9 +163,9 @@ class TestCronGerminate(TestCase):
             main_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
-            self.assertTrue(canary in open(main_override_file).read(),
-                            msg="canary '%s' is not in file '%s'" % (
-                    canary, main_override_file))
+            self.assertIn(canary, open(main_override_file).read(),
+                          msg="canary '%s' is not in file '%s'" % (
+                             canary, main_override_file))
 
         # Check here if we got the data from maintenance-check.py that
         # we expected. This is a kernel name from lucid-updates and it
@@ -175,8 +173,4 @@ class TestCronGerminate(TestCase):
         needle = "linux-image-2.6.32-25-server/i386 Supported 5y"
         lucid_supported_override_file = os.path.join(
             self.ubuntu_misc_dir, "more-extra.override.lucid.main")
-        self.assertTrue(needle in open(lucid_supported_override_file).read())
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertIn(needle, open(lucid_supported_override_file).read())
