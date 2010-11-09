@@ -34,6 +34,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PersonChoice
 from lp.translations.interfaces.rosettastats import IRosettaStats
@@ -167,6 +168,10 @@ class IPOTemplate(IRosettaStats):
             "The source package that uses this template."),
         required=False,
         vocabulary="SourcePackageName")
+
+    sourcepackage = Reference(
+        ISourcePackage, title="Source package this template is for, if any.",
+        required=False, readonly=True)
 
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),

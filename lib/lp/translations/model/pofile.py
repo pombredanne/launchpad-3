@@ -115,170 +115,6 @@ from lp.translations.utilities.translation_common_format import (
     )
 
 
-def _check_translation_perms(permission, translators, person):
-    """Return True or False dependening on whether the person is part of the
-    right group of translators, and the permission on the relevant project,
-    product or distribution.
-
-    :param permission: The kind of TranslationPermission.
-    :param translators: The list of official translators for the
-        product/project/distribution.
-    :param person: The person that we want to check if has translation
-        permissions.
-    """
-    # Let's determine if the person is part of a designated translation team
-    is_designated_translator = False
-    # XXX sabdfl 2005-05-25:
-    # This code could be improved when we have implemented CrowdControl.
-    for translator in translators:
-        if person.inTeam(translator):
-            is_designated_translator = True
-            break
-
-    # have a look at the applicable permission policy
-    if permission == TranslationPermission.OPEN:
-        # if the translation policy is "open", then yes, anybody is an
-        # editor of any translation
-        return True
-    elif permission == TranslationPermission.STRUCTURED:
-        # in the case of a STRUCTURED permission, designated translators
-        # can edit, unless there are no translators, in which case
-        # anybody can translate
-        if len(translators) > 0:
-            # when there are designated translators, only they can edit
-            if is_designated_translator is True:
-                return True
-        else:
-            # since there are no translators, anyone can edit
-            return True
-    elif permission in (TranslationPermission.RESTRICTED,
-                        TranslationPermission.CLOSED):
-        # if the translation policy is "restricted" or "closed", then check if
-        # the person is in the set of translators
-        if is_designated_translator:
-            return True
-    else:
-        raise NotImplementedError('Unknown permission %s' % permission.name)
-
-    # ok, thats all we can check, and so we must assume the answer is no
-    return False
-
-
-def _person_has_not_licensed_translations(person):
-    """Whether a person has declined to BSD-license their translations."""
-    t_p = ITranslationsPerson(person)
-    if (t_p.translations_relicensing_agreement is not None and
-        t_p.translations_relicensing_agreement is False):
-        return True
-    else:
-        return False
-
-
-def is_admin(user):
-    """Is `user` an admin or Translations admin?"""
-    celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.rosetta_experts)
-
-
-def is_product_owner(user, potemplate):
-    """Is `user` the owner of a `Product` that `potemplate` belongs to?
-
-    A product's owners have edit rights on the product's translations.
-    """
-    productseries = potemplate.productseries
-    if productseries is None:
-        return False
-
-    return user.inTeam(productseries.product.owner)
-
-
-def _can_edit_translations(pofile, person):
-    """Say if a person is able to edit existing translations.
-
-    Return True or False indicating whether the person is allowed
-    to edit these translations.
-
-    Admins and Rosetta experts are always able to edit any translation.
-    If the `IPOFile` is for an `IProductSeries`, the owner of the `IProduct`
-    has also permissions.
-    Any other mortal will have rights depending on if he/she is on the right
-    translation team for the given `IPOFile`.translationpermission and the
-    language associated with this `IPOFile`.
-    """
-    if person is None:
-        # Anonymous users can't edit anything.
-        return False
-
-    if is_read_only():
-        # Nothing can be edited in read-only mode.
-        return False
-
-    # XXX Carlos Perello Marin 2006-02-07 bug=4814:
-    # We should not check the permissions here but use the standard
-    # security system.
-
-    # Rosetta experts and admins can always edit translations.
-    if is_admin(person):
-        return True
-
-    # The owner of the product is also able to edit translations.
-    if is_product_owner(person, pofile.potemplate):
-        return True
-
-    # If a person has decided not to license their translations under BSD
-    # license they can't edit translations.
-    if _person_has_not_licensed_translations(person):
-        return False
-
-    # Finally, check whether the user is a member of the translation team.
-    translators = [t.translator for t in pofile.translators]
-    return _check_translation_perms(
-        pofile.translationpermission, translators, person)
-
-
-def _can_add_suggestions(pofile, person):
-    """Whether a person is able to add suggestions.
-
-    Besides people who have permission to edit the translation, this
-    includes any logged-in user for translations in STRUCTURED mode, and
-    any logged-in user for translations in RESTRICTED mode that have a
-    translation team assigned.
-    """
-    if is_read_only():
-        # No suggestions can be added in read-only mode.
-        return False
-
-    if person is None:
-        return False
-
-    # If a person has decided not to license their translations under BSD
-    # license they can't edit translations.
-    if _person_has_not_licensed_translations(person):
-        return False
-
-    if _can_edit_translations(pofile, person):
-        return True
-
-    if pofile.translationpermission == TranslationPermission.OPEN:
-        # We would return True here, except OPEN mode already allows
-        # anyone to edit (see above).
-        raise AssertionError(
-            "Translation is OPEN, but user is not allowed to edit.")
-    elif pofile.translationpermission == TranslationPermission.STRUCTURED:
-        return True
-    elif pofile.translationpermission == TranslationPermission.RESTRICTED:
-        # Only allow suggestions if there is someone to review them.
-        groups = pofile.potemplate.translationgroups
-        for group in groups:
-            if group.query_translator(pofile.language):
-                return True
-        return False
-    elif pofile.translationpermission == TranslationPermission.CLOSED:
-        return False
-
-    raise AssertionError("Unknown translation mode.")
-
-
 class POFileMixIn(RosettaStats):
     """Base class for `POFile` and `DummyPOFile`.
 
@@ -304,11 +140,19 @@ class POFileMixIn(RosettaStats):
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        return _can_edit_translations(self, person)
+        if is_read_only():
+            # Nothing can be edited in read-only mode.
+            return False
+        policy = self.potemplate.getTranslationPolicy()
+        return policy.allowsTranslationEdits(person, self.language)
 
     def canAddSuggestions(self, person):
         """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
+        if is_read_only():
+            # No data can be entered in read-only mode.
+            return False
+        policy = self.potemplate.getTranslationPolicy()
+        return policy.allowsTranslationSuggestions(person, self.language)
 
     def getHeader(self):
         """See `IPOFile`."""

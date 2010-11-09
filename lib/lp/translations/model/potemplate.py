@@ -366,15 +366,25 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['POFile'],
             distinct=True).count()
 
+    @cachedproperty
+    def sourcepackage(self):
+        """See `IPOTemplate`."""
+        # Avoid circular imports
+        from lp.registry.model.sourcepackage import SourcePackage
+
+        if self.distroseries is None:
+            return None
+        return SourcePackage(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename)
+
     @property
     def translationtarget(self):
+        """See `IPOTemplate`."""
         if self.productseries is not None:
             return self.productseries
-        elif self.distroseries is not None:
-            from lp.registry.model.sourcepackage import SourcePackage
-            return SourcePackage(distroseries=self.distroseries,
-                sourcepackagename=self.sourcepackagename)
-        raise AssertionError('Unknown POTemplate translation target')
+        else:
+            return self.sourcepackage
 
     def getHeader(self):
         """See `IPOTemplate`."""

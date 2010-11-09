@@ -11,6 +11,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import (
     Choice,
+    Object,
     )
 
 from canonical.launchpad import _
@@ -24,6 +25,14 @@ class ITranslationPolicy(Interface):
     add suggestions.  (The ability to edit also implies the ability to
     enter suggestions).  Everyone else is allowed only to view the
     translations.
+
+    The policy can "invite" the user to edit or suggest; or it can
+    merely "allow" them to.  Whoever is invited is also allowed, but
+    administrators and certain other special users may be allowed
+    without actually being invited.
+
+    The invitation is based purely on the access model configured by the
+    user: translation team and translation policy.
     """
 
     translationgroup = Choice(
@@ -80,4 +89,68 @@ class ITranslationPolicy(Interface):
         Returns the strictest applicable permission out of
         `self.translationpermission` and any inherited
         `TranslationPermission`.
+        """
+
+    def invitesTranslationEdits(person, language):
+        """Does this policy invite `person` to edit translations?
+
+        The decision is based on the chosen `TranslationPermission`,
+        `TranslationGroup`(s), the presence of a translation team, and
+        `person`s membership of the translation team.
+
+        As one extreme, the OPEN model invites editing by anyone.  The
+        opposite extreme is CLOSED, which invites editing only by
+        members of the applicable translation team.
+
+        :param person: The user.
+        :type person: IPerson
+        :param language: The language to translate to.  This will be
+            used to look up the applicable translation team(s).
+        :type language: ILanguage
+        """
+
+    def invitesTranslationSuggestions(person, language):
+        """Does this policy invite `person` to enter suggestions?
+
+        Similar to `invitesTranslationEdits`, but for the activity of
+        entering suggestions.  This carries less risk, so generally a
+        wider public is invited to do this than to edit.
+        """
+
+    def allowsTranslationEdits(person, language):
+        """Is `person` allowed to edit translations to `language`?
+
+        Similar to `invitesTranslationEdits`, except administrators and
+        in the case of Product translations, owners of the product are
+        always allowed even if they are not invited.
+        """
+
+    def allowsTranslationSuggestions(person, language):
+        """Is `person` allowed to enter suggestions for `language`?
+
+        Similar to `invitesTranslationSuggestions, except administrators
+        and in the case of Product translations, owners of the product
+        are always allowed even if they are not invited.
+        """
+
+    def sharesTranslationsWithOtherSide(person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """Should translations be shared across `TranslationSide`s?
+
+        Should translations to this object, as reviewed by `person`,
+        into `language` be shared with the other `TranslationSide`?
+
+        The answer depends on whether the user is invited to edit the
+        translations on the other side.  Administrators and other
+        specially privileged users are allowed to do that, but that
+        does not automatically mean that their translations should be
+        shared there.
+
+        :param person: The `Person` providing translations.
+        :param language: The `Language` being translated to.
+        :param sourcepackage: When translating a `Distribution`, the
+            `SourcePackage` that is being translated.
+        :param purportedly_upstream: Whether `person` provides the
+            translations in question as coming from upstream.
         """

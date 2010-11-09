@@ -208,6 +208,16 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # return not self.translatables().is_empty()
         return self.translatables().count() != 0
 
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, (
+            "Got a SourcePackage for a ProjectGroup!")
+        # ProjectGroup translations are considered upstream.  They are
+        # automatically shared.
+        return True
+
     def has_branches(self):
         """ See `IProjectGroup`."""
         return not self.getBranches().is_empty()

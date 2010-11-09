@@ -462,29 +462,13 @@ class FileImporter(object):
     def share_with_other_side(self):
         """Returns True if translations should be shared with the other side.
         """
-        traits = getUtility(
-            ITranslationSideTraitsSet).getForTemplate(self.potemplate)
-        if traits.side == TranslationSide.UPSTREAM:
-            return True
-        # Check from_upstream.
-        if self.translation_import_queue_entry.from_upstream:
-            return True
-        # Find the sharing POFile and check permissions.
-        productseries = self.potemplate.distroseries.getSourcePackage(
-            self.potemplate.sourcepackagename).productseries
-        if productseries is None:
-            return False
-        upstream_template = getUtility(IPOTemplateSet).getSubset(
-            productseries=productseries).getPOTemplateByName(
-                self.potemplate.name)
-        upstream_pofile = upstream_template.getPOFileByLang(
-            self.pofile.language.code)
-        if upstream_pofile is not None:
-            uploader_person = self.translation_import_queue_entry.importer
-            if upstream_pofile.canEditTranslations(uploader_person):
-                return True
-        # Deny the rest.
-        return False
+        from_upstream = self.translation_import_queue_entry.from_upstream
+        potemplate = self.potemplate
+        policy = potemplate.getTranslationPolicy()
+        return policy.sharesTranslationsWithOtherSide(
+            self.importer, self.pofile.language,
+            sourcepackage=potemplate.sourcepackage,
+            purportedly_from_upstream=from_upstream)
 
     @cachedproperty
     def translations_are_msgids(self):
