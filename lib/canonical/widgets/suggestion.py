@@ -58,7 +58,8 @@ class SuggestionWidget(LaunchpadRadioWidget):
             suggestions not present in this vocabulary are ignored.
         """
         suggestions = cls._get_suggestions(context)
-        terms = [term for term in full_vocabulary if term.value in suggestions]
+        terms = [term for term in full_vocabulary
+            if term.value in suggestions]
         return SimpleVocabulary(terms)
 
     def _renderSuggestions(self):
@@ -251,6 +252,7 @@ class RecipeOwnerWidget(SuggestionWidget):
 
     The current user and the base branch owner are suggested.
     """
+
     @staticmethod
     def _get_suggestions(branch):
         """Suggest the branch owner and current user."""

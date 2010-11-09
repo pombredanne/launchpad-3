@@ -409,7 +409,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
 
-
     @property
     def initial_values(self):
         return {
