@@ -204,6 +204,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
         # translations, but are not particularly invited to do so.
         owner = self.factory.makePerson()
         language = self.factory.makeLanguage()
+        self.policy.translationpermission = TranslationPermission.CLOSED
         self.policy.isTranslationsOwner = FakeMethod(result=True)
         self.assertFalse(self.policy.invitesTranslationEdits(owner, language))
         self.assertFalse(
@@ -298,9 +299,11 @@ class TestTranslationPolicy(TestCaseWithFactory):
         # even if there is a translation group.
         joe = self.factory.makePerson()
         language = self.factory.makeLanguage()
-        self.policy.translationgroup = self.factory.makeTranslationGroup()
-        self.policy.translationpolicy = TranslationPermission.RESTRICTED
+        self.policy.translationpermission = TranslationPermission.RESTRICTED
 
+        self.assertFalse(
+            self.policy.invitesTranslationSuggestions(joe, language))
+        self.policy.translationgroup = self.factory.makeTranslationGroup()
         self.assertFalse(
             self.policy.invitesTranslationSuggestions(joe, language))
 
@@ -312,7 +315,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
         getUtility(ITranslatorSet).new(
             self.policy.translationgroup, language, self.factory.makeTeam(),
             None)
-        self.policy.translationpolicy = TranslationPermission.RESTRICTED
+        self.policy.translationpermission = TranslationPermission.RESTRICTED
 
         self.assertTrue(
             self.policy.invitesTranslationSuggestions(joe, language))

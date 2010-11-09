@@ -23,6 +23,22 @@ from lp.translations.model.translationgroup import TranslationGroup
 from lp.translations.model.translator import Translator
 
 
+def has_translators(translators_list):
+    """Did `getTranslators` find any translators?"""
+    for group, translator, team in translators_list:
+        if team is not None:
+            return True
+    return False
+
+
+def is_in_one_of_translators(translators_list, person):
+    """Is `person` a member of one of the entries in `getTranslators`?"""
+    for group, translator, team in translators_list:
+        if team is not None and person.inTeam(team):
+            return True
+    return False
+
+
 class TranslationPolicyMixin:
     """Implementation mixin for `ITranslationPolicy`."""
 
@@ -104,20 +120,6 @@ class TranslationPolicyMixin:
                 self.translationpermission,
                 inherited.getEffectiveTranslationPermission()])
 
-    def _hasTranslators(self, translators_list):
-        """Did `getTranslators` find any translators?"""
-        for group, translator, person in translators_list:
-            if translator is not None:
-                return True
-        return False
-
-    def _isInOneOfTranslators(self, translators_list, person):
-        """Is `person` a member of one of the entries in `getTranslators`?"""
-        for group, translator, team in translators_list:
-            if team is not None and person.inTeam(team):
-                return True
-        return False
-
     def invitesTranslationEdits(self, person, language):
         """See `ITranslationPolicy`."""
         if person is None:
@@ -132,11 +134,11 @@ class TranslationPolicyMixin:
         if model == TranslationPermission.STRUCTURED:
             # Structured permissions act like Open if no translators
             # have been assigned for the language.
-            if not self._hasTranslators(translators):
+            if not has_translators(translators):
                 return True
 
         # Translation-team members are always invited to edit.
-        return self._isInOneOfTranslators(translators, person)
+        return is_in_one_of_translators(translators, person)
 
     def invitesTranslationSuggestions(self, person, language):
         """See `ITranslationPolicy`."""
@@ -155,13 +157,13 @@ class TranslationPolicyMixin:
 
         translators = self.getTranslators(language)
         if model == TranslationPermission.RESTRICTED:
-            if self._hasTranslators(translators):
+            if has_translators(translators):
                 # Restricted invites any user's suggestions as long as
                 # there is a translation team to handle them.
                 return True
 
         # Translation-team members are always invited to suggest.
-        return self._isInOneOfTranslators(translators, person)
+        return is_in_one_of_translators(translators, person)
 
     def allowsTranslationEdits(self, person, language):
         """See `ITranslationPolicy`."""
