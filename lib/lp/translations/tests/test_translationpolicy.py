@@ -339,7 +339,7 @@ class TestTranslationsOwners(TestCaseWithFactory):
         return removeSecurityProxy(pillar).isTranslationsOwner(self.owner)
 
     def test_product_owners(self):
-        # Product owners are "translations owners." 
+        # Product owners are "translations owners."
         product = self.factory.makeProduct(owner=self.owner)
         self.assertTrue(self.isTranslationsOwnerOf(product))
 
