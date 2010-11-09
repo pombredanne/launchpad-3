@@ -168,7 +168,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             distroseries=distroseries, sourcepackagename='fnord')
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=self.source_package.sourcepackagename,
-            distroseries=distroseries, version='1.5-1')
+            distroseries=distroseries, version='1.5-0ubuntu1')
         self.source_package.setPackaging(
             productseries, productseries.product.owner)
 

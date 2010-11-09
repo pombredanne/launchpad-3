@@ -661,10 +661,10 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
             # Launchpad is missing data. There is not enough information to
             # track releases.
             return PackageUpstreamTracking.NONE
-        # Compare the versions by appending '-1' to upstrem release to
-        # account for the first packaging in a distro.
-        age = VersionCompare(
-            upstream_release.version + '-1', current_release.version)
+        # Compare the base version contained in the full debian version
+        # to upstream release's version.
+        base_version, debian_revision = current_release.version.split('-', 1)
+        age = VersionCompare(upstream_release.version, base_version)
         if age > 0:
             return PackageUpstreamTracking.NEWER
         elif age < 0:
