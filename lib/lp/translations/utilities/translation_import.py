@@ -468,7 +468,7 @@ class FileImporter(object):
         return policy.sharesTranslationsWithOtherSide(
             self.importer, self.pofile.language,
             sourcepackage=potemplate.sourcepackage,
-            purportedly_from_upstream=from_upstream)
+            purportedly_upstream=from_upstream)
 
     @cachedproperty
     def translations_are_msgids(self):
