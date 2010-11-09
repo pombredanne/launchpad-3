@@ -368,6 +368,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     @property
     def translationtarget(self):
+        """See `IPOTemplate`."""
         if self.productseries is not None:
             return self.productseries
         elif self.distroseries is not None:

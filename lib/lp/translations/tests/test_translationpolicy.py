@@ -20,6 +20,7 @@ from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class TranslationPolicyImplementation(TranslationPolicyMixin):
+    """An `ITranslationPolicy` implementation for testing."""
     implements(ITranslationPolicy)
 
     translationgroup = None
@@ -28,6 +29,10 @@ class TranslationPolicyImplementation(TranslationPolicyMixin):
 
 
 class TestTranslationPolicy(TestCaseWithFactory):
+    """Test `TranslationPolicyMixin`.
+
+    :ivar policy: A `TranslationPolicyImplementation` for testing.
+    """
     layer = ZopelessDatabaseLayer
 
     def setUp(self):
