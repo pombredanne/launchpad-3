@@ -495,7 +495,7 @@ class StructuralSubscriptionTargetMixin:
             "WHERE filter = BugSubscriptionFilter.id AND include")
         tags_include_array = "ARRAY(%s)" % tags_include_expr
         tags_include_is_empty = SQL(
-            "ARRAY[]::TEXT[] = ARRAY(%s)" % tags_include_expr)
+            "ARRAY[]::TEXT[] = %s" % tags_include_array)
 
         # The tags a subscription requests for exclusion.
         tags_exclude_expr = (
@@ -503,7 +503,7 @@ class StructuralSubscriptionTargetMixin:
             "WHERE filter = BugSubscriptionFilter.id AND NOT include")
         tags_exclude_array = "ARRAY(%s)" % tags_exclude_expr
         tags_exclude_is_empty = SQL(
-            "ARRAY[]::TEXT[] = ARRAY(%s)" % tags_exclude_expr)
+            "ARRAY[]::TEXT[] = %s" % tags_exclude_array)
 
         # Choose the correct expression depending on the find_all_tags flag.
         def tags_find_all_combinator(find_all_expr, find_any_expr):
@@ -515,8 +515,9 @@ class StructuralSubscriptionTargetMixin:
             tag_conditions = [
                 BugSubscriptionFilter.include_any_tags == False,
                 # The subscription's required tags must be an empty set.
-                SQL("%s = %s" % (tags_array, tags_include_array)),
-                # The subscription's excluded tags can be anything.
+                tags_include_is_empty,
+                # The subscription's excluded tags can be anything so no
+                # condition is needed.
                 ]
         else:
             tag_conditions = [
