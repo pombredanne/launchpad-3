@@ -1186,6 +1186,9 @@ class Person(
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
+            if team is None:
+                # No team, no membership.
+                return False
 
         if self.id == team.id:
             # A team is always a member of itself.

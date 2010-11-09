@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
     ILanguage,

@@ -196,7 +196,9 @@ class FTPArchiveHandler:
         anything in them currently.
         """
         for distroseries in self.distroseries:
-            components = self._config.componentsForSeries(distroseries.name)
+            components = [
+                comp.name for comp in
+                self.publisher.archive.getComponentsForSeries(distroseries)]
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -239,7 +241,9 @@ class FTPArchiveHandler:
                 "_".join((suite, ) + parts)))
         touch_list(comp, "source")
 
-        for arch in self._config.archTagsForSeries(distroseries.name):
+        arch_tags = [
+            a.architecturetag for a in distroseries.enabled_architectures]
+        for arch in arch_tags:
             # Touch more file lists for the archs.
             touch_list(comp, "binary-" + arch)
             touch_list(comp, "debian-installer", "binary-" + arch)
@@ -777,8 +781,11 @@ class FTPArchiveHandler:
         """Generates the config stanza for an individual pocket."""
         suite = distroseries.getSuite(pocket)
 
-        archs = self._config.archTagsForSeries(distroseries.name)
-        comps = self._config.componentsForSeries(distroseries.name)
+        archs = [
+            a.architecturetag for a in distroseries.enabled_architectures]
+        comps = [
+            comp.name for comp in
+            self.publisher.archive.getComponentsForSeries(distroseries)]
 
         self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {

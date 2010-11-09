@@ -103,7 +103,7 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,

@@ -52,7 +52,6 @@ setup(
         'meliae',
         'mercurial',
         'mocker',
-        'numpy',
         'oauth',
         'paramiko',
         'psycopg2',
