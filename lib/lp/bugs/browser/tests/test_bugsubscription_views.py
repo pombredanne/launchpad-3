@@ -167,7 +167,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     BugNotificationLevel.METADATA,
                     default_notification_level_value,
                     "Default value for bug_notification_level should be "
-                    "METADATA, is actually %s" % default_notification_level_value)
+                    "METADATA, is actually %s"
+                    % default_notification_level_value)
 
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
