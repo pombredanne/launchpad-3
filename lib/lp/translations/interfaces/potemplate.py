@@ -170,7 +170,7 @@ class IPOTemplate(IRosettaStats):
         vocabulary="SourcePackageName")
 
     sourcepackage = Reference(
-        ISourcePackage, title="Source package this template is for, if any.",
+        ISourcePackage, title=u"Source package this template is for, if any.",
         required=False, readonly=True)
 
     from_sourcepackagename = Choice(
