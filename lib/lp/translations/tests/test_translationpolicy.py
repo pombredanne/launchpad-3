@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import ZopelessDatabaseLayer
@@ -298,7 +299,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
         joe = self.factory.makePerson()
         language = self.factory.makeLanguage()
         self.policy.translationgroup = self.factory.makeTranslationGroup()
-        self.policy = TranslationPermission.RESTRICTED
+        self.policy.translationpolicy = TranslationPermission.RESTRICTED
 
         self.assertFalse(
             self.policy.invitesTranslationSuggestions(joe, language))
@@ -311,7 +312,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
         getUtility(ITranslatorSet).new(
             self.policy.translationgroup, language, self.factory.makeTeam(),
             None)
-        self.policy = TranslationPermission.RESTRICTED
+        self.policy.translationpolicy = TranslationPermission.RESTRICTED
 
         self.assertTrue(
             self.policy.invitesTranslationSuggestions(joe, language))
@@ -328,20 +329,24 @@ class TestTranslationsOwners(TestCaseWithFactory):
         super(TestTranslationsOwners, self).setUp()
         self.owner = self.factory.makePerson()
 
+    def isTranslationsOwnerOf(self, pillar):
+        """Is `self.owner` a translations owner of `pillar`?"""
+        return removeSecurityProxy(pillar).isTranslationsOwner(self.owner)
+
     def test_product_owners(self):
         # Product owners are "translations owners." 
         product = self.factory.makeProduct(owner=self.owner)
-        self.assertTrue(product.isTranslationsOwner(self.owner))
+        self.assertTrue(self.isTranslationsOwnerOf(product))
 
     def test_projectgroup_owners(self):
         # ProjectGroup owners are not translations owners.
         project = self.factory.makeProject(owner=self.owner)
-        self.assertFalse(project.isTranslationsOwner(self.owner))
+        self.assertFalse(self.isTranslationsOwnerOf(project))
 
     def test_distribution_owners(self):
         # Distribution owners are not translations owners.
         distro = self.factory.makeDistribution(owner=self.owner)
-        self.assertFalse(distro.isTranslationsOwner(self.owner))
+        self.assertFalse(self.isTranslationsOwnerOf(distro))
 
     def test_product_translationgroup_owners(self):
         # Translation group owners are not translations owners in the
@@ -349,7 +354,7 @@ class TestTranslationsOwners(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(owner=self.owner)
         product = self.factory.makeProject()
         product.translationgroup = group
-        self.assertFalse(product.isTranslationsOwner(self.owner))
+        self.assertFalse(self.isTranslationsOwnerOf(product))
 
     def test_distro_translationgroup_owners(self):
         # Translation group owners are not translations owners in the
@@ -357,7 +362,7 @@ class TestTranslationsOwners(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(owner=self.owner)
         distro = self.factory.makeDistribution()
         distro.translationgroup = group
-        self.assertFalse(distro.isTranslationsOwner(self.owner))
+        self.assertFalse(self.isTranslationsOwnerOf(distro))
 
 
 class TestSharingPolicy(TestCaseWithFactory):
@@ -383,8 +388,10 @@ class TestSharingPolicy(TestCaseWithFactory):
 
     def test_distribution_shares_only_if_invited(self):
         package = self.factory.makeSourcePackage()
-        package.productseries = self.factory.makeProductSeries()
-        product = package.producteries.product
+        self.factory.makePackagingLink(
+            sourcepackagename=package.sourcepackagename,
+            distroseries=package.distroseries)
+        product = package.productseries.product
 
         product.translationpermission = TranslationPermission.OPEN
         self.assertTrue(self._doesPackageShare(package))
