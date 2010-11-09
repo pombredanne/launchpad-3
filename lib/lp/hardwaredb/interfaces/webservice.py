@@ -23,7 +23,7 @@ __all__ = [
     'ParameterError',
     ]
 
-from lp.hardwaredb.interfaces import (
+from lp.hardwaredb.interfaces.hwdb import (
     IHWDBApplication,
     IHWDevice,
     IHWDeviceClass,
