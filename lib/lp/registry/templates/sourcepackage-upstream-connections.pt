@@ -59,26 +59,29 @@
   </div>
 
   <tal:upstream-version
-    define="release series/getLatestRelease">
-    <p id="no-upstream-release">
-      <span class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
-      There are no registered releases for the
-      <tal:project replace="series/product/displayname" />
+    define="release series/getLatestRelease;
+            tracking view/current_release_tracking">
+    <p id="no-upstream-version"
+      tal:condition="tracking/enumvalue:NONE">
+      <span class="sprite no">There are no registered releases</span>
+      for the <tal:project replace="series/product/displayname" />
       &rArr; <tal:series replace="series/name" />.
     </p>
-    <p id="new-upstream-release" tal:condition="release">
-      <span class="sprite info">&nbsp;<span class="invisible-link">info</span></span>
-      <strong><a tal:replace="structure release/fmt:link" />
-      is available for packaging.</strong>
+    <p id="older-package-version"
+      tal:condition="tracking/enumvalue:OLDER">
+      <strong class="sprite warning-icon"><a
+        tal:replace="structure release/fmt:link" /> is available for
+      packaging.</strong>
     </p>
-    <p id="older-upstream-release">
-      <span class="sprite no">&nbsp;<span class="invisible-link">no</span></span>
-      <a tal:replace="structure release/fmt:link" /> is older that the
-      current packaged version.
+    <p id="newer-package-version"
+      tal:condition="tracking/enumvalue:NEWER">
+      <span class="sprite warning-icon"><a
+        tal:replace="structure release/fmt:link" /></span> is older that the
+      current packaged version. Launchpad may be missing upstream information.
     </p>
-    <p id="current-upstream-release" tal:condition="release">
-      <span class="sprite yes">&nbsp;<span class="invisible-link">yes</span></span>
-      Packaging is up-to-date for
+    <p id="current-package-version"
+      tal:condition="tracking/enumvalue:CURRENT">
+      <span class="sprite yes">Packaging is up-to-date</span> for
       <a tal:replace="structure release/fmt:link" />.
     </p>
   </tal:upstream-version>

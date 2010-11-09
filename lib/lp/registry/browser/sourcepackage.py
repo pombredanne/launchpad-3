@@ -619,14 +619,14 @@ class PackageUpstreamTracking(EnumeratedType):
         """)
 
     OLDER = Item("""
-        Older version
+        Older package version
 
         The package version is older than the upstream version. The package
         can be updated to the upstream version.
         """)
 
     NEWER = Item("""
-        Newer version
+        Newer package version
 
         The package version is newer than the upstream version, Launchpad
         Launchpad is missing upstream data.

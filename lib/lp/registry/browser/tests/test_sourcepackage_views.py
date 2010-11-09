@@ -11,6 +11,7 @@ import urllib
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.sourcepackage import (
     get_register_upstream_url,
@@ -176,11 +177,16 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             self.milestone.name = version
             self.factory.makeProductRelease(self.milestone)
 
+    def assertId(self, view, id_):
+        element = find_tag_by_id(view.render(), id_)
+        self.assertTrue(element is not None)
+
     def test_current_release_tracking_none(self):
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
         self.assertEqual(
             PackageUpstreamTracking.NONE, view.current_release_tracking)
+        self.assertId(view, 'no-upstream-version')
 
     def test_current_release_tracking_current(self):
         self.makeUpstreamRelease('1.5')
@@ -188,6 +194,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             self.source_package, name='+upstream-connections')
         self.assertEqual(
             PackageUpstreamTracking.CURRENT, view.current_release_tracking)
+        self.assertId(view, 'current-package-version')
 
     def test_current_release_tracking_older(self):
         self.makeUpstreamRelease('1.6')
@@ -195,6 +202,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             self.source_package, name='+upstream-connections')
         self.assertEqual(
             PackageUpstreamTracking.OLDER, view.current_release_tracking)
+        self.assertId(view, 'older-package-version')
 
     def test_current_release_tracking_newer(self):
         self.makeUpstreamRelease('1.4')
@@ -202,3 +210,4 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             self.source_package, name='+upstream-connections')
         self.assertEqual(
             PackageUpstreamTracking.NEWER, view.current_release_tracking)
+        self.assertId(view, 'newer-package-version')
