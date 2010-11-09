@@ -500,7 +500,7 @@ class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
 
     def render(self):
         """Override the default render() to return only JSON."""
-        self.request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('content-type', 'application/json')
         return self.subscriber_ids_js
 
 
