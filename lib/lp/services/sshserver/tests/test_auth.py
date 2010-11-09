@@ -5,6 +5,7 @@ import os
 
 from testtools.deferredruntest import (
     assert_fails_with,
+    flush_logged_errors,
     AsynchronousDeferredRunTest,
     )
 
@@ -405,7 +406,7 @@ class TestPublicKeyFromLaunchpadChecker(TestCase):
         checker = self.makeChecker(True)
         d = checker.requestAvatarId(creds)
         def flush_errback(f):
-            self.flushLoggedErrors(BadKeyError)
+            flush_logged_errors(BadKeyError)
             return f
         d.addErrback(flush_errback)
         return assert_fails_with(d, UnauthorizedLogin)
