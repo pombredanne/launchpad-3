@@ -189,5 +189,5 @@
             interface="lp.hardwaredb.interfaces.hwdb.IHWSubmissionBugSet"/>
     </securedutility>
 
-   <webservice:register module="lp.hardwaredb.interfaces.hwdb" />
+   <webservice:register module="lp.hardwaredb.interfaces.webservice" />
 </configure>
