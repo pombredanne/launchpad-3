@@ -76,7 +76,9 @@ from lp.services.fields import (
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
