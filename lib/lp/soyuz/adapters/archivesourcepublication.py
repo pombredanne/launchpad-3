@@ -92,7 +92,8 @@ class ArchiveSourcePublication:
         # using the delegate as self - might not be possible without
         # duck-typing.
         return getUtility(
-            IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
+            IPublishingSet).getBuildStatusSummaryForSourcePublication(self,
+            self.getBuilds)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""
