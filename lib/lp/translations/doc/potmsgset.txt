@@ -624,8 +624,6 @@ one with two forms) is updated.
     >>> message_with_one_form = pm_potmsgset.updateTranslation(
     ...     pm_translation, pm_template.owner, ['%d fu'],
     ...     is_imported=False, lock_timestamp=datetime.now(pytz.UTC))
-    WARNING:...Translation for POTMsgSet ... into 'zap' matches
-    2 existing translations.
 
     >>> message_with_one_form == message_with_two_forms
     True

@@ -140,8 +140,12 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
 
     @property
     def has_imports_enabled(self):
-        """Is imports enabled for the series?"""
+        """Should information about automatic imports be displayed?
+
+        Will be True if imports are enabled for the series and if the user
+        is allowed to view to the import branch."""
         return (self.context.branch is not None and
+                check_permission("launchpad.View", self.context.branch) and
                 self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
@@ -345,12 +349,23 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         self.has_multiple_templates = (
             self.context.getCurrentTranslationTemplates().count() > 1)
 
-        self.has_exports_enabled = (
-            self.context.translations_branch is not None)
+    @property
+    def has_exports_enabled(self):
+        """Should information about automatic exports be displayed?
 
-        self.uses_bzr_sync = (
-            (self.context.branch is not None and self.has_imports_enabled) or
-            self.has_exports_enabled)
+        Will be True if an export branch exists for the series and if the
+        user is allowed to view that branch branch."""
+        return self.context.translations_branch is not None and (
+            check_permission(
+                "launchpad.View", self.context.translations_branch))
+
+    @property
+    def uses_bzr_sync(self):
+        """Should information about automatic imports/exports be displayed?
+
+        Will be True if either imports or exports are enabled and if the user
+        is allowed to view the import or the export branch (or both)."""
+        return self.has_imports_enabled or self.has_exports_enabled
 
     @property
     def productserieslanguages(self):

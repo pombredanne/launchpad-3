@@ -90,7 +90,6 @@ from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from lp.registry.interfaces.mailinglist import *
 from lp.registry.interfaces.mailinglistsubscription import *
-from lp.registry.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from lp.registry.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
