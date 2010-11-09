@@ -25,6 +25,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
@@ -68,14 +69,14 @@ class BinaryPackageNameSet:
         """Find binarypackagenames by its name or part of it."""
         return IStore(BinaryPackageName).find(
             BinaryPackageName,
-            BinaryPackageName.name.contains_string(unicode(name)))
+            BinaryPackageName.name.contains_string(ensure_unicode(name)))
 
     def queryByName(self, name):
         return IStore(BinaryPackageName).find(
-            BinaryPackageName, name=unicode(name)).one()
+            BinaryPackageName, name=ensure_unicode(name)).one()
 
     def new(self, name):
-        return BinaryPackageName(name=unicode(name))
+        return BinaryPackageName(name=ensure_unicode(name))
 
     def ensure(self, name):
         """Ensure that the given BinaryPackageName exists, creating it
@@ -83,7 +84,7 @@ class BinaryPackageNameSet:
 
         Returns the BinaryPackageName
         """
-        name = unicode(name)
+        name = ensure_unicode(name)
         try:
             return self[name]
         except NotFoundError:

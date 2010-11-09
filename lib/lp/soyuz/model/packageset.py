@@ -17,6 +17,7 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -293,7 +294,7 @@ class Packageset(Storm):
     def addSources(self, names):
         """See `IPackageset`."""
         if isinstance(names, basestring):
-            names = [unicode(names)]
+            names = [ensure_unicode(names)]
         clauses = (SourcePackageName, SourcePackageName.name.is_in(names))
         self._api_add_or_remove(clauses, self._addSourcePackageNames)
 

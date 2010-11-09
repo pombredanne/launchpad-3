@@ -94,7 +94,10 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -185,7 +188,7 @@ class BasePersonVocabulary:
         If the token contains an '@', treat it like an email. Otherwise,
         treat it like a name.
         """
-        token = unicode(token)
+        token = ensure_unicode(token)
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
@@ -252,7 +255,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = unicode(query).lower()
+            query = ensure_unicode(query).lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
@@ -297,7 +300,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            query = unicode(query).lower()
+            query = ensure_unicode(query).lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
@@ -374,7 +377,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        return self._select(unicode(text).lower())
+        return self._select(ensure_unicode(text).lower())
 
 
 class PersonAccountToMergeVocabulary(
@@ -407,7 +410,7 @@ class PersonAccountToMergeVocabulary(
         if not text:
             return self.emptySelectResults()
 
-        text = unicode(text).lower()
+        text = ensure_unicode(text).lower()
         return self._select(text)
 
 
@@ -637,7 +640,7 @@ class ValidPersonOrTeamVocabulary(
             else:
                 return self.emptySelectResults()
 
-        text = unicode(text).lower()
+        text = ensure_unicode(text).lower()
         return self._doSearch(text=text)
 
     def searchForTerms(self, query=None):
@@ -1007,7 +1010,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         if not query:
             return self.emptySelectResults()
 
-        query = unicode(query).lower()
+        query = ensure_unicode(query).lower()
         objs = self._table.select(
             AND(
                 Milestone.q.id == ProductRelease.q.milestoneID,
@@ -1062,7 +1065,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         if not query:
             return self.emptySelectResults()
 
-        query = unicode(query).lower().strip('/')
+        query = ensure_unicode(query).lower().strip('/')
         # If there is a slash splitting the product and productseries
         # names, they must both match. If there is no slash, we don't
         # know whether it is matching the product or the productseries
@@ -1405,7 +1408,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         if not query:
             return self.emptySelectResults()
 
-        query = unicode(query).lower()
+        query = ensure_unicode(query).lower()
         objs = self._table.select(
                 AND(
                     Distribution.q.id == DistroSeries.q.distributionID,

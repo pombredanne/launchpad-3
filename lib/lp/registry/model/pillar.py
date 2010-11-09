@@ -30,6 +30,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -85,7 +86,7 @@ class PillarNameSet:
     def __contains__(self, name):
         """See `IPillarNameSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        name = unicode(name)
+        name = ensure_unicode(name)
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
@@ -128,7 +129,7 @@ class PillarNameSet:
             """
         if ignore_inactive:
             query += " AND active IS TRUE"
-        name = unicode(name)
+        name = ensure_unicode(name)
         result = store.execute(query, [name, name])
         row = result.get_one()
         if row is None:
@@ -179,7 +180,7 @@ class PillarNameSet:
                  Distribution.fti @@ ftq(%(text)s) OR
                  lower(Distribution.title) = lower(%(text)s)
                 )
-            ''' % sqlvalues(text=unicode(text)))
+            ''' % sqlvalues(text=ensure_unicode(text)))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
             PillarName, OtherPillarName, Product, ProjectGroup, Distribution]

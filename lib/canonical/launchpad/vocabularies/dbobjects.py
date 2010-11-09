@@ -64,7 +64,10 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import (
@@ -118,6 +121,7 @@ class ComponentVocabulary(SQLObjectVocabularyBase):
 
 # Country.name may have non-ASCII characters, so we can't use
 # NamedSQLObjectVocabulary here.
+
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
@@ -159,7 +163,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Search for web bug trackers."""
-        query = unicode(query).lower()
+        query = ensure_unicode(query).lower()
         results = IStore(self._table).find(
             self._table, And(
             self._filter,
@@ -347,6 +351,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
+
         def escape(string):
             return cgi.escape(string, quote=True)
 

@@ -118,6 +118,7 @@ from canonical.launchpad.event.interfaces import (
     ITeamInvitationEvent,
     )
 from canonical.launchpad.helpers import (
+    ensure_unicode,
     get_contact_email_addresses,
     get_email_template,
     shortlist,
@@ -2839,10 +2840,12 @@ class PersonSet:
             join = store.using(
                 EmailAddress,
                 LeftJoin(Account, EmailAddress.accountID == Account.id))
-            email, account = join.find(
+            email, account = (
+                join.find(
                     (EmailAddress, Account),
                     EmailAddress.email.lower() ==
-                        unicode(email_address).lower()).one() or (None, None)
+                        ensure_unicode(email_address).lower()).one()
+                or (None, None))
             identifier = store.find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
 
@@ -3144,7 +3147,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            EmailAddress.email.lower().startswith(unicode(text)))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -3167,7 +3170,7 @@ class PersonSet:
             return EmptyResultSet()
 
         orderBy = Person._sortingColumnsForSetOperations
-        text = unicode(text).lower()
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3214,7 +3217,7 @@ class PersonSet:
             must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = unicode(text).lower()
+        text = ensure_unicode(text).lower()
         store = IStore(Person)
         base_query = And(
             Person.teamowner == None,
@@ -3254,7 +3257,7 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            EmailAddress.email.lower().startswith(unicode(text)))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
 
         name_query = And(
             base_query,
@@ -3267,7 +3270,7 @@ class PersonSet:
     def findTeam(self, text=""):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = unicode(text).lower()
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3288,7 +3291,7 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        email = unicode(email).strip().lower()
+        email = ensure_unicode(email).strip().lower()
         return IStore(Person).find(
             Person,
             Person.id == EmailAddress.personID,

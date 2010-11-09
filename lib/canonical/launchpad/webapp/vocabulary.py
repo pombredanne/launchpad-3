@@ -41,6 +41,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.helpers import ensure_unicode
 
 
 class ForgivingSimpleVocabulary(SimpleVocabulary):
@@ -52,7 +53,6 @@ class ForgivingSimpleVocabulary(SimpleVocabulary):
         if self._default_term is missing:
             raise TypeError('required argument "default_term" not provided')
         return super(ForgivingSimpleVocabulary, self).__init__(*args, **kws)
-
 
     def getTerm(self, value):
         """Look up a value, returning the default if it is not found."""
@@ -86,7 +86,6 @@ class ICountableIterator(Interface):
     # XXX: JonathanLange 2009-02-23: This should probably be fused with or at
     # least adapted from storm.zope.interfaces.IResultSet. Or maybe just
     # deleted in favour of passing around Storm ResultSets.
-
     def count():
         """Return the number of items in the iterator."""
 
@@ -102,12 +101,14 @@ class ICountableIterator(Interface):
         # work; we should probably change that to either check for the
         # presence of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
+        pass
 
     def __getslice__(argument):
         """Return a slice of the collection."""
         # Python will use __getitem__ if this method is not implemented,
         # but it is convenient to define it in the interface for
         # allowing access to the attributes through the security proxy.
+        pass
 
 
 class CountableIterator:
@@ -351,7 +352,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     def search(self, query):
         """Return terms where query is a subtring of the name."""
         if query:
-            clause = CONTAINSSTRING(self._table.q.name, unicode(query))
+            clause = CONTAINSSTRING(self._table.q.name, ensure_unicode(query))
             if self._filter:
                 clause = AND(clause, self._filter)
             return self._table.select(clause, orderBy=self._orderBy)
@@ -384,7 +385,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         if not query:
             return self.emptySelectResults()
 
-        query = unicode(query).lower()
+        query = ensure_unicode(query).lower()
         clause = CONTAINSSTRING(self._table.q.name, query)
         if self._filter:
             clause = AND(clause, self._filter)

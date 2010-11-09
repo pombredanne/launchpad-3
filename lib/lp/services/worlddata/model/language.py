@@ -12,7 +12,6 @@ __all__ = [
 
 from sqlobject import (
     BoolCol,
-    CONTAINSSTRING,
     IntCol,
     SQLObjectNotFound,
     SQLRelatedJoin,
@@ -26,6 +25,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
@@ -243,12 +243,12 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
-            text = unicode(text).lower()
+            text = ensure_unicode(text).lower()
             results = ISlaveStore(Language).find(
                 Language, Or(
-                    CONTAINSSTRING(Language.code.lower(), text),
-                    CONTAINSSTRING(Language.englishname.lower(), text)
-                    )).order_by(Language.englishname)
+                    Language.code.lower().contains_string(text),
+                    Language.englishname.lower().contains_string(
+                        text))).order_by(Language.englishname)
         else:
             results = None
 
