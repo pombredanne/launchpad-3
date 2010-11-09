@@ -187,11 +187,13 @@ from lp.translations.model.distroserieslanguage import (
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )

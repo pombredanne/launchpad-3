@@ -94,10 +94,10 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
-from lp.translations.model.potemplate import (
+from lp.translations.model.hastranslationtemplates import (
     HasTranslationTemplatesMixin,
-    TranslationTemplatesCollection,
     )
+from lp.translations.model.potemplate import TranslationTemplatesCollection
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
