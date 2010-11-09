@@ -32,9 +32,7 @@ __all__ = [
     'IDistroArchSeries',
     'IPackageUpload',
     'IPackageset',
-    'IPackagesetEdit',
     'IPackagesetSet',
-    'IPackagesetViewOnly',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
     'InsufficientUploadRights',
@@ -89,8 +87,6 @@ from lp.soyuz.interfaces.buildrecords import (
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName,
-    IPackagesetViewOnly,
-    IPackagesetEdit,
     IPackageset,
     IPackagesetSet,
     NoSuchPackageSet,
