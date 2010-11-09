@@ -3,13 +3,12 @@
 
 """All the interfaces that are exposed through the webservice."""
 
-__metaclass__ = type
 __all__ = [
-    'ICountry',
-    'ICountrySet',
-    'ILanguage',
-    'ILanguageSet',
-    ]
+     'ICountry',
+     'ICountrySet',
+     'ILanguage',
+     'ILanguageSet',
+     ]
 
 from lp.services.worlddata.interfaces.country import (
     ICountry,
