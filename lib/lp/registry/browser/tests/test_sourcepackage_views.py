@@ -12,7 +12,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.browser.sourcepackage import get_register_upstream_url
+from lp.registry.browser.sourcepackage import (
+    get_register_upstream_url,
+    PackageUpstreamTracking,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries,
@@ -180,22 +183,26 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
     def test_current_release_tracking_none(self):
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
-        self.assertEqual(True, view.current_release_tracking['None'])
+        self.assertEqual(
+            PackageUpstreamTracking.NONE, view.current_release_tracking)
 
     def test_current_release_tracking_current(self):
         self.makeUpstreamRelease('1.5')
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
-        self.assertEqual(True, view.current_release_tracking['current'])
+        self.assertEqual(
+            PackageUpstreamTracking.CURRENT, view.current_release_tracking)
 
     def test_current_release_tracking_older(self):
         self.makeUpstreamRelease('1.6')
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
-        self.assertEqual(True, view.current_release_tracking['older'])
+        self.assertEqual(
+            PackageUpstreamTracking.OLDER, view.current_release_tracking)
 
     def test_current_release_tracking_newer(self):
         self.makeUpstreamRelease('1.4')
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
-        self.assertEqual(True, view.current_release_tracking['newer'])
+        self.assertEqual(
+            PackageUpstreamTracking.NEWER, view.current_release_tracking)

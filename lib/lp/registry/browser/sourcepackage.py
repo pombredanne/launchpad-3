@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUpstreamTracking',
     'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
@@ -24,6 +25,10 @@ import urllib
 from apt_pkg import (
     ParseSrcDepends,
     VersionCompare,
+    )
+from lazr.enum import (
+    EnumeratedType,
+    Item,
     )
 from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
@@ -597,6 +602,37 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
         self.next_url = self.request.getURL()
 
 
+class PackageUpstreamTracking(EnumeratedType):
+    """The state of the package's tracking of the upstream version."""
+
+    NONE = Item("""
+        None
+
+        There is not enough information to compare the current package version
+        to the upstream version.
+        """)
+
+    CURRENT = Item("""
+        Current version
+
+        The package version is the current upstream version.
+        """)
+
+    OLDER = Item("""
+        Older version
+
+        The package version is older than the upstream version. The package
+        can be updated to the upstream version.
+        """)
+
+    NEWER = Item("""
+        Newer version
+
+        The package version is newer than the upstream version, Launchpad
+        Launchpad is missing upstream data.
+        """)
+
+
 class SourcePackageUpstreamConnectionsView(LaunchpadView):
     """A shared view with upstream connection info."""
 
@@ -618,28 +654,21 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
 
     @property
     def current_release_tracking(self):
-        """The state of tracking the upstream release version."""
-        tracking = dict(
-            none=None, newer=None, older=None, current=None)
+        """The PackageUpstreamTracking state for the current release."""
         upstream_release = self.context.productseries.getLatestRelease()
         current_release = self.context.currentrelease
         if upstream_release is None or current_release is None:
             # Launchpad is missing data. There is not enough information to
             # track releases.
-            tracking['None'] = True
-            return tracking
+            return PackageUpstreamTracking.NONE
         # Compare the versions by appending '-1' to upstrem release to
         # account for the first packaging in a distro.
         age = VersionCompare(
             current_release.version, upstream_release.version + '-1')
-        if age == 0:
-            # The upstream release is the base for the current release.
-            tracking['current'] = True
-        elif age > 0:
-            # The upstream release is newer than the current package
-            tracking['newer'] = True
+        if age > 0:
+            return PackageUpstreamTracking.NEWER
+        elif age < 0:
+            return PackageUpstreamTracking.OLDER
         else:
-            # The upstream release is older than the current package,
-            # Launchpad is missing upstream data.
-            tracking['older'] = True
-        return tracking
+            # age == 0:
+            return PackageUpstreamTracking.CURRENT
