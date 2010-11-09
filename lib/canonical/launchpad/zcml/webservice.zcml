@@ -82,6 +82,7 @@
    <webservice:register module="lp.bugs.interfaces.webservice" />
    <webservice:register module="lp.hwdb.interfaces.hwdb" />
    <webservice:register module="lp.services.worlddata.interfaces.webservice" />
+   <webservice:register module="lp.soyuz.interfaces.webservice" />
 
    <adapter
        for="zope.schema.interfaces.IChoice
