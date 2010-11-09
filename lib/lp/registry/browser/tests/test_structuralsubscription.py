@@ -9,12 +9,16 @@ from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.ftests import (
+    LaunchpadFormHarness,
     login,
     logout,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageNavigation,
@@ -24,7 +28,15 @@ from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
-from lp.testing import TestCaseWithFactory
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionView)
+from lp.registry.enum import BugNotificationLevel
+from lp.testing import (
+    feature_flags,
+    person_logged_in,
+    set_feature_flag,
+    TestCaseWithFactory,
+    )
 
 
 class FakeLaunchpadRequest(FakeRequest):
@@ -144,6 +156,46 @@ class TestDistributionSourcePackageStructuralSubscriptionTraversal(
         self.target = debuntu.getSourcePackage(fooix)
         self.navigation = DistributionSourcePackageNavigation
 
+
+class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
+    """A base class for testing advanced structural subscription features."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionAdvancedFeaturesBase, self).setUp()
+        self.setUpTarget()
+        with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProduct()
+
+    def test_subscribe_uses_bug_notification_level(self):
+        # When advanced features are turned on for subscriptions a user
+        # can specify a bug_notification_level on the +subscribe form.
+        with feature_flags():
+            # We don't display BugNotificationLevel.NOTHING as an option.
+            displayed_levels = [
+                level for level in BugNotificationLevel.items
+                if level != BugNotificationLevel.NOTHING]
+            for level in displayed_levels:
+                person = self.factory.makePerson()
+                with person_logged_in(person):
+                    harness = LaunchpadFormHarness(
+                        self.target, StructuralSubscriptionView)
+                    form_data = {
+                        'field.subscribe_me': 'on',
+                        }
+                    harness.submit('save', form_data)
+                    self.assertFalse(harness.hasErrors())
+
+                subscription = self.target.getSubscription(person)
+                self.assertEqual(
+                    level, subscription.bug_notification_level,
+                    "Bug notification level of subscription should be %s, "
+                    "is actually %s." % (
+                        level.name, subscription.bug_notification_level.name))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
