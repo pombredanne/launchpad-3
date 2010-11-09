@@ -7,11 +7,13 @@ __metaclass__ = type
 
 
 import bz2
+import crypt
 import gzip
 import os
 import shutil
 import stat
 import tempfile
+from textwrap import dedent
 
 import transaction
 from zope.component import getUtility
@@ -395,11 +397,9 @@ class TestPublisher(TestPublisherBase):
         # Stub parameters.
         allowed_suites = [
             ('breezy-autotest', PackagePublishingPocket.RELEASE)]
-        distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -416,7 +416,7 @@ class TestPublisher(TestPublisherBase):
         partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntutest, ArchivePurpose.PARTNER)
         distro_publisher = getPublisher(
-            partner_archive, allowed_suites, self.logger, distsroot)
+            partner_archive, allowed_suites, self.logger)
         self.assertEqual(partner_archive, distro_publisher.archive)
         self.assertEqual('/var/tmp/archive/ubuntutest-partner/dists',
             distro_publisher._config.distsroot)
@@ -660,10 +660,8 @@ class TestPublisher(TestPublisherBase):
         work on the deleted publications.
         """
         allowed_suites = []
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -735,10 +733,8 @@ class TestPublisher(TestPublisherBase):
             ('breezy-autotest', PackagePublishingPocket.SECURITY),
             ('breezy-autotest', PackagePublishingPocket.UPDATES),
             ]
-        distsroot = None
         publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger,
-            distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger)
 
         publisher.A2_markPocketsWithDeletionsDirty()
         self.checkDirtyPockets(publisher, expected=[])
@@ -1039,6 +1035,42 @@ class TestPublisher(TestPublisherBase):
 
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
+
+    def testHtaccessForPrivatePPA(self):
+        # A htaccess file is created for new private PPA's.
+
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntutest, private=True)
+        ppa.buildd_secret = "geheim"
+
+        # Setup the publisher for it and publish its repository.
+        archive_publisher = getPublisher(ppa, [], self.logger)
+        pubconf = getPubConfig(ppa)
+        htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
+        self.assertTrue(os.path.exists(htaccess_path))
+        with open(htaccess_path, 'r') as htaccess_f:
+            self.assertEquals(htaccess_f.read(), dedent("""
+                AuthType           Basic
+                AuthName           "Token Required"
+                AuthUserFile       %s/.htpasswd
+                Require            valid-user
+                """) % pubconf.htaccessroot)
+
+        htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
+
+        # Read it back in.
+        with open(htpasswd_path, "r") as htpasswd_f:
+            file_contents = htpasswd_f.readlines()
+
+        self.assertEquals(1, len(file_contents))
+
+        # The first line should be the buildd_secret.
+        [user, password] = file_contents[0].strip().split(":", 1)
+        self.assertEqual(user, "buildd")
+        # We can re-encrypt the buildd_secret and it should match the
+        # one in the .htpasswd file.
+        encrypted_secret = crypt.crypt(ppa.buildd_secret, password)
+        self.assertEqual(encrypted_secret, password)
 
 
 class TestArchiveIndices(TestPublisherBase):
