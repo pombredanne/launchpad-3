@@ -15,7 +15,7 @@ __all__ = [
     'IDistroSeriesDifferenceComment',
     'IGPGKey',
     'IHasMilestones',
-    'IIrcId',
+    'IIrcID',
     'IJabberID',
     'IMilestone',
     'IPerson',
@@ -62,7 +62,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     )
 from lp.registry.interfaces.gpg import IGPGKey
-from lp.registry.interfaces.irc import IIrcId
+from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
