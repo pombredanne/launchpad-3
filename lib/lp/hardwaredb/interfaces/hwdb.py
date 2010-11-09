@@ -3,7 +3,13 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Interfaces related to the hardware database."""
+"""Interfaces related to the hardware database.
+
+There is a declaration in ZCML somewhere that looks like:
+  <webservice:register module="lp.hardwaredb.interfaces.hwdb" />
+
+which tells `lazr.restful` that it should look for webservice exports here.
+"""
 
 __metaclass__ = type
 

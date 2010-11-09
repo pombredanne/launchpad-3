@@ -3,7 +3,13 @@
 
 # pylint: disable-msg=W0611
 
-"""All the interfaces that are exposed through the webservice."""
+"""All the interfaces that are exposed through the webservice.
+
+There is a declaration in ZCML somewhere that looks like:
+  <webservice:register module="lp.translations.interfaces.webservice" />
+
+which tells `lazr.restful` that it should look for webservice exports here.
+"""
 
 __all__ = [
     'IHasTranslationImports',
