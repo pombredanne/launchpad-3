@@ -21,9 +21,11 @@ from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class TranslationPolicyImplementation(TranslationPolicyMixin):
-    """A `ITranslationPolicy` implementation for testing."""
+    """An `ITranslationPolicy` implementation for testing."""
     implements(ITranslationPolicy)
+
     translationgroup = None
+
     translationpermission = TranslationPermission.OPEN
 
 
