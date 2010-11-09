@@ -104,6 +104,20 @@ class TranslationPolicyMixin:
                 self.translationpermission,
                 inherited.getEffectiveTranslationPermission()])
 
+    def _hasTranslators(self, translators_list):
+        """Did `getTranslators` find any translators?"""
+        for group, translator, person in translators_list:
+            if translator is not None:
+                return True
+        return False
+
+    def _isInOneOfTranslators(self, translators_list, person):
+        """Is `person` a member of one of the entries in `getTranslators`?"""
+        for group, translator, team in translators_list:
+            if person.inTeam(team):
+                return True
+        return False
+
     def invitesTranslationEdits(self, person, language):
         """See `ITranslationPolicy`."""
         if person is None:
@@ -114,19 +128,15 @@ class TranslationPolicyMixin:
             # Open permissions invite all contributions.
             return True
 
-        translators = self._getTranslators(language)
+        translators = self.getTranslators(language)
         if model == TranslationPermission.STRUCTURED:
             # Structured permissions act like Open if no translators
             # have been assigned for the language.
-            if len(translators) == 0:
+            if not self._hasTranslators(translators):
                 return True
 
         # Translation-team members are always invited to edit.
-        for translator in translators:
-            if person.inTeam(translator):
-                return True
-
-        return False
+        return self._isInOneOfTranslators(translators, person)
 
     def invitesTranslationSuggestions(self, person, language):
         """See `ITranslationPolicy`."""
@@ -143,19 +153,15 @@ class TranslationPolicyMixin:
         if model in welcoming_models:
             return True
 
-        translators = self._getTranslators(language)
+        translators = self.getTranslators(language)
         if model == TranslationPermission.RESTRICTED:
-            if len(translators) > 0:
+            if self._hasTranslators(translators):
                 # Restricted invites any user's suggestions as long as
                 # there is a translation team to handle them.
                 return True
 
         # Translation-team members are always invited to suggest.
-        for translator in translators:
-            if person.inTeam(translator):
-                return True
-
-        return False
+        return self._isInOneOfTranslators(translators, person)
 
     def allowsTranslationEdits(self, person, language):
         """See `ITranslationPolicy`."""
