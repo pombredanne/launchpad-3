@@ -89,8 +89,10 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -389,6 +391,9 @@ class IDistroSeriesPublic(
 
     # DistroArchSeries lookup properties/methods.
     architectures = Attribute("All architectures in this series.")
+
+    enabled_architectures = Attribute(
+        "All architectures in this series with the 'enabled' flag set.")
 
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")

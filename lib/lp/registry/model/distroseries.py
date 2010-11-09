@@ -187,11 +187,13 @@ from lp.translations.model.distroserieslanguage import (
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
@@ -361,6 +363,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             if architecture.processorfamily == processor.family:
                 return architecture
         return None
+
+    @property
+    def enabled_architectures(self):
+        store = Store.of(self)
+        results = store.find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.enabled == True)
+        return results.order_by(DistroArchSeries.architecturetag)
 
     @property
     def buildable_architectures(self):
