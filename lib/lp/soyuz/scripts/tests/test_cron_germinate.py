@@ -11,9 +11,7 @@ from lp.testing import TestCase
 import copy
 import gzip
 import os
-import shutil
 import subprocess
-import unittest
 
 
 class TestCronGerminate(TestCase):
@@ -22,6 +20,8 @@ class TestCronGerminate(TestCase):
     COMPONENTS = ["main", "restricted", "universe", "multiverse"]
     ARCHES = ["i386", "amd64", "armel", "powerpc"]
     BASEPATH = os.path.abspath(os.path.dirname(__file__))
+    source_root = os.path.normpath(
+        os.path.join(BASEPATH, "..", "..", "..", "..", ".."))
 
     def setUp(self):
         super(TestCronGerminate, self).setUp()
@@ -147,10 +147,8 @@ class TestCronGerminate(TestCase):
                 canary)
 
         # Run cron.germinate in the fake environment.
-        source_root = os.path.normpath(
-            os.path.join(self.BASEPATH, "..", "..", "..", "..", ".."))
         cron_germinate_path = os.path.join(
-            source_root, "cronscripts", "publishing", "cron.germinate")
+            self.source_root, "cronscripts", "publishing", "cron.germinate")
         subprocess.call(
             [cron_germinate_path], env=fake_environ, cwd=self.BASEPATH)
 
@@ -163,9 +161,7 @@ class TestCronGerminate(TestCase):
             main_override_file = os.path.join(
                 self.ubuntu_misc_dir,
                 "more-extra.override.%s.main" % dist)
-            self.assertIn(canary, open(main_override_file).read(),
-                          msg="canary '%s' is not in file '%s'" % (
-                             canary, main_override_file))
+            self.assertIn(canary, open(main_override_file).read())
 
         # Check here if we got the data from maintenance-check.py that
         # we expected. This is a kernel name from lucid-updates and it
