@@ -21,7 +21,10 @@ from cgi import escape
 import string
 import urllib
 
-from apt_pkg import ParseSrcDepends
+from apt_pkg import (
+    ParseSrcDepends,
+    VersionCompare,
+    )
 from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
@@ -621,9 +624,22 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         upstream_release = self.context.productseries.getLatestRelease()
         current_release = self.context.currentrelease
         if upstream_release is None or current_release is None:
-            # There is not enough information to track releases.
+            # Launchpad is missing data. There is not enough information to
+            # track releases.
             tracking['None'] = True
-        elif current_release.version.startswith(upstream_release.version):
+            return tracking
+        # Compare the versions by appending '-1' to upstrem release to
+        # account for the first packaging in a distro.
+        age = VersionCompare(
+            current_release.version, upstream_release.version + '-1')
+        if age == 0:
             # The upstream release is the base for the current release.
             tracking['current'] = True
+        elif age > 0:
+            # The upstream release is newer than the current package
+            tracking['newer'] = True
+        else:
+            # The upstream release is older than the current package,
+            # Launchpad is missing upstream data.
+            tracking['older'] = True
         return tracking

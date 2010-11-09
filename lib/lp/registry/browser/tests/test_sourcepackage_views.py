@@ -169,7 +169,7 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             sourcepackagename='fnord')
         spn = self.source_package.sourcepackagename
         spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=spn, version='1.5', distroseries=distroseries)
+            sourcepackagename=spn, distroseries=distroseries, version='1.5-1')
         self.source_package.setPackaging(productseries, product.owner)
 
     def makeUpstreamRelease(self, version):
@@ -187,3 +187,15 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
         self.assertEqual(True, view.current_release_tracking['current'])
+
+    def test_current_release_tracking_older(self):
+        self.makeUpstreamRelease('1.6')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(True, view.current_release_tracking['older'])
+
+    def test_current_release_tracking_newer(self):
+        self.makeUpstreamRelease('1.4')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(True, view.current_release_tracking['newer'])
