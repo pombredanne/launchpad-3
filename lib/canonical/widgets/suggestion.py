@@ -25,8 +25,8 @@ class SuggestionWidget(LaunchpadRadioWidget):
     def __init__(self, field, vocabulary, request):
         # Create the vocabulary and pass that to the radio button
         # constructor.
-        branch = field.context
-        self.suggestion_vocab = self._generateSuggestionVocab(branch)
+        self.suggestion_vocab = self._generateSuggestionVocab(
+            field.context, vocabulary)
 
         LaunchpadRadioWidget.__init__(
             self, field, self.suggestion_vocab, request)
@@ -35,27 +35,41 @@ class SuggestionWidget(LaunchpadRadioWidget):
             (field, request), IInputWidget)
         setUpWidget(
             self, 'other_selection', field, IInputWidget,
-            prefix=self.name, context=branch)
+            prefix=self.name, context=field.context)
 
-        # If there are branches to show explicitly, then we want to be
-        # able to select the 'Other' selection item when someone types
-        # in any values.
-        branch_count = len(self.suggestion_vocab)
-        if branch_count > 0:
-            on_key_press = "selectWidget('%s.%d', event);" % (
-                self.name, branch_count)
-            self.other_selection_widget.onKeyPress = on_key_press
+        # If there are suggestions to show explicitly, then we want to select
+        # the 'Other' selection item when the user chooses a non-suggested
+        # value.
+        if self._renderSuggestions():
+            self._autoselect_other()
+
+    def _generateSuggestionVocab(self, context, full_vocabulary):
+        """Generate a vocabulary for the suggestions.
+
+        :param context: The context object to generate suggestions for.
+        :param full_vocabulary: The vocabulary suggestions may be drawn from.
+        """
+        suggestions = self._get_suggestions(context)
+        terms = [term for term in full_vocabulary if term.value in suggestions]
+        return SimpleVocabulary(terms)
+
+    def _renderSuggestions(self):
+        """Return True if suggestions should be rendered."""
+        return len(self.suggestion_vocab) > 0
+
+    def _other_id(self):
+        """Return the id of the "Other" option."""
+        return '%s.%d' % (self.name, len(self.suggestion_vocab))
 
     def _toFieldValue(self, form_value):
-        """Convert the form value into a branch.
+        """Convert the form value into the target value.
 
         If there were no radio button options, or 'other' was selected, then
-        get the value from the branch widget, otherwise get the branch
-        reference from the built up vocabulary.
+        get the value from the other_selection widget, otherwise get the
+        object reference from the built up vocabulary.
         """
-        if (len(self.suggestion_vocab) == 0 or
-            form_value == "other"):
-            # Get the value from the branch selector widget.
+        if not self._renderSuggestions() or form_value == "other":
+            # Get the value from the other selector widget.
             try:
                 return self.other_selection_widget.getInputValue()
             except InputErrors:
@@ -68,10 +82,10 @@ class SuggestionWidget(LaunchpadRadioWidget):
     def hasInput(self):
         """Is there any input for the widget.
 
-        We need to defer the call to the other branch widget when either there
-        are no terms in the vocabulary or the other radio button was selected.
+        We need to defer the call to the other widget when either there are no
+        terms in the vocabulary or the other radio button was selected.
         """
-        if len(self.suggestion_vocab) == 0:
+        if not self._renderSuggestions():
             return self.other_selection_widget.hasInput()
         else:
             has_input = LaunchpadRadioWidget.hasInput(self)
@@ -94,6 +108,14 @@ class SuggestionWidget(LaunchpadRadioWidget):
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
             option_id, text)
 
+    def _renderSuggestionLabel(self, value, index):
+        """Render a label for the option based on a branch."""
+        return self._renderLabel(self._valueDisplayname(value), index)
+
+    def _valueDisplayname(self, value):
+        """Return the displayname for a value."""
+        return value.displayname
+
     def renderItems(self, value):
         """Render the items for the selector."""
         field = self.context
@@ -103,7 +125,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
 
         items = []
         index = 0
-        # Render each of the branches with the first selected.
+        # Render each of the suggestions with the first selected.
         for index, term in enumerate(self.suggestion_vocab):
             suggestion = term.value
             if index == 0:
@@ -122,7 +144,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
             self._renderLabel("Other:", index),
             self.other_selection_widget())
         other_selection_onclick = (
-            "this.form['%s.target_branch'].focus()" % self.name)
+            "this.form['%s'].focus()" % self.other_selection_widget.name)
 
         elem = renderElement(u'input',
                              value="other",
@@ -140,7 +162,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
 
     def __call__(self):
         """Don't render the radio buttons if only one choice."""
-        if len(self.suggestion_vocab) == 0:
+        if not self._renderSuggestions():
             return self.other_selection_widget()
         else:
             return LaunchpadRadioWidget.__call__(self)
@@ -161,7 +183,7 @@ class TargetBranchWidget(SuggestionWidget):
     normal branch selector.
     """
 
-    def _generateSuggestionVocab(self, branch):
+    def _generateSuggestionVocab(self, branch, full_vocabulary):
         """Generate the vocabulary for the radio buttons.
 
         The generated vocabulary contains the branch associated with the
@@ -209,23 +231,27 @@ class TargetBranchWidget(SuggestionWidget):
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
             option_id, text)
 
+    def _autoselect_other(self):
+        """Select "other" on keypress."""
+        on_key_press = "selectWidget('%s', event);" % self._other_id()
+        self.other_selection_widget.onKeyPress = on_key_press
+
 
 class RecipeOwnerWidget(SuggestionWidget):
+    """Widget for selecting a recipe owner.
 
-    def _generateSuggestionVocab(self, branch):
-        terms = [SimpleTerm(branch.owner, branch.owner.name)]
-        return SimpleVocabulary(terms)
+    The current user and the base branch owner are suggested.
+    """
+    def _get_suggestions(self, branch):
+        """Suggest the branch owner and current user."""
+        logged_in_user = getUtility(ILaunchBag).user
+        return set([branch.owner, logged_in_user])
 
-    def _renderSuggestionLabel(self, person, index):
-        """Render a label for the option based on a branch."""
-        option_id = '%s.%s' % (self.name, index)
+    def _valueDisplayname(self, value):
+        """Provide a specialized displayname for Persons"""
+        return value.unique_displayname
 
-        # To aid usability there needs to be some text connected with the
-        # radio buttons that is not a hyperlink in order to select the radio
-        # button.  It was decided not to have the entire text as a link, but
-        # instead to have a separate link to the branch details.
-        text = '%s (<a href="%s">branch details</a>)' % (
-            person.displayname, canonical_url(person))
-        return u'<label for="%s" style="font-weight: normal">%s</label>' % (
-            option_id, text)
-
+    def _autoselect_other(self):
+        """Select "other" on click."""
+        on_click = "onClick=\"selectWidget('%s', event);\"" % self._other_id()
+        self.other_selection_widget.extra = on_click
