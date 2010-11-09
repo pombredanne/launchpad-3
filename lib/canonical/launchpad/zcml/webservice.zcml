@@ -79,6 +79,7 @@
    <webservice:register module="canonical.launchpad.interfaces" />
    <webservice:register module="canonical.launchpad.interfaces.webservice" />
    <webservice:register module="lp.blueprints.interfaces.webservice" />
+   <webservice:register module="lp.bugs.interfaces.webservice" />
    <webservice:register module="lp.hwdb.interfaces.hwdb" />
    <webservice:register module="lp.services.worlddata.interfaces.webservice" />
 
