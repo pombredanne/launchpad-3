@@ -619,17 +619,17 @@ class PackageUpstreamTracking(EnumeratedType):
         """)
 
     OLDER = Item("""
-        Older package version
+        Older upstream version
 
-        The package version is older than the upstream version. The package
-        can be updated to the upstream version.
+        The upstream version is older than the package version. Launchpad
+        Launchpad is missing upstream data.
         """)
 
     NEWER = Item("""
-        Newer package version
+        Newer upstream version
 
-        The package version is newer than the upstream version, Launchpad
-        Launchpad is missing upstream data.
+        The upstream version is newer than the package version. The package
+        can be updated to the upstream version.
         """)
 
 
@@ -664,7 +664,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
         # Compare the versions by appending '-1' to upstrem release to
         # account for the first packaging in a distro.
         age = VersionCompare(
-            current_release.version, upstream_release.version + '-1')
+            upstream_release.version + '-1', current_release.version)
         if age > 0:
             return PackageUpstreamTracking.NEWER
         elif age < 0:

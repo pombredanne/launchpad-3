@@ -194,20 +194,20 @@ class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
             self.source_package, name='+upstream-connections')
         self.assertEqual(
             PackageUpstreamTracking.CURRENT, view.current_release_tracking)
-        self.assertId(view, 'current-package-version')
+        self.assertId(view, 'current-upstream-version')
 
     def test_current_release_tracking_older(self):
-        self.makeUpstreamRelease('1.6')
-        view = create_initialized_view(
-            self.source_package, name='+upstream-connections')
-        self.assertEqual(
-            PackageUpstreamTracking.OLDER, view.current_release_tracking)
-        self.assertId(view, 'older-package-version')
-
-    def test_current_release_tracking_newer(self):
         self.makeUpstreamRelease('1.4')
         view = create_initialized_view(
             self.source_package, name='+upstream-connections')
         self.assertEqual(
+            PackageUpstreamTracking.OLDER, view.current_release_tracking)
+        self.assertId(view, 'older-upstream-version')
+
+    def test_current_release_tracking_newer(self):
+        self.makeUpstreamRelease('1.6')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(
             PackageUpstreamTracking.NEWER, view.current_release_tracking)
-        self.assertId(view, 'newer-package-version')
+        self.assertId(view, 'newer-upstream-version')

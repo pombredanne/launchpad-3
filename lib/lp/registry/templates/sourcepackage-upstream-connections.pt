@@ -67,19 +67,19 @@
       for the <tal:project replace="series/product/displayname" />
       &rArr; <tal:series replace="series/name" />.
     </p>
-    <p id="older-package-version"
-      tal:condition="tracking/enumvalue:OLDER">
+    <p id="newer-upstream-version"
+      tal:condition="tracking/enumvalue:NEWER">
       <strong class="sprite warning-icon"><a
         tal:replace="structure release/fmt:link" /> is available for
       packaging.</strong>
     </p>
-    <p id="newer-package-version"
-      tal:condition="tracking/enumvalue:NEWER">
+    <p id="older-upstream-version"
+      tal:condition="tracking/enumvalue:OLDER">
       <span class="sprite warning-icon"><a
         tal:replace="structure release/fmt:link" /></span> is older that the
       current packaged version. Launchpad may be missing upstream information.
     </p>
-    <p id="current-package-version"
+    <p id="current-upstream-version"
       tal:condition="tracking/enumvalue:CURRENT">
       <span class="sprite yes">Packaging is up-to-date</span> for
       <a tal:replace="structure release/fmt:link" />.
