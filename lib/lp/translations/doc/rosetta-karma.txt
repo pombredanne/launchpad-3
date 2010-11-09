@@ -52,9 +52,9 @@ We are going to import it as the Rosetta expert team, like we do with
 automatic imports from Ubuntu. In this case, we shouldn't give any kind
 of karma to that user.
 
-    >>> comes_from_upstream = True
+    >>> uploaded_by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, comes_from_upstream,
+    ...     potemplate.path, potemplate_contents, uploaded_by_maintainer,
     ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
 
@@ -89,7 +89,7 @@ Do the import.
 
     >>> potemplate = POTemplate.get(1)
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, comes_from_upstream,
+    ...     potemplate.path, potemplate_contents, uploaded_by_maintainer,
     ...     foo_bar, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -145,7 +145,7 @@ of karma to that user.
 Do the import.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, comes_from_upstream,
+    ...     pofile.path, pofile_contents, uploaded_by_maintainer,
     ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -172,7 +172,7 @@ will give karma only for the upload action.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, comes_from_upstream, foo_bar,
+    ...     pofile.path, pofile_contents, uploaded_by_maintainer, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -209,7 +209,7 @@ We attach the new file as not comming from upstream.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
+    ...     pofile.path, pofile_contents, not uploaded_by_maintainer, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -241,7 +241,7 @@ We import it again without changes and see that we don't get karma changes.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
+    ...     pofile.path, pofile_contents, not uploaded_by_maintainer, foo_bar,
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -294,13 +294,13 @@ that should not add any kind of karma to this user.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: 'bar'}
     >>> fuzzy = False
-    >>> from_upstream = False
+    >>> by_maintainer = False
 
 And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, from_upstream,
+    ...     pofile, no_priv, new_translations, by_maintainer,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> flush_database_caches()
 
@@ -315,7 +315,7 @@ At this moment, karma is assigned and thus is printed here.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, no_priv, new_translations, from_upstream,
+    ...     pofile, no_priv, new_translations, by_maintainer,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -334,7 +334,7 @@ being approved.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, from_upstream,
+    ...     pofile, kurem, new_translations, by_maintainer,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -349,7 +349,7 @@ get karma for his autoapproved translation.
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
     >>> translationmessage = potmsgset.updateTranslation(
-    ...     pofile, kurem, new_translations, from_upstream,
+    ...     pofile, kurem, new_translations, by_maintainer,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()
