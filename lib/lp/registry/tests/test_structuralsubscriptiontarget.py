@@ -66,6 +66,10 @@ class StructuralSubscriptionTestBase:
         self.team_owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(owner=self.team_owner)
 
+
+class RestrictedStructuralSubscription(StructuralSubscriptionTestBase):
+    # Tests suitable for a target that restricts structural subscriptions.
+
     def test_target_implements_structural_subscription_target(self):
         self.assertTrue(verifyObject(IStructuralSubscriptionTarget,
                                      self.target))
@@ -124,7 +128,9 @@ class StructuralSubscriptionTestBase:
             self.ordinary_subscriber, self.ordinary_subscriber)
 
 
-class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
+class UnrestrictedStructuralSubscription(RestrictedStructuralSubscription):
+    # Tests suitable for a target that does not restrict structural
+    # subscriptions.
 
     def test_structural_subscription_by_ordinary_user(self):
         # ordinary users can subscribe themselves
@@ -169,6 +175,15 @@ class UnrestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 
 class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
     """Tests for filtered structural subscriptions."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(FilteredStructuralSubscriptionTestBase, self).setUp()
+        self.target = self.makeTarget()
+
+    def makeTarget(self):
+        raise NotImplementedError(self.makeTarget)
 
     def makeBugTask(self):
         return self.factory.makeBugTask(target=self.target)
@@ -511,7 +526,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
 
 class TestStructuralSubscriptionForDistro(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+    RestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -574,10 +589,15 @@ class TestStructuralSubscriptionForDistro(
             StructuralSubscription)
 
 
+class TestStructuralSubscriptionFiltersForDistro(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeDistribution()
+
+
 class TestStructuralSubscriptionForProduct(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -586,10 +606,15 @@ class TestStructuralSubscriptionForProduct(
         self.target = self.factory.makeProduct()
 
 
+class TestStructuralSubscriptionFiltersForProduct(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeProduct()
+
+
 class TestStructuralSubscriptionForDistroSourcePackage(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -599,10 +624,15 @@ class TestStructuralSubscriptionForDistroSourcePackage(
         self.target = ProxyFactory(self.target)
 
 
+class TestStructuralSubscriptionFiltersForDistroSourcePackage(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeDistributionSourcePackage()
+
+
 class TestStructuralSubscriptionForMilestone(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -611,15 +641,19 @@ class TestStructuralSubscriptionForMilestone(
         self.target = self.factory.makeMilestone()
         self.target = ProxyFactory(self.target)
 
+
+class TestStructuralSubscriptionFiltersForMilestone(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeMilestone()
+
     def makeBugTask(self):
-        # XXX Should test with target *and* series_target.
         return self.factory.makeBugTask(target=self.target.series_target)
 
 
 class TestStructuralSubscriptionForDistroSeries(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -629,10 +663,15 @@ class TestStructuralSubscriptionForDistroSeries(
         self.target = ProxyFactory(self.target)
 
 
+class TestStructuralSubscriptionFiltersForDistroSeries(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeDistroSeries()
+
+
 class TestStructuralSubscriptionForProjectGroup(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -641,15 +680,20 @@ class TestStructuralSubscriptionForProjectGroup(
         self.target = self.factory.makeProject()
         self.target = ProxyFactory(self.target)
 
+
+class TestStructuralSubscriptionFiltersForProjectGroup(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeProject()
+
     def makeBugTask(self):
         return self.factory.makeBugTask(
             target=self.factory.makeProduct(project=self.target))
 
 
 class TestStructuralSubscriptionForProductSeries(
-    UnrestrictedStructuralSubscription,
-    FilteredStructuralSubscriptionTestBase,
-    TestCaseWithFactory):
+    UnrestrictedStructuralSubscription, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -657,6 +701,13 @@ class TestStructuralSubscriptionForProductSeries(
         super(TestStructuralSubscriptionForProductSeries, self).setUp()
         self.target = self.factory.makeProductSeries()
         self.target = ProxyFactory(self.target)
+
+
+class TestStructuralSubscriptionFiltersForProductSeries(
+    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
+
+    def makeTarget(self):
+        return self.factory.makeProductSeries()
 
 
 class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
