@@ -72,7 +72,7 @@ class ITranslationPolicy(Interface):
             translator is unique if present, but the person need not be.
         """
 
-    def getEffectiveTranslationPermission(self):
+    def getEffectiveTranslationPermission():
         """Get the effective `TranslationPermission`.
 
         Returns the strictest applicable permission out of
