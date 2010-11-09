@@ -703,7 +703,7 @@ language, we should not have to reimport all translations):
 Upstream import notifications
 -----------------------------
 
-Add an upstream POFile import (i.e. from a package or bzr branch),
+Add a maintainer POFile import (i.e. from a package or bzr branch),
 approve and import it.
 
     >>> pofile_contents = r'''
@@ -719,9 +719,9 @@ approve and import it.
     ... msgstr "blah"
     ... '''
     >>> pofile = factory.makePOFile('sr', potemplate=potemplate)
-    >>> from_upstream = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_upstream, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
     ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
@@ -742,7 +742,7 @@ For syntax errors, failure notification is still sent out.
 
     >>> pofile_contents = pofile_contents[:-2]
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, from_upstream, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     distroseries=distroseries, sourcepackagename=sourcepackagename,
     ...     potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()

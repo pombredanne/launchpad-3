@@ -156,7 +156,7 @@ class TranslationImportQueueEntry(SQLBase):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     productseries_id = Int(name='productseries', allow_none=True)
     productseries = Reference(productseries_id, 'ProductSeries.id')
-    from_upstream = BoolCol(notNull=True)
+    by_maintainer = BoolCol(notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
@@ -485,12 +485,12 @@ class TranslationImportQueueEntry(SQLBase):
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
-        if self.from_upstream:
-            # This entry comes from upstream, which means that the path we got
-            # is exactly the right one. If it's different from what pofile
-            # has, that would mean that either the entry changed its path
-            # since previous upload or that we had to guess it and now that we
-            # got the right path, we should fix it.
+        if self.by_maintainer:
+            # This was uploaded by the maintainer, which means that the path
+            # we got is exactly the right one. If it's different from what
+            # pofile has, that would mean that either the entry changed its
+            # path since previous upload or that we had to guess it and now
+            # that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
@@ -912,7 +912,7 @@ class TranslationImportQueue:
         return (
             format, translation_importer.getTranslationFormatImporter(format))
 
-    def addOrUpdateEntry(self, path, content, from_upstream, importer,
+    def addOrUpdateEntry(self, path, content, by_maintainer, importer,
                          sourcepackagename=None, distroseries=None,
                          productseries=None, potemplate=None, pofile=None,
                          format=None):
@@ -948,13 +948,13 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                from_upstream=from_upstream, potemplate=potemplate,
+                by_maintainer=by_maintainer, potemplate=potemplate,
                 pofile=pofile, format=format)
         else:
             # It's an update.
             entry.setErrorOutput(None)
             entry.content = alias
-            entry.from_upstream = from_upstream
+            entry.by_maintainer = by_maintainer
             if potemplate is not None:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
@@ -1015,7 +1015,7 @@ class TranslationImportQueue:
 
         return True
 
-    def addOrUpdateEntriesFromTarball(self, content, from_upstream, importer,
+    def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
@@ -1056,7 +1056,7 @@ class TranslationImportQueue:
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
-                path, file_content, from_upstream, importer,
+                path, file_content, by_maintainer, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate))
