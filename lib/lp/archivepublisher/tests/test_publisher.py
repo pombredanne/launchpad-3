@@ -13,6 +13,7 @@ import os
 import shutil
 import stat
 import tempfile
+from textwrap import dedent
 
 import transaction
 from zope.component import getUtility
@@ -1048,12 +1049,12 @@ class TestPublisher(TestPublisherBase):
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
         with open(htaccess_path, 'r') as htaccess_f:
-            self.assertEquals(htaccess_f.read(), """
-AuthType           Basic
-AuthName           "Token Required"
-AuthUserFile       %s/.htpasswd
-Require            valid-user
-""" % pubconf.htaccessroot)
+            self.assertEquals(htaccess_f.read(), dedent("""
+                AuthType           Basic
+                AuthName           "Token Required"
+                AuthUserFile       %s/.htpasswd
+                Require            valid-user
+                """) % pubconf.htaccessroot)
 
         htpasswd_path = os.path.join(pubconf.htaccessroot, ".htpasswd")
 
