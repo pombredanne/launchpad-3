@@ -9,12 +9,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import (
-    Choice,
-    )
+from zope.schema import Choice
 
 from canonical.launchpad import _
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 
 
 class ITranslationPolicy(Interface):
