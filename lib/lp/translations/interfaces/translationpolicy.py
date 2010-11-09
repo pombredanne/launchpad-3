@@ -41,7 +41,7 @@ class ITranslationPolicy(Interface):
         required=True,
         vocabulary=TranslationPermission)
 
-    def getTranslationGroups(self):
+    def getTranslationGroups():
         """List all applicable translation groups.
 
         This may be an empty list, or a list containing just this
