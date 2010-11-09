@@ -144,7 +144,7 @@ class TestTranslationPermission(TestCaseWithFactory):
             permissions_model[permission, coverage],
             privilege_level,
             "Wrong privileges for %s with translation team coverage '%s'." % (
-                permission, coverage))
+                permission.name, coverage))
 
     def test_translationgroup_models(self):
         # Test that a translation group bestows the expected privilege

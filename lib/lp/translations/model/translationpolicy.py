@@ -114,7 +114,7 @@ class TranslationPolicyMixin:
     def _isInOneOfTranslators(self, translators_list, person):
         """Is `person` a member of one of the entries in `getTranslators`?"""
         for group, translator, team in translators_list:
-            if person.inTeam(team):
+            if team is not None and person.inTeam(team):
                 return True
         return False
 
@@ -123,7 +123,7 @@ class TranslationPolicyMixin:
         if person is None:
             return False
 
-        model = self.translationpermission
+        model = self.getEffectiveTranslationPermission()
         if model == TranslationPermission.OPEN:
             # Open permissions invite all contributions.
             return True
@@ -143,7 +143,7 @@ class TranslationPolicyMixin:
         if person is None:
             return False
 
-        model = self.translationpermission
+        model = self.getEffectiveTranslationPermission()
 
         # These models always invite suggestions from anyone.
         welcoming_models = [
