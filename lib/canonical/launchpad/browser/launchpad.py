@@ -89,6 +89,14 @@ from canonical.launchpad.webapp.interfaces import (
     INavigationMenu,
     )
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import (
+    ExportedFolder,
+    ExportedImageFolder,
+    )
+from canonical.widgets.project import ProjectScopeWidget
+from lp.answers.interfaces.questioncollection import IQuestionSet
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
@@ -99,14 +107,6 @@ from lp.app.browser.tales import (
     MenuAPI,
     PageTemplateContextsAPI,
     )
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import (
-    ExportedFolder,
-    ExportedImageFolder,
-    )
-from canonical.widgets.project import ProjectScopeWidget
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.errors import (
     GoneError,
     NotFoundError,

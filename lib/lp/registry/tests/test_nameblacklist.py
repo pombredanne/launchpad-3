@@ -6,27 +6,25 @@
 __metaclass__ = type
 
 
-from lp.testing import (
-    ANONYMOUS,
-    login,
-    login_person,
-    TestCaseWithFactory,
-    )
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
+    )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 

@@ -31,7 +31,6 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     Navigation,
     )
-
 from lp.registry.browser import RegistryEditFormView
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,

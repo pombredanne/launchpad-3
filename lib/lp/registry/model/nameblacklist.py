@@ -15,11 +15,9 @@ from storm.locals import (
     Int,
     Unicode,
     )
-
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
