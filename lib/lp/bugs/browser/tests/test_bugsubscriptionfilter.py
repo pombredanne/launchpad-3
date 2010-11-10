@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from urlparse import urlparse
+
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -16,6 +18,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import StartsWith
 
 
 class TestBugSubscriptionFilterNavigation(TestCaseWithFactory):
@@ -34,10 +37,12 @@ class TestBugSubscriptionFilterNavigation(TestCaseWithFactory):
         flush_database_updates()
 
     def test_canonical_url(self):
+        url = urlparse(canonical_url(self.subscription_filter))
+        self.assertThat(url.hostname, StartsWith("bugs."))
         self.assertEqual(
-            "http://bugs.launchpad.dev/bar/+subscription/foo/+filter/%d" % (
+            "/bar/+subscription/foo/+filter/%d" % (
                 self.subscription_filter.id),
-            canonical_url(self.subscription_filter))
+            url.path)
 
     def test_navigation(self):
         request = LaunchpadTestRequest()
