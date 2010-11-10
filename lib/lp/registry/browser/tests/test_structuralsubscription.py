@@ -40,6 +40,7 @@ from lp.testing import (
 
 
 class FakeLaunchpadRequest(FakeRequest):
+
     @property
     def stepstogo(self):
         """See `IBasicLaunchpadRequest`."""
@@ -106,6 +107,7 @@ class StructuralSubscriptionTraversalTestBase(TestCaseWithFactory):
 class TestProductSeriesStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProductSeries."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1')
@@ -115,6 +117,7 @@ class TestProductSeriesStructuralSubscriptionTraversal(
 class TestMilestoneStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IMilestone."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1').newMilestone('0.1.0')
@@ -124,6 +127,7 @@ class TestMilestoneStructuralSubscriptionTraversal(
 class TestProjectStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProjectGroup."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProject(name='fooix-project')
         self.navigation = ProjectNavigation
@@ -132,6 +136,7 @@ class TestProjectStructuralSubscriptionTraversal(
 class TestDistributionStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistribution."""
+
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu')
         self.navigation = DistributionNavigation
@@ -140,6 +145,7 @@ class TestDistributionStructuralSubscriptionTraversal(
 class TestDistroSeriesStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistroSeries."""
+
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu').newSeries(
             '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, self.eric)
@@ -150,6 +156,7 @@ class TestDistributionSourcePackageStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistributionSourcePackage.
     """
+
     def setUpTarget(self):
         debuntu = self.factory.makeDistribution(name='debuntu')
         fooix = self.factory.makeSourcePackageName('fooix')
