@@ -117,7 +117,7 @@ class TestBuilder(TestCaseWithFactory):
         self.assertIs(None, bq)
 
 
-class TestBuilderWithTrial(TrialTestCase):
+class TestBuilderWithTrialBase(TrialTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
@@ -129,6 +129,9 @@ class TestBuilderWithTrial(TrialTestCase):
         self.factory = LaunchpadObjectFactory()
         login_as(ANONYMOUS)
         self.addCleanup(logout)
+
+
+class TestBuilderWithTrial(TestBuilderWithTrialBase):
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -309,7 +312,7 @@ class TestBuilderWithTrial(TrialTestCase):
         return d.addCallback(check_slave_calls)
 
 
-class TestBuilderSlaveStatus(TestBuilderWithTrial):
+class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
 
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
