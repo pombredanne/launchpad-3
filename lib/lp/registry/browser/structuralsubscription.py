@@ -53,10 +53,10 @@ class StructuralSubscriptionNavigation(Navigation):
 
     @stepthrough("+filter")
     def bug_filter(self, filter_id):
-        filter_id = int(filter_id)
-        for subscription_filter in self.context.bug_filters:
-            if subscription_filter.id == filter_id:
-                return subscription_filter
+        bug_filter_id = int(filter_id)
+        for bug_filter in self.context.bug_filters:
+            if bug_filter.id == bug_filter_id:
+                return bug_filter
         return None
 
 
