@@ -248,7 +248,8 @@ class StructuralSubscriptionView(LaunchpadFormView,
             team for team in teams if self.isSubscribed(team))
 
         for team in form_selected_teams - subscriptions:
-            target.addBugSubscription(team, self.user)
+            target.addBugSubscription(
+                team, self.user, data.get('bug_notification_level', None))
             self.request.response.addNotification(
                 'The %s team will now receive an e-mail each time '
                 'someone reports or changes a public bug in "%s".' % (
