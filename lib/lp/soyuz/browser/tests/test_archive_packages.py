@@ -9,19 +9,24 @@ __metaclass__ = type
 __all__ = [
     'TestP3APackages',
     'TestPPAPackages',
-    'test_suite',
     ]
 
+from testtools.matchers import Equals, LessThan
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
+from lp.testing._webservice import QueryCollector
 
 
 class TestP3APackages(TestCaseWithFactory):
@@ -113,3 +118,39 @@ class TestPPAPackages(TestCaseWithFactory):
     def test_specified_name_filter_returns_none_on_empty_filter(self):
         view = self.getPackagesView('field.name_filter=')
         self.assertIs(None, view.specified_name_filter)
+
+    def test_query_counts(self):
+        query_baseline = 39
+        cost_per_package = 4
+        # Get the baseline.
+        ppa = self.factory.makeArchive()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            # The baseline has one package, because otherwise the short-circuit
+            # prevents the packages iteration happening at all and we're not
+            # actually measuring scaling appropriately.
+            self.factory.makeSourcePackagePublishingHistory(archive=ppa)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(Equals(query_baseline)))
+        expected_count = collector.count
+        # Once the page is fixed, we can assert the count is contant. Until
+        # then then, we use a separate metric.
+        expected_count += cost_per_package
+        # Use all new objects - avoids caching issues invalidating the gathered
+        # metrics.
+        login(ADMIN_EMAIL)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            for i in range(2):
+                self.factory.makeSourcePackagePublishingHistory(archive=ppa)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(Equals(expected_count)))
