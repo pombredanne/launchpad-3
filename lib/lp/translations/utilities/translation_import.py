@@ -32,11 +32,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    TranslationSide,
-    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -462,29 +457,13 @@ class FileImporter(object):
     def share_with_other_side(self):
         """Returns True if translations should be shared with the other side.
         """
-        traits = getUtility(
-            ITranslationSideTraitsSet).getForTemplate(self.potemplate)
-        if traits.side == TranslationSide.UPSTREAM:
-            return True
-        # Maintainer uploads are always shared with Ubuntu.
-        if self.translation_import_queue_entry.by_maintainer:
-            return True
-        # Find the sharing POFile and check permissions.
-        productseries = self.potemplate.distroseries.getSourcePackage(
-            self.potemplate.sourcepackagename).productseries
-        if productseries is None:
-            return False
-        upstream_template = getUtility(IPOTemplateSet).getSubset(
-            productseries=productseries).getPOTemplateByName(
-                self.potemplate.name)
-        upstream_pofile = upstream_template.getPOFileByLang(
-            self.pofile.language.code)
-        if upstream_pofile is not None:
-            uploader_person = self.translation_import_queue_entry.importer
-            if upstream_pofile.canEditTranslations(uploader_person):
-                return True
-        # Deny the rest.
-        return False
+        from_upstream = self.translation_import_queue_entry.by_maintainer
+        potemplate = self.potemplate
+        policy = potemplate.getTranslationPolicy()
+        return policy.sharesTranslationsWithOtherSide(
+            self.importer, self.pofile.language,
+            sourcepackage=potemplate.sourcepackage,
+            purportedly_upstream=from_upstream)
 
     @cachedproperty
     def translations_are_msgids(self):

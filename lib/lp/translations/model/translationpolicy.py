@@ -17,9 +17,26 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.person import Person
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.translationgroup import TranslationGroup
 from lp.translations.model.translator import Translator
+
+
+def has_translators(translators_list):
+    """Did `getTranslators` find any translators?"""
+    for group, translator, team in translators_list:
+        if team is not None:
+            return True
+    return False
+
+
+def is_in_one_of_translators(translators_list, person):
+    """Is `person` a member of one of the entries in `getTranslators`?"""
+    for group, translator, team in translators_list:
+        if team is not None and person.inTeam(team):
+            return True
+    return False
 
 
 class TranslationPolicyMixin:
@@ -102,3 +119,68 @@ class TranslationPolicyMixin:
             return max([
                 self.translationpermission,
                 inherited.getEffectiveTranslationPermission()])
+
+    def invitesTranslationEdits(self, person, language):
+        """See `ITranslationPolicy`."""
+        if person is None:
+            return False
+
+        model = self.getEffectiveTranslationPermission()
+        if model == TranslationPermission.OPEN:
+            # Open permissions invite all contributions.
+            return True
+
+        translators = self.getTranslators(language)
+        if model == TranslationPermission.STRUCTURED:
+            # Structured permissions act like Open if no translators
+            # have been assigned for the language.
+            if not has_translators(translators):
+                return True
+
+        # Translation-team members are always invited to edit.
+        return is_in_one_of_translators(translators, person)
+
+    def invitesTranslationSuggestions(self, person, language):
+        """See `ITranslationPolicy`."""
+        if person is None:
+            return False
+
+        model = self.getEffectiveTranslationPermission()
+
+        # These models always invite suggestions from anyone.
+        welcoming_models = [
+            TranslationPermission.OPEN,
+            TranslationPermission.STRUCTURED,
+            ]
+        if model in welcoming_models:
+            return True
+
+        translators = self.getTranslators(language)
+        if model == TranslationPermission.RESTRICTED:
+            if has_translators(translators):
+                # Restricted invites any user's suggestions as long as
+                # there is a translation team to handle them.
+                return True
+
+        # Translation-team members are always invited to suggest.
+        return is_in_one_of_translators(translators, person)
+
+    def allowsTranslationEdits(self, person, language):
+        """See `ITranslationPolicy`."""
+        if person is None:
+            return False
+        if self._hasSpecialTranslationPrivileges(person):
+            return True
+        return (
+            self._canTranslate(person) and
+            self.invitesTranslationEdits(person, language))
+
+    def allowsTranslationSuggestions(self, person, language):
+        """See `ITranslationPolicy`."""
+        if person is None:
+            return False
+        if self._hasSpecialTranslationPrivileges(person):
+            return True
+        return (
+            self._canTranslate(person) and
+            self.invitesTranslationSuggestions(person, language))

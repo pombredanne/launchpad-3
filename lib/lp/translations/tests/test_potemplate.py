@@ -139,6 +139,18 @@ class TestPOTemplate(TestCaseWithFactory):
         self.assertEqual(1, len(karma_events))
         self.assertEqual(action, karma_events[0].action.name)
 
+    def test_translationtarget_can_be_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        self.assertEqual(productseries, template.translationtarget)
+
+    def test_translationtarget_can_be_sourcepackage(self):
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.assertEqual(package, template.translationtarget)
+
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""

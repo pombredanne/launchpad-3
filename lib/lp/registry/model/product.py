@@ -1059,6 +1059,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # policy from its ProjectGroup, if any.
         return self.project
 
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, "Got a SourcePackage for a Product!"
+        # Product translations are considered upstream.  They are
+        # automatically shared.
+        return True
+
     @property
     def has_any_specifications(self):
         """See `IHasSpecifications`."""
