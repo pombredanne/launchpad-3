@@ -215,5 +215,37 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                 self.assertTrue(harness.hasErrors())
 
 
+class TestProductSeriesAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for ProductSeries."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProductSeries()
+
+
+class TestDistributionAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for distributions."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeDistribution()
+
+
+class TestDistroSeriesAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for DistroSeries."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeDistroSeries()
+
+
+class TestMilestoneAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for Milestones."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeMilestone()
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
