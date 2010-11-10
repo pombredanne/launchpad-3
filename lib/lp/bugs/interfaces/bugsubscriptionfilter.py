@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import export_as_webservice_entry
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
@@ -82,3 +83,4 @@ class IBugSubscriptionFilterMethods(Interface):
 class IBugSubscriptionFilter(
     IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
     """A bug subscription filter."""
+    export_as_webservice_entry()
