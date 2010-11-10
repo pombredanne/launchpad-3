@@ -71,6 +71,8 @@ class TestRequestReview(WindmillTestCase):
         client.keyPress(
             options='\\9,true,false,false,false,false',
             id=u'field.reviewer')
+        # Give javascript event handler time to run
+        client.waits.sleep(milliseconds=unicode(500))
         client.asserts.assertProperty(
             id=u"field.review_type", validator='disabled|false')
 
