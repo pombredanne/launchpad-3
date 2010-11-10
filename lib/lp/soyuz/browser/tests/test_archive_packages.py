@@ -121,7 +121,7 @@ class TestPPAPackages(TestCaseWithFactory):
 
     def test_query_counts(self):
         query_baseline = 39
-        cost_per_package = 4
+        cost_per_package = 3
         # Get the baseline.
         ppa = self.factory.makeArchive()
         collector = QueryCollector()

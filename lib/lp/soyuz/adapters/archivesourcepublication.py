@@ -19,6 +19,8 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
@@ -162,9 +164,18 @@ class ArchiveSourcePublications:
             return iter(results)
 
         # Load the extra-information for all source publications.
+        # All of this code would be better on an object representing a set of
+        # publications.
         builds_by_source = self.getBuildsBySource()
         unpublished_builds_by_source = self.getUnpublishedBuildsBySource()
         changesfiles_by_source = self.getChangesFileBySource()
+        # Batch load the used source package names.
+        spn_ids = set()
+        for spph in self._source_publications:
+            spn_ids.add(spph.sourcepackagerelease.sourcepackagenameID)
+        list(IStore(SourcePackageName).find(SourcePackageName,
+            SourcePackageName.id.is_in(spn_ids)))
+        # Source package names are used by setNewerDistroSeriesVersions.
         DistroSeries.setNewerDistroSeriesVersions(self._source_publications)
 
         # Build the decorated object with the information we have.
