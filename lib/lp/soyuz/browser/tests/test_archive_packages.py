@@ -121,7 +121,8 @@ class TestPPAPackages(TestCaseWithFactory):
 
     def test_query_counts(self):
         query_baseline = 39
-        cost_per_package = 3
+        cost_per_package = 2
+        cost_per_distroseries = 3
         # Get the baseline.
         ppa = self.factory.makeArchive()
         collector = QueryCollector()
@@ -141,7 +142,10 @@ class TestPPAPackages(TestCaseWithFactory):
         expected_count = collector.count
         # Once the page is fixed, we can assert the count is contant. Until
         # then then, we use a separate metric.
-        expected_count += cost_per_package
+        # 3 new packages
+        expected_count += cost_per_package * 3
+        # 1 new distro series
+        expected_count += cost_per_distroseries * 1
         # Use all new objects - avoids caching issues invalidating the gathered
         # metrics.
         login(ADMIN_EMAIL)
@@ -150,7 +154,10 @@ class TestPPAPackages(TestCaseWithFactory):
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
             for i in range(2):
-                self.factory.makeSourcePackagePublishingHistory(archive=ppa)
+                pkg = self.factory.makeSourcePackagePublishingHistory(
+                    archive=ppa)
+                self.factory.makeSourcePackagePublishingHistory(archive=ppa,
+                    distroseries=pkg.distroseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
         self.assertThat(collector, HasQueryCount(Equals(expected_count)))
