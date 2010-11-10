@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 
+from collections import defaultdict
 from datetime import datetime
 import operator
 import os
@@ -501,25 +502,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return unique_binary_publications
 
+    @staticmethod
+    def _convertBuilds(builds_for_sources):
+        """Convert from IPublishingSet getBuilds to SPPH getBuilds."""
+        return [build for source, build, arch in builds_for_sources]
+
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getBuildsForSources(self)
-
-        return [build for source, build, arch in result_set]
+        result_set = publishing_set.getBuildsForSources([self])
+        return SourcePackagePublishingHistory._convertBuilds(result_set)
 
     def getUnpublishedBuilds(self, build_states=None):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
-
-        # Create a function that will just return the second item
-        # in the result tuple (the build).
-        def result_to_build(result):
-            return result[1]
-
-        return DecoratedResultSet(result_set, result_to_build)
+        return DecoratedResultSet(result_set, operator.itemgetter(1))
 
     def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1698,28 +1697,84 @@ class PublishingSet:
             PackageUploadSource.sourcepackagereleaseID == spr.id)
         return result_set.one()
 
-    def getBuildStatusSummariesForSourceIdsAndArchive(self,
-                                                      source_ids,
-                                                      archive):
+    def getBuildStatusSummariesForSourceIdsAndArchive(self, source_ids,
+        archive, get_builds=None):
         """See `IPublishingSet`."""
         # source_ids can be None or an empty sequence.
         if not source_ids:
             return {}
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        source_pubs = store.find(
-            SourcePackagePublishingHistory,
-            SourcePackagePublishingHistory.id.is_in(source_ids),
-            SourcePackagePublishingHistory.archive == archive)
-
+        if len(source_ids) == 1 and get_builds is not None:
+            # Fake out the DB access for ArchivePublication
+            source_pubs = list(store.find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.id.is_in(source_ids),
+                SourcePackagePublishingHistory.archive == archive))
+            source = source_pubs[0]
+            build_info = [(source, build, None) for build in get_builds()]
+        else:
+            build_info = list(
+                self.getBuildsForSourceIds(source_ids, archive=archive))
+            source_pubs = set()
+            found_source_ids = set()
+            for row in build_info:
+                source_pubs.add(row[0])
+                found_source_ids.add(row[0].id)
+            pubs_without_builds = set(source_ids) - found_source_ids
+            if pubs_without_builds:
+                # Add in source pubs for which no builds were found: we may in
+                # future want to make this a LEFT OUTER JOIN in
+                # getBuildsForSourceIds but to avoid destabilising other code
+                # paths while we fix performance, it is just done as a single
+                # separate query for now.
+                source_pubs.update(store.find(
+                    SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.id.is_in(
+                        pubs_without_builds),
+                    SourcePackagePublishingHistory.archive == archive))
+        # For each source_pub found, provide an aggregate summary of its
+        # builds.
+        binarypackages = getUtility(IBinaryPackageBuildSet)
         source_build_statuses = {}
+        need_unpublished = set()
         for source_pub in source_pubs:
-            status_summary = source_pub.getStatusSummaryForBuilds()
-            source_build_statuses[source_pub.id] = status_summary
+            source_builds = [build for build in build_info 
+                if build[0].id == source_pub.id]
+            builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
+            summary = binarypackages.getStatusSummaryForBuilds(builds)
+            source_build_statuses[source_pub.id] = summary
+
+            # If:
+            #   1. the SPPH is in an active publishing state, and
+            #   2. all the builds are fully-built, and
+            #   3. the SPPH is not being published in a rebuild/copy archive (in
+            #      which case the binaries are not published)
+            #   4. There are unpublished builds
+            # Then we augment the result with FULLYBUILT_PENDING and attach the
+            # unpublished builds.
+            if (source_pub.status in active_publishing_status and
+                    summary['status'] == BuildSetStatus.FULLYBUILT and
+                    not source_pub.archive.is_copy):
+                need_unpublished.add(source_pub)
+
+        if need_unpublished:
+            unpublished = list(self.getUnpublishedBuildsForSources(
+                need_unpublished))
+            unpublished_per_source = defaultdict(list)
+            for source_pub, build, _ in unpublished:
+                unpublished_per_source[source_pub].append(build)
+            for source_pub, builds in unpublished_per_source.items():
+                summary = {
+                    'status': BuildSetStatus.FULLYBUILT_PENDING,
+                    'builds': builds
+                }
+                source_build_statuses[source_pub.id] = summary
 
         return source_build_statuses
 
-    def getBuildStatusSummaryForSourcePublication(self, source_publication):
+    def getBuildStatusSummaryForSourcePublication(self, source_publication,
+        get_builds=None):
         """See `ISourcePackagePublishingHistory`.getStatusSummaryForBuilds.
 
         This is provided here so it can be used by both the SPPH as well
@@ -1727,31 +1782,9 @@ class PublishingSet:
         the same interface but uses cached results for builds and binaries
         used in the calculation.
         """
-        builds = source_publication.getBuilds()
-        summary = getUtility(
-            IBinaryPackageBuildSet).getStatusSummaryForBuilds(builds)
-
-        # We only augment the result if:
-        #   1. we (the SPPH) are ourselves in an active publishing state, and
-        #   2. all the builds are fully-built, and
-        #   3. we are not being published in a rebuild/copy archive (in
-        #      which case the binaries are not currently published anyway)
-        # In this case we check to see if they are all published, and if
-        # not we return FULLYBUILT_PENDING:
-        augmented_summary = summary
-        if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT and
-                not source_publication.archive.is_copy):
-
-            unpublished_builds = list(
-                source_publication.getUnpublishedBuilds())
-
-            if unpublished_builds:
-                augmented_summary = {
-                    'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': unpublished_builds
-                }
-        return augmented_summary
+        source_id = source_publication.id
+        return self.getBuildStatusSummariesForSourceIdsAndArchive([source_id],
+            source_publication.archive, get_builds=get_builds)[source_id]
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""

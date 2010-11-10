@@ -92,9 +92,11 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
