@@ -1889,7 +1889,8 @@ class TestPOFile(TestCaseWithFactory):
     def test_markChanged_defaults_to_now(self):
         self.pofile.date_changed = datetime.now(pytz.UTC) - timedelta(days=99)
         self.pofile.markChanged()
-        self.assertEqual(UTC_NOW, self.pofile.date_changed)
+        self.assertSqlAttributeEqualsDate(
+            self.pofile, 'date_changed', UTC_NOW)
 
     def test_markChanged_leaves_lasttranslator_unchanged(self):
         old_lasttranslator = self.pofile.lasttranslator
