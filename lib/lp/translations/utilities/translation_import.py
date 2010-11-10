@@ -32,11 +32,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    TranslationSide,
-    )
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )

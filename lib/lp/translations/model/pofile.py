@@ -69,10 +69,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
-from lp.translations.enums import (
-    RosettaImportStatus,
-    TranslationPermission,
-    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
@@ -99,7 +96,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translatablemessage import TranslatableMessage
