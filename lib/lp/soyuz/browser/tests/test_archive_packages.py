@@ -11,7 +11,11 @@ __all__ = [
     'TestPPAPackages',
     ]
 
-from testtools.matchers import Equals, LessThan
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import canonical_url
@@ -119,8 +123,8 @@ class TestPPAPackages(TestCaseWithFactory):
         view = self.getPackagesView('field.name_filter=')
         self.assertIs(None, view.specified_name_filter)
 
-    def test_query_counts(self):
-        query_baseline = 41
+    def test_source_query_counts(self):
+        query_baseline = 42
         # Get the baseline.
         ppa = self.factory.makeArchive()
         collector = QueryCollector()
@@ -136,8 +140,14 @@ class TestPPAPackages(TestCaseWithFactory):
             self.factory.makeSourcePackagePublishingHistory(archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(Equals(query_baseline)))
+        self.assertThat(collector, HasQueryCount(LessThan(query_baseline)))
         expected_count = collector.count
+        # We scale with 1 query per distro series because of
+        # getCurrentSourceReleases.
+        expected_count += 1
+        # We need a fuzz of one because if the test is the first to run a 
+        # credentials lookup is done as well (and accrued to the collector).
+        expected_count += 1
         # Use all new objects - avoids caching issues invalidating the gathered
         # metrics.
         login(ADMIN_EMAIL)
@@ -152,4 +162,41 @@ class TestPPAPackages(TestCaseWithFactory):
                     distroseries=pkg.distroseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(Equals(expected_count)))
+        self.assertThat(collector, HasQueryCount(LessThan(expected_count)))
+
+    def test_binary_query_counts(self):
+        query_baseline = 26
+        # Get the baseline.
+        ppa = self.factory.makeArchive()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            # The baseline has one package, because otherwise the short-circuit
+            # prevents the packages iteration happening at all and we're not
+            # actually measuring scaling appropriately.
+            self.factory.makeBinaryPackagePublishingHistory(archive=ppa)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(
+            MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
+        expected_count = collector.count
+        # Use all new objects - avoids caching issues invalidating the gathered
+        # metrics.
+        login(ADMIN_EMAIL)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            for i in range(2):
+                pkg = self.factory.makeBinaryPackagePublishingHistory(
+                    archive=ppa)
+                self.factory.makeBinaryPackagePublishingHistory(archive=ppa,
+                    distroarchseries=pkg.distroarchseries)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(
+            MatchesAny(Equals(expected_count), LessThan(expected_count))))
