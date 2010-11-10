@@ -68,7 +68,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -77,6 +76,17 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+
+
+def make_publisher():
+    """Make a test publisher.
+
+    Exists only to work around circular import problems. When the
+    canonical/launchpad/database/__init__.py globs go away, this can probably
+    go away too.
+    """
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class TestBuilder(TestCaseWithFactory):
@@ -122,7 +132,7 @@ class TestBuilderWithTrialBase(TrialTestCase):
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBuilderWithTrial, self)
+        super(TestBuilderWithTrialBase, self)
         self.slave_helper = SlaveTestHelpers()
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
@@ -342,11 +352,12 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-
         d = builder.rescueIfLost()
         def check_builder(ignored):
-            self.assertIdentical(
-                IdleBuildBehavior, builder.current_build_behavior)
+            self.assertIsInstance(
+                removeSecurityProxy(builder.current_build_behavior),
+                IdleBuildBehavior)
+        return d.addCallback(check_builder)
 
 
 class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
@@ -429,7 +440,7 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidateBase, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         # Create some i386 builders ready to build PPA builds.  Two
@@ -502,7 +513,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidatePPAWithSingleBuilder, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         self.bob_builder = getUtility(IBuilderSet)['bob']
@@ -764,7 +775,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.builder = self.factory.makeBuilder(name='builder')
 
         # Have a publisher and a ppa handy for some of the tests below.
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
 

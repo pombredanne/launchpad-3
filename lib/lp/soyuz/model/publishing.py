@@ -1698,41 +1698,32 @@ class PublishingSet:
         return result_set.one()
 
     def getBuildStatusSummariesForSourceIdsAndArchive(self, source_ids,
-        archive, get_builds=None):
+        archive):
         """See `IPublishingSet`."""
         # source_ids can be None or an empty sequence.
         if not source_ids:
             return {}
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if len(source_ids) == 1 and get_builds is not None:
-            # Fake out the DB access for ArchivePublication
-            source_pubs = list(store.find(
+        build_info = list(
+            self.getBuildsForSourceIds(source_ids, archive=archive))
+        source_pubs = set()
+        found_source_ids = set()
+        for row in build_info:
+            source_pubs.add(row[0])
+            found_source_ids.add(row[0].id)
+        pubs_without_builds = set(source_ids) - found_source_ids
+        if pubs_without_builds:
+            # Add in source pubs for which no builds were found: we may in
+            # future want to make this a LEFT OUTER JOIN in
+            # getBuildsForSourceIds but to avoid destabilising other code
+            # paths while we fix performance, it is just done as a single
+            # separate query for now.
+            source_pubs.update(store.find(
                 SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.id.is_in(source_ids),
+                SourcePackagePublishingHistory.id.is_in(
+                    pubs_without_builds),
                 SourcePackagePublishingHistory.archive == archive))
-            source = source_pubs[0]
-            build_info = [(source, build, None) for build in get_builds()]
-        else:
-            build_info = list(
-                self.getBuildsForSourceIds(source_ids, archive=archive))
-            source_pubs = set()
-            found_source_ids = set()
-            for row in build_info:
-                source_pubs.add(row[0])
-                found_source_ids.add(row[0].id)
-            pubs_without_builds = set(source_ids) - found_source_ids
-            if pubs_without_builds:
-                # Add in source pubs for which no builds were found: we may in
-                # future want to make this a LEFT OUTER JOIN in
-                # getBuildsForSourceIds but to avoid destabilising other code
-                # paths while we fix performance, it is just done as a single
-                # separate query for now.
-                source_pubs.update(store.find(
-                    SourcePackagePublishingHistory,
-                    SourcePackagePublishingHistory.id.is_in(
-                        pubs_without_builds),
-                    SourcePackagePublishingHistory.archive == archive))
         # For each source_pub found, provide an aggregate summary of its
         # builds.
         binarypackages = getUtility(IBinaryPackageBuildSet)
@@ -1773,8 +1764,7 @@ class PublishingSet:
 
         return source_build_statuses
 
-    def getBuildStatusSummaryForSourcePublication(self, source_publication,
-        get_builds=None):
+    def getBuildStatusSummaryForSourcePublication(self, source_publication):
         """See `ISourcePackagePublishingHistory`.getStatusSummaryForBuilds.
 
         This is provided here so it can be used by both the SPPH as well
@@ -1784,7 +1774,7 @@ class PublishingSet:
         """
         source_id = source_publication.id
         return self.getBuildStatusSummariesForSourceIdsAndArchive([source_id],
-            source_publication.archive, get_builds=get_builds)[source_id]
+            source_publication.archive)[source_id]
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
