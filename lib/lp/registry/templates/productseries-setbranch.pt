@@ -119,7 +119,7 @@
   </div>
 
   <script type="text/javascript">
-    YUI().use('lp.code.productseries_setbranch', function(Y) {
+    LPS.use('lp.code.productseries_setbranch', function(Y) {
       Y.on('domready', Y.lp.code.productseries_setbranch.setup);
     });
   </script>
