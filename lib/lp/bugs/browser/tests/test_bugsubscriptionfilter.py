@@ -5,28 +5,41 @@
 
 __metaclass__ = type
 
+import transaction
+
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import AppServerLayer
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    ws_object,
     )
 
 
 class TestBugSubscriptionFilterNavigation(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterNavigation, self).setUp()
+        self.owner = self.factory.makePerson(name=u"foo")
+        self.structure = self.factory.makeProduct(
+            owner=self.owner, name=u"bar")
+        with person_logged_in(self.owner):
+            self.subscription = self.structure.addBugSubscription(
+                self.owner, self.owner)
+            self.subscription_filter = self.subscription.newBugFilter()
+        flush_database_updates()
 
     def test_canonical_url(self):
-        owner = self.factory.makePerson(name=u"foo")
-        structure = self.factory.makeProduct(owner=owner, name=u"bar")
-        with person_logged_in(structure.owner):
-            subscription = structure.addBugSubscription(
-                structure.owner, structure.owner)
-            subscription_filter = subscription.newBugFilter()
-        flush_database_updates()
         self.assertEqual(
             "http://bugs.launchpad.dev/bar/+subscription/foo/+filter/%d" % (
-                subscription_filter.id),
-            canonical_url(subscription_filter))
+                self.subscription_filter.id),
+            canonical_url(self.subscription_filter))
+
+    def test_navigation(self):
+        transaction.commit()
+        ws_subscription_filter = ws_object(
+            self.factory.makeLaunchpadService(), self.subscription_filter)
+        self.assertIsNot(None, ws_subscription_filter)

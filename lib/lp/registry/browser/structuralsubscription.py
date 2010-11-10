@@ -27,6 +27,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     custom_widget,
     LaunchpadFormView,
+    Navigation,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -39,10 +40,24 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
 from lp.services.propertycache import cachedproperty
+
+
+class StructuralSubscriptionNavigation(Navigation):
+
+    usedfor = IStructuralSubscription
+
+    @stepthrough("+filter")
+    def bug_filter(self, filter_id):
+        filter_id = int(filter_id)
+        for subscription_filter in self.context.bug_filters:
+            if subscription_filter.id == filter_id:
+                return subscription_filter
+        return None
 
 
 class StructuralSubscriptionView(LaunchpadFormView):
