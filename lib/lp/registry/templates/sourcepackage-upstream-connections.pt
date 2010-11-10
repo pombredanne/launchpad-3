@@ -78,8 +78,12 @@
       tal:condition="tracking/enumvalue:OLDER">
       <span class="sprite warning-icon"><a
         tal:replace="structure release/fmt:link" /></span> is older than the
-      current packaged version. Launchpad may be missing upstream information:
-      <a tal:content="series/name" tal:attributes="href series/fmt:url" />
+      current packaged version. Launchpad may be missing release information
+      for the <a tal:content="string:${series/name} series"
+        tal:attributes="href series/fmt:url" /> or this package is linked
+        to the wrong
+        <a tal:attributes="href series/product/menu:overview/series/fmt:url"
+           tal:content="string: ${series/product/displayname} series" />.
     </p>
     <p id="current-upstream-version"
       tal:condition="tracking/enumvalue:CURRENT">
