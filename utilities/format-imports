@@ -24,7 +24,7 @@ The script identifies the import section of each file as a block of lines
 that start with "import" or "from" or are indented with at least one space or
 are blank lines. Comment lines are also included if they are followed by an
 import statement. An inital __future__ import and a module docstring are
-explicitly skipped.  
+explicitly skipped.
 
 The import section is rewritten as three subsections, each separated by a
 blank line. Any of the sections may be empty.
@@ -123,7 +123,7 @@ is over the length limit.
     from lp.app.verylongnames.orverlydeep.modulestructure.leavenoroom \
         import object
 }}}
-""" 
+"""
 
 __metaclass__ = type
 
@@ -145,7 +145,8 @@ from_import_single_regex = re.compile(
     "(?P<objects>[*]|[a-zA-Z0-9_, ]+)"
     "(?P<comment>#.*)?$", re.M)
 from_import_multi_regex = re.compile(
-    "^from +(?P<module>.+) +import *[(](?P<objects>[a-zA-Z0-9_, \n]+)[)]$", re.M)
+    "^from +(?P<module>.+) +import *[(](?P<objects>[a-zA-Z0-9_, \n]+)[)]$",
+    re.M)
 comment_regex = re.compile(
     "(?P<comment>(^#.+\n)+)(^import|^from) +(?P<module>[a-zA-Z0-9_.]+)", re.M)
 split_regex = re.compile(",\s*")
@@ -153,14 +154,16 @@ split_regex = re.compile(",\s*")
 # Module docstrings are multiline (""") strings that are not indented and are
 # followed at some point by an import .
 module_docstring_regex = re.compile(
-    '(?P<docstring>^["]{3}[^"]+["]{3}\n).*^(import |from .+ import)', re.M | re.S)
+    '(?P<docstring>^["]{3}[^"]+["]{3}\n).*^(import |from .+ import)',
+    re.M | re.S)
 # The imports section starts with an import state that is not a __future__
 # import and consists of import lines, indented lines, empty lines and
 # comments which are followed by an import line. Sometimes we even find
 # lines that contain a single ")"... :-(
 imports_section_regex = re.compile(
     "(^#.+\n)*^(import|(from ((?!__future__)\S+) import)).*\n"
-    "(^import .+\n|^from .+\n|^[\t ]+.+\n|(^#.+\n)+((^import|^from) .+\n)|^\n|^[)]\n)*",
+    "(^import .+\n|^from .+\n|^[\t ]+.+\n|(^#.+\n)+((^import|^from) "
+    ".+\n)|^\n|^[)]\n)*",
     re.M)
 
 
@@ -227,17 +230,17 @@ def parse_import_statements(import_section):
     imported as a sorted list of strings."""
     imports = {}
     # Search for escaped newlines and remove them.
-    searchpos =  0
+    searchpos = 0
     while True:
         match = escaped_nl_regex.search(import_section, searchpos)
         if match is None:
             break
         start = match.start()
         end = match.end()
-        import_section = import_section[:start]+import_section[end:]
+        import_section = import_section[:start] + import_section[end:]
         searchpos = start
     # Search for simple one-line import statements.
-    searchpos =  0
+    searchpos = 0
     while True:
         match = import_regex.search(import_section, searchpos)
         if match is None:
@@ -299,7 +302,7 @@ def format_imports(imports):
             standard_section[module] = statement
         else:
             thirdparty_section[module] = statement
-    
+
     all_import_lines = []
     # Sort within each section and generate statement strings.
     sections = (
@@ -321,7 +324,7 @@ def format_imports(imports):
         if len(import_lines) > 0:
             all_import_lines.append('\n'.join(import_lines))
     # Sections are separated by two blank lines.
-    return '\n\n'.join(all_import_lines)        
+    return '\n\n'.join(all_import_lines)
 
 
 def reformat_importsection(filename):
@@ -334,17 +337,17 @@ def reformat_importsection(filename):
     imports_section = pyfile[import_start:import_end]
     imports = parse_import_statements(imports_section)
 
-    if pyfile[import_end:import_end+1] != '#':
+    if pyfile[import_end:import_end + 1] != '#':
         # Two newlines before anything but comments.
         number_of_newlines = 3
     else:
         number_of_newlines = 2
 
-    new_imports = format_imports(imports)+"\n"*number_of_newlines
+    new_imports = format_imports(imports) + ("\n" * number_of_newlines)
     if new_imports == imports_section:
-      # No change, no need to write a new file.
-      return False
-    
+        # No change, no need to write a new file.
+        return False
+
     new_file = open(filename, "w")
     new_file.write(pyfile[:import_start])
     new_file.write(new_imports)
@@ -372,7 +375,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1 or sys.argv[1] in ("-h", "-?", "--help"):
         sys.stderr.write(dedent("""\
         usage: format-imports <file or directory> ...
-        
+
         Type "format-imports --docstring | less" to see the documentation.
         """))
         sys.exit(1)
