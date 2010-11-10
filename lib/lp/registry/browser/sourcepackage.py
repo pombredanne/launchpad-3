@@ -24,6 +24,7 @@ import urllib
 
 from apt_pkg import (
     ParseSrcDepends,
+    upstream_version,
     VersionCompare,
     )
 from lazr.enum import (
@@ -663,7 +664,7 @@ class SourcePackageUpstreamConnectionsView(LaunchpadView):
             return PackageUpstreamTracking.NONE
         # Compare the base version contained in the full debian version
         # to upstream release's version.
-        base_version, debian_revision = current_release.version.split('-', 1)
+        base_version = upstream_version(current_release.version)
         age = VersionCompare(upstream_release.version, base_version)
         if age > 0:
             return PackageUpstreamTracking.NEWER
