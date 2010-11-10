@@ -108,14 +108,14 @@ class TestMarkDuplicate(WindmillTestCase):
         # Finally, clicking on the link to the bug takes you to the master.
         client.click(link=u'bug #1')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.asserts.assertText(
-            xpath=u"//h1[@id='bug-title']/span[1]",
-            validator=u'Firefox does not support SVG')
+        client.waits.forElement(
+            id=u'bug-title', timeout=constants.FOR_ELEMENT)
 
         # If someone wants to set the master to dupe another bug, there
         # is a warning in the dupe widget about this bug having its own
         # duplicates.
         client.click(classname='menu-link-mark-dupe')
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertTextIn(
             classname='large-warning', validator=u'This bug has duplicates',
             timeout=constants.FOR_ELEMENT)
