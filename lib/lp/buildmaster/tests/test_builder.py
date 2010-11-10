@@ -335,17 +335,18 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
-        self.assertNotIdentical(None, builder.current_build_behavior)
+        self.assertNotIdentical(
+            IdleBuildBehavior, builder.current_build_behavior)
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-        self.assertIdentical(None, builder.current_build_behavior)
 
         d = builder.rescueIfLost()
         def check_builder(ignored):
-            self.assertIdentical(None, builder.current_build_behavior)
+            self.assertIdentical(
+                IdleBuildBehavior, builder.current_build_behavior)
 
 
 class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
