@@ -461,8 +461,8 @@ class FileImporter(object):
         potemplate = self.potemplate
         policy = potemplate.getTranslationPolicy()
         return policy.sharesTranslationsWithOtherSide(
-            self.importer, self.pofile.language,
-            sourcepackage=potemplate.sourcepackage,
+            self.translation_import_queue_entry.importer,
+            self.pofile.language, sourcepackage=potemplate.sourcepackage,
             purportedly_upstream=from_upstream)
 
     @cachedproperty

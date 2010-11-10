@@ -691,16 +691,6 @@ class FileImporterSharingTest(TestCaseWithFactory):
             importer.share_with_other_side,
             "Ubuntu import should not share with upstream.")
 
-    def test_share_with_other_side_ubuntu_from_package(self):
-        # An ubuntu queue entry that is imported from an upstream package
-        # will be shared with upstream.
-        entry = self._makeImportEntry(self.UBUNTU, by_maintainer=True)
-        importer = POFileImporter(
-            entry, importers[TranslationFileFormat.PO], None)
-        self.assertTrue(
-            importer.share_with_other_side,
-            "Ubuntu import should share with upstream.")
-
     def test_share_with_other_side_ubuntu_uploader_upstream_translator(self):
         # If the uploader in ubuntu has rights on upstream as well, the
         # translations are shared.
