@@ -5,21 +5,22 @@
 
 __metaclass__ = type
 
-import transaction
-
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import AppServerLayer
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionNavigation,
+    )
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
-    ws_object,
     )
 
 
 class TestBugSubscriptionFilterNavigation(TestCaseWithFactory):
 
-    layer = AppServerLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestBugSubscriptionFilterNavigation, self).setUp()
@@ -39,7 +40,9 @@ class TestBugSubscriptionFilterNavigation(TestCaseWithFactory):
             canonical_url(self.subscription_filter))
 
     def test_navigation(self):
-        transaction.commit()
-        ws_subscription_filter = ws_object(
-            self.factory.makeLaunchpadService(), self.subscription_filter)
-        self.assertIsNot(None, ws_subscription_filter)
+        request = LaunchpadTestRequest()
+        request.setTraversalStack([unicode(self.subscription_filter.id)])
+        navigation = StructuralSubscriptionNavigation(
+            self.subscription, request)
+        view = navigation.publishTraverse(request, '+filter')
+        self.assertIsNot(None, view)
