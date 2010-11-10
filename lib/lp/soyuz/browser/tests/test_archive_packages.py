@@ -125,8 +125,7 @@ class TestPPAPackages(TestCaseWithFactory):
 
     def test_source_query_counts(self):
         query_baseline = 42
-        # Get the baseline.
-        ppa = self.factory.makeArchive()
+        # Assess the baseline.
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
@@ -166,8 +165,7 @@ class TestPPAPackages(TestCaseWithFactory):
 
     def test_binary_query_counts(self):
         query_baseline = 26
-        # Get the baseline.
-        ppa = self.factory.makeArchive()
+        # Assess the baseline.
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
