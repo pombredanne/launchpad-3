@@ -984,16 +984,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         source_package_ids = [
             package_name.id for package_name in source_package_names]
         releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
+            SourcePackageRelease.sourcepackagename IN %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.id = (
                 SELECT max(spph.id)
                 FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
+                     SourcePackageRelease spr
                 WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
+                    spr.sourcepackagename = SourcePackageRelease.sourcepackagename AND
                     spph.sourcepackagerelease = spr.id AND
                     spph.archive IN %s AND
                     spph.status IN %s AND
