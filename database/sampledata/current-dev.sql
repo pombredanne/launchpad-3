@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.4
+-- Created using pg_dump (PostgreSQL) 8.4.5
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,27 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3333,42 +3354,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (1, 2, 1, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (2, 1, 3, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (3, 1, 4, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (4, 2, 5, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (5, 2, 6, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (6, 4, 7, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (7, 5, 8, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (8, 6, 9, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (9, 3, 10, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (10, 7, 11, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (11, 8, 14, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (12, 9, 15, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (13, 10, 17, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (14, 10, 16, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (15, 11, 24, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (16, 11, 25, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (17, 11, 26, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (18, 11, 27, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (19, 11, 28, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (20, 11, 29, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (21, 11, 30, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (22, 12, 31, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (23, 12, 33, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (24, 12, 34, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (25, 12, 35, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (26, 12, 36, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (27, 13, 37, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (28, 13, 38, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (29, 14, 39, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (30, 15, 40, NULL, NULL, true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3799,13 +3820,6 @@ ALTER TABLE bugtrackercomponentgroup DISABLE TRIGGER ALL;
 ALTER TABLE bugtrackercomponentgroup ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugtrackercomponent DISABLE TRIGGER ALL;
 
 
@@ -4014,6 +4028,13 @@ INSERT INTO distributionbounty (id, bounty, distribution, date_created) VALUES (
 ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 
+ALTER TABLE distributionjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
 INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, owner, speed, country, content, official_candidate, enabled, date_created, whiteboard, status, date_reviewed, reviewer, country_dns_mirror) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30, NULL, NULL, false);
@@ -4029,6 +4050,13 @@ INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distributionsourcepackage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distributionsourcepackage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
@@ -4990,6 +5018,81 @@ INSERT INTO lp_account (id, openid_identifier) VALUES (2436243, 'kYFxQYP');
 ALTER TABLE lp_account ENABLE TRIGGER ALL;
 
 
+ALTER TABLE lp_openididentifier DISABLE TRIGGER ALL;
+
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6KHNEe3', 2436141, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6w7kmzC', 2436091, '2007-12-07 13:43:20.393704');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('CALDpFr', 2436171, '2008-03-06 09:55:27.289842');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('GMX7shE', 2436242, '2009-03-17 07:26:14.024613');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('MGWJnTL', 2436111, '2007-12-14 16:52:15.403833');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('R8FpwXd', 2436161, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('WQPMHdf', 2436081, '2007-11-12 15:23:19.847132');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('andrelop_oid', 431, '2005-06-06 08:59:51.561685');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('barbier_oid', 421, '2005-06-06 08:59:51.560604');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-importer_oid', 581, '2005-12-06 09:48:58.287679');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-watch-updater_oid', 621, '2006-05-23 12:49:30.483464');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cCGE3LA', 2436101, '2007-12-14 16:52:15.403833');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cF4PNk3', 2436241, '2008-11-04 12:59:26.965843');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('callipeo_oid', 401, '2005-06-06 08:59:51.558429');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('carlos_oid', 131, '2005-06-06 08:59:51.615543');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cprov_oid', 281, '2005-06-06 08:59:51.59705');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('daf_oid', 141, '2005-06-06 08:59:51.616666');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('danner_oid', 371, '2005-06-06 08:59:51.549651');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('ddaa_oid', 231, '2005-06-06 08:59:51.620823');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('debonzi_oid', 271, '2005-06-06 08:59:51.557224');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('edgar_oid', 331, '2005-06-06 08:59:51.621892');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('former-user_oid', 701, '2006-12-13 21:19:06.369142');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jblack_oid', 81, '2005-06-06 08:59:51.601584');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jdub_oid', 61, '2005-06-06 08:59:51.600523');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jordi_oid', 561, '2005-10-07 14:17:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jorge-gonzalez-gonzalez_oid', 411, '2005-06-06 08:59:51.559519');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('justdave_oid', 31, '2005-06-06 08:59:51.610048');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jvprat_oid', 341, '2005-06-06 08:59:51.622908');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kYFxQYP', 2436243, '2009-08-04 10:50:39.383407');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kamion_oid', 41, '2005-06-06 08:59:51.611185');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('karl_oid', 631, '2006-05-23 12:49:30.483464');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kebil_oid', 491, '2005-06-06 08:59:51.568323');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('keybuk_oid', 51, '2005-06-06 08:59:51.608802');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kiko_oid', 91, '2005-06-06 08:59:51.594941');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kinnison_oid', 261, '2005-06-06 08:59:51.618722');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kreutzm_oid', 511, '2005-06-06 08:59:51.570701');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kurem_oid', 461, '2005-06-06 08:59:51.565033');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-beta-owner_oid', 681, '2007-01-31 06:56:25.096519');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-janitor_oid', 651, '2006-10-04 16:20:51.19954');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('lifeless_oid', 21, '2005-06-06 08:59:51.598107');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('limi_oid', 101, '2005-06-06 08:59:51.619713');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('luk-claes_oid', 451, '2005-06-06 08:59:51.563952');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mTmeENb', 2436231, '2008-06-27 14:49:11.149508');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('marilize_oid', 551, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mark_oid', 11, '2005-06-06 08:59:51.591618');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('martin-pitt_oid', 381, '2005-06-06 08:59:51.555051');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('matsubara_oid', 661, '2006-12-13 21:19:06.369142');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('morten_oid', 471, '2005-06-06 08:59:51.56614');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mpo_oid', 481, '2005-06-06 08:59:51.567224');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name12_oid', 121, '2005-06-06 08:59:51.612277');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name16_oid', 161, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('neMCQNd', 2436061, '2007-08-09 21:25:37.832976');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-priv_oid', 521, '2005-06-06 08:59:51.593849');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-team-memberships_oid', 2436021, '2007-02-19 11:17:57.755666');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('nsv_oid', 391, '2005-06-06 08:59:51.556132');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('one-membership_oid', 2436031, '2007-02-21 10:53:59.700105');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('rPwGRk4', 2436221, '2008-05-12 17:38:38.798696');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('salgado_oid', 291, '2005-06-06 08:59:51.596025');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('sigurd-ubuntu_oid', 351, '2005-06-06 08:59:51.623962');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('skacel_oid', 361, '2005-06-06 08:59:51.5244');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('spiv_oid', 71, '2005-06-06 08:59:51.551196');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stevea_oid', 111, '2005-06-06 08:59:51.599234');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stub_oid', 221, '2005-06-06 08:59:51.59276');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('team-membership-janitor_oid', 671, '2006-10-04 16:20:51.19954');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('tsukimi_oid', 501, '2005-06-06 08:59:51.569518');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('valyag_oid', 441, '2005-06-06 08:59:51.562857');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('yEzBPbd', 2436151, '2007-12-18 16:31:34.790641');
+INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('zRtPxw8', 243637, '2010-07-12 09:48:27.198885');
+
+
+ALTER TABLE lp_openididentifier ENABLE TRIGGER ALL;
+
+
 ALTER TABLE lp_person DISABLE TRIGGER ALL;
 
 INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, language, fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications, account) VALUES (1, 'Mark Shuttleworth', NULL, NULL, 'mark', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 0, NULL, NULL, 1, true, 1, false, 11);
@@ -5094,81 +5197,6 @@ INSERT INTO lp_person (id, displayname, teamowner, teamdescription, name, langua
 
 
 ALTER TABLE lp_person ENABLE TRIGGER ALL;
-
-
-ALTER TABLE lp_openididentifier DISABLE TRIGGER ALL;
-
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6KHNEe3', 2436141, '2007-12-18 16:31:34.790641');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('6w7kmzC', 2436091, '2007-12-07 13:43:20.393704');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('CALDpFr', 2436171, '2008-03-06 09:55:27.289842');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('GMX7shE', 2436242, '2009-03-17 07:26:14.024613');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('MGWJnTL', 2436111, '2007-12-14 16:52:15.403833');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('R8FpwXd', 2436161, '2007-12-18 16:31:34.790641');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('WQPMHdf', 2436081, '2007-11-12 15:23:19.847132');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('andrelop_oid', 431, '2005-06-06 08:59:51.561685');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('barbier_oid', 421, '2005-06-06 08:59:51.560604');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-importer_oid', 581, '2005-12-06 09:48:58.287679');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('bug-watch-updater_oid', 621, '2006-05-23 12:49:30.483464');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cCGE3LA', 2436101, '2007-12-14 16:52:15.403833');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cF4PNk3', 2436241, '2008-11-04 12:59:26.965843');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('callipeo_oid', 401, '2005-06-06 08:59:51.558429');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('carlos_oid', 131, '2005-06-06 08:59:51.615543');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('cprov_oid', 281, '2005-06-06 08:59:51.59705');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('daf_oid', 141, '2005-06-06 08:59:51.616666');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('danner_oid', 371, '2005-06-06 08:59:51.549651');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('ddaa_oid', 231, '2005-06-06 08:59:51.620823');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('debonzi_oid', 271, '2005-06-06 08:59:51.557224');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('edgar_oid', 331, '2005-06-06 08:59:51.621892');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('former-user_oid', 701, '2006-12-13 21:19:06.369142');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jblack_oid', 81, '2005-06-06 08:59:51.601584');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jdub_oid', 61, '2005-06-06 08:59:51.600523');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jordi_oid', 561, '2005-10-07 14:17:51.593849');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jorge-gonzalez-gonzalez_oid', 411, '2005-06-06 08:59:51.559519');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('justdave_oid', 31, '2005-06-06 08:59:51.610048');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('jvprat_oid', 341, '2005-06-06 08:59:51.622908');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kYFxQYP', 2436243, '2009-08-04 10:50:39.383407');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kamion_oid', 41, '2005-06-06 08:59:51.611185');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('karl_oid', 631, '2006-05-23 12:49:30.483464');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kebil_oid', 491, '2005-06-06 08:59:51.568323');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('keybuk_oid', 51, '2005-06-06 08:59:51.608802');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kiko_oid', 91, '2005-06-06 08:59:51.594941');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kinnison_oid', 261, '2005-06-06 08:59:51.618722');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kreutzm_oid', 511, '2005-06-06 08:59:51.570701');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('kurem_oid', 461, '2005-06-06 08:59:51.565033');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-beta-owner_oid', 681, '2007-01-31 06:56:25.096519');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('launchpad-janitor_oid', 651, '2006-10-04 16:20:51.19954');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('lifeless_oid', 21, '2005-06-06 08:59:51.598107');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('limi_oid', 101, '2005-06-06 08:59:51.619713');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('luk-claes_oid', 451, '2005-06-06 08:59:51.563952');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mTmeENb', 2436231, '2008-06-27 14:49:11.149508');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('marilize_oid', 551, '2005-06-06 08:59:51.593849');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mark_oid', 11, '2005-06-06 08:59:51.591618');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('martin-pitt_oid', 381, '2005-06-06 08:59:51.555051');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('matsubara_oid', 661, '2006-12-13 21:19:06.369142');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('morten_oid', 471, '2005-06-06 08:59:51.56614');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('mpo_oid', 481, '2005-06-06 08:59:51.567224');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name12_oid', 121, '2005-06-06 08:59:51.612277');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('name16_oid', 161, '2005-06-06 08:59:51.593849');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('neMCQNd', 2436061, '2007-08-09 21:25:37.832976');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-priv_oid', 521, '2005-06-06 08:59:51.593849');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('no-team-memberships_oid', 2436021, '2007-02-19 11:17:57.755666');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('nsv_oid', 391, '2005-06-06 08:59:51.556132');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('one-membership_oid', 2436031, '2007-02-21 10:53:59.700105');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('rPwGRk4', 2436221, '2008-05-12 17:38:38.798696');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('salgado_oid', 291, '2005-06-06 08:59:51.596025');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('sigurd-ubuntu_oid', 351, '2005-06-06 08:59:51.623962');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('skacel_oid', 361, '2005-06-06 08:59:51.5244');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('spiv_oid', 71, '2005-06-06 08:59:51.551196');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stevea_oid', 111, '2005-06-06 08:59:51.599234');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('stub_oid', 221, '2005-06-06 08:59:51.59276');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('team-membership-janitor_oid', 671, '2006-10-04 16:20:51.19954');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('tsukimi_oid', 501, '2005-06-06 08:59:51.569518');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('valyag_oid', 441, '2005-06-06 08:59:51.562857');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('yEzBPbd', 2436151, '2007-12-18 16:31:34.790641');
-INSERT INTO lp_openididentifier (identifier, account, date_created) VALUES ('zRtPxw8', 243637, '2010-07-12 09:48:27.198885');
-
-
-ALTER TABLE lp_openididentifier ENABLE TRIGGER ALL;
 
 
 ALTER TABLE lp_personlocation DISABLE TRIGGER ALL;
@@ -6297,6 +6325,13 @@ ALTER TABLE personnotification DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personnotification ENABLE TRIGGER ALL;
+
+
+ALTER TABLE persontransferjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE persontransferjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pocketchroot DISABLE TRIGGER ALL;
@@ -9815,6 +9850,13 @@ ALTER TABLE questionbug DISABLE TRIGGER ALL;
 ALTER TABLE questionbug ENABLE TRIGGER ALL;
 
 
+ALTER TABLE questionjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE questionjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
 INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
@@ -11235,6 +11277,13 @@ INSERT INTO translationtemplateitem (id, potemplate, sequence, potmsgset) VALUES
 
 
 ALTER TABLE translationtemplateitem ENABLE TRIGGER ALL;
+
+
+ALTER TABLE translationtemplatesbuild DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE translationtemplatesbuild ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translator DISABLE TRIGGER ALL;

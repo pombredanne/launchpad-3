@@ -32,10 +32,8 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet,
-    TranslationPermission,
-    )
+from lp.translations.enums import TranslationPermission
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.pofile import POFile

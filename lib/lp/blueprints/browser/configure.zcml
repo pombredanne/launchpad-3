@@ -8,6 +8,21 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+
+  <adapter
+      name="blueprints"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
+      factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
+      permission="zope.Public"/>
+  <adapter
+      name="blueprints"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      for="lp.registry.interfaces.person.IPerson"
+      factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
+      permission="zope.Public"/>
+
+
     <browser:navigation
         module="lp.blueprints.browser.sprint"
         classes="

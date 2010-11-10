@@ -126,8 +126,7 @@ and reviewer working mode.
 If Evolution's translation is set to Closed mode, Joe will not be able
 to submit suggestions.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'

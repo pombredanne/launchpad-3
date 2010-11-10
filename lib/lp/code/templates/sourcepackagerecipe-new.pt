@@ -1,0 +1,29 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
+
+      <div>
+        <p>A "recipe" is a description of the steps bzr-builder should take to
+        construct a source package from the various bzr branches. Its format
+        specifies:</p>
+        <ul class="bulleted">
+          <li>where to use the code from (trunk branch, beta branch, etc.), where to get the packaging from (separate branch? ubuntu branch?)</li>
+          <li>the correct package version (so users will still be able to upgrade to the stable version of the distro once it gets released)</li>
+          <li>what to modify to make the source build properly</li>
+        </ul>
+
+        <p>We strongly recommend that you test your recipe locally first.
+        <a href="https://help.launchpad.net/Packaging/SourceBuilds/GettingStarted">Read more...</a></p>
+
+      </div>
+
+      <div metal:use-macro="context/@@launchpad_form/form" />
+    </div>
+  </body>
+</html>
