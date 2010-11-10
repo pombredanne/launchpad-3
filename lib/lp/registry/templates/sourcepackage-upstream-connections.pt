@@ -69,15 +69,17 @@
     </p>
     <p id="newer-upstream-version"
       tal:condition="tracking/enumvalue:NEWER">
-      <strong class="sprite warning-icon"><a
-        tal:replace="structure release/fmt:link" /> is available for
-      packaging.</strong>
+      <strong class="sprite warning-icon">A newer version of
+      <tal:name replace="context/name"/> is available for
+      packaging: <a
+        tal:replace="structure release/fmt:link" /></strong>
     </p>
     <p id="older-upstream-version"
       tal:condition="tracking/enumvalue:OLDER">
       <span class="sprite warning-icon"><a
-        tal:replace="structure release/fmt:link" /></span> is older that the
-      current packaged version. Launchpad may be missing upstream information.
+        tal:replace="structure release/fmt:link" /></span> is older than the
+      current packaged version. Launchpad may be missing upstream information:
+      <a tal:content="series/name" tal:attributes="href series/fmt:url" />
     </p>
     <p id="current-upstream-version"
       tal:condition="tracking/enumvalue:CURRENT">
