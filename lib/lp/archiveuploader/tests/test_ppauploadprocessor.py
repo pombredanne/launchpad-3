@@ -65,8 +65,8 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.name16 = getUtility(IPersonSet).getByName("name16")
         beta_testers.addMember(self.name16, admin)
         # Pop the two messages notifying the team modification.
-        unused = stub.test_emails.pop()
-        unused = stub.test_emails.pop()
+        stub.test_emails.pop()
+        stub.test_emails.pop()
 
         # create name16 PPA
         self.name16_ppa = getUtility(IArchiveSet).new(
@@ -639,40 +639,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             pub_foocomm.sourcepackagerelease.component.name, 'partner')
         self.assertEqual(pub_foocomm.component.name, 'main')
 
-    def testUploadSignedByCodeOfConductNonSigner(self):
-        """Check if a CoC non-signer can upload to his PPA."""
-        self.name16.activesignatures[0].active = False
-        self.layer.commit()
-
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.rejection_message,
-            "PPA uploads must be signed by an Ubuntu Code of Conduct signer.")
-        self.assertTrue(self.name16.archive is not None)
-
-    def testUploadSignedByBetaTesterMember(self):
-        """Check if a non-member of launchpad-beta-testers can upload to PPA.
-
-        PPA was opened for public access in 1.1.11 (22th Nov 2007), so we will
-        keep this test as a simple reference to the check disabled in code
-        (uploadpolicy.py).
-        """
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        self.name16.leave(beta_testers)
-        # Pop the message notifying the membership modification.
-        run_mail_jobs()
-        unused = stub.test_emails.pop()
-
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        self.assertEqual(
-            self.uploadprocessor.last_processed_upload.queue_root.status,
-            PackageUploadStatus.DONE)
-
     def testMixedUpload(self):
         """Mixed PPA uploads are rejected with a appropriate message."""
         upload_dir = self.queueUpload(
@@ -938,7 +904,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         # Discard the announcement email and check the acceptance message
         # content.
-        announcement = stub.test_emails.pop()
+        stub.test_emails.pop()
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
@@ -972,7 +938,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Create a fake "bar" package and publish it in section "web".
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
-        pub_src = publisher.getPubSource(
+        publisher.getPubSource(
             sourcename="bar", version="1.0-1", section="web",
             archive=self.name16_ppa, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
@@ -1175,7 +1141,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
-        unused = stub.test_emails.pop()
+        stub.test_emails.pop()
 
         # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
         # PPA. All of the missing files will be retrieved from the
@@ -1328,7 +1294,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         publisher.prepareBreezyAutotest()
 
         # Publish To Breezy:
-        pub_bin1 = publisher.getPubBinaries(
+        publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -1339,7 +1305,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         warty['i386'].addOrUpdateChroot(fake_chroot)
 
         # Publish To Warty:
-        pub_bin2 = publisher.getPubBinaries(
+        publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
 
