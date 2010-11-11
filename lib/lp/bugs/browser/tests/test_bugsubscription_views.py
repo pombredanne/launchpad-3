@@ -249,9 +249,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     "User should not be able to update a subscription that "
                     "doesn't exist.")
 
-    def test_bug_notification_level_field_hidden_for_indirect_subs(self):
-        # If the user is not directly subscribed to the bug (i.e. they
-        # are subscribed via a team or a duplicate), the
+    def test_bug_notification_level_field_hidden_for_dupe_subs(self):
+        # If the user is subscribed to the bug via a duplicate, the
         # bug_notification_level field won't be visible on the form.
         bug = self.factory.makeBug()
         duplicate = self.factory.makeBug()

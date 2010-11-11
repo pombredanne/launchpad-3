@@ -288,8 +288,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
             if (self.user_is_subscribed and
                 self.current_user_subscription is None):
-                # If the user is subscribed via a duplicate or a team
-                # but is not directly subscribed, we hide the
+                # If the user is subscribed via a duplicate but is not
+                # directly subscribed, we hide the
                 # bug_notification_level field, since it's not used.
                 self.widgets['bug_notification_level'].visible = False
 
