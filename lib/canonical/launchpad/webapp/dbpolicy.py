@@ -25,7 +25,6 @@ from storm.cache import (
     Cache,
     GenerationalCache,
     )
-from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -43,7 +42,7 @@ from canonical.config import (
     dbconfig,
     )
 from canonical.database.sqlbase import StupidCache
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )

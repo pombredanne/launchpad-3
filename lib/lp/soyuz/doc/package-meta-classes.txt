@@ -4,11 +4,13 @@ Package Meta Classes
 There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
- >>> from canonical.launchpad.database import (
- ...     DistributionSourcePackageRelease,
- ...     DistroSeriesSourcePackageRelease, SourcePackageRelease)
  >>> from lp.registry.model.distribution import Distribution
  >>> from lp.registry.model.sourcepackagename import SourcePackageName
+ >>> from lp.soyuz.model.distributionsourcepackagerelease import (
+ ...     DistributionSourcePackageRelease)
+ >>> from lp.soyuz.model.distroseriessourcepackagerelease import (
+ ...     DistroSeriesSourcePackageRelease)
+ >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
  >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
  >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease

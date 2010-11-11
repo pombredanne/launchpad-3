@@ -30,14 +30,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces import (
-    IHeldMessageDetails,
-    IPerson,
-    IPersonSet,
-    ISpecification,
-    ITeamMembershipSet,
-    TeamMembershipStatus,
-    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization,
@@ -51,7 +43,17 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
+from lp.registry.interfaces.mailinglist import IHeldMessageDetails
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.services.mail.mailwrapper import MailWrapper
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,

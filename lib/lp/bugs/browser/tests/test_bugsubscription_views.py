@@ -8,7 +8,10 @@ __metaclass__ = type
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
-from lp.bugs.browser.bugsubscription import BugSubscriptionSubscribeSelfView
+from lp.bugs.browser.bugsubscription import (
+    BugPortletSubcribersIds,
+    BugSubscriptionSubscribeSelfView,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
@@ -164,5 +167,23 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     BugNotificationLevel.METADATA,
                     default_notification_level_value,
                     "Default value for bug_notification_level should be "
-                    "METADATA, is actually %s" %
-                    default_notification_level_value)
+                    "METADATA, is actually %s"
+                    % default_notification_level_value)
+
+
+class BugPortletSubcribersIdsTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_content_type(self):
+        bug = self.factory.makeBug()
+
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            harness = LaunchpadFormHarness(
+                bug.default_bugtask, BugPortletSubcribersIds)
+            harness.view.render()
+
+        self.assertEqual(
+            harness.request.response.getHeader('content-type'),
+            'application/json')

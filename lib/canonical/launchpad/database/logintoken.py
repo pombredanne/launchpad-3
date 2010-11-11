@@ -31,14 +31,13 @@ from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
     )
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    IGPGHandler,
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
-    IPersonSet,
-    LoginTokenType,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.mail import (
     format_address,
@@ -53,6 +52,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
 
 
 class LoginToken(SQLBase):
