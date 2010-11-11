@@ -9,7 +9,6 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import (
@@ -23,10 +22,9 @@ from lp.registry.interfaces.nameblacklist import (
 from lp.testing import (
     ANONYMOUS,
     login,
-    login_person,
+    login_celebrity,
     TestCaseWithFactory,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestNameBlacklist(TestCaseWithFactory):
@@ -108,34 +106,37 @@ class TestNameBlacklistSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestNameBlacklistSet, self).setUp()
-        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
-        registry_expert = self.factory.makePerson()
-        login(ADMIN_EMAIL)
-        registry_experts.addMember(registry_expert, registry_expert)
-        login_person(registry_expert)
+        login_celebrity('registry_experts')
         self.name_blacklist_set = getUtility(INameBlacklistSet)
 
     def test_create_with_one_arg(self):
         # Test NameBlacklistSet.create(regexp).
         name_blacklist = self.name_blacklist_set.create(u'foo')
         self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
-        self.assertEquals(u'foo', name_blacklist.regexp)
+        self.assertEqual(u'foo', name_blacklist.regexp)
         self.assertIs(None, name_blacklist.comment)
 
     def test_create_with_two_args(self):
         # Test NameBlacklistSet.create(regexp, comment).
         name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
         self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
-        self.assertEquals(u'foo', name_blacklist.regexp)
-        self.assertEquals(u'bar', name_blacklist.comment)
+        self.assertEqual(u'foo', name_blacklist.regexp)
+        self.assertEqual(u'bar', name_blacklist.comment)
 
     def test_get(self):
-        # Test NameBlacklistSet.get().
+        # Test NameBlacklistSet.get() success.
         name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
         store = IStore(name_blacklist)
         store.flush()
         retrieved = self.name_blacklist_set.get(name_blacklist.id)
-        self.assertEquals(name_blacklist, retrieved)
+        self.assertEqual(name_blacklist, retrieved)
+
+    def test_get_returns_None_instead_of_ValueError(self):
+        # Test that NameBlacklistSet.get() will return None instead of
+        # raising a ValueError when it tries to cast the id to an int,
+        # so that traversing an invalid url causes a Not Found error
+        # instead of an error that is recorded as an oops.
+        self.assertIs(None, self.name_blacklist_set.get('asdf'))
 
     def test_getAll(self):
         # Test NameBlacklistSet.getAll().
