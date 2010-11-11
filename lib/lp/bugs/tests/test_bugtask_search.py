@@ -507,6 +507,23 @@ class ProductAndDistributionTests:
         self.assertSearchFinds(params, self.bugtasks[:1])
 
 
+class ProjectGroupAndDistributionTests:
+    """Tests which are useful for project groups and distributions."""
+
+    def setUpStructuralSubscriptions(self):
+        # Subscribe a user to the search target of this test and to
+        # another target.
+        raise NotImplementedError
+
+    def test_unique_results_for_multiple_structural_subscriptions(self):
+        # Searching for subscriber who is more than once subscribed to a
+        # bug task returns this bug task only once.
+        subscriber = self.setUpStructuralSubscriptions()
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, self.bugtasks)
+
+
 class BugTargetTestBase:
     """A base class for the bug target mixin classes."""
 
@@ -628,7 +645,8 @@ class ProductSeriesTarget(BugTargetTestBase):
             bugtask, self.searchtarget.product)
 
 
-class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
+class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
+                         ProjectGroupAndDistributionTests):
     """Use a project group as the bug target."""
 
     def setUp(self):
@@ -698,6 +716,15 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
             'No bug task found for a product that is not the target of '
             'the main test bugtask.')
 
+    def setUpStructuralSubscriptions(self):
+        # See `ProjectGroupAndDistributionTests`.
+        subscriber = self.factory.makePerson()
+        self.subscribeToTarget(subscriber)
+        with person_logged_in(subscriber):
+            self.bugtasks[0].target.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
+
 
 class MilestoneTarget(BugTargetTestBase):
     """Use a milestone as the bug target."""
@@ -731,7 +758,8 @@ class MilestoneTarget(BugTargetTestBase):
 
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
-                         BugTargetWithBugSuperVisor):
+                         BugTargetWithBugSuperVisor,
+                         ProjectGroupAndDistributionTests):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -752,6 +780,18 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
         return self.factory.makeDistroSeries(distribution=self.searchtarget)
+
+    def setUpStructuralSubscriptions(self):
+        # See `ProjectGroupAndDistributionTests`.
+        subscriber = self.factory.makePerson()
+        sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=self.searchtarget)
+        self.bugtasks.append(self.factory.makeBugTask(target=sourcepackage))
+        self.subscribeToTarget(subscriber)
+        with person_logged_in(subscriber):
+            sourcepackage.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
 
 
 class DistroseriesTarget(BugTargetTestBase):
@@ -838,7 +878,30 @@ bug_targets_mixins = (
     )
 
 
-class PreloadBugtaskTargets:
+class MultipleParams:
+    """A mixin class for tests with more than one search parameter object.
+
+    BugTaskSet.search() can be called with more than one
+    BugTaskSearchParams instancs, while BugTaskSet.searchBugIds()
+    accepts exactly one instance.
+    """
+
+    def test_two_param_objects(self):
+        # We can pass more than one BugTaskSearchParams instance to
+        # BugTaskSet.search().
+        params1 = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.FIXCOMMITTED)
+        subscriber = self.factory.makePerson()
+        self.subscribeToTarget(subscriber)
+        params2 = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.NEW,
+            structural_subscriber=subscriber)
+        search_result = self.runSearch(params1, params2)
+        expected = self.resultValuesForBugtasks(self.bugtasks[1:])
+        self.assertEqual(expected, search_result)
+
+
+class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
     def setUp(self):
@@ -852,7 +915,7 @@ class PreloadBugtaskTargets:
         return expected_bugtasks
 
 
-class NoPreloadBugtaskTargets:
+class NoPreloadBugtaskTargets(MultipleParams):
     """Do not preload bug targets during a BugTaskSet.search() query."""
 
     def setUp(self):
