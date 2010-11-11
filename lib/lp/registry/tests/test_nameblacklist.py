@@ -64,10 +64,10 @@ class TestNameBlacklist(TestCaseWithFactory):
         # A name that is blacklisted returns the id of the row in the
         # NameBlacklist table that matched. Rows are tried in order, and the
         # first match is returned.
-        self.failUnlessEqual(
+        self.assertEqual(
             self.name_blacklist_match("foobar"),
             self.caret_foo_exp.id)
-        self.failUnlessEqual(
+        self.assertEqual(
             self.name_blacklist_match("barfoo"),
             self.foo_exp.id)
 
@@ -75,11 +75,11 @@ class TestNameBlacklist(TestCaseWithFactory):
         # If the blacklist is changed in the DB, these changes are noticed.
         # This test is needed because the stored procedure keeps a cache
         # of the compiled regular expressions.
-        self.failUnlessEqual(
+        self.assertEqual(
             self.name_blacklist_match("foobar"),
             self.caret_foo_exp.id)
         self.caret_foo_exp.regexp = u'nomatch'
-        self.failUnlessEqual(
+        self.assertEqual(
             self.name_blacklist_match("foobar"),
             self.foo_exp.id)
         self.foo_exp.regexp = u'nomatch2'

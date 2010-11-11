@@ -12,8 +12,7 @@
   <body>
 
     <tal:side metal:fill-slot="side">
-      <tal:menu replace="structure view/@@+global-actions" />
-      <tal:menu replace="structure context/@@+related-pages" />
+      <tal:menu replace="structure context/@@+global-actions" />
     </tal:side>
 
     <div metal:fill-slot="main" class="main-portlet">
