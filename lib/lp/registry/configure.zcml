@@ -557,8 +557,8 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.PillarSetLink"
-        provides="canonical.launchpad.rest.IPillarSetLink">
+        class="canonical.launchpad.rest.pillarset.PillarSetLink"
+        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
@@ -1862,11 +1862,8 @@
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
 
-    <!-- Registers exceptions used in webservice defined in lp.registry.
-      Other data is in module=canonical.launchpad.interfaces as defined in
-      zcml there.-->
-
     <webservice:register module="lp.registry.errors" />
+    <webservice:register module="lp.registry.interfaces.webservice" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

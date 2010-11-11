@@ -11,7 +11,7 @@ the address is reserved for the team which owns the ML.
     >>> logout()
     >>> transaction.commit()
 
-    >>> from canonical.launchpad.database import EmailAddressSet
+    >>> from canonical.launchpad.database.emailaddress import EmailAddressSet
     >>> email_set = EmailAddressSet()
     >>> email_set.getByEmail(mailing_list.address)
     <EmailAddress at...

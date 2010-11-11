@@ -520,7 +520,7 @@ We need some files to test different ways of accessing them.
 
     # Create a new LibraryFileAlias not referencing any LibraryFileContent
     # record. Such records are considered as being deleted.
-    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 

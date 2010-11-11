@@ -1505,4 +1505,5 @@ class BranchSparkView(LaunchpadView):
             values['last_commit'] = adapter.approximatedate()
             values.update(self._commitCounts())
 
+        self.request.response.setHeader('content-type', 'application/json')
         return simplejson.dumps(values)

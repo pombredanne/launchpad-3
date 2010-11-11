@@ -25,31 +25,16 @@ from zope.interface import (
     )
 from zope.schema import ValidationError
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.mail import (
     BugTargetNotFound,
-    BugTaskImportance,
-    BugTaskStatus,
-    CreateBugParams,
     EmailProcessingError,
-    IBug,
     IBugEditEmailCommand,
     IBugEmailCommand,
-    IBugSet,
     IBugTaskEditEmailCommand,
     IBugTaskEmailCommand,
-    ICveSet,
-    IDistribution,
-    IDistributionSourcePackage,
-    IDistroBugTask,
-    IDistroSeries,
-    ILaunchBag,
-    IMessageSet,
-    IPillarNameSet,
-    IProduct,
-    IProductSeries,
-    IProjectGroup,
-    ISourcePackage,
     )
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.mail.helpers import (
     get_error_message,
     get_person_or_team,
@@ -60,6 +45,27 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IDistroBugTask,
+    )
+from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 def normalize_arguments(string_args):

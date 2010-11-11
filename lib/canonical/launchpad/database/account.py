@@ -4,7 +4,11 @@
 """Implementation classes for Account and associates."""
 
 __metaclass__ = type
-__all__ = ['Account', 'AccountPassword', 'AccountSet']
+__all__ = [
+    'Account',
+    'AccountPassword',
+    'AccountSet',
+    ]
 
 from sqlobject import (
     ForeignKey,
@@ -22,7 +26,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,
