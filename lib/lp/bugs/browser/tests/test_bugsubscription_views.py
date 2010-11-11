@@ -8,7 +8,10 @@ __metaclass__ = type
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
-from lp.bugs.browser.bugsubscription import BugSubscriptionSubscribeSelfView
+from lp.bugs.browser.bugsubscription import (
+    BugSubscriptionAddView,
+    BugSubscriptionSubscribeSelfView,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
@@ -165,3 +168,99 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     default_notification_level_value,
                     "Default value for bug_notification_level should be "
                     "METADATA, is actually %s" % default_notification_level_value)
+
+    def test_update_subscription_fails_if_user_not_subscribed(self):
+        # If the user is not directly subscribed to the bug, trying to
+        # update the subscription will fail (since you can't update a
+        # subscription that doesn't exist).
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                level = BugNotificationLevel.METADATA
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+                self.assertTrue(harness.hasErrors())
+                self.assertEqual(
+                    'Invalid value',
+                    harness.getFieldError('subscription'),
+                    "User should not be able to update a subscription that "
+                    "doesn't exist.")
+
+    def test_update_subscription_fails_for_users_subscribed_via_teams(self):
+        # If the user is not directly subscribed, but is subscribed via
+        # a team, they will not be able to use the "Update my
+        # subscription" option.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+
+        with feature_flags():
+            with person_logged_in(person):
+                level = BugNotificationLevel.METADATA
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+                self.assertTrue(harness.hasErrors())
+                self.assertEqual(
+                    'Invalid value',
+                    harness.getFieldError('subscription'),
+                    "User should not be able to update a subscription that "
+                    "doesn't exist.")
+
+    def test_bug_673288(self):
+        # If the user is not directly subscribed, but is subscribed via
+        # a team and via a duplicate, they will not be able to use the
+        # "Update my subscription" option.
+        # This is a regression test for bug 673288.
+        bug = self.factory.makeBug()
+        duplicate = self.factory.makeBug()
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=person)
+        with feature_flags():
+            with person_logged_in(person):
+                duplicate.markAsDuplicate(bug)
+                duplicate.subscribe(person, person)
+                bug.subscribe(team, person)
+
+                level = BugNotificationLevel.METADATA
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.name,
+                    }
+                harness.submit('continue', form_data)
+                self.assertTrue(harness.hasErrors())
+                self.assertEqual(
+                    'Invalid value',
+                    harness.getFieldError('subscription'),
+                    "User should not be able to update a subscription that "
+                    "doesn't exist.")
+
+    def test_bug_notification_level_field_hidden_for_indirect_subs(self):
+        # If the user is not directly subscribed to the bug (i.e. they
+        # are subscribed via a team or a duplicate), the
+        # bug_notification_level field won't be visible on the form.
+        bug = self.factory.makeBug()
+        duplicate = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                duplicate.markAsDuplicate(bug)
+                duplicate.subscribe(person, person)
+                harness = LaunchpadFormHarness(
+                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
+                self.assertFalse(
+                    harness.view.widgets['bug_notification_level'].visible)

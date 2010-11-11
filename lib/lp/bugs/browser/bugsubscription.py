@@ -225,10 +225,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self_subscribed = False
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                if self._use_advanced_features:
+                if (self._use_advanced_features and
+                    self.current_user_subscription is not None):
                     subscription_terms.append(self._update_subscription_term)
-                subscription_terms.append(
-                    SimpleTerm(
+                subscription_terms.insert(
+                    0, SimpleTerm(
                         person, person.name,
                         'Unsubscribe me from this bug'))
                 self_subscribed = True
@@ -244,7 +245,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        if self.user_is_subscribed and self._use_advanced_features:
+        if (self._use_advanced_features and
+            self.current_user_subscription is not None):
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -283,6 +285,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 # subscribed via a team, because they can either
                 # subscribe theirself or unsubscribe their team.
                 self.widgets['subscription'].visible = True
+
+            if (self.user_is_subscribed and
+                self.current_user_subscription is None):
+                # If the user is subscribed via a duplicate or a team
+                # but is not directly subscribed, we hide the
+                # bug_notification_level field, since it's not used.
+                self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
     def user_is_subscribed(self):
