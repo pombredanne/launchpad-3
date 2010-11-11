@@ -11,7 +11,7 @@ IDistributionSourcePackage.bug_subscriptions attribute. When there are
 no subscriptions associated with a package, an empty list is returned:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
@@ -23,7 +23,7 @@ Adding a package subscription is done with the
 IDistributionSourcePackage.addBugSubscription method. You have to
 be logged in to call this method:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName("name12")
 
@@ -86,7 +86,7 @@ To demonstrate, let's change the source package for bug #1 in
 mozilla-firefox in Ubuntu to be pmount in Ubuntu, and see how the
 subscribers list changes.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
@@ -118,7 +118,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> import transaction
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
     >>> from lp.services.mail import stub
 
     >>> daf = personset.getByName("daf")
@@ -309,7 +309,7 @@ Like reassigning a bug task to another package, reassigning a bug task
 to another product will subscribe any new product bug supervisors to the
 bug that aren't already subscribed.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> mozilla_firefox = getUtility(IProductSet).get(4)
 
@@ -320,7 +320,7 @@ Let's make Foo Bar a bug supervisor for upstream firefox:
 Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
 Bar gets subscribed to the bug in the process:
 
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
 
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
     >>> print bug_two_in_ubuntu.bug.id
@@ -388,9 +388,9 @@ supervisor for Mozilla Firefox.
 The list of teams that a user may add to a package as a bug supervisor will
 only contain those teams of which the user is an administrator.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> package = ubuntu.getSourcePackage('mozilla-firefox')

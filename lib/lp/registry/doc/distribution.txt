@@ -18,7 +18,7 @@ The IDistributionSet utility is accessed in the usual fashion:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistribution, IDistributionSet)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroset = getUtility(IDistributionSet)
 
@@ -70,9 +70,8 @@ have a SourcePackageName object for it.
 
     >>> from lp.registry.model.sourcepackagename import (
     ...                                          SourcePackageName)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSourcePackage,
-    ...     IDistributionSourcePackageRelease)
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
 
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
@@ -387,7 +386,7 @@ Launchpad Usage
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
@@ -507,7 +506,7 @@ informational.
 
     >>> kubuntu = distroset.getByName("kubuntu")
 
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
@@ -571,9 +570,7 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     SpecificationDefinitionStatus,
-    ...     )
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
     >>> login('mark@example.com')
     >>> for spec in kubuntu.specifications():
     ...     # Do this here, otherwise, the change will be flush before

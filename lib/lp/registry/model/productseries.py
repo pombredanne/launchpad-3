@@ -47,7 +47,7 @@ from lp.app.enums import (
     ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -89,16 +89,18 @@ from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin,
-    )
 
 
 MAX_TIMELINE_MILESTONES = 20
@@ -199,7 +201,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             service_uses_launchpad(self.answers_usage) or
             service_uses_launchpad(self.codehosting_usage) or
             service_uses_launchpad(self.bug_tracking_usage))
-
 
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
@@ -450,6 +451,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
+
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
 
     def getRelease(self, version):
         for release in self.releases:

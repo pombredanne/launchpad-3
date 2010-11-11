@@ -338,8 +338,8 @@ This feed gets the latest bugs for a person.
 This feed gets the latest bugs for a whole team.
 First, make a team responsible for some bugs.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> one_mem_browser = setupBrowser(
     ...    auth='Basic one-membership@test.com:test')
     >>> personset = getUtility(IPersonSet)

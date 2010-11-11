@@ -109,7 +109,9 @@ Our review request is listed in the votes collection.
 Branch merge proposals can be fetched through the API.
 
     >>> login('admin@canonical.com')
-    >>> fixit_proposal = factory.makeBranchMergeProposal()
+    >>> from lp.code.tests.helpers import (
+    ...     make_merge_proposal_without_reviewers)
+    >>> fixit_proposal = make_merge_proposal_without_reviewers(factory)
     >>> fixit_proposal.source_branch.owner.name = 'source'
     >>> fixit_proposal.source_branch.name = 'fix-it'
     >>> fixit_proposal.target_branch.owner.name = 'target'

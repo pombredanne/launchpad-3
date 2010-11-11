@@ -5,9 +5,11 @@ IBugTask instances. For convenience, Launchpad provides a default
 implementation of IBugTaskSet, allowing retrieval of any bug task in
 Launchpad. We'll use this implementation for demonstration purposes:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugTask, IBugTaskSet)
     >>> from lp.app.errors import NotFoundError
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTask,
+    ...     IBugTaskSet,
+    ...     )
     >>> task_set = getUtility(IBugTaskSet)
 
 

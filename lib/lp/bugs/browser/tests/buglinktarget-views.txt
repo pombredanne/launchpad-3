@@ -4,9 +4,10 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugLinkTarget, IBugSet, ICveSet)
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
+    >>> from lp.bugs.interfaces.cve import ICveSet
 
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']

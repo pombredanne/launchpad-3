@@ -46,7 +46,6 @@ from lp.registry.browser.distributionmirror import *
 from lp.registry.browser.featuredproject import *
 from lp.registry.browser.karma import *
 from lp.registry.browser.mailinglists import *
-from lp.registry.browser.mentoringoffer import *
 from lp.registry.browser.objectreassignment import *
 from lp.registry.browser.peoplemerge import *
 from lp.registry.browser.poll import *

@@ -52,6 +52,7 @@ __all__ = [
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
+    'PersonStructuralSubscriptionsView',
     'PersonSubscribedBugTaskSearchListingView',
     'PersonSubscriptionsView',
     'PersonView',
@@ -73,8 +74,8 @@ __all__ = [
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
-    'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
+    'TeamOverviewNavigationMenu',
     'TeamReassignmentView',
     'archive_to_person',
     ]
@@ -206,10 +207,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from lp.app.browser.tales import (
-    DateTimeFormatterAPI,
-    PersonFormatterAPI,
-    )
 from canonical.lazr.utils import smartquote
 from canonical.widgets import (
     LaunchpadDropdownWidget,
@@ -226,12 +223,16 @@ from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    PersonFormatterAPI,
+    )
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.interfaces.specification import SpecificationFilter
+from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -311,7 +312,7 @@ from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
@@ -542,6 +543,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_recipe(self, name):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
+
+    @stepthrough('+merge-queues')
+    def traverse_merge_queue(self, name):
+        """Traverse to this person's merge queues."""
+        return self.context.getMergeQueue(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -990,6 +996,16 @@ class CommonMenuLinks:
         enabled = bool(self.person.getOwnedOrDrivenPillars())
         return Link(target, text, enabled=enabled, icon='info')
 
+    def subscriptions(self):
+        target = '+subscriptions'
+        text = 'Direct subscriptions'
+        return Link(target, text, icon='info')
+
+    def structural_subscriptions(self):
+        target = '+structural-subscriptions'
+        text = 'Structural subscriptions'
+        return Link(target, text, icon='info')
+
 
 class PersonMenuMixin(CommonMenuLinks):
 
@@ -1023,14 +1039,34 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage',
-             'editemailaddresses', 'editlanguages', 'editwikinames',
-             'editircnicknames', 'editjabberids',
-             'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'codesofconduct', 'karma', 'administer', 'administer_account',
-             'projects', 'activate_ppa', 'maintained',
-             'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary', 'view_recipes']
+    links = [
+        'edit',
+        'branding',
+        'common_edithomepage',
+        'editemailaddresses',
+        'editlanguages',
+        'editwikinames',
+        'editircnicknames',
+        'editjabberids',
+        'editsshkeys',
+        'editpgpkeys',
+        'editlocation',
+        'memberships',
+        'codesofconduct',
+        'karma',
+        'administer',
+        'administer_account',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'view_ppa_subscriptions',
+        'ppa',
+        'oauth_tokens',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
 
     def related_software_summary(self):
         target = '+related-software'
@@ -1370,14 +1406,36 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
-             'add_member', 'proposed_members',
-             'memberships', 'received_invitations',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
-             'related_software_summary', 'view_recipes']
+    links = [
+        'edit',
+        'branding',
+        'common_edithomepage',
+        'members',
+        'mugshots',
+        'add_member',
+        'proposed_members',
+        'memberships',
+        'received_invitations',
+        'editemail',
+        'configure_mailing_list',
+        'moderate_mailing_list',
+        'editlanguages',
+        'map',
+        'polls',
+        'add_poll',
+        'join',
+        'leave',
+        'add_my_teams',
+        'reassign',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'ppa',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -1711,7 +1769,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # Only the IPerson can be traversed to, so it provides the IAccount.
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces import IMasterObject
+        from canonical.launchpad.interfaces.lpstorm import IMasterObject
         self.context = IMasterObject(self.context.account)
         # Set fields to be displayed.
         self.field_names = ['status', 'status_comment']
@@ -2344,14 +2402,16 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         return self.getSearchPageHeading()
 
 
-class PersonSubscriptionsView(BugTaskSearchListingView):
+class PersonSubscriptionsView(LaunchpadView):
     """All the subscriptions for a person."""
 
     page_title = 'Subscriptions'
 
     def subscribedBugTasks(self):
-        """Return a BatchNavigator for distinct bug tasks to which the
-        person is subscribed."""
+        """
+        Return a BatchNavigator for distinct bug tasks to which the person is
+        subscribed.
+        """
         bug_tasks = self.context.searchTasks(None, user=self.user,
             order_by='-date_last_updated',
             status=(BugTaskStatus.NEW,
@@ -2364,37 +2424,52 @@ class PersonSubscriptionsView(BugTaskSearchListingView):
             bug_subscriber=self.context)
 
         sub_bug_tasks = []
-        sub_bugs = []
+        sub_bugs = set()
 
+        # XXX: GavinPanella 2010-10-08 bug=656904: This materializes the
+        # entire result set. It would probably be more efficient implemented
+        # with a pre_iter_hook on a DecoratedResultSet.
         for task in bug_tasks:
+            # We order the bugtasks by date_last_updated but we always display
+            # the default task for the bug. This is to avoid ordering issues
+            # in tests and also prevents user confusion (because nothing is
+            # more confusing than your subscription targets changing seemingly
+            # at random).
             if task.bug not in sub_bugs:
-                # We order the bugtasks by date_last_updated but we
-                # always display the default task for the bug. This is
-                # to avoid ordering issues in tests and also prevents
-                # user confusion (because nothing is more confusing than
-                # your subscription targets changing seemingly at
-                # random).
+                # XXX: GavinPanella 2010-10-08 bug=656904: default_bugtask
+                # causes a query to be executed. It would be more efficient to
+                # get the default bugtask in bulk, in a pre_iter_hook on a
+                # DecoratedResultSet perhaps.
                 sub_bug_tasks.append(task.bug.default_bugtask)
-                sub_bugs.append(task.bug)
+                sub_bugs.add(task.bug)
+
         return BatchNavigator(sub_bug_tasks, self.request)
 
     def canUnsubscribeFromBugTasks(self):
-        viewed_person = self.context
-        if self.user is None:
-            return False
-        elif viewed_person == self.user:
-            return True
-        elif (viewed_person.is_team and
-              self.user.inTeam(viewed_person)):
-            return True
-
-    def getSubscriptionsPageHeading(self):
-        """The header for the subscriptions page."""
-        return "Subscriptions for %s" % self.context.displayname
+        """Can the current user unsubscribe from the bug tasks shown?"""
+        return (self.user is not None and
+                self.user.inTeam(self.context))
 
     @property
     def label(self):
-        return self.getSubscriptionsPageHeading()
+        """The header for the subscriptions page."""
+        return "Subscriptions for %s" % self.context.displayname
+
+
+class PersonStructuralSubscriptionsView(LaunchpadView):
+    """All the structural subscriptions for a person."""
+
+    page_title = 'Structural subscriptions'
+
+    def canUnsubscribeFromBugTasks(self):
+        """Can the current user modify subscriptions for the context?"""
+        return (self.user is not None and
+                self.user.inTeam(self.context))
+
+    @property
+    def label(self):
+        """The header for the structural subscriptions page."""
+        return "Structural subscriptions for %s" % self.context.displayname
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -5736,7 +5811,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        del IPropertyCache(self)._all_recipients
+        del get_property_cache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.

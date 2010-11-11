@@ -17,8 +17,10 @@ __all__ = [
     'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
+    'IGenerateIncrementalDiffJob',
+    'IGenerateIncrementalDiffJobSource',
+    'IMergeProposalNeedsReviewEmailJob',
+    'IMergeProposalNeedsReviewEmailJobSource',
     'IMergeProposalUpdatedEmailJob',
     'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
@@ -556,6 +558,10 @@ class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 
+class IBranchMergeProposalJobSource(IJobSource):
+    """A job source that will get all supported merge proposal jobs."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -633,15 +639,15 @@ class ICreateMergeProposalJobSource(IJobSource):
         """Return a CreateMergeProposalJob for this message."""
 
 
-class IMergeProposalCreatedJob(IRunnableJob):
-    """Interface for review diffs."""
+class IMergeProposalNeedsReviewEmailJob(IRunnableJob):
+    """Email about a merge proposal needing a review.."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class IMergeProposalNeedsReviewEmailJobSource(Interface):
+    """Interface for acquiring MergeProposalNeedsReviewEmailJobs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a needs review email job for the specified proposal."""
 
 
 class IUpdatePreviewDiffJob(IRunnableJob):
@@ -661,6 +667,20 @@ class IUpdatePreviewDiffJobSource(Interface):
         """Return the UpdatePreviewDiffJob with this id."""
 
 
+class IGenerateIncrementalDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+
+class IGenerateIncrementalDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp, old_revision_id, new_revision_id):
+        """Create job to generate incremental diff for this merge proposal."""
+
+    def get(id):
+        """Return the GenerateIncrementalDiffJob with this id."""
+
+
 class ICodeReviewCommentEmailJob(IRunnableJob):
     """Interface for the job to send code review comment email."""
 
@@ -677,7 +697,9 @@ class ICodeReviewCommentEmailJobSource(Interface):
 class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
-    reviewer = Attribute('The person or team asked to do the review.')
+    reviewer = Attribute('The person or team asked to do the review. '
+                         'If left blank, then the default reviewer for the '
+                         'selected target branch will be used.')
     requester = Attribute('The person who has asked for the review.')
 
 
@@ -713,6 +735,7 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 

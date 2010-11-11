@@ -29,13 +29,14 @@ Here we have some imports and utility fetch.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.model.productseries import ProductSeries
     >>> from lp.registry.model.sourcepackagename import SourcePackageName

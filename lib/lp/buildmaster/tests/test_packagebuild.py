@@ -3,8 +3,6 @@
 
 """Tests for `IPackageBuild`."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import datetime
@@ -34,6 +32,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import (
@@ -99,6 +98,8 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertRaises(
             NotImplementedError, self.package_build.verifySuccessfulUpload)
         self.assertRaises(NotImplementedError, self.package_build.notify)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.assertRaises(
             NotImplementedError, self.package_build.handleStatus,
             None, None, None)
@@ -201,6 +202,19 @@ class TestPackageBuild(TestPackageBuildBase):
         expected_cookie = "%d-PACKAGEBUILD-%d" % (
             self.package_build.id, self.package_build.build_farm_job.id)
         self.assertEquals(expected_cookie, cookie)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
 
 class TestPackageBuildSet(TestPackageBuildBase):
@@ -311,6 +325,8 @@ class TestHandleStatusMixin:
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
@@ -321,6 +337,8 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_absolute_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
@@ -331,6 +349,8 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_relative_filepath(self):
         # A filemap that tries to write to files outside of
         # the upload directory will result in a failed upload.
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
@@ -341,6 +361,8 @@ class TestHandleStatusMixin:
         # The build log is set during handleStatus.
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
@@ -350,6 +372,8 @@ class TestHandleStatusMixin:
         # The date finished is updated during handleStatus_OK.
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })

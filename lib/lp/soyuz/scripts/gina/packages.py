@@ -34,10 +34,17 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import log
 from canonical.launchpad.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.enums import PackagePublishingPriority
-from lp.soyuz.scripts.gina import call
+from lp.soyuz.scripts.gina import (
+    call,
+    ExecutionError,
+    )
 from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 #
@@ -75,6 +82,8 @@ def stripseq(seq):
 
 
 epoch_re = re.compile(r"^\d+:")
+
+
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
     version = epoch_re.sub("", version)
@@ -104,7 +113,10 @@ def get_dsc_path(name, version, component, archive_root):
 def unpack_dsc(package, version, component, archive_root):
     dsc_name, dsc_path, component = get_dsc_path(package, version,
                                                  component, archive_root)
-    call("dpkg-source -sn -x %s" % dsc_path)
+    try:
+        extract_dpkg_source(dsc_path, ".")
+    except DpkgSourceError, e:
+        raise ExecutionError("Error %d unpacking source" % e.result)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
@@ -461,6 +473,7 @@ class BinaryPackageData(AbstractPackageData):
     is_created = False
     #
     source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
+
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":

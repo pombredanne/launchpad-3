@@ -4,8 +4,6 @@
 
 """Tests for the source package recipe view classes and templates."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 
@@ -18,9 +16,11 @@ from textwrap import dedent
 from mechanize import LinkNotFoundError
 from pytz import utc
 import transaction
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -121,7 +121,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -184,7 +184,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Owner').displayValue = ['Good Chefs']
         browser.getControl('Create Recipe').click()
 
@@ -279,7 +279,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
 
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[2]),
@@ -412,6 +412,66 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Debian version: 0\+\{revno\}
             Daily build archive:
             PPA 2
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+    def test_admin_edit(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=self.ppa)
+
+        meat_path = meat_branch.bzr_identity
+        expert = getUtility(ILaunchpadCelebrities).admin.teamowner
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=expert)
+        browser.getLink('Edit recipe').click()
+
+        # There shouldn't be a daily build archive property.
+        self.assertRaises(
+            LookupError,
+            browser.getControl,
+            name='field.daily_build_archive')
+
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's fings recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Build schedule: Built on request
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: 0\+\{revno\}
+            Daily build archive:
+            Secret PPA
             Distribution series: Mumbly Midget
             .*
 

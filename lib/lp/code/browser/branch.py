@@ -140,6 +140,7 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -296,7 +297,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     links = [
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
+        'create_queue']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -381,12 +383,16 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        if not self.context.private and config.build_from_branch.enabled:
+        if not self.context.private and recipes_enabled():
             enabled = True
         else:
             enabled = False
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_queue(self):
+        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
 class BranchMirrorMixin:
@@ -1309,19 +1315,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     page_title = label = 'Propose branch for merging'
 
     @property
-    def initial_values(self):
-        """The default reviewer is the code reviewer of the target."""
-        # If there is a default merge branch for the target, then default
-        # the reviewer to be the review team for that branch.
-        reviewer = None
-        default_target = self.context.target.default_merge_target
-        # Don't set the reviewer if the default branch is the same as the
-        # current context.
-        if default_target is not None and default_target != self.context:
-            reviewer = default_target.code_reviewer
-        return {'reviewer': reviewer}
-
-    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
@@ -1342,8 +1335,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         review_requests = []
         reviewer = data.get('reviewer')
+        review_type = data.get('review_type')
+        if reviewer is None:
+            reviewer = target_branch.code_reviewer
         if reviewer is not None:
-            review_requests.append((reviewer, data.get('review_type')))
+            review_requests.append((reviewer, review_type))
 
         try:
             proposal = source_branch.addLandingTarget(

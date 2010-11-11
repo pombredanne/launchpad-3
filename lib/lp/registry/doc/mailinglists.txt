@@ -7,8 +7,10 @@ requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListSet utility.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingList, IMailingListSet)
+    >>> from lp.registry.interfaces.mailinglist import (
+    ...     IMailingList,
+    ...     IMailingListSet,
+    ...     )
     >>> list_set = getUtility(IMailingListSet)
     >>> verifyObject(IMailingListSet, list_set)
     True
@@ -79,7 +81,7 @@ neither and thus may not create a list for team_two.
 
 However, if we make Anne a team owner, she can create the mailing list.
 
-    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
     >>> ignored = team_two.addMember(
@@ -161,7 +163,7 @@ a mailing list is made active, its email address is registered in Launchpad
 and associated with the team's mailing list, so that it can be used as the
 team's contact address.
 
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
@@ -414,9 +416,9 @@ Activating the mailing list (changing it's status to 'available for
 subscription') will fire an instance of the ObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
-    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
-    >>> from canonical.launchpad.interfaces import IMailingList
     >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.registry.interfaces.mailinglist import IMailingList
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
     ...         event.__class__.__name__.split('.')[-1],

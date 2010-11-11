@@ -3,8 +3,6 @@
 
 """Common classes and functions for the checkwatches system."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'WorkingBase',
@@ -224,7 +222,7 @@ class WorkingBase:
         oops_info = report_oops(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
-        self.logger.error("%s (%s)" % (message, oops_info.oopsid))
+        self.logger.info("%s (%s)" % (message, oops_info.oopsid))
         # Reset statement logging, if enabled.
         self._statement_logging_reset()
         # Return the OOPS ID so that we can use it in

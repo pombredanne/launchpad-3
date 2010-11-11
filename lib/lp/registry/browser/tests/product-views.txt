@@ -20,10 +20,10 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -415,6 +415,27 @@ releasefileglob fields.
 
     >>> print view.series.releasefileglob
     ftp://mozilla.org/firefox.*bz2
+
+
+Viewing series for a product
+============================
+
+All the product series can be viewed in batches.
+
+    >>> product = factory.makeProduct()
+    >>> for name in ('stable', 'testing', '1.1', '1.2', 'extra'):
+    ...     series = factory.makeProductSeries(product=product, name=name)
+    >>> view = create_view(product, name='+series')
+    >>> batch = view.batched_series.currentBatch()
+    >>> print batch.total()
+    6
+    >>> for series in batch:
+    ...     print series.name
+    trunk
+    1.2
+    1.1
+    testing
+    stable
 
 
 Product index view

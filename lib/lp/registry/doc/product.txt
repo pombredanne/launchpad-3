@@ -6,10 +6,13 @@ The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a ProjectGroup or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet)
     >>> from lp.app.errors import NotFoundError
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import (
+    ...     IProduct,
+    ...     IProductSet,
+    ...     )
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -274,7 +277,7 @@ one.
 
 This is true even if its project has a bug tracker specified.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
@@ -407,7 +410,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 

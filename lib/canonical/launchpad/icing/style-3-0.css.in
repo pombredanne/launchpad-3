@@ -284,6 +284,12 @@ a.help:hover, a.help:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.invalid-link {
+    disabled: True;
+    color: #909090;
+    text-decoration: none;
+    cursor: default;
+    }
 img, a img {
     /* No border on images that are links. */
     border: none;
@@ -2056,10 +2062,6 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/person-inactive-badge.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.mentoring {
-    background-image: url(/@@/mentoring.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .undecided {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2316,10 +2318,6 @@ body.tab-bugs #duplicate-actions .sprite {
     }
 .large-launchpad {
     background-image: url(/@@/launchpad-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.large-mentoring {
-    background-image: url(/@@/mentoring-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .large-proposal {
