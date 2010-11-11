@@ -15,14 +15,13 @@ from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.errors import NoSuchSourcePackageName
-
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
     ISyncPackageJob,
     ISyncPackageJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
 
@@ -61,6 +60,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
     def test_cronscript(self):
+        # The cron script runs without problems.
         script = os.path.join(
             config.root, 'cronscripts', 'sync_packages.py')
         args = [sys.executable, script, '-v']
@@ -81,6 +81,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         self.assertRaises(NoSuchSourcePackageName, job.run)
 
     def test_run(self):
+        # A proper test run synchronizes packages.
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         distroseries = publisher.breezy_autotest
