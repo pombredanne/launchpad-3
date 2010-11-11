@@ -65,12 +65,15 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.team = self.factory.makeTeam(name='test-team')
         login_person(self.team.teamowner)
 
-    def test_add_member_success(self):
-        member = self.factory.makePerson(name="a-member")
-        form = {
-            'field.newmember': member.name,
+    def getForm(self, new_member):
+        return {
+            'field.newmember': new_member.name,
             'field.actions.add': 'Add Member',
             }
+
+    def test_add_member_success(self):
+        member = self.factory.makePerson(name="a-member")
+        form = self.getForm(member)
         view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual([], view.errors)
         notifications = view.request.response.notifications
@@ -87,10 +90,7 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.team.addMember(member, self.team.teamowner)
         with person_logged_in(member):
             member.leave(self.team)
-        form = {
-            'field.newmember': member.name,
-            'field.actions.add': 'Add Member',
-            }
+        form = self.getForm(member)
         view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual([], view.errors)
         notifications = view.request.response.notifications
@@ -103,10 +103,7 @@ class TestTeamMemberAddView(TestCaseWithFactory):
     def test_add_existing_member_fail(self):
         member = self.factory.makePerson(name="a-member")
         self.team.addMember(member, self.team.teamowner)
-        form = {
-            'field.newmember': member.name,
-            'field.actions.add': 'Add Member',
-            }
+        form = self.getForm(member)
         view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
@@ -116,10 +113,7 @@ class TestTeamMemberAddView(TestCaseWithFactory):
     def test_add_empty_team_fail(self):
         empty_team = self.factory.makeTeam(owner=self.team.teamowner)
         self.team.teamowner.leave(empty_team)
-        form = {
-            'field.newmember': empty_team.name,
-            'field.actions.add': 'Add Member',
-            }
+        form = self.getForm(empty_team)
         view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
