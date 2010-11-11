@@ -13,9 +13,15 @@ __all__ = [
 import re
 
 from zope.app.form.browser import TextWidget
-from zope.component import getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.interface import implements
 
 from canonical.launchpad.webapp import action
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -68,6 +74,8 @@ class NameBlacklistEditView(NameBlacklistValidationMixin,
 
     schema = INameBlacklist
     field_names = ['regexp', 'comment']
+    label = "Edit a blacklist expression"
+    page_title = label
 
     @property
     def cancel_url(self):
@@ -82,13 +90,9 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
     schema = INameBlacklist
     field_names = ['regexp', 'comment']
     label = "Add a new blacklist expression"
+    page_title = label
 
     custom_widget('regexp', TextWidget, displayWidth=60)
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
 
     @property
     def cancel_url(self):
@@ -112,9 +116,9 @@ class NameBlacklistAddView(NameBlacklistValidationMixin, LaunchpadFormView):
 class NameBlacklistSetView(LaunchpadView):
     """View for /+nameblacklists top level collection."""
 
-    page_title = (
-        'Blacklist for names of Launchpad pillars, persons, and teams')
-    label = page_title
+    label = (
+        'Blacklist for names of Launchpad pillars and persons')
+    page_title = label
 
 
 class NameBlacklistSetNavigation(Navigation):
@@ -122,7 +126,7 @@ class NameBlacklistSetNavigation(Navigation):
     usedfor = INameBlacklistSet
 
     def traverse(self, name):
-        return self.context.get(int(name))
+        return self.context.get(name)
 
 
 class NameBlacklistSetNavigationMenu(NavigationMenu):
@@ -149,3 +153,23 @@ class NameBlacklistNavigationMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit_blacklist_expression(self):
         return Link('+edit', 'Edit blacklist expression', icon='edit')
+
+
+@adapter(INameBlacklistSet)
+class NameBlacklistSetBreadcrumb(Breadcrumb):
+    """Return a breadcrumb for an `INameBlackListSet`."""
+
+    implements(IBreadcrumb)
+
+    text = "Name Blacklist"
+
+
+@adapter(INameBlacklist)
+class NameBlacklistBreadcrumb(Breadcrumb):
+    """Return a breadcrumb for an `INameBlackList`."""
+
+    implements(IBreadcrumb)
+
+    @property
+    def text(self):
+        return self.context.regexp

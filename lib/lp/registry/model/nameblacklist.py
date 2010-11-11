@@ -57,6 +57,10 @@ class NameBlacklistSet:
 
     def get(self, id):
         """See `INameBlacklistSet`."""
+        try:
+            id = int(id)
+        except ValueError:
+            return None
         store = IStore(NameBlacklist)
         return store.find(NameBlacklist, NameBlacklist.id == id).one()
 
