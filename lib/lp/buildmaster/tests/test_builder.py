@@ -18,7 +18,10 @@ from twisted.python.failure import Failure
 from twisted.web.client import getPage
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
@@ -326,8 +329,9 @@ class TestBuilder(TestCaseWithFactory):
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
-        self.assertNotIdentical(
-            IdleBuildBehavior, builder.current_build_behavior)
+        self.assertFalse(
+            zope_isinstance(
+                builder.current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
