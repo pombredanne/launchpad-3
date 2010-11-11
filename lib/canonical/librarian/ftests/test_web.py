@@ -22,8 +22,10 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     session_store,
     )
-from canonical.launchpad.database import LibraryFileAlias
-from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.librarian.client import (

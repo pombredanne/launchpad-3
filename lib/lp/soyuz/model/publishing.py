@@ -23,7 +23,6 @@ import os
 import re
 import sys
 
-import apt_pkg
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -881,7 +880,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def distroarchseriesbinarypackagerelease(self):
         """See `IBinaryPackagePublishingHistory`."""
         # Import here to avoid circular import.
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         return DistroArchSeriesBinaryPackageRelease(
