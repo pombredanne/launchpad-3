@@ -738,7 +738,8 @@ class YUIUnitTestCase(WindmillTestCase):
         client = self.client
         client.open(url=self.yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete', timeout=constants.FOR_ELEMENT)
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
