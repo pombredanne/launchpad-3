@@ -6,6 +6,7 @@
 import os
 import subprocess
 import sys
+import transaction
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -19,6 +20,8 @@ from lp.soyuz.interfaces.distributionjob import (
     ISyncPackageJob,
     ISyncPackageJobSource,
     )
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
 
@@ -76,6 +79,43 @@ class SyncPackageJobTests(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
         self.assertRaises(NoSuchSourcePackageName, job.run)
+
+    def test_run(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+
+        # A job can be run and synchronizes a package.
+        pf = self.factory.makeProcessorFamily()
+        pf.addProcessor('x86', '', '')
+        lf = self.factory.makeLibraryFileAlias()
+        # Since the LFA needs to be in the librarian, commit.
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, processorfamily=pf)
+        transaction.commit()
+
+        das.addOrUpdateChroot(lf)
+        das.supports_virtualized = True
+        distroseries.nominatedarchindep = das
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+
+        publisher.getPubBinaries(
+            distroseries=distroseries, binaryname="libc",
+            version="2.8-1",
+            status=PackagePublishingStatus.PUBLISHED)
+
+        source = getUtility(ISyncPackageJobSource)
+        job = source.create(archive1, archive2, distroseries,
+                PackagePublishingPocket.RELEASE,
+                "libc", "2.8-1", include_binaries=False)
+        job.run()
+
+        # Make sure everything hits the database, switching db users
+        # aborts.
+        transaction.commit()
+        self.layer.switchDbUser('syncpackages')
+        job.run()
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
