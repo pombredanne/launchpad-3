@@ -49,7 +49,7 @@ from canonical.config import (
     DatabaseConfig,
     )
 from canonical.database.interfaces import IRequestExpired
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
     )

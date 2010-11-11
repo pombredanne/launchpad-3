@@ -108,7 +108,6 @@ from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -133,6 +132,9 @@ from lp.services.fields import (
     Summary,
     Title,
     URIField,
+    )
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
     )
 from lp.translations.interfaces.translationgroup import ITranslationPolicy
 
@@ -405,11 +407,12 @@ class IProductModerateRestricted(Interface):
 class IProductPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     IHasBranchVisibilityPolicy, IHasDrivers, IHasExternalBugTracker, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMergeProposals, IHasMilestones,
+    IHasLogo, IHasMergeProposals, IHasMilestones,
     IHasMugshot, IHasOwner, IHasSecurityContact, IHasSprints,
-    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget, IHasRecipes,
-    IHasCodeImports, IServiceUsage):
+    IHasTranslationImports, ITranslationPolicy, IKarmaContext,
+    ILaunchpadUsage, IMakesAnnouncements, IOfficialBugTagTargetPublic,
+    IPillar, ISpecificationTarget, IHasRecipes, IHasCodeImports,
+    IServiceUsage):
     """Public IProduct properties."""
 
     id = Int(title=_('The Project ID'))
@@ -1081,3 +1084,5 @@ class InvalidProductName(LaunchpadValidationError):
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
+
+ICommercialSubscription['product'].schema = IProduct

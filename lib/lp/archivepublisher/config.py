@@ -51,12 +51,6 @@ def getPubConfig(archive):
             archive.distribution.name)
         update_pub_config(pubconf)
     elif archive.purpose == ArchivePurpose.PARTNER:
-        # Reset the list of components to partner only.  This prevents
-        # any publisher runs from generating components not related to
-        # the partner archive.
-        for distroseries in pubconf._distroseries.keys():
-            pubconf._distroseries[
-                distroseries]['components'] = ['partner']
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name + '-partner')
@@ -112,22 +106,13 @@ class Config(object):
 
         for dr in distribution:
             distroseries_name = dr.name.encode('utf-8')
-            config_segment =  {
-                "archtags": []
-                }
-
-            for dar in dr.architectures:
-                if dar.enabled:
-                    config_segment["archtags"].append(
-                        dar.architecturetag.encode('utf-8'))
+            config_segment = {}
 
             if dr.lucilleconfig:
                 strio = StringIO(dr.lucilleconfig.encode('utf-8'))
                 config_segment["config"] = ConfigParser()
                 config_segment["config"].readfp(strio)
                 strio.close()
-                config_segment["components"] = config_segment["config"].get(
-                    "publishing", "components").split(" ")
 
                 self._distroseries[distroseries_name] = config_segment
 
@@ -149,12 +134,6 @@ class Config(object):
             raise LucilleConfigError(
                 'No Lucille config section for %s in %s' %
                     (dr, self.distroName))
-
-    def archTagsForSeries(self, dr):
-        return self.series(dr)["archtags"]
-
-    def componentsForSeries(self, dr):
-        return self.series(dr)["components"]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""

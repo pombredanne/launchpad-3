@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import testtools
-import transaction
 
 from canonical.database.sqlbase import session_store
 from canonical.launchpad.database.librarian import TimeLimitedToken

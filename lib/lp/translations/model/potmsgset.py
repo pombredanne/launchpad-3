@@ -557,7 +557,7 @@ class POTMsgSet(SQLBase):
 
         if len(matches) > 0:
             if len(matches) > 1:
-                logging.warn(
+                logging.info(
                     "Translation for POTMsgSet %s into %s "
                     "matches %s existing translations." % sqlvalues(
                         self, pofile.language.code, len(matches)))
@@ -831,7 +831,6 @@ class POTMsgSet(SQLBase):
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
-                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,

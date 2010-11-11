@@ -27,15 +27,14 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces import (
-    AccountStatus,
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    ILibraryFileAliasSet,
-    IMailBox,
-    IPerson,
-    IWeaklyAuthenticatedPrincipal,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mailnotification import (
@@ -51,6 +50,7 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
+from lp.registry.interfaces.person import IPerson
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 

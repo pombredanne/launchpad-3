@@ -217,7 +217,8 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
-    def addBugSubscription(subscriber, subscribed_by):
+    def addBugSubscription(subscriber, subscribed_by,
+                           bug_notification_level=None):
         """Add a bug subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
@@ -227,6 +228,9 @@ class IStructuralSubscriptionTargetWrite(Interface):
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
+        :bug_notification_level: The BugNotificationLevel for the
+            subscription. If omitted, BugNotificationLevel.COMMENTS will be
+            used.
         :return: The new bug subscription.
         """
 
