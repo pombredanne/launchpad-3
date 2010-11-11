@@ -6,14 +6,13 @@
 import os
 import subprocess
 import sys
-import transaction
 
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
-
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
@@ -62,7 +61,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
     def test_cronscript(self):
         # The cron script runs without problems.
         script = os.path.join(
-            config.root, 'cronscripts', 'sync_packages.py')
+            config.root, 'cronscripts', 'sync-packages.py')
         args = [sys.executable, script, '-v']
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -119,9 +118,10 @@ class SyncPackageJobTests(TestCaseWithFactory):
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
-        vars = job.getOopsVars()
+        oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
-            ('distribution_id', distroseries.distribution.id), vars)
-        self.assertIn(('distroseries_id', distroseries.id), vars)
-        self.assertIn(('distribution_job_id', naked_job.context.id), vars)
+            ('distribution_id', distroseries.distribution.id), oops_vars)
+        self.assertIn(('distroseries_id', distroseries.id), oops_vars)
+        self.assertIn(
+            ('distribution_job_id', naked_job.context.id), oops_vars)

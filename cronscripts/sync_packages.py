@@ -10,9 +10,7 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.services.job.runner import JobCronScript
-from lp.soyuz.interfaces.distributionjob import (
-    ISyncPackageJobSource,
-    )
+from lp.soyuz.interfaces.distributionjob import ISyncPackageJobSource
 
 
 class RunSyncPackageJob(JobCronScript):
