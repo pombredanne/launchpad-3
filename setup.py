@@ -51,7 +51,6 @@ setup(
         'meliae',
         'mercurial',
         'mocker',
-        'numpy',
         'oauth',
         'paramiko',
         'python-memcached',

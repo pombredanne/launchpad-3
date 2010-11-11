@@ -199,8 +199,9 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
-        self.validateBugSupervisor(data)
-        self.validateSecurityContact(data)
+        if check_permission("launchpad.Edit", self.context):
+            self.validateBugSupervisor(data)
+            self.validateSecurityContact(data)
         # enable_bug_expiration is disabled by JavaScript when bugtracker
         # is not 'In Launchpad'. The constraint is enforced here in case the
         # JavaScript fails to activate or run. Note that the bugtracker
@@ -215,10 +216,11 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         # bug_supervisor and security_contactrequires a transition method,
         # so it must be handled separately and removed for the
         # updateContextFromData to work as expected.
-        self.changeBugSupervisor(data['bug_supervisor'])
-        del data['bug_supervisor']
-        self.changeSecurityContact(data['security_contact'])
-        del data['security_contact']
+        if check_permission("launchpad.Edit", self.context):
+            self.changeBugSupervisor(data['bug_supervisor'])
+            del data['bug_supervisor']
+            self.changeSecurityContact(data['security_contact'])
+            del data['security_contact']
         self.updateContextFromData(data)
 
 
