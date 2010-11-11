@@ -104,7 +104,11 @@ class SyncPackageJobTests(TestCaseWithFactory):
         self.layer.switchDbUser('sync_packages')
         job.run()
 
-        self.assertEquals([], archive2.getPublishedSources())
+        published_sources = archive2.getPublishedSources()
+        self.assertEquals(1, published_sources.count())
+        spr = published_sources[0].sourcepackagerelease
+        self.assertEquals("libc", spr.name)
+        self.assertEquals("2.8-1", spr.version)
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
