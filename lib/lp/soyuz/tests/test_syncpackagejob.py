@@ -81,41 +81,30 @@ class SyncPackageJobTests(TestCaseWithFactory):
         self.assertRaises(NoSuchSourcePackageName, job.run)
 
     def test_run(self):
-        distroseries = self.factory.makeDistroSeries()
-        archive1 = self.factory.makeArchive(distroseries.distribution)
-        archive2 = self.factory.makeArchive(distroseries.distribution)
-
-        # A job can be run and synchronizes a package.
-        pf = self.factory.makeProcessorFamily()
-        pf.addProcessor('x86', '', '')
-        lf = self.factory.makeLibraryFileAlias()
-        # Since the LFA needs to be in the librarian, commit.
-        das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=pf)
-        transaction.commit()
-
-        das.addOrUpdateChroot(lf)
-        das.supports_virtualized = True
-        distroseries.nominatedarchindep = das
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
 
         publisher.getPubBinaries(
             distroseries=distroseries, binaryname="libc",
             version="2.8-1",
-            status=PackagePublishingStatus.PUBLISHED)
+            status=PackagePublishingStatus.PUBLISHED,
+            archive=archive1)
 
         source = getUtility(ISyncPackageJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "libc", "2.8-1", include_binaries=False)
-        job.run()
-
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
-        self.layer.switchDbUser('syncpackages')
+        self.layer.switchDbUser('sync_packages')
         job.run()
+
+        self.assertEquals([], archive2.getPublishedSources())
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
