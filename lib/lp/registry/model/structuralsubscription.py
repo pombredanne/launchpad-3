@@ -448,24 +448,6 @@ class StructuralSubscriptionTargetMixin:
         return StructuralSubscription.select(
             query, orderBy='Person.displayname', clauseTables=['Person'])
 
-    def getBugNotificationsRecipients(self, recipients=None, level=None):
-        """See `IStructuralSubscriptionTarget`."""
-        if level is None:
-            subscriptions = self.bug_subscriptions
-        else:
-            subscriptions = self.getSubscriptions(
-                min_bug_notification_level=level)
-        subscribers = set(
-            subscription.subscriber for subscription in subscriptions)
-        if recipients is not None:
-            for subscriber in subscribers:
-                recipients.addStructuralSubscriber(subscriber, self)
-        parent = self.parent_subscription_target
-        if parent is not None:
-            subscribers.update(
-                parent.getBugNotificationsRecipients(recipients, level))
-        return subscribers
-
     @property
     def bug_subscriptions(self):
         """See `IStructuralSubscriptionTarget`."""
@@ -484,21 +466,8 @@ class StructuralSubscriptionTargetMixin:
                     return True
         return False
 
-    def getSubscriptionsForBug(self, bug, level):
+    def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        if IProjectGroup.providedBy(self):
-            targets = set(self.products)
-        elif IMilestone.providedBy(self):
-            targets = [self.series_target]
-        else:
-            targets = [self]
-
-        bugtasks = [
-            bugtask for bugtask in bug.bugtasks
-            if bugtask.target in targets]
-
-        assert len(bugtasks) != 0, repr(self)
-
         origin = [
             StructuralSubscription,
             LeftJoin(
@@ -515,7 +484,7 @@ class StructuralSubscriptionTargetMixin:
                     BugSubscriptionFilter.id)),
             ]
 
-        if len(bug.tags) == 0:
+        if len(bugtask.bug.tags) == 0:
             tag_conditions = [
                 BugSubscriptionFilter.include_any_tags == False,
                 ]
@@ -534,13 +503,12 @@ class StructuralSubscriptionTargetMixin:
                     # There's no status filter, or there is a status filter
                     # and and it matches.
                     Or(BugSubscriptionFilterStatus.id == None,
-                       BugSubscriptionFilterStatus.status.is_in(
-                            bugtask.status for bugtask in bugtasks)),
+                       BugSubscriptionFilterStatus.status == bugtask.status),
                     # There's no importance filter, or there is an importance
                     # filter and it matches.
                     Or(BugSubscriptionFilterImportance.id == None,
-                       BugSubscriptionFilterImportance.importance.is_in(
-                            bugtask.importance for bugtask in bugtasks)),
+                       BugSubscriptionFilterImportance.importance == (
+                            bugtask.importance)),
                     # Any number of conditions relating to tags.
                     *tag_conditions)),
             ]

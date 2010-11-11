@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from doctest import DocTestSuite
@@ -114,7 +112,3 @@ def test_suite():
     suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

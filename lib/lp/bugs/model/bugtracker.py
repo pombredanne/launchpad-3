@@ -175,6 +175,121 @@ def make_bugtracker_title(uri):
         return base_uri.host + base_uri.path
 
 
+class BugTrackerComponent(Storm):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    implements(IBugTrackerComponent)
+    __storm_table__ = 'BugTrackerComponent'
+
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
+
+    component_group_id = Int('component_group')
+    component_group = Reference(
+        component_group_id,
+        'BugTrackerComponentGroup.id')
+
+    is_visible = Bool(allow_none=False)
+    is_custom = Bool(allow_none=False)
+
+    distribution_id = Int('distribution')
+    distribution = Reference(
+        distribution_id,
+        'Distribution.id')
+
+    source_package_name_id = Int('source_package_name')
+    source_package_name = Reference(
+        source_package_name_id,
+        'SourcePackageName.id')
+
+    def _get_distro_source_package(self):
+        """Retrieves the corresponding source package"""
+        if self.distribution is None or self.source_package_name is None:
+            return None
+        return self.distribution.getSourcePackage(
+            self.source_package_name)
+
+    def _set_distro_source_package(self, dsp):
+        """Links this component to its corresponding source package"""
+        if dsp is None:
+            self.distribution = None
+            self.source_package_name = None
+        else:
+            self.distribution = dsp.distribution
+            self.source_package_name = dsp.sourcepackagename
+
+    distro_source_package = property(
+        _get_distro_source_package,
+        _set_distro_source_package,
+        None,
+        """The distribution's source package for this component""")
+
+
+class BugTrackerComponentGroup(Storm):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level
+    groups, such as Bugzilla's 'product'.
+    """
+    implements(IBugTrackerComponentGroup)
+    __storm_table__ = 'BugTrackerComponentGroup'
+
+    id = Int(primary=True)
+    name = Unicode(allow_none=False)
+    bug_tracker_id = Int('bug_tracker')
+    bug_tracker = Reference(bug_tracker_id, 'BugTracker.id')
+    components = ReferenceSet(
+        id,
+        BugTrackerComponent.component_group_id,
+        order_by=BugTrackerComponent.name)
+
+    def addComponent(self, component_name):
+        """Adds a component that is synced from a remote bug tracker"""
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        component.component_group = self
+
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+        store.flush()
+
+        return component
+
+    def getComponent(self, component_name):
+        """Retrieves a component by the given name.
+
+        None is returned if there is no component by that name in the
+        group.
+        """
+
+        if component_name is None:
+            return None
+        else:
+            return Store.of(self).find(
+                BugTrackerComponent,
+                (BugTrackerComponent.name == component_name)).one()
+
+    def addCustomComponent(self, component_name):
+        """Adds a component locally that isn't synced from a remote tracker
+        """
+
+        component = BugTrackerComponent()
+        component.name = component_name
+        component.component_group = self
+        component.is_custom = True
+
+        store = IStore(BugTrackerComponent)
+        store.add(component)
+        store.flush()
+
+        return component
+
+
 class BugTracker(SQLBase):
     """A class to access the BugTracker table in the database.
 
@@ -233,7 +348,9 @@ class BugTracker(SQLBase):
         BugTrackerType.SOURCEFORGE: (
             "%(base_url)s/%(tracker)s/?func=add&"
             "group_id=%(group_id)s&atid=%(at_id)s"),
-        BugTrackerType.TRAC: "%(base_url)s/newticket",
+        BugTrackerType.TRAC: (
+            "%(base_url)s/newticket?summary=%(summary)s&"
+            "description=%(description)s"),
         }
 
     _search_url_patterns = {
@@ -716,86 +833,3 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
-
-
-class BugTrackerComponent(Storm):
-    """The software component in the remote bug tracker.
-
-    Most bug trackers organize bug reports by the software 'component'
-    they affect.  This class provides a mapping of this upstream component
-    to the corresponding source package in the distro.
-    """
-    implements(IBugTrackerComponent)
-    __storm_table__ = 'BugTrackerComponent'
-
-    id = Int(primary=True)
-    name = Unicode(allow_none=False)
-
-    component_group_id = Int('component_group')
-    component_group = Reference(
-        component_group_id,
-        'BugTrackerComponentGroup.id')
-
-    is_visible = Bool(allow_none=False)
-    is_custom = Bool(allow_none=False)
-
-
-class BugTrackerComponentGroup(Storm):
-    """A collection of components in a remote bug tracker.
-
-    Some bug trackers organize sets of components into higher level groups,
-    such as Bugzilla's 'product'.
-    """
-    implements(IBugTrackerComponentGroup)
-    __storm_table__ = 'BugTrackerComponentGroup'
-
-    id = Int(primary=True)
-    name = Unicode(allow_none=False)
-    bug_tracker_id = Int('bug_tracker')
-    bug_tracker = Reference(bug_tracker_id, 'BugTracker.id')
-    components = ReferenceSet(
-        id,
-        BugTrackerComponent.component_group_id,
-        order_by=BugTrackerComponent.name)
-
-    def addComponent(self, component_name):
-        """Adds a component that is synced from a remote bug tracker"""
-
-        component = BugTrackerComponent()
-        component.name = component_name
-        component.component_group = self
-
-        store = IStore(BugTrackerComponent)
-        store.add(component)
-        store.flush()
-
-        return component
-
-    def getComponent(self, component_name):
-        """Retrieves a component by the given name.
-
-        None is returned if there is no component by that name in the
-        group.
-        """
-
-        if component_name is None:
-            return None
-        else:
-            return Store.of(self).find(
-                BugTrackerComponent,
-                (BugTrackerComponent.name == component_name)).one()
-
-    def addCustomComponent(self, component_name):
-        """Adds a component locally that isn't synced from a remote tracker
-        """
-
-        component = BugTrackerComponent()
-        component.name = component_name
-        component.component_group = self
-        component.is_custom = True
-
-        store = IStore(BugTrackerComponent)
-        store.add(component)
-        store.flush()
-
-        return component

@@ -3,8 +3,6 @@
 
 """Test Archive features."""
 
-from __future__ import with_statement
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer

@@ -37,7 +37,6 @@ from storm.expr import (
     And,
     AutoTables,
     Desc,
-    In,
     Join,
     LeftJoin,
     Or,
@@ -127,6 +126,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -155,9 +155,12 @@ from lp.registry.interfaces.productseries import (
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.propertycache import IPropertyCache
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -354,37 +357,6 @@ class BugTaskMixin:
             if that_pillar != this_pillar:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
-
-    @property
-    def mentoring_offers(self):
-        """See `IHasMentoringOffers`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.mentoring_offers
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.canMentor(user)
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.isMentor(user)
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.offerMentoring(user, team)
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.retractMentoring(user)
 
 
 class NullBugTask(BugTaskMixin):
@@ -694,16 +666,11 @@ class BugTask(SQLBase, BugTaskMixin):
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
 
-        # Make sure to exclude the current BugTask from the list of
-        # matching tasks. We use 4*limit as an arbitrary value here to
-        # make sure we select more than :limit: bugtasks.
-        matching_bugtasks = [
-            bug_task for bug_task in matching_bugtasks[:4*limit]
-            if bug_task != self]
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, user, limit)
-        return matching_bugs
+
+        # Make sure to exclude the bug of the current bugtask.
+        return [bug for bug in matching_bugs if bug.id != self.bugID]
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
@@ -884,19 +851,23 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id or
-            user.id == celebrities.janitor.id):
+        if (self.status == BugTaskStatus.FIXRELEASED and
+           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+            return True
+        elif (user.inTeam(self.pillar.bug_supervisor) or
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
             return True
         else:
-            return (self.status is not BugTaskStatus.WONTFIX and
-                    new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+            return (self.status not in (
+                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
+                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
-        if not new_status:
+        if not new_status or user is None:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
@@ -1345,8 +1316,9 @@ def _make_cache_user_can_view_bug(user):
     :seealso: get_bug_privacy_filter_with_decorator
     """
     userid = user.id
+
     def cache_user_can_view_bug(bugtask):
-        IPropertyCache(bugtask.bug)._known_viewers = set([userid])
+        get_property_cache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
     return cache_user_can_view_bug
 
@@ -1487,7 +1459,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         # XXX: JSK: 2007-12-19: This method should probably return
         # None when task_id is not present. See:
-        # https://bugs.edge.launchpad.net/launchpad/+bug/123592
+        # https://bugs.launchpad.net/launchpad/+bug/123592
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
@@ -1515,26 +1487,22 @@ class BugTaskSet:
         from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
-        from lp.registry.model.mentoringoffer import MentoringOffer
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
-        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
-                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+            SpecificationBug.bugID,
+            SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
-                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+                BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
         # Cache all bugs at once to avoid one query per bugtask. We
         # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
 
         badge_properties = {}
         for bugtask in bugtasks:
             bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
-                'has_mentoring_offer':
-                    bug.id in bug_ids_with_mentoring_offers,
                 'has_specification':
                     bug.id in bug_ids_with_specifications,
                 'has_branch':
@@ -1772,7 +1740,8 @@ class BugTaskSet:
                   BugTask.productseries = StructuralSubscription.productseries
                   AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                SELECT BugTask.id
+                FROM BugTask, StructuralSubscription, Product
                 WHERE
                   BugTask.product = Product.id
                   AND Product.project = StructuralSubscription.project
@@ -1942,13 +1911,19 @@ class BugTaskSet:
                 "Bug.date_last_updated > %s" % (
                     sqlvalues(params.modified_since,)))
 
+        if params.created_since:
+            extra_clauses.append(
+                "BugTask.datecreated > %s" % (
+                    sqlvalues(params.created_since,)))
+
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
 
         if not decorators:
-            decorator = lambda x:x
+            decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2244,6 +2219,7 @@ class BugTaskSet:
             # This may need revisiting if e.g. searches on behalf of different
             # users are combined.
             decorators.append(decorator)
+
         def decorator(row):
             bugtask = row[0]
             for decorator in decorators:
@@ -2311,7 +2287,7 @@ class BugTaskSet:
             else:
                 store = search_results._store
             milestones = store.find(
-                Milestone, In(Milestone.id, milestone_ids))
+                Milestone, Milestone.id.is_in(milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
@@ -2371,7 +2347,7 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         bugtask.updateTargetNameCache()
-        del IPropertyCache(bug).bugtasks
+        del get_property_cache(bug).bugtasks
         # Because of block_implicit_flushes, it is possible for a new bugtask
         # to be queued in appropriately, which leads to Bug.bugtasks not
         # finding the bugtask.
@@ -2417,7 +2393,7 @@ class BugTaskSet:
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
-                              bug=None, target=None):
+                              bug=None, target=None, limit=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -2483,6 +2459,8 @@ class BugTaskSet:
             unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
+        if limit is not None:
+            expirable_bugtasks = expirable_bugtasks.limit(limit)
 
         return expirable_bugtasks
 
@@ -2829,3 +2807,58 @@ class BugTaskSet:
             counts.append(package_counts)
 
         return counts
+
+    def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
+        """See `IBugTaskSet`."""
+        query_arguments = []
+        for bugtask in bugtasks:
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                query_arguments.append((bugtask.target, bugtask))
+                if bugtask.target.parent_subscription_target is not None:
+                    query_arguments.append(
+                        (bugtask.target.parent_subscription_target, bugtask))
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the source
+                # package set as their target, so we add the distroseries
+                # explicitly to the set of subscription targets.
+                query_arguments.append((bugtask.distroseries, bugtask))
+            if bugtask.milestone is not None:
+                query_arguments.append((bugtask.milestone, bugtask))
+
+        if len(query_arguments) == 0:
+            return EmptyResultSet()
+
+        if level is None:
+            # If level is not specified, default to NOTHING so that all
+            # subscriptions are found.
+            level = BugNotificationLevel.NOTHING
+
+        # Build the query.
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
+        queries = (
+            target.getSubscriptionsForBugTask(bugtask, level)
+            for target, bugtask in query_arguments)
+        subscriptions = reduce(union, queries)
+
+        # Pull all the subscriptions in.
+        subscriptions = list(subscriptions)
+
+        # Prepare a query for the subscribers.
+        from lp.registry.model.person import Person
+        subscribers = IStore(Person).find(
+            Person, Person.id.is_in(
+                removeSecurityProxy(subscription).subscriberID
+                for subscription in subscriptions))
+
+        if recipients is not None:
+            # We need to process subscriptions, so pull all the
+            # subscribes into the cache, then update recipients with
+            # the subscriptions.
+            subscribers = list(subscribers)
+            for subscription in subscriptions:
+                recipients.addStructuralSubscriber(
+                    subscription.subscriber, subscription.target)
+
+        return subscribers

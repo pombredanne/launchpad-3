@@ -36,7 +36,7 @@ targeted to the PRIMARY archive.
 The 'PPA' action-menu item will be enabled if we target the build to
 Celso's PPA.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_failed_build = cprov.archive.getBuildRecords(
@@ -166,8 +166,8 @@ A person in a team that has rights to upload to a packageset can also retry it.
 So, create a user, a team, and the packageset:
 
     >>> login('admin@canonical.com')
+    >>> from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
     >>> from lp.soyuz.interfaces.packageset import IPackagesetSet
-    >>> from canonical.launchpad.interfaces import IArchivePermissionSet
     >>> joe = factory.makePerson(email='joe@example.com', password='test')
     >>> desktop = factory.makeTeam(name='desktop', owner=joe)
     >>> main_archive = test_publisher.distroseries.main_archive

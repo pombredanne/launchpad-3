@@ -58,8 +58,7 @@ Let's make it the translation group for Evolution.
 
 Let's only allow translators from that group to translate.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
 No Privileges Person isn't allowed to translate into Welsh.

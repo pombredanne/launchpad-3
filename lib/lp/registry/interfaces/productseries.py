@@ -73,7 +73,12 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -121,7 +126,7 @@ class IProductSeriesEditRestricted(Interface):
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationTemplates, IServiceUsage):
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -251,6 +256,11 @@ class IProductSeriesPublic(
         description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

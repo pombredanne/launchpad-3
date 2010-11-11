@@ -8,7 +8,7 @@ distribution. Let's start with a product, this is done using
 affects and creates the new bugtask.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> len(bug_four.bugtasks)
     1
@@ -97,8 +97,8 @@ the product manually, since it's hard to guess which product that is
 most likely to get added. Let's take a look how it works for packages,
 which can have packaging links that helps us choose the product.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> owner = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -168,8 +168,8 @@ In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
@@ -646,5 +646,5 @@ bug trackers will always be a usable URL.
     >>> product.bugtracker = trac_bugtracker
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Reflow%20...
     bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

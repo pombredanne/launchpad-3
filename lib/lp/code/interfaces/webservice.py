@@ -20,6 +20,7 @@ from lp.code.interfaces.branch import (
     IBranchSet,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -35,3 +36,4 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 
 
+IBranchMergeQueue['branches'].value_type.schema = IBranch

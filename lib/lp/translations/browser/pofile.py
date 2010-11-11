@@ -26,7 +26,6 @@ from zope.publisher.browser import FileUpload
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -36,6 +35,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from lp.app.errors import (
@@ -87,20 +87,7 @@ class POFileNavigation(Navigation):
             raise NotFoundError(
                 "%r is not a valid sequence number." % name)
 
-        # Need to check in our database whether we have already the requested
-        # TranslationMessage.
-        translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.context.potemplate, self.context.language)
-
-        if translationmessage is not None:
-            # Already have a valid POMsgSet entry, just return it.
-            translationmessage.setPOFile(self.context)
-            return translationmessage
-        else:
-            # Get a fake one so we don't create new TranslationMessage just
-            # because someone is browsing the web.
-            return potmsgset.getCurrentDummyTranslationMessage(
-                self.context.potemplate, self.context.language)
+        return potmsgset.getCurrentTranslationMessageOrDummy(self.context)
 
 
 class POFileFacets(POTemplateFacets):
@@ -837,26 +824,15 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _buildTranslationMessageViews(self, for_potmsgsets):
         """Build translation message views for all potmsgsets given."""
-        last = None
         for potmsgset in for_potmsgsets:
-            assert (last is None or
-                    potmsgset.getSequence(
-                        self.context.potemplate) >= last.getSequence(
-                            self.context.potemplate)), (
-                "POTMsgSets on page not in ascending sequence order")
-            last = potmsgset
+            translationmessage = (
+                potmsgset.getCurrentTranslationMessageOrDummy(self.context))
+            error = self.errors.get(potmsgset)
+            can_edit = self.context.canEditTranslations(self.user)
 
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.context.potemplate, self.context.language)
-            if translationmessage is None:
-                translationmessage = (
-                    potmsgset.getCurrentDummyTranslationMessage(
-                        self.context.potemplate, self.context.language))
-            else:
-                translationmessage.setPOFile(self.context)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
-                self.errors.get(potmsgset))
+                pofile=self.context, can_edit=can_edit, error=error)
             view.zoomed_in_view = False
             self.translationmessage_views.append(view)
 

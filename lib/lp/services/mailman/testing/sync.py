@@ -30,10 +30,8 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces import (
-    IEmailAddressSet,
-    IPersonSet,
-    )
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.registry.interfaces.person import IPersonSet
 
 
 class SyncDetails:

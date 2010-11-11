@@ -61,11 +61,13 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -655,9 +657,10 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Only the Launchpad admins need this, we are only going to use it
-        for connecting up series and distroseriess where we did not have
-        them."""
+        """Only the Launchpad admins need this, we are only going to use
+        it for connecting up series and distroseries where we did not
+        have them.
+        """
         return user.in_admin
 
 
@@ -889,8 +892,45 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
 class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
-    permission = 'launchpad.Edit'
+    permission = 'launchpad.BugSupervisor'
     usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.distribution.bug_supervisor) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.in_admin)
+
+
+class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
+    AuthorizationBase):
+    """Product's owner and bug supervisor can set official bug tags."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IOfficialBugTagTargetRestricted
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.bug_supervisor) or
+                user.inTeam(self.obj.owner) or
+                user.in_admin)
+
+
+class NominateBugForProductSeries(AuthorizationBase):
+    """Product's owners and bug supervisors can add bug nominations."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        return (user.inTeam(self.obj.product.bug_supervisor) or
+                user.inTeam(self.obj.product.owner) or
+                user.in_admin)
+
+
+class NominateBugForDistroSeries(AuthorizationBase):
+    """Distro's owners and bug supervisors can add bug nominations."""
+
+    permission = 'launchpad.BugSupervisor'
+    usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.distribution.bug_supervisor) or
@@ -1121,6 +1161,18 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_bazaar_experts or user.in_buildd_admin
+
+
+class EditBranchMergeQueue(AuthorizationBase):
+    """Control who can edit a BranchMergeQueue.
+
+    Access is granted only to the owner of the queue.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeQueue
+
+    def checkAuthenticated(self, user):
+        return user.isOwner(self.obj)
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -1930,7 +1982,7 @@ class ViewHWSubmission(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Can the user view the submission details?
 
-        Submissions that not marked private are publicly visible,
+        Submissions that are not marked private are publicly visible,
         private submissions may only be accessed by their owner and by
         admins.
         """

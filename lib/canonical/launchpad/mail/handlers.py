@@ -61,7 +61,7 @@ from lp.services.mail.sendmail import (
 
 def extract_signature_timestamp(signed_msg):
     # break import cycle
-    from canonical.launchpad.mail.incoming import (
+    from lp.services.mail.incoming import (
         canonicalise_line_endings)
     signature = getUtility(IGPGHandler).getVerifiedSignature(
         canonicalise_line_endings(signed_msg.signedContent),

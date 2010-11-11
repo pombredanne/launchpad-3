@@ -14,7 +14,7 @@ TESTOPTS=
 SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
-LPCONFIG=development
+LPCONFIG?=development
 
 JSFLAGS=
 ICING=lib/canonical/launchpad/icing
@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
@@ -228,18 +228,18 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: check_schema inplace stop support_files
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -252,9 +252,8 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
-
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian
@@ -343,7 +342,7 @@ clean: clean_js clean_buildout
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)

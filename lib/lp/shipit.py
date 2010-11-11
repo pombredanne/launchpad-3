@@ -16,13 +16,6 @@ from canonical.launchpad.helpers import (
     intOrZero,
     shortlist,
     )
-# From browser/configure.zcml.
-from canonical.launchpad.interfaces import (
-    ILaunchpadRoot,
-    IMasterObject,
-    ISlaveStore,
-    IStore,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
     IAccount,
@@ -31,6 +24,12 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+# From browser/configure.zcml.
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    ISlaveStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.security import AuthorizationBase
@@ -65,6 +64,7 @@ from canonical.launchpad.webapp.interaction import Participation
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     ILaunchpadApplication,
+    ILaunchpadRoot,
     IPlacelessLoginSource,
     IStoreSelector,
     UnexpectedFormData,
@@ -108,7 +108,7 @@ from lp.services.mail import stub
 from lp.services.mail.sendmail import simple_sendmail
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.scripts.base import (
     LaunchpadCronScript,

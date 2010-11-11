@@ -3,8 +3,8 @@
 Admistrators can access a subset of any IPerson's fields from the UI.
 The PersonAdministerView is registered under the +review name.
 
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 
     >>> login('foo.bar@canonical.com')
     >>> admin = getUtility(IOpenLaunchBag).user
