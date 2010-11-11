@@ -32,7 +32,6 @@ class TestPOFileStillInitialized(TestCaseWithFactory):
         tm = self.factory.makeTranslationMessage(pofile=pofile)
 
 
-
 class TestTranslationMessage(TestCaseWithFactory):
     """Basic unit tests for TranslationMessage class.
     """
