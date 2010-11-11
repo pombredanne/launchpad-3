@@ -181,7 +181,6 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import (
-    BugTask,
     get_related_bugtasks_search_params,
     )
 from lp.code.model.hasbranches import (
@@ -192,6 +191,7 @@ from lp.code.model.hasbranches import (
 from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
+    PPACreationError,
     )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -218,7 +218,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
