@@ -117,6 +117,9 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -379,7 +382,7 @@ patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -474,6 +477,10 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+
+# IHasTranslationTemplates
+patch_collection_return_type(
+    IHasTranslationTemplates, 'getTranslationTemplates', IPOTemplate)
 
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)

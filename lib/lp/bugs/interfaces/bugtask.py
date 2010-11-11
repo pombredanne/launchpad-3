@@ -1188,8 +1188,8 @@ class BugTaskSearchParams:
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
-        self.modified_since = None
-        self.created_since = None
+        self.modified_since = modified_since
+        self.created_since = created_since
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1442,7 +1442,8 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
+                              limit=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
@@ -1455,6 +1456,7 @@ class IBugTaskSet(Interface):
         :param target: An `IBugTarget`. If a target is provided, only
             bugtasks that belong to the target may be returned. If target
             is None, all bugtargets are searched.
+        :param limit: An int for limiting the number of bugtasks returned.
         :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug

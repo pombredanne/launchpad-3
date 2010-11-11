@@ -25,6 +25,7 @@ from canonical.testing.layers import (
 
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
+    BugBranchSearch,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
@@ -53,29 +54,30 @@ class SearchTestBase:
         super(SearchTestBase, self).setUp()
         self.bugtask_set = getUtility(IBugTaskSet)
 
+    def assertSearchFinds(self, params, expected_bugtasks):
+        # Run a search for the given search parameters and check if
+        # the result matches the expected bugtasks.
+        search_result = self.runSearch(params)
+        expected = self.resultValuesForBugtasks(expected_bugtasks)
+        self.assertEqual(expected, search_result)
+
     def test_search_all_bugtasks_for_target(self):
         # BugTaskSet.search() returns all bug tasks for a given bug
         # target, if only the bug target is passed as a search parameter.
         params = self.getBugTaskSearchParams(user=None)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks)
 
     def test_private_bug_in_search_result(self):
         # Private bugs are not included in search results for anonymous users.
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.setPrivate(True, self.owner)
         params = self.getBugTaskSearchParams(user=None)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)[:-1]
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:-1])
 
         # Private bugs are not included in search results for ordinary users.
         user = self.factory.makePerson()
         params = self.getBugTaskSearchParams(user=user)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)[:-1]
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:-1])
 
         # If the user is subscribed to the bug, it is included in the
         # search result.
@@ -83,16 +85,12 @@ class SearchTestBase:
         with person_logged_in(self.owner):
             self.bugtasks[-1].bug.subscribe(user, self.owner)
         params = self.getBugTaskSearchParams(user=user)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks)
 
         # Private bugs are included in search results for admins.
         admin = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
         params = self.getBugTaskSearchParams(user=admin)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks)
 
     def test_search_by_bug_reporter(self):
         # Search results can be limited to bugs filed by a given person.
@@ -100,9 +98,7 @@ class SearchTestBase:
         reporter = bugtask.bug.owner
         params = self.getBugTaskSearchParams(
             user=None, bug_reporter=reporter)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks([bugtask])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, [bugtask])
 
     def test_search_by_bug_commenter(self):
         # Search results can be limited to bugs having a comment from a
@@ -118,9 +114,7 @@ class SearchTestBase:
             expected.bug.newMessage(owner=commenter, content='a comment')
         params = self.getBugTaskSearchParams(
             user=None, bug_commenter=commenter)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks([expected])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, [expected])
 
     def test_search_by_person_affected_by_bug(self):
         # Search results can be limited to bugs which affect a given person.
@@ -130,9 +124,7 @@ class SearchTestBase:
             expected.bug.markUserAffected(affected_user)
         params = self.getBugTaskSearchParams(
             user=None, affected_user=affected_user)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks([expected])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, [expected])
 
     def test_search_by_bugtask_assignee(self):
         # Search results can be limited to bugtask assigned to a given
@@ -142,9 +134,7 @@ class SearchTestBase:
         with person_logged_in(assignee):
             expected.transitionToAssignee(assignee)
         params = self.getBugTaskSearchParams(user=None, assignee=assignee)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks([expected])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, [expected])
 
     def test_search_by_bug_subscriber(self):
         # Search results can be limited to bugs to which a given person
@@ -154,9 +144,69 @@ class SearchTestBase:
         with person_logged_in(subscriber):
             expected.bug.subscribe(subscriber, subscribed_by=subscriber)
         params = self.getBugTaskSearchParams(user=None, subscriber=subscriber)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks([expected])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, [expected])
+
+    def subscribeToTarget(self, subscriber):
+        # Subscribe the given person to the search target.
+        with person_logged_in(subscriber):
+            self.searchtarget.addSubscription(
+                subscriber, subscribed_by=subscriber)
+
+    def _findBugtaskForOtherProduct(self, bugtask, main_product):
+        # Return the bugtask for the product that is not related to the
+        # main bug target.
+        #
+        # The default bugtasks of this test suite are created by
+        # ObjectFactory.makeBugTask() as follows:
+        # - a new bug is created having a new product as the target.
+        # - another bugtask is created for self.searchtarget (or,
+        #   when self.searchtarget is a milestone, for the product
+        #   of the milestone)
+        # This method returns the bug task for the product that is not
+        # related to the main bug target.
+        bug = bugtask.bug
+        for other_task in bug.bugtasks:
+            other_target = other_task.target
+            if (IProduct.providedBy(other_target)
+                and other_target != main_product):
+                return other_task
+        self.fail(
+            'No bug task found for a product that is not the target of '
+            'the main test bugtask.')
+
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that is not related to the
+        # main bug target.
+        #
+        # This method must ober overridden for product related tests.
+        return self._findBugtaskForOtherProduct(bugtask, None)
+
+    def test_search_by_structural_subscriber(self):
+        # Search results can be limited to bugs with a bug target to which
+        # a given person has a structural subscription.
+        subscriber = self.factory.makePerson()
+        # If the given person is not subscribed, no bugtasks are returned.
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, [])
+        # When the person is subscribed, all bugtasks are returned.
+        self.subscribeToTarget(subscriber)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, self.bugtasks)
+
+        # Searching for a structural subscriber does not return a bugtask,
+        # if the person is subscribed to another target than the main
+        # bug target.
+        other_subscriber = self.factory.makePerson()
+        other_bugtask = self.findBugtaskForOtherProduct(self.bugtasks[0])
+        other_target = other_bugtask.target
+        with person_logged_in(other_subscriber):
+            other_target.addSubscription(
+                other_subscriber, subscribed_by=other_subscriber)
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=other_subscriber)
+        self.assertSearchFinds(params, [])
 
     def test_search_by_bug_attachment(self):
         # Search results can be limited to bugs having attachments of
@@ -171,23 +221,17 @@ class SearchTestBase:
         # We can search for bugs with non-patch attachments...
         params = self.getBugTaskSearchParams(
             user=None, attachmenttype=BugAttachmentType.UNSPECIFIED)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:1])
         # ... for bugs with patches...
         params = self.getBugTaskSearchParams(
             user=None, attachmenttype=BugAttachmentType.PATCH)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[1:2])
         # and for bugs with patches or attachments
         params = self.getBugTaskSearchParams(
             user=None, attachmenttype=any(
                 BugAttachmentType.PATCH,
                 BugAttachmentType.UNSPECIFIED))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:2])
 
     def setUpFullTextSearchTests(self):
         # Set text fields indexed by Bug.fti, BugTask.fti or
@@ -205,40 +249,30 @@ class SearchTestBase:
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
             user=None, searchtext='one title')
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:1])
         # ... by BugTask.fti ...
         params = self.getBugTaskSearchParams(
             user=None, searchtext='two explanation')
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[1:2])
         # ...and by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, searchtext='three comment')
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[2:3])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[2:3])
 
     def test_fast_fulltext_search(self):
         # Fast full text searches find text indexed by Bug.fti...
         self.setUpFullTextSearchTests()
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='one title')
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:1])
         # ... but not text indexed by BugTask.fti ...
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='two explanation')
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
         # ..or by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='three comment')
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
 
     def test_has_no_upstream_bugtask(self):
         # Search results can be limited to bugtasks of bugs that do
@@ -258,13 +292,13 @@ class SearchTestBase:
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
                 bug = self.factory.makeBug(distribution=self.searchtarget)
-                expected = self.resultValuesForBugtasks([bug.default_bugtask])
+                expected = [bug.default_bugtask]
             else:
                 bug = self.factory.makeBug(
                     distribution=self.searchtarget.distribution)
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
-                expected = self.resultValuesForBugtasks([bugtask])
+                expected = [bugtask]
         else:
             # Bugs without distribution related bugtasks have always at
             # least one product related bugtask, hence a
@@ -273,23 +307,14 @@ class SearchTestBase:
             expected = []
         params = self.getBugTaskSearchParams(
             user=None, has_no_upstream_bugtask=True)
-        search_result = self.runSearch(params)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, expected)
 
     def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
         # Change the status of another bugtask of the same bug to the
         # given status.
-        bug = bugtask.bug
-        for other_task in bug.bugtasks:
-            other_target = other_task.target
-            if other_task != bugtask and IProduct.providedBy(other_target):
-                with person_logged_in(other_target.owner):
-                    other_task.transitionToStatus(
-                        new_status, other_target.owner)
-                return
-        self.fail(
-            'No bug task found for a product that is not the target of '
-            'the main test bugtask.')
+        other_task = self.findBugtaskForOtherProduct(bugtask)
+        with person_logged_in(other_task.target.owner):
+            other_task.transitionToStatus(new_status, other_task.target.owner)
 
     def test_upstream_status(self):
         # Search results can be filtered by the status of an upstream
@@ -299,14 +324,11 @@ class SearchTestBase:
         # with status NEW for the "other" product, hence all bug tasks
         # will be returned in a search for bugs that are open upstream.
         params = self.getBugTaskSearchParams(user=None, open_upstream=True)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks)
         # A search for tasks resolved upstream does not yield any bugtask.
         params = self.getBugTaskSearchParams(
             user=None, resolved_upstream=True)
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
         # But if we set upstream bug tasks to "fix committed" or "fix
         # released", the related bug tasks for our test target appear in
         # the search result.
@@ -314,14 +336,11 @@ class SearchTestBase:
             self.bugtasks[0], BugTaskStatus.FIXCOMMITTED)
         self.changeStatusOfBugTaskForOtherProduct(
             self.bugtasks[1], BugTaskStatus.FIXRELEASED)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:2])
         # A search for bug tasks open upstream now returns only one
         # test task.
         params = self.getBugTaskSearchParams(user=None, open_upstream=True)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
+        self.assertSearchFinds(params, self.bugtasks[2:])
 
     def test_tags(self):
         # Search results can be limited to bugs having given tags.
@@ -330,44 +349,31 @@ class SearchTestBase:
             self.bugtasks[1].bug.tags = ['tag1', 'tag3']
         params = self.getBugTaskSearchParams(
             user=None, tag=any('tag2', 'tag3'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:2])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('tag2', 'tag3'))
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('tag1', 'tag3'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[1:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[1:2])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('tag1', '-tag3'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:1])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('-tag1'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[2:])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('*'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:2])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:2])
 
         params = self.getBugTaskSearchParams(
             user=None, tag=all('-*'))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[2:])
 
     def test_date_closed(self):
         # Search results can be filtered by the date_closed time
@@ -379,13 +385,106 @@ class SearchTestBase:
         self.assertTrue(utc_now >= self.bugtasks[2].date_closed)
         params = self.getBugTaskSearchParams(
             user=None, date_closed=greater_than(utc_now-timedelta(days=1)))
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[2:])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[2:])
         params = self.getBugTaskSearchParams(
             user=None, date_closed=greater_than(utc_now+timedelta(days=1)))
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
+
+    def test_created_since(self):
+        # Search results can be limited to bugtasks created after a
+        # given time.
+        one_day_ago = self.bugtasks[0].datecreated - timedelta(days=1)
+        two_days_ago = self.bugtasks[0].datecreated - timedelta(days=2)
+        with person_logged_in(self.owner):
+            self.bugtasks[0].datecreated = two_days_ago
+        params = self.getBugTaskSearchParams(
+            user=None, created_since=one_day_ago)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_modified_since(self):
+        # Search results can be limited to bugs modified after a
+        # given time.
+        one_day_ago = (
+            self.bugtasks[0].bug.date_last_updated - timedelta(days=1))
+        two_days_ago = (
+            self.bugtasks[0].bug.date_last_updated - timedelta(days=2))
+        with person_logged_in(self.owner):
+            self.bugtasks[0].bug.date_last_updated = two_days_ago
+        params = self.getBugTaskSearchParams(
+            user=None, modified_since=one_day_ago)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_branches_linked(self):
+        # Search results can be limited to bugs with or without linked
+        # branches.
+        with person_logged_in(self.owner):
+            branch = self.factory.makeBranch()
+            self.bugtasks[0].bug.linkBranch(branch, self.owner)
+        params = self.getBugTaskSearchParams(
+            user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        params = self.getBugTaskSearchParams(
+            user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_limit_search_to_one_bug(self):
+        # Search results can be limited to a given bug.
+        params = self.getBugTaskSearchParams(
+            user=None, bug=self.bugtasks[0].bug)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        other_bug = self.factory.makeBug()
+        params = self.getBugTaskSearchParams(user=None, bug=other_bug)
+        self.assertSearchFinds(params, [])
+
+    def test_filter_by_status(self):
+        # Search results can be limited to bug tasks with a given status.
+        params = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.FIXCOMMITTED)
+        self.assertSearchFinds(params, self.bugtasks[2:])
+        params = self.getBugTaskSearchParams(
+            user=None, status=any(BugTaskStatus.NEW, BugTaskStatus.TRIAGED))
+        self.assertSearchFinds(params, self.bugtasks[:2])
+        params = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.WONTFIX)
+        self.assertSearchFinds(params, [])
+
+    def test_filter_by_importance(self):
+        # Search results can be limited to bug tasks with a given importance.
+        params = self.getBugTaskSearchParams(
+            user=None, importance=BugTaskImportance.HIGH)
+        self.assertSearchFinds(params, self.bugtasks[:1])
+        params = self.getBugTaskSearchParams(
+            user=None,
+            importance=any(BugTaskImportance.HIGH, BugTaskImportance.LOW))
+        self.assertSearchFinds(params, self.bugtasks[:2])
+        params = self.getBugTaskSearchParams(
+            user=None, importance=BugTaskImportance.MEDIUM)
+        self.assertSearchFinds(params, [])
+
+    def test_omit_duplicate_bugs(self):
+        # Duplicate bugs can optionally be excluded from search results.
+        # The default behaviour is to include duplicates.
+        duplicate_bug = self.bugtasks[0].bug
+        master_bug = self.bugtasks[1].bug
+        with person_logged_in(self.owner):
+            duplicate_bug.markAsDuplicate(master_bug)
+        params = self.getBugTaskSearchParams(user=None)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If we explicitly pass the parameter omit_duplicates=False, we get
+        # the same result.
+        params = self.getBugTaskSearchParams(user=None, omit_dupes=False)
+        self.assertSearchFinds(params, self.bugtasks)
+        # If omit_duplicates is set to True, the first task bug is omitted.
+        params = self.getBugTaskSearchParams(user=None, omit_dupes=True)
+        self.assertSearchFinds(params, self.bugtasks[1:])
+
+    def test_has_cve(self):
+        # Search results can be limited to bugs linked to a CVE.
+        with person_logged_in(self.owner):
+            cve = self.factory.makeCVE('2010-0123')
+            self.bugtasks[0].bug.linkCVE(cve, self.owner)
+        params = self.getBugTaskSearchParams(user=None, has_cve=True)
+        self.assertSearchFinds(params, self.bugtasks[:1])
 
 
 class ProductAndDistributionTests:
@@ -405,9 +504,7 @@ class ProductAndDistributionTests:
             self.bugtasks[0].bug.addNomination(nominator, series1)
             self.bugtasks[1].bug.addNomination(nominator, series2)
         params = self.getBugTaskSearchParams(user=None, nominated_for=series1)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks[:1])
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks[:1])
 
 
 class BugTargetTestBase:
@@ -445,15 +542,12 @@ class BugTargetWithBugSuperVisor:
         supervisor = self.factory.makeTeam(owner=self.owner)
         params = self.getBugTaskSearchParams(
             user=None, bug_supervisor=supervisor)
-        search_result = self.runSearch(params)
-        self.assertEqual([], search_result)
+        self.assertSearchFinds(params, [])
 
         # If we appoint a bug supervisor, searching for bug tasks
         # by supervisor will return all bugs for our test target.
         self.setSupervisor(supervisor)
-        search_result = self.runSearch(params)
-        expected = self.resultValuesForBugtasks(self.bugtasks)
-        self.assertEqual(expected, search_result)
+        self.assertSearchFinds(params, self.bugtasks)
 
     def setSupervisor(self, supervisor):
         """Set the bug supervisor for the bug task target."""
@@ -484,6 +578,11 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
         """See `ProductAndDistributionTests`."""
         return self.factory.makeProductSeries(product=self.searchtarget)
 
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that is not related to the
+        # main bug target.
+        return self._findBugtaskForOtherProduct(bugtask, self.searchtarget)
+
 
 class ProductSeriesTarget(BugTargetTestBase):
     """Use a product series as the bug target."""
@@ -502,6 +601,31 @@ class ProductSeriesTarget(BugTargetTestBase):
         params = BugTaskSearchParams(*args, **kw)
         params.setProductSeries(self.searchtarget)
         return params
+
+    def changeStatusOfBugTaskForOtherProduct(self, bugtask, new_status):
+        # Change the status of another bugtask of the same bug to the
+        # given status.
+        #
+        # This method is called by SearchTestBase.test_upstream_status().
+        # A search for bugs which are open or closed upstream has an
+        # odd behaviour when the search target is a product series: In
+        # this case, all bugs with an open or closed bug task for _any_
+        # product are returned, including bug tasks for the main product
+        # of the series. Hence we must set the status for all products
+        # in order to avoid a failure of test_upstream_status().
+        bug = bugtask.bug
+        for other_task in bugtask.related_tasks:
+            other_target = other_task.target
+            if IProduct.providedBy(other_target):
+                with person_logged_in(other_target.owner):
+                    other_task.transitionToStatus(
+                        new_status, other_target.owner)
+
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that not related to the
+        # main bug target.
+        return self._findBugtaskForOtherProduct(
+            bugtask, self.searchtarget.product)
 
 
 class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
@@ -525,8 +649,10 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
     def makeBugTasks(self):
         """Create bug tasks for the search target."""
         self.bugtasks = []
+        self.products = []
         with person_logged_in(self.owner):
             product = self.factory.makeProduct(owner=self.owner)
+            self.products.append(product)
             product.project = self.searchtarget
             self.bugtasks.append(
                 self.factory.makeBugTask(target=product))
@@ -535,6 +661,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
                 BugTaskStatus.TRIAGED, self.owner)
 
             product = self.factory.makeProduct(owner=self.owner)
+            self.products.append(product)
             product.project = self.searchtarget
             self.bugtasks.append(
                 self.factory.makeBugTask(target=product))
@@ -543,6 +670,7 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
             BugTaskStatus.NEW, self.owner)
 
             product = self.factory.makeProduct(owner=self.owner)
+            self.products.append(product)
             product.project = self.searchtarget
             self.bugtasks.append(
                 self.factory.makeBugTask(target=product))
@@ -556,6 +684,19 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
             # We must set the bug supervisor for each bug task target
             for bugtask in self.bugtasks:
                 bugtask.target.setBugSupervisor(supervisor, self.owner)
+
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that not related to the
+        # main bug target.
+        bug = bugtask.bug
+        for other_task in bug.bugtasks:
+            other_target = other_task.target
+            if (IProduct.providedBy(other_target)
+                and other_target not in self.products):
+                return other_task
+        self.fail(
+            'No bug task found for a product that is not the target of '
+            'the main test bugtask.')
 
 
 class MilestoneTarget(BugTargetTestBase):
@@ -582,6 +723,11 @@ class MilestoneTarget(BugTargetTestBase):
         with person_logged_in(self.owner):
             for bugtask in self.bugtasks:
                 bugtask.transitionToMilestone(self.searchtarget, self.owner)
+
+    def findBugtaskForOtherProduct(self, bugtask):
+        # Return the bugtask for the product that not related to the
+        # main bug target.
+        return self._findBugtaskForOtherProduct(bugtask, self.product)
 
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
@@ -644,6 +790,14 @@ class SourcePackageTarget(BugTargetTestBase):
         params = BugTaskSearchParams(*args, **kw)
         params.setSourcePackage(self.searchtarget)
         return params
+
+    def subscribeToTarget(self, subscriber):
+        # Subscribe the given person to the search target.
+        # Source packages do not support structural subscriptions,
+        # so we subscribe to the distro series instead.
+        with person_logged_in(subscriber):
+            self.searchtarget.distroseries.addSubscription(
+                subscriber, subscribed_by=subscriber)
 
 
 class DistributionSourcePackageTarget(BugTargetTestBase,

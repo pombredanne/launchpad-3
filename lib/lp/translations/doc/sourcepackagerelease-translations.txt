@@ -38,7 +38,7 @@ Commit, so uploaded contents are available in the current test.
 
 We will use an arbitrary source package release from the sampledata.
 
-    >>> from canonical.launchpad.database import SourcePackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> spr_test = SourcePackageRelease.get(20)
     >>> print spr_test.title
     pmount - 0.1-1

@@ -229,8 +229,11 @@ class BranchJobDerived(BaseRunnableJob):
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
     # should be implemented by delegates().
     def __eq__(self, other):
+        # removeSecurityProxy, since 'other' might well be a delegated object
+        # and the context attribute is not exposed by design.
+        from zope.security.proxy import removeSecurityProxy
         return (self.__class__ == other.__class__ and
-                self.context == other.context)
+                self.context == removeSecurityProxy(other).context)
 
     def __ne__(self, other):
         return not (self == other)

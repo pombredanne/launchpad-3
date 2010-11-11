@@ -954,6 +954,14 @@ BugMessage""" % sqlvalues(self.id))
             ).order_by(Person.name),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
+    def getSubscriptionForPerson(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        return store.find(
+            BugSubscription,
+            BugSubscription.person == person,
+            BugSubscription.bug == self).one()
+
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 

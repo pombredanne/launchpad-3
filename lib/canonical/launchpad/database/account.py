@@ -17,14 +17,13 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import (
-    DEFAULT,
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
     IStore,

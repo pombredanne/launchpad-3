@@ -92,7 +92,7 @@ We keep exceptions from expiring for about 3 months.
 
 >>> match = re.search('/(\d+)/', url)
 >>> alias_id = match.group(1)
->>> from canonical.launchpad.database import LibraryFileAlias
+>>> from canonical.launchpad.database.librarian import LibraryFileAlias
 >>> transaction.abort() # To see db changes made by the librarian
 >>> alias = LibraryFileAlias.get(alias_id)
 >>> now = datetime.now().replace(tzinfo=utc)
