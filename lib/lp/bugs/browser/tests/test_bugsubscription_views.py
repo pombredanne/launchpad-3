@@ -57,12 +57,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         }
                     harness.submit('continue', form_data)
 
-        subscription = bug.getSubscriptionForPerson(person)
-        self.assertEqual(
-            level, subscription.bug_notification_level,
-            "Bug notification level of subscription should be %s, is "
-            "actually %s." % (
-                level.name, subscription.bug_notification_level.name))
+                subscription = bug.getSubscriptionForPerson(person)
+                self.assertEqual(
+                    level, subscription.bug_notification_level,
+                    "Bug notification level of subscription should be %s, is "
+                    "actually %s." % (
+                        level.name, subscription.bug_notification_level.name))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
