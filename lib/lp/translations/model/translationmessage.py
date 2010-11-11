@@ -368,7 +368,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We can do this because our message sharing code ensures a POFile
         # exists for any of the sharing templates.
         # This approach gives us roughly a 100x performance improvement
-        # as of 2010-11-11. - danilo
+        # compared to straightforward join as of 2010-11-11. - danilo
         pofile = IStore(self).find(
             POFile,
             POFile.potemplateID == SQL(
