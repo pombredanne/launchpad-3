@@ -84,7 +84,6 @@ from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.interfaces.distributionjob import ISyncPackageJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -613,42 +612,13 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         be implemented later.
         """
         selected_differences = data['selected_differences']
-        success = []
-        failure = []
+        diffs = [
+            diff.source_package_name.name
+                for diff in selected_differences]
 
-        source = getUtility(ISyncPackageJobSource)
-
-        # Retrieve packages for which a job is active so
-        # users can be warned about packages for which a job is
-        # in progress.
-        active_packages = set([
-            job.source_package_name for job in
-                source.getActiveJobs(self.derived_series.main_archive)])
-
-        for diff in selected_differences:
-            if diff.source_package_name.name in active_packages:
-                failure.apppend(diff.source_package_name.name)
-                continue
-            success.append(diff.source_package_name.name)
-
-            # FIXME: Check for existing jobs for package
-            job = source.create(
-                source_archive=diff.derived_series.parent_series.main_archive,
-                target_archive=diff.derived_series.main_archive,
-                distroseries=diff.derived_series,
-                source_package_name=diff.source_package_name.name,
-                source_package_version=diff.parent_source_version,
-                include_binaries=True)
-
-        notification = ""
-        if success:
-            self.request.response.addNotification(
-                "The following sources will be synced:" +
-                ", ".join(success))
-        if failure:
-            self.request.response.addNotification(
-                "The following sources could not be synced:" +
-                ", ".join(failure))
+        self.request.response.addNotification(
+            "The following sources would have been synced if this "
+            "wasn't just a stub operation: " + ", ".join(diffs))
 
         self.next_url = self.request.URL
 
