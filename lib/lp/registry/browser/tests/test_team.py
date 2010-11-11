@@ -64,20 +64,13 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.team = self.factory.makeTeam()
         login_person(self.team.teamowner)
 
-    def test_newmember_empty_before_add(self):
-        view = create_initialized_view(self.team, "+addmember")
-        self.assertEqual([], view.errors)
-        self.assertEqual(
-            None, view.widgets['newmember']._getCurrentValue())
-
-    def test_newmember_add_success(self):
+    def test_add_member_success(self):
         member = self.factory.makePerson(name="a-member")
         form = {
             'field.newmember': 'a-member',
             'field.actions.add': 'Add Member',
             }
-        view = create_initialized_view(
-            self.team, "+addmember", form=form)
+        view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual([], view.errors)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
@@ -87,3 +80,16 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertTrue(member.inTeam(self.team))
         self.assertEqual(
             None, view.widgets['newmember']._getCurrentValue())
+
+    def test_add_empty_team_fail(self):
+        empty_team = self.factory.makeTeam(owner=self.team.teamowner)
+        self.team.teamowner.leave(empty_team)
+        form = {
+            'field.newmember': empty_team.name,
+            'field.actions.add': 'Add Member',
+            }
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            "You can't add a team that doesn't have any active members.",
+            view.errors[0])
