@@ -365,6 +365,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # Get any POFile where this translation exists.
         # Because we can't create a subselect with "LIMIT" using Storm,
         # we directly embed a subselect using raw SQL instead.
+        # We can do this because our message sharing code ensures a POFile
+        # exists for any of the sharing templates.
         # This approach gives us roughly a 100x performance improvement
         # as of 2010-11-11. - danilo
         pofile = IStore(self).find(
