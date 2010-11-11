@@ -1,1 +1,1 @@
-../../../../../maintenance-check.py
+../../../../../../../../../cronscripts/publishing/maintenance-check.py
