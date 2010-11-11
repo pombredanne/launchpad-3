@@ -5,4 +5,4 @@
 # of procmail) because there can be no multiple germinate instances
 # while we run the tests
 
-exit 0
+exit 1
