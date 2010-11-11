@@ -11,6 +11,8 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+from cStringIO import StringIO
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -82,9 +84,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return None
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        return slave.getFile(slave_filename).read()
+
+        tarball_file = StringIO()
+        d = slave.getFile(slave_filename, tarball_file)
+        return d.addCallback(lambda ignored: tarball_file.read())
 
     def _uploadTarball(self, branch, tarball, logger):
         """Upload tarball to productseries that want it."""
@@ -120,13 +123,11 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             queue_item.specific_job.branch.bzr_identity,
             build_status))
 
-        if build_status == 'OK':
-            logger.debug("Processing successful templates build.")
-            filemap = slave_status.get('filemap')
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            tarball = self._readTarball(queue_item, filemap, logger)
+        def clean_slave(ignored):
+            d = queue_item.builder.cleanSlave()
+            return d.addCallback(lambda ignored: queue_item.destroySelf())
 
+        def got_tarball(tarball):
             if tarball is None:
                 logger.error("Build produced no tarball.")
             else:
@@ -135,5 +136,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                     queue_item.specific_job.branch, tarball, logger)
                 logger.debug("Upload complete.")
 
-        d = queue_item.builder.cleanSlave()
-        return d.addCallback(lambda ignored: queue_item.destroySelf())
+        if build_status == 'OK':
+            logger.debug("Processing successful templates build.")
+            filemap = slave_status.get('filemap')
+            # XXX 2010-10-18 bug=662631
+            # Change this to do non-blocking IO.
+            tarball = self._readTarball(queue_item, filemap, logger)
+            d = self._readTarball(queue_item, filemap, logger)
+            return d.addCallback(got_tarball).addCallback(clean_slave)
+
+        return clean_slave(None)
+

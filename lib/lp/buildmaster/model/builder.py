@@ -39,6 +39,7 @@ from twisted.internet import (
     reactor as default_reactor,
     )
 from twisted.web import xmlrpc
+from twisted.web.client import downloadPage
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -177,12 +178,19 @@ class BuilderSlave(object):
         return self._with_timeout(self._server.callRemote(
             'ensurepresent', sha1sum, url, username, password))
 
-    def getFile(self, sha_sum):
-        """Construct a file-like object to return the named file."""
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
+    def getFile(self, sha_sum, file_to_write):
+        """Fetch a file from the builder.
+
+        :param sha_sum: The sha of the file (which is also its name on the 
+            builder)
+        :param file_to_write: A file name or file-like object to write
+            the file to
+        :return: A Deferred that calls back when the download is done, or
+            errback with the error string.
+        """
         file_url = urlappend(self._file_cache_url, sha_sum)
-        return urllib2.urlopen(file_url)
+        # XXX set timeout= ???
+        return downloadPage(file_url, file_to_write, followRedirect=0)
 
     def resume(self, clock=None):
         """Resume the builder in an asynchronous fashion.
@@ -568,38 +576,42 @@ class Builder(SQLBase):
         """See IBuilder."""
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
-        try:
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            slave_file = self.slave.getFile(file_sha1)
-            copy_and_close(slave_file, out_file)
-            # If the requested file is the 'buildlog' compress it using gzip
-            # before storing in Librarian.
-            if file_sha1 == 'buildlog':
+
+        def got_file(ignored):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
                 out_file = open(out_file_name)
-                filename += '.gz'
-                out_file_name += '.gz'
-                gz_file = gzip.GzipFile(out_file_name, mode='wb')
-                copy_and_close(out_file, gz_file)
-                os.remove(out_file_name.replace('.gz', ''))
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
 
-            # Reopen the file, seek to its end position, count and seek
-            # to beginning, ready for adding to the Librarian.
-            out_file = open(out_file_name)
-            out_file.seek(0, 2)
-            bytes_written = out_file.tell()
-            out_file.seek(0)
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.
+                out_file.close()
+                os.remove(out_file_name)
 
-            library_file = getUtility(ILibraryFileAliasSet).create(
-                filename, bytes_written, out_file,
-                contentType=filenameToContentType(filename),
-                restricted=private)
-        finally:
-            # Finally, remove the temporary file
-            out_file.close()
-            os.remove(out_file_name)
+            return library_file.id
 
-        return library_file.id
+        # XXX: there was no error handling in the old code, what should
+        # we do in an errback here?
+        d = self.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file)
+        return d
 
     def isAvailable(self):
         """See `IBuilder`."""
