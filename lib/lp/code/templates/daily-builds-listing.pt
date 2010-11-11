@@ -1,0 +1,92 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    metal:use-macro="view/macro:page/main_only"
+    i18n:domain="launchpad">
+
+  <body>
+
+    <metal:heading fill-slot="heading">
+      <h1 tal:content="view/page_title" />
+    </metal:heading>
+
+    <div metal:fill-slot="main"
+         tal:define="dailybuilds view/batchnav/currentBatch">
+
+      <tal:block tal:condition="not:dailybuilds">
+        <p id="no-builds">No daily builds found.</p>
+      </tal:block>
+
+      <tal:block tal:condition="dailybuilds">
+        <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
+        <table class="listing sortable" id="daily-build-listing">
+          <thead>
+            <tr>
+              <th>
+                Source Package
+              </th>
+              <th>
+                Recipe
+              </th>
+              <th>
+                Recipe Owner
+              </th>
+              <th>
+                Archive
+              </th>
+              <th>
+                Most Recent Build Time
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="dailybuild dailybuilds">
+              <td>
+                <!--<tal:source-package replace="structure dailybuild/sourcepackage/fmt:link">-->
+                  <!--source package-->
+                <!--</tal:source-package>-->
+                <a href="sourcepackage"
+                tal:attributes="href dailybuild/sourcepackage/fmt:url">
+                <span tal:replace="dailybuild/sourcepackage/name">
+                  source package
+                </span>
+                </a>
+              </td>
+
+              <td>
+                <a href="recipe"
+                tal:attributes="href dailybuild/recipe/fmt:url">
+                <span tal:replace="dailybuild/recipe/name">
+                  recipe
+                </span>
+                </a>
+              </td>
+
+              <td>
+                <tal:recipeowner replace="structure dailybuild/recipeowner/fmt:link">
+                  recipe owner
+                </tal:recipeowner>
+              </td>
+
+              <td>
+                <tal:archive replace="structure
+                                      dailybuild/archive/displayname">
+                  archive
+                </tal:archive>
+              </td>
+
+              <td tal:content="dailybuild/most_recent_build_time/fmt:datetime">
+                a date
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+        <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
+      </tal:block>
+    </div>
+
+  </body>
+</html>

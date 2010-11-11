@@ -68,6 +68,21 @@
 
 </facet>
 
+    <facet
+        facet="branches">
+        <browser:defaultView
+        for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
+        name="+daily-builds"/>
+      <browser:page
+          for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
+          layer="lp.code.publisher.CodeLayer"
+          name="+daily-builds"
+          class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
+          template="../templates/daily-builds-listing.pt"
+          permission="zope.Public"
+          />
+    </facet>
+
     <browser:url
         for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
         path_expression="string:+review/${id}"

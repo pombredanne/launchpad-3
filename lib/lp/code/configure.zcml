@@ -1002,4 +1002,23 @@
         factory="lp.code.model.sourcepackagerecipebuild.get_recipe_build_for_build_farm_job"
         name="RECIPEBRANCHBUILD"
         permission="zope.Public"/>
+
+  <!-- RecipeBuildRecordSet -->
+
+  <securedutility
+      class="lp.code.model.recipebuild.RecipeBuildRecordSet"
+      provides="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet">
+    <allow interface="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"/>
+  </securedutility>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecord">
+    <require permission="launchpad.View"
+             interface="lp.code.interfaces.recipebuild.IRecipeBuildRecord"/>
+  </class>
+
+  <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">
+    <allow attributes="__getitem__ __getslice__ __len__ __iter__
+                    __contains__ count" />
+  </class>
+
 </configure>
