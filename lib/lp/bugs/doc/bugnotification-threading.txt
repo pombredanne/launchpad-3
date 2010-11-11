@@ -10,7 +10,7 @@ you can't know to which comment the new comment was a reply to.
 Let's add add change notification and see how it works:
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import MessageSet
+    >>> from canonical.launchpad.database.message import MessageSet
 
     >>> login('test@canonical.com')
 
