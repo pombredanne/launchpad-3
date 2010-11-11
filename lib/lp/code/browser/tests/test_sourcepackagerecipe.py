@@ -664,7 +664,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
 
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
@@ -677,7 +677,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             This recipe has not been built yet.""", self.getMainText(recipe))
 
@@ -686,7 +686,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
@@ -704,7 +704,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
         pattern = """\
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
