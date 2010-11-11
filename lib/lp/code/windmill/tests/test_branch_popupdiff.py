@@ -134,6 +134,7 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
 
         client.click(xpath=ADD_BRANCH_MENU)
+        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
         client.waits.forElement(xpath=BRANCH_SEARCH_FIELD)
         client.type(text='~fred/fooix/proposed', xpath=BRANCH_SEARCH_FIELD)
         client.click(xpath=BRANCH_SEARCH_BUTTON)
