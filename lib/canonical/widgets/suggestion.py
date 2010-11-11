@@ -257,11 +257,6 @@ class RecipeOwnerWidget(SuggestionWidget):
     The current user and the base branch owner are suggested.
     """
 
-    def __init__(self, field, vocabulary, request):
-        """Provide "subordinate" CSS class, to indent the widget."""
-        super(RecipeOwnerWidget, self).__init__(field, vocabulary, request)
-        self.other_selection_widget.cssClass = 'subordinate'
-
     @staticmethod
     def _getSuggestions(branch):
         """Suggest the branch owner and current user."""
