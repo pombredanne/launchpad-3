@@ -914,11 +914,13 @@ class PersonBranchesMenu(ApplicationMenu):
                 self.owned_branch_count, 'owned branch', 'owned branches'))
 
     def registered(self):
+        person_is_individual = (not self.person.is_team)
         return Link(
             '+registeredbranches',
             get_plural_text(
                 self.registered_branch_count,
-                'registered branch', 'registered branches'))
+                'registered branch', 'registered branches'),
+            enabled=person_is_individual)
 
     def subscribed(self):
         return Link(

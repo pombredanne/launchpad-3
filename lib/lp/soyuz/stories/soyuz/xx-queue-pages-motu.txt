@@ -73,8 +73,8 @@ permission to manipulate them.
     >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
     >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from canonical.launchpad.database import (
-    ...     BinaryPackageRelease, SourcePackageRelease)
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> universe = getUtility(IComponentSet)['universe']
     >>> alsa_utils = getUtility(
     ...     ISourcePackageNameSet).queryByName("alsa-utils")

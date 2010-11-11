@@ -38,7 +38,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,

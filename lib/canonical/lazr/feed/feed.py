@@ -35,7 +35,7 @@ from canonical.config import config
 # XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
 # from canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.
-from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

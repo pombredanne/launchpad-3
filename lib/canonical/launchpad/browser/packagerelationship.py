@@ -13,7 +13,7 @@ __all__ = [
 import operator as std_operator
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.packagerelationship import (
     IPackageRelationship,
     IPackageRelationshipSet,
     )

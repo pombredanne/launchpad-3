@@ -57,8 +57,7 @@ without special privileges, like "cprov": structured privileges are
 enough (but we could go with "open" as well, which would allow not
 only suggestions but full translations as well).
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> product = pofile.potemplate.productseries.product
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 

@@ -67,10 +67,6 @@ from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
     )
-from canonical.launchpad.interfaces import (
-    IMasterStore,
-    IStore,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -83,6 +79,10 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
@@ -1163,7 +1163,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None, date_created=None,
-                                description=None):
+                                description=None, reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1188,8 +1188,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranchTargetBranch(target)
         if registrant is None:
             registrant = self.makePerson()
+        review_requests = []
+        if reviewer is not None:
+            review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch,
+            registrant, target_branch, review_requests=review_requests,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
             description=description, date_created=date_created)
 
@@ -1624,7 +1627,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW):
+                          status=SpecificationDefinitionStatus.NEW,
+                          implementation_status=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1640,7 +1644,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        return getUtility(ISpecificationSet).new(
+        spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
@@ -1649,6 +1653,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner=owner,
             product=product,
             distribution=distribution)
+        if implementation_status is not None:
+            naked_spec = removeSecurityProxy(spec)
+            naked_spec.implementation_status = implementation_status
+            naked_spec.updateLifecycleStatus(owner)
+        return spec
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
