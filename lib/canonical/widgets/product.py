@@ -29,9 +29,10 @@ from z3c.ptcompat import ViewPageTemplateFile
 from lazr.restful.interface import copy_field
 
 from canonical.launchpad.browser.widgets import DescriptionWidget
-from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag)
+from lp.services.fields import StrippedTextLine
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType, IBugTracker, IBugTrackerSet)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
@@ -264,33 +265,35 @@ class LicenseWidget(CheckBoxMatrixWidget):
     allow_pending_license = False
 
     CATEGORIES = {
-        'AFFERO'        : 'recommended',
-        'APACHE'        : 'recommended',
-        'BSD'           : 'recommended',
-        'GNU_GPL_V2'    : 'recommended',
-        'GNU_GPL_V3'    : 'recommended',
-        'GNU_LGPL_V2_1' : 'recommended',
-        'GNU_LGPL_V3'   : 'recommended',
-        'MIT'           : 'recommended',
-        'CC_0'          : 'recommended',
-        'ACADEMIC'      : 'more',
-        'ARTISTIC'      : 'more',
-        'ARTISTIC_2_0'  : 'more',
-        'COMMON_PUBLIC' : 'more',
-        'ECLIPSE'       : 'more',
+        'AFFERO': 'recommended',
+        'APACHE': 'recommended',
+        'BSD': 'recommended',
+        'GNU_GPL_V2': 'recommended',
+        'GNU_GPL_V3': 'recommended',
+        'GNU_LGPL_V2_1': 'recommended',
+        'GNU_LGPL_V3': 'recommended',
+        'MIT': 'recommended',
+        'CC_0': 'recommended',
+        'ACADEMIC': 'more',
+        'ARTISTIC': 'more',
+        'ARTISTIC_2_0': 'more',
+        'COMMON_PUBLIC': 'more',
+        'ECLIPSE': 'more',
         'EDUCATIONAL_COMMUNITY': 'more',
-        'MPL'           : 'more',
-        'OPEN_SOFTWARE' : 'more',
-        'PHP'           : 'more',
-        'PUBLIC_DOMAIN' : 'more',
-        'PYTHON'        : 'more',
-        'ZPL'           : 'more',
-        'CC_BY'         : 'more',
-        'CC_BY_SA'      : 'more',
-        'PERL'          : 'deprecated',
-        'OTHER_PROPRIETARY' : 'special',
-        'OTHER_OPEN_SOURCE' : 'special',
-        'DONT_KNOW'     : 'special',
+        'GNU_GFDL_NO_OPTIONS': 'more',
+        'MPL': 'more',
+        'OFL': 'more',
+        'OPEN_SOFTWARE': 'more',
+        'PHP': 'more',
+        'PUBLIC_DOMAIN': 'more',
+        'PYTHON': 'more',
+        'ZPL': 'more',
+        'CC_BY': 'more',
+        'CC_BY_SA': 'more',
+        'PERL': 'deprecated',
+        'OTHER_PROPRIETARY': 'special',
+        'OTHER_OPEN_SOURCE': 'special',
+        'DONT_KNOW': 'special',
         }
 
     items_by_category = None
@@ -316,6 +319,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
             self, 'license_info', self.license_info, IInputWidget,
             prefix='field', value=initial_value,
             context=field.context)
+        self.source_package_release = None
         # These will get filled in by _categorize().  They are the number of
         # selected licenses in the category.  The actual count doesn't matter,
         # since if it's greater than 0 it will start opened.  NOte that we

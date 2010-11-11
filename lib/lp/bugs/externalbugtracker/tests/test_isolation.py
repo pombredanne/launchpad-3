@@ -7,14 +7,12 @@ __metaclass__ = type
 
 import unittest
 
-import transaction
-
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 from storm.zope.interfaces import IZStorm
+import transaction
 from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadZopelessLayer
-
 from lp.bugs.externalbugtracker import isolation
 from lp.testing import TestCase
 

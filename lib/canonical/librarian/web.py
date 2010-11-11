@@ -5,12 +5,18 @@ __metaclass__ = type
 
 from datetime import datetime
 import time
+from urlparse import urlparse
 
+from twisted.python import log
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
 
-from canonical.librarian.client import quote
-from canonical.librarian.db import read_transaction, write_transaction
+from canonical.config import config
+from canonical.librarian.client import url_path_quote
+from lp.services.database import (
+    read_transaction,
+    write_transaction,
+    )
 from canonical.librarian.utils import guess_librarian_encoding
 
 
@@ -47,6 +53,8 @@ class LibraryFileResource(resource.Resource):
         try:
             aliasID = int(name)
         except ValueError:
+            log.msg(
+                "404: alias is not an int: %r" % (name,))
             return fourOhFour
 
         return LibraryFileAliasResource(self.storage, aliasID,
@@ -62,19 +70,44 @@ class LibraryFileAliasResource(resource.Resource):
         self.upstreamPort = upstreamPort
 
     def getChild(self, filename, request):
-
         # If we still have another component of the path, then we have
         # an old URL that encodes the content ID. We want to keep supporting
         # these, so we just ignore the content id that is currently in
-        # self.aliasID and extract the real one from the URL.
+        # self.aliasID and extract the real one from the URL. Note that
+        # tokens do not work with the old URL style: they are URL specific.
         if len(request.postpath) == 1:
             try:
                 self.aliasID = int(filename)
             except ValueError:
+                log.msg(
+                    "404 (old URL): alias is not an int: %r" % (name,))
                 return fourOhFour
             filename = request.postpath[0]
 
-        deferred = deferToThread(self._getFileAlias, self.aliasID)
+        # IFF the request has a .restricted. subdomain, ensure there is a
+        # alias id in the right most subdomain, and that it matches
+        # self.aliasIDd, And that the host precisely matches what we generate
+        # (specifically to stop people putting a good prefix to the left of an
+        # attacking one).
+        hostname = request.getRequestHostname()
+        if '.restricted.' in hostname:
+            # Configs can change without warning: evaluate every time.
+            download_url = config.librarian.download_url
+            parsed = list(urlparse(download_url))
+            netloc = parsed[1]
+            # Strip port if present
+            if netloc.find(':') > -1:
+                netloc = netloc[:netloc.find(':')]
+            expected_hostname = 'i%d.restricted.%s' % (self.aliasID, netloc)
+            if expected_hostname != hostname:
+                log.msg(
+                    '404: expected_hostname != hostname: %r != %r' %
+                    (expected_hostname, hostname))
+                return fourOhFour
+
+        token = request.args.get('token', [None])[0]
+        path = request.path
+        deferred = deferToThread(self._getFileAlias, self.aliasID, token, path)
         deferred.addCallback(
                 self._cb_getFileAlias, filename, request
                 )
@@ -82,12 +115,12 @@ class LibraryFileAliasResource(resource.Resource):
         return util.DeferredResource(deferred)
 
     @write_transaction
-    def _getFileAlias(self, aliasID):
+    def _getFileAlias(self, aliasID, token, path):
         try:
-            alias = self.storage.getFileAlias(aliasID)
+            alias = self.storage.getFileAlias(aliasID, token, path)
             alias.updateLastAccessed()
             return (alias.contentID, alias.filename,
-                alias.mimetype, alias.date_created)
+                alias.mimetype, alias.date_created, alias.restricted)
         except LookupError:
             raise NotFound
 
@@ -96,17 +129,26 @@ class LibraryFileAliasResource(resource.Resource):
         return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype, date_created),
+            self, (dbcontentID, dbfilename, mimetype, date_created, restricted),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
         # a crude form of access control (stuff we care about can have
         # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
+            log.msg(
+                "404: dbfilename.encode('utf-8') != filename: %r != %r"
+                % (dbfilename.encode('utf-8'), filename))
             return fourOhFour
 
-        # Set our caching headers. Librarian files can be cached forever.
-        request.setHeader('Cache-Control', 'max-age=31536000, public')
+        if not restricted:
+            # Set our caching headers. Librarian files can be cached forever.
+            request.setHeader('Cache-Control', 'max-age=31536000, public')
+        else:
+            # Restricted files require revalidation every time. For now,
+            # until the deployment details are completely reviewed, the
+            # simplest, most cautious approach is taken: no caching permited.
+            request.setHeader('Cache-Control', 'max-age=0, private')
 
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
@@ -163,7 +205,7 @@ class DigestSearchResource(resource.Resource):
     @read_transaction
     def _matchingAliases(self, digest):
         library = self.storage.library
-        matches = ['%s/%s' % (aID, quote(aName))
+        matches = ['%s/%s' % (aID, url_path_quote(aName))
                    for fID in library.lookupBySHA1(digest)
                    for aID, aName, aType in library.getAliases(fID)]
         return matches

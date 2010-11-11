@@ -5,16 +5,27 @@
 
 __metaclass__ = type
 
-import unittest
 from datetime import timedelta
-from zope.session.interfaces import ISessionDataContainer, ISessionData
+import unittest
+
 from zope.publisher.browser import TestRequest
-from zope.security.management import newInteraction, endInteraction
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    )
+from zope.session.interfaces import (
+    ISessionData,
+    ISessionDataContainer,
+    )
 
 from canonical.launchpad.webapp.pgsession import (
-        PGSessionDataContainer, PGSessionData
-        )
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadLayer
+    PGSessionData,
+    PGSessionDataContainer,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadLayer,
+    )
 
 
 class PicklingTest:

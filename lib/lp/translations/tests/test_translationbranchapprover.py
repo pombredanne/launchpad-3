@@ -5,17 +5,19 @@
 
 __metaclass__ = type
 
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.name import valid_name
-from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.model.approver import TranslationBranchApprover
 
 

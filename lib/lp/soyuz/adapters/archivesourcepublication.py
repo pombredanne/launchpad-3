@@ -15,14 +15,16 @@ __all__ = [
     ]
 
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lazr.delegates import delegates
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class ArchiveSourcePackageRelease:
@@ -90,7 +92,8 @@ class ArchiveSourcePublication:
         # using the delegate as self - might not be possible without
         # duck-typing.
         return getUtility(
-            IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
+            IPublishingSet).getBuildStatusSummaryForSourcePublication(self,
+            self.getBuilds)
 
 class ArchiveSourcePublications:
     """`ArchiveSourcePublication` iterator."""
@@ -162,6 +165,7 @@ class ArchiveSourcePublications:
         builds_by_source = self.getBuildsBySource()
         unpublished_builds_by_source = self.getUnpublishedBuildsBySource()
         changesfiles_by_source = self.getChangesFileBySource()
+        DistroSeries.setNewerDistroSeriesVersions(self._source_publications)
 
         # Build the decorated object with the information we have.
         for pub in self._source_publications:

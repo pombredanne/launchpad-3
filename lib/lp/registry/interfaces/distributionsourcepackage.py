@@ -11,23 +11,40 @@ __all__ = [
     'IDistributionSourcePackage',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Int, TextLine
-
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_operation_as, export_read_operation,
-    exported, operation_parameters, operation_returns_collection_of,
-    rename_parameters_as)
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+    IStructuralSubscriptionTarget,
+    )
+from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
@@ -159,7 +176,7 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             - The latest distroseries wins
             - updates > security > release
 
-        See https://bugs.edge.launchpad.net/soyuz/+bug/236922 for a plan
+        See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
 

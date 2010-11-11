@@ -15,26 +15,38 @@ __all__ = [
     'safe_action',
     ]
 
-import transaction
-
-from zope.interface import classImplements, providedBy
-from zope.interface.advice import addClassAdvisor
-from zope.event import notify
-from zope.formlib import form
-from zope.formlib.form import action # imported so it may be exported
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.browser import (
-    CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import transaction
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import (
+    CheckBoxWidget,
+    DropdownWidget,
+    RadioWidget,
+    TextAreaWidget,
+    )
+from zope.app.form.interfaces import IInputWidget
+from zope.event import notify
+from zope.formlib import form
+# imported so it may be exported
+from zope.formlib.form import action
+from zope.interface import (
+    classImplements,
+    providedBy,
+    )
+from zope.interface.advice import addClassAdvisor
 
 from canonical.launchpad.webapp.interfaces import (
-    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
+    IAlwaysSubmittedWidget,
+    ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout,
+    UnsafeFormGetSubmissionError,
+    )
 from canonical.launchpad.webapp.menu import escape
-from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -74,6 +86,8 @@ class LaunchpadFormView(LaunchpadView):
 
     actions = ()
 
+    action_taken = None
+
     render_context = False
 
     form_result = None
@@ -112,6 +126,7 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        self.action_taken = action
 
     def render(self):
         """Return the body of the response.
@@ -445,7 +460,7 @@ class ReturnToReferrerMixin:
     between the request to view the form and submitting the form.
 
     _return_attribute_name and _return_attribute_values are also stored
-    as hidden fields and they are use to check the validity of _return_url.
+    as hidden fields and they are used to check the validity of _return_url.
 
     If _return_url depends on _return_attribute_name, the result of a form
     submission can invalidate it.

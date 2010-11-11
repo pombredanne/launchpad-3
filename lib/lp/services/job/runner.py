@@ -4,7 +4,6 @@
 """Facilities for running Jobs."""
 
 
-from __future__ import with_statement
 __metaclass__ = type
 
 
@@ -22,26 +21,44 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
-from signal import getsignal, SIGCHLD, SIGHUP, signal
+from signal import (
+    getsignal,
+    SIGCHLD,
+    SIGHUP,
+    signal,
+    )
 import sys
 
-from ampoule import child, pool, main
+from ampoule import (
+    child,
+    main,
+    pool,
+    )
+from lazr.delegates import delegates
 import transaction
-from twisted.internet import defer, reactor
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.protocols import amp
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from lazr.delegates import delegates
 
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
-from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
+from canonical.lp import initZopeless
+from lp.services.job.interfaces.job import (
+    IJob,
+    IRunnableJob,
+    LeaseHeld,
+    )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
+    ParallelLimitedTaskConsumer,
+    PollingTaskSource,
+    )
 
 
 class BaseRunnableJob:
@@ -59,7 +76,6 @@ class BaseRunnableJob:
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
-
     def __eq__(self, job):
         return (
             self.__class__ is removeSecurityProxy(job.__class__)
@@ -199,10 +215,8 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Failed to notify users about a failure.")
                 info = sys.exc_info()
-                self.error_utility.raising(info)
-                oops = self.error_utility.getLastOopsReport()
                 # Returning the oops says something went wrong.
-                return oops
+                return self.error_utility.raising(info)
 
     def _doOops(self, job, info):
         """Report an OOPS for the provided job and info.
@@ -211,8 +225,7 @@ class BaseJobRunner(object):
         :param info: The standard sys.exc_info() value.
         :return: the Oops that was reported.
         """
-        self.error_utility.raising(info)
-        oops = self.error_utility.getLastOopsReport()
+        oops = self.error_utility.raising(info)
         job.notifyOops(oops)
         return oops
 
@@ -322,13 +335,12 @@ class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
-        env = {'PYTHONPATH': os.environ['PYTHONPATH'],
-               'PATH': os.environ['PATH']}
-        lp_config = os.environ.get('LPCONFIG')
-        if lp_config is not None:
-            env['LPCONFIG'] = lp_config
+        env = {'PATH': os.environ['PATH']}
+        for name in ('PYTHONPATH', 'LPCONFIG'):
+            if name in os.environ:
+                env[name] = os.environ[name]
         starter = main.ProcessStarter(
-            packages=('twisted', 'ampoule'), env=env)
+            packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
         import_name = '%s.%s' % (
@@ -352,7 +364,8 @@ class TwistedJobRunner(BaseJobRunner):
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
-        self.logger.debug('Running %r, lease expires %s', job, job.lease_expires)
+        self.logger.debug(
+            'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
         def update(response):
@@ -427,14 +440,21 @@ class TwistedJobRunner(BaseJobRunner):
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self, runner_class=JobRunner, test_args=None,
-                 script_name=None):
-        self.dbuser = getattr(config, self.config_name).dbuser
-        if script_name is None:
-            script_name = self.config_name
+    config_name = None
+
+    def __init__(self, runner_class=JobRunner, test_args=None, name=None):
         super(JobCronScript, self).__init__(
-            script_name, self.dbuser, test_args)
-        self.runner_class = runner_class
+            name=name, dbuser=None, test_args=test_args)
+        self._runner_class = runner_class
+
+    @property
+    def dbuser(self):
+        return self.config_section.dbuser
+
+    @property
+    def runner_class(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._runner_class
 
     def job_counts(self, jobs):
         """Return a list of tuples containing the job name and counts."""
@@ -443,8 +463,18 @@ class JobCronScript(LaunchpadCronScript):
             counts[job.__class__.__name__] += 1
         return sorted(counts.items())
 
+    @property
+    def config_section(self):
+        return getattr(config, self.config_name)
+
     def main(self):
-        errorlog.globalErrorUtility.configure(self.config_name)
+        section = self.config_section
+        if (getattr(section, 'error_dir', None) is not None
+            and getattr(section, 'oops_prefix', None) is not None
+            and getattr(section, 'copy_to_zlog', None) is not None):
+            # If the three variables are not set, we will let the error
+            # utility default to using the [error_reports] config.
+            errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger)

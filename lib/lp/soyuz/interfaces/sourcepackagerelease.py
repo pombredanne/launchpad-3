@@ -14,8 +14,14 @@ __all__ = [
 
 
 from lazr.restful.fields import Reference
-from zope.schema import TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
@@ -96,7 +102,15 @@ class ISourcePackageRelease(Interface):
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
@@ -137,6 +151,8 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
 
     # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
     source_package_recipe_build = Reference(
@@ -183,8 +199,8 @@ class ISourcePackageRelease(Interface):
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published by
-            upstream.
+        :is_published: indicates if the imported files are already published
+            by upstream.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from

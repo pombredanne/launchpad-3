@@ -11,18 +11,25 @@ __all__ = [
     'ICodeReviewCommentDeletion',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, TextLine
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.interfaces.message import IMessage
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+from lp.code.enums import CodeReviewVote
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.registry.interfaces.person import IPerson
 
 
 class ICodeReviewComment(Interface):

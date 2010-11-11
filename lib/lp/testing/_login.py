@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 # We like global statements!
 # pylint: disable-msg=W0602,W0603
 __metaclass__ = type
@@ -32,12 +30,14 @@ from zope.security.management import endInteraction
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, get_current_principal, setupInteractionByEmail,
-    setupInteractionForPerson)
+    ANONYMOUS,
+    get_current_principal,
+    setupInteractionByEmail,
+    setupInteractionForPerson,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
-
 from lp.services.utils import decorate_with
 
 

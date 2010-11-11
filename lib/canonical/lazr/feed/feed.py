@@ -17,32 +17,41 @@ __all__ = [
     'MINUTES',
     ]
 
-from BeautifulSoup import BeautifulSoup
 from datetime import datetime
-import pytz
 import operator
 import os
 import time
 from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-from zope.datetime import rfc1123_date
+from BeautifulSoup import BeautifulSoup
+import pytz
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.datetime import rfc1123_date
 from zope.interface import implements
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 # XXX: bac 2007-09-20 bug=153795: modules in canonical.lazr should not import
 # from canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.
-from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
-    LaunchpadView, canonical_url, urlappend, urlparse)
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    urlparse,
+    )
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed,
+    IFeedEntry,
+    IFeedPerson,
+    IFeedTypedData,
+    UnsupportedFeedFormat,
+    )
+from lp.services.propertycache import cachedproperty
+
 
 SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.

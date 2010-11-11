@@ -41,7 +41,7 @@
         <dl id="preferred_languages"
             tal:condition="view/user">
           <dt>Your preferred languages:
-            <a tal:attributes="href string:${view/user/fmt:url}/+editlanguages"
+            <a tal:attributes="href view/user/fmt:url:translations/+editlanguages"
                class="edit sprite"></a>
           </dt>
           <dd tal:content="structure view/user_languages">

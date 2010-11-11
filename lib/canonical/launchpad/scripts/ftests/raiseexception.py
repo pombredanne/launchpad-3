@@ -7,12 +7,16 @@ demonstrate a script using the LibrarianFormatter
 
 __metaclass__ = type
 
-import sys
-from canonical.launchpad.scripts import (
-        logger, logger_options, execute_zcml_for_scripts
-        )
-from optparse import OptionParser
 import logging
+from optparse import OptionParser
+import sys
+
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -25,7 +29,7 @@ if __name__ == '__main__':
     print >> sys.stderr, 'Script Output'
     try:
         raise RuntimeError('Aargh')
-    except:
+    except RuntimeError:
         log.exception('Oops')
         root_log.exception('Root oops')
 

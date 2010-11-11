@@ -12,19 +12,30 @@ __all__ = [
     "IBugBranchSet",
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, Int, Object, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import export_as_webservice_entry, exported
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import ReferenceChoice
+from zope.interface import Interface
+from zope.schema import (
+    Int,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField, Summary
-from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
+    IHasDateCreated,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
+from lp.services.fields import (
+    BugField,
+    )
 
 
 class IBugBranch(IHasDateCreated, IHasBug, IHasBranchTarget):

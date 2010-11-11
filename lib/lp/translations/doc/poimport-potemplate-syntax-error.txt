@@ -1,4 +1,5 @@
-= PO Import test with a .pot file that has a syntax error =
+PO Import test with a .pot file that has a syntax error
+=======================================================
 
 When we import a .pot file with a syntax error, we should notify
 the user about that error so they have a chance to fix it.
@@ -7,8 +8,9 @@ In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -23,8 +25,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -101,7 +102,8 @@ And the code composed email with a notification of the error.
     <BLANKLINE>
 
 
-== Encoding errors ==
+Encoding errors
+===============
 
     >>> potemplate = subset.new(
     ...     name='nonascii',

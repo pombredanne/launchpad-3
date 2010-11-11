@@ -4,26 +4,32 @@
 import logging
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer, reset_logging
-
-from lp.registry.interfaces.series import SeriesStatus
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    reset_logging,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
-    IProductReleaseFile, UpstreamFileType)
-from lp.registry.scripts.productreleasefinder.filter import (
-    FilterPattern)
+    IProductReleaseFile,
+    UpstreamFileType,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.finder import (
-    extract_version, ProductReleaseFinder)
+    extract_version,
+    ProductReleaseFinder,
+    )
 from lp.testing import TestCaseWithFactory
+
 
 class FindReleasesTestCase(unittest.TestCase):
 

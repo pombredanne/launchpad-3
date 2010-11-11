@@ -23,7 +23,7 @@ instead to expose this as an edit form after the object is created.
 Let's use Salgado and the Launchpad Administrators team as an examples
 here, since they haven't uploaded custom logos yet.
 
-    >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
+    >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> salgado.logo is None
     True
@@ -74,7 +74,7 @@ other radio button allows the user to upload a new image.
 If we set any random file as salgado's logo, we'll see it there, as
 well as an option to delete the image that was just uploaded.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> login('guilherme.salgado@canonical.com')
     >>> logo = getUtility(ILibraryFileAliasSet)[53]
     >>> salgado.logo = logo
@@ -99,7 +99,7 @@ widget. Let's see how it reacts.
 
 First, let's tell it to keep the existing image.
 
-    >>> from canonical.launchpad.fields import KEEP_SAME_IMAGE
+    >>> from lp.services.fields import KEEP_SAME_IMAGE
     >>> form = {'field.logo.action': 'keep'}
     >>> widget = ImageChangeWidget(
     ...     person_logo, LaunchpadTestRequest(form=form), edit_style)
@@ -260,7 +260,7 @@ a custom field (IconImageUpload) together with it. That field should not be
 used directly, since it specifies some constraints and defaults that are
 specific to each image, so you must subclass it before using.
 
-    >>> from canonical.launchpad.fields import (BaseImageUpload,
+    >>> from lp.services.fields import (BaseImageUpload,
     ... IconImageUpload)
 
 Note: the .bind method here is fetching the field from the IPerson schema
@@ -317,7 +317,7 @@ change the current image to the given file.
 #an attribute called gotchi_heading of the same object. Any class in which this
 #field is used must provide a gotchi_heading attribute.
 #
-#    >>> from canonical.launchpad.fields import LargeImageUpload
+#    >>> from lp.services.fields import LargeImageUpload
 #    >>> person_gotchi.__class__ == LargeImageUpload
 #    True
 #

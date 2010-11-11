@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = []
 
 import unittest
+from uuid import uuid1
 
 import transaction
 import windmill
@@ -13,16 +14,20 @@ import windmill
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget)
-from uuid import uuid1
+    search_and_select_picker_widget,
+    )
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import login_person, WindmillTestCase
+from lp.testing import (
+    login_person,
+    WindmillTestCase,
+    )
+
 
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
 ADD_COMMENT_BUTTON = (
-    u'//input[@id="field.actions.add" and @class="button js-action"]')
+    u'//input[@id="field.actions.add" and contains(@class, "button")]')
 
 
 class TestRequestReview(WindmillTestCase):
@@ -47,6 +52,18 @@ class TestRequestReview(WindmillTestCase):
         client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')
+
+        # Check that the javascript to disable the review_type field when the
+        # reviewer field is empty works.
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|true')
+        client.type(text=u'mark', id=u'field.reviewer')
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|false')
+        client.type(text=u'', id=u'field.reviewer')
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|true')
+
         client.click(id=u'field.actions.register')
 
         client.waits.forPageLoad(timeout=u'10000')

@@ -64,6 +64,12 @@
           <tal:product-summary define="widget nocall:widgets/summary">
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tal:product-summary>
+
+          <tal:can_link_package condition="view/can_link_package">
+            <tal:add-packaging define="widget nocall:widgets/add_packaging">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:add-packaging>
+          </tal:can_link_package>
         </table>
 
         <div class="actions">

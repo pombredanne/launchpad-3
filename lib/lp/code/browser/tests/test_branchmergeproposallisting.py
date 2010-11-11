@@ -13,13 +13,24 @@ import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingItem,
-    BranchMergeProposalListingView)
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+    ActiveReviewsView,
+    BranchMergeProposalListingItem,
+    BranchMergeProposalListingView,
+    )
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
+
 
 _default = object()
 
@@ -224,9 +235,10 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
         self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
     def test_target_branch_owner(self):
-        # For other people, even the target branch owner, it is other.
+        # For the target branch owner, it is to_do since they are the default
+        # reviewer.
         reviewer = self.bmp.target_branch.owner
-        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.TO_DO)
 
     def test_group_pending_review(self):
         # If the reviewer in user has a pending review request, it is a TO_DO.
@@ -324,7 +336,8 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         login_person(bmp3.source_branch.owner)
         bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
         login(ANONYMOUS)
-        view = create_initialized_view(product, name='+activereviews')
+        view = create_initialized_view(
+            product, name='+activereviews', rootsite='code')
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])

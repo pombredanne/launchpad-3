@@ -14,13 +14,17 @@ from zope.schema import Choice
 
 from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities,
-    IProduct, NotFoundError, UnexpectedFormData)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.errors import NotFoundError, UnexpectedFormData
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.product import IProduct
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):

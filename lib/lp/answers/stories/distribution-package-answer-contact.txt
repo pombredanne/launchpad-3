@@ -1,4 +1,5 @@
-= Answer Contacts for Distribution Source Package =
+Answer Contacts for Distribution Source Package
+===============================================
 
 Support on source packages is handled both by the source package answer
 contacts as well as the distribution answer contacts.
@@ -6,9 +7,10 @@ contacts as well as the distribution answer contacts.
     # Register a Sample Person as an answer contact for the distribution.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguageSet, ILaunchBag)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> # Answer contacts must speak a language
@@ -114,7 +116,9 @@ portlet for the source package is updated.
     ...     print answer_contact.renderContents()
     Landscape Developers
 
-== Distribution Release Source Package Answer Contacts ==
+
+Distribution Release Source Package Answer Contacts
+---------------------------------------------------
 
 The 'Set answer contacts' action is also available on distribution
 release source package. Altough in this case, it's exactly like working
@@ -127,7 +131,7 @@ in Ubuntu are shown on the evolution package in Hoary:
     ...     "http://answers.launchpad.dev/ubuntu/hoary/+source/evolution")
     >>> browser.getLink('Set answer contact').click()
     >>> print browser.url
-    http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact
+    http://.../ubuntu/hoary/+source/evolution/+answer-contact
 
 The Landscape developers team is selected as answer contact, like for
 the distribution source package.

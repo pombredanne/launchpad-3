@@ -67,9 +67,9 @@ And CD image mirrors:
 People who are not mirror listing admins or the mirrors registrar may not
 change the owner's of mirrors:
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
     >>> login(ANONYMOUS)

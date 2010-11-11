@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
-from lp.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestBugBranchPrimaryContext(TestCaseWithFactory):

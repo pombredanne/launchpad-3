@@ -82,7 +82,7 @@
   <div class="yui-g">
     <div class="portlet">
       <h2>Build records</h2>
-        <table class="listing narrow-listing" style='margin-bottom: 1em;'>
+        <table class="listing" style='margin-bottom: 1em;'>
           <thead>
             <tr>
               <th>Status</th>

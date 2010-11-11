@@ -9,15 +9,20 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -244,3 +249,23 @@ class TestBuildPackageJob(TestBuildJobBase):
         build_package_job.jobStarted()
         self.failUnlessEqual(
             BuildStatus.BUILDING, build_package_job.build.status)
+
+
+class TestBuildPackageJobScore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_score_unusual_component(self):
+        unusual_component = self.factory.makeComponent(name="unusual")
+        source_package_release = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source_package_release,
+            component=unusual_component,
+            archive=source_package_release.upload_archive,
+            distroseries=source_package_release.upload_distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release)
+        build.queueBuild()
+        job = build.buildqueue_record.specific_job
+        # For now just test that it doesn't raise an Exception
+        job.score()

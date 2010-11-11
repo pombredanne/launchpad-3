@@ -11,10 +11,15 @@ import unittest
 
 from twisted.trial.unittest import TestCase
 
-from lp.codehosting.vfs.branchfsclient import (
-    BranchFileSystemClient, NotInCache)
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.vfs.branchfsclient import (
+    BranchFileSystemClient,
+    NotInCache,
+    )
 from lp.testing import FakeTime
 
 

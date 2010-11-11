@@ -6,8 +6,6 @@
 
 """Library to create sprites."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 __all__ = [
@@ -15,12 +13,13 @@ __all__ = [
     ]
 
 import os
-import sys
 import re
+import sys
+from textwrap import dedent
+
 import cssutils
 import Image
 import simplejson
-from textwrap import dedent
 
 
 class SpriteUtil:

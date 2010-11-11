@@ -2,14 +2,17 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from itertools import count
-
 import unittest
 
 from windmill.authoring import WindmillTestClientException
 
-from canonical.launchpad.windmill.testing import lpuser, constants
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"
 DYNAMIC_SPAN_XPATH = AFFECTS_ME_TOO_XPATH + u"/span[@class='dynamic']"

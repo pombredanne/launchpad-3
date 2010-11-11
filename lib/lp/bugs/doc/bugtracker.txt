@@ -9,10 +9,10 @@ and an external bug, see bugwatch.txt.
     >>> import pytz
     >>> from datetime import datetime, timedelta
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> bugtracker_set = getUtility(IBugTrackerSet)
     >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime.now(pytz.UTC)
 
     >>> def print_watches(bugtracker):
     ...     watches = sorted(
@@ -139,8 +139,8 @@ it. If this method is not passed a name parameter when it creates a new
 bugtracker it will use make_bugtracker_name() to generate a name for the
 bug tracker.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IPersonSet)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> a_bugtracker = bugtracker_set.ensureBugTracker(
@@ -203,11 +203,12 @@ If no bug tracker can be found None is returned.
     True
 
 
-=== Aliases ===
+Aliases
+-------
 
 A bug tracker can have a number of alias URLs associated with it.
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerAliasSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerAliasSet
     >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 
 The most natural way to work with aliases is via the aliases attribute
@@ -293,7 +294,8 @@ an alias.
     >>> mozilla_bugzilla.baseurl = 'https://bugzilla.mozilla.org/'
 
 
-== Pillars for bugtrackers ===
+Pillars for bugtrackers
+-----------------------
 
     >>> trackers = list(bugtracker_set)
     >>> pillars = bugtracker_set.getPillarsForBugtrackers(trackers)
@@ -323,8 +325,8 @@ The Mozilla Bugzilla has only one imported bug message.
 
 We will forge some BugMessage records before trying again:
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
 
     >>> for num, bug_watch in enumerate(mozilla_bugzilla.watches):
     ...     bug_message = getUtility(IBugMessageSet).createMessage(
@@ -355,12 +357,13 @@ Filing a bug on the remote tracker
 ----------------------------------
 
 The IBugTracker interface defines a method, getBugFilingAndSearchLinks(),
-which returns the URLs of the bug filing form and the bug search on the remote
-bug tracker as a dict. It accepts three parameters: remote_product, which is the
-name of the product on the remote tracker; summary, which is the bug summary
-to be passed to the remote bug tracker for searching or filing and
-description, which is the full description of the bug. This is only passed to
-the bug filing form as it is too specific for the search form.
+which returns the URLs of the bug filing form and the bug search on
+the remote bug tracker as a dict. It accepts three parameters:
+remote_product, which is the name of the product on the remote
+tracker; summary, which is the bug summary to be passed to the remote
+bug tracker for searching or filing and description, which is the full
+description of the bug. This is only passed to the bug filing form as
+it is too specific for the search form.
 
     >>> def print_links(links_dict):
     ...     for key in sorted(links_dict):
@@ -445,15 +448,15 @@ unique URL, so it too ignores the remote_product parameter.
     bug_filing_url: http://.../issues/entry?summary=Foo&comment=Bar
     bug_search_url: http://.../issues/list?q=Foo
 
-Trac's bug filing form doesn't accept data in the query string, so we don't
-include it.
+Trac's bug filing form also accepts data in the query string, so we include
+it.
 
     >>> example_trac = factory.makeBugTracker(
     ...     'http://trac.example.com', BugTrackerType.TRAC)
     >>> links = example_trac.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Foo&description=Bar
     bug_search_url: http://trac.example.com/search?ticket=on&q=Foo
 
     >>> example_roundup = factory.makeBugTracker(
@@ -472,7 +475,7 @@ form, so we don't try.
     >>> links = example_mantis.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
     >>> print_links(links)
-    bug_filing_url: .../bug_report_advanced_page.php?summary=Foo&description=Bar
+    bug_filing_url: .../bug_..._advanced_page.php?summary=Foo&description=Bar
     bug_search_url: .../view_all_bug_page.php
 
 The EMAILADDRESS BugTrackerType is a special case and returns None for
@@ -529,16 +532,16 @@ BugTracker.multi_product
 ------------------------
 
 As described above, some bug trackers don't need to have a remote
-product passed to `getBugFilingAndSearchLinks()` in order to be able to return a
-bug filing URL because they use static URLs for bug filing or only track
-one product.
+product passed to `getBugFilingAndSearchLinks()` in order to be able to
+return a bug filing URL because they use static URLs for bug filing or
+only track one product.
 
 `IBugTracker` defines an attribute, `multi_product` which can be used to
 check whether a given bug tracker can return a bug filing URL without
 being passed a remote product.
 
-Our example Trac bug tracker's `multi_product` property will
-be False, since it only tracks one product at a time.
+Our example Trac bug tracker's `multi_product` property will be False,
+since it only tracks one product at a time.
 
     >>> print example_trac.multi_product
     False
@@ -585,55 +588,3 @@ use the default setup.
     bug_search_url:
     http://.../query.cgi?product=testproduct&short_desc=Foo
 
-
-Resetting a tracker's watches
------------------------------
-
-It's possible to reset all the watches on a bug tracker by calling its
-resetWatches() method.
-
-    >>> from operator import attrgetter
-    >>> from pytz import utc
-    >>> definitely_now = datetime.now(utc)
-
-    >>> def print_tracker_watch_times(bugtracker):
-    ...     for watch in sorted(
-    ...         bugtracker.watches, key=attrgetter('id')):
-    ...         if watch.next_check != definitely_now:
-    ...             print watch.bug.id, "not now"
-    ...         else:
-    ...             print watch.bug.id, "now"
-
-    >>> print_tracker_watch_times(mozilla_bugzilla)
-    2 not now
-    1 not now
-    1 not now
-    1 not now
-
-Calling resetWatches() on mozilla_bugzilla will set all its next_check
-times to datetime.now(). For testing purposes, we'll pass it a value to
-use in place of now().
-
-    >>> mozilla_bugzilla.resetWatches(now=definitely_now)
-    >>> transaction.commit()
-    >>> print_tracker_watch_times(mozilla_bugzilla)
-    2 now
-    1 now
-    1 now
-    1 now
-
-resetWatches() also clears the last_error_type field of the watches.
-
-    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
-    >>> for watch in mozilla_bugzilla.watches:
-    ...     watch.last_error_type = BugWatchActivityStatus.UNKNOWN
-
-    >>> txn = transaction.begin()
-    >>> mozilla_bugzilla.resetWatches()
-    >>> txn.commit()
-    >>> for watch in mozilla_bugzilla.watches:
-    ...     print watch.last_error_type
-    None
-    None
-    None
-    None

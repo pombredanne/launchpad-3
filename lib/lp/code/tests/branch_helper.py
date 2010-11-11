@@ -9,11 +9,14 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
+import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 
 

@@ -19,29 +19,43 @@ __all__ = [
     'ISetLocation',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Choice, Datetime, Float, Object
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Float,
+    Object,
+    )
 
 from canonical.launchpad import _
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-   call_with, export_write_operation, exported, operation_parameters,
-   REQUEST_USER)
 
 
 class IHasLocation(Interface):
     """An interface supported by objects with a defined location."""
 
-    latitude = exported(
+    latitude = exported(doNotSnapshot(
         Float(title=_("The latitude of this object."),
-              required=False, readonly=True))
-    longitude = exported(
+              required=False, readonly=True)))
+    longitude = exported(doNotSnapshot(
         Float(title=_("The longitude of this object."),
-              required=False, readonly=True))
-    time_zone = exported(
+              required=False, readonly=True)))
+    time_zone = exported(doNotSnapshot(
         Choice(title=_('The time zone of this object.'),
                required=False, readonly=True,
-               vocabulary='TimezoneName'))
+               vocabulary='TimezoneName')))
 
 
 class IObjectWithLocation(Interface):
@@ -52,7 +66,7 @@ class IObjectWithLocation(Interface):
 
 class ILocationRecord(IHasLocation):
     """A location record, which may be attached to a particular object.
-    
+
     The location record contains additional information such as the date the
     location data was recorded, and by whom.
     """

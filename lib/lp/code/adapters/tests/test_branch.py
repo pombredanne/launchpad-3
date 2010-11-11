@@ -3,13 +3,15 @@
 
 """Functional tests for branch-related components"""
 
-from unittest import TestLoader, TestCase
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.launchpad.ftests import login
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchMergeProposalStatus
-from canonical.launchpad.ftests import login
 from lp.testing.factory import LaunchpadObjectFactory
 
 

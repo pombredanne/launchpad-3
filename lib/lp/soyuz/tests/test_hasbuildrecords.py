@@ -6,21 +6,22 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.registry.model.sourcepackage import SourcePackage
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuildSource)
+    IBuildFarmJob,
+    )
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords, IncompatibleArguments)
+    IHasBuildRecords,
+    IncompatibleArguments,
+    )
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.tests.test_binarypackagebuild import (
-    BaseTestCaseWithThreeBuilds)
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
@@ -143,7 +144,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone IBuildFarmJob of a
         # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-        from lp.buildmaster.interfaces.buildbase import BuildStatus
+        from lp.buildmaster.enums import BuildStatus
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
             status=BuildStatus.BUILDING)

@@ -3,8 +3,6 @@
 
 """Common classes and functions for the checkwatches system."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'WorkingBase',
@@ -12,25 +10,30 @@ __all__ = [
     'with_interaction',
     ]
 
-import sys
-
 from contextlib import contextmanager
 from functools import wraps
+import sys
 
 from zope.component import getUtility
-from zope.security.management import endInteraction, queryInteraction
+from zope.security.management import (
+    endInteraction,
+    queryInteraction,
+    )
 
 from canonical.launchpad.webapp.adapter import (
-    clear_request_started, get_request_start_time, set_request_started)
+    clear_request_started,
+    get_request_start_time,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
 from canonical.launchpad.webapp.interaction import setupInteraction
-
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.bugs.externalbugtracker import BugWatchUpdateWarning
 from lp.bugs.externalbugtracker.isolation import check_no_transaction
 from lp.services.limitedlist import LimitedList
-
 
 # For OOPS reporting keep up to this number of SQL statements.
 MAX_SQL_STATEMENTS_LOGGED = 10000
@@ -219,7 +222,7 @@ class WorkingBase:
         oops_info = report_oops(
             message, properties, info, self._transaction_manager)
         # Also put it in the log.
-        self.logger.error("%s (%s)" % (message, oops_info.oopsid))
+        self.logger.info("%s (%s)" % (message, oops_info.oopsid))
         # Reset statement logging, if enabled.
         self._statement_logging_reset()
         # Return the OOPS ID so that we can use it in

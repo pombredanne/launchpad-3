@@ -22,22 +22,18 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
-    'match_enum_title',
     'RevisionControlSystems',
     'TeamBranchVisibilityRule',
     'UICreatableBranchType',
     ]
 
 from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-
-
-def match_enum_title(enum, title, default):
-    for value in enum.items:
-        if value.title == title:
-            return value
-    else:
-        return default
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 
 
 class BranchLifecycleStatus(DBEnumeratedType):

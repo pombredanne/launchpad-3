@@ -9,9 +9,14 @@ __all__ = ['RemoteProductUpdater']
 from zope.component import getUtility
 
 from lp.bugs.externalbugtracker import (
-    BugWatchUpdateError, BugWatchUpdateWarning, get_external_bugtracker)
+    BugWatchUpdateError,
+    BugWatchUpdateWarning,
+    get_external_bugtracker,
+    )
 from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, SINGLE_PRODUCT_BUGTRACKERTYPES)
+    BugTrackerType,
+    SINGLE_PRODUCT_BUGTRACKERTYPES,
+    )
 from lp.registry.interfaces.product import IProductSet
 
 

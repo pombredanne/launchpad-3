@@ -3,29 +3,37 @@
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
-from zope.component import getAdapter, getUtility
+import unittest
+
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData)
+    ITranslationFileData,
+    )
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.translations.utilities.xpi_po_exporter import (
-    XPIPOExporter)
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    )
 from lp.translations.utilities.tests.test_xpi_import import (
-    get_en_US_xpi_file_to_import)
+    get_en_US_xpi_file_to_import,
+    )
 from lp.translations.utilities.translation_export import ExportFileStorage
+from lp.translations.utilities.xpi_po_exporter import XPIPOExporter
 
 
 class XPIPOExporterTestCase(unittest.TestCase):

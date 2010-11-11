@@ -5,32 +5,9 @@ heavy database activity including complex caching and prefetching of
 translation suggestions.  It's hard to keep database performance for this page
 under control.
 
-  >>> from canonical.launchpad.webapp.adapter import get_request_statements
-  >>> from zope.app.testing import ztapi
-  >>> from zope.app.publication.interfaces import IEndRequestEvent
-
-  >>> class QueryCounter:
-  ...     """Count database statements performed in last request.
-  ...
-  ...     We can't get at this count after the browser has completed its
-  ...     request, because that will reset the tracking logic.  Instead, we
-  ...     subscribe to the Zope "request completed" event and grab our count
-  ...     when that event comes along.
-  ...     """
-  ...     _active = True
-  ...     count = None
-  ...
-  ...     def __init__(self):
-  ...         ztapi.subscribe((IEndRequestEvent, ), None, self)
-  ...
-  ...     def __call__(self, event):
-  ...         if self._active:
-  ...             self.count = len(get_request_statements())
-  ...
-  ...     def unregister(self):
-  ...         self._active = False
-
-  >>> query_counter = QueryCounter()
+  >>> from lp.testing._webservice import QueryCollector
+  >>> query_counter = QueryCollector()
+  >>> query_counter.register()
 
 === Anonymous access ===
 

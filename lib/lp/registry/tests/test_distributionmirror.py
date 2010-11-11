@@ -10,18 +10,21 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from lp.registry.model.distributionmirror import DistributionMirror
 from canonical.launchpad.ftests import login
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirrorSet, MirrorContent, MirrorFreshness)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    MirrorFreshness,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distributionmirror import DistributionMirror
 from lp.services.mail import stub
+from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing.factory import LaunchpadObjectFactory
 
-from canonical.testing import LaunchpadFunctionalLayer
 
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer

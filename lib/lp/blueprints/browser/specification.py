@@ -40,45 +40,66 @@ __all__ = [
 
 from operator import attrgetter
 import os
-from subprocess import Popen, PIPE
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.interface import Interface
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.webapp import (
+    action,
+    canonical_url,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Navigation,
+    safe_action,
+    stepthrough,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import (
+    INewSpecification,
+    INewSpecificationProjectTarget,
+    INewSpecificationSeriesGoal,
+    INewSpecificationSprint,
+    INewSpecificationTarget,
+    ISpecification,
+    ISpecificationSet,
+    )
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.blueprints.interfaces.specification import (
-    INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
-    INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification)
-
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-
-from canonical.launchpad.webapp import (
-    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Navigation, action, canonical_url,
-    safe_action, stepthrough, stepto, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from lp.services.propertycache import cachedproperty
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -424,8 +445,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
-    __used_for__ = ISpecification
-
     @cachedproperty
     def feedbackrequests(self):
         if self.user is None:
@@ -456,8 +475,6 @@ class SpecificationSimpleView(LaunchpadView):
 
 class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
-
-    __used_for__ = ISpecification
 
     @property
     def label(self):
@@ -519,13 +536,14 @@ class SpecificationEditView(LaunchpadEditFormView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        old_status = self.context.lifecycle_status
         self.updateContextFromData(data)
         # We need to ensure that resolution is recorded if the spec is now
         # resolved.
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
+        new_status = self.context.lifecycle_status
+        if new_status != old_status:
             self.request.response.addNotification(
-                'blueprint is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % new_status.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -718,7 +736,7 @@ class SupersededByWidget(DropdownWidget):
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
-    label = _('Mark specification superseded')
+    label = _('Mark blueprint superseded')
     custom_widget('superseded_by', SupersededByWidget)
 
     @property
@@ -745,7 +763,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 description=_(
                     "The blueprint which supersedes this one. Note "
                     "that selecting a blueprint here and pressing "
-                    "Continue will change the specification status "
+                    "Continue will change the blueprint status "
                     "to Superseded.")),
             render_context=self.render_context)
 
@@ -767,7 +785,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
     @property

@@ -4,7 +4,7 @@ StrippedTextLine field
 The StrippedTextLine field strips the leading and trailing text from the
 set value.
 
-    >>> from canonical.launchpad.fields import StrippedTextLine
+    >>> from lp.services.fields import StrippedTextLine
 
     >>> non_required_field = StrippedTextLine(
     ...     __name__='field', title=u'Title',  required=False)
@@ -30,9 +30,9 @@ StrippedTextLine Widget
 
 This custom widget is used to strip leading and trailing whitespaces.
 
-  >>> from canonical.widgets.textwidgets import StrippedTextWidget
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.launchpad.interfaces import IRemoteBug
+  >>> from canonical.widgets.textwidgets import StrippedTextWidget
+  >>> from lp.bugs.interfaces.bugtracker import IRemoteBug
 
 We pass a string with leading and trailing whitespaces to the widget
 

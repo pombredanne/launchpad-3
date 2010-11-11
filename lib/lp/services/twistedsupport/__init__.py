@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'cancel_on_timeout',
     'defer_to_thread',
     'extract_result',
     'gatherResults',
@@ -15,7 +16,11 @@ __all__ = [
 import StringIO
 import sys
 
-from twisted.internet import defer, threads
+from twisted.internet import (
+    defer,
+    threads,
+    reactor as default_reactor,
+    )
 from twisted.python.util import mergeFunctionMetadata
 
 
@@ -89,3 +94,23 @@ def extract_result(deferred):
         return successes[0]
     else:
         raise AssertionError("%r has not fired yet." % (deferred,))
+
+
+def cancel_on_timeout(d, timeout, reactor=None):
+    """Cancel a Deferred if it doesn't fire before the timeout is up.
+
+    :param d: The Deferred to cancel
+    :param timeout: The timeout in seconds
+    :param reactor: Override the default reactor (useful for tests).
+
+    :return: The same deferred, d.
+    """
+    if reactor is None:
+        reactor = default_reactor
+    delayed_call = reactor.callLater(timeout, d.cancel)
+    def cancel_timeout(passthrough):
+        if not delayed_call.called:
+            delayed_call.cancel()
+        return passthrough
+    return d.addBoth(cancel_timeout)
+

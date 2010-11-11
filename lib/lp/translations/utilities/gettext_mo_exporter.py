@@ -12,17 +12,19 @@ __all__ = [
 
 import os
 import subprocess
+
 from zope.component import getUtility
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     ITranslationFormatExporter,
-    UnknownTranslationExporterError)
+    UnknownTranslationExporterError,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.utilities.translation_export import (
-    ExportFileStorage)
+    TranslationFileFormat,
+    )
+from lp.translations.utilities.translation_export import ExportFileStorage
 
 
 class POCompiler:
@@ -88,7 +90,7 @@ class GettextMOExporter:
             # include those as .pot files stored in a templates/
             # directory.
             file_path = 'templates/%s' % os.path.basename(po_export.path)
-            content_type = gettext_po_exporter.content_type
+            content_type = gettext_po_exporter.mime_type
             file_extension = po_export.file_extension
         else:
             file_extension = 'mo'

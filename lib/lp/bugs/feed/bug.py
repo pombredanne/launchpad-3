@@ -12,25 +12,36 @@ __all__ = [
     'SearchBugsFeed',
     ]
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from z3c.ptcompat import ViewPageTemplateFile
-
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp import (
+    canonical_url,
+    urlparse,
+    )
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.feed import (
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    MINUTES,
+    )
 from lp.bugs.browser.bugtask import (
-    BugsBugTaskSearchListingView, BugTargetView)
-from lp.registry.browser.person import (
-    PersonRelatedBugTaskSearchListingView)
-from lp.bugs.interfaces.bug import IBug, IBugSet
+    BugsBugTaskSearchListingView,
+    BugTargetView,
+    )
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.registry.browser.person import PersonRelatedBugTaskSearchListingView
 from lp.registry.interfaces.person import IPerson
-from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
 
 class BugFeedContentView(LaunchpadView):

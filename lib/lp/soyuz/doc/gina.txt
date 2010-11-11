@@ -37,7 +37,7 @@ Create a distribution release and an arch release for breezy:
 
     >>> from canonical.launchpad.database import (
     ...     ProcessorFamily, DistroArchSeries)
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> hoary = ubuntu.getSeries("hoary")
@@ -133,7 +133,7 @@ Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
@@ -211,7 +211,7 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
@@ -480,7 +480,7 @@ run.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
@@ -541,7 +541,7 @@ because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                           AND distroseries = %s
     ...                           AND status in (%s, %s)""" %

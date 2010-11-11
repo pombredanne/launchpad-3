@@ -22,9 +22,12 @@ If we add an attachment to the bug report...
     >>> import StringIO
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login("test@canonical.com")
-    >>> bug_11 =  getUtility(IBugSet).get(11)
+    >>> bug_11 = getUtility(IBugSet).get(11)
+    >>> launchbag = getUtility(ILaunchBag)
+    >>> launchbag.clear()
     >>> attachment = bug_11.addAttachment(
     ...     owner=None, data=StringIO.StringIO('whatever'),
     ...     comment=bug_11.initial_message, filename='test.txt',
@@ -50,11 +53,12 @@ displayed as the bug report).
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
-    http://localhost:58000/.../test.txt
+    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
 
 == Patch attachments are shown before non-patch attachments ==
 
     >>> login("test@canonical.com")
+    >>> launchbag.clear()
     >>> patch_attachment = bug_11.addAttachment(
     ...     owner=None, data=StringIO.StringIO('patchy patch patch'),
     ...     comment=bug_11.initial_message, filename='patch.txt',

@@ -8,30 +8,33 @@ __all__ = []
 
 
 import os
-from subprocess import PIPE, Popen
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import unittest
 
-
-import transaction
-
+from bzrlib import errors
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib import errors
 from bzrlib.upgrade import upgrade
-from bzrlib.urlutils import join as urljoin, local_path_from_url
+from bzrlib.urlutils import (
+    join as urljoin,
+    local_path_from_url,
+    )
 from bzrlib.workingtree import WorkingTree
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.codehosting.vfs import get_lp_server
 from lp.codehosting.puller.tests import PullerBranchTestCase
 from lp.codehosting.tests.helpers import LoomTestMixin
-from canonical.config import config
-from canonical.launchpad.interfaces import IScriptActivitySet
-from canonical.testing import ZopelessAppServerLayer
+from lp.codehosting.vfs import get_lp_server
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):

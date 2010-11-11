@@ -26,12 +26,19 @@ __all__ = [
 import base64
 import urllib2
 import weakref
-import transaction
 
-from zope.testbrowser.browser import Browser as _Browser, fix_exception_name
+import transaction
+from zope.testbrowser.browser import (
+    Browser as _Browser,
+    fix_exception_name,
+    )
 
 from canonical.launchpad.testing.pages import (
-    extract_text, find_main_content, find_tag_by_id, get_feedback_messages)
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    get_feedback_messages,
+    )
 
 
 class SocketClosingOnErrorHandler(urllib2.BaseHandler):
@@ -97,7 +104,7 @@ class Browser(_Browser):
     def _clickSubmit(self, form, control, coord):
         # XXX gary 2010-03-08 bug=98437
         # This change is taken from
-        # https://bugs.edge.launchpad.net/zope3/+bug/98437/comments/9 .  It
+        # https://bugs.launchpad.net/zope3/+bug/98437/comments/9 .  It
         # should be pushed upstream, per that comment.
         labels = control.get_labels()
         if labels:

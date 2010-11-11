@@ -9,16 +9,19 @@ import signal
 from meliae import scanner
 
 from twisted.application import service, strports
+from twisted.internet import reactor
+from twisted.python import log
 from twisted.web import server
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
+from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
 
 # Connect to database
 dbconfig.setConfigSection('librarian')
@@ -28,16 +31,20 @@ path = config.librarian_server.root
 if config.librarian_server.upstream_host:
     upstreamHost = config.librarian_server.upstream_host
     upstreamPort = config.librarian_server.upstream_port
-    print 'Using upstream librarian http://%s:%d' % (
-        upstreamHost, upstreamPort)
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg,
+        'Using upstream librarian http://%s:%d' %
+        (upstreamHost, upstreamPort))
 else:
     upstreamHost = upstreamPort = None
+    reactor.addSystemEventTrigger(
+        'before', 'startup', log.msg, 'Not using upstream librarian')
 
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(librarianService)
+readyservice.ReadyService().setServiceParent(librarianService)
 
 def setUpListener(uploadPort, webPort, restricted):
     """Set up a librarian listener on the given ports.
@@ -69,6 +76,9 @@ setUpListener(uploadPort, webPort, restricted=False)
 webPort = config.librarian.restricted_download_port
 uploadPort = config.librarian.restricted_upload_port
 setUpListener(uploadPort, webPort, restricted=True)
+
+# Log OOPS reports
+set_up_oops_reporting('librarian', 'librarian')
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

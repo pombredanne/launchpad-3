@@ -10,16 +10,21 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
-
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
-from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import login, login_person, TestCaseWithFactory
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
+from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):

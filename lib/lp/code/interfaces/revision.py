@@ -10,11 +10,20 @@ __all__ = [
     'IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionProperty',
     'IRevisionSet']
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class IRevision(Interface):
@@ -63,6 +72,9 @@ class IRevision(Interface):
             only non-junk branches are returned.
         :return: A `Branch` or None if an appropriate branch cannot be found.
         """
+
+    def getLefthandParent():
+        """Return lefthand parent of revision, or None if not in database."""
 
 
 class IRevisionAuthor(Interface):
@@ -142,7 +154,7 @@ class IRevisionSet(Interface):
         :return: ResultSet containing tuples of (Revision, RevisionAuthor)
         """
 
-    def getRevisionsNeedingKarmaAllocated():
+    def getRevisionsNeedingKarmaAllocated(limit=None):
         """Get the revisions needing karma allocated.
 
         Under normal circumstances karma is allocated for revisions by the

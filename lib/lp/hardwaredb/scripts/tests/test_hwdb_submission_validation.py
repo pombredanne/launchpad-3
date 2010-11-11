@@ -7,13 +7,16 @@ from datetime import datetime
 import logging
 import os
 import re
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
+from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
-from canonical.testing import BaseLayer
 
 
 class TestHWDBSubmissionRelaxNGValidation(TestCase):

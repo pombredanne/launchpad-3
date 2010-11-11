@@ -13,9 +13,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer
-from lp.soyuz.interfaces.packagediff import PackageDiffStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 
 

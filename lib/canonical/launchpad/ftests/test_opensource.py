@@ -20,8 +20,8 @@ import logging
 import os
 import unittest
 
-import wadllib
 import launchpadlib
+import wadllib
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import AppServerLayer

@@ -15,39 +15,71 @@ __all__ = [
     ]
 
 
-from bzrlib.plugins.builder.recipe import RecipeParser, RecipeParseError
-from zope.interface import providedBy
+from bzrlib.plugins.builder.recipe import (
+    ForbiddenInstructionError,
+    RecipeParseError,
+    RecipeParser,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from storm.locals import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, Interface
-from zope.schema import Choice, List, Text
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    Text,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough, structured)
+    action,
+    canonical_url,
+    ContextMenu,
+    custom_widget,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    structured,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.code.errors import ForbiddenInstruction
-from lp.code.errors import BuildAlreadyPending
-from lp.code.interfaces.branch import NoSuchBranch
+from lp.code.errors import (
+    BuildAlreadyPending,
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    TooNewRecipeFormat,
+    )
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource)
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+
 
 RECIPE_BETA_MESSAGE = structured(
     'We\'re still working on source package recipes. '
     'We would love for you to try them out, and if you have '
     'any issues, please '
-    '<a href="http://bugs.edge.launchpad.net/launchpad-code">'
+    '<a href="http://bugs.launchpad.net/launchpad-code">'
     'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
@@ -65,7 +97,8 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
     @property
     def url(self):
-        return canonical_url(self.context, view_name="+recipes")
+        return canonical_url(
+            self.context, view_name="+recipes", rootsite='code')
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
@@ -166,7 +199,6 @@ class SourcePackageRecipeView(LaunchpadView):
             builds.append(build)
             if len(builds) >= 5:
                 break
-        builds.reverse()
         return builds
 
 
@@ -239,13 +271,19 @@ class ISourcePackageAddEditSchema(Interface):
         'name',
         'description',
         'owner',
-        'build_daily'
+        'build_daily',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
-        title=u'Daily build archive')
+        title=u'Daily build archive',
+        description=(
+            u'If built daily, this is the archive where the package '
+            u'will be uploaded.'))
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default Distribution series')
+        title=u'Default distribution series',
+        description=(
+            u'If built daily, these are the distribution versions that '
+            u'the recipe will be built for.'))
     recipe_text = Text(
         title=u'Recipe text', required=True,
         description=u'The text of the recipe.')
@@ -297,16 +335,19 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
-        parser = RecipeParser(data['recipe_text'])
-        recipe = parser.parse()
         try:
             source_package_recipe = getUtility(
                 ISourcePackageRecipeSource).new(
-                    self.user, data['owner'], data['name'], recipe,
-                    data['description'], data['distros'],
+                    self.user, data['owner'], data['name'],
+                    data['recipe_text'], data['description'], data['distros'],
                     data['daily_build_archive'], data['build_daily'])
             Store.of(source_package_recipe).flush()
-        except ForbiddenInstruction:
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+            return
+        except ForbiddenInstructionError:
             # XXX: bug=592513 We shouldn't be hardcoding "run" here.
             self.setFieldError(
                 'recipe_text',
@@ -315,6 +356,9 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         except NoSuchBranch, e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+            return
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
             return
 
         self.next_url = canonical_url(source_package_recipe)
@@ -344,11 +388,32 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
 
+    def setUpFields(self):
+        super(SourcePackageRecipeEditView, self).setUpFields()
+
+        if check_permission('launchpad.Admin', self.context):
+            # Exclude the PPA archive dropdown.
+            self.form_fields = self.form_fields.omit('daily_build_archive')
+
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description=(u"As an administrator you are able to reassign"
+                             u" this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
+
+
     @property
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),}
+            'recipe_text': str(self.context.builder_recipe),
+            }
 
     @property
     def cancel_url(self):
@@ -365,14 +430,22 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
             try:
-                self.context.builder_recipe = recipe
+                self.context.setRecipeText(recipe_text)
                 changed = True
-            except ForbiddenInstruction:
+            except TooNewRecipeFormat:
+                self.setFieldError(
+                    'recipe_text',
+                    'The recipe format version specified is not available.')
+                return
+            except ForbiddenInstructionError:
                 # XXX: bug=592513 We shouldn't be hardcoding "run" here.
                 self.setFieldError(
                     'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted here.'
-                    )
+                    'The bzr-builder instruction "run" is not permitted'
+                    ' here.')
+                return
+            except PrivateBranchRecipe, e:
+                self.setFieldError('recipe_text', str(e))
                 return
 
 

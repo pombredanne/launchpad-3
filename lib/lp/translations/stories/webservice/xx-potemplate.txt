@@ -17,7 +17,7 @@ Anonymous users have read access to PO templates attributes.
     exported_in_languagepacks: True
     format: u'PO format'
     id: 2
-    language_count: 8
+    language_count: 9
     message_count: 63
     name: u'pmount'
     owner_link: u'http://.../~rosetta-admins'

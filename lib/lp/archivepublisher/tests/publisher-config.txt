@@ -22,13 +22,7 @@ We will use a helper function for dumping publisher configurations.
     ...     for attr_name in config_attributes:
     ...         print '%s: %s' % (attr_name, getattr(config, attr_name))
     ...     for distroseries_name in sorted(config.distroSeriesNames()):
-    ...         print '%s:' % distroseries_name
-    ...         sorted_arches = sorted(
-    ...             config.archTagsForSeries(distroseries_name))
-    ...         print 'Architectures:', ', '.join(sorted_arches)
-    ...         sorted_components = sorted(
-    ...             config.componentsForSeries(distroseries_name))
-    ...         print 'Components:', ', '.join(sorted_components)
+    ...         print '%s' % distroseries_name
 
 
 == Primary ==
@@ -49,12 +43,8 @@ We will use a helper function for dumping publisher configurations.
     cacheroot:       /var/tmp/archive/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-misc
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
+    breezy-autotest
+    hoary-test
 
 
 == PPAs ==
@@ -98,12 +88,8 @@ None, so they won't get created:
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
+    breezy-autotest
+    hoary-test
 
 There is a separate location for private PPAs that is used if the
 archive is marked as private:
@@ -133,12 +119,8 @@ archive is marked as private:
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
+    breezy-autotest
+    hoary-test
 
 
 == Partner ==
@@ -163,12 +145,8 @@ archive.
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: partner
-    hoary-test:
-      Architectures: amd64, i386
-      Components: partner
+    breezy-autotest
+    hoary-test
 
 
 == DEBUG ==
@@ -177,7 +155,7 @@ The publisher configuration for DEBUG archives points to directories
 besides PRIMARY repository ones, but the distribution part is
 modified to be clearly different than the PRIMARY one.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> debug_archive = getUtility(IArchiveSet).new(
     ...     purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
     ...     distribution=ubuntutest)
@@ -194,12 +172,8 @@ modified to be clearly different than the PRIMARY one.
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
+    breezy-autotest
+    hoary-test
 
 
 == COPY ==
@@ -223,9 +197,5 @@ is of the form distroroot/distroname-archivename/distroname
     cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
     temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
+    breezy-autotest
+    hoary-test

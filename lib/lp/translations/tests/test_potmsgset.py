@@ -5,29 +5,32 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
 import pytz
-
 import transaction
-
 from zope.component import getUtility
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.potmsgset import (
-    POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.interfaces.translationmessage import TranslationConflict
-from lp.translations.model.translationmessage import (
-    DummyTranslationMessage)
-
 from lp.testing import TestCaseWithFactory
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potmsgset import (
+    POTMsgSetInIncompatibleTemplatesError,
+    TranslationCreditsType,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.model.translationmessage import DummyTranslationMessage
 
 
 class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
@@ -40,12 +43,12 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create a product with two series and a shared POTemplate
         # in different series ('devel' and 'stable').
         super(TestTranslationSharedPOTMsgSets, self).setUp()
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_devel = self.factory.makeProductSeries(
             name='devel', product=self.foo)
         self.foo_stable = self.factory.makeProductSeries(
             name='stable', product=self.foo)
-        self.foo.official_rosetta = True
 
         # POTemplate is 'shared' if it has the same name ('messages').
         self.devel_potemplate = self.factory.makePOTemplate(
@@ -57,6 +60,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         self.potmsgset.setSequence(self.devel_potemplate, 1)
+
+    def _refreshSuggestiveTemplatesCache(self):
+        """Refresh the `SuggestivePOTemplate` cache."""
+        getUtility(IPOTemplateSet).populateSuggestivePOTemplatesCache()
 
     def test_TranslationTemplateItem(self):
         self.potmsgset.setSequence(self.stable_potemplate, 1)
@@ -154,31 +161,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         translation.potemplate = self.devel_potemplate
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
-    def test_getCurrentDummyTranslationMessage(self):
-        """Test that a DummyTranslationMessage is correctly returned."""
+    def test_getCurrentTranslationMessageOrDummy_returns_real_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        message = self.factory.makeTranslationMessage(
+            pofile=pofile, suggestion=False, is_imported=True)
 
-        # When there is no POFile, we get a DummyTranslationMessage inside
-        # a DummyPOFile.
-        serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+        self.assertEqual(
+            message,
+            message.potmsgset.getCurrentTranslationMessageOrDummy(pofile))
 
-        # If a POFile exists, but there is no current translation message,
-        # a dummy translation message is returned.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        dummy = self.potmsgset.getCurrentDummyTranslationMessage(
-            self.devel_potemplate, serbian)
-        self.assertTrue(zope_isinstance(dummy, DummyTranslationMessage))
+    def test_getCurrentTranslationMessageOrDummy_returns_dummy_tm(self):
+        pofile = self.factory.makePOFile('nl')
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
 
-        # When there is a current translation message, an exception
-        # is raised.
-        translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertTrue(translation.is_current)
-        self.assertRaises(AssertionError,
-                          self.potmsgset.getCurrentDummyTranslationMessage,
-                          self.devel_potemplate, serbian)
+        message = potmsgset.getCurrentTranslationMessageOrDummy(pofile)
+        self.assertIsInstance(message, DummyTranslationMessage)
 
     def test_getCurrentTranslationMessage(self):
         """Test how shared and diverged current translation messages
@@ -319,13 +316,15 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 
@@ -378,13 +377,15 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create an external POTemplate with a POTMsgSet using
         # the same English string as the one in self.potmsgset.
         external_template = self.factory.makePOTemplate()
-        external_template.productseries.product.official_rosetta = True
+        product = external_template.productseries.product
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
             external_template,
             singular=self.potmsgset.singular_text)
         external_potmsgset.setSequence(external_template, 1)
         external_pofile = self.factory.makePOFile('sr', external_template)
         serbian = external_pofile.language
+        self._refreshSuggestiveTemplatesCache()
 
         transaction.commit()
 
@@ -733,10 +734,10 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetSuggestions, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
@@ -921,10 +922,10 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
         # create TranslationMessage objects.
         super(TestPOTMsgSetResetTranslation, self).setUp()
         self.now = self.gen_now().next
-        self.foo = self.factory.makeProduct()
+        self.foo = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.foo_main = self.factory.makeProductSeries(
             name='main', product=self.foo)
-        self.foo.official_rosetta = True
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")

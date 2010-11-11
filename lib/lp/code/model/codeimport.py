@@ -14,37 +14,54 @@ __all__ = [
 
 from datetime import timedelta
 
-from storm.expr import Select, And, Desc, Func
+from lazr.lifecycle.event import ObjectCreatedEvent
+from sqlobject import (
+    ForeignKey,
+    IntervalCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    Func,
+    Select,
+    )
 from storm.locals import Store
 from storm.references import Reference
-from sqlobject import (
-    ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
-    SQLObjectNotFound)
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IStore
-from lp.code.model.codeimportjob import CodeImportJobWorkflow
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
 from lp.code.enums import (
-    BranchType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, RevisionControlSystems)
+    BranchType,
+    CodeImportJobState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState)
-from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    )
+from lp.code.interfaces.codeimport import (
+    ICodeImport,
+    ICodeImportSet,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
-from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.mail.codeimport import code_import_updated
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -202,9 +219,9 @@ class CodeImport(SQLBase):
     def requestImport(self, requester, error_if_already_requested=False):
         """See `ICodeImport`."""
         if self.import_job is None: # not in automatic mode
-           raise CodeImportNotInReviewedState("This code import is %s, and "
-                   "must be Reviewed for you to call requestImport."
-                   % self.review_status.name)
+            raise CodeImportNotInReviewedState("This code import is %s, and "
+                "must be Reviewed for you to call requestImport."
+                % self.review_status.name)
         if (self.import_job.state != CodeImportJobState.PENDING):
             assert (self.import_job.state == CodeImportJobState.RUNNING)
             # Already running

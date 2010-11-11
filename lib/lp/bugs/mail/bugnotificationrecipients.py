@@ -10,11 +10,9 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import INotificationRecipientSet
-
+from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
 from lp.services.mail.basemailer import RecipientReason
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class BugNotificationRecipientReason(RecipientReason):

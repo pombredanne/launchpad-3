@@ -4,10 +4,10 @@ The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-    >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -75,7 +75,7 @@ are similar to the query:
 
     >>> from zope.security import proxy
     >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
-    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
+    >>> terms = vocabulary.searchForTerms('extensions')
     >>> proxy.isinstance(terms, CountableIterator)
     True
     >>> terms.count()
@@ -83,6 +83,6 @@ are similar to the query:
     >>> for term in terms:
     ...     print term.title
     How do I troubleshoot problems with extensions/themes?
-    How do I install Java?
+    How do I install Extensions?
 
 

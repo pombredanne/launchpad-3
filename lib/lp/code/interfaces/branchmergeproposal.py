@@ -17,8 +17,8 @@ __all__ = [
     'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
+    'IMergeProposalNeedsReviewEmailJob',
+    'IMergeProposalNeedsReviewEmailJobSource',
     'IMergeProposalUpdatedEmailJob',
     'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
@@ -30,27 +30,63 @@ __all__ = [
 
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.event import notify
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bytes, Bool, Choice, Datetime, Int, Object, Text, TextLine)
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.bugs.interfaces.bug import IBug
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branch import IBranch
-from lp.registry.interfaces.person import IPerson
-from lp.code.interfaces.diff import IPreviewDiff, IStaticDiff
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_entry, rename_parameters_as,
-    REQUEST_USER)
+from lp.bugs.interfaces.bug import IBug
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.diff import (
+    IPreviewDiff,
+    IStaticDiff,
+    )
+from lp.registry.interfaces.person import IPerson
+from lp.services.fields import (
+    PublicPersonChoice,
+    Summary,
+    Whiteboard,
+    )
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    ITwistedJobSource,
+    )
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -254,6 +290,13 @@ class IBranchMergeProposal(IPrivacy):
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    def getRevisionsSinceReviewStart():
+        """Return all the revisions added since the review began.
+
+        Revisions are grouped by creation (i.e. push) time.
+        :return: An iterator of (date, iterator of revision data)
+        """
 
     def getVoteReference(id):
         """Return the CodeReviewVoteReference with the specified ID."""
@@ -483,8 +526,8 @@ class IBranchMergeProposal(IPrivacy):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param prerequisite_revision_id: The revision id that was used from the
-            prerequisite branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 
@@ -509,7 +552,7 @@ class IBranchMergeProposalJob(Interface):
         """Destroy this object."""
 
 
-class IBranchMergeProposalJobSource(IJobSource):
+class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 
@@ -590,15 +633,15 @@ class ICreateMergeProposalJobSource(IJobSource):
         """Return a CreateMergeProposalJob for this message."""
 
 
-class IMergeProposalCreatedJob(IRunnableJob):
-    """Interface for review diffs."""
+class IMergeProposalNeedsReviewEmailJob(IRunnableJob):
+    """Email about a merge proposal needing a review.."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class IMergeProposalNeedsReviewEmailJobSource(Interface):
+    """Interface for acquiring MergeProposalNeedsReviewEmailJobs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a needs review email job for the specified proposal."""
 
 
 class IUpdatePreviewDiffJob(IRunnableJob):
@@ -634,7 +677,9 @@ class ICodeReviewCommentEmailJobSource(Interface):
 class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
-    reviewer = Attribute('The person or team asked to do the review.')
+    reviewer = Attribute('The person or team asked to do the review. '
+                         'If left blank, then the default reviewer for the '
+                         'selected target branch will be used.')
     requester = Attribute('The person who has asked for the review.')
 
 
@@ -670,6 +715,7 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 

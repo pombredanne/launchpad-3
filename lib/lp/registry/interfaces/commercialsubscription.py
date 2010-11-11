@@ -11,15 +11,22 @@ __all__ = [
     'ICommercialSubscription',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Text, TextLine
-
-from lazr.restful.fields import ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import ReferenceChoice
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp.services.fields import PublicPersonChoice
 
 
 class ICommercialSubscription(Interface):
@@ -39,7 +46,7 @@ class ICommercialSubscription(Interface):
             required=True,
             readonly=True,
             vocabulary='Product',
-            # Really IProduct.  Set properly below.
+            # Really IProduct.  Set properly in lp/registry/interfaces/product.py
             schema=Interface,
             description=_(
                 "Project for which this commercial subscription is "
@@ -95,8 +102,3 @@ class ICommercialSubscription(Interface):
             title=_('Active'),
             readonly=True,
             description=_("Whether this subscription is active.")))
-
-
-# Fix circular dependency issues.
-from lp.registry.interfaces.product import IProduct
-ICommercialSubscription['product'].schema = IProduct

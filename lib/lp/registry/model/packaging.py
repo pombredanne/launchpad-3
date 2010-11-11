@@ -6,16 +6,21 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.packaging import (
-    IPackaging, IPackagingUtil, PackagingType)
+    IPackaging,
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 

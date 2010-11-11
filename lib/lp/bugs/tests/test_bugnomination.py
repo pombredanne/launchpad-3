@@ -5,8 +5,11 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login, logout
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 

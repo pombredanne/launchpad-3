@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A class for the top-level link to the pillar set."""
@@ -9,12 +9,11 @@ __all__ = [
     'PillarSetLink',
     ]
 
+from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IPillarNameSet
+from lp.registry.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-
-from lazr.restful.interfaces import ITopLevelEntryLink
 
 
 class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):

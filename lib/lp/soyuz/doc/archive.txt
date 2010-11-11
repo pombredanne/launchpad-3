@@ -9,8 +9,9 @@ records to disk, including configuration and indexes.
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet)
+    >>> from lp.soyuz.enums import ArchivePurpose, ArchiveStatus
     >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet, IArchive)
+    ...     IArchiveSet, IArchive)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_archive = cprov.archive
@@ -44,6 +45,8 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.is_ppa
     True
     >>> cprov_archive.is_main
+    False
+    >>> cprov_archive.is_partner
     False
     >>> cprov_archive.is_active
     True
@@ -184,7 +187,6 @@ It is only editable by someone with launchpad.Edit permissions:
     >>> print cprov_archive.status.name
     ACTIVE
 
-    >>> from lp.soyuz.interfaces.archive import ArchiveStatus
     >>> cprov_archive.status = ArchiveStatus.DELETING
     >>> print cprov_archive.status.name
     DELETING
@@ -300,7 +302,7 @@ This lookup also supports optional filters:
  * 'version': exact version string matching;
  * 'status': a item or a list of PackagePublishingStatus.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> active_status = [PackagePublishingStatus.PENDING,
     ...                  PackagePublishingStatus.PUBLISHED]
@@ -881,7 +883,7 @@ First, let's print the currently published files in cprov's PPA:
 Now we will emulate a duplicated reference to the same 'orig.tar.gz',
 upstream tarball, as if it was part of two different SourcePackageRelease.
 
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
     >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(
     ...     name='cdrkit')[0]
@@ -938,7 +940,7 @@ source-package releases for the archive. By default, all releases will
 be returned, but you can also ask for releases with builds in a certain
 state.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> releases = cprov_archive.getSourcePackageReleases(
     ...     build_status=BuildStatus.FULLYBUILT)
     >>> for release in releases:
@@ -1365,6 +1367,8 @@ and an ArchivePurpose:
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
     partner
+    >>> print partner_archive.is_partner
+    True
 
 It explicitly fails when purpose is PPA, since such lookup should be
 restricted by archive owner.
@@ -2078,7 +2082,7 @@ checkArchivePermission() can also check someone's permission to upload a specifi
 source package.  Carlos, who does not have permission to upload to any
 Ubuntu components, has permission to upload "mozilla-firefox".
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> mozilla = getUtility(
     ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
     >>> ubuntu.main_archive.checkArchivePermission(carlos, mozilla)

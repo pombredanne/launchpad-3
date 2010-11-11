@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 """Tests for the login helpers."""
 
 __metaclass__ = type
@@ -28,11 +26,11 @@ from lp.testing import (
     login_team,
     logout,
     person_logged_in,
+    TestCaseWithFactory,
     with_anonymous_login,
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-from lp.testing import TestCaseWithFactory
 
 
 class TestLoginHelpers(TestCaseWithFactory):

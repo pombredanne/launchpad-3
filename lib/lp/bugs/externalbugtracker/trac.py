@@ -6,39 +6,44 @@
 __metaclass__ = type
 __all__ = ['Trac', 'TracLPPlugin']
 
+from Cookie import SimpleCookie
+from cookielib import CookieJar
 import csv
-import pytz
+from datetime import datetime
+from email.Utils import parseaddr
 import time
 import urllib2
 import xmlrpclib
 
-from Cookie import SimpleCookie
-from cookielib import CookieJar
-from datetime import datetime
-from email.Utils import parseaddr
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from lp.bugs.externalbugtracker.base import (
-    BugNotFound, BugTrackerAuthenticationError, ExternalBugTracker,
-    InvalidBugId, LookupTree, UnknownRemoteStatusError,
-    UnparseableBugData
-    )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, BugTaskImportance
-    )
-from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport,
-    ISupportsCommentPushing, UNKNOWN_REMOTE_IMPORTANCE
-    )
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
-
+from lp.bugs.externalbugtracker.base import (
+    BugNotFound,
+    BugTrackerAuthenticationError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteStatusError,
+    UnparseableBugData,
+    )
+from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.externalbugtracker import (
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
+    )
 
 # Symbolic constants used for the Trac LP plugin.
 LP_PLUGIN_BUG_IDS_ONLY = 0
@@ -269,7 +274,9 @@ class Trac(ExternalBugTracker):
         # XXX: 2007-08-06 Graham Binns:
         #      We should follow dupes if possible.
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
-        ('fixed', 'closed', BugTaskStatus.FIXRELEASED),
+        # Status fixverified added for bug 667340, for http://trac.yorba.org/,
+        # but could be generally useful so adding here.
+        ('fixed', 'closed', 'fixverified', BugTaskStatus.FIXRELEASED),
         ('invalid', 'worksforme', BugTaskStatus.INVALID),
         ('wontfix', BugTaskStatus.WONTFIX),
         )

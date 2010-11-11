@@ -42,10 +42,10 @@ trivially retrieved using getPackageUploads and specifying a custom_type.
 First, insert some data to retrieve:
 
     >>> login("admin@canonical.com")
-    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> warty_series = getUtility(IDistributionSet)['ubuntu']['warty']
     >>> upload = warty_series.createQueueEntry(
     ...     pocket=PackagePublishingPocket.RELEASE, changesfilename="test",

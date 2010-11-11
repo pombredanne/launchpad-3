@@ -10,8 +10,8 @@ import unittest
 
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget)
-
+    search_and_select_picker_widget,
+    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 

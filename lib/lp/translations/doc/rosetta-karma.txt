@@ -7,13 +7,15 @@ SQLObject we need to use to be sure we have the right information. Seems
 like SQLObjects are not persistent between transactions.
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import (
-    ...     IKarmaActionSet, IPersonSet,
+    >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.karma import IKarmaActionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
-    >>> from lp.translations.model.potemplate import POTemplate
+    ...     ITranslationImportQueue)
     >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.translations.model.potemplate import POTemplate
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)
@@ -384,7 +386,8 @@ Let's see the description we have atm:
 We do the update and see the karma being assigned.
 
     >>> status = potemplate_view.initialize()
-    Karma added: action=translationtemplatedescriptionchanged, product=evolution
+    Karma added: action=translationtemplatedescriptionchanged,
+                 product=evolution
 
 And the new one is:
 

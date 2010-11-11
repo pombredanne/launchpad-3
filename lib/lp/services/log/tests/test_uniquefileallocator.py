@@ -3,12 +3,12 @@
 
 """Tests for the unique log naming facility."""
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -58,12 +58,12 @@ class TestUniqueFileAllocator(testtools.TestCase):
         # when combined with configuration changes causing disk scans. That
         # would also permit using a completely stubbed out file system,
         # reducing IO in tests that use UniqueFileAllocator (such as all the
-        # pagetests in Launchpad. At that point an interface to obtain a 
+        # pagetests in Launchpad. At that point an interface to obtain a
         # factory of UniqueFileAllocator's would be useful to parameterise the
         # entire test suite.
         namer = UniqueFileAllocator(self._tempdir, 'OOPS', 'T')
         # first name of the day
-        self.assertUniqueFileAllocator(namer, 
+        self.assertUniqueFileAllocator(namer,
             datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC),
             'OOPS-91T1', 1, '2006-04-01/01800.T1', '2006-04-01')
         # second name of the day
@@ -73,7 +73,7 @@ class TestUniqueFileAllocator(testtools.TestCase):
 
         # first name of the following day sets a new dir and the id starts
         # over.
-        self.assertUniqueFileAllocator(namer, 
+        self.assertUniqueFileAllocator(namer,
             datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC),
             'OOPS-92T1', 1, '2006-04-02/01800.T1', '2006-04-02')
 
@@ -95,16 +95,16 @@ class TestUniqueFileAllocator(testtools.TestCase):
         self.assertRaises(ValueError, namer.newId, now)
 
     def test_changeErrorDir(self):
-        """Test changing the log output dur."""
+        """Test changing the log output dir."""
         namer = UniqueFileAllocator(self._tempdir, 'OOPS', 'T')
 
         # First an id in the original error directory.
-        self.assertUniqueFileAllocator(namer, 
+        self.assertUniqueFileAllocator(namer,
             datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC),
             'OOPS-91T1', 1, '2006-04-01/01800.T1', '2006-04-01')
 
-        # UniqueFileAllocator uses the _output_root attribute to get the current output
-        # directory.
+        # UniqueFileAllocator uses the _output_root attribute to get the
+        # current output directory.
         new_output_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, new_output_dir, ignore_errors=True)
         namer._output_root = new_output_dir
@@ -113,8 +113,8 @@ class TestUniqueFileAllocator(testtools.TestCase):
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
         log_id, filename = namer.newId(now)
 
-        # Since it's a new directory, with no previous logs, the id is 1 again,
-        # rather than 2.
+        # Since it's a new directory, with no previous logs, the id is 1
+        # again, rather than 2.
         self.assertEqual(log_id, 'OOPS-91T1')
         self.assertEqual(namer._last_serial, 1)
         self.assertEqual(namer._last_output_dir,
@@ -133,6 +133,23 @@ class TestUniqueFileAllocator(testtools.TestCase):
         open(os.path.join(output_dir, '12346.B100'), 'w').close()
         # The namer should figure out the right highest serial.
         self.assertEqual(namer._findHighestSerial(output_dir), 10)
+
+    def test_output_dir_permission(self):
+        # Set up default dir creation mode to rwx------.
+        umask_permission = stat.S_IRWXG | stat.S_IRWXO
+        old_umask = os.umask(umask_permission)
+        namer = UniqueFileAllocator(self._tempdir, "OOPS", "T")
+        output_dir = namer.output_dir()
+        st = os.stat(output_dir)
+        # Permission we want here is: rwxr-xr-x
+        wanted_permission = (
+            stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH |
+            stat.S_IXOTH)
+        # Get only the permission bits for this directory.
+        dir_permission = stat.S_IMODE(st.st_mode)
+        self.assertEqual(dir_permission, wanted_permission)
+        # Restore the umask to the original value.
+        ignored = os.umask(old_umask)
 
 
 def test_suite():

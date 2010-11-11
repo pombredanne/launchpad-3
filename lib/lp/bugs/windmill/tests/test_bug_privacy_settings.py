@@ -3,12 +3,16 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser, constants
+from canonical.launchpad.windmill.testing import (
+    constants,
+    lpuser,
+    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
+
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
-MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/table'
+MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/div'
 FORM_NOT_VISIBLE = (
     u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (

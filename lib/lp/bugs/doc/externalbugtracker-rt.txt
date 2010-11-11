@@ -11,8 +11,8 @@ implementation of ExternalBugTracker, RequestTracker.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     RequestTracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -155,15 +155,16 @@ This can also be demonstrated for importing bugs as a batch:
 First, we create some bug watches to test with. Example.com hosts an RT
 instance which has several bugs that we wish to watch:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     print_bugwatches)
 
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1585, so we add a watch against the remote bug.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.RT)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
@@ -180,8 +181,8 @@ remote status for, the bug watch that we have created.
 
     >>> transaction.commit()
 
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(txn)
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)

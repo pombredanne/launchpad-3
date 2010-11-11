@@ -48,11 +48,13 @@ HEADER="-- Copyright 2010 Canonical Ltd.  This software is licensed under \
 
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
-build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
-	echo $(HEADER) > $(2); \
+build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
+	echo $(HEADER) > $(2) && \
+    echo -n "-- Created using " >> $(2) && \
+    pg_dump --version >> $(2) && \
     pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-    | $(PYTHON) sort_sql.py >> $(2); \
+    | $(PYTHON) sort_sql.py >> $(2) && \
     $(PYTHON) fti.py --force -d ${1} -q
 
 
@@ -62,9 +64,9 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 # 
-REV=2207
+REV=2208
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
+MD5SUM=6c060041b010528a12947cd95c5c0133  launchpad-2208-00-0.sql
 
 default: all
 

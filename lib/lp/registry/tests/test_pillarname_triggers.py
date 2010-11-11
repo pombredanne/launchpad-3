@@ -9,7 +9,8 @@ __metaclass__ = type
 import unittest
 
 from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
+
 
 class PillarNameTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer

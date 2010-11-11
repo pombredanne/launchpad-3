@@ -7,18 +7,22 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.publisher import BugsLayer
-
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_initialized_view
-
-from lp.registry.browser.product import ProductBugsMenu
 from lp.registry.browser.distribution import DistributionBugsMenu
 from lp.registry.browser.distributionsourcepackage import (
-    DistributionSourcePackageBugsMenu)
+    DistributionSourcePackageBugsMenu,
+    )
+from lp.registry.browser.product import ProductBugsMenu
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestConfigureBugTrackerBase(TestCaseWithFactory):

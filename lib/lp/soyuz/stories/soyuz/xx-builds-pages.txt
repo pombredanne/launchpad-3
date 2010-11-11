@@ -143,8 +143,8 @@ initialised' one (fix bug #52704).
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started at an unknown time on an unknown build machine and finished
-    on 2007-08-09 taking
+    Build started on 2007-08-09 on an unknown build machine and finished
+    on 2007-08-09 taking ten minutes
     ------------------------------
     Failed to upload
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
@@ -200,8 +200,8 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started at an unknown time on an unknown build machine and finished
-    on 2007-08-09 taking
+    Build started on 2007-08-09 on an unknown build machine and finished
+    on 2007-08-09 taking ten minutes
     ------------------------------
     Successfully built
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
@@ -486,9 +486,9 @@ processed, the upload 'status' is shown in parentheses after the build
 link.
 
     # Create testing source publications.
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
     >>> test_publisher = SoyuzTestPublisher()
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -33,7 +33,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 #
 # pylint: disable-msg=W0614,W0401
 from canonical.launchpad.database import *
-from canonical.launchpad.interfaces import *
+from lp.bugs.model.bug import Bug
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail import create_mail_for_directoryMailBox
 from canonical.launchpad.testing.systemdocs import (

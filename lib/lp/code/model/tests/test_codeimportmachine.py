@@ -10,11 +10,13 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    CodeImportMachineOfflineReason, CodeImportMachineState)
+    CodeImportMachineOfflineReason,
+    CodeImportMachineState,
+    )
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):

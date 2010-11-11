@@ -32,3 +32,6 @@ def customizeMimetypes():
     # of type text/x-diff inline, so making this text/plain because
     # viewing .debdiff inline is the most common use-case.
     mimetypes.add_type('text/plain', '.debdiff')
+
+    # Add support for Launchpad's OWL decription of its RDF metadata.
+    mimetypes.add_type('application/rdf+xml', '.owl')

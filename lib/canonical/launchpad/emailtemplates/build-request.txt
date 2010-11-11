@@ -1,1 +1,8 @@
-Build %(recipe_owner)s/%(recipe)s into %(archive)s for %(distroseries)s: %(status)s.
+ * State: %(status)s
+ * Recipe: %(recipe_owner)s/%(recipe)s
+ * Archive: %(archive_owner)s/%(archive)s
+ * Distroseries: %(distroseries)s
+ * Duration: %(duration)s
+ * Build Log: %(log_url)s
+ * Upload Log: %(upload_log_url)s
+ * Builder: %(builder_url)s

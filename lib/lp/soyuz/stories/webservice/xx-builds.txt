@@ -13,10 +13,10 @@ source publications can be retrieved.
     >>> from lp.archiveuploader.tests import (
     ...     insertFakeChangesFileForAllPackageUploads)
     >>> insertFakeChangesFileForAllPackageUploads()
-    >>> from lp.registry.model.gpgkey import GPGKey
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
@@ -44,6 +44,7 @@ of properties:
     archive_link: u'http://.../beta/~cprov/+archive/ppa'
     can_be_rescored: False
     can_be_retried: True
+    changesfile_url: None
     current_source_publication_link: u'http://.../beta/~cprov/+archive/ppa/+sourcepub/27'
     date_created: u'2007-07-08T00:00:00+00:00'
     date_finished: u'2007-07-08T00:00:01+00:00'
@@ -70,6 +71,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     buildstate: u'Failed to build'
     can_be_rescored: False
     can_be_retried: True
+    changesfile_url: None
     current_source_publication_link: u'http://.../~cprov/+archive/ppa/+sourcepub/27'
     date_first_dispatched: None
     datebuilt: u'2007-07-08T00:00:01+00:00'
@@ -200,7 +202,7 @@ If the build cannot be retried, then a 400 code is returned.  Let's
 alter the buildstate to one that cannot be retried:
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> build.status = BuildStatus.FAILEDTOUPLOAD
     >>> logout()
 

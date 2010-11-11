@@ -10,7 +10,8 @@ import logging
 import re
 
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 
 
 def normalize_path(path):

@@ -11,16 +11,20 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
-
-from lp.bugs.browser.bugtask import BugTaskListingItem
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView
+from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, IBugTaskSet, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskSearchParams,
+    IBugTaskSet,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.propertycache import cachedproperty
+
+
 class BugTaskCve:
     """An object that represents BugTasks and CVEs related to a single bug."""
     def __init__(self):
@@ -75,7 +79,6 @@ class CVEReportView(LaunchpadView):
             # queries being issues when trying to render the badges.
             bugtask = BugTaskListingItem(
                 bugtask,
-                has_mentoring_offer=badges['has_mentoring_offer'],
                 has_bug_branch=badges['has_branch'],
                 has_specification=badges['has_specification'],
                 has_patch=badges['has_patch'])

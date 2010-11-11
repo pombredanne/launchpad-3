@@ -19,17 +19,22 @@ decrypt data in pagetests.
 
 __metaclass__ = type
 
-import os
 from cStringIO import StringIO
-
-from zope.component import getUtility
+import os
 
 import gpgme
+from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IGPGKeySet, IGPGHandler, IPersonSet, GPGKeyAlgorithm)
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKeySet,
+    )
+from lp.registry.interfaces.person import IPersonSet
+
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
+
 
 def import_public_key(email_addr):
     """Imports the public key related to the given email address."""
@@ -67,16 +72,19 @@ def import_public_key(email_addr):
         algorithm=GPGKeyAlgorithm.items[key.algorithm],
         active=(not key.revoked))
 
+
 def iter_test_key_emails():
     """Iterates over the email addresses for the keys in the gpgkeysdir."""
     for name in sorted(os.listdir(gpgkeysdir), reverse=True):
         if name.endswith('.pub'):
             yield name[:-4]
 
+
 def import_public_test_keys():
     """Imports all the public keys located in gpgkeysdir into the db."""
     for email in iter_test_key_emails():
         import_public_key(email)
+
 
 def import_secret_test_key(keyfile='test@canonical.com.sec'):
     """Imports the secret key located in gpgkeysdir into local keyring.
@@ -87,19 +95,23 @@ def import_secret_test_key(keyfile='test@canonical.com.sec'):
     seckey = open(os.path.join(gpgkeysdir, keyfile)).read()
     return gpghandler.importSecretKey(seckey)
 
+
 def test_pubkey_file_from_email(email_addr):
     """Get the file name for a test pubkey by email address."""
     return os.path.join(gpgkeysdir, email_addr + '.pub')
 
+
 def test_pubkey_from_email(email_addr):
     """Get the on disk content for a test pubkey by email address."""
     return open(test_pubkey_file_from_email(email_addr)).read()
+
 
 def test_keyrings():
     """Iterate over the filenames for test keyrings."""
     for name in os.listdir(gpgkeysdir):
         if name.endswith('.gpg'):
             yield os.path.join(gpgkeysdir, name)
+
 
 def decrypt_content(content, password):
     """Return the decrypted content or None if failed

@@ -8,11 +8,12 @@ Unit tests for the Google test service stub.
 __metaclass__ = type
 
 
-from canonical.launchpad.testing import googletestservice
-from canonical.lazr.pidfile import pidfile_path
 import errno
 import os
 import unittest
+
+from canonical.launchpad.testing import googletestservice
+from canonical.lazr.pidfile import pidfile_path
 
 
 class TestServiceUtilities(unittest.TestCase):

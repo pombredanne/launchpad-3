@@ -3,26 +3,25 @@
 
 """Tests for the `base` module."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-import unittest
-
 from contextlib import contextmanager
+import unittest
 
 import transaction
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import (
-    endInteraction, queryInteraction)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
-
+    endInteraction,
+    queryInteraction,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.isolation import (
-    TransactionInProgress, is_transaction_in_progress)
+    is_transaction_in_progress,
+    TransactionInProgress,
+    )
 from lp.bugs.scripts.checkwatches.base import WorkingBase
-
 from lp.testing import TestCaseWithFactory
 
 

@@ -14,9 +14,9 @@ distribution:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName,
-    ...     PackagePublishingStatus)
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 
     >>> distroset = getUtility(IDistributionSet)
     >>> gentoo = distroset.getByName("gentoo")
@@ -88,10 +88,10 @@ team.
     ...                  '2.0', None, gentoo.owner)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Moderate')
 
     >>> login('mark@example.com')
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
     ...                               'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
@@ -129,7 +129,7 @@ addition to PUBLISHED ones:
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')
     >>> print bin_name
@@ -173,6 +173,27 @@ differs:
     source: u'linux-source-2.6.15'
     binary: u'linux-2.6.12'
 
+If there are multiple matching binary packages, the source of the latest
+publication is used. If we create a new 'linux' source with a 'linux-2.6.12'
+binary, 'linux' will be returned instead of 'linux-source-2.6.15'.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> hoary = test_publisher.setUpDefaultDistroSeries(
+    ...     ubuntu.getSeries('hoary'))
+    >>> fake_chroot = test_publisher.addMockFile('fake_chroot.tar.gz')
+    >>> unused = hoary['i386'].addOrUpdateChroot(fake_chroot)
+    >>> login('admin@canonical.com')
+    >>> test_publisher.getPubBinaries(
+    ...     'linux-2.6.12', architecturespecific=True)
+    [<BinaryPackagePublishingHistory ...>]
+    >>> login(ANONYMOUS)
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux'
+    binary: u'linux-2.6.12'
+
 
 Handling Personal Package Archives
 ----------------------------------
@@ -184,7 +205,7 @@ Handling Personal Package Archives
  * getPendingAcceptancePPAs
  * getPendingPublicationPPAs
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> mark = getUtility(IPersonSet).getByName('mark')
@@ -377,7 +398,6 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> src_pub.status = PackagePublishingStatus.PUBLISHED
 
     >>> ubuntu.getPendingPublicationPPAs().count()

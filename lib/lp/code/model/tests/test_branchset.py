@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestBranchSet(TestCaseWithFactory):

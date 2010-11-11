@@ -14,7 +14,7 @@ TESTOPTS=
 SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
-LPCONFIG=development
+LPCONFIG?=development
 
 JSFLAGS=
 ICING=lib/canonical/launchpad/icing
@@ -60,7 +60,7 @@ hosted_branches: $(PY)
 
 $(API_INDEX): $(BZR_VERSION_INFO)
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
@@ -179,10 +179,13 @@ buildonce_eggs: $(PY)
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
+# Note that the buildout version must be maintained here and in versions.cfg
+# to make sure that the build does not go over the network.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
-		--download-base=download-cache/dist --eggs=eggs
+		--download-base=download-cache/dist --eggs=eggs \
+		--version=1.5.1
 
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want eggs: they are the expensive bits,
@@ -199,10 +202,14 @@ $(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
+# bin/compile_templates is responsible for building all chameleon templates,
+# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
+	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
+	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -221,18 +228,18 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: check_schema inplace stop support_files
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop hosted_branches
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,mailman,codebrowse,google-webservice,memcached \
+run_all: check_schema inplace stop
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build
@@ -244,10 +251,9 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop hosted_branches
-	$(RM) thread*.request
-	bin/run -r librarian,sftp,codebrowse -i $(LPCONFIG)
-
+run_codehosting: check_schema inplace stop
+	$(RM) logs/thread*.request
+	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
 	bin/start_librarian
@@ -333,9 +339,10 @@ clean: clean_js clean_buildout
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
+	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) thread*.request
+	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -r $(CODEHOSTING_ROOT)
@@ -398,11 +405,13 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
+	a2ensite local-vostok
 
 reload-apache: enable-apache-launchpad
 	/etc/init.d/apache2 restart

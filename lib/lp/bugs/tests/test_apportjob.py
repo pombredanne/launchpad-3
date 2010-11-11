@@ -6,29 +6,40 @@
 __metaclass__ = type
 
 import os
-import transaction
 
 from sqlobject import SQLObjectNotFound
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+    ITemporaryStorageManager,
+    )
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.bugs.interfaces.apportjob import (
-    ApportJobType, IProcessApportBlobJobSource)
-from lp.bugs.model.apportjob import ApportJob, ApportJobDerived
+    ApportJobType,
+    IProcessApportBlobJobSource,
+    )
+from lp.bugs.model.apportjob import (
+    ApportJob,
+    ApportJobDerived,
+    )
 from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+    FileBugData,
+    FileBugDataParser,
+    )
 from lp.services.job.interfaces.job import JobStatus
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 

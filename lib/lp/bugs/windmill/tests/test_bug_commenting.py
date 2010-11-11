@@ -7,17 +7,18 @@ __metaclass__ = type
 __all__ = []
 
 import unittest
+from uuid import uuid1
 
 from canonical.launchpad.windmill.testing import lpuser
-from uuid import uuid1
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+
 
 WAIT_PAGELOAD = u'30000'
 WAIT_ELEMENT_COMPLETE = u'30000'
 WAIT_CHECK_CHANGE = u'1000'
 ADD_COMMENT_BUTTON = (
-    u'//input[@id="field.actions.save" and @class="button js-action"]')
+    u'//input[@id="field.actions.save" and contains(@class, "button")]')
 
 
 class TestBugCommenting(WindmillTestCase):

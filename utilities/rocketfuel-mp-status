@@ -6,13 +6,16 @@ from launchpadlib.launchpad import Launchpad
 import os
 import sys
 
-launchpad = Launchpad.login_with('rocketfuel-mp-status', 'edge')
+launchpad = Launchpad.login_with('rocketfuel-mp-status', 'production')
 trunk = commands.getoutput(
     '. ~/.rocketfuel-env.sh && echo $LP_TRUNK_NAME')
 projpath = commands.getoutput(
     '. ~/.rocketfuel-env.sh && echo $LP_PROJECT_PATH')
-os.chdir(projpath)
-branches = os.listdir('.')
+if len(sys.argv) > 1:
+    branches = sys.argv[1:]
+else:
+    os.chdir(projpath)
+    branches = os.listdir('.')
 lp_branches = launchpad.branches
 
 for lb in branches:

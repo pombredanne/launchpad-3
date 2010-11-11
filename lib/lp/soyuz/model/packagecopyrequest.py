@@ -6,18 +6,31 @@ __all__ = ['PackageCopyRequest', 'PackageCopyRequestSet']
 
 import itertools
 
+from storm.locals import (
+    Bool,
+    DateTime,
+    Enum,
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.interfaces.packagecopyrequest import (
-    PackageCopyStatus, IPackageCopyRequest, IPackageCopyRequestSet)
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from storm.locals import Bool, Enum, Int, DateTime, Reference, Storm, Unicode
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import PackageCopyStatus
+from lp.soyuz.interfaces.packagecopyrequest import (
+    IPackageCopyRequest,
+    IPackageCopyRequestSet,
+    )
 
 
 def _construct_enum_mapping(db_item_cls):

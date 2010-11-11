@@ -6,13 +6,14 @@
 __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
 
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
     POTemplate,
-    TranslationTemplatesCollection)
+    TranslationTemplatesCollection,
+    )
 
 
 class TestSomething(TestCaseWithFactory):

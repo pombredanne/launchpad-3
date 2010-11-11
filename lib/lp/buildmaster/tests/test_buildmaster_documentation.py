@@ -11,10 +11,21 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 def buildmasterSetUp(test):

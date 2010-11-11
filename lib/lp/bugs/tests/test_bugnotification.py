@@ -7,22 +7,30 @@ __metaclass__ = type
 
 import unittest
 
-from zope.event import notify
-from zope.interface import providedBy
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from zope.event import notify
+from zope.interface import providedBy
 
 from canonical.config import config
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IUpstreamBugTask
-from lp.bugs.model.bugnotification import BugNotification, BugNotificationSet
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IUpstreamBugTask,
+    )
+from lp.bugs.model.bugnotification import (
+    BugNotification,
+    BugNotificationSet,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.mail_helpers import pop_notifications
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 class TestNotificationRecipientsOfPrivateBugs(unittest.TestCase):
@@ -155,7 +163,7 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
             user='test@canonical.com')
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
-        self.dupe_bug.duplicateof = self.bug
+        self.dupe_bug.markAsDuplicate(self.bug)
         self.dupe_subscribers = set(
             self.dupe_bug.getDirectSubscribers() +
             self.dupe_bug.getIndirectSubscribers())

@@ -9,13 +9,11 @@ __metaclass__ = type
 
 __all__ = ['QuestionBug']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.launchpad.interfaces import IQuestionBug
-
 from canonical.database.sqlbase import SQLBase
+from lp.coop.answersbugs.interfaces import IQuestionBug
 
 
 class QuestionBug(SQLBase):

@@ -6,11 +6,17 @@
 __metaclass__ = type
 __all__ = ['PersonRoles']
 
+from zope.component import (
+    adapts,
+    getUtility,
+    )
 from zope.interface import implements
-from zope.component import adapts, getUtility
-from canonical.launchpad.interfaces import (
-    IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 
+from canonical.launchpad.interfaces.launchpad import (
+    IHasDrivers,
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.person import IPerson
 
 
@@ -34,6 +40,10 @@ class PersonRoles:
             return self.person.inTeam(getattr(self._celebrities, attribute))
         except AttributeError:
             raise AttributeError(errortext)
+
+    @property
+    def id(self):
+        return self.person.id
 
     def isOwner(self, obj):
         """See IPersonRoles."""
