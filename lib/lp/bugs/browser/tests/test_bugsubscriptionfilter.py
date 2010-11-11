@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from functools import partial
 from urlparse import urlparse
 
 import transaction
@@ -68,16 +69,12 @@ class TestBugSubscriptionFilterAPI(
 
     layer = AppServerLayer
 
-    def setUp(self):
-        super(TestBugSubscriptionFilterAPI, self).setUp()
-        transaction.commit()
-        self.service = self.factory.makeLaunchpadService()
-
     def test_visible_attributes(self):
-        ws_subscription = ws_object(
-            self.service, self.subscription)
-        ws_subscription_filter = ws_object(
-            self.service, self.subscription_filter)
+        transaction.commit()
+        get_ws_object = partial(
+            ws_object, self.factory.makeLaunchpadService())
+        ws_subscription = get_ws_object(self.subscription)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
         self.assertEqual(
             ws_subscription.self_link,
             ws_subscription_filter.structural_subscription_link)
