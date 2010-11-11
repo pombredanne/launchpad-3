@@ -274,7 +274,9 @@ class Trac(ExternalBugTracker):
         # XXX: 2007-08-06 Graham Binns:
         #      We should follow dupes if possible.
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
-        ('fixed', 'closed', BugTaskStatus.FIXRELEASED),
+        # Status fixverified added for bug 667340, for http://trac.yorba.org/,
+        # but could be generally useful so adding here.
+        ('fixed', 'closed', 'fixverified', BugTaskStatus.FIXRELEASED),
         ('invalid', 'worksforme', BugTaskStatus.INVALID),
         ('wontfix', BugTaskStatus.WONTFIX),
         )

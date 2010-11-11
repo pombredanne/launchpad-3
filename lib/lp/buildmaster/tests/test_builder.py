@@ -182,9 +182,7 @@ class TestBuilder(TestCaseWithFactory):
         d = builder.handleTimeout(QuietFakeLogger(), 'blah')
         return assert_fails_with(d, CannotResumeHost)
 
-    def _setupRecipeBuildAndBuilder(self):
-        # Helper function to make a builder capable of building a
-        # recipe, returning both.
+    def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
@@ -196,8 +194,22 @@ class TestBuilder(TestCaseWithFactory):
         chroot = self.factory.makeLibraryFileAlias()
         das.addOrUpdateChroot(chroot)
         distroseries.nominatedarchindep = das
+        return builder, distroseries, das
+
+    def _setupRecipeBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # recipe, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
         build = self.factory.makeSourcePackageRecipeBuild(
             distroseries=distroseries)
+        return builder, build
+
+    def _setupBinaryBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # binary package, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroarchseries, builder=builder)
         return builder, build
 
     def test_findAndStartJob_returns_candidate(self):
@@ -302,9 +314,34 @@ class TestBuilder(TestCaseWithFactory):
             self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
 
+    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
+        # See bug 671242
+        # When a job is destroyed, the builder's behaviour should be reset
+        # too so that we don't traceback when the wrong behaviour tries
+        # to access a non-existent job.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        building_slave = BuildingSlave()
+        builder.setSlaveForTesting(building_slave)
+        candidate.markAsBuilding(builder)
+
+        # At this point we should see a valid behaviour on the builder:
+        self.assertNotIdentical(
+            IdleBuildBehavior, builder.current_build_behavior)
+
+        # Now reset the job and try to rescue the builder.
+        candidate.destroySelf()
+        self.layer.txn.commit()
+        builder = getUtility(IBuilderSet)[builder.name]
+        d = builder.rescueIfLost()
+        def check_builder(ignored):
+            self.assertIsInstance(
+                removeSecurityProxy(builder.current_build_behavior),
+                IdleBuildBehavior)
+        return d.addCallback(check_builder)
+
 
 class TestBuilderSlaveStatus(TestCaseWithFactory):
-
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
 

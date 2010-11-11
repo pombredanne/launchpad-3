@@ -34,7 +34,7 @@ from canonical.launchpad.components.tokens import (
     create_token,
     create_unique_token_for_table,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.oauth import (
     ClockSkew,
     IOAuthAccessToken,
     IOAuthConsumer,
