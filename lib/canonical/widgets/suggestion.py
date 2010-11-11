@@ -70,12 +70,12 @@ class SuggestionWidget(LaunchpadRadioWidget):
         """Return True if suggestions should be rendered."""
         return len(self.suggestion_vocab) > 0
 
-    def _option_id(self, index):
+    def _optionId(self, index):
         return '%s.%d' % (cgi.escape(self.name), index)
 
-    def _other_id(self):
+    def _otherId(self):
         """Return the id of the "Other" option."""
-        return self._option_id(len(self.suggestion_vocab))
+        return self._optionId(len(self.suggestion_vocab))
 
     def _toFieldValue(self, form_value):
         """Convert the form value into the target value.
@@ -121,7 +121,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
     def _renderLabel(self, text, index):
         """Render a label for the option with the specified index."""
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
-            self._option_id(index), text)
+            self._optionId(index), text)
 
     def _renderSuggestionLabel(self, value, index):
         """Render a label for the option based on a branch."""
@@ -243,11 +243,11 @@ class TargetBranchWidget(SuggestionWidget):
         if branch == self.context.context.target.default_merge_target:
             text = text + "&ndash; <em>development focus</em>"
         return u'<label for="%s" style="font-weight: normal">%s</label>' % (
-            self._option_id(index), text)
+            self._optionId(index), text)
 
     def _autoselectOther(self):
         """Select "other" on keypress."""
-        on_key_press = "selectWidget('%s', event);" % self._other_id()
+        on_key_press = "selectWidget('%s', event);" % self._otherId()
         self.other_selection_widget.onKeyPress = on_key_press
 
 
@@ -275,5 +275,5 @@ class RecipeOwnerWidget(SuggestionWidget):
 
     def _autoselectOther(self):
         """Select "other" on click."""
-        on_click = "onClick=\"selectWidget('%s', event);\"" % self._other_id()
+        on_click = "onClick=\"selectWidget('%s', event);\"" % self._otherId()
         self.other_selection_widget.extra = on_click
