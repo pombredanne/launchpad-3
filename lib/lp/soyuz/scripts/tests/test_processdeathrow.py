@@ -23,11 +23,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database import SourcePackagePublishingHistory
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 class TestProcessDeathRow(TestCase):
