@@ -16,14 +16,12 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces import (
     IMasterObject,
     IMasterStore,
@@ -290,10 +288,12 @@ class AccountSet:
 
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        conditions = [EmailAddress.account == Account.id,
-                      EmailAddress.email.lower() == email.lower().strip()]
         store = IStore(Account)
-        account = store.find(Account, *conditions).one()
+        account = store.find(
+            Account,
+            EmailAddress.account == Account.id,
+            EmailAddress.email.lower()
+                == ensure_unicode(email).strip().lower()).one()
         if account is None:
             raise LookupError(email)
         return account

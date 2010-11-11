@@ -53,10 +53,8 @@ from storm.expr import (
     And,
     Desc,
     Exists,
-    In,
     Join,
     LeftJoin,
-    Lower,
     Min,
     Not,
     Or,
@@ -115,12 +113,12 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent,
     ITeamInvitationEvent,
     )
 from canonical.launchpad.helpers import (
+    ensure_unicode,
     get_contact_email_addresses,
     get_email_template,
     shortlist,
@@ -180,10 +178,7 @@ from lp.bugs.interfaces.bugtask import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.model.bugtask import (
-    BugTask,
-    get_related_bugtasks_search_params,
-    )
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -2851,7 +2846,8 @@ class PersonSet:
             email, account = (
                 join.find(
                     (EmailAddress, Account),
-                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                    EmailAddress.email.lower() ==
+                        ensure_unicode(email_address).lower()).one()
                 or (None, None))
             identifier = store.find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
@@ -3154,7 +3150,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -3177,9 +3173,7 @@ class PersonSet:
             return EmptyResultSet()
 
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3188,8 +3182,8 @@ class PersonSet:
             Person.merged == None,
             EmailAddress.person == Person.id,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
-            StartsWith(Lower(EmailAddress.email), text))
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
+            EmailAddress.email.lower().startswith(text))
 
         store = IStore(Person)
 
@@ -3206,7 +3200,7 @@ class PersonSet:
             Person.teamowner == None,
             Person.merged == None,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
             SQL("Person.fti @@ ftq(?)", (text, ))
             )
 
@@ -3226,10 +3220,8 @@ class PersonSet:
             must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
+        text = ensure_unicode(text).lower()
         store = IStore(Person)
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
         base_query = And(
             Person.teamowner == None,
             Person.merged == None)
@@ -3241,7 +3233,7 @@ class PersonSet:
             base_query = And(
                 base_query,
                 Person.account == Account.id,
-                Not(In(Account.status, inactive_statuses)))
+                Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)))
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
@@ -3268,7 +3260,7 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
 
         name_query = And(
             base_query,
@@ -3281,7 +3273,7 @@ class PersonSet:
     def findTeam(self, text=""):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3302,18 +3294,11 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        # We lookup the EmailAddress in the auth store so we can
-        # lookup a Person by EmailAddress in the same transaction
-        # that the Person or EmailAddress was created. This is not
-        # optimal for production as it requires two database lookups,
-        # but is required by much of the test suite.
-        conditions = (Lower(EmailAddress.email) == email.lower().strip())
-        email_address = IStore(EmailAddress).find(
-            EmailAddress, conditions).one()
-        if email_address is None:
-            return None
-        else:
-            return IStore(Person).get(Person, email_address.personID)
+        email = ensure_unicode(email).strip().lower()
+        return IStore(Person).find(
+            Person,
+            Person.id == EmailAddress.personID,
+            EmailAddress.email.lower() == email).one()
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""

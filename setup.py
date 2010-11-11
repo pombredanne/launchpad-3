@@ -54,6 +54,7 @@ setup(
         'mocker',
         'oauth',
         'paramiko',
+        'psycopg2',
         'python-memcached',
         'pyasn1',
         'pydkim',
