@@ -123,12 +123,20 @@ class TestNameBlacklistSet(TestCaseWithFactory):
         self.assertEqual(u'foo', name_blacklist.regexp)
         self.assertEqual(u'bar', name_blacklist.comment)
 
-    def test_get(self):
-        # Test NameBlacklistSet.get() success.
+    def test_get_int(self):
+        # Test NameBlacklistSet.get() with int id.
         name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
         store = IStore(name_blacklist)
         store.flush()
         retrieved = self.name_blacklist_set.get(name_blacklist.id)
+        self.assertEqual(name_blacklist, retrieved)
+
+    def test_get_string(self):
+        # Test NameBlacklistSet.get() with string id.
+        name_blacklist = self.name_blacklist_set.create(u'foo', u'bar')
+        store = IStore(name_blacklist)
+        store.flush()
+        retrieved = self.name_blacklist_set.get(str(name_blacklist.id))
         self.assertEqual(name_blacklist, retrieved)
 
     def test_get_returns_None_instead_of_ValueError(self):
