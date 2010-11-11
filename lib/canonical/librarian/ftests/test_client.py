@@ -15,7 +15,7 @@ from canonical.librarian import client as client_module
 from canonical.librarian.client import (
     LibrarianClient, LibrarianServerError, RestrictedLibrarianClient)
 from canonical.librarian.interfaces import UploadFailed
-from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.database.librarian import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):

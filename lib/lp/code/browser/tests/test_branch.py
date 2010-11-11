@@ -449,6 +449,16 @@ class TestBranchSparkView(TestCaseWithFactory):
         self.assertEqual(0, json['count'])
         self.assertEqual('empty branch', json['last_commit'])
 
+    def test_content_type(self):
+        # The response has the correct (JSON) content type...
+        branch = self.factory.makeAnyBranch()
+        request = LaunchpadTestRequest()
+        view = BranchSparkView(branch, request)
+        view.render()
+        self.assertEqual(
+            request.response.getHeader('content-type'),
+            'application/json')
+
     def test_old_commits(self):
         # A branch with a commit older than the COMMIT_DAYS will create a list
         # of commits that all say zero.

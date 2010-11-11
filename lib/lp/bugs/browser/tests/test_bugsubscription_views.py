@@ -9,6 +9,7 @@ from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
+    BugPortletSubcribersIds,
     BugSubscriptionAddView,
     BugSubscriptionSubscribeSelfView,
     )
@@ -57,12 +58,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         }
                     harness.submit('continue', form_data)
 
-        subscription = bug.getSubscriptionForPerson(person)
-        self.assertEqual(
-            level, subscription.bug_notification_level,
-            "Bug notification level of subscription should be %s, is "
-            "actually %s." % (
-                level.name, subscription.bug_notification_level.name))
+                subscription = bug.getSubscriptionForPerson(person)
+                self.assertEqual(
+                    level, subscription.bug_notification_level,
+                    "Bug notification level of subscription should be %s, is "
+                    "actually %s." % (
+                        level.name, subscription.bug_notification_level.name))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
@@ -167,7 +168,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     BugNotificationLevel.METADATA,
                     default_notification_level_value,
                     "Default value for bug_notification_level should be "
-                    "METADATA, is actually %s" % default_notification_level_value)
+                    "METADATA, is actually %s"
+                    % default_notification_level_value)
 
     def test_update_subscription_fails_if_user_not_subscribed(self):
         # If the user is not directly subscribed to the bug, trying to
@@ -199,11 +201,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
         team = self.factory.makeTeam(owner=person)
-        with person_logged_in(person):
-            bug.subscribe(team, person)
-
         with feature_flags():
             with person_logged_in(person):
+                bug.subscribe(team, person)
                 level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
@@ -264,3 +264,21 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
+
+
+class BugPortletSubcribersIdsTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_content_type(self):
+        bug = self.factory.makeBug()
+
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            harness = LaunchpadFormHarness(
+                bug.default_bugtask, BugPortletSubcribersIds)
+            harness.view.render()
+
+        self.assertEqual(
+            harness.request.response.getHeader('content-type'),
+            'application/json')

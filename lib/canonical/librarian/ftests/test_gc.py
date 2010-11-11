@@ -20,8 +20,14 @@ import transaction
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT)
-from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
+    connect,
+    cursor,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
 from canonical.testing.layers import LaunchpadZopelessLayer

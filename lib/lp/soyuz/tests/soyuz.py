@@ -15,7 +15,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.ftests import (
     import_public_test_keys,
     syncUpdate,
