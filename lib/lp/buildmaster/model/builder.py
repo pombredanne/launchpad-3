@@ -350,6 +350,11 @@ class Builder(SQLBase):
     # give up and mark it builderok=False.
     FAILURE_THRESHOLD = 5
 
+    def __storm_invalidated__(self):
+        """Clear cached properties."""
+        super(Builder, self).__storm_invalidated__()
+        self._current_build_behavior = None
+
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
         if not safe_hasattr(self, '_current_build_behavior'):

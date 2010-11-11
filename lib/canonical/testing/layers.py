@@ -108,7 +108,8 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox

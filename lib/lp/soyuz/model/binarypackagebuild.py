@@ -314,7 +314,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def distroarchseriesbinarypackages(self):
         """See `IBuild`."""
         # Avoid circular import by importing locally.
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
             self.distro_arch_series, bp)
