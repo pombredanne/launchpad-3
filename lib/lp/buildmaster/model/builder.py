@@ -188,7 +188,7 @@ class BuilderSlave(object):
         :return: A Deferred that calls back when the download is done, or
             errback with the error string.
         """
-        file_url = urlappend(self._file_cache_url, sha_sum)
+        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
         # XXX set timeout= ???
         return downloadPage(file_url, file_to_write, followRedirect=0)
 

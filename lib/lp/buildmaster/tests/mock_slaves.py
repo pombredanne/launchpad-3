@@ -338,7 +338,7 @@ class SlaveTestHelpers(fixtures.Fixture):
         self.addCleanup(restore_handleResponse)
 
         return BuilderSlave.makeBuilderSlave(
-            self.TEST_URL, 'vmhost', reactor, proxy)
+            self.BASE_URL, 'vmhost', reactor, proxy)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
