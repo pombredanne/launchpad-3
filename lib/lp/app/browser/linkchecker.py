@@ -52,6 +52,8 @@ class LinkCheckerAPI:
     def __call__(self):
         result = {}
         links_to_check_data = self.request.get('link_hrefs')
+        if links_to_check_data is None:
+            return simplejson.dumps(result)
         links_to_check = simplejson.loads(links_to_check_data)
 
         for link_type in links_to_check:
