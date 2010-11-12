@@ -2696,7 +2696,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None):
+            status=None, pocket=None, date_created=None, processor=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2720,7 +2720,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
                 archive=archive, sourcepackagerelease=source_package_release)
-        processor = self.makeProcessor()
+        if processor is None:
+            processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
@@ -2729,6 +2730,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
+        if date_created is None:
+            date_created = self.getUniqueDate()
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
@@ -2736,7 +2739,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status=status,
             archive=archive,
             pocket=pocket,
-            date_created=self.getUniqueDate())
+            date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         return binary_package_build
