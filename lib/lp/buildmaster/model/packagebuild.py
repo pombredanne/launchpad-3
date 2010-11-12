@@ -381,7 +381,6 @@ class PackageBuildDerived:
         d.addCallback(files_downloaded)
         return d
 
-
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
         """Handle a package that had failed to build.
 
