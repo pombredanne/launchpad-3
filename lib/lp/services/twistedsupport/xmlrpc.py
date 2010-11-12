@@ -65,7 +65,7 @@ class DisconnectingQueryProtocol(QueryProtocol):
         self._response = contents
 
     def connectionLost(self, reason):
-        QueryProtocol.connectionLost(reason)
+        QueryProtocol.connectionLost(self, reason)
         if self._response is not None:
             response, self._response = self._response, None
             self.factory.parseResponse(response)
