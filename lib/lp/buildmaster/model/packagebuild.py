@@ -319,6 +319,7 @@ class PackageBuildDerived:
 
         slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
         successful_copy_from_slave = True
+        filenames_to_download = {}
         for filename in filemap:
             logger.info("Grabbing file: %s" % filename)
             out_file_name = os.path.join(upload_path, filename)
@@ -331,9 +332,10 @@ class PackageBuildDerived:
                     "A slave tried to upload the file '%s' "
                     "for the build %d." % (filename, self.id))
                 break
-            out_file = open(out_file_name, "wb")
-            slave_file = slave.getFile(filemap[filename])
-            copy_and_close(slave_file, out_file)
+            filenames_to_download[filemap[filename]] = out_file_name
+            #out_file = open(out_file_name, "wb")
+            #slave_file = slave.getFile(filemap[filename])
+            #copy_and_close(slave_file, out_file)
 
         def build_info_stored(ignored):
             # We only attempt the upload if we successfully copied all the
@@ -369,10 +371,15 @@ class PackageBuildDerived:
             # Remove BuildQueue record.
             self.buildqueue_record.destroySelf()
 
-        # Store build information, build record was already updated during
-        # the binary upload.
-        d = self.storeBuildInfo(self, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        def files_downloaded(ignore):
+            # Store build information, build record was already updated during
+            # the binary upload.
+            d = self.storeBuildInfo(self, librarian, slave_status)
+            return d.addCallback(build_info_stored)
+
+        d = slave.getFiles(filenames_to_download)
+        d.addCallback(files_downloaded)
+        return d
 
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):

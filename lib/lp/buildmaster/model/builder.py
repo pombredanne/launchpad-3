@@ -192,6 +192,20 @@ class BuilderSlave(object):
         # XXX set timeout= ???
         return downloadPage(file_url, file_to_write, followRedirect=0)
 
+    def getFiles(self, filemap):
+        """Fetch many files from the builder.
+
+        :param filemap: A Dictionary containing key values of the builder
+            file name to retrieve, which maps to a value containing the
+            file name or file object to write the file to.
+
+        :return: A DeferredList that calls back when the download is done.
+        """
+        dl = defer.gatherResults([
+            self.getFile(builder_file, filemap[builder_file])
+            for builder_file in filemap])
+        return dl
+
     def resume(self, clock=None):
         """Resume the builder in an asynchronous fashion.
 
@@ -577,7 +591,7 @@ class Builder(SQLBase):
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
 
-        def got_file(ignored):
+        def got_file(ignored, filename, out_file, out_file_name):
             try:
                 # If the requested file is the 'buildlog' compress it
                 # using gzip before storing in Librarian.
@@ -601,8 +615,8 @@ class Builder(SQLBase):
                     contentType=filenameToContentType(filename),
                     restricted=private)
             finally:
-                # Remove the temporary file.
-                out_file.close()
+                # Remove the temporary file.  getFile() closes the file
+                # object.
                 os.remove(out_file_name)
 
             return library_file.id
@@ -610,7 +624,7 @@ class Builder(SQLBase):
         # XXX: there was no error handling in the old code, what should
         # we do in an errback here?
         d = self.slave.getFile(file_sha1, out_file)
-        d.addCallback(got_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
         return d
 
     def isAvailable(self):

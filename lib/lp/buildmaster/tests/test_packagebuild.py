@@ -331,7 +331,7 @@ class TestHandleStatusMixin:
         def got_status(ignored):
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
-            self.assertIs(None, self.build.buildqueue_record)
+            self.assertIdentical(None, self.build.buildqueue_record)
 
         d = self.build.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
@@ -357,7 +357,9 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        return d.addCallback(self.assertNotEqual, None, self.build.log)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.log)
+        return d.addCallback(got_status)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
@@ -366,5 +368,6 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
-        return d.addCallback(
-            self.assertNotEqual, None, self.build.date_finished)
+        def got_status(ignored):
+            self.assertNotEqual(None, self.build.date_finished)
+        return d.addCallback(got_status)
