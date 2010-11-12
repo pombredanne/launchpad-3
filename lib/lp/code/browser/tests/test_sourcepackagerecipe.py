@@ -42,6 +42,7 @@ from lp.code.browser.sourcepackagerecipebuild import (
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -706,7 +707,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         pattern = """\
             Latest builds
             Status Time Distribution series Archive
-            Pending build in .* \(estimated\) Secret Squirrel Secret PPA
+            Pending build starting in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents"""
@@ -895,8 +896,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         view = self.makeBuildView()
         self.assertTrue(view.estimate)
         view.context.buildqueue_record.job.start()
+        clear_property_cache(view)
         self.assertTrue(view.estimate)
         removeSecurityProxy(view.context).date_finished = datetime.now(utc)
+        clear_property_cache(view)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -915,11 +918,13 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             recipe_build=build)
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, utc)
         self.factory.makeBuilder()
+        clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
         queue_entry.job.start()
+        clear_property_cache(view)
         self.assertEqual(
             queue_entry.job.date_started + queue_entry.estimated_duration,
             view.eta)
