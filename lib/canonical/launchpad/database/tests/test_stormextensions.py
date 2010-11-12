@@ -46,7 +46,7 @@ class TestStormExpressions(TestCaseWithFactory):
                           case_sensitive=False)
 
     def test_StartsWithUse(self):
-        """StartWith correctly performs searches."""
+        """StartsWith correctly performs searches."""
 
         person1 = self.factory.makePerson(name='aa', displayname="John Doe")
         person2 = self.factory.makePerson(name='bb', displayname="Johan Doe")
