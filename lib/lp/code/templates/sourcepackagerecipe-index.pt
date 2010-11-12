@@ -7,6 +7,13 @@
   i18n:domain="launchpad"
 >
 
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .binary-build .indent {
+      padding-left: 2em;
+    }
+  </style>
+</metal:block>
 
 <body>
 
@@ -92,18 +99,36 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="build view/builds">
+            <tal:recipe-builds repeat="build view/builds">
               <tal:build-view define="buildview nocall:build/@@+index">
+            <tr>
               <td>
                 <span tal:replace="structure build/image:icon" />
                 <a tal:content="buildview/status"
                    tal:attributes="href build/fmt:url"></a>
               </td>
-              <td>
-                <tal:date replace="buildview/date/fmt:displaydate" />
-                <tal:estimate condition="buildview/estimate">
-                (estimated)
-                </tal:estimate>
+              <td tal:define="is_building build/status/enumvalue:BUILDING">
+                <tal:building condition="is_building">
+                  Started
+                  <span tal:attributes="title build/date_started/fmt:datetime"
+                        tal:content="build/date_started/fmt:approximatedate"
+                        >5 minutes ago</span>
+                </tal:building>
+                <tal:not-building condition="not: is_building">
+                  <tal:estimate condition="buildview/estimate">
+                    starting
+                  </tal:estimate>
+                  <tal:date replace="buildview/date/fmt:displaydate" />
+                  <tal:estimate condition="buildview/estimate">
+                    (estimated)
+                  </tal:estimate>
+                </tal:not-building>
+                <tal:build-log define="file build/log"
+                               tal:condition="file">
+                  <a class="sprite download"
+                     tal:attributes="href build/log_url">buildlog</a>
+                  (<span tal:replace="file/content/filesize/fmt:bytes" />)
+                </tal:build-log>
               </td>
               <td>
                 <tal:distro
@@ -112,8 +137,56 @@
               <td>
                 <tal:archive replace="structure build/archive/fmt:link"/>
               </td>
-              </tal:build-view>
             </tr>
+            <tal:binary-builds repeat="binary buildview/binary_builds">
+              <tr tal:define="binaryview nocall:binary/@@+index"
+                  class="binary-build">
+                <td class="indent">
+                  <span tal:replace="structure binary/image:icon"/>
+                  <a tal:content="binary/source_package_release/title"
+                     tal:attributes="href binary/fmt:url">package - version</a>
+                </td>
+                <td>
+
+                  <tal:pending condition="binaryview/dispatch_time_estimate_available"
+                               define="eta binary/buildqueue_record/getEstimatedJobStartTime;">
+                    starting <tal:eta
+                    replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+                    (estimated)
+                  </tal:pending>
+
+                  <tal:building condition="binary/status/enumvalue:BUILDING">
+                    <li>
+                      started
+                      <span tal:attributes="title binary/date_started/fmt:datetime"
+                            tal:content="binary/date_started/fmt:approximatedate"
+                            >5 minutes ago</span>
+                    </li>
+                  </tal:building>
+
+                  <tal:built condition="binary/date_finished">
+                    <span tal:attributes="title binary/date_finished/fmt:datetime"
+                        tal:content="binary/date_finished/fmt:displaydate">2008-01-01</span>
+                  </tal:built>
+
+                  <tal:build-log define="file binary/log"
+                                 tal:condition="file">
+                    <a class="sprite download"
+                       tal:attributes="href binary/log_url">buildlog</a>
+                    (<span tal:replace="file/content/filesize/fmt:bytes" />)
+                  </tal:build-log>
+
+                </td>
+                <td class="indent">
+                  <a class="sprite distribution"
+                     tal:define="archseries binary/distro_arch_series"
+                     tal:attributes="href archseries/fmt:url"
+                     tal:content="archseries/architecturetag">i386</a>
+                </td>
+              </tr>
+            </tal:binary-builds>
+            </tal:build-view>
+            </tal:recipe-builds>
           </tbody>
         </table>
         <p tal:condition="not: view/builds">
