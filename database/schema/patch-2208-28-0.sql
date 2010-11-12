@@ -4,4 +4,4 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE SourcePackageRecipeBuild ALTER COLUMN recipe DROP NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 28, 0);
