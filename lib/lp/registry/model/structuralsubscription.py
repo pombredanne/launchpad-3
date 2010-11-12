@@ -369,7 +369,8 @@ class StructuralSubscriptionTargetMixin:
                 return False
         return True
 
-    def addBugSubscription(self, subscriber, subscribed_by):
+    def addBugSubscription(self, subscriber, subscribed_by,
+                           bug_notification_level=None):
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
         # subscription and immediately giving it a full
@@ -382,7 +383,9 @@ class StructuralSubscriptionTargetMixin:
                     subscribed_by.name, subscriber.name))
 
         sub = self.addSubscription(subscriber, subscribed_by)
-        sub.bug_notification_level = BugNotificationLevel.COMMENTS
+        if bug_notification_level is None:
+            bug_notification_level = BugNotificationLevel.COMMENTS
+        sub.bug_notification_level = bug_notification_level
         return sub
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):

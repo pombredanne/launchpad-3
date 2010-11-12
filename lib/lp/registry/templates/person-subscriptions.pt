@@ -15,6 +15,16 @@
                    sub_bugs view/subscribedBugTasks;
                    sub_bug_batch sub_bugs/currentBatch">
 
+    <ul class="horizontal">
+      <li
+          tal:define="link context/menu:overview/structural_subscriptions"
+          tal:condition="link/enabled"
+          tal:content="structure link/fmt:link" />
+    </ul>
+
+    <div class="yui-g">
+      <div class="portlet">
+
     <tal:no_subscribed_bugs condition="not: sub_bug_batch|nothing">
       <p>
         <tal:person content="display_name">Sample
@@ -23,10 +33,6 @@
     </tal:no_subscribed_bugs>
 
     <tal:subscribed_bugs condition="sub_bug_batch|nothing">
-      <p>
-        Direct bug subscriptions for
-        <tal:person content="display_name">Sample Person</tal:person>
-      </p>
       <tal:multipage condition="sub_bugs/has_multiple_pages">
         <tal:navigation
             replace="structure sub_bugs/@@+navigation-links-upper"/>
@@ -71,6 +77,9 @@
             replace="structure sub_bugs/@@+navigation-links-lower"/>
       </tal:multipage>
     </tal:subscribed_bugs>
+
+      </div>
+    </div>
 
   </div>
 </body>

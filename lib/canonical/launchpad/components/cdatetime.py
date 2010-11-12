@@ -10,7 +10,7 @@ from datetime import datetime
 import pytz
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IAging
+from canonical.launchpad.interfaces.launchpad import IAging
 
 
 SECONDS_PER_HOUR = 3600

@@ -191,13 +191,13 @@
 
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
-      class="canonical.launchpad.xmlrpc.BranchSetAPI"
+      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
+      class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
-      class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+      interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
+      class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
 
   <!-- Branch Merge Proposal -->

@@ -17,23 +17,21 @@ __all__ = [
     'find_copyright',
     ]
 
-import apt_pkg
 from cStringIO import StringIO
-from debian.deb822 import Deb822Dict
 import errno
 import glob
 import os
 import shutil
 import tempfile
 
+import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    IGPGKeySet,
-    ISourcePackageNameSet,
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -48,8 +46,8 @@ from lp.archiveuploader.tagfiles import (
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
-    DpkgSourceError,
     determine_source_file_type,
+    DpkgSourceError,
     extract_dpkg_source,
     get_source_file_extension,
     ParseMaintError,
@@ -59,18 +57,18 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     safe_fix_maintainer,
     )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 def unpack_source(dsc_filepath):

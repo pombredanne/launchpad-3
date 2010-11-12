@@ -187,11 +187,13 @@ from lp.translations.model.distroserieslanguage import (
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.pofile import POFile
 from lp.translations.model.pofiletranslator import POFileTranslator
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
     POTemplate,
     TranslationTemplatesCollection,
     )
@@ -361,6 +363,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             if architecture.processorfamily == processor.family:
                 return architecture
         return None
+
+    @property
+    def enabled_architectures(self):
+        store = Store.of(self)
+        results = store.find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.enabled == True)
+        return results.order_by(DistroArchSeries.architecturetag)
 
     @property
     def buildable_architectures(self):
@@ -973,16 +984,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         source_package_ids = [
             package_name.id for package_name in source_package_names]
         releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
+            SourcePackageRelease.sourcepackagename IN %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.id = (
                 SELECT max(spph.id)
                 FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
+                     SourcePackageRelease spr
                 WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
+                    spr.sourcepackagename = SourcePackageRelease.sourcepackagename AND
                     spph.sourcepackagerelease = spr.id AND
                     spph.archive IN %s AND
                     spph.status IN %s AND
@@ -991,7 +1001,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_ids, self.distribution.all_distro_archive_ids,
                 active_publishing_status, self),
             clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
+                'SourcePackagePublishingHistory'])
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))

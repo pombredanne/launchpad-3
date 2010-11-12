@@ -367,14 +367,14 @@ these URLs in Apache.
 <!-- self-test xmlrpc api -->
 <xmlrpc:view
   for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-  interface="canonical.launchpad.xmlrpc.ISelfTest"
-  class="canonical.launchpad.xmlrpc.SelfTest"
+  interface="canonical.launchpad.xmlrpc.application.ISelfTest"
+  class="canonical.launchpad.xmlrpc.application.SelfTest"
   permission="zope.Public"
   />
 <xmlrpc:view
   for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
-  interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
-  class="canonical.launchpad.xmlrpc.RosettaSelfTest"
+  interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
+  class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
   permission="zope.Public"
   />
 

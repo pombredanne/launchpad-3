@@ -6,7 +6,7 @@ for IDistroSeries context (IDistroSeriesView)
 Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
-  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> from canonical.launchpad.database.librarian import LibraryFileAlias
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> fake_chroot = LibraryFileAlias.get(1)

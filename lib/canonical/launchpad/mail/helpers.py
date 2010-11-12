@@ -9,7 +9,7 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
+from lp.bugs.interfaces.bugtask import (
     IDistroBugTask,
     IDistroSeriesBugTask,
     IUpstreamBugTask,
@@ -51,7 +51,7 @@ def get_main_body(signed_msg):
 def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the bugtask provides.
 
-        >>> from canonical.launchpad.interfaces import (
+        >>> from lp.bugs.interfaces.bugtask import (
         ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
         >>> from zope.interface import classImplementsOnly
         >>> class BugTask:

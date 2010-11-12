@@ -188,7 +188,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
@@ -1142,16 +1142,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         publishing_condition = ''
         if publishing_distroseries is not None:
-            publishing_condition = """
-                AND EXISTS (
-                    SELECT 1
-                    FROM SourcePackageRelease spr
-                        JOIN SourcePackagePublishingHistory spph
-                            ON spph.sourcepackagerelease = spr.id
-                    WHERE spr.sourcepackagename = SourcePackageName.id
-                        AND spph.distroseries = %d
-                    )""" % (
-                publishing_distroseries.id)
+            origin += [
+                Join(SourcePackageRelease,
+                    SourcePackageRelease.sourcepackagename ==
+                        SourcePackageName.id),
+                Join(SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.sourcepackagerelease ==
+                        SourcePackageRelease.id),
+                ]
+            publishing_condition = (
+                "AND SourcePackagePublishingHistory.distroseries = %d"
+                % publishing_distroseries.id)
 
         packaging_query = """
             SELECT 1
@@ -1178,8 +1179,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text), has_packaging_condition,
                    publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition).order_by('rank DESC')
-
+            find_spec, condition).order_by(
+                'rank DESC, DistributionSourcePackageCache.name')
+        dsp_caches_with_ranks.config(distinct=True)
         return dsp_caches_with_ranks
 
     def searchSourcePackages(

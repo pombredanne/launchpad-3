@@ -139,6 +139,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'Confirmed'
     >>> trac.convertRemoteStatus('worksforme').title
     'Invalid'
+    >>> trac.convertRemoteStatus('fixverified').title
+    'Fix Released'
 
 If the status isn't one that our Trac ExternalBugTracker can understand
 an UnknownRemoteStatusError will be raised.
