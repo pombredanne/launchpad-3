@@ -1670,7 +1670,7 @@ class BugTaskSet:
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
-            # Circular.
+            # Prevent circular import problems.
             from lp.registry.model.product import Product
             clauseTables.append(Product)
             extra_clauses.append("BugTask.product = Product.id")
@@ -1721,32 +1721,45 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            join_clause = (
-                BugTask.productID == StructuralSubscription.productID)
-            join_clause = Or(
-                join_clause,
-                (BugTask.productseriesID ==
-                 StructuralSubscription.productseriesID))
-            # Circular.
+            ssub_match_product = (
+                BugTask.productID ==
+                StructuralSubscription.productID)
+            ssub_match_productseries = (
+                BugTask.productseriesID ==
+                StructuralSubscription.productseriesID)
+            # Prevent circular import problems.
             from lp.registry.model.product import Product
+            ssub_match_project = And(
+                Product.projectID ==
+                StructuralSubscription.projectID,
+                BugTask.product == Product.id)
+            ssub_match_distribution = (
+                BugTask.distributionID ==
+                StructuralSubscription.distributionID)
+            ssub_match_sourcepackagename = (
+                BugTask.sourcepackagenameID ==
+                StructuralSubscription.sourcepackagenameID)
+            ssub_match_null_sourcepackagename = (
+                StructuralSubscription.sourcepackagename == None)
+            ssub_match_distribution_with_optional_package = And(
+                ssub_match_distribution, Or(
+                    ssub_match_sourcepackagename,
+                    ssub_match_null_sourcepackagename))
+            ssub_match_distribution_series = (
+                BugTask.distroseriesID ==
+                StructuralSubscription.distroseriesID)
+            ssub_match_milestone = (
+                BugTask.milestoneID ==
+                StructuralSubscription.milestoneID)
+
             join_clause = Or(
-                join_clause,
-                And(Product.projectID == StructuralSubscription.projectID,
-                    BugTask.product == Product.id))
-            join_clause = Or(
-                join_clause,
-                And((BugTask.distributionID ==
-                     StructuralSubscription.distributionID),
-                    Or(BugTask.sourcepackagenameID ==
-                       StructuralSubscription.sourcepackagenameID,
-                    StructuralSubscription.sourcepackagename == None)))
-            join_clause = Or(
-                join_clause,
-                (BugTask.distroseriesID ==
-                 StructuralSubscription.distroseriesID))
-            join_clause = Or(
-                join_clause,
-                BugTask.milestoneID == StructuralSubscription.milestoneID)
+                ssub_match_product,
+                ssub_match_productseries,
+                ssub_match_project,
+                ssub_match_distribution_with_optional_package,
+                ssub_match_distribution_series,
+                ssub_match_milestone)
+
             join_tables.append(
                 (Product, LeftJoin(Product, BugTask.productID == Product.id)))
             join_tables.append(
@@ -2201,10 +2214,9 @@ class BugTaskSet:
         :param params: A BugTaskSearchParams instance.
         :param args: optional additional BugTaskSearchParams instances,
         """
-        undecorated = kw.get('undecorated', False)
         store = IStore(BugTask)
-        (query, clauseTables, orderby, bugtask_decorator, join_tables,
-        has_duplicate_results) = self.buildQuery(params)
+        [query, clauseTables, orderby, bugtask_decorator, join_tables,
+        has_duplicate_results] = self.buildQuery(params)
         if len(args) == 0:
             if has_duplicate_results:
                 origin = self.buildOrigin(join_tables, [], clauseTables)
@@ -2216,13 +2228,11 @@ class BugTaskSet:
                 origin = self.buildOrigin(join_tables, prejoins, clauseTables)
                 resultset = store.using(*origin).find(resultrow, query)
             if prejoins:
-                decorator=lambda row: bugtask_decorator(row[0])
+                decorator = lambda row: bugtask_decorator(row[0])
             else:
                 decorator = bugtask_decorator
 
             resultset.order_by(orderby)
-            if undecorated:
-                return resultset
             return DecoratedResultSet(resultset, result_decorator=decorator)
 
         bugtask_fti = SQL('BugTask.fti')
@@ -2232,8 +2242,8 @@ class BugTaskSet:
 
         decorators = [bugtask_decorator]
         for arg in args:
-            (query, clauseTables, ignore, decorator, join_tables,
-             has_duplicate_results) = self.buildQuery(arg)
+            [query, clauseTables, ignore, decorator, join_tables,
+             has_duplicate_results] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
             next_result = store.using(*origin).find(inner_resultrow, query)
             resultset = resultset.union(next_result)
@@ -2262,8 +2272,6 @@ class BugTaskSet:
 
         result = store.using(*origin).find(resultrow)
         result.order_by(orderby)
-        if undecorated:
-            return result
         return DecoratedResultSet(result, result_decorator=decorator)
 
     def search(self, params, *args, **kwargs):
@@ -2273,7 +2281,7 @@ class BugTaskSet:
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
         """
-        # Circular.
+        # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
         _noprejoins = kwargs.get('_noprejoins', False)
@@ -2294,7 +2302,7 @@ class BugTaskSet:
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        return self._search(BugTask.bugID, [], params, undecorated=True)
+        return self._search(BugTask.bugID, [], params).result_set
 
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""
@@ -2898,7 +2906,7 @@ class BugTaskSet:
 
         if recipients is not None:
             # We need to process subscriptions, so pull all the
-            # subscribes into the cache, then update recipients
+            # subscribers into the cache, then update recipients
             # with the subscriptions.
             subscribers = list(subscribers)
             for subscription in subscriptions:

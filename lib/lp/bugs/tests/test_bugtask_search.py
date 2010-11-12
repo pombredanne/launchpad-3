@@ -516,7 +516,7 @@ class ProjectGroupAndDistributionTests:
         raise NotImplementedError
 
     def test_unique_results_for_multiple_structural_subscriptions(self):
-        # Searching for subscriber who is more than once subscribed to a
+        # Searching for a subscriber who is more than once subscribed to a
         # bug task returns this bug task only once.
         subscriber = self.setUpStructuralSubscriptions()
         params = self.getBugTaskSearchParams(
@@ -882,7 +882,7 @@ class MultipleParams:
     """A mixin class for tests with more than one search parameter object.
 
     BugTaskSet.search() can be called with more than one
-    BugTaskSearchParams instancs, while BugTaskSet.searchBugIds()
+    BugTaskSearchParams instances, while BugTaskSet.searchBugIds()
     accepts exactly one instance.
     """
 
