@@ -31,12 +31,12 @@
     </tal:disabled>
   </ul>
 
-  <tal:pseudo-editor condition="not: context/required:launchpad.Edit">
-    <!--
-    The bug supervisor can view the "Configure bug tracker" link, but it
-    would be confusing to display the configuration progress
-    information.
-    -->
+  <tal:pseudo-editor condition="context/required:launchpad.BugSupervisor">
+    <tal:comment condition="nothing">
+      The bug supervisor can view the "Configure bug tracker" link, but
+      it would be confusing to display the configuration progress
+      information.
+    </tal:comment>
     <table
       tal:condition="view/configuration_links"
       style="width: 100%; margin-top: 1em"
