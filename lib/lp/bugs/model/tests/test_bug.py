@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility
