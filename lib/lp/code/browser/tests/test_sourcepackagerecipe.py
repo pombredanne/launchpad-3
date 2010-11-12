@@ -641,7 +641,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_index(self):
         recipe = self.makeRecipe()
@@ -650,6 +650,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.status = BuildStatus.FULLYBUILT
         build.date_started = datetime(2010, 03, 16, tzinfo=utc)
         build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -667,7 +668,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Latest builds
             Status Time Distribution series Archive
-            Successful build on 2010-03-16 Secret Squirrel Secret PPA
+            Successful build on 2010-03-16 buildlog (.*) Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents
