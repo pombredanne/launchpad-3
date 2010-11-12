@@ -1075,6 +1075,8 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
+        # Clear the newmember widget so that the user can add another member.
+        self.widgets['newmember'].setRenderedValue(None)
 
 
 class TeamMapView(LaunchpadView):
