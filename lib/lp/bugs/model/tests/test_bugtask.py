@@ -9,6 +9,7 @@ import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import ResultSet
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.interface import providedBy
 
@@ -67,7 +68,6 @@ from lp.testing.factory import (
     is_security_proxied_or_harmless,
     LaunchpadObjectFactory,
     )
-from lp.testing.matchers import StartsWith
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
