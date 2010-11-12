@@ -11,7 +11,11 @@ __all__ = [
     ]
 
 from twisted.internet import defer
-from twisted.web.xmlrpc import Fault
+from twisted.web.xmlrpc import (
+    Fault,
+    _QueryFactory,
+    QueryProtocol,
+    )
 
 
 class BlockingProxy:
@@ -49,6 +53,27 @@ class DeferredBlockingProxy(BlockingProxy):
             super(DeferredBlockingProxy, self).callRemote,
             method_name, *args, **kwargs)
 
+
+class DisconnectingQueryProtocol(QueryProtocol):
+
+    def connectionMade(self):
+        self._response = None
+        QueryProtocol.connectionMade(self)
+
+    def handleResponse(self, contents):
+        self.transport.loseConnection()
+        self._response = contents
+
+    def connectionLost(self, reason):
+        QueryProtocol.connectionLost(reason)
+        if self._response is not None:
+            response, self._response = self._response, None
+            self.factory.parseResponse(response)
+
+
+def fix_bug_2518():
+    # XXX: See http://twistedmatrix.com/trac/ticket/2518.
+    _QueryFactory.protocol = DisconnectingQueryProtocol
 
 
 def trap_fault(failure, *fault_classes):

@@ -74,12 +74,16 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
+from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing import (
     login,
     logout,
     TestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+
+
+fix_bug_2518()
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -573,16 +577,6 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-def handleResponse(protocol, contents):
-    # Twisted has a bug!  We need to monkey patch
-    # QueryProtocol.handleResponse() so that it terminates the
-    # connection properly, otherwise the Trial test can leave the
-    # reactor dirty which fails the test.
-    # See http://twistedmatrix.com/trac/ticket/2518
-    protocol.transport.loseConnection()
-    protocol.factory.parseResponse(contents)
-
-
 class TestWorkerMonitorIntegration(BzrTestCase):
 
     layer = ZopelessAppServerLayer
@@ -595,7 +589,6 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.disable_directory_isolation()
-        self.patch(xmlrpc.QueryProtocol, 'handleResponse', handleResponse)
         self.addCleanup(shutil.rmtree, self.repo_path)
         self.foreign_commit_count = 0
 
