@@ -11,7 +11,8 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-from cStringIO import StringIO
+import os
+import tempfile
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -85,9 +86,11 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
 
-        tarball_file = StringIO()
+        fd, fname = tempfile.mkstemp()
+        tarball_file = os.fdopen(fd, 'wb')
         d = slave.getFile(slave_filename, tarball_file)
-        return d.addCallback(lambda ignored: tarball_file.read())
+        # getFile will close the file object.
+        return d.addCallback(lambda ignored: fname)
 
     def _uploadTarball(self, branch, tarball, logger):
         """Upload tarball to productseries that want it."""
@@ -127,21 +130,28 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             d = queue_item.builder.cleanSlave()
             return d.addCallback(lambda ignored: queue_item.destroySelf())
 
-        def got_tarball(tarball):
-            if tarball is None:
-                logger.error("Build produced no tarball.")
-            else:
-                logger.debug("Uploading translation templates tarball.")
-                self._uploadTarball(
-                    queue_item.specific_job.branch, tarball, logger)
-                logger.debug("Upload complete.")
+        def got_tarball(filename):
+            # XXX 2010-11-12 bug=674575
+            # Please make addOrUpdateEntriesFromTarball() take files on
+            # disk; reading arbitrarily sized files into memory is
+            # dangerous.
+            tarball_file = open(filename)
+            tarball = tarball_file.read()
+            try:
+                if tarball is None:
+                    logger.error("Build produced no tarball.")
+                else:
+                    logger.debug("Uploading translation templates tarball.")
+                    self._uploadTarball(
+                        queue_item.specific_job.branch, tarball, logger)
+                    logger.debug("Upload complete.")
+            finally:
+                tarball_file.close()
+                os.remove(filename)
 
         if build_status == 'OK':
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            tarball = self._readTarball(queue_item, filemap, logger)
             d = self._readTarball(queue_item, filemap, logger)
             return d.addCallback(got_tarball).addCallback(clean_slave)
 

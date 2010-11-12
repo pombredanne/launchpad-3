@@ -12,9 +12,12 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from twisted.internet import defer
+
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.librarian.utils import copy_and_close
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     TwistedLaunchpadZopelessLayer,
@@ -299,12 +302,15 @@ class TestTranslationTemplatesBuildBehavior(
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
-        def got_dispatch((status, info)):
+        def fake_getFile(sum, file):
             dummy_tar = os.path.join(
                 os.path.dirname(__file__), 'dummy_templates.tar.gz')
-            # XXX 2010-10-18 bug=662631
-            # Change this to do non-blocking IO.
-            builder.slave.getFile = lambda sum: open(dummy_tar)
+            tar_file = open(dummy_tar)
+            copy_and_close(tar_file, file)
+            return defer.succeed(None)
+
+        def got_dispatch((status, info)):
+            builder.slave.getFile = fake_getFile
             builder.slave.filemap = {
                 'translation-templates.tar.gz': 'foo'}
             return builder.slave.status()
