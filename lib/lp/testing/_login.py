@@ -100,8 +100,8 @@ def login_team(team, participation=None):
     from lp.testing.factory import LaunchpadObjectFactory
     if not team.is_team:
         raise ValueError("Got person, expected team: %r" % (team,))
-    person = LaunchpadObjectFactory().makePerson()
     login(ADMIN_EMAIL)
+    person = LaunchpadObjectFactory().makePerson()
     team.addMember(person, person)
     login_person(person, participation=participation)
     return person
