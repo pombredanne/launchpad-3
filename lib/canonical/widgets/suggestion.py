@@ -149,7 +149,7 @@ class SuggestionWidget(LaunchpadRadioWidget):
                 renderfunc = self.renderItem
             text = self._renderSuggestionLabel(suggestion, index)
             render_args = dict(
-                index=index, text=text, value=suggestion.name,
+                index=index, text=text, value=term.token,
                 name=self.name, cssClass=self.cssClass)
             items.append(renderfunc(**render_args))
 
