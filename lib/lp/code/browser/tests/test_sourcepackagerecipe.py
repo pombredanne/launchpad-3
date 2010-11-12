@@ -717,6 +717,37 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
               chocolate - 0\+r42 starting in .* \(estimated\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
+    def test_index_success_with_completed_binary_build(self):
+        # Binary builds show their buildlog too.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+        package_name = self.factory.getOrMakeSourcePackageName('chocolate')
+        source_package_release = self.factory.makeSourcePackageRelease(
+            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
+            source_package_recipe_build=build, version='0+r42')
+        builder = self.factory.makeBuilder()
+        binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release,
+            distroarchseries=self.squirrel.nominatedarchindep,
+            processor=builder.processor))
+        binary_build.queueBuild()
+        binary_build.status = BuildStatus.FULLYBUILT
+        binary_build.date_started = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status Time Distribution series Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Request build\(s\)""", self.getMainText(recipe))
+
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
