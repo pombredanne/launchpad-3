@@ -181,8 +181,8 @@ If multiple source packages match they will all be displayed.
     ...     principal=product.owner)
     >>> for dsp in view.suggestions:
     ...     print dsp.name
-    bingo
     ba-bingo
+    bingo
 
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
     >>> print extract_text(content)
@@ -193,8 +193,8 @@ If multiple source packages match they will all be displayed.
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
     Ubuntu Hoary packages:
-    bingo
-    ba-bingo...
+    ba-bingo
+    bingo...
 
 But the limit is 8 packages.
 
