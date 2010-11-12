@@ -6,9 +6,11 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from canonical.launchpad.interfaces import (
-    ...     IProjectGroupSet, IProjectGroup)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.projectgroup import (
+    ...     IProjectGroup,
+    ...     IProjectGroupSet,
+    ...     )
     >>> projectset = getUtility(IProjectGroupSet)
 
 
@@ -132,7 +134,7 @@ Specification Listings
 We should be able to generate filtered lists of specs on a project.
 
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 

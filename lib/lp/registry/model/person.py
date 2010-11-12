@@ -1,7 +1,5 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
-
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
 
@@ -165,7 +163,7 @@ from canonical.launchpad.validators.name import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -183,7 +181,6 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import (
-    BugTask,
     get_related_bugtasks_search_params,
     )
 from lp.code.model.hasbranches import (
@@ -191,7 +188,11 @@ from lp.code.model.hasbranches import (
     HasMergeProposalsMixin,
     HasRequestedReviewsMixin,
     )
-from lp.registry.errors import NameAlreadyTaken
+from lp.registry.errors import (
+    JoinNotAllowed,
+    NameAlreadyTaken,
+    PPACreationError,
+    )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -217,7 +218,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    JoinNotAllowed,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -250,7 +250,6 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.structuralsubscription import StructuralSubscription
@@ -262,7 +261,7 @@ from lp.registry.model.teammembership import (
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import (
     cachedproperty,
-    IPropertyCache,
+    get_property_cache,
     )
 from lp.services.salesforce.interfaces import (
     ISalesforceVoucherProxy,
@@ -276,7 +275,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
@@ -309,7 +308,7 @@ class ValidPersonCache(SQLBase):
     Note that it performs poorly at least some of the time, and if
     EmailAddress and Person are already being queried, its probably better to
     query Account directly. See bug
-    https://bugs.edge.launchpad.net/launchpad-registry/+bug/615237 for some
+    https://bugs.launchpad.net/launchpad-registry/+bug/615237 for some
     corroborating information.
     """
 
@@ -509,19 +508,19 @@ class Person(
 
         :raises AttributeError: If the cache doesn't exist.
         """
-        return IPropertyCache(self).languages
+        return get_property_cache(self).languages
 
     def setLanguagesCache(self, languages):
         """Set this person's cached languages.
 
         Order them by name if necessary.
         """
-        IPropertyCache(self).languages = sorted(
+        get_property_cache(self).languages = sorted(
             languages, key=attrgetter('englishname'))
 
     def deleteLanguagesCache(self):
         """Delete this person's cached languages, if it exists."""
-        del IPropertyCache(self).languages
+        del get_property_cache(self).languages
 
     def addLanguage(self, language):
         """See `IPerson`."""
@@ -624,7 +623,7 @@ class Person(
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
         if self.location is None:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, visible=visible)
         else:
             self.location.visible = visible
@@ -643,7 +642,7 @@ class Person(
             self.location.last_modified_by = user
             self.location.date_last_modified = UTC_NOW
         else:
-            IPropertyCache(self).location = PersonLocation(
+            get_property_cache(self).location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
@@ -664,53 +663,6 @@ class Person(
             AND NOT (%(completed_clause)s)
             """ % replacements
         return Specification.select(query, orderBy=['-date_started'], limit=5)
-
-    # mentorship
-    @property
-    def mentoring_offers(self):
-        """See `IPerson`"""
-        return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT MentoringOffer.id
-            FROM MentoringOffer
-            LEFT OUTER JOIN BugTask ON
-                MentoringOffer.bug = BugTask.bug
-            LEFT OUTER JOIN Bug ON
-                BugTask.bug = Bug.id
-            LEFT OUTER JOIN Specification ON
-                MentoringOffer.specification = Specification.id
-            WHERE
-                MentoringOffer.owner = %s
-                """ % sqlvalues(self.id) + """ AND (
-                BugTask.id IS NULL OR NOT
-                (Bug.private IS TRUE OR
-                  (""" + BugTask.completeness_clause +"""))) AND (
-                Specification.id IS NULL OR NOT
-                (""" + Specification.completeness_clause +")))",
-            )
-
-    @property
-    def team_mentorships(self):
-        """See `IPerson`"""
-        return MentoringOffer.select("""MentoringOffer.id IN
-        (SELECT MentoringOffer.id
-            FROM MentoringOffer
-            JOIN TeamParticipation ON
-                MentoringOffer.team = TeamParticipation.person
-            LEFT OUTER JOIN BugTask ON
-                MentoringOffer.bug = BugTask.bug
-            LEFT OUTER JOIN Bug ON
-                BugTask.bug = Bug.id
-            LEFT OUTER JOIN Specification ON
-                MentoringOffer.specification = Specification.id
-            WHERE
-                TeamParticipation.team = %s
-                """ % sqlvalues(self.id) + """ AND (
-                BugTask.id IS NULL OR NOT
-                (Bug.private IS TRUE OR
-                  (""" + BugTask.completeness_clause +"""))) AND (
-                Specification.id IS NULL OR NOT
-                (""" + Specification.completeness_clause +")))",
-            )
 
     @property
     def unique_displayname(self):
@@ -1238,6 +1190,9 @@ class Person(
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
+            if team is None:
+                # No team, no membership.
+                return False
 
         if self.id == team.id:
             # A team is always a member of itself.
@@ -1281,17 +1236,7 @@ class Person(
     def leave(self, team):
         """See `IPerson`."""
         assert not ITeam.providedBy(self)
-
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
-        active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        if tm is None or tm.status not in active:
-            # Ok, we're done. You are not an active member and still
-            # not being.
-            return
-
-        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
+        self.retractTeamMembership(team, self)
 
     def join(self, team, requester=None, may_subscribe_to_list=True):
         """See `IPerson`."""
@@ -1443,6 +1388,28 @@ class Person(
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, comment=comment)
+
+    def retractTeamMembership(self, team, user, comment=None):
+        """See `IPerson`"""
+        # Include PROPOSED and INVITED so that teams can retract mistakes
+        # without involving members of the other team.
+        active_and_transitioning = {
+            TeamMembershipStatus.ADMIN: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.APPROVED: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.PROPOSED: TeamMembershipStatus.DECLINED,
+            TeamMembershipStatus.INVITED:
+                TeamMembershipStatus.INVITATION_DECLINED,
+            }
+        constraints = And(
+            TeamMembership.personID == self.id,
+            TeamMembership.teamID == team.id,
+            TeamMembership.status.is_in(active_and_transitioning.keys()))
+        tm = Store.of(self).find(TeamMembership, constraints).one()
+        if tm is not None:
+            # Flush the cache used by the inTeam method.
+            self._inTeam_cache = {}
+            new_status = active_and_transitioning[tm.status]
+            tm.setStatus(new_status, user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
@@ -1631,7 +1598,7 @@ class Person(
             if not person:
                 return
             email = column
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
 
         decorators.append(handleemail)
 
@@ -1645,7 +1612,7 @@ class Person(
                 column is not None
                 # -- preferred email found
                 and person.preferredemail is not None)
-            IPropertyCache(person).is_valid_person = valid
+            get_property_cache(person).is_valid_person = valid
         decorators.append(handleaccount)
         return dict(
             joins=origins,
@@ -1735,7 +1702,7 @@ class Person(
 
         def prepopulate_person(row):
             result = row[0]
-            cache = IPropertyCache(result)
+            cache = get_property_cache(result)
             index = 1
             #-- karma caching
             if need_karma:
@@ -1797,7 +1764,7 @@ class Person(
         result = self._getMembersWithPreferredEmails()
         person_list = []
         for person, email in result:
-            IPropertyCache(person).preferredemail = email
+            get_property_cache(person).preferredemail = email
             person_list.append(person)
         return person_list
 
@@ -1932,7 +1899,7 @@ class Person(
         # fetches the rows when they're needed.
         locations = self._getMappedParticipantsLocations(limit=limit)
         for location in locations:
-            IPropertyCache(location.person).location = location
+            get_property_cache(location.person).location = location
         participants = set(location.person for location in locations)
         # Cache the ValidPersonCache query for all mapped participants.
         if len(participants) > 0:
@@ -2009,8 +1976,9 @@ class Person(
     # person.
     def deactivateAccount(self, comment):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
+        if not self.is_valid_person:
+            raise AssertionError(
+                "You can only deactivate an account of a valid person.")
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2045,11 +2013,15 @@ class Person(
             pillar = pillar_name.pillar
             # XXX flacoste 2007-11-26 bug=164635 The comparison using id below
             # works around a nasty intermittent failure.
+            changed = False
             if pillar.owner.id == self.id:
                 pillar.owner = registry_experts
-            elif pillar.driver.id == self.id:
+                changed = True
+            if pillar.driver is not None and pillar.driver.id == self.id:
                 pillar.driver = registry_experts
-            else:
+                changed = True
+
+            if not changed:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
                 raise AssertionError(
@@ -2074,7 +2046,7 @@ class Person(
         self.account_status = AccountStatus.DEACTIVATED
         self.account_status_comment = comment
         IMasterObject(self.preferredemail).status = EmailAddressStatus.NEW
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 
@@ -2464,7 +2436,7 @@ class Person(
         if email_address is not None:
             email_address.status = EmailAddressStatus.VALIDATED
             email_address.syncUpdate()
-        del IPropertyCache(self).preferredemail
+        del get_property_cache(self).preferredemail
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
@@ -2501,7 +2473,7 @@ class Person(
         IMasterObject(email).syncUpdate()
 
         # Now we update our cache of the preferredemail.
-        IPropertyCache(self).preferredemail = email
+        get_property_cache(self).preferredemail = email
 
     @cachedproperty
     def preferredemail(self):
@@ -2738,6 +2710,18 @@ class Person(
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
+
+    def createPPA(self, name=None, displayname=None, description=None):
+        """See `IPerson`."""
+        errors = Archive.validatePPA(self, name)
+        if errors:
+            raise PPACreationError(errors)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ppa = getUtility(IArchiveSet).new(
+            owner=self, purpose=ArchivePurpose.PPA,
+            distribution=ubuntu, name=name, displayname=displayname,
+            description=description)
+        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3075,7 +3059,7 @@ class PersonSet:
                 # Populate the previously empty 'preferredemail' cached
                 # property, so the Person record is up-to-date.
                 if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = IPropertyCache(account_person)
+                    cache = get_property_cache(account_person)
                     cache.preferredemail = master_email
                 return account_person
             # There is no associated `Person` to the email `Account`.
@@ -3528,40 +3512,6 @@ class PersonSet:
             DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
 
-    def _mergeMentoringOffer(self, cur, from_id, to_id):
-        # Update only the MentoringOffers that will not conflict.
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET owner=%(to_id)d
-            WHERE owner=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE owner = %(to_id)d)
-            ''' % vars())
-        cur.execute('''
-            UPDATE MentoringOffer
-            SET team=%(to_id)d
-            WHERE team=%(from_id)d
-                AND bug NOT IN (
-                    SELECT bug
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-                AND specification NOT IN (
-                    SELECT specification
-                    FROM MentoringOffer
-                    WHERE team = %(to_id)d)
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM MentoringOffer
-            WHERE owner=%(from_id)d OR team=%(from_id)d
-            ''' % vars())
-
     def _mergeBugNotificationRecipient(self, cur, from_id, to_id):
         # Update BugNotificationRecipient entries that will not conflict.
         cur.execute('''
@@ -3925,7 +3875,7 @@ class PersonSet:
         self._mergeQuestionSubscription(cur, from_id, to_id)
         skip.append(('questionsubscription', 'person'))
 
-        self._mergeMentoringOffer(cur, from_id, to_id)
+        # DELETE when the mentoring table is deleted.
         skip.append(('mentoringoffer', 'owner'))
         skip.append(('mentoringoffer', 'team'))
 
@@ -4081,7 +4031,7 @@ class PersonSet:
 
     def cacheBrandingForPeople(self, people):
         """See `IPersonSet`."""
-        from canonical.launchpad.database import LibraryFileAlias
+        from canonical.launchpad.database.librarian import LibraryFileAlias
         aliases = []
         aliases.extend(person.iconID for person in people
                        if person.iconID is not None)

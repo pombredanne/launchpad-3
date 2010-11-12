@@ -1066,7 +1066,7 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1075,7 +1075,7 @@
         permission="zope.Public"
         facet="branches"
         name="+subscribedbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1084,7 +1084,7 @@
         permission="zope.Public"
         facet="branches"
         name="+registeredbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1262,7 +1262,7 @@
             permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
-            template="../../app/templates/generic-edit.pt"/>
+            template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"

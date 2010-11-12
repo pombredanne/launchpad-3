@@ -164,7 +164,8 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         owner_browser.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch.
+    Launchpad allows communities to translate projects using
+    imports or a branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
@@ -186,7 +187,8 @@ An administrator also sees the notice.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         admin_browser.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch.
+    Launchpad allows communities to translate projects using
+    imports or a branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
@@ -229,14 +231,23 @@ notice but not the link to the project's settings.
 Branch synchronization options
 ------------------------------
 
-If automatic import and export are set, but import branch is unset, we only
-indicate that export is happening.
+When no imports or exports have been set up, the page indicates that
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    This project is currently not using any synchronization
+    with bazaar branches.
+
+If a translation branch is set we indicate that exports are happening.
+Imports are not mentioned until a series branch has been set.
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
     >>> branch = factory.makeBranch(product=frobnicator)
-    >>> branch_name = branch.name
     >>> frobnicator_trunk.branch = None
     >>> frobnicator_trunk.translations_autoimport_mode = (
     ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
@@ -244,10 +255,42 @@ indicate that export is happening.
     >>> logout()
 
     >>> browser.open(frobnicator_trunk_url)
-    >>> print extract_text(browser.contents)
-    Translations...
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
     Translations are exported daily to branch
-    ...
+    lp://dev/~person-name.../frobnicator/branch....
+
+If the branch is private, though the page pretends to non-privileged users
+that no synchronization has been set up.
+
+    >>> login('foo.bar@canonical.com')
+    >>> private_branch = factory.makeBranch(product=frobnicator, private=True)
+    >>> frobnicator_trunk.translations_branch = private_branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    This project is currently not using any synchronization
+    with bazaar branches.
+
+Imports are indicated in likewise manner once a series branch has been set.
+
+    >>> login('foo.bar@canonical.com')
+    >>> frobnicator_trunk.branch = branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> sync_settings = first_tag_by_class(
+    ...     browser.contents, 'automatic-synchronization')
+    >>> print extract_text(sync_settings)
+    Automatic synchronization
+    Translations are imported with every update from branch
+    lp://dev/frobnicator.
 
 
 Translation focus
@@ -301,8 +344,8 @@ project admin does not see the link for configuring other branches.
 
 A new series is added.
 
-    >>> from lp.registry.model.product import Product
     >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.registry.model.product import Product
     >>> login('foo.bar@canonical.com')
     >>> evolution = Product.byName('evolution')
     >>> series = factory.makeProductSeries(

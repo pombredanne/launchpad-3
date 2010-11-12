@@ -61,6 +61,7 @@ from lp.code.errors import (
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
+    BranchMergeProposalNeedsReviewEvent,
     BranchMergeProposalStatusChangeEvent,
     NewCodeReviewCommentEvent,
     ReviewerNominatedEvent,
@@ -412,6 +413,11 @@ class BranchMergeProposal(SQLBase):
         # review state.
         if _date_requested is None:
             _date_requested = UTC_NOW
+        # If we are going from work in progress to needs review, then reset
+        # the root message id and trigger a job to send out the email.
+        if self.queue_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.root_message_id = None
+            notify(BranchMergeProposalNeedsReviewEvent(self))
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
@@ -537,8 +543,19 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    def resubmit(self, registrant):
+    def resubmit(self, registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT, description=None,
+                 break_link=False):
         """See `IBranchMergeProposal`."""
+        if source_branch is None:
+            source_branch = self.source_branch
+        if target_branch is None:
+            target_branch = self.target_branch
+        # DEFAULT instead of None, because None is a valid value.
+        if prerequisite_branch is DEFAULT:
+            prerequisite_branch = self.prerequisite_branch
+        if description is None:
+            description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
         # not from MERGED or SUPERSEDED.
         self._transitionToState(
@@ -547,15 +564,16 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
-        review_requests = set(
-            (vote.reviewer, vote.review_type) for vote in self.votes)
-        proposal = self.source_branch.addLandingTarget(
+        review_requests = list(set(
+            (vote.reviewer, vote.review_type) for vote in self.votes))
+        proposal = source_branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.target_branch,
-            prerequisite_branch=self.prerequisite_branch,
-            description=self.description,
+            target_branch=target_branch,
+            prerequisite_branch=prerequisite_branch,
+            description=description,
             needs_review=True, review_requests=review_requests)
-        self.superseded_by = proposal
+        if not break_link:
+            self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to
         # the old and the new proposal.

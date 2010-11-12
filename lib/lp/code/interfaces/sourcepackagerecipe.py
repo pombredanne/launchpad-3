@@ -14,6 +14,7 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
+    'recipes_enabled',
     ]
 
 
@@ -45,13 +46,16 @@ from zope.schema import (
     TextLine,
     )
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
+from lp.services import features
 from lp.services.fields import (
+    Description,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -168,14 +172,15 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             " build a source package for"),
         readonly=False)
     build_daily = exported(Bool(
-        title=_("Build daily")))
+        title=_("Automatically build each day, if the source has changed"),
+        description=_("You can manually request a build at any time.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Text(
+    description = Description(
         title=_('Description'), required=True,
         description=_('A short description of the recipe.'))
 
@@ -208,3 +213,13 @@ class ISourcePackageRecipeSource(Interface):
 
     def exists(owner, name):
         """Check to see if a recipe by the same name and owner exists."""
+
+
+def recipes_enabled():
+    """Return True if recipes are enabled."""
+    # Features win:
+    if features.getFeatureFlag(u'code.recipes_enabled'):
+        return True
+    if not config.build_from_branch.enabled:
+        return False
+    return True

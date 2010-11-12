@@ -34,7 +34,7 @@ from canonical.launchpad.components.tokens import (
     create_token,
     create_unique_token_for_table,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.oauth import (
     ClockSkew,
     IOAuthAccessToken,
     IOAuthConsumer,
@@ -105,17 +105,29 @@ class OAuthConsumer(OAuthBase):
     secret = StringCol(notNull=False, default='')
 
     # This regular expression singles out a consumer key that
-    # represents any and all apps running on a specific computer
-    # (usually a desktop). For instance:
+    # represents any and all apps running on a specific computer. The
+    # regular expression identifies the system type (eg. the OS) and
+    # the name of the computer (eg. the hostname).
     #
-    # System-wide: Ubuntu desktop (hostname1)
-    #  - An Ubuntu desktop called "hostname1"
-    # System-wide: Windows desktop (Computer Name)
-    #  - A Windows desktop called "Computer Name"
-    # System-wide: Mac OS desktop (hostname2)
-    #  - A Macintosh desktop called "hostname2"
-    # System-wide Android phone (Bob's Phone)
-    #  - An Android phone called "Bob's Phone"
+    # A client can send whatever string they want, as long as it
+    # matches the regular expression, but here are some values we've
+    # seen from the lazr.restfulclient code for generating this
+    # string.
+    #
+    # System-wide: Ubuntu (hostname)
+    #  - An Ubuntu computer called "hostname"
+    # System-wide: debian (hostname)
+    #  - A Debian computer called "hostname"
+    #    (A Nokia N900 phone also sends this string.)
+    # System-wide: Windows (hostname)
+    #  - A Windows computer called "hostname"
+    # System-wide: Microsoft (hostname)
+    #  - A Windows computer called "hostname", running an old version
+    #    of Python
+    # System-wide: Darwin (hostname)
+    #  - A Mac OS X computer called "hostname"
+    #    (Presumably an iPhone will also send this string,
+    #     but we're not sure.)
     integrated_desktop_re = re.compile("^System-wide: (.*) \(([^)]*)\)$")
 
     def _integrated_desktop_match_group(self, position):
@@ -310,7 +322,7 @@ class OAuthRequestToken(OAuthBase):
         expires = self.date_created + timedelta(hours=REQUEST_TOKEN_VALIDITY)
         return expires <= now
 
-    def review(self, user, permission, context=None):
+    def review(self, user, permission, context=None, date_expires=None):
         """See `IOAuthRequestToken`."""
         if self.is_reviewed:
             raise AssertionError(
@@ -320,6 +332,7 @@ class OAuthRequestToken(OAuthBase):
                 'This request token has expired and can no longer be '
                 'reviewed.')
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.date_expires = date_expires
         self.person = user
         self.permission = permission
         if IProduct.providedBy(context):
@@ -352,7 +365,8 @@ class OAuthRequestToken(OAuthBase):
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=access_level, product=self.product,
+            secret=secret, permission=access_level,
+            date_expires=self.date_expires, product=self.product,
             project=self.project, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         self.destroySelf()

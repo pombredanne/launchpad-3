@@ -3,8 +3,6 @@
 
 """Unit tests for CodeReviewVoteReferences."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 

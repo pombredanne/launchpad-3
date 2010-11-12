@@ -72,7 +72,7 @@ class TestMirroringForImportedBranches(TestCaseWithFactory):
         past_time = datetime.now(pytz.UTC) - timedelta(days=1)
         removeSecurityProxy(branch).next_mirror_time = past_time
         branch.requestMirror()
-        self.assertEqual(past_time, branch.next_mirror_time)
+        self.assertEqual(branch.next_mirror_time, past_time)
 
     def test_requestMirror_can_promote_branch(self):
         # requestMirror() sets the mirror request time to 'now' if

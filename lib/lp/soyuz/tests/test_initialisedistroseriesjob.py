@@ -1,18 +1,27 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import transaction
-from canonical.testing import LaunchpadZopelessLayer
+import os
+import subprocess
+import sys
+
 from storm.exceptions import IntegrityError
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.initialisedistroseriesjob import (
     InitialiseDistroSeriesJob,
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
@@ -46,14 +55,14 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         # If there's already a InitialiseDistroSeriesJob for a
         # DistroSeries, InitialiseDistroSeriesJob.create() won't create
         # a new one.
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries)
         transaction.commit()
 
         # There will now be one job in the queue.
         self.assertEqual(1, self._getJobCount())
 
-        new_job = getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries)
 
         # This is less than ideal
@@ -88,3 +97,50 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(naked_job.arches, arches)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
+
+    def test_job(self):
+        pf = self.factory.makeProcessorFamily()
+        pf.addProcessor('x86', '', '')
+        parent = self.factory.makeDistroSeries()
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf)
+        lf = self.factory.makeLibraryFileAlias()
+        # Since the LFA needs to be in the librarian, commit.
+        transaction.commit()
+        parent_das.addOrUpdateChroot(lf)
+        parent_das.supports_virtualized = True
+        parent.nominatedarchindep = parent_das
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        packages = {'udev': '0.1-1', 'libc6': '2.8-1'}
+        for package in packages.keys():
+            publisher.getPubBinaries(
+                distroseries=parent, binaryname=package,
+                version=packages[package],
+                status=PackagePublishingStatus.PUBLISHED)
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', parent.owner,
+            distroseries=parent)
+        test1.addSources('udev')
+        parent.updatePackageCount()
+        child = self.factory.makeDistroSeries(parent_series=parent)
+
+        # Make sure everything hits the database, switching db users
+        # aborts.
+        transaction.commit()
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        self.layer.switchDbUser('initialisedistroseries')
+
+        job.run()
+        child.updatePackageCount()
+        self.assertEqual(parent.sourcecount, child.sourcecount)
+        self.assertEqual(parent.binarycount, child.binarycount)
+
+    def test_cronscript(self):
+        script = os.path.join(
+            config.root, 'cronscripts', 'initialise_distro_series.py')
+        args = [sys.executable, script, '-v']
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        self.assertEqual(process.returncode, 0)

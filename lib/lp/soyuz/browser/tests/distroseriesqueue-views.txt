@@ -6,9 +6,9 @@ for IDistroSeries context (IDistroSeriesView)
 Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
+  >>> from canonical.launchpad.database.librarian import LibraryFileAlias
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> from lp.registry.interfaces.distribution import IDistributionSet
-  >>> from canonical.launchpad.database import LibraryFileAlias
   >>> fake_chroot = LibraryFileAlias.get(1)
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -253,8 +253,8 @@ Now that "foo" is published in Hoary, we can upload a new build.
     ...     sourcename="foo", distroseries=hoary, version="1.0-2",
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
     >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
     >>> from lp.archiveuploader.tests import (

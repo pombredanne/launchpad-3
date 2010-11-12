@@ -35,6 +35,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.interfaces.translationmessage import (
@@ -115,13 +116,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     implements(ITranslationMessage)
 
     def __init__(self, pofile, potmsgset):
-        # Check whether we already have a suitable TranslationMessage, in
-        # which case, the dummy one must not be used.
-        assert potmsgset.getCurrentTranslationMessage(
-            pofile.potemplate,
-            pofile.language) is None, (
-                'This translation message already exists in the database.')
-
         self.id = None
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
@@ -367,20 +361,23 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
         from lp.translations.model.pofile import POFile
-        clauses = [
-            "POFile.potemplate = TranslationTemplateItem.potemplate",
-            "TranslationTemplateItem.potmsgset = %s" % (
-                sqlvalues(self.potmsgset)),
-            "POFile.language = %s" % sqlvalues(self.language),
-            ]
 
-        pofiles = POFile.select(' AND '.join(clauses),
-                                clauseTables=['TranslationTemplateItem'])
-        pofile = list(pofiles[:1])
-        if len(pofile) > 0:
-            return pofile[0]
-        else:
-            return None
+        # Get any POFile where this translation exists.
+        # Because we can't create a subselect with "LIMIT" using Storm,
+        # we directly embed a subselect using raw SQL instead.
+        # We can do this because our message sharing code ensures a POFile
+        # exists for any of the sharing templates.
+        # This approach gives us roughly a 100x performance improvement
+        # compared to straightforward join as of 2010-11-11. - danilo
+        pofile = IStore(self).find(
+            POFile,
+            POFile.potemplateID == SQL(
+              """(SELECT potemplate
+                    FROM TranslationTemplateItem
+                    WHERE potmsgset = %s AND sequence > 0
+                    LIMIT 1)""" % sqlvalues(self.potmsgset)),
+            POFile.language == self.language).one()
+        return pofile
 
     def ensureBrowserPOFile(self):
         """See `ITranslationMessage`."""

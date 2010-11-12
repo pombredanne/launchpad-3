@@ -368,7 +368,8 @@ class StructuralSubscriptionTargetMixin:
                 return False
         return True
 
-    def addBugSubscription(self, subscriber, subscribed_by):
+    def addBugSubscription(self, subscriber, subscribed_by,
+                           bug_notification_level=None):
         """See `IStructuralSubscriptionTarget`."""
         # This is a helper method for creating a structural
         # subscription and immediately giving it a full
@@ -381,7 +382,9 @@ class StructuralSubscriptionTargetMixin:
                     subscribed_by.name, subscriber.name))
 
         sub = self.addSubscription(subscriber, subscribed_by)
-        sub.bug_notification_level = BugNotificationLevel.COMMENTS
+        if bug_notification_level is None:
+            bug_notification_level = BugNotificationLevel.COMMENTS
+        sub.bug_notification_level = bug_notification_level
         return sub
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):
@@ -447,24 +450,6 @@ class StructuralSubscriptionTargetMixin:
         query = " AND ".join(clauses)
         return StructuralSubscription.select(
             query, orderBy='Person.displayname', clauseTables=['Person'])
-
-    def getBugNotificationsRecipients(self, recipients=None, level=None):
-        """See `IStructuralSubscriptionTarget`."""
-        if level is None:
-            subscriptions = self.bug_subscriptions
-        else:
-            subscriptions = self.getSubscriptions(
-                min_bug_notification_level=level)
-        subscribers = set(
-            subscription.subscriber for subscription in subscriptions)
-        if recipients is not None:
-            for subscriber in subscribers:
-                recipients.addStructuralSubscriber(subscriber, self)
-        parent = self.parent_subscription_target
-        if parent is not None:
-            subscribers.update(
-                parent.getBugNotificationsRecipients(recipients, level))
-        return subscribers
 
     @property
     def bug_subscriptions(self):

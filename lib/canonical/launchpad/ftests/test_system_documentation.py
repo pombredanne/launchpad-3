@@ -7,8 +7,6 @@ lib/canonical/launchpad/doc.
 """
 # pylint: disable-msg=C0103
 
-from __future__ import with_statement
-
 import logging
 import os
 import unittest
@@ -22,11 +20,6 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
-    )
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    ILanguageSet,
-    IPersonSet,
     )
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
@@ -47,6 +40,9 @@ from canonical.testing.layers import (
     )
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -67,8 +63,8 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database import EmailAddress
-    from canonical.launchpad.interfaces import EmailAddressStatus
+    from canonical.launchpad.database.emailaddress import EmailAddress
+    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
     stevea_emailaddress.status = EmailAddressStatus.NEW
@@ -360,8 +356,6 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
-            # 'icky way of running doctests with __future__ imports
-            globs={'with_statement': with_statement},
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 

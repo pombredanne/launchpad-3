@@ -39,9 +39,6 @@ class IDistroSeriesLanguage(IRosettaStats):
         "language. This includes only the real pofiles where translations "
         "exist.")
 
-    translator_count = Attribute("The number of registered translators "
-        "for this language in the distribution.")
-
     contributor_count = Attribute("The number of contributors in total "
         "for this language in the distribution.")
 
