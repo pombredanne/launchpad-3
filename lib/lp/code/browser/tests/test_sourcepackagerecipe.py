@@ -650,7 +650,6 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build.status = BuildStatus.FULLYBUILT
         build.date_started = datetime(2010, 03, 16, tzinfo=utc)
         build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
-        build.log = self.factory.makeLibraryFileAlias()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -668,12 +667,28 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Latest builds
             Status Time Distribution series Archive
-            Successful build on 2010-03-16 buildlog (.*) Secret Squirrel Secret PPA
+            Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents
             # bzr-builder format 0.2 deb-version 0\+\{revno\}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+
+    def test_index_success_with_buildlog(self):
+        # The buildlog is shown if it is there.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status Time Distribution series Archive
+            Successful build on 2010-03-16 buildlog (.*) Secret Squirrel Secret PPA
+            Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
