@@ -1001,7 +1001,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_ids, self.distribution.all_distro_archive_ids,
                 active_publishing_status, self),
             clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
+                'SourcePackagePublishingHistory'])
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))
