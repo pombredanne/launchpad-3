@@ -192,6 +192,7 @@ class TestInlineSubscribing(WindmillTestCase):
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         # Confirm there are 2 subscriber links: one in duplicate subscribers,
         # and one in indirect subscribers.
+        client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertNode(
             xpath=(u'//div[@id="subscribers-from-duplicates"]'
                    '/div/a[@name="Sample Person"]'))
