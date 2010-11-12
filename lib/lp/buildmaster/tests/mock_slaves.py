@@ -169,8 +169,6 @@ class BuildingSlave(OkSlave):
     def getFile(self, sum, file_to_write):
         self.call_log.append('getFile')
         if sum == "buildlog":
-            #s = StringIO("This is a build log")
-            #s.headers = {'content-length': 19}
             if isinstance(file_to_write, types.StringTypes):
                 file_to_write = open(file_to_write, 'wb')
             file_to_write.write("This is a build log")
@@ -216,7 +214,6 @@ class WaitingSlave(OkSlave):
                 file_to_write = open(file_to_write, 'wb')
             file_to_write.write(content)
             file_to_write.close()
-            #file_to_write.headers = {'content-length': len(content)}
         return defer.succeed(None)
 
     def getFiles(self, filemap):
