@@ -182,17 +182,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
-                form_data = {
-                    'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
-                    }
-                harness.submit('continue', form_data)
-                self.assertTrue(harness.hasErrors())
-                self.assertEqual(
-                    'Invalid value',
-                    harness.getFieldError('subscription'),
-                    "User should not be able to update a subscription that "
-                    "doesn't exist.")
+                subscription_field = (
+                    harness.view.form_fields['subscription'].field)
+                # The update-subscription option won't appear.
+                self.assertNotIn(
+                    'update-subscription',
+                    subscription_field.vocabulary.by_token)
 
     def test_update_subscription_fails_for_users_subscribed_via_teams(self):
         # If the user is not directly subscribed, but is subscribed via
@@ -207,17 +202,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
-                form_data = {
-                    'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
-                    }
-                harness.submit('continue', form_data)
-                self.assertTrue(harness.hasErrors())
-                self.assertEqual(
-                    'Invalid value',
-                    harness.getFieldError('subscription'),
-                    "User should not be able to update a subscription that "
-                    "doesn't exist.")
+                subscription_field = (
+                    harness.view.form_fields['subscription'].field)
+                # The update-subscription option won't appear.
+                self.assertNotIn(
+                    'update-subscription',
+                    subscription_field.vocabulary.by_token)
 
     def test_bug_673288(self):
         # If the user is not directly subscribed, but is subscribed via
@@ -237,17 +227,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
-                form_data = {
-                    'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
-                    }
-                harness.submit('continue', form_data)
-                self.assertTrue(harness.hasErrors())
-                self.assertEqual(
-                    'Invalid value',
-                    harness.getFieldError('subscription'),
-                    "User should not be able to update a subscription that "
-                    "doesn't exist.")
+                subscription_field = (
+                    harness.view.form_fields['subscription'].field)
+                # The update-subscription option won't appear.
+                self.assertNotIn(
+                    'update-subscription',
+                    subscription_field.vocabulary.by_token)
 
     def test_bug_notification_level_field_hidden_for_dupe_subs(self):
         # If the user is subscribed to the bug via a duplicate, the

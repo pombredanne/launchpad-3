@@ -226,7 +226,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
                 if (self._use_advanced_features and
-                    self.current_user_subscription is not None):
+                    self.user_is_subscribed_directly):
                     subscription_terms.append(self._update_subscription_term)
                 subscription_terms.insert(
                     0, SimpleTerm(
@@ -246,7 +246,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         if (self._use_advanced_features and
-            self.current_user_subscription is not None):
+            self.user_is_subscribed_directly):
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -287,18 +287,35 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 self.widgets['subscription'].visible = True
 
             if (self.user_is_subscribed and
-                self.current_user_subscription is None):
+                self.user_is_subscribed_to_dupes_only):
                 # If the user is subscribed via a duplicate but is not
                 # directly subscribed, we hide the
                 # bug_notification_level field, since it's not used.
                 self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
+    def user_is_subscribed_directly(self):
+        """Is the user subscribed directly to this bug?"""
+        return self.context.bug.isSubscribed(self.user)
+
+    @cachedproperty
+    def user_is_subscribed_to_dupes(self):
+        """Is the user subscribed to dupes of this bug?"""
+        return self.context.bug.isSubscribedToDupes(self.user)
+
+    @property
     def user_is_subscribed(self):
         """Is the user subscribed to this bug?"""
         return (
-            self.context.bug.isSubscribed(self.user) or
-            self.context.bug.isSubscribedToDupes(self.user))
+            self.user_is_subscribed_directly or
+            self.user_is_subscribed_to_dupes)
+
+    @property
+    def user_is_subscribed_to_dupes_only(self):
+        """Is the user subscribed to this bug only via a dupe?"""
+        return (
+            self.user_is_subscribed_to_dupes and
+            not self.user_is_subscribed_directly)
 
     def shouldShowUnsubscribeFromDupesWarning(self):
         """Should we warn the user about unsubscribing and duplicates?
