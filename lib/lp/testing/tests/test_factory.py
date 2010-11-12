@@ -9,6 +9,7 @@ from datetime import datetime
 import unittest
 
 import pytz
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -58,7 +59,6 @@ from lp.testing.matchers import (
     IsProxied,
     Provides,
     ProvidesAndIsProxied,
-    StartsWith,
     )
 
 
