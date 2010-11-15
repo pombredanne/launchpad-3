@@ -341,7 +341,6 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> switch_db_to_launchpad()
     >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
@@ -349,8 +348,6 @@ notification will be sent to all members individually.
     ...     'subject', 'a comment.', sample_person,
     ...     datecreated=ten_minutes_ago)
     >>> bug_one.addCommentNotification(comment)
-
-    >>> switch_db_to_bugnotification()
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
@@ -371,6 +368,21 @@ notification will be sent to all members individually.
 
 Duplicates
 ----------
+
+We will need some helper functions.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
 
 We will also need a fresh new bug.
 
@@ -539,8 +551,7 @@ few notifications to show that it works.
     ...     '** Summary changed to: New summary.', sample_person,
     ...     when=ten_minutes_ago)
 
-    >>> notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     6
 
