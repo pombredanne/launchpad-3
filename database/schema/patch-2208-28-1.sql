@@ -21,4 +21,4 @@ CREATE UNIQUE INDEX tm__potmsgset__potemplate__language__diverged__imported__idx
 
 CREATE INDEX translationmessage__language__submitter__idx ON translationmessage USING btree (language, submitter);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 28, 1);

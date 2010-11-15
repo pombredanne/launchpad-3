@@ -7,4 +7,4 @@ ALTER TABLE TranslationMessage
 ALTER TABLE POFile
     DROP COLUMN variant;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 29, 0);
