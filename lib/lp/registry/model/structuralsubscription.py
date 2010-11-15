@@ -574,21 +574,22 @@ class StructuralSubscriptionTargetMixin:
             self.__helper.join,
             ]
 
-        # if len(bugtask.bug.tags) == 0:
-        #     conditions.append(
-        #         BugSubscriptionFilter.include_any_tags == False)
-        # else:
-        #     conditions.append(
-        #         BugSubscriptionFilter.exclude_any_tags == False)
+        filter_conditions = list(conditions)
+        if len(bugtask.bug.tags) == 0:
+            filter_conditions.append(
+                BugSubscriptionFilter.include_any_tags == False)
+        else:
+            filter_conditions.append(
+                BugSubscriptionFilter.exclude_any_tags == False)
 
-        sets = [
-            subscriptions_matching_status(bugtask, *conditions),
-            subscriptions_matching_importance(bugtask, *conditions),
+        filter_sets = [
+            subscriptions_matching_status(bugtask, *filter_conditions),
+            subscriptions_matching_importance(bugtask, *filter_conditions),
             ]
 
         query = Union(
             subscriptions_without_filters(*conditions),
-            Intersect(*sets))
+            Intersect(*filter_sets))
 
         return Store.of(self.__helper.pillar).find(
             StructuralSubscription, In(StructuralSubscription.id, query))
