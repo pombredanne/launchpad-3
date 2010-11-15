@@ -31,7 +31,6 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
-    In,
     Join,
     LeftJoin,
     Or,
@@ -474,7 +473,7 @@ class POTemplate(SQLBase, RosettaStats):
         result = store.using(POTMsgSet, origin1, origin2).find(
             POTMsgSet,
             TranslationTemplateItem.potemplate == self,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids))
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids))
         # Filter these candidates because is_translation_credit checks for
         # more conditions than the special msgids.
         for potmsgset in result:

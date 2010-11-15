@@ -5,11 +5,6 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-from random import random
 import time
 from UserDict import DictMixin
 
@@ -25,6 +20,7 @@ from zope.session.interfaces import (
     ISessionPkgData,
     )
 
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 
@@ -95,7 +91,7 @@ class PGSessionData(PGSessionBase):
 
     def __init__(self, session_data_container, client_id):
         self.session_data_container = session_data_container
-        self.client_id = client_id
+        self.client_id = ensure_unicode(client_id)
         self.lastAccessTime = time.time()
 
         # Update the last access time in the db if it is out of date
@@ -105,7 +101,7 @@ class PGSessionData(PGSessionBase):
             WHERE client_id = ?
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
-        self.store.execute(query, (client_id,), noresult=True)
+        self.store.execute(query, (self.client_id,), noresult=True)
 
     def _ensureClientId(self):
         if self._have_ensured_client_id:
@@ -170,7 +166,7 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
 
     def __init__(self, session_data, product_id):
         self.session_data = session_data
-        self.product_id = product_id
+        self.product_id = ensure_unicode(product_id)
         self.table_name = (
             session_data.session_data_container.session_pkg_data_table_name)
         self._populate()
@@ -193,12 +189,15 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
         return self._data_cache[key]
 
     def __setitem__(self, key, value):
-        pickled_value =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
+        key = ensure_unicode(key)
+        pickled_value = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
 
         self.session_data._ensureClientId()
-        self.store.execute("SELECT set_session_pkg_data(?, ?, ?, ?)",
-                           (self.session_data.client_id, self.product_id,
-                            key, pickled_value), noresult=True)
+        self.store.execute(
+            "SELECT set_session_pkg_data(?, ?, ?, ?)",
+            (self.session_data.client_id,
+                self.product_id, key, pickled_value),
+            noresult=True)
 
         # Store the value in the cache too
         self._data_cache[key] = value
@@ -219,8 +218,11 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
         query = """
             DELETE FROM %s WHERE client_id = ? AND product_id = ? AND key = ?
             """ % self.table_name
-        self.store.execute(query, (self.session_data.client_id,
-                                   self.product_id, key), noresult=True)
+        self.store.execute(
+            query,
+            (self.session_data.client_id,
+                self.product_id, ensure_unicode(key)),
+            noresult=True)
 
     def keys(self):
         return self._data_cache.keys()

@@ -36,6 +36,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalChangeStatusView,
     BranchMergeProposalContextMenu,
     BranchMergeProposalMergedView,
+    BranchMergeProposalResubmitView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
     ICodeReviewNewRevisions,
@@ -59,6 +60,7 @@ from lp.testing import (
     feature_flags,
     login_person,
     set_feature_flag,
+    person_logged_in,
     TestCaseWithFactory,
     time_counter,
     )
@@ -506,7 +508,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertOnePendingReview(proposal, reviewer)
         self.assertIs(None, proposal.description)
 
-    def test_register_request_review_type(self):
+    def test_register_request_review_type_branch_reviewer(self):
         # We can ask for a specific review type. The target branch has a
         # reviewer so that reviewer should be used.
         target_branch, reviewer = self._makeTargetBranchWithReviewer()
@@ -518,6 +520,96 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
+
+
+class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
+    """Test BranchMergeProposalResubmitView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def createView(self):
+        """Create the required view."""
+        context = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(context.registrant))
+        view = BranchMergeProposalResubmitView(
+            context, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_resubmit_action(self):
+        """resubmit_action resubmits the proposal."""
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+             'break_link': False,
+            })
+        self.assertEqual(new_proposal.supersedes, context)
+        self.assertEqual(new_proposal.source_branch, context.source_branch)
+        self.assertEqual(new_proposal.target_branch, context.target_branch)
+        self.assertEqual(
+            new_proposal.prerequisite_branch, context.prerequisite_branch)
+
+    def test_resubmit_action_change_branches(self):
+        """Changing the branches changes the branches in the new proposal."""
+        view = self.createView()
+        target = view.context.source_branch.target
+        new_source = self.factory.makeBranchTargetBranch(target)
+        new_target = self.factory.makeBranchTargetBranch(target)
+        new_prerequisite = self.factory.makeBranchTargetBranch(target)
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': new_source, 'target_branch': new_target,
+             'prerequisite_branch': new_prerequisite,
+             'description': 'description',
+             'break_link': False,
+             })
+        self.assertEqual(new_proposal.supersedes, view.context)
+        self.assertEqual(new_proposal.source_branch, new_source)
+        self.assertEqual(new_proposal.target_branch, new_target)
+        self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
+
+    def test_resubmit_action_break_link(self):
+        """Enabling break_link prevents linking the old and new proposals."""
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+             'break_link': True,
+            })
+        self.assertIs(None, new_proposal.supersedes)
+
+
+class TestResubmitBrowser(BrowserTestCase):
+    """Browser tests for resubmitting branch merge proposals."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_resubmit_text(self):
+        """The text of the resubmit page is as expected."""
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        text = self.getMainText(bmp, '+resubmit')
+        expected = (
+            'Resubmit proposal to merge.*'
+            'Source Branch:.*'
+            'Target Branch:.*'
+            'Prerequisite Branch:.*'
+            'Description.*'
+            'Start afresh.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+    def test_resubmit_controls(self):
+        """Proposals can be resubmitted using the browser."""
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Description').value = 'flibble'
+        browser.getControl('Resubmit').click()
+        self.assertEqual('flibble', bmp.superseded_by.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):

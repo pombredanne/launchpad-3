@@ -110,39 +110,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         self.assertEqual(contents, file_contents)
 
-    def testWriteHtpasswd(self):
-        """Test that writing the .htpasswd file works properly."""
-        fd, filename = tempfile.mkstemp()
-        os.close(fd)
-        script = self.getScript()
-
-        TEST_PASSWORD = "password"
-        TEST_PASSWORD2 = "passwor2"
-
-        # We provide a constant salt to the crypt function so that we
-        # can test the encrypted result.
-        SALT = "XX"
-
-        user1 = ("user", TEST_PASSWORD, SALT)
-        user2 = ("user2", TEST_PASSWORD2, SALT)
-        list_of_users = [user1]
-        list_of_users.append(user2)
-
-        # Run the script
-        script.writeHtpasswd(filename, list_of_users)
-
-        expected_contents = [
-            "user:XXq2wKiyI43A2",
-            "user2:XXaQB8b5Gtwi.",
-            ]
-
-        file = open(filename, "r")
-        file_contents = file.read().splitlines()
-        file.close()
-        os.remove(filename)
-
-        self.assertEqual(expected_contents, file_contents)
-
     def testGenerateHtpasswd(self):
         """Given some `ArchiveAuthToken`s, test generating htpasswd."""
         # Make some subscriptions and tokens.

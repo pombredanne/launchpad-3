@@ -874,7 +874,6 @@ class POTMsgSet(SQLBase):
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
-                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,

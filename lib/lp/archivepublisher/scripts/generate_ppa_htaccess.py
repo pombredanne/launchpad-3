@@ -5,13 +5,11 @@
 
 # pylint: disable-msg=C0103,W0403
 
-import crypt
 from datetime import (
     datetime,
     timedelta,
     )
 import filecmp
-from operator import attrgetter
 import os
 import tempfile
 
@@ -31,10 +29,13 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
-from lp.soyuz.enums import (
-    ArchiveStatus,
-    ArchiveSubscriberStatus,
+from lp.archivepublisher.htaccess import (
+    write_htaccess,
+    write_htpasswd,
+    htpasswd_credentials_for_archive,
     )
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
@@ -42,15 +43,6 @@ from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 BLACKLISTED_PPAS = {
     'ubuntuone': ['ppa'],
     }
-
-HTACCESS_TEMPLATE = """
-AuthType           Basic
-AuthName           "Token Required"
-AuthUserFile       %(path)s/.htpasswd
-Require            valid-user
-"""
-
-BUILDD_USER_NAME = "buildd"
 
 
 class HtaccessTokenGenerator(LaunchpadCronScript):
@@ -69,23 +61,6 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             dest="no_deactivation", default=False,
             help="If set, tokens are not deactivated.")
 
-    def writeHtpasswd(self, filename, list_of_users):
-        """Write out a new htpasswd file.
-
-        :param filename: The file to create.
-        :param list_of_users: A list of (user, password, salt) tuples.
-        """
-        if os.path.isfile(filename):
-            os.remove(filename)
-
-        file = open(filename, "a")
-        for entry in list_of_users:
-            user, password, salt = entry
-            encrypted = crypt.crypt(password, salt)
-            file.write("%s:%s\n" % (user, encrypted))
-
-        file.close()
-
     def ensureHtaccess(self, ppa):
         """Generate a .htaccess for `ppa`."""
         if self.options.dryrun:
@@ -99,10 +74,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
             # It's not there, so create it.
             if not os.path.exists(pub_config.htaccessroot):
                 os.makedirs(pub_config.htaccessroot)
-            interpolations = {"path": pub_config.htaccessroot}
-            file = open(htaccess_filename, "w")
-            file.write(HTACCESS_TEMPLATE % interpolations)
-            file.close()
+            write_htaccess(htaccess_filename, pub_config.htaccessroot)
             self.logger.debug("Created .htaccess for %s" % ppa.displayname)
 
     def generateHtpasswd(self, ppa, tokens):
@@ -117,18 +89,8 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
         fd, temp_filename = tempfile.mkstemp(dir=pub_config.htaccessroot)
         os.close(fd)
 
-        # The first .htpasswd entry is the buildd_secret.
-        list_of_users = [
-            (BUILDD_USER_NAME, ppa.buildd_secret, BUILDD_USER_NAME[:2])]
-
-        # Iterate over tokens and write the appropriate htpasswd
-        # entries for them.  Use a consistent sort order so that the
-        # generated file can be compared to an existing one later.
-        for token in sorted(tokens, key=attrgetter("id")):
-            entry = (token.person.name, token.token, token.person.name[:2])
-            list_of_users.append(entry)
-
-        self.writeHtpasswd(temp_filename, list_of_users)
+        write_htpasswd(
+            temp_filename, htpasswd_credentials_for_archive(ppa, tokens))
 
         return temp_filename
 

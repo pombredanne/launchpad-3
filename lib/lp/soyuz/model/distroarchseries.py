@@ -225,7 +225,7 @@ class DistroArchSeries(SQLBase):
         result = result.order_by("rank DESC, BinaryPackageName.name")
 
         # import here to avoid circular import problems
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting

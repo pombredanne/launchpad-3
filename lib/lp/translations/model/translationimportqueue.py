@@ -28,7 +28,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Like,
     Or,
     )
 from storm.locals import (
@@ -1363,7 +1362,7 @@ class TranslationImportQueue:
         deletion_clauses.append(And(
             TranslationImportQueueEntry.distroseries_id != None,
             TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
-            Like(TranslationImportQueueEntry.path, '%.po')))
+            TranslationImportQueueEntry.path.like(u'%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))
