@@ -306,15 +306,12 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
-        # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
+            ProductSeries,
             ProductSeries, SQL(
                 "official_rosetta AND translations_branch IS NOT NULL"))
-
         # Anything deterministic will do, and even that is only for
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
