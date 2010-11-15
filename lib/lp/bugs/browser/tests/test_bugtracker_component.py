@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -106,11 +105,3 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-
-    return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
