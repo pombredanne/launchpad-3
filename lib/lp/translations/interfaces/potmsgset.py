@@ -279,6 +279,15 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
+    def getCurrentTranslation(potemplate, language, side=None):
+        """Get a current translation message.
+
+        :param potemplate: An `IPOTemplate` to look up a translation for.
+            If it's None, returns a shared translation.
+        :param language: translation should be to this `ILanguage`.
+        :param side: translation side to look at.
+        """
+
     def setCurrentTranslation(pofile, submitter, translations, origin,
                               share_with_other_side=False,
                               lock_timestamp=None):
