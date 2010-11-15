@@ -93,25 +93,14 @@
 
     <div class="yui-u">
       <div class="portlet" id="upstream">
-        <tal:project define="project context/upstream_product">
-          <div tal:condition="project">
-            <h2>Upstream</h2>
-            <div style="float:left; padding:0 1em 1em 0;">
-              <a
-                tal:attributes="href project/fmt:url"
-                tal:content="structure project/image:logo" />
-            </div>
-            <div> 
-              <a 
-                tal:attributes="href project/fmt:url"
-                tal:content="project/displayname" />
-            </div>
-            <div tal:content="structure project/summary" />
-          </div>
-          <tal:noproject condition="not: project">
-              This package is not linked to an upstream product.
-          </tal:noproject>
-        </tal:project>
+        <div tal:condition="not: view/active_series">
+          <h2>Upstream</h2>
+          This package is no longer tracking upstream.
+        </div>
+        <tal:published_series
+          condition="view/active_series"
+          replace="structure view/latest_sourcepackage/@@+portlet-associations"
+          />
       </div><!--portlet -->
     </div><!--yui-u -->
 

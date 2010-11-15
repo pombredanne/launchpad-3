@@ -408,7 +408,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             packages_dict[package.distroseries] = package
         return packages_dict
 
-    @property
+    @cachedproperty
     def active_series(self):
         """Return active distroseries where this package is published.
 
@@ -435,6 +435,13 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             version = pub.source_package_version
             pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict
+
+    @property
+    def latest_sourcepackage(self):
+        if len(self.active_series) == 0:
+            return None
+        return self.active_series[0].getSourcePackage(
+            self.context.sourcepackagename)
 
     @property
     def version_table(self):
