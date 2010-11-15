@@ -870,7 +870,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         transaction.commit()
-        current = self.potmsgset.getCurrentTranslationMessage(
+        current = self.potmsgset.getCurrentTranslation(
             self.potemplate, self.pofile.language)
         self.assertNotEqual(None, current)
         self.assertEqual([None], current.translations)

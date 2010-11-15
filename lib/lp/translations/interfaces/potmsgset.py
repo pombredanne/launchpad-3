@@ -144,17 +144,28 @@ class IPOTMsgSet(Interface):
             `self` in `pofile`.
         """
 
+    # XXX JeroenVermeulen 2010-11-10: We want to change what this method
+    # does in the Recife branch.  Until then, I'm documenting its actual
+    # behaviour and adding getCurrentTranslation, which figures out the
+    # right side by itself.
     def getCurrentTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage marked as being currently used.
+        """Returns TranslationMessage marked as current in Ubuntu.
 
         Diverged messages are preferred.
         """
 
+    # XXX JeroenVermeulen 2010-11-10: We want to change what this method
+    # does in the Recife branch.  Until then, I'm documenting its actual
+    # behaviour and adding getCurrentTranslation, which figures out the
+    # right side by itself.
     def getImportedTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage as imported from the package.
+        """Returns a TranslationMessage marked as current upstream.
 
         Diverged messages are preferred.
         """
+
+    def getCurrentTranslation(potemplate, language):
+        """Returns the current translation, if any."""
 
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
