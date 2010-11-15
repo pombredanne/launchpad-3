@@ -333,13 +333,7 @@ class POTMsgSet(SQLBase):
             None, language, current=True)
 
     def getCurrentTranslation(self, potemplate, language, side=None):
-        """Get a current translation message.
-
-        :param potemplate: An `IPOTemplate` to look up a translation for.
-            If it's None, returns a shared translation.
-        :param language: translation should be to this `ILanguage`.
-        :param side: translation side to look at.
-        """
+        """See `IPOTMsgSet`."""
 
         from zope.security.proxy import removeSecurityProxy
         if side is None:
@@ -363,6 +357,8 @@ class POTMsgSet(SQLBase):
             TranslationMessage.potmsgsetID == self.id,
             TranslationMessage.languageID == language.id])
 
+        # Return a diverged translation if it exists, and fall back
+        # to the shared one otherwise.
         result = Store.of(self).find(
             TranslationMessage, *clauses).order_by(
               Desc(Coalesce(TranslationMessage.potemplateID, -1))).first()
