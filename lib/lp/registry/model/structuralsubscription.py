@@ -582,6 +582,29 @@ class StructuralSubscriptionTargetMixin:
             set_builder.subscriptions_matching_status,
             set_builder.subscriptions_matching_importance,
             ]
+
+        if len(bugtask.bug.tags) == 0:
+            # The subscription's required tags must be an empty set.
+            filter_sets.append(
+                set_builder.subscriptions_tags_include_empty)
+            # The subscription's excluded tags can be anything so no condition
+            # is needed.
+        else:
+            # The bug's tags must contain the subscription's required tags
+            # if find_all_tags is set, else there must be an intersection.
+            # Or(tags_include_is_empty,
+            #    tags_find_all_combinator(
+            #         "%s @> %s" % (tags_array, tags_include_array),
+            #         "%s && %s" % (tags_array, tags_include_array))),
+            # The bug's tags must not contain the subscription's excluded
+            # tags if find_all_tags is set, else there must not be an
+            # intersection.
+            # Or(tags_exclude_is_empty,
+            #    tags_find_all_combinator(
+            #         "NOT (%s @> %s)" % (tags_array, tags_exclude_array),
+            #         "NOT (%s && %s)" % (tags_array, tags_exclude_array))),
+            pass
+
         query = Union(
             set_builder.subscriptions_without_filters,
             Intersect(*filter_sets))
