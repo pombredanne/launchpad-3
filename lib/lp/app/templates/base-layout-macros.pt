@@ -657,8 +657,10 @@
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
     var LPS = YUI({
+      bootstrap: false,
       fetchCSS: false,
-      combine: false
+      combine: false,
+      timeout: 50
       });
   </script>
 </metal:load-javascript>
