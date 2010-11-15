@@ -189,7 +189,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.translations_usage = %s AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, self),
+            ''' % sqlvalues(self, ServiceUsage.LAUNCHPAD),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
 
