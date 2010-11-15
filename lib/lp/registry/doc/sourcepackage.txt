@@ -128,8 +128,8 @@ upload, even though it gets changed in the publishing record.
     PUBLISHED main
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.database import Component
-    >>> from canonical.launchpad.database import (
+    >>> from lp.soyuz.model.component import Component
+    >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 

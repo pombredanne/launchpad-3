@@ -27,7 +27,6 @@ from storm.expr import (
     And,
     Coalesce,
     Exists,
-    In,
     Join,
     LeftJoin,
     Not,
@@ -70,7 +69,10 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.services.propertycache import cachedproperty
-from lp.translations.enums import RosettaImportStatus
+from lp.translations.enums import (
+    RosettaImportStatus,
+    TranslationPermission,
+    )
 from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
@@ -85,7 +87,6 @@ from lp.translations.interfaces.translationcommonformat import (
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     NotExportedFromLaunchpad,
@@ -1572,7 +1573,7 @@ class POFileSet:
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
         if untranslated:
             message_select = Select(
                 True,

@@ -20,7 +20,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    In,
     SQL,
     )
 from storm.locals import Int
@@ -104,7 +103,7 @@ from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -326,9 +325,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         if not self.products:
             return []
-        product_ids = sqlvalues(*self.products)
+        product_ids = [product.id for product in self.products]
         return get_bug_tags_open_count(
-            In(BugTask.productID, product_ids), user)
+            BugTask.productID.is_in(product_ids), user)
 
     def _getBugTaskContextClause(self):
         """See `HasBugsBase`."""

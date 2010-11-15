@@ -29,17 +29,7 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IAnnouncementSet,
-    IBugSet,
-    IBugTask,
-    IBugTaskSet,
-    IFeedsApplication,
-    IHasAnnouncements,
-    IHasBugs,
-    ILaunchpadRoot,
-    IPillarNameSet,
-    )
+from canonical.launchpad.interfaces.launchpad import IFeedsApplication
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name,
@@ -47,16 +37,30 @@ from canonical.launchpad.webapp import (
     Navigation,
     stepto,
     )
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchpadRoot,
+    )
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtask import (
+    IBugTask,
+    IBugTaskSet,
+    )
 from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.announcement import (
+    IAnnouncementSet,
+    IHasAnnouncements,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 

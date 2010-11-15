@@ -108,7 +108,8 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
@@ -1533,7 +1534,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
             PageTestLayer.profiler = Profile()
         else:
             PageTestLayer.profiler = None
-        file_handler = logging.FileHandler('pagetests-access.log', 'w')
+        file_handler = logging.FileHandler('logs/pagetests-access.log', 'w')
         file_handler.setFormatter(logging.Formatter())
         logger = PythonLogger('pagetests-access')
         logger.logger.addHandler(file_handler)

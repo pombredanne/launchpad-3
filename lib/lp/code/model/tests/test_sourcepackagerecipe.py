@@ -41,6 +41,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -65,10 +66,12 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.testing import (
     ANONYMOUS,
+    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     ws_object,
     )
@@ -78,6 +81,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageRecipe, self).setUp()
+        self.useContext(feature_flags())
 
     def test_implements_interface(self):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
@@ -346,6 +353,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
             PackagePublishingPocket.RELEASE)
+
+    def test_recipes_enabled_config(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        self.assertFalse(recipes_enabled())
+
+    def test_recipes_enabled_flag(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        set_feature_flag(u'code.recipes_enabled', u'on')
+        self.assertTrue(recipes_enabled())
 
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""

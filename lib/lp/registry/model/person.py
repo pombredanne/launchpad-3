@@ -53,10 +53,8 @@ from storm.expr import (
     And,
     Desc,
     Exists,
-    In,
     Join,
     LeftJoin,
-    Lower,
     Min,
     Not,
     Or,
@@ -115,12 +113,12 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.database.stormsugar import StartsWith
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent,
     ITeamInvitationEvent,
     )
 from canonical.launchpad.helpers import (
+    ensure_unicode,
     get_contact_email_addresses,
     get_email_template,
     shortlist,
@@ -180,10 +178,7 @@ from lp.bugs.interfaces.bugtask import (
     IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.model.bugtask import (
-    BugTask,
-    get_related_bugtasks_search_params,
-    )
+from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -192,6 +187,7 @@ from lp.code.model.hasbranches import (
 from lp.registry.errors import (
     JoinNotAllowed,
     NameAlreadyTaken,
+    PPACreationError,
     )
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -218,7 +214,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    PPACreationError,
     PersonalStanding,
     PersonCreationRationale,
     PersonVisibility,
@@ -1191,6 +1186,9 @@ class Person(
         # Translate the team name to an ITeam if we were passed a team.
         if isinstance(team, (str, unicode)):
             team = PersonSet().getByName(team)
+            if team is None:
+                # No team, no membership.
+                return False
 
         if self.id == team.id:
             # A team is always a member of itself.
@@ -1234,17 +1232,7 @@ class Person(
     def leave(self, team):
         """See `IPerson`."""
         assert not ITeam.providedBy(self)
-
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
-        active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        if tm is None or tm.status not in active:
-            # Ok, we're done. You are not an active member and still
-            # not being.
-            return
-
-        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
+        self.retractTeamMembership(team, self)
 
     def join(self, team, requester=None, may_subscribe_to_list=True):
         """See `IPerson`."""
@@ -1396,6 +1384,28 @@ class Person(
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, comment=comment)
+
+    def retractTeamMembership(self, team, user, comment=None):
+        """See `IPerson`"""
+        # Include PROPOSED and INVITED so that teams can retract mistakes
+        # without involving members of the other team.
+        active_and_transitioning = {
+            TeamMembershipStatus.ADMIN: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.APPROVED: TeamMembershipStatus.DEACTIVATED,
+            TeamMembershipStatus.PROPOSED: TeamMembershipStatus.DECLINED,
+            TeamMembershipStatus.INVITED:
+                TeamMembershipStatus.INVITATION_DECLINED,
+            }
+        constraints = And(
+            TeamMembership.personID == self.id,
+            TeamMembership.teamID == team.id,
+            TeamMembership.status.is_in(active_and_transitioning.keys()))
+        tm = Store.of(self).find(TeamMembership, constraints).one()
+        if tm is not None:
+            # Flush the cache used by the inTeam method.
+            self._inTeam_cache = {}
+            new_status = active_and_transitioning[tm.status]
+            tm.setStatus(new_status, user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
@@ -2836,7 +2846,8 @@ class PersonSet:
             email, account = (
                 join.find(
                     (EmailAddress, Account),
-                    Lower(EmailAddress.email) == Lower(email_address)).one()
+                    EmailAddress.email.lower() ==
+                        ensure_unicode(email_address).lower()).one()
                 or (None, None))
             identifier = store.find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
@@ -3139,7 +3150,7 @@ class PersonSet:
             Not(Person.teamowner == None),
             Person.merged == None,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
         return team_email_query
 
     def _teamNameQuery(self, text):
@@ -3162,9 +3173,7 @@ class PersonSet:
             return EmptyResultSet()
 
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3173,8 +3182,8 @@ class PersonSet:
             Person.merged == None,
             EmailAddress.person == Person.id,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
-            StartsWith(Lower(EmailAddress.email), text))
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
+            EmailAddress.email.lower().startswith(text))
 
         store = IStore(Person)
 
@@ -3191,7 +3200,7 @@ class PersonSet:
             Person.teamowner == None,
             Person.merged == None,
             Person.account == Account.id,
-            Not(In(Account.status, inactive_statuses)),
+            Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
             SQL("Person.fti @@ ftq(?)", (text, ))
             )
 
@@ -3211,10 +3220,8 @@ class PersonSet:
             must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
+        text = ensure_unicode(text).lower()
         store = IStore(Person)
-        inactive_statuses = tuple(
-            status.value for status in INACTIVE_ACCOUNT_STATUSES)
         base_query = And(
             Person.teamowner == None,
             Person.merged == None)
@@ -3226,7 +3233,7 @@ class PersonSet:
             base_query = And(
                 base_query,
                 Person.account == Account.id,
-                Not(In(Account.status, inactive_statuses)))
+                Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)))
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
@@ -3253,7 +3260,7 @@ class PersonSet:
         email_query = And(
             base_query,
             EmailAddress.person == Person.id,
-            StartsWith(Lower(EmailAddress.email), text))
+            EmailAddress.email.lower().startswith(ensure_unicode(text)))
 
         name_query = And(
             base_query,
@@ -3266,7 +3273,7 @@ class PersonSet:
     def findTeam(self, text=""):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
-        text = text.lower()
+        text = ensure_unicode(text).lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
@@ -3287,18 +3294,11 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        # We lookup the EmailAddress in the auth store so we can
-        # lookup a Person by EmailAddress in the same transaction
-        # that the Person or EmailAddress was created. This is not
-        # optimal for production as it requires two database lookups,
-        # but is required by much of the test suite.
-        conditions = (Lower(EmailAddress.email) == email.lower().strip())
-        email_address = IStore(EmailAddress).find(
-            EmailAddress, conditions).one()
-        if email_address is None:
-            return None
-        else:
-            return IStore(Person).get(Person, email_address.personID)
+        email = ensure_unicode(email).strip().lower()
+        return IStore(Person).find(
+            Person,
+            Person.id == EmailAddress.personID,
+            EmailAddress.email.lower() == email).one()
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""
@@ -4075,7 +4075,7 @@ class PersonSet:
 
     def cacheBrandingForPeople(self, people):
         """See `IPersonSet`."""
-        from canonical.launchpad.database import LibraryFileAlias
+        from canonical.launchpad.database.librarian import LibraryFileAlias
         aliases = []
         aliases.extend(person.iconID for person in people
                        if person.iconID is not None)
