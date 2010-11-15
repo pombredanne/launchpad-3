@@ -1751,6 +1751,15 @@ class TestGetCurrentTranslation(TestCaseWithFactory):
                       potmsgset.getCurrentTranslation(
                           pofile.potemplate, pofile.language))
 
+    def test_assertion_on_bad_parameters(self):
+        # When no potemplate is passed in to getCurrentTranslation,
+        # and no explicit side is selected, AssertionError is raised.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+
+        self.assertRaises(AssertionError,
+                          potmsgset.getCurrentTranslation,
+                          None, pofile.language, None)
+
     def test_basic_get(self):
         # getCurrentTranslation gets the current upstream translation
         # for a message.
