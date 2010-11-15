@@ -1730,17 +1730,8 @@ class BaseTestGetCurrentTranslation(object):
                       potmsgset.getCurrentTranslation(
                           pofile.potemplate, pofile.language))
 
-    def test_assertion_on_bad_parameters(self):
-        # When no potemplate is passed in to getCurrentTranslation,
-        # and no explicit side is selected, AssertionError is raised.
-        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-
-        self.assertRaises(AssertionError,
-                          potmsgset.getCurrentTranslation,
-                          None, pofile.language, None)
-
     def test_basic_get(self):
-        # getCurrentTranslation gets the current upstream translation
+        # getCurrentTranslation gets the current translation
         # for a message.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         translations = { 0: self.factory.getUniqueString('translation') }
@@ -1751,6 +1742,15 @@ class BaseTestGetCurrentTranslation(object):
         self.assertEqual(message,
                          potmsgset.getCurrentTranslation(
                              pofile.potemplate, pofile.language))
+
+    def test_assertion_on_bad_parameters(self):
+        # When no potemplate is passed in to getCurrentTranslation,
+        # and no explicit side is selected, AssertionError is raised.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+
+        self.assertRaises(AssertionError,
+                          potmsgset.getCurrentTranslation,
+                          None, pofile.language, None)
 
     def test_other_languages_ignored(self):
         # getCurrentTranslation never returns a translation for another
@@ -1855,6 +1855,7 @@ class BaseTestGetCurrentTranslation(object):
 
 class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
                                             TestCaseWithFactory):
+    """getCurrentTranslation working on an upstream POFile."""
     def setUp(self):
         super(TestGetCurrentTranslationForUpstreams, self).setUp(
             'carlos@canonical.com')
@@ -1880,6 +1881,7 @@ class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
 
 class TestGetCurrentTranslationForUbuntu(BaseTestGetCurrentTranslation,
                                          TestCaseWithFactory):
+    """getCurrentTranslation working on an Ubuntu POFile."""
     def setUp(self):
         super(TestGetCurrentTranslationForUbuntu, self).setUp(
             'carlos@canonical.com')
