@@ -20,7 +20,7 @@
       </tal:block>
 
       <tal:block tal:condition="dailybuilds">
-        <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
+        <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper"/>
         <table class="listing sortable" id="daily-build-listing">
           <thead>
             <tr>
@@ -44,11 +44,7 @@
           <tbody>
             <tr tal:repeat="dailybuild dailybuilds">
               <td>
-                <!--<tal:source-package replace="structure dailybuild/sourcepackage/fmt:link">-->
-                  <!--source package-->
-                <!--</tal:source-package>-->
-                <a href="sourcepackage"
-                tal:attributes="href dailybuild/sourcepackage/fmt:url">
+                <a href="sourcepackage" tal:attributes="href dailybuild/sourcepackage/fmt:url">
                 <span tal:replace="dailybuild/sourcepackage/name">
                   source package
                 </span>
@@ -56,8 +52,7 @@
               </td>
 
               <td>
-                <a href="recipe"
-                tal:attributes="href dailybuild/recipe/fmt:url">
+                <a href="recipe" tal:attributes="href dailybuild/recipe/fmt:url">
                 <span tal:replace="dailybuild/recipe/name">
                   recipe
                 </span>
@@ -71,9 +66,13 @@
               </td>
 
               <td>
-                <tal:archive replace="structure
-                                      dailybuild/archive/displayname">
-                  archive
+                <tal:archivelink tal:condition="dailybuild/archive/is_ppa"
+                              replace="structure dailybuild/archive/fmt:link">
+                  archive link
+                </tal:archivelink>
+                <tal:archive tal:condition="not:dailybuild/archive/is_ppa"
+                              replace="structure dailybuild/archive/displayname">
+                  archive name
                 </tal:archive>
               </td>
 

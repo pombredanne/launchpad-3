@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import collections
 import datetime
 
 from zope.component._api import getUtility
@@ -13,13 +14,16 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.code.model.recipebuild import RecipeBuildRecord
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     BrowserTestCase,
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view
+    )
 
 
 class RecipeBuildsTestMixin:
@@ -39,7 +43,12 @@ class RecipeBuildsTestMixin:
                     owner=recipeowner,
                     name=sourcepackagename.name,
                     distroseries=distroseries)
-                archive = self.factory.makeArchive()
+                # Ensure we have both ppa and primary archives
+                if x%2 == 0:
+                    purpose = ArchivePurpose.PPA
+                else:
+                    purpose = ArchivePurpose.PRIMARY
+                archive = self.factory.makeArchive(purpose=purpose)
                 sprb = self.factory.makeSourcePackageRecipeBuild(
                     status = BuildStatus.FULLYBUILT,
                     requester=recipeowner,
@@ -58,6 +67,16 @@ class RecipeBuildsTestMixin:
                         status = BuildStatus.FULLYBUILT)
                 bfj = self.factory.makeSourcePackageRecipeBuildJob(
                         recipe_build = sprb)
+
+#                RecipeBuildRec = collections.namedtuple(
+#                    'lp_code_model_recipebuild_RecipeBuildRec',
+#                    'sourcepackage, recipeowner, recipe, archive, most_recent_build_time')
+#
+#                rbr = RecipeBuildRec(
+#                    sourcepackage, recipeowner,
+#                    recipe, archive,
+#                    bfj.job.date_finished)
+                
                 rbr = RecipeBuildRecord(
                     sourcepackage, recipeowner,
                     recipe, archive,
@@ -77,11 +96,11 @@ class TestRecipeBuildView(TestCaseWithFactory, RecipeBuildsTestMixin):
         self.root = getUtility(IRecipeBuildRecordSet)
 
     def test_recipebuildrecords(self):
-        records = self._makeRecipeBuildRecords(15)
-        login_person(self.user)
-        view = create_initialized_view(self.root, "+daily-builds",
-                                  rootsite='code')
-        self.assertEqual(set(records), set(view.dailybuilds))
+        records = self._makeRecipeBuildRecords(5)
+        with person_logged_in(self.user):
+            view = create_initialized_view(self.root, "+daily-builds",
+                                      rootsite='code')
+            self.assertEqual(set(records), set(view.dailybuilds))
 
 
 class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
@@ -90,12 +109,25 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
+        #self.user = self.factory.makePerson()
+        self.user = getUtility(IPersonSet).getByName("name12")
 
     def test_recipebuild_listing(self):
-        self._makeRecipeBuildRecords(1)
-        text = self.getMainText(
-            getUtility(IRecipeBuildRecordSet), '+daily-builds')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Completed Daily Recipe Builds
-            Source Package   Recipe   Recipe   Owner   Archive   Most Recent Build Time
-            generic-string.*""", text)
+        self._makeRecipeBuildRecords(15)
+        with person_logged_in(self.user):
+            text = self.getMainText(
+                getUtility(IRecipeBuildRecordSet), '+daily-builds')
+            self.assertTextMatchesExpressionIgnoreWhitespace("""
+                Completed Daily Recipe Builds
+                .*
+                Source Package
+                Recipe
+                Recipe Owner
+                Archive
+                Most Recent Build Time
+                .*
+                generic-string.*
+                generic-string.*
+                Person-name.*
+                """, text)
+            

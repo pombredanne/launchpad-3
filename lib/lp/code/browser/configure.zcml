@@ -68,21 +68,6 @@
 
 </facet>
 
-    <facet
-        facet="branches">
-        <browser:defaultView
-        for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
-        name="+daily-builds"/>
-      <browser:page
-          for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
-          layer="lp.code.publisher.CodeLayer"
-          name="+daily-builds"
-          class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
-          template="../templates/daily-builds-listing.pt"
-          permission="zope.Public"
-          />
-    </facet>
-
     <browser:url
         for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
         path_expression="string:+review/${id}"
@@ -163,6 +148,27 @@
             name="+index"
             template="../templates/bazaar-index.pt"/>
     </browser:pages>
+
+    <facet
+        facet="branches">
+        <browser:url
+            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
+            path_expression="string:+daily-builds"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+            rootsite="code"/>
+        <browser:defaultView
+            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
+            name="+daily-builds"
+            layer="lp.code.publisher.CodeLayer"/>
+        <browser:page
+            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
+            layer="lp.code.publisher.CodeLayer"
+            name="+daily-builds"
+            class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
+            template="../templates/daily-builds-listing.pt"
+            permission="zope.Public"/>
+    </facet>
+
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         layer="lp.code.publisher.CodeLayer"

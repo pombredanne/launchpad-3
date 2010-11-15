@@ -23,6 +23,4 @@ class CompletedDailyBuildsView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         self.dailybuilds = self.context.findCompletedDailyBuilds()
-        self.batchnav = BatchNavigator(
-            self.dailybuilds, self.request,
-            size=config.launchpad.recipebuildlisting_batch_size)
+        self.batchnav = BatchNavigator(self.dailybuilds, self.request)

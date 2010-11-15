@@ -10,7 +10,7 @@ __all__ = [
     'RecipeBuildRecordSet',
     ]
 
-from contextlib import contextmanager
+import collections
 
 from storm.expr import (
     compile,
@@ -20,15 +20,18 @@ from storm.expr import (
     Max,
     Select)
 from storm import Undef
-from storm.store import ResultSet
 
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
+    SLAVE_FLAVOR,
     )
 
 from lp.code.interfaces.recipebuild import (
@@ -78,17 +81,6 @@ class RecipeBuildRecord():
             % (self.recipe, self.sourcepackage, self.archive))
 
 
-@contextmanager
-def user_result_set(store, user_result_set):
-    """ Allow a user specified ResultSet to be used with a Storm Store."""
-    orig_resultset_factory = store._result_set_factory
-    store._result_set_factory = user_result_set
-    try:
-        yield
-    finally:
-        store._result_set_factory = orig_resultset_factory
-
-
 class RecipeBuildRecordSet:
     """See `IRecipeBuildRecordSet`."""
 
@@ -125,31 +117,52 @@ class RecipeBuildRecordSet:
                  PackageBuild.build_farm_job_id),
         ]
 
-        with user_result_set(store, RecipeBuildRecordResultSet):
-            store._result_set_factory = RecipeBuildRecordResultSet
-            result_set = store.using(*tables).find(
-                    (SourcePackageName.id,
-                        Person.id,
-                        SourcePackageRecipeBuild.id,
-                        Archive.id,
-                        Max(BuildFarmJob.date_finished),
-                        ),
-                    BuildFarmJob.status == BuildStatus.FULLYBUILT,
-                    SourcePackageRecipe.build_daily,
-                ).group_by(
-                    SourcePackageName.id,
-                    Person.id,
-                    SourcePackageRecipeBuild.id,
-                    Archive.id,
-                ).order_by(
-                    SourcePackageName.id,
-                    Person.id,
-                    SourcePackageRecipeBuild.id,
-                    Archive.id,
-                    )
-            return result_set
+        def _makeRecipeBuildRecord(values):
+            (sourcepackagename, recipeowner, recipe_build, archive,
+                date_finished) = values
+            sp_factory = getUtility(ISourcePackageFactory)
+            sourcepackage = sp_factory.new(sourcepackagename,
+                                           recipe_build.distroseries)
 
+#            RecipeBuildRec = collections.namedtuple(
+#                'lp_code_model_recipebuild_RecipeBuildRec',
+#                'sourcepackage, recipeowner, recipe, archive, most_recent_build_time')
+#
+#            return RecipeBuildRec(
+#                sourcepackage, recipeowner,
+#                recipe_build.recipe, archive,
+#                date_finished)
 
+            return RecipeBuildRecord(
+                sourcepackage, recipeowner,
+                recipe_build.recipe, archive,
+                date_finished)
+        
+        result_set = store.using(*tables).find(
+                (SourcePackageName,
+                    Person,
+                    SourcePackageRecipeBuild,
+                    Archive,
+                    Max(BuildFarmJob.date_finished),
+                    ),
+                BuildFarmJob.status == BuildStatus.FULLYBUILT,
+                SourcePackageRecipe.build_daily,
+            ).group_by(
+                SourcePackageName,
+                Person,
+                SourcePackageRecipeBuild,
+                Archive,
+            ).order_by(
+                SourcePackageName.name,
+                Person.name,
+                Archive.name,
+                )
+        return RecipeBuildRecordResultSet(
+            result_set, _makeRecipeBuildRecord)
+
+# XXX: wallyworld Nov 2010
+# storm's Count() implementation is broken for distinct
+# see bug 675377
 class CountDistinct(Expr):
     __slots__ = ("columns")
 
@@ -165,7 +178,7 @@ def compile_countdistinct(compile, countselect, state):
     return "count(distinct(%s))" % col
 
 
-class RecipeBuildRecordResultSet(ResultSet):
+class RecipeBuildRecordResultSet(DecoratedResultSet):
 
     count_columns = (
         SourcePackageName.id,
@@ -175,29 +188,13 @@ class RecipeBuildRecordResultSet(ResultSet):
     )
 
     def count(self, expr=Undef, distinct=True):
+        """This count() knows how to handle result sets with group by."""
+
         # We don't support distinct=False for this result set
         select = Select(
             columns=CountDistinct(self.count_columns),
-            tables = self._tables,
-            where = self._where,
+            tables = self.result_set._tables,
+            where = self.result_set._where,
             )
-        result = self._store.execute(select)
+        result = self.result_set._store.execute(select)
         return result.get_one()[0]
-
-    def _load_objects(self, result, values):
-        values = super(
-           RecipeBuildRecordResultSet, self)._load_objects(result, values)
-        return self._makeRecipeBuildRecord(*values)
-
-    def _makeRecipeBuildRecord(self, *values):
-        recipeowner = self._store.get(Person, values[1])
-        recipe_build = self._store.get(SourcePackageRecipeBuild, values[2])
-        archive = self._store.get(Archive, values[3])
-        sourcepackagename = self._store.get(SourcePackageName, values[0])
-        sp_factory = getUtility(ISourcePackageFactory)
-        sourcepackage = sp_factory.new(sourcepackagename,
-                                       recipe_build.distroseries)
-        return RecipeBuildRecord(
-            sourcepackage, recipeowner,
-            recipe_build.recipe, archive,
-            values[4])
