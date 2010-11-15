@@ -14,6 +14,8 @@ __all__ = [
 import os
 import tempfile
 
+from twisted.internet import defer
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -77,12 +79,12 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """Read tarball with generated translation templates from slave."""
         if filemap is None:
             logger.error("Slave returned no filemap.")
-            return None
+            return defer.succeed(None)
 
         slave_filename = filemap.get(self.templates_tarball_path)
         if slave_filename is None:
             logger.error("Did not find templates tarball in slave output.")
-            return None
+            return defer.succeed(None)
 
         slave = removeSecurityProxy(buildqueue.builder.slave)
 
@@ -135,11 +137,15 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # Please make addOrUpdateEntriesFromTarball() take files on
             # disk; reading arbitrarily sized files into memory is
             # dangerous.
+            if filename is None:
+                logger.error("Build produced no tarball.")
+                return
+
             tarball_file = open(filename)
-            tarball = tarball_file.read()
             try:
+                tarball = tarball_file.read()
                 if tarball is None:
-                    logger.error("Build produced no tarball.")
+                    logger.error("Build produced empty tarball.")
                 else:
                     logger.debug("Uploading translation templates tarball.")
                     self._uploadTarball(
@@ -153,7 +159,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
             d = self._readTarball(queue_item, filemap, logger)
-            return d.addCallback(got_tarball).addCallback(clean_slave)
+            d.addCallback(got_tarball)
+            d.addCallback(clean_slave)
+            return d
 
         return clean_slave(None)
 
