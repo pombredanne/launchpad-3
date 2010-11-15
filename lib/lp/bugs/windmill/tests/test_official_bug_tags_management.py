@@ -43,7 +43,8 @@ class TestOfficialBugTags(WindmillTestCase):
 
         client.asserts.assertElemJS(
             id=u'official-tags-list',
-            js=u'element.childNodes.length == 0')
+            js=u'element.childNodes.length == 0',
+            timeout=constants.FOR_ELEMENT)
 
     # The save button is disabled initially, since there's nothing to change.
 
