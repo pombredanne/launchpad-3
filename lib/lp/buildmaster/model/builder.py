@@ -189,7 +189,9 @@ class BuilderSlave(object):
             errback with the error string.
         """
         file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
-        # XXX set timeout= ???
+        # If desired we can pass a param "timeout" here but let's leave
+        # it at the default value if it becomes obvious we need to
+        # change it.
         return downloadPage(file_url, file_to_write, followRedirect=0)
 
     def getFiles(self, filemap):
@@ -626,8 +628,6 @@ class Builder(SQLBase):
 
             return library_file.id
 
-        # XXX: there was no error handling in the old code, what should
-        # we do in an errback here?
         d = self.slave.getFile(file_sha1, out_file)
         d.addCallback(got_file, filename, out_file, out_file_name)
         return d

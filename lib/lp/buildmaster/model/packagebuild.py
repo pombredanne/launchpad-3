@@ -279,7 +279,8 @@ class PackageBuildDerived:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
             return
-        return method(librarian, slave_status, logger)
+        d = method(librarian, slave_status, logger)
+        return d
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
@@ -333,9 +334,6 @@ class PackageBuildDerived:
                     "for the build %d." % (filename, self.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
-            #out_file = open(out_file_name, "wb")
-            #slave_file = slave.getFile(filemap[filename])
-            #copy_and_close(slave_file, out_file)
 
         def build_info_stored(ignored):
             # We only attempt the upload if we successfully copied all the
