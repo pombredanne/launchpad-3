@@ -8,9 +8,13 @@ __all__ = ['StructuralSubscription',
 from sqlobject import ForeignKey
 from storm.expr import (
     And,
+    In,
+    Intersect,
     LeftJoin,
     Or,
+    Select,
     SQL,
+    Union,
     )
 from storm.store import Store
 from zope.component import (
@@ -470,7 +474,7 @@ class StructuralSubscriptionTargetMixin:
                     return True
         return False
 
-    def getSubscriptionsForBugTask(self, bugtask, level):
+    def XXXgetSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
         origin = [
             StructuralSubscription,
@@ -562,3 +566,78 @@ class StructuralSubscriptionTargetMixin:
 
         return Store.of(self.__helper.pillar).using(*origin).find(
             StructuralSubscription, self.__helper.join, *conditions)
+
+    def getSubscriptionsForBugTask(self, bugtask, level):
+        """See `IStructuralSubscriptionTarget`."""
+        conditions = [
+            StructuralSubscription.bug_notification_level >= level,
+            self.__helper.join,
+            ]
+
+        # if len(bugtask.bug.tags) == 0:
+        #     conditions.append(
+        #         BugSubscriptionFilter.include_any_tags == False)
+        # else:
+        #     conditions.append(
+        #         BugSubscriptionFilter.exclude_any_tags == False)
+
+        sets = [
+            subscriptions_matching_status(bugtask, *conditions),
+            subscriptions_matching_importance(bugtask, *conditions),
+            ]
+
+        query = Union(
+            subscriptions_without_filters(*conditions),
+            Intersect(*sets))
+
+        return Store.of(self.__helper.pillar).find(
+            StructuralSubscription, In(StructuralSubscription.id, query))
+
+
+def subscriptions_without_filters(*conditions):
+    """Match subscriptions without filters."""
+    return Select(
+        StructuralSubscription.id,
+        tables=(
+            StructuralSubscription,
+            LeftJoin(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.structural_subscription_id == (
+                    StructuralSubscription.id))),
+        where=And(
+            BugSubscriptionFilter.id == None,
+            *conditions))
+
+
+def subscriptions_matching_x(join, *conditions):
+    return Select(
+        StructuralSubscription.id,
+        tables=(StructuralSubscription, BugSubscriptionFilter, join),
+        where=And(
+            BugSubscriptionFilter.structural_subscription_id == (
+                StructuralSubscription.id),
+            *conditions))
+
+
+def subscriptions_matching_status(bugtask, *conditions):
+    """Match subscriptions with the given bugtask's status."""
+    join = LeftJoin(
+        BugSubscriptionFilterStatus,
+        BugSubscriptionFilterStatus.filter_id == (
+            BugSubscriptionFilter.id))
+    condition = Or(
+        BugSubscriptionFilterStatus.id == None,
+        BugSubscriptionFilterStatus.status == bugtask.status)
+    return subscriptions_matching_x(join, condition, *conditions)
+
+
+def subscriptions_matching_importance(bugtask, *conditions):
+    """Match subscriptions with the given bugtask's importance."""
+    join = LeftJoin(
+        BugSubscriptionFilterImportance,
+        BugSubscriptionFilterImportance.filter_id == (
+            BugSubscriptionFilter.id))
+    condition = Or(
+        BugSubscriptionFilterImportance.id == None,
+        BugSubscriptionFilterImportance.importance == bugtask.importance)
+    return subscriptions_matching_x(join, condition, *conditions)
