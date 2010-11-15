@@ -10,9 +10,11 @@ from itertools import chain
 from sqlobject import ForeignKey
 from storm.expr import (
     And,
+    Except,
     In,
     Intersect,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
@@ -590,20 +592,19 @@ class StructuralSubscriptionTargetMixin:
             # The subscription's excluded tags can be anything so no condition
             # is needed.
         else:
-            # The bug's tags must contain the subscription's required tags
-            # if find_all_tags is set, else there must be an intersection.
-            # Or(tags_include_is_empty,
-            #    tags_find_all_combinator(
-            #         "%s @> %s" % (tags_array, tags_include_array),
-            #         "%s && %s" % (tags_array, tags_include_array))),
-            # The bug's tags must not contain the subscription's excluded
-            # tags if find_all_tags is set, else there must not be an
-            # intersection.
-            # Or(tags_exclude_is_empty,
-            #    tags_find_all_combinator(
-            #         "NOT (%s @> %s)" % (tags_array, tags_exclude_array),
-            #         "NOT (%s && %s)" % (tags_array, tags_exclude_array))),
-            pass
+            # !find_all_tags and (
+            #   (where the filter's required tags correspond to any of the
+            #    bug's tags OR
+            #    where the filter has no required tags)
+            #   except
+            #   (where the filter's excluded tags correspond to any of the
+            #    bug's tags)
+            # )
+            filter_sets.append(
+                Except(
+                    Union(set_builder.subscriptions_tags_include_empty,
+                          set_builder.subscriptions_tags_include_match_any),
+                    set_builder.subscriptions_tags_exclude_match_any))
 
         query = Union(
             set_builder.subscriptions_without_filters,
@@ -628,6 +629,8 @@ class FilterSetBuilder:
             self.filter_conditions = [
                 BugSubscriptionFilter.exclude_any_tags == False,
                 ]
+        # This gets around some weirdness with security proxies.
+        self.tags = list(self.bugtask.bug.tags)
 
     @property
     def subscriptions_without_filters(self):
@@ -684,15 +687,35 @@ class FilterSetBuilder:
     def subscriptions_tags_include_empty(self):
         join = LeftJoin(
             BugSubscriptionFilterTag,
-            BugSubscriptionFilterTag.filter_id == (
-                BugSubscriptionFilter.id))
-        condition = BugSubscriptionFilterTag.id == None
+            And(BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                BugSubscriptionFilterTag.include))
+        condition = And(
+            Not(BugSubscriptionFilter.find_all_tags),
+            BugSubscriptionFilterTag.id == None)
         return self.subscriptions_matching_x(join, condition)
 
-    def subscriptions_matching_tag(self, tag):
+    @property
+    def subscriptions_tags_include_match_any(self):
         join = LeftJoin(
             BugSubscriptionFilterTag,
-            BugSubscriptionFilterTag.filter_id == (
-                BugSubscriptionFilter.id))
-        condition = BugSubscriptionFilterTag.tag == tag
+            And(BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                BugSubscriptionFilterTag.include))
+        condition = And(
+            Not(BugSubscriptionFilter.find_all_tags),
+            BugSubscriptionFilterTag.include,
+            In(BugSubscriptionFilterTag.tag, self.tags))
+        return self.subscriptions_matching_x(join, condition)
+
+    @property
+    def subscriptions_tags_exclude_match_any(self):
+        join = LeftJoin(
+            BugSubscriptionFilterTag,
+            And(BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                Not(BugSubscriptionFilterTag.include)))
+        condition = And(
+            Not(BugSubscriptionFilter.find_all_tags),
+            In(BugSubscriptionFilterTag.tag, self.tags))
         return self.subscriptions_matching_x(join, condition)
