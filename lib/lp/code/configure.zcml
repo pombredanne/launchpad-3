@@ -1012,8 +1012,7 @@
   </securedutility>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
-    <require permission="launchpad.AnyPerson"
-             interface="lp.code.interfaces.recipebuild.IRecipeBuildRecord"/>
+    <allow interface="lp.code.interfaces.recipebuild.IRecipeBuildRecord"/>
   </class>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">

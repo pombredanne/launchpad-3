@@ -692,11 +692,11 @@ class BrowserTestCase(TestCaseWithFactory):
         else:
             return self.getUserBrowser(url, self.user)
 
-    def getMainText(self, context, view_name=None):
+    def getMainText(self, context, view_name=None, no_login=False):
         """Return the main text of a context's page."""
         from canonical.launchpad.testing.pages import (
             extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
+        browser = self.getViewBrowser(context, view_name, no_login=no_login)
         return extract_text(find_main_content(browser.contents))
 
 
