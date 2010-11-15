@@ -81,7 +81,7 @@
   </div>
   <div class="yui-g">
     <div class="portlet">
-      <h2>Build records</h2>
+      <h2>Latest builds</h2>
         <table class="listing" style='margin-bottom: 1em;'>
           <thead>
             <tr>
@@ -93,13 +93,15 @@
           </thead>
           <tbody>
             <tr tal:repeat="build view/builds">
+              <tal:build-view define="buildview nocall:build/@@+index">
               <td>
-                <a tal:content="build/@@+index/status"
+                <span tal:replace="structure build/image:icon" />
+                <a tal:content="buildview/status"
                    tal:attributes="href build/fmt:url"></a>
               </td>
               <td>
-                <tal:date replace="build/@@+index/date/fmt:displaydate" />
-                <tal:estimate condition="build/@@+index/estimate">
+                <tal:date replace="buildview/date/fmt:displaydate" />
+                <tal:estimate condition="buildview/estimate">
                 (estimated)
                 </tal:estimate>
               </td>
@@ -110,6 +112,7 @@
               <td>
                 <tal:archive replace="structure build/archive/fmt:link"/>
               </td>
+              </tal:build-view>
             </tr>
           </tbody>
         </table>

@@ -71,7 +71,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -80,6 +79,17 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+
+
+def make_publisher():
+    """Make a test publisher.
+
+    Exists only to work around circular import problems. When the
+    canonical/launchpad/database/__init__.py globs go away, this can probably
+    go away too.
+    """
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class TestBuilder(TestCaseWithFactory):
@@ -120,18 +130,21 @@ class TestBuilder(TestCaseWithFactory):
         self.assertIs(None, bq)
 
 
-class TestBuilderWithTrial(TrialTestCase):
+class TestBuilderWithTrialBase(TrialTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBuilderWithTrial, self)
+        super(TestBuilderWithTrialBase, self)
         self.slave_helper = SlaveTestHelpers()
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
         self.factory = LaunchpadObjectFactory()
         login_as(ANONYMOUS)
         self.addCleanup(logout)
+
+
+class TestBuilderWithTrial(TestBuilderWithTrialBase):
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -191,9 +204,7 @@ class TestBuilderWithTrial(TrialTestCase):
         d = builder.handleTimeout(QuietFakeLogger(), 'blah')
         return self.assertFailure(d, CannotResumeHost)
 
-    def _setupRecipeBuildAndBuilder(self):
-        # Helper function to make a builder capable of building a
-        # recipe, returning both.
+    def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
@@ -205,8 +216,22 @@ class TestBuilderWithTrial(TrialTestCase):
         chroot = self.factory.makeLibraryFileAlias()
         das.addOrUpdateChroot(chroot)
         distroseries.nominatedarchindep = das
+        return builder, distroseries, das
+
+    def _setupRecipeBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # recipe, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
         build = self.factory.makeSourcePackageRecipeBuild(
             distroseries=distroseries)
+        return builder, build
+
+    def _setupBinaryBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # binary package, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroarchseries, builder=builder)
         return builder, build
 
     def test_findAndStartJob_returns_candidate(self):
@@ -311,8 +336,34 @@ class TestBuilderWithTrial(TrialTestCase):
             self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
 
+    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
+        # See bug 671242
+        # When a job is destroyed, the builder's behaviour should be reset
+        # too so that we don't traceback when the wrong behaviour tries
+        # to access a non-existent job.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        building_slave = BuildingSlave()
+        builder.setSlaveForTesting(building_slave)
+        candidate.markAsBuilding(builder)
 
-class TestBuilderSlaveStatus(TestBuilderWithTrial):
+        # At this point we should see a valid behaviour on the builder:
+        self.assertNotIdentical(
+            IdleBuildBehavior, builder.current_build_behavior)
+
+        # Now reset the job and try to rescue the builder.
+        candidate.destroySelf()
+        self.layer.txn.commit()
+        builder = getUtility(IBuilderSet)[builder.name]
+        d = builder.rescueIfLost()
+        def check_builder(ignored):
+            self.assertIsInstance(
+                removeSecurityProxy(builder.current_build_behavior),
+                IdleBuildBehavior)
+        return d.addCallback(check_builder)
+
+
+class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
 
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
@@ -392,7 +443,7 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidateBase, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         # Create some i386 builders ready to build PPA builds.  Two
@@ -465,7 +516,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidatePPAWithSingleBuilder, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         self.bob_builder = getUtility(IBuilderSet)['bob']
@@ -727,7 +778,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.builder = self.factory.makeBuilder(name='builder')
 
         # Have a publisher and a ppa handy for some of the tests below.
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
 

@@ -13,6 +13,7 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
+    'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
     'UserCannotChangeMembershipSilently',
@@ -119,4 +120,10 @@ class TeamMembershipTransitionError(ValueError):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class PPACreationError(Exception):
+    """Raised when there is an issue creating a new PPA."""
+
     webservice_error(httplib.BAD_REQUEST)
