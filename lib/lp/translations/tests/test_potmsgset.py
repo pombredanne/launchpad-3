@@ -24,7 +24,6 @@ from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
@@ -723,11 +722,6 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         self.assertEqual(rosetta_experts, current.submitter)
-
-    def test_getCurrentTranslation_basic(self):
-        # Test that getCurrentTranslation returns a current translation.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        
 
 
 class TestPOTMsgSetSuggestions(TestCaseWithFactory):
@@ -1734,7 +1728,8 @@ class BaseTestGetCurrentTranslation(object):
         # getCurrentTranslation gets the current translation
         # for a message.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-        translations = { 0: self.factory.getUniqueString('translation') }
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
         origin = RosettaTranslationOrigin.SCM
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
@@ -1758,7 +1753,8 @@ class BaseTestGetCurrentTranslation(object):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
         pofile_other_language = self.factory.makePOFile(
             potemplate=pofile.potemplate)
-        translations = { 0: self.factory.getUniqueString('translation') }
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
         origin = RosettaTranslationOrigin.SCM
         message = potmsgset.setCurrentTranslation(
             pofile_other_language, pofile.potemplate.owner,
@@ -1775,7 +1771,8 @@ class BaseTestGetCurrentTranslation(object):
         pofile_other = self._makeOtherPOFile(pofile, potmsgset)
 
         # Create a diverged translation in pofile_other.
-        translations = { 0: self.factory.getUniqueString('translation') }
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
         suggestion = potmsgset.submitSuggestion(
             pofile_other, pofile_other.potemplate.owner, translations)
         suggestion.approveAsDiverged(
@@ -1793,9 +1790,9 @@ class BaseTestGetCurrentTranslation(object):
 
         # Create current translations in 'pofile' and 'pofile_other'.
         translations_here = {
-            0: self.factory.getUniqueString('here') }
+            0: self.factory.getUniqueString('here'), }
         translations_other = {
-            0: self.factory.getUniqueString('other') }
+            0: self.factory.getUniqueString('other'), }
         origin = RosettaTranslationOrigin.SCM
 
         current_translation = potmsgset.setCurrentTranslation(
@@ -1820,8 +1817,10 @@ class BaseTestGetCurrentTranslation(object):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
 
         # Create both a shared and a diverged translation in pofile.
-        translations_shared = { 0: self.factory.getUniqueString('shared') }
-        translations_diverged = { 0: self.factory.getUniqueString('diverged') }
+        translations_shared = {
+            0: self.factory.getUniqueString('shared'), }
+        translations_diverged = {
+            0: self.factory.getUniqueString('diverged'), }
         origin = RosettaTranslationOrigin.SCM
         shared_message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations_shared, origin)
@@ -1839,8 +1838,10 @@ class BaseTestGetCurrentTranslation(object):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
 
         # Create both a shared and a diverged translation in pofile.
-        translations_shared = { 0: self.factory.getUniqueString('shared') }
-        translations_diverged = { 0: self.factory.getUniqueString('diverged') }
+        translations_shared = {
+            0: self.factory.getUniqueString('shared'), }
+        translations_diverged = {
+            0: self.factory.getUniqueString('diverged'), }
         origin = RosettaTranslationOrigin.SCM
         shared_message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations_shared, origin)
@@ -1856,6 +1857,7 @@ class BaseTestGetCurrentTranslation(object):
 class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
                                             TestCaseWithFactory):
     """getCurrentTranslation working on an upstream POFile."""
+
     def setUp(self):
         super(TestGetCurrentTranslationForUpstreams, self).setUp(
             'carlos@canonical.com')
@@ -1882,6 +1884,7 @@ class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
 class TestGetCurrentTranslationForUbuntu(BaseTestGetCurrentTranslation,
                                          TestCaseWithFactory):
     """getCurrentTranslation working on an Ubuntu POFile."""
+
     def setUp(self):
         super(TestGetCurrentTranslationForUbuntu, self).setUp(
             'carlos@canonical.com')
