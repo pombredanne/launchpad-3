@@ -184,6 +184,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
+        # TODO Stormify this while we're working on this crap.
+
         # XXX j.c.sackett 2010-08-30 bug=627631: Once data migration has
         # happened for the usage enums, this sql needs to be updated to
         # check for the translations_usage, not official_rosetta.  At that
