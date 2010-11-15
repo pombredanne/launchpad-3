@@ -5,6 +5,8 @@ __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
+from itertools import chain
+
 from sqlobject import ForeignKey
 from storm.expr import (
     And,
@@ -39,6 +41,7 @@ from lp.bugs.model.bugsubscriptionfilterimportance import (
 from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
+from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.errors import (
     DeleteSubscriptionError,
@@ -569,76 +572,104 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        conditions = [
+        base_conditions = [
             StructuralSubscription.bug_notification_level >= level,
             self.__helper.join,
             ]
 
-        filter_conditions = list(conditions)
-        if len(bugtask.bug.tags) == 0:
-            filter_conditions.append(
-                BugSubscriptionFilter.include_any_tags == False)
-        else:
-            filter_conditions.append(
-                BugSubscriptionFilter.exclude_any_tags == False)
-
+        set_builder = FilterSetBuilder(bugtask, base_conditions)
         filter_sets = [
-            subscriptions_matching_status(bugtask, *filter_conditions),
-            subscriptions_matching_importance(bugtask, *filter_conditions),
+            set_builder.subscriptions_matching_status,
+            set_builder.subscriptions_matching_importance,
             ]
-
         query = Union(
-            subscriptions_without_filters(*conditions),
+            set_builder.subscriptions_without_filters,
             Intersect(*filter_sets))
 
         return Store.of(self.__helper.pillar).find(
             StructuralSubscription, In(StructuralSubscription.id, query))
 
 
-def subscriptions_without_filters(*conditions):
-    """Match subscriptions without filters."""
-    return Select(
-        StructuralSubscription.id,
-        tables=(
-            StructuralSubscription,
-            LeftJoin(
-                BugSubscriptionFilter,
+class FilterSetBuilder:
+    """A convenience class to build queries for getSubscriptionsForBugTask."""
+
+    def __init__(self, bugtask, base_conditions):
+        self.bugtask = bugtask
+        self.base_conditions = base_conditions
+        # Set up common filter conditions.
+        if len(bugtask.bug.tags) == 0:
+            self.filter_conditions = [
+                BugSubscriptionFilter.include_any_tags == False,
+                ]
+        else:
+            self.filter_conditions = [
+                BugSubscriptionFilter.exclude_any_tags == False,
+                ]
+
+    @property
+    def subscriptions_without_filters(self):
+        """Match subscriptions without filters."""
+        return Select(
+            StructuralSubscription.id,
+            tables=(
+                StructuralSubscription,
+                LeftJoin(
+                    BugSubscriptionFilter,
+                    BugSubscriptionFilter.structural_subscription_id == (
+                        StructuralSubscription.id))),
+            where=And(
+                BugSubscriptionFilter.id == None,
+                *self.base_conditions))
+
+    def subscriptions_matching_x(self, join, *extra_conditions):
+        conditions = chain(
+            self.base_conditions, self.filter_conditions, extra_conditions)
+        return Select(
+            StructuralSubscription.id,
+            tables=(StructuralSubscription, BugSubscriptionFilter, join),
+            where=And(
                 BugSubscriptionFilter.structural_subscription_id == (
-                    StructuralSubscription.id))),
-        where=And(
-            BugSubscriptionFilter.id == None,
-            *conditions))
+                    StructuralSubscription.id),
+                *conditions))
 
+    @property
+    def subscriptions_matching_status(self):
+        """Match subscriptions with the given bugtask's status."""
+        join = LeftJoin(
+            BugSubscriptionFilterStatus,
+            BugSubscriptionFilterStatus.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = Or(
+            BugSubscriptionFilterStatus.id == None,
+            BugSubscriptionFilterStatus.status == self.bugtask.status)
+        return self.subscriptions_matching_x(join, condition)
 
-def subscriptions_matching_x(join, *conditions):
-    return Select(
-        StructuralSubscription.id,
-        tables=(StructuralSubscription, BugSubscriptionFilter, join),
-        where=And(
-            BugSubscriptionFilter.structural_subscription_id == (
-                StructuralSubscription.id),
-            *conditions))
+    @property
+    def subscriptions_matching_importance(self):
+        """Match subscriptions with the given bugtask's importance."""
+        join = LeftJoin(
+            BugSubscriptionFilterImportance,
+            BugSubscriptionFilterImportance.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = Or(
+            BugSubscriptionFilterImportance.id == None,
+            BugSubscriptionFilterImportance.importance == (
+                self.bugtask.importance))
+        return self.subscriptions_matching_x(join, condition)
 
+    @property
+    def subscriptions_tags_include_empty(self):
+        join = LeftJoin(
+            BugSubscriptionFilterTag,
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = BugSubscriptionFilterTag.id == None
+        return self.subscriptions_matching_x(join, condition)
 
-def subscriptions_matching_status(bugtask, *conditions):
-    """Match subscriptions with the given bugtask's status."""
-    join = LeftJoin(
-        BugSubscriptionFilterStatus,
-        BugSubscriptionFilterStatus.filter_id == (
-            BugSubscriptionFilter.id))
-    condition = Or(
-        BugSubscriptionFilterStatus.id == None,
-        BugSubscriptionFilterStatus.status == bugtask.status)
-    return subscriptions_matching_x(join, condition, *conditions)
-
-
-def subscriptions_matching_importance(bugtask, *conditions):
-    """Match subscriptions with the given bugtask's importance."""
-    join = LeftJoin(
-        BugSubscriptionFilterImportance,
-        BugSubscriptionFilterImportance.filter_id == (
-            BugSubscriptionFilter.id))
-    condition = Or(
-        BugSubscriptionFilterImportance.id == None,
-        BugSubscriptionFilterImportance.importance == bugtask.importance)
-    return subscriptions_matching_x(join, condition, *conditions)
+    def subscriptions_matching_tag(self, tag):
+        join = LeftJoin(
+            BugSubscriptionFilterTag,
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id))
+        condition = BugSubscriptionFilterTag.tag == tag
+        return self.subscriptions_matching_x(join, condition)
