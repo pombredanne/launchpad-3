@@ -194,13 +194,16 @@ class TestOfficialBugTags(WindmillTestCase):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-            a_new_tag)
+            a_new_tag,
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-                  another_new_tag)
+                  another_new_tag,
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertNode(
             xpath=u'//ul[@id="official-tags-list"]/li[@id="tag-%s"]' %
-                  doc_tag)
+                  doc_tag,
+            timeout=constants.FOR_ELEMENT)
 
     # We finish by cleaning after ourselves, to make sure that we leave the
     # database at the same state we found it.
