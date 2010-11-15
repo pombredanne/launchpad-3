@@ -602,9 +602,23 @@ class StructuralSubscriptionTargetMixin:
             # )
             filter_sets.append(
                 Except(
-                    Union(set_builder.subscriptions_tags_include_empty,
+                    Union(set_builder.subscriptions_tags_include_empty_any,
                           set_builder.subscriptions_tags_include_match_any),
                     set_builder.subscriptions_tags_exclude_match_any))
+
+            # find_all_tags and (
+            #   (where the filter's required tags all correspond to the bug's
+            #    tags OR
+            #    where the filter has no required tags)
+            #   except
+            #   (where the filter's excluded tags all correspond to the bug's
+            #    tags)
+            # )
+            # filter_sets.append(
+            #     Except(
+            #         Union(set_builder.subscriptions_tags_include_empty_all,
+            #               set_builder.subscriptions_tags_include_match_all),
+            #         set_builder.subscriptions_tags_exclude_match_all))
 
         query = Union(
             set_builder.subscriptions_without_filters,
@@ -683,17 +697,29 @@ class FilterSetBuilder:
                 self.bugtask.importance))
         return self.subscriptions_matching_x(join, condition)
 
-    @property
-    def subscriptions_tags_include_empty(self):
+    def _subscriptions_tags_include_empty(self, *extra_conditions):
         join = LeftJoin(
             BugSubscriptionFilterTag,
             And(BugSubscriptionFilterTag.filter_id == (
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilterTag.include))
         condition = And(
-            Not(BugSubscriptionFilter.find_all_tags),
-            BugSubscriptionFilterTag.id == None)
+            BugSubscriptionFilterTag.id == None, *extra_conditions)
         return self.subscriptions_matching_x(join, condition)
+
+    @property
+    def subscriptions_tags_include_empty(self):
+        return self._subscriptions_tags_include_empty()
+
+    @property
+    def subscriptions_tags_include_empty_any(self):
+        return self._subscriptions_tags_include_empty(
+            Not(BugSubscriptionFilter.find_all_tags))
+
+    @property
+    def subscriptions_tags_include_empty_all(self):
+        return self._subscriptions_tags_include_empty(
+            BugSubscriptionFilter.find_all_tags)
 
     @property
     def subscriptions_tags_include_match_any(self):
@@ -704,7 +730,6 @@ class FilterSetBuilder:
                 BugSubscriptionFilterTag.include))
         condition = And(
             Not(BugSubscriptionFilter.find_all_tags),
-            BugSubscriptionFilterTag.include,
             In(BugSubscriptionFilterTag.tag, self.tags))
         return self.subscriptions_matching_x(join, condition)
 
