@@ -152,6 +152,12 @@ class OkSlave:
         return self.sendFileToSlave(
             libraryfilealias.content.sha1, libraryfilealias.http_url)
 
+    def getFiles(self, filemap):
+        dl = defer.gatherResults([
+            self.getFile(builder_file, filemap[builder_file])
+            for builder_file in filemap])
+        return dl
+
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
@@ -174,12 +180,6 @@ class BuildingSlave(OkSlave):
             file_to_write.write("This is a build log")
             file_to_write.close()
         return defer.succeed(None)
-
-    def getFiles(self, filemap):
-        dl = defer.gatherResults([
-            self.getFile(builder_file, filemap[builder_file])
-            for builder_file in filemap])
-        return dl
 
 
 class WaitingSlave(OkSlave):
@@ -215,12 +215,6 @@ class WaitingSlave(OkSlave):
             file_to_write.write(content)
             file_to_write.close()
         return defer.succeed(None)
-
-    def getFiles(self, filemap):
-        dl = defer.gatherResults([
-            self.getFile(builder_file, filemap[builder_file])
-            for builder_file in filemap])
-        return dl
 
 
 class AbortingSlave(OkSlave):
