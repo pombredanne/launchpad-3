@@ -13,13 +13,11 @@ __all__ = [
 
 from lazr.delegates import delegates
 from storm.locals import (
-    And,
     Bool,
     Desc,
     Int,
     Reference,
     ReferenceSet,
-    Select,
     Store,
     Storm,
     Unicode,
@@ -199,8 +197,9 @@ class SourcePackageRecipe(Storm):
         store = Store.of(self)
         self.distroseries.clear()
         self._recipe_data.instructions.find().remove()
-        self.getBuilds(pending=True).set(recipe_id=None)
-        self.getBuilds(pending=False).set(recipe_id=None)
+        builds = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self)
+        builds.set(recipe_id=None)
         store.remove(self._recipe_data)
         store.remove(self)
 
@@ -252,15 +251,12 @@ class SourcePackageRecipe(Storm):
             clauses = [BuildFarmJob.date_finished == None]
         else:
             clauses = [BuildFarmJob.date_finished != None]
-        # Use subselect as a workaround for Storm bug #674582.
-        and_clause = And(
-            SourcePackageRecipeBuild.recipe==self,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == BuildFarmJob.id, *clauses)
-        subselect = Select(SourcePackageRecipeBuild.id, and_clause)
         result = Store.of(self).find(
             SourcePackageRecipeBuild,
-            SourcePackageRecipeBuild.id.is_in(subselect))
+            SourcePackageRecipeBuild.recipe==self,
+            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == BuildFarmJob.id,
+            *clauses)
         result.order_by(Desc(BuildFarmJob.date_finished))
         return result
 
