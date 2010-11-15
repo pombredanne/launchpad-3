@@ -1719,29 +1719,8 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
             lock_timestamp=lock_timestamp)
 
 
-class TestGetCurrentTranslation(TestCaseWithFactory):
+class BaseTestGetCurrentTranslation(object):
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestGetCurrentTranslation, self).setUp('carlos@canonical.com')
-        self.this_side = TranslationSide.UPSTREAM
-        self.other_side = TranslationSide.UBUNTU
-
-    def _makePOFileAndPOTMsgSet(self):
-        pofile = self.factory.makePOFile()
-        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
-        return pofile, potmsgset
-
-    def _makeOtherPOFile(self, pofile, potmsgset):
-        sp = self.factory.makeSourcePackage()
-        potemplate = self.factory.makePOTemplate(
-            name=pofile.potemplate.name,
-            distroseries=sp.distroseries,
-            sourcepackagename=sp.sourcepackagename)
-        pofile_other = self.factory.makePOFile(potemplate=potemplate,
-                                               language=pofile.language)
-        potmsgset.setSequence(potemplate, 1)
-        return pofile_other
 
     def test_no_translation(self):
         # getCurrentTranslation returns None when there's no translation.
@@ -1872,6 +1851,56 @@ class TestGetCurrentTranslation(TestCaseWithFactory):
         self.assertEquals(shared_message,
                           potmsgset.getCurrentTranslation(
                               None, pofile.language, self.this_side))
+
+
+class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
+                                            TestCaseWithFactory):
+    def setUp(self):
+        super(TestGetCurrentTranslationForUpstreams, self).setUp(
+            'carlos@canonical.com')
+        self.this_side = TranslationSide.UPSTREAM
+        self.other_side = TranslationSide.UBUNTU
+
+    def _makePOFileAndPOTMsgSet(self):
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeOtherPOFile(self, pofile, potmsgset):
+        sp = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            name=pofile.potemplate.name,
+            distroseries=sp.distroseries,
+            sourcepackagename=sp.sourcepackagename)
+        pofile_other = self.factory.makePOFile(potemplate=potemplate,
+                                               language=pofile.language)
+        potmsgset.setSequence(potemplate, 1)
+        return pofile_other
+
+
+class TestGetCurrentTranslationForUbuntu(BaseTestGetCurrentTranslation,
+                                         TestCaseWithFactory):
+    def setUp(self):
+        super(TestGetCurrentTranslationForUbuntu, self).setUp(
+            'carlos@canonical.com')
+        self.this_side = TranslationSide.UBUNTU
+        self.other_side = TranslationSide.UPSTREAM
+
+    def _makePOFileAndPOTMsgSet(self):
+        sp = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sp.distroseries,
+            sourcepackagename=sp.sourcepackagename)
+        pofile = self.factory.makePOFile(potemplate=potemplate)
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeOtherPOFile(self, pofile, potmsgset):
+        potemplate = self.factory.makePOTemplate(name=pofile.potemplate.name)
+        pofile_other = self.factory.makePOFile(potemplate=potemplate,
+                                               language=pofile.language)
+        potmsgset.setSequence(potemplate, 1)
+        return pofile_other
 
 
 class TestCheckForConflict(TestCaseWithFactory):
