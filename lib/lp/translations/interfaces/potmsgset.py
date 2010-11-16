@@ -145,13 +145,13 @@ class IPOTMsgSet(Interface):
         """
 
     def getCurrentTranslationMessage(potemplate, language):
-        """Returns TranslationMessage marked as current in Ubuntu.
+        """Returns a TranslationMessage marked as being currently used.
 
         Diverged messages are preferred.
         """
 
     def getImportedTranslationMessage(potemplate, language):
-        """Returns a TranslationMessage marked as current upstream.
+        """Returns a TranslationMessage as imported from the package.
 
         Diverged messages are preferred.
         """
