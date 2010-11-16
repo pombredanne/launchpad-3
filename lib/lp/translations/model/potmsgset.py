@@ -327,15 +327,6 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             potemplate, language, current=False)
 
-    def getCurrentTranslation(self, potemplate, language):
-        # XXX JeroenVermeulen 2010-11-16: Stub.  To be replaced with
-        # Danilo's simultaneous work.  If you see both definitions, this
-        # is the one you should drop.
-        """See `IPOTMsgSet`."""
-        traits = getUtility(ITranslationSideTraitsSet).getTraits(
-            potemplate.translation_side)
-        return traits.getCurrentMessage(self, potemplate, language)
-
     def getSharedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
