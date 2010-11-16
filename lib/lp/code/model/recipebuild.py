@@ -30,7 +30,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
-    SLAVE_FLAVOR,
+    MASTER_FLAVOR,
     )
 
 from lp.buildmaster.enums import BuildStatus
@@ -60,7 +60,7 @@ class RecipeBuildRecordSet:
     def findCompletedDailyBuilds(self):
         """See `IRecipeBuildRecordSet`."""
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         tables = [
             SourcePackageRecipe,
             Join(Person,
@@ -143,19 +143,12 @@ def compile_countdistinct(compile, countselect, state):
 
 class RecipeBuildRecordResultSet(DecoratedResultSet):
 
-    count_columns = (
-        SourcePackageName.id,
-        Person.id,
-        SourcePackageRecipeBuild.id,
-        Archive.id,
-    )
-
     def count(self, expr=Undef, distinct=True):
         """This count() knows how to handle result sets with group by."""
 
         # We don't support distinct=False for this result set
         select = Select(
-            columns=CountDistinct(self.count_columns),
+            columns=CountDistinct(self.result_set._group_by),
             tables = self.result_set._tables,
             where = self.result_set._where,
             )
