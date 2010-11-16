@@ -481,42 +481,14 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        base_conditions = And(
-            StructuralSubscription.bug_notification_level >= level,
-            self.__helper.join,
-            )
-
-        set_builder = FilterSetBuilder(bugtask, base_conditions)
-        filter_sets = [
-            set_builder.subscriptions_matching_status,
-            set_builder.subscriptions_matching_importance,
-            ]
-
-        if len(bugtask.bug.tags) == 0:
-            # The subscription's required tags must be an empty set. The
-            # subscription's excluded tags can be anything so no condition is
-            # needed.
-            filter_sets.append(
-                set_builder.subscriptions_tags_include_empty)
-        else:
-            tag_filter_set = Union(
-                Except(
-                    Union(set_builder.subscriptions_tags_include_empty_any,
-                          set_builder.subscriptions_tags_include_match_any),
-                    set_builder.subscriptions_tags_exclude_match_any),
-                Except(
-                    Union(set_builder.subscriptions_tags_include_empty_all,
-                          set_builder.subscriptions_tags_include_match_all),
-                    set_builder.subscriptions_tags_exclude_match_all),
-                )
-            filter_sets.append(tag_filter_set)
-
-        query = Union(
-            set_builder.subscriptions_without_filters,
-            Intersect(*filter_sets))
-
+        set_builder = FilterSetBuilder(
+            bugtask, And(
+                StructuralSubscription.bug_notification_level >= level,
+                self.__helper.join))
         return Store.of(self.__helper.pillar).find(
-            StructuralSubscription, In(StructuralSubscription.id, query))
+            StructuralSubscription, In(
+                StructuralSubscription.id,
+                set_builder.subscriptions_matching))
 
 
 class ArrayAgg(NamedFunc):
@@ -678,3 +650,41 @@ class FilterSetBuilder:
         """Subscriptions excluding the bug's tags."""
         return self._subscriptions_tags_match_all(
             Not(BugSubscriptionFilterTag.include))
+
+    @property
+    def subscriptions_tags_include(self):
+        """Subscriptions with tag filters including the bug."""
+        return Union(
+            self.subscriptions_tags_include_empty,
+            self.subscriptions_tags_include_match_any,
+            self.subscriptions_tags_include_match_all)
+
+    @property
+    def subscriptions_tags_exclude(self):
+        """Subscriptions with tag filters excluding the bug."""
+        return Union(
+            self.subscriptions_tags_exclude_match_any,
+            self.subscriptions_tags_exclude_match_all)
+
+    @property
+    def subscriptions_tags_match(self):
+        """Subscriptions with tag filters matching the bug."""
+        if len(self.tags) == 0:
+            # The subscription's required tags must be an empty set. The
+            # subscription's excluded tags can be anything so no condition is
+            # needed.
+            return self.subscriptions_tags_include_empty
+        else:
+            return Except(
+                self.subscriptions_tags_include,
+                self.subscriptions_tags_exclude)
+
+    @property
+    def subscriptions_matching(self):
+        """Subscriptions matching the bug."""
+        return Union(
+            self.subscriptions_without_filters,
+            Intersect(
+                self.subscriptions_matching_status,
+                self.subscriptions_matching_importance,
+                self.subscriptions_tags_match))
