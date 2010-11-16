@@ -20,7 +20,12 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import SQL
+from storm.expr import (
+    Coalesce,
+    Desc,
+    Or,
+    SQL,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -335,6 +340,34 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
             None, language, current=True)
+
+    def getCurrentTranslation(self, potemplate, language, side):
+        """See `IPOTMsgSet`."""
+
+        from zope.security.proxy import removeSecurityProxy
+        assert side is not None, "Translation side must be specified."
+
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
+        clauses = [removeSecurityProxy(
+            traits.getFlag(TranslationMessage)) == True]
+
+        if potemplate is None:
+            # Look only for a shared translation.
+            clauses.append(TranslationMessage.potemplate == None)
+        else:
+            clauses.append(
+                Or(TranslationMessage.potemplate == None,
+                   TranslationMessage.potemplateID == potemplate.id))
+        clauses.extend([
+            TranslationMessage.potmsgsetID == self.id,
+            TranslationMessage.languageID == language.id])
+
+        # Return a diverged translation if it exists, and fall back
+        # to the shared one otherwise.
+        result = Store.of(self).find(
+            TranslationMessage, *clauses).order_by(
+              Desc(Coalesce(TranslationMessage.potemplateID, -1))).first()
+        return result
 
     def getLocalTranslationMessages(self, potemplate, language,
                                     include_dismissed=False,
