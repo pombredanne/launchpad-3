@@ -126,7 +126,6 @@ from lp.code.errors import (
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
@@ -579,7 +578,6 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         '+countries': ICountrySet,
-        '+daily-builds': IRecipeBuildRecordSet,
         'distros': IDistributionSet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
