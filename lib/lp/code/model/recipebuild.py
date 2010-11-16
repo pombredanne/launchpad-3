@@ -34,13 +34,10 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 
-from lp.code.interfaces.recipebuild import (
-    IRecipeBuildRecord,
-    IRecipeBuildRecordSet,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
@@ -51,34 +48,9 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class RecipeBuildRecord():
-    """See `IRecipeBuildRecord`."""
-
-    implements(IRecipeBuildRecord)
-
-    def __init__(
-            self, sourcepackage, recipeowner, recipe, archive,
-            most_recent_build_time):
-        self.sourcepackage = sourcepackage
-        self.archive = archive
-        self.recipeowner = recipeowner
-        self.recipe = recipe
-        self.most_recent_build_time = most_recent_build_time
-
-    def __eq__(self, other):
-        return (self.sourcepackage == other.sourcepackage and
-                self.archive == other.archive and
-                self.recipe == other.recipe and
-                self.recipeowner == other.recipeowner and
-                self.most_recent_build_time == other.most_recent_build_time)
-
-    def __hash__(self):
-        return (hash(self.recipe) ^ hash(self.sourcepackage)
-                ^ hash(self.archive))
-
-    def __repr__(self):
-        return ("<Recipe Build for %r, sp=%r, a=%r>"
-            % (self.recipe, self.sourcepackage, self.archive))
+RecipeBuildRecord = collections.namedtuple(
+    'lp_code_model_recipebuild_RecipeBuildRecord',
+    'sourcepackage, recipeowner, recipe, archive, most_recent_build_time')
 
 
 class RecipeBuildRecordSet:
@@ -89,7 +61,7 @@ class RecipeBuildRecordSet:
     def findCompletedDailyBuilds(self):
         """See `IRecipeBuildRecordSet`."""
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         tables = [
             SourcePackageRecipe,
             Join(Person,
@@ -124,20 +96,11 @@ class RecipeBuildRecordSet:
             sourcepackage = sp_factory.new(sourcepackagename,
                                            recipe_build.distroseries)
 
-#            RecipeBuildRec = collections.namedtuple(
-#                'lp_code_model_recipebuild_RecipeBuildRec',
-#                'sourcepackage, recipeowner, recipe, archive, most_recent_build_time')
-#
-#            return RecipeBuildRec(
-#                sourcepackage, recipeowner,
-#                recipe_build.recipe, archive,
-#                date_finished)
-
             return RecipeBuildRecord(
                 sourcepackage, recipeowner,
                 recipe_build.recipe, archive,
                 date_finished)
-        
+
         result_set = store.using(*tables).find(
                 (SourcePackageName,
                     Person,
@@ -160,8 +123,9 @@ class RecipeBuildRecordSet:
         return RecipeBuildRecordResultSet(
             result_set, _makeRecipeBuildRecord)
 
+
 # XXX: wallyworld Nov 2010
-# storm's Count() implementation is broken for distinct
+# storm's Count() implementation is broken for distinct with > 1 column
 # see bug 675377
 class CountDistinct(Expr):
     __slots__ = ("columns")

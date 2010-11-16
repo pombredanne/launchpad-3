@@ -9,7 +9,6 @@ __all__ = [
     'CompletedDailyBuildsView',
     ]
 
-from canonical.config import config
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
