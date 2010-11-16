@@ -33,12 +33,8 @@ class TranslationSideTraits:
 
     def getCurrentMessage(self, potmsgset, potemplate, language):
         """See `ITranslationSideTraits`."""
-        if self.side == TranslationSide.UPSTREAM:
-            return potmsgset.getImportedTranslationMessage(
-                potemplate, language)
-        else:
-            return potmsgset.getCurrentTranslationMessage(
-                potemplate, language)
+        return potmsgset.getCurrentTranslation(
+            potemplate, language, self.side)
 
     def setFlag(self, translationmessage, value):
         """See `ITranslationSideTraits`."""
