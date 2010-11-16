@@ -466,7 +466,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.addCleanup(os.remove, tmp_orig_file_name)
 
             # Check that the original file from the slave matches the
-            # incompressed file in the librarian.
+            # uncompressed file in the librarian.
             def got_orig_log(ignored):
                 orig_file_content = open(tmp_orig_file_name).read()
                 self.assertEqual(orig_file_content, uncompressed_file)

@@ -369,14 +369,12 @@ class PackageBuildDerived:
             # Remove BuildQueue record.
             self.buildqueue_record.destroySelf()
 
-        def files_downloaded(ignore):
-            # Store build information, build record was already updated during
-            # the binary upload.
-            d = self.storeBuildInfo(self, librarian, slave_status)
-            return d.addCallback(build_info_stored)
-
         d = slave.getFiles(filenames_to_download)
-        d.addCallback(files_downloaded)
+        # Store build information, build record was already updated during
+        # the binary upload.
+        d.addCallback(
+            lambda x: self.storeBuildInfo(self, librarian, slave_status))
+        d.addCallback(build_info_stored)
         return d
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
