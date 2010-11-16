@@ -332,15 +332,11 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             None, language, current=True)
 
-    def getCurrentTranslation(self, potemplate, language, side=None):
+    def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
 
         from zope.security.proxy import removeSecurityProxy
-        if side is None:
-            assert potemplate is not None, (
-                "Translation side must be specified when no POTemplate "
-                "is provided.")
-            side = potemplate.translation_side
+        assert side is not None, "Translation side must be specified."
 
         traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
         clauses = [removeSecurityProxy(

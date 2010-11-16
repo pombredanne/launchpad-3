@@ -1722,7 +1722,7 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertIs(None,
                       potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language))
+                          pofile.potemplate, pofile.language, self.this_side))
 
     def test_basic_get(self):
         # getCurrentTranslation gets the current translation
@@ -1736,7 +1736,8 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertEqual(message,
                          potmsgset.getCurrentTranslation(
-                             pofile.potemplate, pofile.language))
+                             pofile.potemplate, pofile.language,
+                             self.this_side))
 
     def test_assertion_on_bad_parameters(self):
         # When no potemplate is passed in to getCurrentTranslation,
@@ -1762,7 +1763,7 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertIs(None,
                       potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language))
+                          pofile.potemplate, pofile.language, self.this_side))
 
     def test_other_diverged_no_translation(self):
         # getCurrentTranslation gets the current upstream translation
@@ -1780,9 +1781,9 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertIs(None,
                       potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language))
+                          pofile.potemplate, pofile.language, self.this_side))
 
-    def test_explicit_side(self):
+    def test_other_side(self):
         # getCurrentTranslation gets the current translation
         # for a message depending on the side that is specified.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
@@ -1804,7 +1805,7 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertEquals(current_translation,
                           potmsgset.getCurrentTranslation(
-                              pofile.potemplate, pofile.language,
+                              pofile_other.potemplate, pofile_other.language,
                               self.this_side))
         self.assertEquals(other_translation,
                           potmsgset.getCurrentTranslation(
@@ -1830,7 +1831,8 @@ class BaseTestGetCurrentTranslation(object):
 
         self.assertEquals(diverged_message,
                           potmsgset.getCurrentTranslation(
-                              pofile.potemplate, pofile.language))
+                              pofile.potemplate, pofile.language,
+                              self.this_side))
 
     def test_shared_when_requested(self):
         # getCurrentTranslation returns a shared translation even with
