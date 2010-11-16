@@ -10,10 +10,12 @@ from itertools import chain
 from sqlobject import ForeignKey
 from storm.expr import (
     And,
+    CompoundOper,
     Except,
     In,
     Intersect,
     LeftJoin,
+    NamedFunc,
     Not,
     Or,
     Select,
@@ -600,12 +602,7 @@ class StructuralSubscriptionTargetMixin:
             #   (where the filter's excluded tags correspond to any of the
             #    bug's tags)
             # )
-            filter_sets.append(
-                Except(
-                    Union(set_builder.subscriptions_tags_include_empty_any,
-                          set_builder.subscriptions_tags_include_match_any),
-                    set_builder.subscriptions_tags_exclude_match_any))
-
+            # UNION
             # find_all_tags and (
             #   (where the filter's required tags all correspond to the bug's
             #    tags OR
@@ -614,11 +611,18 @@ class StructuralSubscriptionTargetMixin:
             #   (where the filter's excluded tags all correspond to the bug's
             #    tags)
             # )
-            # filter_sets.append(
-            #     Except(
-            #         Union(set_builder.subscriptions_tags_include_empty_all,
-            #               set_builder.subscriptions_tags_include_match_all),
-            #         set_builder.subscriptions_tags_exclude_match_all))
+            filter_sets.append(
+                Union(
+                    Except(
+                        Union(
+                            set_builder.subscriptions_tags_include_empty_any,
+                            set_builder.subscriptions_tags_include_match_any),
+                        set_builder.subscriptions_tags_exclude_match_any),
+                    Except(
+                        Union(
+                            set_builder.subscriptions_tags_include_empty_all,
+                            set_builder.subscriptions_tags_include_match_all),
+                        set_builder.subscriptions_tags_exclude_match_all)))
 
         query = Union(
             set_builder.subscriptions_without_filters,
@@ -626,6 +630,16 @@ class StructuralSubscriptionTargetMixin:
 
         return Store.of(self.__helper.pillar).find(
             StructuralSubscription, In(StructuralSubscription.id, query))
+
+
+class ArrayAgg(NamedFunc):
+    __slots__ = ()
+    name = "ARRAY_AGG"
+
+
+class Contains(CompoundOper):
+    __slots__ = ()
+    oper = "@>"
 
 
 class FilterSetBuilder:
@@ -744,3 +758,40 @@ class FilterSetBuilder:
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
         return self.subscriptions_matching_x(join, condition)
+
+    def _subscriptions_tags_match_all(self, *extra_conditions):
+        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
+            quote(tag) for tag in self.tags)
+        conditions = chain(
+            self.base_conditions,
+            self.filter_conditions,
+            extra_conditions)
+        return Select(
+            StructuralSubscription.id,
+            tables=(
+                StructuralSubscription,
+                BugSubscriptionFilter,
+                BugSubscriptionFilterTag),
+            where=And(
+                BugSubscriptionFilter.structural_subscription_id == (
+                    StructuralSubscription.id),
+                BugSubscriptionFilterTag.filter_id == (
+                    BugSubscriptionFilter.id),
+                BugSubscriptionFilter.find_all_tags,
+                *conditions),
+            group_by=(
+                StructuralSubscription.id,
+                BugSubscriptionFilter.id),
+            having=Contains(
+                SQL(tags_array),
+                ArrayAgg(BugSubscriptionFilterTag.tag)))
+
+    @property
+    def subscriptions_tags_include_match_all(self):
+        return self._subscriptions_tags_match_all(
+            BugSubscriptionFilterTag.include)
+
+    @property
+    def subscriptions_tags_exclude_match_all(self):
+        return self._subscriptions_tags_match_all(
+            Not(BugSubscriptionFilterTag.include))
