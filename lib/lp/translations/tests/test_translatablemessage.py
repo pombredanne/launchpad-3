@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 import pytz
 import transaction
@@ -22,7 +21,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 
-class TestTranslatableMessageBase(TestCaseWithFactory):
+class TestTranslatableMessageBase:
     """Common setup for `TranslatableMessage`."""
 
     layer = ZopelessDatabaseLayer
@@ -64,7 +63,8 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
                 date_updated=date_updated)
 
 
-class TestTranslatableMessage(TestTranslatableMessageBase):
+class TestTranslatableMessage(TestTranslatableMessageBase,
+                              TestCaseWithFactory):
     """Test of `TranslatableMessage` properties and methods."""
 
     def test_sequence(self):
@@ -137,7 +137,8 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         self.assertEqual(translation, shared)
 
 
-class TestTranslatableMessageExternal(TestTranslatableMessageBase):
+class TestTranslatableMessageExternal(TestTranslatableMessageBase,
+                                      TestCaseWithFactory):
     """Test of `TranslatableMessage` methods for external translations."""
 
     def setUp(self):
@@ -177,7 +178,8 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
         self.assertContentEqual([self.external_suggestion], externals)
 
 
-class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
+class TestTranslatableMessageSuggestions(TestTranslatableMessageBase,
+                                         TestCaseWithFactory):
     """Test of `TranslatableMessage` methods for getting suggestions."""
 
     def gen_now(self):
@@ -198,8 +200,8 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
     def test_getAllSuggestions(self):
         # There are three different methods to return.
         suggestions = self.message.getAllSuggestions()
-        self.assertContentEqual([self.suggestion1, self.suggestion2],
-                                suggestions)
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2], suggestions)
 
     def test_getDismissedSuggestions(self):
         # There are three different methods to return.
@@ -215,11 +217,6 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         # Add a suggestion that is newer than the current translation and
         # dismiss it. Also show that getSuggestions only returns translations
         # that are newer than the current one unless only_new is set to False.
-
         self.message.dismissAllSuggestions(self.potemplate.owner, self.now())
         suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([], suggestions)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
