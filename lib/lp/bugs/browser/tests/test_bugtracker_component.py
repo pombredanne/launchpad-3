@@ -103,5 +103,3 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
             u"""The example source package is already linked to """
             """alpha:b in ubuntu""")
         self.assertEqual(expected, notifications.pop().message)
-
-
