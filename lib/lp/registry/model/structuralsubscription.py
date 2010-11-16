@@ -549,7 +549,7 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_without_filters(self):
-        """Match subscriptions without filters."""
+        """Subscriptions without filters."""
         return Select(
             StructuralSubscription.id,
             tables=(
@@ -575,7 +575,7 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_matching_status(self):
-        """Match subscriptions with the given bugtask's status."""
+        """Subscriptions with the given bugtask's status."""
         join = LeftJoin(
             BugSubscriptionFilterStatus,
             BugSubscriptionFilterStatus.filter_id == (
@@ -587,7 +587,7 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_matching_importance(self):
-        """Match subscriptions with the given bugtask's importance."""
+        """Subscriptions with the given bugtask's importance."""
         join = LeftJoin(
             BugSubscriptionFilterImportance,
             BugSubscriptionFilterImportance.filter_id == (
@@ -610,20 +610,24 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_tags_include_empty(self):
+        """Subscriptions with no tags required."""
         return self._subscriptions_tags_include_empty()
 
     @property
     def subscriptions_tags_include_empty_any(self):
+        """Subscriptions with no tags required."""
         return self._subscriptions_tags_include_empty(
             Not(BugSubscriptionFilter.find_all_tags))
 
     @property
     def subscriptions_tags_include_empty_all(self):
+        """Subscriptions with no tags required."""
         return self._subscriptions_tags_include_empty(
             BugSubscriptionFilter.find_all_tags)
 
     @property
     def subscriptions_tags_include_match_any(self):
+        """Subscriptions including any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
                 BugSubscriptionFilter.id),
@@ -635,6 +639,7 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_tags_exclude_match_any(self):
+        """Subscriptions excluding any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
                 BugSubscriptionFilter.id),
@@ -664,10 +669,12 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_tags_include_match_all(self):
+        """Subscriptions including the bug's tags."""
         return self._subscriptions_tags_match_all(
             BugSubscriptionFilterTag.include)
 
     @property
     def subscriptions_tags_exclude_match_all(self):
+        """Subscriptions excluding the bug's tags."""
         return self._subscriptions_tags_match_all(
             Not(BugSubscriptionFilterTag.include))
