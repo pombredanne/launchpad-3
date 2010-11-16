@@ -30,7 +30,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
-    MASTER_FLAVOR,
     SLAVE_FLAVOR,
     )
 

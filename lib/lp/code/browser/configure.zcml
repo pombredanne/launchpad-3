@@ -138,36 +138,22 @@
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
-        facet="branches">
-        <browser:page
-            name="+index"
-            template="../templates/bazaar-index.pt"/>
-    </browser:pages>
-
-    <facet
-        facet="branches">
-        <browser:url
-            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
-            path_expression="string:+daily-builds"
-            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-            rootsite="code"/>
-        <browser:defaultView
-            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
-            name="+daily-builds"
-            layer="lp.code.publisher.CodeLayer"/>
-        <browser:page
-            for="lp.code.interfaces.recipebuild.IRecipeBuildRecordSet"
-            layer="lp.code.publisher.CodeLayer"
-            name="+daily-builds"
-            class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
-            template="../templates/daily-builds-listing.pt"
-            permission="zope.Public"/>
-    </facet>
+        facet="branches"
+        name="+index"
+        template="../templates/bazaar-index.pt" />
+    <browser:page
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
+        layer="lp.code.publisher.CodeLayer"
+        permission="zope.Public"
+        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
+        facet="branches"
+        name="+daily-builds"
+        template="../templates/daily-builds-listing.pt" />
 
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"

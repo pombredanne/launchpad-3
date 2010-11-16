@@ -9,17 +9,20 @@ __all__ = [
     'CompletedDailyBuildsView',
     ]
 
-from canonical.launchpad.browser.feeds import FeedsMixin
+from zope.component import getUtility
+
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 
 
-class CompletedDailyBuildsView(LaunchpadView, FeedsMixin):
+class CompletedDailyBuildsView(LaunchpadView):
 
     @property
     def page_title(self):
         return 'Completed Daily Recipe Builds'
 
     def initialize(self):
-        self.dailybuilds = self.context.findCompletedDailyBuilds()
+        recipe_build_set = getUtility(IRecipeBuildRecordSet)
+        self.dailybuilds = recipe_build_set.findCompletedDailyBuilds()
         self.batchnav = BatchNavigator(self.dailybuilds, self.request)

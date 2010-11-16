@@ -10,13 +10,15 @@ import datetime
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import IBazaarApplication
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
+    ANONYMOUS,
     BrowserTestCase,
+    login,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -24,9 +26,6 @@ from lp.testing.views import create_initialized_view
 
 
 class RecipeBuildsTestMixin:
-
-    def setUp(self):
-        self.user = self.factory.makePerson()
 
     def _makeRecipeBuildRecords(self, nr_records):
         recipeowner = self.factory.makePerson()
@@ -81,54 +80,66 @@ class TestRecipeBuildView(TestCaseWithFactory, RecipeBuildsTestMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        RecipeBuildsTestMixin.setUp(self)
-        self.root = getUtility(IRecipeBuildRecordSet)
-
     def test_recipebuildrecords(self):
         records = self._makeRecipeBuildRecords(15)
-        with person_logged_in(self.user):
-            view = create_initialized_view(self.root, "+daily-builds",
-                                      rootsite='code')
-            self.assertEqual(set(records), set(view.dailybuilds))
+        login(ANONYMOUS)
+        root = getUtility(IBazaarApplication)
+        view = create_initialized_view(root, "+daily-builds", rootsite='code')
+        self.assertEqual(set(records), set(view.dailybuilds))
 
 
 class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        RecipeBuildsTestMixin.setUp(self)
-
     def test_recipebuild_listing(self):
         self._makeRecipeBuildRecords(15)
-        with person_logged_in(self.user):
-            text = self.getMainText(
-                getUtility(IRecipeBuildRecordSet), '+daily-builds')
-            self.assertTextMatchesExpressionIgnoreWhitespace("""
-                Completed Daily Recipe Builds
-                .*
-                Source Package
-                Recipe
-                Recipe Owner
-                Archive
-                Most Recent Build Time
-                .*
-                generic-string.*
-                generic-string.*
-                Person-name.*
-                .*
-                generic-string.*
-                generic-string.*
-                Person-name.*
-                .*
-                generic-string.*
-                generic-string.*
-                Person-name.*
-                .*
-                generic-string.*
-                generic-string.*
-                Person-name.*
-                """, text)
+        root = getUtility(IBazaarApplication)
+        text = self.getMainText(root, '+daily-builds')
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Completed Daily Recipe Builds
+            .*
+            Source Package
+            Recipe
+            Recipe Owner
+            Archive
+            Most Recent Build Time
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            """, text)
+
+    def test_recipebuild_listing_anonymous(self):
+        self._makeRecipeBuildRecords(15)
+        root = getUtility(IBazaarApplication)
+        text = self.getMainText(root, '+daily-builds', no_login=True)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Completed Daily Recipe Builds
+            .*
+            Source Package
+            Recipe
+            Recipe Owner
+            Archive
+            Most Recent Build Time
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            .*
+            generic-string.*
+            generic-string.*
+            Person-name.*
+            """, text)
