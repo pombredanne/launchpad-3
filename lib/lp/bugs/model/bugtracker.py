@@ -696,6 +696,8 @@ class BugTracker(SQLBase):
         self, distro_name, source_package_name):
         """See `IBugTracker`."""
         distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distribution is None:
+            return None
         pkg = distribution.getSourcePackage(source_package_name)
 
         pkgs = Store.of(self).find(

@@ -95,7 +95,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
         # No components link to the source package yet
         link_comp = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
-            u'Ubuntu', u'example')
+            u'ubuntu', u'example')
         self.assertIs(None, link_comp)
 
         # Set the source package on the component
@@ -104,7 +104,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
         # Verify we can find the component by the source package now
         link_comp = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
-            u'Ubuntu', u'example')
+            u'ubuntu', u'example')
         self.assertIsNot(None, link_comp)
 
 
