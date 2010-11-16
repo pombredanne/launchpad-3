@@ -24,7 +24,6 @@ from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
@@ -305,8 +304,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # Setting one of the suggestions as current will leave
         # them both 'reviewed' and thus hidden.
-        current_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
+        shared_suggestion.approve(sr_pofile, self.factory.makePerson())
         self.assertContentEqual(
             [],
             self.potmsgset.getLocalTranslationMessages(
