@@ -107,6 +107,7 @@ class TestBugTrackerComponent(TestCaseWithFactory):
             u'Ubuntu', u'example')
         self.assertIsNot(None, link_comp)
 
+
 class TestBugTrackerWithComponents(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
