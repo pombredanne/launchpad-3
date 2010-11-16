@@ -586,41 +586,23 @@ class StructuralSubscriptionTargetMixin:
             ]
 
         if len(bugtask.bug.tags) == 0:
-            # The subscription's required tags must be an empty set.
+            # The subscription's required tags must be an empty set. The
+            # subscription's excluded tags can be anything so no condition is
+            # needed.
             filter_sets.append(
                 set_builder.subscriptions_tags_include_empty)
-            # The subscription's excluded tags can be anything so no condition
-            # is needed.
         else:
-            # !find_all_tags and (
-            #   (where the filter's required tags correspond to any of the
-            #    bug's tags OR
-            #    where the filter has no required tags)
-            #   except
-            #   (where the filter's excluded tags correspond to any of the
-            #    bug's tags)
-            # )
-            # UNION
-            # find_all_tags and (
-            #   (where the filter's required tags all correspond to the bug's
-            #    tags OR
-            #    where the filter has no required tags)
-            #   except
-            #   (where the filter's excluded tags all correspond to the bug's
-            #    tags)
-            # )
-            filter_sets.append(
-                Union(
-                    Except(
-                        Union(
-                            set_builder.subscriptions_tags_include_empty_any,
-                            set_builder.subscriptions_tags_include_match_any),
-                        set_builder.subscriptions_tags_exclude_match_any),
-                    Except(
-                        Union(
-                            set_builder.subscriptions_tags_include_empty_all,
-                            set_builder.subscriptions_tags_include_match_all),
-                        set_builder.subscriptions_tags_exclude_match_all)))
+            tag_filter_set = Union(
+                Except(
+                    Union(set_builder.subscriptions_tags_include_empty_any,
+                          set_builder.subscriptions_tags_include_match_any),
+                    set_builder.subscriptions_tags_exclude_match_any),
+                Except(
+                    Union(set_builder.subscriptions_tags_include_empty_all,
+                          set_builder.subscriptions_tags_include_match_all),
+                    set_builder.subscriptions_tags_exclude_match_all),
+                )
+            filter_sets.append(tag_filter_set)
 
         query = Union(
             set_builder.subscriptions_without_filters,
