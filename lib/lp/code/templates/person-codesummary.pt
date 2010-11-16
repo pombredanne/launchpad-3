@@ -10,27 +10,21 @@
   <table>
     <tr class="code-links">
       <td class="code-count" tal:content="menu/owned_branch_count">100</td>
-      <td tal:condition="menu"
-          tal:content="structure menu/owned/render"
+      <td tal:content="structure menu/owned/render"
           />
     </tr>
-    <tr>
+    <tr class="code-links"
+        tal:condition="menu/registered/enabled">
       <td class="code-count" tal:content="menu/registered_branch_count">100</td>
-      <td tal:condition="menu"
-          tal:content="structure menu/registered/render"
-          />
+      <td tal:content="structure menu/registered/render" />
     </tr>
-    <tr>
+    <tr class="code-links">
       <td class="code-count" tal:content="menu/subscribed_branch_count">100</td>
-      <td tal:condition="menu"
-          tal:content="structure menu/subscribed/render"
-          />
+      <td tal:content="structure menu/subscribed/render" />
     </tr>
-    <tr id="merge-counts">
+    <tr class="code-links" id="merge-counts">
       <td class="code-count" tal:content="menu/active_review_count">5</td>
-      <td tal:condition="menu"
-          tal:content="structure menu/active_reviews/render"
-          />
+      <td tal:content="structure menu/active_reviews/render" />
     </tr>
   </table>
 </div>

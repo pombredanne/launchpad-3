@@ -202,7 +202,24 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
 
 
 class IBugTracker(Interface):
-    """A remote bug system."""
+    """A remote bug system.
+
+    Launchpadlib example: What bug tracker is used for a distro source
+    package?
+
+    ::
+
+        product = source_package.upstream_product
+        if product:
+            tracker = product.bug_tracker
+            if not tracker:
+                project = product.project_group
+                if project:
+                    tracker = project.bug_tracker
+        if tracker:
+            print "%s at %s" %(tracker.bug_tracker_type, tracker.base_url)
+
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'))

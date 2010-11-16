@@ -969,8 +969,8 @@ cve $cve
 
 The 'cve' command associates a bug with a CVE reference.
 
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     IProductSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> def new_firefox_bug():
     ...     firefox = getUtility(IProductSet).getByName('firefox')
     ...     return firefox.createBug(CreateBugParams(

@@ -54,9 +54,9 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.database import ComponentSelection
   >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.model.component import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> universe = getUtility(IComponentSet)['universe']
@@ -111,8 +111,8 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
   >>> from lp.soyuz.enums import PackagePublishingStatus
+  >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":

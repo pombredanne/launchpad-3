@@ -8,11 +8,14 @@ or it can create it for the user.
 Set Up
 ------
 
-    >>> login('admin@canonical.com')
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
     >>> soyuz = factory.makeTeam(name='soyuz-team')
     >>> parent = factory.makeDistroSeries()
-    >>> child = factory.makeDistroSeries(parent_series=parent)
+    >>> child = factory.makeDistroSeries(name='child1', parent_series=parent)
     >>> other = factory.makeDistroSeries()
+    >>> distribution = factory.makeDistribution(name='deribuntu', owner=soyuz)
+    >>> version = "%s.0" % factory.getUniqueInteger()
     >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
@@ -55,14 +58,33 @@ If we call it correctly, it works.
     <BLANKLINE>
     ...
 
-And we can verify the job exists.
+If we call it with all of the arguments, it also works.
+
+    >>> deribuntu = webservice.get('/deribuntu').jsonBody()
+    >>> text = 'The Second Child'
+    >>> derived = soyuz_webservice.named_post(
+    ...     series['self_link'], 'deriveDistroSeries', {},
+    ...     name='child2', displayname=text, title=text, summary=text,
+    ...     description=text, version=version,
+    ...     distribution=deribuntu['self_link'], architectures=('i386',),
+    ...     packagesets=('test1',), rebuild=False)
+    >>> print derived
+    HTTP/1.1 200 Ok
+    Status: 200 Ok
+    ...
+    <BLANKLINE>
+    ...
+
+And we can verify both jobs exists.
 
     >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
     ...     IInitialiseDistroSeriesJobSource)
-    >>> login('admin@canonical.com')
-    >>> [job] = list(
-    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady())
-    >>> job.distroseries == child
-    True
-
+    >>> login(ADMIN_EMAIL)
+    >>> jobs = sorted(
+    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady(),
+    ...     key=lambda x: x.distroseries.name)
+    >>> for job in jobs:
+    ...     print job.distroseries.name
+    child1
+    child2

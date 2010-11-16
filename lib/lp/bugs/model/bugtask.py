@@ -37,7 +37,6 @@ from storm.expr import (
     And,
     AutoTables,
     Desc,
-    In,
     Join,
     LeftJoin,
     Or,
@@ -359,37 +358,6 @@ class BugTaskMixin:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
 
-    @property
-    def mentoring_offers(self):
-        """See `IHasMentoringOffers`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.mentoring_offers
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.canMentor(user)
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.isMentor(user)
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.offerMentoring(user, team)
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        # mentoring is on IBug as a whole, not on a specific task, so we
-        # pass through to the bug
-        return self.bug.retractMentoring(user)
-
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -698,16 +666,11 @@ class BugTask(SQLBase, BugTaskMixin):
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
 
-        # Make sure to exclude the current BugTask from the list of
-        # matching tasks. We use 4*limit as an arbitrary value here to
-        # make sure we select more than :limit: bugtasks.
-        matching_bugtasks = [
-            bug_task for bug_task in matching_bugtasks[:4*limit]
-            if bug_task != self]
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, user, limit)
-        return matching_bugs
+
+        # Make sure to exclude the bug of the current bugtask.
+        return [bug for bug in matching_bugs if bug.id != self.bugID]
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
@@ -888,11 +851,14 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bug_supervisor) or
-            user.inTeam(self.pillar.owner) or
-            user.id == celebrities.bug_watch_updater.id or
-            user.id == celebrities.bug_importer.id or
-            user.id == celebrities.janitor.id):
+        if (self.status == BugTaskStatus.FIXRELEASED and
+           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+            return True
+        elif (user.inTeam(self.pillar.bug_supervisor) or
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
             return True
         else:
             return (self.status not in (
@@ -1350,6 +1316,7 @@ def _make_cache_user_can_view_bug(user):
     :seealso: get_bug_privacy_filter_with_decorator
     """
     userid = user.id
+
     def cache_user_can_view_bug(bugtask):
         get_property_cache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
@@ -1520,26 +1487,22 @@ class BugTaskSet:
         from lp.blueprints.model.specificationbug import SpecificationBug
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugbranch import BugBranch
-        from lp.registry.model.mentoringoffer import MentoringOffer
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
-        bug_ids_with_mentoring_offers = set(IStore(MentoringOffer).find(
-                MentoringOffer.bugID, In(MentoringOffer.bugID, bug_ids)))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+            SpecificationBug.bugID,
+            SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
-                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+                BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
         # Cache all bugs at once to avoid one query per bugtask. We
         # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
 
         badge_properties = {}
         for bugtask in bugtasks:
             bug = bugs[bugtask.bugID]
             badge_properties[bugtask] = {
-                'has_mentoring_offer':
-                    bug.id in bug_ids_with_mentoring_offers,
                 'has_specification':
                     bug.id in bug_ids_with_specifications,
                 'has_branch':
@@ -1777,7 +1740,8 @@ class BugTaskSet:
                   BugTask.productseries = StructuralSubscription.productseries
                   AND StructuralSubscription.subscriber = %(personid)s
                 UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
+                SELECT BugTask.id
+                FROM BugTask, StructuralSubscription, Product
                 WHERE
                   BugTask.product = Product.id
                   AND Product.project = StructuralSubscription.project
@@ -1959,6 +1923,7 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2254,6 +2219,7 @@ class BugTaskSet:
             # This may need revisiting if e.g. searches on behalf of different
             # users are combined.
             decorators.append(decorator)
+
         def decorator(row):
             bugtask = row[0]
             for decorator in decorators:
@@ -2321,7 +2287,7 @@ class BugTaskSet:
             else:
                 store = search_results._store
             milestones = store.find(
-                Milestone, In(Milestone.id, milestone_ids))
+                Milestone, Milestone.id.is_in(milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
@@ -2427,7 +2393,7 @@ class BugTaskSet:
         return cur.fetchall()
 
     def findExpirableBugTasks(self, min_days_old, user,
-                              bug=None, target=None):
+                              bug=None, target=None, limit=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -2493,6 +2459,8 @@ class BugTaskSet:
             unconfirmed_bug_condition,
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
+        if limit is not None:
+            expirable_bugtasks = expirable_bugtasks.limit(limit)
 
         return expirable_bugtasks
 
@@ -2885,8 +2853,9 @@ class BugTaskSet:
                 for subscription in subscriptions))
 
         if recipients is not None:
-            # We need to process subscriptions, so pull all the subscribes into
-            # the cache, then update recipients with the subscriptions.
+            # We need to process subscriptions, so pull all the
+            # subscribes into the cache, then update recipients with
+            # the subscriptions.
             subscribers = list(subscribers)
             for subscription in subscriptions:
                 recipients.addStructuralSubscriber(

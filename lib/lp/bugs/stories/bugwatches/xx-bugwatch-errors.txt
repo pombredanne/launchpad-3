@@ -33,8 +33,11 @@ no existing bug watches.
 We can now alter the bug watch manually to check that the correct error
 messages are displayed.
 
-    >>> from canonical.launchpad.interfaces import (BugWatchActivityStatus,
-    ...     BugTaskStatus, IBugTrackerSet, UNKNOWN_REMOTE_STATUS)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     UNKNOWN_REMOTE_STATUS)
+    >>> from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 
     >>> login('foo.bar@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')

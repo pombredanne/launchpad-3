@@ -1067,6 +1067,12 @@
             name="+subscriptions"
             template="../templates/person-subscriptions.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonStructuralSubscriptionsView"
+            name="+structural-subscriptions"
+            template="../templates/person-structural-subscriptions.pt"/>
+        <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="zope.Public"
             class="lp.registry.browser.person.TeamIndexView"
@@ -1473,7 +1479,7 @@
         template="../templates/product-portlet-packages.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.registry.browser.product.ProductSeriesView"
+        class="lp.registry.browser.product.ProductSeriesSetView"
         name="+series"
         facet="overview"
         permission="zope.Public"
@@ -1554,6 +1560,57 @@
         class="lp.registry.browser.product.ProductReviewLicenseView"
         permission="launchpad.Moderate"
         template="../templates/product-review-license.pt"/>
+
+    <browser:page
+        for="lp.registry.interfaces.nameblacklist.INameBlacklist"
+        permission="launchpad.Edit"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistEditView"
+        name="+edit"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        path_expression="string:+nameblacklist"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        />
+    <browser:url
+        for="lp.registry.interfaces.nameblacklist.INameBlacklist"
+        path_expression="string:${id}"
+        parent_utility="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        />
+    <browser:defaultView
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        name="+index"/>
+    <browser:page
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        permission="launchpad.View"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistSetView"
+        name="+index"
+        template="../templates/nameblacklists-index.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.nameblacklist.INameBlacklistSet"
+        permission="launchpad.Edit"
+        facet="overview"
+        class="lp.registry.browser.nameblacklist.NameBlacklistAddView"
+        name="+add"
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:navigation
+        module="lp.registry.browser.nameblacklist"
+        classes="NameBlacklistSetNavigation"/>
+    <browser:menus
+        classes="
+            NameBlacklistNavigationMenu
+            NameBlacklistSetNavigationMenu
+            "
+        module="lp.registry.browser.nameblacklist"/>
+    <adapter
+        factory="lp.registry.browser.nameblacklist.NameBlacklistSetBreadcrumb"
+        />
+    <adapter
+        factory="lp.registry.browser.nameblacklist.NameBlacklistBreadcrumb"
+        />
+
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
