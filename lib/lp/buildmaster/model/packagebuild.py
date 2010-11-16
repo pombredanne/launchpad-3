@@ -364,10 +364,11 @@ class PackageBuildDerived:
             os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
             # Release the builder for another job.
-            self.buildqueue_record.builder.cleanSlave()
+            d = self.buildqueue_record.builder.cleanSlave()
 
             # Remove BuildQueue record.
-            self.buildqueue_record.destroySelf()
+            return d.addcallBack(
+                lambda x:self.buildqueue_record.destroySelf())
 
         d = slave.getFiles(filenames_to_download)
         # Store build information, build record was already updated during
@@ -386,9 +387,11 @@ class PackageBuildDerived:
         """
         self.status = BuildStatus.FAILEDTOBUILD
         def build_info_stored(ignored):
-            self.buildqueue_record.builder.cleanSlave()
             self.notify()
-            self.buildqueue_record.destroySelf()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
@@ -403,8 +406,10 @@ class PackageBuildDerived:
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
                             % self.buildqueue_record.builder.name)
-            self.buildqueue_record.builder.cleanSlave()
-            self.buildqueue_record.destroySelf()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
@@ -419,9 +424,11 @@ class PackageBuildDerived:
         def build_info_stored(ignored):
             logger.critical("***** %s is CHROOTWAIT *****" %
                             self.buildqueue_record.builder.name)
-            self.buildqueue_record.builder.cleanSlave()
             self.notify()
-            self.buildqueue_record.destroySelf()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
@@ -457,8 +464,10 @@ class PackageBuildDerived:
             # properly presented in the Web UI. We will discuss it in
             # the next Paris Summit, infinity has some ideas about how
             # to use this content. For now we just ensure it's stored.
-            self.buildqueue_record.builder.cleanSlave()
             self.buildqueue_record.reset()
+            d = self.buildqueue_record.builder.cleanSlave()
+            return d
+
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
