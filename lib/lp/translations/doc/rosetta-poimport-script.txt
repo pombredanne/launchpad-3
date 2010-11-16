@@ -5,9 +5,10 @@ PO import script
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue,
-    ...     RosettaImportStatus)
+    ...     )
     >>> from canonical.config import config
     >>> import datetime
     >>> import pytz
@@ -56,8 +57,7 @@ without special privileges, like "cprov": structured privileges are
 enough (but we could go with "open" as well, which would allow not
 only suggestions but full translations as well).
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> product = pofile.potemplate.productseries.product
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 

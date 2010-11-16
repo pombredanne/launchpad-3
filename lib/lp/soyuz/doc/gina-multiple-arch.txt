@@ -3,15 +3,16 @@ Gina over Multiple Architectures (and Pockets, and Components)
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database import (
-    ...     SourcePackageRelease,
-    ...     SourcePackagePublishingHistory,
-    ...     BinaryPackagePublishingHistory,
-    ...     EmailAddress,
-    ...     BinaryPackageRelease,
-    ...     BinaryPackageBuild)
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.publishing import (
+    ...     BinaryPackagePublishingHistory,
+    ...     SourcePackagePublishingHistory,
+    ...     )
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> SSPPH = SourcePackagePublishingHistory
     >>> SBPPH = BinaryPackagePublishingHistory
 
@@ -27,8 +28,8 @@ Get the current counts of stuff in the database:
 
 Create a distribution series and an arch series for dapper:
 
-    >>> from canonical.launchpad.database import (
-    ...     ProcessorFamily, DistroArchSeries)
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
+    >>> from lp.soyuz.model.processor import ProcessorFamily
     >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -101,7 +102,7 @@ Set up the processor, commit and run her again. Note that
 dapper-updates/universe doesn't include the powerpc architecture, but we
 just warn it and move right ahead.
 
-    >>> from canonical.launchpad.database import Processor
+    >>> from lp.soyuz.model.processor import Processor
     >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
     ...     description="The little processor that could")
     >>> p == Processor.selectOneBy(familyID=pf.id)
@@ -160,7 +161,7 @@ distroarchseries:
 
 Check that the source package was correctly imported:
 
-    >>> from canonical.launchpad.database import BinaryPackageName
+    >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,

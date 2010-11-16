@@ -45,7 +45,7 @@ def lobotomize_stevea():
     code that did not use the ValidPersonOrTeamCache to determine
     validity.
     """
-    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.database.emailaddress import EmailAddress
     from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
     stevea_emailaddress = EmailAddress.byEmail(
             'steve.alexander@ubuntulinux.com')
@@ -145,12 +145,6 @@ special = {
         '../doc/build-notification.txt',
         setUp=builddmasterSetUp,
         layer=LaunchpadZopelessLayer,
-        ),
-    'buildd-slavescanner.txt': LayeredDocFileSuite(
-        '../doc/buildd-slavescanner.txt',
-        setUp=builddmasterSetUp,
-        layer=LaunchpadZopelessLayer,
-        stdout_logging_level=logging.WARNING
         ),
     'buildd-scoring.txt': LayeredDocFileSuite(
         '../doc/buildd-scoring.txt',

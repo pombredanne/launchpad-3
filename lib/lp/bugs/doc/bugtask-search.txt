@@ -299,7 +299,7 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     ...     BugTaskImportance,
     ...     BugTaskStatus,
     ...     )
-    >>> from lp.bugs.tests.test_bugtask_1 import (
+    >>> from lp.bugs.model.tests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (

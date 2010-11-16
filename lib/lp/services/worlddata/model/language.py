@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
@@ -34,6 +34,10 @@ from lp.services.worlddata.interfaces.language import (
     TextDirection,
     )
 
+# XXX: JonathanLange 2010-11-10 bug=673796: It turns out this module is
+# unusable without spokenin being imported first. So, import spokenin.
+from lp.services.worlddata.model.spokenin import SpokenIn
+SpokenIn
 
 class Language(SQLBase):
     implements(ILanguage)

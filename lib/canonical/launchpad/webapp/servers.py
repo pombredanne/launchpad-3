@@ -620,10 +620,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
-    def isRedirectInhibited(self):
-        """Returns True if edge redirection has been inhibited."""
-        return self.cookies.get('inhibit_beta_redirect', '0') == '1'
-
     @cachedproperty
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
@@ -915,6 +911,10 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
     def setPrincipal(self, principal):
         """See `IPublicationRequest`."""
         self.principal = principal
+
+    def clearSecurityPolicyCache(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):

@@ -9,12 +9,16 @@ from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.ftests import (
+    LaunchpadFormHarness,
     login,
     logout,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageNavigation,
@@ -24,10 +28,19 @@ from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
-from lp.testing import TestCaseWithFactory
+from lp.registry.browser.structuralsubscription import (
+    StructuralSubscriptionView)
+from lp.registry.enum import BugNotificationLevel
+from lp.testing import (
+    feature_flags,
+    person_logged_in,
+    set_feature_flag,
+    TestCaseWithFactory,
+    )
 
 
 class FakeLaunchpadRequest(FakeRequest):
+
     @property
     def stepstogo(self):
         """See `IBasicLaunchpadRequest`."""
@@ -94,6 +107,7 @@ class StructuralSubscriptionTraversalTestBase(TestCaseWithFactory):
 class TestProductSeriesStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProductSeries."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1')
@@ -103,6 +117,7 @@ class TestProductSeriesStructuralSubscriptionTraversal(
 class TestMilestoneStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IMilestone."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProduct(name='fooix').newSeries(
             self.eric, '0.1', '0.1').newMilestone('0.1.0')
@@ -112,6 +127,7 @@ class TestMilestoneStructuralSubscriptionTraversal(
 class TestProjectStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IProjectGroup."""
+
     def setUpTarget(self):
         self.target = self.factory.makeProject(name='fooix-project')
         self.navigation = ProjectNavigation
@@ -120,6 +136,7 @@ class TestProjectStructuralSubscriptionTraversal(
 class TestDistributionStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistribution."""
+
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu')
         self.navigation = DistributionNavigation
@@ -128,6 +145,7 @@ class TestDistributionStructuralSubscriptionTraversal(
 class TestDistroSeriesStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistroSeries."""
+
     def setUpTarget(self):
         self.target = self.factory.makeDistribution(name='debuntu').newSeries(
             '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, self.eric)
@@ -138,11 +156,130 @@ class TestDistributionSourcePackageStructuralSubscriptionTraversal(
     StructuralSubscriptionTraversalTestBase):
     """Test IStructuralSubscription traversal from IDistributionSourcePackage.
     """
+
     def setUpTarget(self):
         debuntu = self.factory.makeDistribution(name='debuntu')
         fooix = self.factory.makeSourcePackageName('fooix')
         self.target = debuntu.getSourcePackage(fooix)
         self.navigation = DistributionSourcePackageNavigation
+
+
+class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
+    """A base class for testing advanced structural subscription features."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscriptionAdvancedFeaturesBase, self).setUp()
+        self.setUpTarget()
+        with feature_flags():
+            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProduct()
+
+    def test_subscribe_uses_bug_notification_level(self):
+        # When advanced features are turned on for subscriptions a user
+        # can specify a bug_notification_level on the +subscribe form.
+        with feature_flags():
+            # We don't display BugNotificationLevel.NOTHING as an option.
+            displayed_levels = [
+                level for level in BugNotificationLevel.items
+                if level != BugNotificationLevel.NOTHING]
+            for level in displayed_levels:
+                person = self.factory.makePerson()
+                with person_logged_in(person):
+                    harness = LaunchpadFormHarness(
+                        self.target, StructuralSubscriptionView)
+                    form_data = {
+                        'field.subscribe_me': 'on',
+                        'field.bug_notification_level': level.name,
+                        }
+                    harness.submit('save', form_data)
+                    self.assertFalse(harness.hasErrors())
+
+                subscription = self.target.getSubscription(person)
+                self.assertEqual(
+                    level, subscription.bug_notification_level,
+                    "Bug notification level of subscription should be %s, "
+                    "is actually %s." % (
+                        level.name, subscription.bug_notification_level.name))
+
+    def test_subscribe_uses_bug_notification_level_for_teams(self):
+        # The bug_notification_level field is also used when subscribing
+        # a team.
+        with feature_flags():
+            displayed_levels = [
+                level for level in BugNotificationLevel.items
+                if level != BugNotificationLevel.NOTHING]
+            for level in displayed_levels:
+                person = self.factory.makePerson()
+                team = self.factory.makeTeam(owner=person)
+                with person_logged_in(person):
+                    harness = LaunchpadFormHarness(
+                        self.target, StructuralSubscriptionView)
+                    form_data = {
+                        'field.subscribe_me': '',
+                        'field.subscriptions_team': team.name,
+                        'field.bug_notification_level': level.name,
+                        }
+                    harness.submit('save', form_data)
+                    self.assertFalse(harness.hasErrors())
+
+                subscription = self.target.getSubscription(team)
+                self.assertEqual(
+                    level, subscription.bug_notification_level,
+                    "Bug notification level of subscription should be %s, "
+                    "is actually %s." % (
+                        level.name, subscription.bug_notification_level.name))
+
+    def test_nothing_is_not_a_valid_level(self):
+        # BugNotificationLevel.NOTHING isn't considered valid when a
+        # user is subscribing via the web UI.
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                harness = LaunchpadFormHarness(
+                    self.target, StructuralSubscriptionView)
+                form_data = {
+                    'field.subscribe_me': 'on',
+                    'field.bug_notification_level': (
+                        BugNotificationLevel.NOTHING),
+                    }
+                harness.submit('save', form_data)
+                self.assertTrue(harness.hasErrors())
+
+
+class TestProductSeriesAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for ProductSeries."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeProductSeries()
+
+
+class TestDistributionAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for distributions."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeDistribution()
+
+
+class TestDistroSeriesAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for DistroSeries."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeDistroSeries()
+
+
+class TestMilestoneAdvancedSubscriptionFeatures(
+    TestStructuralSubscriptionAdvancedFeaturesBase):
+    """Test advanced subscription features for Milestones."""
+
+    def setUpTarget(self):
+        self.target = self.factory.makeMilestone()
 
 
 def test_suite():

@@ -112,7 +112,6 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.services.fields import (
     BugField,
     PersonChoice,
@@ -443,7 +442,7 @@ class IllegalRelatedBugTasksParams(Exception):
     webservice_error(400) #Bad request.
 
 
-class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
+class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -656,20 +655,22 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        this method should be deletable. When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     def isSubscribed(person):
         """Return True if the person is an explicit subscriber to the
         underlying bug for this bugtask.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        then this method should be deletable.  When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     @mutator_for(milestone)
@@ -1187,8 +1188,8 @@ class BugTaskSearchParams:
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
         self.structural_subscriber = structural_subscriber
-        self.modified_since = None
-        self.created_since = None
+        self.modified_since = modified_since
+        self.created_since = created_since
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1441,7 +1442,8 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
+                              limit=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
@@ -1454,6 +1456,7 @@ class IBugTaskSet(Interface):
         :param target: An `IBugTarget`. If a target is provided, only
             bugtasks that belong to the target may be returned. If target
             is None, all bugtargets are searched.
+        :param limit: An int for limiting the number of bugtasks returned.
         :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug
@@ -1523,6 +1526,12 @@ class IBugTaskSet(Interface):
 
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
+
+    def getStructuralSubscribers(bugtasks, recipients=None, level=None):
+        """Return `IPerson`s subscribed to the given bug tasks.
+
+        This takes into account bug subscription filters.
+        """
 
 
 def valid_remote_bug_url(value):

@@ -18,13 +18,13 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.services.propertycache import cachedproperty
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage,
     )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 

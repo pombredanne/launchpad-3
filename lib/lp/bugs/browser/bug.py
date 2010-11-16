@@ -209,8 +209,7 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog', 'affectsmetoo']
+             'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -305,20 +304,6 @@ class BugContextMenu(ContextMenu):
         enabled = self.context.bug.has_cves
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
-
-    def offermentoring(self):
-        """Return the 'Offer mentorship' Link."""
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = False
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        """Return the 'Retract mentorship' Link."""
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     @property
     def _bug_question(self):
