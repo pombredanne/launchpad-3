@@ -184,26 +184,16 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        # TODO Stormify this while we're working on this crap.
-        # .. At that
-        # time it should also be converted to a Storm query and the issue with
-        # has_translatables resolved.
-        return Product.select('''
-            Product.project = %s AND
-            Product.translations_usage = %s AND
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
-            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, self),
-            clauseTables=['ProductSeries', 'POTemplate'],
-            distinct=True)
+        store = Store.of(Product)
+        return store.find(Product,
+            Product.project == self,
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product == ProductSeries.product,
+            POTemplate.productseries = ProductSeries).config(distinct=True)
 
     def has_translatable(self):
         """See `IProjectGroup`."""
-        # XXX: BradCrittenden 2010-10-12 bug=659078: The test should be
-        # converted to use is_empty but the implementation in storm's
-        # sqlobject wrapper is broken.
-        # return not self.translatables().is_empty()
-        return self.translatables().count() != 0
+        return self.translatables().is_empty()
 
     def has_branches(self):
         """ See `IProjectGroup`."""
