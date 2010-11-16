@@ -905,7 +905,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
         current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language)
+            pofile.potemplate, pofile.language)
         if current is None:
             # Create an empty translation message.
             current = self.updateTranslation(
