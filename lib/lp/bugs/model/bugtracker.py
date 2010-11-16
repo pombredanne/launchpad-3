@@ -690,7 +690,6 @@ class BugTracker(SQLBase):
                 name = component_group_name).one()
         return component_group
 
-    #TODO: Need a test for this routine
     def getRemoteComponentForDistroSourcePackage(
         self, distro_name, source_package_name):
         """See `IBugTracker`."""
