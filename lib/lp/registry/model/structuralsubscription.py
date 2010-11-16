@@ -675,7 +675,7 @@ class FilterSetBuilder:
                 BugSubscriptionFilter.id == None,
                 *self.base_conditions))
 
-    def _subscriptions_matching_x(self, join, *extra_conditions):
+    def _subscriptions_matching_x(self, join, *extra_conditions, **extra):
         conditions = chain(
             self.base_conditions,
             self.filter_conditions,
@@ -686,7 +686,8 @@ class FilterSetBuilder:
             where=And(
                 BugSubscriptionFilter.structural_subscription_id == (
                     StructuralSubscription.id),
-                *conditions))
+                *conditions),
+            **extra)
 
     @property
     def subscriptions_matching_status(self):
@@ -760,21 +761,15 @@ class FilterSetBuilder:
             BugSubscriptionFilterTag, condition)
 
     def _subscriptions_tags_match_all(self, *extra_conditions):
-        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
-            quote(tag) for tag in self.tags)
         conditions = chain(
             self.base_conditions,
             self.filter_conditions,
             extra_conditions)
-        return Select(
-            StructuralSubscription.id,
-            tables=(
-                StructuralSubscription,
-                BugSubscriptionFilter,
-                BugSubscriptionFilterTag),
-            where=And(
-                BugSubscriptionFilter.structural_subscription_id == (
-                    StructuralSubscription.id),
+        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
+            quote(tag) for tag in self.tags)
+        return self._subscriptions_matching_x(
+            BugSubscriptionFilterTag,
+            And(
                 BugSubscriptionFilterTag.filter_id == (
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilter.find_all_tags,
