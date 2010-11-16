@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
@@ -925,4 +926,7 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
+
+   <webservice:register module="lp.soyuz.interfaces.webservice" />
+
 </configure>

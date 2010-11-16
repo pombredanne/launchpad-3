@@ -10,10 +10,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
-    ComponentSelection,
-    LibraryFileAlias,
-    )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.ftests import (
     import_public_test_keys,
     login,
@@ -32,6 +29,7 @@ from lp.archiveuploader.tests import (
     )
 from lp.archiveuploader.uploadpolicy import ArchiveUploadType
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.interfaces.component import IComponentSet
 
 

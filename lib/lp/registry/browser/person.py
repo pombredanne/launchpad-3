@@ -52,6 +52,7 @@ __all__ = [
     'PersonSpecWorkloadTableView',
     'PersonSpecWorkloadView',
     'PersonSpecsMenu',
+    'PersonStructuralSubscriptionsView',
     'PersonSubscribedBugTaskSearchListingView',
     'PersonSubscriptionsView',
     'PersonView',
@@ -73,8 +74,8 @@ __all__ = [
     'TeamMembershipView',
     'TeamMugshotView',
     'TeamNavigation',
-    'TeamOverviewNavigationMenu',
     'TeamOverviewMenu',
+    'TeamOverviewNavigationMenu',
     'TeamReassignmentView',
     'archive_to_person',
     ]
@@ -990,6 +991,16 @@ class CommonMenuLinks:
         enabled = bool(self.person.getOwnedOrDrivenPillars())
         return Link(target, text, enabled=enabled, icon='info')
 
+    def subscriptions(self):
+        target = '+subscriptions'
+        text = 'Direct subscriptions'
+        return Link(target, text, icon='info')
+
+    def structural_subscriptions(self):
+        target = '+structural-subscriptions'
+        text = 'Structural subscriptions'
+        return Link(target, text, icon='info')
+
 
 class PersonMenuMixin(CommonMenuLinks):
 
@@ -1023,14 +1034,34 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage',
-             'editemailaddresses', 'editlanguages', 'editwikinames',
-             'editircnicknames', 'editjabberids',
-             'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'codesofconduct', 'karma', 'administer', 'administer_account',
-             'projects', 'activate_ppa', 'maintained',
-             'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
-             'related_software_summary', 'view_recipes']
+    links = [
+        'edit',
+        'branding',
+        'common_edithomepage',
+        'editemailaddresses',
+        'editlanguages',
+        'editwikinames',
+        'editircnicknames',
+        'editjabberids',
+        'editsshkeys',
+        'editpgpkeys',
+        'editlocation',
+        'memberships',
+        'codesofconduct',
+        'karma',
+        'administer',
+        'administer_account',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'view_ppa_subscriptions',
+        'ppa',
+        'oauth_tokens',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
 
     def related_software_summary(self):
         target = '+related-software'
@@ -1370,14 +1401,36 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
-             'add_member', 'proposed_members',
-             'memberships', 'received_invitations',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
-             'related_software_summary', 'view_recipes']
+    links = [
+        'edit',
+        'branding',
+        'common_edithomepage',
+        'members',
+        'mugshots',
+        'add_member',
+        'proposed_members',
+        'memberships',
+        'received_invitations',
+        'editemail',
+        'configure_mailing_list',
+        'moderate_mailing_list',
+        'editlanguages',
+        'map',
+        'polls',
+        'add_poll',
+        'join',
+        'leave',
+        'add_my_teams',
+        'reassign',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'ppa',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -2396,6 +2449,22 @@ class PersonSubscriptionsView(LaunchpadView):
     def label(self):
         """The header for the subscriptions page."""
         return "Subscriptions for %s" % self.context.displayname
+
+
+class PersonStructuralSubscriptionsView(LaunchpadView):
+    """All the structural subscriptions for a person."""
+
+    page_title = 'Structural subscriptions'
+
+    def canUnsubscribeFromBugTasks(self):
+        """Can the current user modify subscriptions for the context?"""
+        return (self.user is not None and
+                self.user.inTeam(self.context))
+
+    @property
+    def label(self):
+        """The header for the structural subscriptions page."""
+        return "Structural subscriptions for %s" % self.context.displayname
 
 
 class PersonVouchersView(LaunchpadFormView):

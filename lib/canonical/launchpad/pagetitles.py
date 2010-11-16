@@ -45,11 +45,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag,
-    IMaloneApplication,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import smartquote
+from lp.bugs.interfaces.malone import IMaloneApplication
 
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'

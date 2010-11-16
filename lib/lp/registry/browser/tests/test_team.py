@@ -5,7 +5,11 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    person_logged_in,
+    )
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.menu import check_menu_links
 from lp.testing.views import create_initialized_view
@@ -50,3 +54,68 @@ class TestModeration(TestCaseWithFactory):
         self.assertThat(
             view.held_messages,
             IsConfiguredBatchNavigator('message', 'messages'))
+
+
+class TestTeamMemberAddView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamMemberAddView, self).setUp()
+        self.team = self.factory.makeTeam(name='test-team')
+        login_person(self.team.teamowner)
+
+    def getForm(self, new_member):
+        return {
+            'field.newmember': new_member.name,
+            'field.actions.add': 'Add Member',
+            }
+
+    def test_add_member_success(self):
+        member = self.factory.makePerson(name="a-member")
+        form = self.getForm(member)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'A-member (a-member) has been added as a member of this team.',
+            notifications[0].message)
+        self.assertTrue(member.inTeam(self.team))
+        self.assertEqual(
+            None, view.widgets['newmember']._getCurrentValue())
+
+    def test_add_former_member_success(self):
+        member = self.factory.makePerson(name="a-member")
+        self.team.addMember(member, self.team.teamowner)
+        with person_logged_in(member):
+            member.leave(self.team)
+        form = self.getForm(member)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'A-member (a-member) has been added as a member of this team.',
+            notifications[0].message)
+        self.assertTrue(member.inTeam(self.team))
+
+    def test_add_existing_member_fail(self):
+        member = self.factory.makePerson(name="a-member")
+        self.team.addMember(member, self.team.teamowner)
+        form = self.getForm(member)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            "A-member (a-member) is already a member of Test Team.",
+            view.errors[0])
+
+    def test_add_empty_team_fail(self):
+        empty_team = self.factory.makeTeam(owner=self.team.teamowner)
+        self.team.teamowner.leave(empty_team)
+        form = self.getForm(empty_team)
+        view = create_initialized_view(self.team, "+addmember", form=form)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            "You can't add a team that doesn't have any active members.",
+            view.errors[0])
