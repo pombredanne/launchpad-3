@@ -248,12 +248,15 @@ class TestResetTranslations(TestCaseWithFactory):
         view.initialize()
 
     def test_disables_current_translation(self):
+        # Resetting the current translation clears its "current" flag.
         self.assertTrue(self.current_translation.is_current_ubuntu)
         with person_logged_in(self.factory.makePerson()):
             self.submitForcedEmptySuggestion()
         self.assertFalse(self.current_translation.is_current_ubuntu)
 
     def test_turns_current_translation_into_suggestion(self):
+        # Resetting the current translation demotes it back to the
+        # status of a suggestion.
         self.assertEqual([], self.getLocalSuggestions())
         with person_logged_in(self.factory.makePerson()):
             self.submitForcedEmptySuggestion()
@@ -261,6 +264,9 @@ class TestResetTranslations(TestCaseWithFactory):
             [self.current_translation], self.getLocalSuggestions())
 
     def test_unprivileged_user_cannot_reset(self):
+        # When a user without editing privileges on the translation
+        # submits an empty suggestion, that does not clear the
+        # translation.
         self.closeTranslations()
         self.assertTrue(self.current_translation.is_current_ubuntu)
         with person_logged_in(self.factory.makePerson()):
