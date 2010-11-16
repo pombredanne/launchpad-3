@@ -373,13 +373,30 @@ class IBugTracker(Interface):
 
     @operation_parameters(
         component_group_name=TextLine(
-            title=u"The name of the remote component group", required=True))
+            title=u"The name of the remote component group",
+            required=True))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
 
         :param component_group_name: Name of the component group to retrieve.
+        """
+
+    @operation_parameters(
+        distro_name=TextLine(
+            title=u"The name of the distribution for the source package",
+            required=True),
+        source_package_name=TextLine(
+            title=u"The name of the source package to look for",
+            required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getRemoteComponentForDistroSourcePackage(
+        distro_name, source_package_name):
+        """Returns the component linked to this source package, if any.
+
+        If no components have been linked, returns value of None.
         """
 
 

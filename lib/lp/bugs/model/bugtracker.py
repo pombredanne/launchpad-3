@@ -82,6 +82,7 @@ from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from lp.bugs.model.bugwatch import BugWatch
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
@@ -688,6 +689,23 @@ class BugTracker(SQLBase):
                 BugTrackerComponentGroup,
                 name = component_group_name).one()
         return component_group
+
+    #TODO: Need a test for this routine
+    def getRemoteComponentForDistroSourcePackage(
+        self, distro_name, source_package_name):
+        """See `IBugTracker`."""
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+        pkg = distribution.getSourcePackage(source_package_name)
+
+        pkgs = Store.of(self).find(
+            BugTrackerComponent,
+            BugTrackerComponent.distribution == distribution.id,
+            BugTrackerComponent.source_package_name ==
+            pkg.sourcepackagename.id)
+        if pkgs.count() == 0:
+            return None
+        assert(pkgs.count() == 1)
+        return pkgs[0]
 
 
 class BugTrackerSet:

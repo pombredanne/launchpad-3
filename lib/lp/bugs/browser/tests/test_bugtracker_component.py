@@ -101,5 +101,5 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         expected = (
             u"""The example source package is already linked to """
-            """alpha:b in ubuntu""")
+            """alpha:a in ubuntu""")
         self.assertEqual(expected, notifications.pop().message)
