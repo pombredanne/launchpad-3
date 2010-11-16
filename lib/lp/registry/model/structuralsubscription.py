@@ -675,7 +675,7 @@ class FilterSetBuilder:
                 BugSubscriptionFilter.id == None,
                 *self.base_conditions))
 
-    def subscriptions_matching_x(self, join, *extra_conditions):
+    def _subscriptions_matching_x(self, join, *extra_conditions):
         conditions = chain(
             self.base_conditions, self.filter_conditions, extra_conditions)
         return Select(
@@ -696,7 +696,7 @@ class FilterSetBuilder:
         condition = Or(
             BugSubscriptionFilterStatus.id == None,
             BugSubscriptionFilterStatus.status == self.bugtask.status)
-        return self.subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(join, condition)
 
     @property
     def subscriptions_matching_importance(self):
@@ -709,7 +709,7 @@ class FilterSetBuilder:
             BugSubscriptionFilterImportance.id == None,
             BugSubscriptionFilterImportance.importance == (
                 self.bugtask.importance))
-        return self.subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(join, condition)
 
     def _subscriptions_tags_include_empty(self, *extra_conditions):
         join = LeftJoin(
@@ -719,7 +719,7 @@ class FilterSetBuilder:
                 BugSubscriptionFilterTag.include))
         condition = And(
             BugSubscriptionFilterTag.id == None, *extra_conditions)
-        return self.subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(join, condition)
 
     @property
     def subscriptions_tags_include_empty(self):
@@ -745,7 +745,7 @@ class FilterSetBuilder:
         condition = And(
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self.subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(join, condition)
 
     @property
     def subscriptions_tags_exclude_match_any(self):
@@ -757,7 +757,7 @@ class FilterSetBuilder:
         condition = And(
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self.subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(join, condition)
 
     def _subscriptions_tags_match_all(self, *extra_conditions):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
