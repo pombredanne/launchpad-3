@@ -5,8 +5,6 @@ __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
-from itertools import chain
-
 from sqlobject import ForeignKey
 from storm.expr import (
     And,
@@ -576,10 +574,10 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        base_conditions = [
+        base_conditions = And(
             StructuralSubscription.bug_notification_level >= level,
             self.__helper.join,
-            ]
+            )
 
         set_builder = FilterSetBuilder(bugtask, base_conditions)
         filter_sets = [
@@ -650,13 +648,13 @@ class FilterSetBuilder:
         self.base_conditions = base_conditions
         # Set up common filter conditions.
         if len(bugtask.bug.tags) == 0:
-            self.filter_conditions = [
-                BugSubscriptionFilter.include_any_tags == False,
-                ]
+            self.filter_conditions = And(
+                self.base_conditions,
+                BugSubscriptionFilter.include_any_tags == False)
         else:
-            self.filter_conditions = [
-                BugSubscriptionFilter.exclude_any_tags == False,
-                ]
+            self.filter_conditions = And(
+                self.base_conditions,
+                BugSubscriptionFilter.exclude_any_tags == False)
         # This gets around some weirdness with security proxies.
         self.tags = list(self.bugtask.bug.tags)
 
@@ -673,20 +671,17 @@ class FilterSetBuilder:
                         StructuralSubscription.id))),
             where=And(
                 BugSubscriptionFilter.id == None,
-                *self.base_conditions))
+                self.base_conditions))
 
-    def _subscriptions_matching_x(self, join, *extra_conditions, **extra):
-        conditions = chain(
-            self.base_conditions,
-            self.filter_conditions,
-            extra_conditions)
+    def _subscriptions_matching_x(self, join, extra_condition, **extra):
         return Select(
             StructuralSubscription.id,
             tables=(StructuralSubscription, BugSubscriptionFilter, join),
             where=And(
                 BugSubscriptionFilter.structural_subscription_id == (
                     StructuralSubscription.id),
-                *conditions),
+                self.filter_conditions,
+                extra_condition),
             **extra)
 
     @property
@@ -760,11 +755,7 @@ class FilterSetBuilder:
         return self._subscriptions_matching_x(
             BugSubscriptionFilterTag, condition)
 
-    def _subscriptions_tags_match_all(self, *extra_conditions):
-        conditions = chain(
-            self.base_conditions,
-            self.filter_conditions,
-            extra_conditions)
+    def _subscriptions_tags_match_all(self, extra_condition):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in self.tags)
         return self._subscriptions_matching_x(
@@ -773,7 +764,8 @@ class FilterSetBuilder:
                 BugSubscriptionFilterTag.filter_id == (
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilter.find_all_tags,
-                *conditions),
+                self.filter_conditions,
+                extra_condition),
             group_by=(
                 StructuralSubscription.id,
                 BugSubscriptionFilter.id),
