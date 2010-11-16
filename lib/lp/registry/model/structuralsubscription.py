@@ -739,27 +739,25 @@ class FilterSetBuilder:
 
     @property
     def subscriptions_tags_include_match_any(self):
-        join = LeftJoin(
-            BugSubscriptionFilterTag,
-            And(BugSubscriptionFilterTag.filter_id == (
-                    BugSubscriptionFilter.id),
-                BugSubscriptionFilterTag.include))
         condition = And(
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id),
+            BugSubscriptionFilterTag.include,
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self._subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(
+            BugSubscriptionFilterTag, condition)
 
     @property
     def subscriptions_tags_exclude_match_any(self):
-        join = LeftJoin(
-            BugSubscriptionFilterTag,
-            And(BugSubscriptionFilterTag.filter_id == (
-                    BugSubscriptionFilter.id),
-                Not(BugSubscriptionFilterTag.include)))
         condition = And(
+            BugSubscriptionFilterTag.filter_id == (
+                BugSubscriptionFilter.id),
+            Not(BugSubscriptionFilterTag.include),
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self._subscriptions_matching_x(join, condition)
+        return self._subscriptions_matching_x(
+            BugSubscriptionFilterTag, condition)
 
     def _subscriptions_tags_match_all(self, *extra_conditions):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
