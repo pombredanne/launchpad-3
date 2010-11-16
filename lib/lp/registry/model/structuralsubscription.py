@@ -677,7 +677,9 @@ class FilterSetBuilder:
 
     def _subscriptions_matching_x(self, join, *extra_conditions):
         conditions = chain(
-            self.base_conditions, self.filter_conditions, extra_conditions)
+            self.base_conditions,
+            self.filter_conditions,
+            extra_conditions)
         return Select(
             StructuralSubscription.id,
             tables=(StructuralSubscription, BugSubscriptionFilter, join),
