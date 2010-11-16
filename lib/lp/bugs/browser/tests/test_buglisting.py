@@ -9,13 +9,13 @@ from canonical.launchpad.testing.pages import (
     find_tags_by_class,
     )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import BrowserTestCase
 
 
 class TestBugTaskSearchListingView(BrowserTestCase):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def _makeDistributionSourcePackage(self):
         distro = self.factory.makeDistribution('test-distro')
