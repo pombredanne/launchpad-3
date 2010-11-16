@@ -322,6 +322,15 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             potemplate, language, current=False)
 
+    def getCurrentTranslation(self, potemplate, language):
+        # XXX JeroenVermeulen 2010-11-16: Stub.  To be replaced with
+        # Danilo's simultaneous work.  If you see both definitions, this
+        # is the one you should drop.
+        """See `IPOTMsgSet`."""
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(
+            potemplate.translation_side)
+        return traits.getCurrentMessage(self, potemplate, language)
+
     def getSharedTranslationMessage(self, language):
         """See `IPOTMsgSet`."""
         return self._getUsedTranslationMessage(
@@ -341,7 +350,7 @@ class POTMsgSet(SQLBase):
             "msgstr%(form)d IS NOT NULL", "OR")
         query += " AND (%s)" % msgstr_clause
         if include_dismissed != include_unreviewed:
-            current = self.getCurrentTranslationMessage(potemplate, language)
+            current = self.getCurrentTranslation(potemplate, language)
             if current is not None:
                 if current.date_reviewed is None:
                     comparing_date = current.date_created
@@ -1024,17 +1033,18 @@ class POTMsgSet(SQLBase):
 
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
-        assert(lock_timestamp is not None)
-        current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language)
+        current = self.getCurrentTranslation(
+            pofile.potemplate, pofile.language)
         if current is None:
-            # Create an empty translation message.
-            current = self.updateTranslation(
-                pofile, reviewer, [], False, lock_timestamp)
+            # Create or activate an empty translation message.
+            current = self.setCurrentTranslation(
+                pofile, reviewer, {}, RosettaTranslationOrigin.ROSETTAWEB,
+                lock_timestamp=lock_timestamp)
         else:
             # Check for translation conflicts and update review fields.
             self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.markReviewed(reviewer, lock_timestamp)
+        current.markReviewed(reviewer, lock_timestamp)
+        assert self.getCurrentTranslation(pofile.potemplate, pofile.language)
 
     def _nameMessageStatus(self, message, translation_side_traits):
         """Figure out the decision-matrix status of a message.

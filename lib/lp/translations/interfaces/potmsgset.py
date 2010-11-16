@@ -156,6 +156,12 @@ class IPOTMsgSet(Interface):
         Diverged messages are preferred.
         """
 
+    def getCurrentTranslation(potemplate, language):
+        # XXX JeroenVermeulen 2010-11-16: Stub.  To be replaced with
+        # Danilo's simultaneous work.  If you see both definitions, this
+        # is the one you should drop.
+        """Retrieve a current `TranslationMessage`."""
+
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 

@@ -11,20 +11,28 @@ from datetime import (
     )
 
 import pytz
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.testing import (
     anonymous_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_view
+from lp.translations.enums import TranslationPermission
 from lp.translations.browser.translationmessage import (
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.publisher import TranslationsLayer
 
 
 class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
@@ -173,6 +181,97 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         suggestion = self._makeTranslation(suggestion=True)
         self._createView(message)
         self._assertConfirmEmptyPluralPackaged(True, False, False, False)
+
+
+class TestResetTranslations(TestCaseWithFactory):
+    """Test resetting of the current translation.
+
+    A reviewer can reset a current translation by submitting an empty
+    translation and forcing it to be a suggestion.
+
+    :ivar pofile: A `POFile` for an Ubuntu source package.
+    :ivar current_translation: A current `TranslationMessage` in `POFile`,
+        submitted and reviewed sometime in the past.
+    """
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestResetTranslations, self).setUp()
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.pofile = self.factory.makePOFile(potemplate=template)
+        self.current_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile)
+        self.current_translation.setPOFile(self.pofile)
+
+        naked_tm = removeSecurityProxy(self.current_translation)
+        naked_tm.date_created -= timedelta(1)
+        naked_tm.date_reviewed = naked_tm.date_created
+
+    def closeTranslations(self):
+        """Disallow editing of `self.pofile` translations by regular users."""
+        policy = removeSecurityProxy(
+            self.pofile.potemplate.getTranslationPolicy())
+        policy.translationpermission = TranslationPermission.CLOSED
+
+    def getLocalSuggestions(self):
+        """Get local suggestions for `self.current_translation`."""
+        return list(
+            self.current_translation.potmsgset.getLocalTranslationMessages(
+                self.pofile.potemplate, self.pofile.language))
+
+    def submitForcedEmptySuggestion(self):
+        """Submit an empty suggestion for `self.current_translation`."""
+        empty_translation = u''
+
+        msgset_id = 'msgset_' + str(self.current_translation.potmsgset.id)
+        msgset_id_lang = msgset_id + '_' + self.pofile.language.code
+        widget_id_base = msgset_id_lang + '_translation_0_'
+
+        form = {
+            'lock_timestamp': datetime.now(pytz.utc).isoformat(),
+            'alt': None,
+            msgset_id: None,
+            widget_id_base + 'radiobutton': widget_id_base + 'new',
+            widget_id_base + 'new': empty_translation,
+            'submit_translations': 'Save &amp; Continue',
+            msgset_id_lang + '_needsreview': 'force_suggestion',
+        }
+
+        url = canonical_url(self.current_translation) + '/+translate'
+        view = create_view(
+            self.current_translation, '+translate', form=form,
+            layer=TranslationsLayer, server_url=url)
+        view.request.method = 'POST'
+        view.initialize()
+
+    def test_disables_current_translation(self):
+        # Resetting the current translation clears its "current" flag.
+        self.assertTrue(self.current_translation.is_current_ubuntu)
+        with person_logged_in(self.factory.makePerson()):
+            self.submitForcedEmptySuggestion()
+        self.assertFalse(self.current_translation.is_current_ubuntu)
+
+    def test_turns_current_translation_into_suggestion(self):
+        # Resetting the current translation demotes it back to the
+        # status of a suggestion.
+        self.assertEqual([], self.getLocalSuggestions())
+        with person_logged_in(self.factory.makePerson()):
+            self.submitForcedEmptySuggestion()
+        self.assertEqual(
+            [self.current_translation], self.getLocalSuggestions())
+
+    def test_unprivileged_user_cannot_reset(self):
+        # When a user without editing privileges on the translation
+        # submits an empty suggestion, that does not clear the
+        # translation.
+        self.closeTranslations()
+        self.assertTrue(self.current_translation.is_current_ubuntu)
+        with person_logged_in(self.factory.makePerson()):
+            self.submitForcedEmptySuggestion()
+        self.assertTrue(self.current_translation.is_current_ubuntu)
 
 
 class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
