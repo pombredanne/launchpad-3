@@ -51,8 +51,8 @@ points that would otherwise be in the output.
 
     >>> UTC = timezone('UTC')
 
-    >>> nl_file = factory.makePOFile('nl')
-    >>> template = nl_file.potemplate
+    >>> pofile = factory.makePOFile()
+    >>> template = pofile.potemplate
 
 A sample translatable message is flagged as containing a C-style format
 string.  This means that any "%d" sequences and such are significant.
@@ -69,12 +69,12 @@ The sample message has an imported translation, and a current
 translation in Launchpad that differs from the imported one.
 
     >>> current_message = factory.makeTranslationMessage(
-    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
     ...     reviewer=template.owner, translations=[u'%d c'])
     >>> current_message = removeSecurityProxy(current_message)
 
     >>> imported_message = factory.makeTranslationMessage(
-    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
     ...     reviewer=template.owner, translations=[u'%d i'],
     ...     lock_timestamp=datetime.now(UTC))
     >>> imported_message = removeSecurityProxy(imported_message)
