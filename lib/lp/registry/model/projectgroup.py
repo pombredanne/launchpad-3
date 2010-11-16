@@ -104,6 +104,7 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
+from lp.translations.model.potemplate import POTemplate
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -189,7 +190,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project == self,
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
             Product == ProductSeries.product,
-            POTemplate.productseries = ProductSeries).config(distinct=True)
+            POTemplate.productseries == ProductSeries).config(distinct=True)
 
     def has_translatable(self):
         """See `IProjectGroup`."""
