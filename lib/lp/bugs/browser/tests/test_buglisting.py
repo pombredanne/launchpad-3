@@ -10,10 +10,15 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import BrowserTestCase
+from lp.testing import (
+    BrowserTestCase,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
-class TestBugTaskSearchListingView(BrowserTestCase):
+class TestBugTaskSearchListingPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -120,3 +125,20 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertIs(None,
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
+
+
+class TestBugTaskSearchListingView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_external_bugtracker_is_none(self):
+        bug_target = self.factory.makeProduct()
+        view = create_initialized_view(bug_target, '+bugs')
+        self.assertEqual(None, view.external_bugtracker)
+
+    def test_external_bugtracker(self):
+        bug_target = self.factory.makeProduct()
+        with person_logged_in(bug_target.owner):
+            bug_target.bugtracker = self.factory.makeBugTracker()
+        view = create_initialized_view(bug_target, '+bugs')
+        self.assertEqual(bug_target.bugtracker, view.external_bugtracker)

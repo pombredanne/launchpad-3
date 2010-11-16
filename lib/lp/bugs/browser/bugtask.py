@@ -130,7 +130,10 @@ from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_distrotask,
@@ -2299,6 +2302,18 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
+
+    @property
+    def external_bugtracker(self):
+        """External bug tracking system designated for the context.
+
+        :returns: `IBugTracker` or None
+        """
+        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
+        if has_external_bugtracker is None:
+            return None
+        else:
+            return has_external_bugtracker.getExternalBugTracker()
 
     @property
     def page_title(self):
