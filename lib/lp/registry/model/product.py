@@ -1570,7 +1570,7 @@ class ProductSet:
             Product.active == True,
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
-            Product.translations_usage == ServiceUsage.LAUNCHPAD,
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
 

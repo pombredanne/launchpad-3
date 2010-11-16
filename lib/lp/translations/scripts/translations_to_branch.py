@@ -310,8 +310,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
             ProductSeries,
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
+            AND(
+                Product.translations_usage == ServiceUsage.LAUNCHPAD,
+                Product.translations_branch is not None)) 
         # Anything deterministic will do, and even that is only for
         # testing.
         productseries = productseries.order_by(ProductSeries.id)
