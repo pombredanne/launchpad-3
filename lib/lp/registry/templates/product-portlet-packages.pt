@@ -11,7 +11,7 @@
     <span class="see-all"><a
       tal:attributes="href context/menu:overview/packages/fmt:url">
       All packages</a></span>
-    Packages in Ubuntu
+    Packages in Distributions
   </h2>
 
   <tal:has_packages condition="packages">
