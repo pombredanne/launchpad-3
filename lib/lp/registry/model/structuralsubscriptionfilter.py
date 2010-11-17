@@ -166,8 +166,8 @@ class BugFilterSetBuilder:
                 StructuralSubscription.id,
                 BugSubscriptionFilter.id),
             having=ArrayContains(
-                SQL(tags_array),
-                ArrayAgg(BugSubscriptionFilterTag.tag)))
+                SQL(tags_array), ArrayAgg(
+                    BugSubscriptionFilterTag.tag)))
 
     @property
     def subscriptions_tags_include_match_all(self):
