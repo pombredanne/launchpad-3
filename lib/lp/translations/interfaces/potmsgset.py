@@ -156,12 +156,6 @@ class IPOTMsgSet(Interface):
         Diverged messages are preferred.
         """
 
-    def getCurrentTranslation(potemplate, language):
-        # XXX JeroenVermeulen 2010-11-16: Stub.  To be replaced with
-        # Danilo's simultaneous work.  If you see both definitions, this
-        # is the one you should drop.
-        """Retrieve a current `TranslationMessage`."""
-
     def getSharedTranslationMessage(language):
         """Returns a shared TranslationMessage."""
 
@@ -285,11 +279,11 @@ class IPOTMsgSet(Interface):
         If a translation conflict is detected, TranslationConflict is raised.
         """
 
-    def getCurrentTranslation(potemplate, language, side=None):
+    def getCurrentTranslation(potemplate, language, side):
         """Get a current translation message.
 
         :param potemplate: An `IPOTemplate` to look up a translation for.
-            If it's None, returns a shared translation.
+            If it's None, ignore diverged translations.
         :param language: translation should be to this `ILanguage`.
         :param side: translation side to look at.
         """

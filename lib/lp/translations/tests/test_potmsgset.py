@@ -29,7 +29,10 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -37,7 +40,6 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     )
-from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model.translationmessage import DummyTranslationMessage
 
 
@@ -870,7 +872,8 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
             self.pofile, self.factory.makePerson(), self.now())
         transaction.commit()
         current = self.potmsgset.getCurrentTranslation(
-            self.potemplate, self.pofile.language)
+            self.potemplate, self.pofile.language,
+            self.potemplate.translation_side)
         self.assertNotEqual(None, current)
         self.assertEqual([None], current.translations)
         # All suggestions are gone.
@@ -1718,10 +1721,9 @@ class BaseTestGetCurrentTranslation(object):
     def test_no_translation(self):
         # getCurrentTranslation returns None when there's no translation.
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-
-        self.assertIs(None,
-                      potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language, self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
 
     def test_basic_get(self):
         # getCurrentTranslation gets the current translation
@@ -1733,19 +1735,16 @@ class BaseTestGetCurrentTranslation(object):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message,
-                         potmsgset.getCurrentTranslation(
-                             pofile.potemplate, pofile.language,
-                             self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertEqual(message, current)
 
-    def test_assertion_on_bad_parameters(self):
-        # When no potemplate is passed in to getCurrentTranslation,
-        # and no explicit side is selected, AssertionError is raised.
+    def test_requires_side(self):
         pofile, potmsgset = self._makePOFileAndPOTMsgSet()
-
-        self.assertRaises(AssertionError,
-                          potmsgset.getCurrentTranslation,
-                          None, pofile.language, None)
+        self.assertRaises(
+            AssertionError,
+            potmsgset.getCurrentTranslation,
+            pofile.potemplate, pofile.language, None)
 
     def test_other_languages_ignored(self):
         # getCurrentTranslation never returns a translation for another
@@ -1760,9 +1759,9 @@ class BaseTestGetCurrentTranslation(object):
             pofile_other_language, pofile.potemplate.owner,
             translations, origin)
 
-        self.assertIs(None,
-                      potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language, self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
 
     def test_other_diverged_no_translation(self):
         # getCurrentTranslation gets the current upstream translation
@@ -1778,9 +1777,9 @@ class BaseTestGetCurrentTranslation(object):
         suggestion.approveAsDiverged(
             pofile_other, pofile_other.potemplate.owner)
 
-        self.assertIs(None,
-                      potmsgset.getCurrentTranslation(
-                          pofile.potemplate, pofile.language, self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
 
     def test_other_side(self):
         # getCurrentTranslation gets the current translation
@@ -1802,14 +1801,15 @@ class BaseTestGetCurrentTranslation(object):
             pofile_other, pofile_other.potemplate.owner,
             translations_other, origin)
 
-        self.assertEquals(current_translation,
-                          potmsgset.getCurrentTranslation(
-                              pofile_other.potemplate, pofile_other.language,
-                              self.this_side))
-        self.assertEquals(other_translation,
-                          potmsgset.getCurrentTranslation(
-                              pofile.potemplate, pofile.language,
-                              self.other_side))
+        self.assertEquals(
+            current_translation,
+            potmsgset.getCurrentTranslation(
+                pofile_other.potemplate, pofile_other.language,
+                self.this_side))
+        self.assertEquals(
+            other_translation,
+            potmsgset.getCurrentTranslation(
+                pofile.potemplate, pofile.language, self.other_side))
 
     def test_prefers_diverged(self):
         # getCurrentTranslation prefers a diverged translation if
@@ -1828,10 +1828,9 @@ class BaseTestGetCurrentTranslation(object):
             pofile, pofile.potemplate.owner, translations_diverged)
         diverged_message.approveAsDiverged(pofile, pofile.potemplate.owner)
 
-        self.assertEquals(diverged_message,
-                          potmsgset.getCurrentTranslation(
-                              pofile.potemplate, pofile.language,
-                              self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertEquals(diverged_message, current)
 
     def test_shared_when_requested(self):
         # getCurrentTranslation returns a shared translation even with
@@ -1850,9 +1849,9 @@ class BaseTestGetCurrentTranslation(object):
             pofile, pofile.potemplate.owner, translations_diverged)
         diverged_message.approveAsDiverged(pofile, pofile.potemplate.owner)
 
-        self.assertEquals(shared_message,
-                          potmsgset.getCurrentTranslation(
-                              None, pofile.language, self.this_side))
+        current = potmsgset.getCurrentTranslation(
+            None, pofile.language, self.this_side)
+        self.assertEquals(shared_message, current)
 
 
 class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,

@@ -1152,37 +1152,37 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
 # getCurrentTranslation and getImportedTranslation "change sides" based
 # on the current template: lp:~danilo/launchpad/use-upstream-translations.
 
-#class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
-#                                         TestCaseWithFactory):
-#
-#    layer = ZopelessDatabaseLayer
-#
-#    def setUp(self):
-#        super(TestSetCurrentTranslation_Upstream, self).setUp()
-#        series = self.factory.makeProductSeries()
-#        sharing_series = self.factory.makeProductSeries(
-#            product=series.product)
-#        potemplate = self.factory.makePOTemplate(productseries=series)
-#        sharing_potemplate = self.factory.makePOTemplate(
-#            productseries=sharing_series, name=potemplate.name)
-#        self.pofile = self.factory.makePOFile('sr', potemplate=potemplate,
-#                                              create_sharing=True)
-#
-#        # A POFile in the same context as self.pofile, used for diverged
-#        # translations.
-#        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
-#            self.pofile.language.code)
-#
-#        # A POFile in a different context from self.pofile and
-#        # self.diverging_pofile.
-#        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-#        sourcepackagename = self.factory.makeSourcePackageName()
-#        ubuntu_template = self.factory.makePOTemplate(
-#            distroseries=ubuntu.currentseries,
-#            sourcepackagename=sourcepackagename)
-#        self.other_pofile = self.factory.makePOFile(
-#            potemplate=ubuntu_template,
-#            language_code=self.pofile.language.code)
-#
-#        self.potmsgset = self.factory.makePOTMsgSet(potemplate=potemplate,
-#                                                    sequence=1)
+class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
+                                         TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestSetCurrentTranslation_Upstream, self).setUp()
+        series = self.factory.makeProductSeries()
+        sharing_series = self.factory.makeProductSeries(
+            product=series.product)
+        potemplate = self.factory.makePOTemplate(productseries=series)
+        sharing_potemplate = self.factory.makePOTemplate(
+            productseries=sharing_series, name=potemplate.name)
+        self.pofile = self.factory.makePOFile(
+            'sr', potemplate=potemplate, create_sharing=True)
+
+        # A POFile in the same context as self.pofile, used for diverged
+        # translations.
+        self.diverging_pofile = sharing_potemplate.getPOFileByLang(
+            self.pofile.language.code)
+
+        # A POFile in a different context from self.pofile and
+        # self.diverging_pofile.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        sourcepackagename = self.factory.makeSourcePackageName()
+        ubuntu_template = self.factory.makePOTemplate(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=sourcepackagename)
+        self.other_pofile = self.factory.makePOFile(
+            potemplate=ubuntu_template,
+            language_code=self.pofile.language.code)
+
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate=potemplate, sequence=1)
