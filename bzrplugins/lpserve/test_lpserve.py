@@ -1,6 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import errno
 import os
 import signal
 import socket
@@ -383,6 +384,18 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertContainsRe(path, '/lp-forking-service-child-')
         return path, pid, sock
 
+    def _start_subprocess(self, path, env_changes):
+        proc = self.start_bzr_subprocess(
+            ['lp-service', '--path', path, '--no-preload',
+             '--children-timeout=1'],
+            env_changes=env_changes)
+        trace.mutter('started lp-service subprocess')
+        expected = 'Listening on socket: %s\n' % (path,)
+        path_line = proc.stderr.readline()
+        trace.mutter(path_line)
+        self.assertEqual(expected, path_line)
+        return proc
+
     def start_service_subprocess(self):
         # Make sure this plugin is exposed to the subprocess
         # SLOOWWW (~2 seconds, which is why we are doing the work anyway)
@@ -406,16 +419,7 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         os.remove(path) # service wants create it as a socket
         env_changes = {'BZR_PLUGIN_PATH': lpserve.__path__[0],
                        'BZR_LOG': tempname}
-        proc = self.start_bzr_subprocess(
-            ['lp-service', '--path', path, '--no-preload',
-             '--children-timeout=1'],
-            env_changes=env_changes)
-        trace.mutter('started lp-service subprocess')
-        expected = 'Listening on socket: %s\n' % (path,)
-        path_line = proc.stderr.readline()
-        trace.mutter(path_line)
-        self.assertEqual(expected, path_line)
-        # The process won't delete it, so we do
+        proc = self._start_subprocess(path, env_changes)
         return proc, path
 
     def stop_service(self):
@@ -468,6 +472,9 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
         self.assertStartsWith(response, 'exited\n')
         code = int(response.split('\n', 1)[1])
         self.assertEqual(expected_code, code)
+
+
+class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
 
     def test_fork_lp_serve_hello(self):
         path, _, sock = self.send_fork_request('lp-serve --inet 2')
@@ -532,3 +539,127 @@ class TestCaseWithLPForkingServiceSubprocess(TestCaseWithSubprocess):
 
     def test_sigint_exits_nicely(self):
         self._check_exits_nicely(signal.SIGINT)
+
+
+class TestCaseWithLPForkingServiceDaemon(
+    TestCaseWithLPForkingServiceSubprocess):
+    """Test LPForkingService interaction, when run in daemon mode."""
+
+    def _cleanup_daemon(self, pid, pid_filename):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (OSError, IOError), e:
+            trace.mutter('failed to kill pid %d, might be already dead: %s'
+                         % (pid, e))
+        try:
+            os.remove(pid_filename)
+        except (OSError, IOError), e:
+            if e.errno != errno.ENOENT:
+                trace.mutter('failed to remove %r: %s'
+                             % (pid_filename, e))
+
+    def _start_subprocess(self, path, env_changes):
+        fd, pid_filename = tempfile.mkstemp(prefix='tmp-lp-forking-service-',
+                                            suffix='.pid')
+        self.service_pid_filename = pid_filename
+        os.close(fd)
+        proc = self.start_bzr_subprocess(
+            ['lp-service', '--path', path, '--no-preload',
+             '--children-timeout=1', '--pid-file', pid_filename],
+            env_changes=env_changes)
+        trace.mutter('started lp-service daemon')
+        # We wait for the spawned process to exit, expecting it to report the
+        # final pid into the pid_filename.
+        tnow = time.time()
+        tstop_waiting = tnow + 1.0
+        # When this returns, the first fork has completed and the parent has
+        # exited.
+        proc.wait()
+        while tnow < tstop_waiting:
+            # Wait for the socket to become available
+            if os.path.exists(path):
+                # The service has created the socket for us to communicate
+                break
+            time.sleep(0.1)
+            tnow = time.time()
+
+        with open(pid_filename, 'rb') as f:
+            pid = f.read()
+            trace.mutter('found pid: %r' % (pid,))
+        pid = int(pid.strip())
+        # This is now the pid of the final daemon
+        trace.mutter('lp-forking-service daemon at pid %s' % (pid,))
+        # Because nothing else will clean this up, add this final handler to
+        # clean up if all else fails.
+        self.addCleanup(self._cleanup_daemon, pid, pid_filename)
+        # self.service_process will now be the pid of the daemon, rather than a
+        # Popen object.
+        return pid
+
+    def stop_service(self):
+        if self.service_process is None:
+            # Already stopped
+            return
+        # First, try to stop the service gracefully, by sending a 'quit'
+        # message
+        try:
+            response = self.send_message_to_service('quit\n')
+        except socket.error, e:
+            # Ignore a failure to connect, the service must be stopping/stopped
+            # already
+            response = None
+        if response is not None:
+            self.assertEqual('ok\nquit command requested... exiting\n',
+                             response)
+        # Wait for the process to actually exit, or force it if necessary.
+        tnow = time.time()
+        tend = tnow + 2.0
+        # We'll be nice a couple of times, and then get mean
+        attempts = [None, None, None, signal.SIGTERM, signal.SIGKILL]
+        stopped = False
+        unclean = False
+        while tnow < tend:
+            try:
+                os.kill(self.service_process, 0)
+            except (OSError, IOError), e:
+                if e.errno == errno.ESRCH:
+                    # The process has successfully exited
+                    stopped = True
+                    break
+                raise
+            else:
+                # The process has not exited yet
+                time.sleep(0.1)
+                if attempts:
+                    sig = attempts.pop(0)
+                    if sig is not None:
+                        unclean = True
+                        try:
+                            os.kill(self.service_process, sig)
+                        except (OSError, IOError), e:
+                            if e.errno == errno.ESRCH:
+                                stopped = True
+                                break
+                            raise
+        if not stopped:
+            self.fail('Unable to stop the daemon process (pid %s) after 2.0s'
+                      % (self.service_process,))
+        elif unclean:
+            self.fail('Process (pid %s) had to be shut-down'
+                      % (self.service_process,))
+        self.service_process = None
+
+    def test_simple_start_and_stop(self):
+        pass # All the work is done in setUp()
+
+    def test_starts_and_cleans_up(self):
+        # The service should be up and responsive
+        response = self.send_message_to_service('hello\n')
+        self.assertEqual('ok\nyep, still alive\n', response)
+        self.failUnless(os.path.isfile(self.service_pid_filename))
+        with open(self.service_pid_filename, 'rb') as f:
+            content = f.read()
+        self.assertEqualDiff('%d\n' % (self.service_process,), content)
+        # We're done, shut it down
+        self.stop_service()
+        self.failIf(os.path.isfile(self.service_pid_filename))

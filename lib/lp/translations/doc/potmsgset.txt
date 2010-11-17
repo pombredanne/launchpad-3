@@ -416,7 +416,7 @@ That is the one that no_priv submitted.
 And the active translation is not the one we suggested.
 
     >>> current = potmsgset.getCurrentTranslationMessage(
-    ...     potmsgset.potemplate, spanish)
+    ...     evolution_potemplate, spanish)
     >>> current.translations
     [u'libreta de direcciones de Evolution']
 
@@ -897,7 +897,7 @@ active) as it's another context.
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
-    >>> potmsgset_translated.potemplate.iscurrent = False
+    >>> evo_man_template.iscurrent = False
     >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
 
@@ -912,7 +912,7 @@ Launchpad for translations.
 
     # We set the template as current again so we are sure that we don't show
     # suggestions just due to the change to the official_rosetta flag.
-    >>> potmsgset_translated.potemplate.iscurrent = True
+    >>> evo_man_template.iscurrent = True
     >>> ubuntu.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> refresh_suggestive_templates_cache()
     >>> transaction.commit()
