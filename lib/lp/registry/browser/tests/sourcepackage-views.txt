@@ -184,6 +184,7 @@ bonkers project, the portlet will display that information.
     Bug supervisor: no
     Bug tracker: no
     Branch: no
+    There are no registered releases for the Bonkers &rArr; crazy.
 
 A new source project that is not linked to an upstream will result in
 the portlet showing the suggested project.

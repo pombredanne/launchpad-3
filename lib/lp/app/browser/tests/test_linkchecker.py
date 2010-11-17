@@ -67,6 +67,13 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         self.check_invalid_links(
             result_json, 'invalid_branch_links', invalid_branch_urls)
 
+    def test_with_no_data(self):
+        request = LaunchpadTestRequest()
+        link_checker = LinkCheckerAPI(object(), request)
+        result_json = link_checker()
+        link_dict = simplejson.loads(result_json)
+        self.assertEqual(link_dict, {})
+
     def test_only_valid_branchlinks(self):
         branch_urls = self.make_valid_links()
         self.invoke_branch_link_checker(valid_branch_urls=branch_urls)

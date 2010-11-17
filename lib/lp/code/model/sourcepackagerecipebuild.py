@@ -228,7 +228,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             SourcePackageRelease.source_package_recipe_build == self.id)
         for release in releases:
             release.source_package_recipe_build = None
+        package_build = self.package_build
         store.remove(self)
+        package_build.destroySelf()
 
     @classmethod
     def getById(cls, build_id):

@@ -54,6 +54,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
