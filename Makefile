@@ -55,10 +55,10 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-hosted_branches: $(PY)
+hosted_branches: buildout_bin
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(API_INDEX): $(BZR_VERSION_INFO)
+$(API_INDEX): $(BZR_VERSION_INFO) buildout_bin
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
@@ -66,12 +66,12 @@ $(API_INDEX): $(BZR_VERSION_INFO)
 apidoc: compile $(API_INDEX)
 
 # Run by PQM.
-check_merge: $(PY)
+check_merge: buildout_bin
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge: $(PY)
+check_db_merge: buildout_bin
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 check_config: build
@@ -109,16 +109,16 @@ check_mailman: build
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
 		--layer=MailmanLayer
 
-lint: ${PY}
+lint: buildout_bin
 	@bash ./bin/lint.sh
 
-lint-verbose: ${PY}
+lint-verbose: buildout_bin
 	@bash ./bin/lint.sh -v
 
-xxxreport: $(PY)
+xxxreport: buildout_bin
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs: $(PY)
+check-configs: buildout_bin
 	${PY} utilities/check-configs.py
 
 pagetests: build
@@ -145,7 +145,7 @@ jsbuild_lazr: bin/jsbuild
 	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
 	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
 
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize
+jsbuild: jsbuild_lazr bin/jsbuild bin/jssize buildout_bin
 	${SHHH} bin/jsbuild \
 		$(JSFLAGS) \
 		-n launchpad \
@@ -173,7 +173,7 @@ else
 	@exit 1
 endif
 
-buildonce_eggs: $(PY)
+buildonce_eggs: buildout_bin
 	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
@@ -192,19 +192,21 @@ bin/buildout: download-cache eggs
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: $(BUILDOUT_BIN) clean_buildout
+build_eggs: buildout_bin clean_buildout
+
+$(BUILDOUT_BIN): buildout_bin
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
-$(BUILDOUT_BIN): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+buildout_bin: bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 # bin/compile_templates is responsible for building all chameleon templates,
 # of which there is currently one, but of which many more are coming.
-compile: $(PY) $(BZR_VERSION_INFO)
+compile: buildout_bin $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
@@ -463,7 +465,7 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
+.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
