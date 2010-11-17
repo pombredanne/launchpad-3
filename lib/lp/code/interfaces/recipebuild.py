@@ -19,6 +19,9 @@ from zope.interface import (
 class IRecipeBuildRecordSet(Interface):
     """Interface representing a set of recipe build records."""
 
-    def findCompletedDailyBuilds():
-        """Find the completed daily builds..
+    def findCompletedDailyBuilds(epoch_days=30):
+        """Find the recently completed daily builds.
+
+        :param epoch_days: only find builds completed in last epoch_days
+        days. If None, return all completed builds.
         """

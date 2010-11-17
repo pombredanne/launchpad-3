@@ -16,7 +16,7 @@
          tal:define="dailybuilds view/batchnav/currentBatch">
 
       <tal:block tal:condition="not:dailybuilds">
-        <p id="no-builds">No daily builds found.</p>
+        <p id="no-builds">No recently completed daily builds found.</p>
       </tal:block>
 
       <tal:block tal:condition="dailybuilds">
@@ -44,16 +44,14 @@
           <tbody>
             <tr tal:repeat="dailybuild dailybuilds">
               <td>
-                <a href="sourcepackage" tal:attributes="href dailybuild/sourcepackage/fmt:url">
-                <span tal:replace="dailybuild/sourcepackage/name">
-                  source package
-                </span>
-                </a>
+                <a tal:replace="structure dailybuild/recipebuild/distribution/fmt:link">distribution</a>
+                <a tal:attributes="href string:${dailybuild/recipebuild/distribution/fmt:url}/+source/${dailybuild/sourcepackagename/name}"
+                  tal:content="dailybuild/sourcepackagename/name">source package name</a>
               </td>
 
               <td>
-                <a href="recipe" tal:attributes="href dailybuild/recipe/fmt:url">
-                <span tal:replace="dailybuild/recipe/name">
+                <a href="recipe" tal:attributes="href dailybuild/recipebuild/recipe/fmt:url">
+                <span tal:replace="dailybuild/recipebuild/recipe/name">
                   recipe
                 </span>
                 </a>

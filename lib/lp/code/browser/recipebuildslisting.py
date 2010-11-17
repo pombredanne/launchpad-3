@@ -20,7 +20,7 @@ class CompletedDailyBuildsView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Completed Daily Recipe Builds'
+        return 'Recently Completed Daily Recipe Builds'
 
     def initialize(self):
         recipe_build_set = getUtility(IRecipeBuildRecordSet)

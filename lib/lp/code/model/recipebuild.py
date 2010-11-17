@@ -10,8 +10,10 @@ __all__ = [
     'RecipeBuildRecordSet',
     ]
 
-import collections
+from collections import namedtuple
+from datetime import datetime, timedelta
 
+import pytz
 from storm.expr import (
     compile,
     EXPR,
@@ -30,7 +32,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
-    MASTER_FLAVOR,
+    SLAVE_FLAVOR,
     )
 
 from lp.buildmaster.enums import BuildStatus
@@ -39,7 +41,6 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.archive import Archive
@@ -47,9 +48,29 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-RecipeBuildRecord = collections.namedtuple(
-    'lp_code_model_recipebuild_RecipeBuildRecord',
-    'sourcepackage, recipeowner, recipe, archive, most_recent_build_time')
+class RecipeBuildRecord(namedtuple(
+    'RecipeBuildRecord',
+    """sourcepackagename, recipeowner, archive, recipebuild,
+        most_recent_build_time""")):
+    # We need to implement our own equality check since __eq__ is broken on
+    # SourcePackageRecipe. It's broken there because __eq__ is broken,
+    # or not supported, on storm's ReferenceSet implementation.
+    def __eq__(self, other):
+        return (self.sourcepackagename == other.sourcepackagename
+            and self.recipeowner == other.recipeowner
+            and self.recipebuild.recipe.name == other.recipebuild.recipe.name
+            and self.archive == other.archive
+            and self.most_recent_build_time == other.most_recent_build_time
+        )
+
+    def __hash__(self):
+        return (
+            hash(self.sourcepackagename.name) ^
+            hash(self.recipeowner.name) ^
+            hash(self.recipebuild.recipe.name) ^
+            hash(self.archive.name) ^
+            hash(self.most_recent_build_time)
+        )
 
 
 class RecipeBuildRecordSet:
@@ -57,10 +78,10 @@ class RecipeBuildRecordSet:
 
     implements(IRecipeBuildRecordSet)
 
-    def findCompletedDailyBuilds(self):
+    def findCompletedDailyBuilds(self, epoch_days=30):
         """See `IRecipeBuildRecordSet`."""
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         tables = [
             SourcePackageRecipe,
             Join(Person,
@@ -88,17 +109,11 @@ class RecipeBuildRecordSet:
                  PackageBuild.build_farm_job_id),
         ]
 
-        def _makeRecipeBuildRecord(values):
-            (sourcepackagename, recipeowner, recipe_build, archive,
-                date_finished) = values
-            sp_factory = getUtility(ISourcePackageFactory)
-            sourcepackage = sp_factory.new(sourcepackagename,
-                                           recipe_build.distroseries)
-
-            return RecipeBuildRecord(
-                sourcepackage, recipeowner,
-                recipe_build.recipe, archive,
-                date_finished)
+        where = [BuildFarmJob.status == BuildStatus.FULLYBUILT,
+                    SourcePackageRecipe.build_daily]
+        if epoch_days is not None:
+            epoch = datetime.now(pytz.UTC) - timedelta(days=epoch_days)
+            where.append(BuildFarmJob.date_finished >= epoch)
 
         result_set = store.using(*tables).find(
                 (SourcePackageName,
@@ -107,8 +122,7 @@ class RecipeBuildRecordSet:
                     Archive,
                     Max(BuildFarmJob.date_finished),
                     ),
-                BuildFarmJob.status == BuildStatus.FULLYBUILT,
-                SourcePackageRecipe.build_daily,
+                *where
             ).group_by(
                 SourcePackageName,
                 Person,
@@ -119,6 +133,15 @@ class RecipeBuildRecordSet:
                 Person.name,
                 Archive.name,
                 )
+
+        def _makeRecipeBuildRecord(values):
+            (sourcepackagename, recipeowner, recipebuild, archive,
+                date_finished) = values
+            return RecipeBuildRecord(
+                sourcepackagename, recipeowner,
+                archive, recipebuild,
+                date_finished)
+
         return RecipeBuildRecordResultSet(
             result_set, _makeRecipeBuildRecord)
 
