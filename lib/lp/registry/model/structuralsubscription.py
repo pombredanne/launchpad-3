@@ -464,12 +464,9 @@ class StructuralSubscriptionTargetMixin:
 
     def getSubscriptionsForBugTask(self, bugtask, level):
         """See `IStructuralSubscriptionTarget`."""
-        from lp.registry.model.structuralsubscriptionfilter import (
-            FilterSetBuilder)
-        set_builder = FilterSetBuilder(
-            bugtask, And(
-                StructuralSubscription.bug_notification_level >= level,
-                self.__helper.join))
+        from lp.registry.model import structuralsubscriptionfilter
+        set_builder = structuralsubscriptionfilter.FilterSetBuilder(
+            bugtask, level, self.__helper.join)
         return Store.of(self.__helper.pillar).find(
             StructuralSubscription, In(
                 StructuralSubscription.id,

@@ -46,20 +46,25 @@ class Contains(CompoundOper):
 class FilterSetBuilder:
     """A convenience class to build queries for getSubscriptionsForBugTask."""
 
-    def __init__(self, bugtask, base_conditions):
-        self.bugtask = bugtask
-        self.base_conditions = base_conditions
+    def __init__(self, bugtask, level, join_condition):
+        self.status = bugtask.status
+        self.importance = bugtask.importance
+        # The list() gets around some weirdness with security proxies; Storm
+        # does not know how to compile an expression with a proxied list.
+        self.tags = list(bugtask.bug.tags)
+        # Set up common conditions.
+        self.base_conditions = And(
+            StructuralSubscription.bug_notification_level >= level,
+            join_condition)
         # Set up common filter conditions.
-        if len(bugtask.bug.tags) == 0:
+        if len(self.tags) == 0:
             self.filter_conditions = And(
-                self.base_conditions,
-                BugSubscriptionFilter.include_any_tags == False)
+                BugSubscriptionFilter.include_any_tags == False,
+                self.base_conditions)
         else:
             self.filter_conditions = And(
-                self.base_conditions,
-                BugSubscriptionFilter.exclude_any_tags == False)
-        # This gets around some weirdness with security proxies.
-        self.tags = list(self.bugtask.bug.tags)
+                BugSubscriptionFilter.exclude_any_tags == False,
+                self.base_conditions)
 
     @property
     def subscriptions_without_filters(self):
@@ -96,7 +101,7 @@ class FilterSetBuilder:
                 BugSubscriptionFilter.id))
         condition = Or(
             BugSubscriptionFilterStatus.id == None,
-            BugSubscriptionFilterStatus.status == self.bugtask.status)
+            BugSubscriptionFilterStatus.status == self.status)
         return self._subscriptions_matching_x(join, condition)
 
     @property
@@ -108,8 +113,7 @@ class FilterSetBuilder:
                 BugSubscriptionFilter.id))
         condition = Or(
             BugSubscriptionFilterImportance.id == None,
-            BugSubscriptionFilterImportance.importance == (
-                self.bugtask.importance))
+            BugSubscriptionFilterImportance.importance == self.importance)
         return self._subscriptions_matching_x(join, condition)
 
     @property
