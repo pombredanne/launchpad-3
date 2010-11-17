@@ -570,20 +570,16 @@ class FilterSetBuilder:
                 self.bugtask.importance))
         return self._subscriptions_matching_x(join, condition)
 
-    def _subscriptions_tags_include_empty(self, *extra_conditions):
+    @property
+    def subscriptions_tags_include_empty(self):
+        """Subscriptions with no tags required."""
         join = LeftJoin(
             BugSubscriptionFilterTag,
             And(BugSubscriptionFilterTag.filter_id == (
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilterTag.include))
-        condition = And(
-            BugSubscriptionFilterTag.id == None, *extra_conditions)
-        return self._subscriptions_matching_x(join, condition)
-
-    @property
-    def subscriptions_tags_include_empty(self):
-        """Subscriptions with no tags required."""
-        return self._subscriptions_tags_include_empty()
+        return self._subscriptions_matching_x(
+            join, BugSubscriptionFilterTag.id == None)
 
     @property
     def subscriptions_tags_include_match_any(self):
