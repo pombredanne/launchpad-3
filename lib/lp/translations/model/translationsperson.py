@@ -24,6 +24,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.enum import ServiceUsage
 from lp.registry.interfaces.person import IPerson
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries

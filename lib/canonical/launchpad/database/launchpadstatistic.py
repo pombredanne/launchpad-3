@@ -105,8 +105,7 @@ class LaunchpadStatisticSet:
 
         self.update(
                 'products_using_malone',
-                Product.selectBy(official_malone=True).count()
-                )
+                Product.selectBy(official_malone=True).count())
         ztm.commit()
 
         cur = cursor()
@@ -166,8 +165,8 @@ class LaunchpadStatisticSet:
     def _updateRosettaStatistics(self, ztm):
         self.update(
                 'products_using_rosetta',
-                Product.selectBy(translations_usage=ServiceUsage.LAUNCHPAD).count()
-                )
+                Product.selectBy(
+                    translations_usage=ServiceUsage.LAUNCHPAD).count())
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
@@ -225,4 +224,3 @@ class LaunchpadStatisticSet:
             "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
-

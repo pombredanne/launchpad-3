@@ -16,8 +16,8 @@ import os.path
 from bzrlib.errors import NotBranchError
 import pytz
 from storm.expr import (
+    And,
     Join,
-    SQL,
     )
 from zope.component import getUtility
 
@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
+from lp.app.enum import ServiceUsage
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
