@@ -1075,7 +1075,7 @@ class TestSlaveConnectionTimeouts(TrialTestCase):
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
         self.clock = Clock()
-        self.proxy = ProxyWithConnectionTimeout("http://10.255.255.1/")
+        self.proxy = ProxyWithConnectionTimeout("fake_url")
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
 
@@ -1090,7 +1090,10 @@ class TestSlaveConnectionTimeouts(TrialTestCase):
         self.addCleanup(config.pop, 'timeout')
 
         d = self.slave.echo()
-        # Advance past the 30 second timeout.
+        # Advance past the 30 second timeout.  The real reactor will
+        # never call connectTCP() since we're not spinning it up.  This
+        # avoids "connection refused" errors and simulates an
+        # environment where the endpoint doesn't respond.
         self.clock.advance(31)
         self.assertFalse(d.called)
 
