@@ -29,7 +29,10 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -37,7 +40,6 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationConflict,
     )
-from lp.translations.interfaces.side import TranslationSide
 from lp.translations.model.translationmessage import DummyTranslationMessage
 
 
@@ -676,36 +678,63 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
-        current = credits_potmsgset.getCurrentTranslationMessage(
-            self.devel_potemplate, sr_pofile.language)
+        current = credits_potmsgset.getCurrentTranslation(
+            self.devel_potemplate, sr_pofile.language,
+            TranslationSide.UPSTREAM)
         self.assertNotEqual(None, current)
+        self.assertEquals(
+            RosettaTranslationOrigin.LAUNCHPAD_GENERATED, current.origin)
+
+    def test_setTranslationCreditsToTranslated_noop_when_translated(self):
+        """Test that translation credits don't change."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        old_credits = credits_potmsgset.setCurrentTranslation(
+            sr_pofile, sr_pofile.potemplate.owner, { 0: 'credits' },
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        current = credits_potmsgset.getCurrentTranslation(
+            self.devel_potemplate, sr_pofile.language,
+            TranslationSide.UPSTREAM)
+        self.assertEquals(old_credits, current)
+
+    def test_setTranslationCreditsToTranslated_noop_when_not_credits(self):
+        """Test that translation doesn't change on a non-credits message."""
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        not_credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'non-credit message')
+        not_credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        current = not_credits_potmsgset.getCurrentTranslation(
+            self.devel_potemplate, sr_pofile.language,
+            TranslationSide.UPSTREAM)
+        self.assertIs(None, current)
 
     def test_setTranslationCreditsToTranslated_diverged(self):
         # Even if there's a diverged translation credits translation,
         # we should provide an automatic shared translation instead.
-        alsa_utils = getUtility(IProductSet).getByName('alsa-utils')
-        trunk = alsa_utils.getSeries('trunk')
-        potemplate = trunk.getPOTemplate('alsa-utils')
-        es_pofile = potemplate.getPOFileByLang('es')
-        credits_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
-            u'_: EMAIL OF TRANSLATORS\nYour emails')
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        diverged_credits = credits_potmsgset.setCurrentTranslation(
+            sr_pofile, sr_pofile.potemplate.owner, { 0: 'credits' },
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        # Since translation credits are special, we can't easily create
+        # a diverged translation on it, though it may already exist in
+        # the DB.
+        removeSecurityProxy(diverged_credits).potemplate = (
+            sr_pofile.potemplate)
+        # Make sure that worked (not a real test).
+        self.assertTrue(diverged_credits.is_current_upstream)
+        self.assertEquals(sr_pofile.potemplate, diverged_credits.potemplate)
 
-        es_current = credits_potmsgset.getCurrentTranslationMessage(
-            potemplate, es_pofile.language)
-        # Let's make sure this message is also marked as imported
-        # and diverged.
-        es_current.makeCurrentUpstream(True)
-        removeSecurityProxy(es_current).potemplate = potemplate
+        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
 
-        self.assertTrue(es_current.is_current_ubuntu)
-        self.assertNotEqual(None, es_current.potemplate)
-
-        # Setting credits as translated will give us a shared translation.
-        credits_potmsgset.setTranslationCreditsToTranslated(es_pofile)
-        current_shared = credits_potmsgset.getSharedTranslationMessage(
-            es_pofile.language)
-        self.assertNotEqual(None, current_shared)
-        self.assertEqual(None, current_shared.potemplate)
+        # Shared translation is generated.
+        shared = credits_potmsgset.getCurrentTranslation(
+            None, sr_pofile.language, TranslationSide.UPSTREAM)
+        self.assertNotEquals(diverged_credits, shared)
+        self.assertIsNot(None, shared)
 
     def test_setTranslationCreditsToTranslated_submitter(self):
         # Submitter on the automated translation message is always
@@ -716,8 +745,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         sr_pofile.owner = translator
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
-        current = credits_potmsgset.getCurrentTranslationMessage(
-            self.devel_potemplate, sr_pofile.language)
+        current = credits_potmsgset.getCurrentTranslation(
+            self.devel_potemplate, sr_pofile.language,
+            TranslationSide.UPSTREAM)
 
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         self.assertEqual(rosetta_experts, current.submitter)
