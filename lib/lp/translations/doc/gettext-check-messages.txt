@@ -116,7 +116,7 @@ detects the problem when it checks that message.
     >>> run_checker(["-w id=%s" % quote(ubuntu_message.id)])
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
+    INFO ... (ubuntu): format specifications ... are not the same
     DEBUG Commit point.
     COMMIT
     DEBUG Commit point.
@@ -151,21 +151,22 @@ add a sort order using the -o option.
     DEBUG Commit point.
     COMMIT
     DEBUG Checking message ...
-    INFO ... (imported): number of format specifications ... does not match...
+    INFO ... (upstream): number of format specifications ... does not match...
     DEBUG Commit point.
     COMMIT
     INFO Done.
     INFO Messages checked: 2
     INFO Validation errors: 2
-    INFO Messages disabled: 0
+    INFO Messages disabled: 1
     INFO Commit points: 2
 
-The script also notes when a message is shared between upstream Ubuntu.
+The script also notes when a message is shared between upstream and Ubuntu.
 
     >>> upstream_message.is_current_ubuntu = True
+    >>> upstream_message.is_current_upstream = True
     >>> run_checker(["-w id=%s" % quote(upstream_message.id)])
     DEBUG ...
-    INFO ... (current, imported): number of format specifications ...
+    INFO ... (ubuntu, upstream): number of format specifications ...
 
 
 == Dry runs ==
