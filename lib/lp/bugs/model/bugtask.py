@@ -668,16 +668,11 @@ class BugTask(SQLBase, BugTaskMixin):
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
 
-        # Make sure to exclude the current BugTask from the list of
-        # matching tasks. We use 4*limit as an arbitrary value here to
-        # make sure we select more than :limit: bugtasks.
-        matching_bugtasks = [
-            bug_task for bug_task in matching_bugtasks[:4*limit]
-            if bug_task != self]
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, user, limit)
-        return matching_bugs
+
+        # Make sure to exclude the bug of the current bugtask.
+        return [bug for bug in matching_bugs if bug.id != self.bugID]
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
@@ -1497,13 +1492,14 @@ class BugTaskSet:
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+            SpecificationBug.bugID,
+            SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
-                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+                BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
         # Cache all bugs at once to avoid one query per bugtask. We
         # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
 
         badge_properties = {}
         for bugtask in bugtasks:
@@ -1938,6 +1934,7 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2339,7 +2336,7 @@ class BugTaskSet:
             else:
                 store = search_results._store
             milestones = store.find(
-                Milestone, In(Milestone.id, milestone_ids))
+                Milestone, Milestone.id.is_in(milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
