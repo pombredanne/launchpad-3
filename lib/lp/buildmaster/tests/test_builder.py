@@ -7,6 +7,7 @@ import os
 import signal
 import xmlrpclib
 
+from twisted.web import xmlrpc
 from twisted.web.client import getPage
 
 from twisted.internet.defer import CancelledError
@@ -1057,6 +1058,33 @@ class TestSlaveTimeouts(TrialTestCase):
     def test_timeout_build(self):
         return self.assertCancelled(
             self.slave.build(None, None, None, None, None))
+
+
+class TestSlaveConnectionTimeouts(TrialTestCase):
+    # Testing that we can override the default 30 second connection
+    # timeout.
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        super(TestSlaveConnectionTimeouts, self).setUp()
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.clock = Clock()
+        self.proxy = xmlrpc.Proxy("http://10.255.255.1/")
+        self.slave = self.slave_helper.getClientSlave(
+            reactor=self.clock, proxy=self.proxy)
+
+    def test_connection_timeout(self):
+        d = self.slave.echo()
+        # Advance past the 30 second timeout.
+        self.clock.advance(31)
+        self.assertFalse(d.called)
+        # Now advance past the real socket timeout and expect a
+        # failure.
+        self.clock.advance(config.builddmaster.socket_timeout + 1)
+        self.assertTrue(d.called)
 
 
 class TestSlaveWithLibrarian(TrialTestCase):
