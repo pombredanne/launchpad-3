@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'ProxyWithConnectionTimeout',
     'rescueBuilderIfLost',
     'updateBuilderStatus',
     ]
@@ -99,6 +100,41 @@ class QuietQueryFactory(xmlrpc._QueryFactory):
     noisy = False
 
 
+class ProxyWithConnectionTimeout(xmlrpc.Proxy):
+    """Extend Twisted's Proxy to provide a configurable connection timeout."""
+
+    def __init__(self, url, user=None, password=None, allowNone=False,
+                 useDateTime=False, timeout=None):
+        xmlrpc.Proxy.__init__(
+            self, url, user, password, allowNone, useDateTime)
+        if timeout is None:
+            self.timeout = config.builddmaster.socket_timeout
+        else:
+            self.timeout = timeout
+
+    def callRemote(self, method, *args):
+        """Basically a carbon copy of the parent but passes the timeout
+        to connectTCP."""
+
+        def cancel(d):
+            factory.deferred = None
+            connector.disconnect()
+        factory = self.queryFactory(
+            self.path, self.host, method, self.user,
+            self.password, self.allowNone, args, cancel, self.useDateTime)
+        if self.secure:
+            from twisted.internet import ssl
+            connector = default_reactor.connectSSL(
+                self.host, self.port or 443, factory,
+                ssl.ClientContextFactory(),
+                timeout=self.timeout)
+        else:
+            connector = default_reactor.connectTCP(
+                self.host, self.port or 80, factory,
+                timeout=self.timeout)
+        return factory.deferred
+
+
 class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave.
 
@@ -141,7 +177,7 @@ class BuilderSlave(object):
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
         if proxy is None:
-            server_proxy = xmlrpc.Proxy(rpc_url, allowNone=True)
+            server_proxy = ProxyWithConnectionTimeout(rpc_url, allowNone=True)
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy

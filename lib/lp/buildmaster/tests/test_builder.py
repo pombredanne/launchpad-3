@@ -7,7 +7,6 @@ import os
 import signal
 import xmlrpclib
 
-from twisted.web import xmlrpc
 from twisted.web.client import getPage
 
 from twisted.internet.defer import CancelledError
@@ -44,6 +43,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import CannotResumeHost
+from lp.buildmaster.model.builder import (
+    BuilderSlave,
+    ProxyWithConnectionTimeout,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
@@ -1072,19 +1075,39 @@ class TestSlaveConnectionTimeouts(TrialTestCase):
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
         self.clock = Clock()
-        self.proxy = xmlrpc.Proxy("http://10.255.255.1/")
+        self.proxy = ProxyWithConnectionTimeout("http://10.255.255.1/")
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
 
     def test_connection_timeout(self):
+        # The default timeout of 30 seconds should not cause a timeout,
+        # only the config value should.
+        timeout_config = """
+        [builddmaster]
+        socket_timeout: 180
+        """
+        config.push('timeout', timeout_config)
+        self.addCleanup(config.pop, 'timeout')
+
         d = self.slave.echo()
         # Advance past the 30 second timeout.
         self.clock.advance(31)
         self.assertFalse(d.called)
+
         # Now advance past the real socket timeout and expect a
-        # failure.
+        # Failure.
+
+        def got_timeout(failure):
+            self.assertIsInstance(failure.value, CancelledError)
+
+        d.addBoth(got_timeout)
         self.clock.advance(config.builddmaster.socket_timeout + 1)
         self.assertTrue(d.called)
+
+    def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
+        # Make sure that BuilderSlaves use the custom proxy class.
+        slave = BuilderSlave.makeBuilderSlave("url", "host")
+        self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 
 class TestSlaveWithLibrarian(TrialTestCase):
