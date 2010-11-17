@@ -314,6 +314,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             And(
                 Product.translations_usage == ServiceUsage.LAUNCHPAD,
                 Product.translations_branch != None))
+
         # Anything deterministic will do, and even that is only for
         # testing.
         productseries = productseries.order_by(ProductSeries.id)

@@ -108,7 +108,6 @@ class POTMsgSet(SQLBase):
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence')
-    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -905,7 +904,7 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         assert(lock_timestamp is not None)
         current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language)
+            pofile.potemplate, pofile.language)
         if current is None:
             # Create an empty translation message.
             current = self.updateTranslation(

@@ -705,6 +705,7 @@ class QuestionSet:
                 raise AssertionError(
                     'product_id and distribution_id are NULL')
         return projects
+        
 
     @staticmethod
     def new(title=None, description=None, owner=None,
