@@ -166,7 +166,7 @@ class LaunchpadStatisticSet:
         self.update(
                 'products_using_rosetta',
                 Product.selectBy(
-                    translations_usage=ServiceUsage.LAUNCHPAD).count())
+                    _translations_usage=ServiceUsage.LAUNCHPAD).count())
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
