@@ -77,6 +77,7 @@ from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
     )
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
@@ -92,11 +93,12 @@ from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError,
     )
 from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
-from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.potmsgset import POTMsgSet, credits_message_str
 from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
@@ -460,12 +462,15 @@ class POFile(SQLBase, POFileMixIn):
         assert credits_type != TranslationCreditsType.NOT_CREDITS, (
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % potmsgset.singular_text)
-        imported = potmsgset.getImportedTranslationMessage(
-            self.potemplate, self.language)
-        if imported is None:
+        upstream = potmsgset.getCurrentTranslation(
+            None, self.language, TranslationSide.UPSTREAM)
+        if (upstream is None or
+            upstream.origin == RosettaTranslationOrigin.LAUNCHPAD_GENERATED or
+            upstream.translations[0] == credits_message_str):
             text = None
         else:
-            text = imported.translations[0]
+            text = upstream.translations[0]
+
         if credits_type == TranslationCreditsType.KDE_EMAILS:
             emails = []
             if text is not None:

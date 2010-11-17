@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'credits_message_str',
     'POTMsgSet',
     ]
 

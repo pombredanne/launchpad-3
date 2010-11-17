@@ -35,6 +35,7 @@ from lp.translations.interfaces.translationcommonformat import (
     )
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
@@ -1087,6 +1088,30 @@ class TestTranslationCredits(TestCaseWithFactory):
                 "\n  ".join(["%s %s" % (person.displayname,
                                         canonical_url(person))
                              for person in self.pofile.contributors]))
+
+    def test_prepareTranslationCredits_noop(self):
+        # With no contributions, translator credits message is not None,
+        # yet it's ignored in prepareTranslationCredits.
+        credits = self.credits_potmsgset.getCurrentTranslation(
+            self.potemplate, self.pofile.language,
+            self.potemplate.translation_side)
+        self.assertIsNot(None, credits)
+        self.assertIs(
+            None,
+            self.pofile.prepareTranslationCredits(self.credits_potmsgset))
+
+    def test_prepareTranslationCredits_basic(self):
+        # With only upstream contributions, translator credits message
+        # doesn't change from the upstream translation.
+        upstream_translator = self.factory.makePerson(
+            name=u'upstream-translator',
+            displayname=u'Upstream Translator')
+        upstream_credits = self.credits_potmsgset.setCurrentTranslation(
+            self.pofile, upstream_translator, {0: 'upstream credits'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(u'upstream credits'),
+            self.pofile.prepareTranslationCredits(self.credits_potmsgset))
 
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
