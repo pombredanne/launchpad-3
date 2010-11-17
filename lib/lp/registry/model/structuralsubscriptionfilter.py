@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'FilterSetBuilder',
+    'BugFilterSetBuilder',
     ]
 
 from storm.expr import (
@@ -43,7 +43,7 @@ class ArrayContains(CompoundOper):
     oper = "@>"
 
 
-class FilterSetBuilder:
+class BugFilterSetBuilder:
     """A convenience class to build queries for getSubscriptionsForBugTask."""
 
     def __init__(self, bugtask, level, join_condition):
