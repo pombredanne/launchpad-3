@@ -60,8 +60,7 @@ class RecipeBuildRecord(namedtuple(
             and self.recipeowner == other.recipeowner
             and self.recipebuild.recipe.name == other.recipebuild.recipe.name
             and self.archive == other.archive
-            and self.most_recent_build_time == other.most_recent_build_time
-        )
+            and self.most_recent_build_time == other.most_recent_build_time)
 
     def __hash__(self):
         return (
@@ -69,8 +68,7 @@ class RecipeBuildRecord(namedtuple(
             hash(self.recipeowner.name) ^
             hash(self.recipebuild.recipe.name) ^
             hash(self.archive.name) ^
-            hash(self.most_recent_build_time)
-        )
+            hash(self.most_recent_build_time))
 
 
 class RecipeBuildRecordSet:

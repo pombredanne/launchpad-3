@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recipe build listings."""
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 
 __metaclass__ = type
 
@@ -11,10 +10,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import (
-    utc,
-    UTC,
-    )
+from pytz import UTC
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
