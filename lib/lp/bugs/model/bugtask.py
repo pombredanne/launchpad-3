@@ -1938,6 +1938,7 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2280,6 +2281,9 @@ class BugTaskSet:
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
+        :param prejoins: A sequence of tuples (table, table_join) which
+            which should be pre-joined in addition to the default prejoins.
+            This parameter has no effect if _noprejoins is True.
         """
         # Prevent circular import problems.
         from lp.registry.model.product import Product
@@ -2289,6 +2293,7 @@ class BugTaskSet:
             prejoins = []
             resultrow = BugTask
         else:
+            requested_joins = kwargs.get('prejoins', [])
             prejoins = [
                 (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
                 (Product, LeftJoin(Product, BugTask.product == Product.id)),
@@ -2296,8 +2301,12 @@ class BugTaskSet:
                  LeftJoin(
                      SourcePackageName,
                      BugTask.sourcepackagename == SourcePackageName.id)),
-                ]
-            resultrow = (BugTask, Bug, Product, SourcePackageName, )
+                ] + requested_joins
+            resultrow = (BugTask, Bug, Product, SourcePackageName)
+            additional_result_objects = [
+                table for table, join in requested_joins
+                if table not in resultrow]
+            resultrow = resultrow + tuple(additional_result_objects)
         return self._search(resultrow, prejoins, params, *args)
 
     def searchBugIds(self, params):
