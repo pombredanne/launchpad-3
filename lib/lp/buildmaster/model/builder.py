@@ -213,7 +213,7 @@ class BuilderSlave(object):
         :param libraryfilealias: An `ILibraryFileAlias`.
         """
         url = libraryfilealias.http_url
-        logger.debug(
+        logger.info(
             "Asking builder on %s to ensure it has file %s (%s, %s)" % (
                 self._file_cache_url, libraryfilealias.filename, url,
                 libraryfilealias.content.sha1))
@@ -432,7 +432,7 @@ class Builder(SQLBase):
             return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
         logger = self._getSlaveScannerLogger()
-        logger.debug("Resuming %s (%s)" % (self.name, self.url))
+        logger.info("Resuming %s (%s)" % (self.name, self.url))
 
         d = self.slave.resume()
         def got_resume_ok((stdout, stderr, returncode)):
