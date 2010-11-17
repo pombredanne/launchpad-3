@@ -38,7 +38,7 @@ class ArrayAgg(NamedFunc):
     name = "ARRAY_AGG"
 
 
-class Contains(CompoundOper):
+class ArrayContains(CompoundOper):
     __slots__ = ()
     oper = "@>"
 
@@ -165,7 +165,7 @@ class FilterSetBuilder:
             group_by=(
                 StructuralSubscription.id,
                 BugSubscriptionFilter.id),
-            having=Contains(
+            having=ArrayContains(
                 SQL(tags_array),
                 ArrayAgg(BugSubscriptionFilterTag.tag)))
 
