@@ -101,6 +101,7 @@ class TestLineParsing(TestCase):
             path,
             r'/56222647/deluge-gtk_1.3.0-0ubuntu1_all.deb?N\x1f\x9b Z%7B...')
 
+
 class Test_get_fd_and_file_size(TestCase):
 
     def _ensureFileSizeIsCorrect(self, file_path):
