@@ -586,18 +586,6 @@ class FilterSetBuilder:
         return self._subscriptions_tags_include_empty()
 
     @property
-    def subscriptions_tags_include_empty_any(self):
-        """Subscriptions with no tags required."""
-        return self._subscriptions_tags_include_empty(
-            Not(BugSubscriptionFilter.find_all_tags))
-
-    @property
-    def subscriptions_tags_include_empty_all(self):
-        """Subscriptions with no tags required."""
-        return self._subscriptions_tags_include_empty(
-            BugSubscriptionFilter.find_all_tags)
-
-    @property
     def subscriptions_tags_include_match_any(self):
         """Subscriptions including any of the bug's tags."""
         condition = And(
