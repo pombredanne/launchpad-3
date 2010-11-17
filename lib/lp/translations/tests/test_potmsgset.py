@@ -22,7 +22,6 @@ from canonical.testing.layers import (
     )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
@@ -691,7 +690,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
         old_credits = credits_potmsgset.setCurrentTranslation(
-            sr_pofile, sr_pofile.potemplate.owner, { 0: 'credits' },
+            sr_pofile, sr_pofile.potemplate.owner, {0: 'credits'},
             RosettaTranslationOrigin.SCM, share_with_other_side=True)
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
         current = credits_potmsgset.getCurrentTranslation(
@@ -717,7 +716,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
         diverged_credits = credits_potmsgset.setCurrentTranslation(
-            sr_pofile, sr_pofile.potemplate.owner, { 0: 'credits' },
+            sr_pofile, sr_pofile.potemplate.owner, {0: 'credits'},
             RosettaTranslationOrigin.SCM, share_with_other_side=True)
         # Since translation credits are special, we can't easily create
         # a diverged translation on it, though it may already exist in

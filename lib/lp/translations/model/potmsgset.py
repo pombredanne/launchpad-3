@@ -9,11 +9,9 @@ __all__ = [
     ]
 
 
-import datetime
 import logging
 import re
 
-import pytz
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -1604,7 +1602,7 @@ class POTMsgSet(SQLBase):
         translator = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         generated_translation = self.setCurrentTranslation(
-            pofile, translator, { 0: credits_message_str },
+            pofile, translator, {0: credits_message_str},
             RosettaTranslationOrigin.LAUNCHPAD_GENERATED,
             share_with_other_side=True)
         generated_translation.shareIfPossible()
