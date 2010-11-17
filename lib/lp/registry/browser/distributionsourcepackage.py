@@ -50,6 +50,7 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.registry.interfaces.series import SeriesStatus
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.browser.tales import CustomizableFormatter
 from canonical.lazr.utils import smartquote
@@ -452,6 +453,16 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             # The first row for each series is the "title" row.
             packaging = packages_by_series[distroseries].direct_packaging
             package = packages_by_series[distroseries]
+            # Don't show the "Set upstream link" action for older series
+            # without packaging info, so the user won't feel required to
+            # fill it in.
+            show_set_upstream_link = (
+                packaging is None
+                and distroseries.status in (
+                    SeriesStatus.CURRENT,
+                    SeriesStatus.DEVELOPMENT,
+                    )
+                )
             title_row = {
                 'blank_row': False,
                 'title_row': True,
@@ -459,6 +470,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                 'distroseries': distroseries,
                 'series_package': package,
                 'packaging': packaging,
+                'show_set_upstream_link': show_set_upstream_link,
                 }
             rows.append(title_row)
 
