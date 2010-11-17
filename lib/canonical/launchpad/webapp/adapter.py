@@ -684,6 +684,8 @@ class StoreSelector:
                 flavor = SLAVE_FLAVOR
             elif flavor == MASTER_FLAVOR:
                 raise ReadOnlyModeDisallowedStore(name, flavor)
+            else:
+                pass
         db_policy = StoreSelector.get_current()
         if db_policy is None:
             db_policy = MasterDatabasePolicy(None)

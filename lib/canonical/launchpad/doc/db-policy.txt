@@ -137,13 +137,13 @@ for a master store fail and the default store is always the slave.
 
     >>> with nested(read_only_mode(), MasterDatabasePolicy()):
     ...     default_store = IStore(Person)
-    ...     ISlaveStore.providedBy(default_store)
-    True
+    ...     IMasterStore.providedBy(default_store)
+    False
 
     >>> with nested(read_only_mode(), MasterDatabasePolicy()):
     ...     slave_store = ISlaveStore(Person)
-    ...     ISlaveStore.providedBy(slave_store)
-    True
+    ...     IMasterStore.providedBy(slave_store)
+    False
 
     >>> with nested(read_only_mode(), MasterDatabasePolicy()):
     ...     master_store = IMasterStore(Person)
