@@ -232,7 +232,7 @@ class BugFilterSetBuilder:
             self.filters_matching_tags)
 
     @property
-    def subscriptions_matching(self):
+    def subscriptions_with_matching_filters(self):
         """Subscriptions with one or more filters matching the bug."""
         return Select(
             # I don't know of a more Storm-like way of doing this.
@@ -243,4 +243,4 @@ class BugFilterSetBuilder:
     def subscriptions(self):
         return Union(
             self.subscriptions_without_filters,
-            self.subscriptions_matching)
+            self.subscriptions_with_matching_filters)
