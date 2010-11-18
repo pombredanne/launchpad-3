@@ -37,8 +37,7 @@ class GettextCheckMessages(LaunchpadScript):
 
     This script takes a given set of messages (specified as an SQL
     "WHERE" clause) and checks each of them.  Messages that are found
-    faulty are deactivated, and where appropriate, imported messages
-    they were overriding are activated instead.
+    faulty are deactivated.
     """
 
     _check_count = 0
@@ -80,9 +79,9 @@ class GettextCheckMessages(LaunchpadScript):
         """Report gettext validation error for active message."""
         currency_markers = []
         if bad_message.is_current_ubuntu:
-            currency_markers.append('current')
+            currency_markers.append('ubuntu')
         if bad_message.is_current_upstream:
-            currency_markers.append('imported')
+            currency_markers.append('upstream')
         if currency_markers == []:
             currency_markers.append('unused')
         currency = ', '.join(currency_markers)
@@ -117,8 +116,12 @@ class GettextCheckMessages(LaunchpadScript):
         # instead of the bad one.
 
         self._log_bad_message(translationmessage, error)
-        if translationmessage.is_current_ubuntu:
+        is_current_anywhere = (
+            translationmessage.is_current_ubuntu or
+            translationmessage.is_current_upstream) 
+        if is_current_anywhere:
             translationmessage.is_current_ubuntu = False
+            translationmessage.is_current_upstream = False
             self._disable_count += 1
 
     def _do_commit(self):
