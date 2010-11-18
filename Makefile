@@ -127,6 +127,9 @@ pagetests: build
 inplace: build
 
 build: compile apidoc jsbuild css_combine
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
@@ -375,7 +378,6 @@ realclean: clean
 clean_codehosting:
 	$(RM) -r $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
-	mkdir -p $(CODEHOSTING_ROOT)/push-branches
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
