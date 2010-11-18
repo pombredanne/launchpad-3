@@ -262,7 +262,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version 0+{revno}
+                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
@@ -315,7 +315,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         with recipe_parser_newest_version(145.115):
             recipe = dedent(u'''\
-                # bzr-builder format 145.115 deb-version 0+{revno}
+                # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
                 %s
                 ''') % branch.bzr_identity
             browser = self.createRecipe(recipe, branch)
@@ -521,7 +521,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             distroseries=self.squirrel, branches=[veggie_branch])
 
         new_recipe_text = dedent(u'''\
-            # bzr-builder format 145.115 deb-version 0+{revno}
+            # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
             %s
             ''') % recipe.base_branch.bzr_identity
 
