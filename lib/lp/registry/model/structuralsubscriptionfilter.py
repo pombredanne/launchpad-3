@@ -237,8 +237,7 @@ class BugFilterSetBuilder:
         return Select(
             # I don't know of a more Storm-like way of doing this.
             SQL("filters_matching.structural_subscription_id"),
-            tables=Alias(self.filters_matching, "filters_matching"),
-            distinct=True)
+            tables=Alias(self.filters_matching, "filters_matching"))
 
     @property
     def subscriptions(self):
