@@ -733,20 +733,6 @@ class POFile(SQLBase, POFileMixIn):
         query = ' AND '.join(clauses)
         return self._getOrderedPOTMsgSets(clause_tables, query)
 
-    def getPOTMsgSetWithErrors(self):
-        """See `IPOFile`."""
-        clauses = self._getClausesForPOFileMessages()
-        clauses.extend([
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_upstream IS TRUE',
-            'TranslationMessage.validation_status <> %s' % sqlvalues(
-                TranslationValidationStatus.OK),
-            ])
-
-        query = ' AND '.join(clauses)
-        origin = [POTMsgSet, TranslationMessage, TranslationTemplateItem]
-        return self._getOrderedPOTMsgSets(origin, query)
-
     def messageCount(self):
         """See `IRosettaStats`."""
         return self.potemplate.messageCount()
@@ -1247,10 +1233,6 @@ class DummyPOFile(POFileMixIn):
         return EmptyResultSet()
 
     def getPOTMsgSetChangedInUbuntu(self):
-        """See `IPOFile`."""
-        return EmptyResultSet()
-
-    def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
         return EmptyResultSet()
 

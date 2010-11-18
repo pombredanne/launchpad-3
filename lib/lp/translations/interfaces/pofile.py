@@ -195,9 +195,6 @@ class IPOFile(IRosettaStats):
         through Launchpad.
         """
 
-    def getPOTMsgSetWithErrors():
-        """Get message sets that have translations imported with errors."""
-
     def getTranslationsFilteredBy(person):
         """Get TranslationMessages in this `IPOFile` contributed by `person`.
 

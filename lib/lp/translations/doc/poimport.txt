@@ -334,21 +334,6 @@ Fuzzy translations are ignored.
     >>> print message
     None
 
-We can also get the ones that have validation errors.
-
-    >>> potmsgsets = pofile.getPOTMsgSetWithErrors()
-    >>> potmsgsets.count()
-    1
-
-    >>> for potmsgset in potmsgsets:
-    ...     translationmessages = potmsgset.getLocalTranslationMessages(
-    ...         pofile.potemplate, pofile.language)
-    ...     for translationmessage in translationmessages:
-    ...         assert (
-    ...             translationmessage.validation_status ==
-    ...             TranslationValidationStatus.UNKNOWNERROR), (
-    ...             "Doesn't have a validation error")
-
 Check that the plural form was imported correctly.
 
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
