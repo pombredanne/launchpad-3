@@ -34,9 +34,6 @@ from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
 from lp.translations.interfaces.translationgroup import TranslationPermission
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
-    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 

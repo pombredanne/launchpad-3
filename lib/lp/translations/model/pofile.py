@@ -91,9 +91,6 @@ from lp.translations.interfaces.translationimporter import (
     TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError,
     )
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
-    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potmsgset import POTMsgSet
