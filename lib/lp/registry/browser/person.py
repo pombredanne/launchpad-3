@@ -544,6 +544,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
 
+    @stepthrough('+merge-queues')
+    def traverse_merge_queue(self, name):
+        """Traverse to this person's merge queues."""
+        return self.context.getMergeQueue(name)
+
 
 class TeamNavigation(PersonNavigation):
 

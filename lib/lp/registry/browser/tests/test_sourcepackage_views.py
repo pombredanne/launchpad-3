@@ -11,8 +11,12 @@ import urllib
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.browser.sourcepackage import get_register_upstream_url
+from lp.registry.browser.sourcepackage import (
+    get_register_upstream_url,
+    PackageUpstreamTracking,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries,
@@ -20,7 +24,11 @@ from lp.registry.interfaces.distroseries import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestSourcePackageViewHelpers(TestCaseWithFactory):
@@ -144,3 +152,62 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         params = cgi.parse_qsl(query)
         self.assertEqual((expected_base, expected_params),
                          (base, params))
+
+
+class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageUpstreamConnectionsView, self).setUp()
+        productseries = self.factory.makeProductSeries(name='1.0')
+        self.milestone = self.factory.makeMilestone(
+            product=productseries.product, productseries=productseries)
+        distroseries = self.factory.makeDistroRelease()
+        self.source_package = self.factory.makeSourcePackage(
+            distroseries=distroseries, sourcepackagename='fnord')
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=self.source_package.sourcepackagename,
+            distroseries=distroseries, version='1.5-0ubuntu1')
+        self.source_package.setPackaging(
+            productseries, productseries.product.owner)
+
+    def makeUpstreamRelease(self, version):
+        with person_logged_in(self.milestone.productseries.product.owner):
+            self.milestone.name = version
+            self.factory.makeProductRelease(self.milestone)
+
+    def assertId(self, view, id_):
+        element = find_tag_by_id(view.render(), id_)
+        self.assertTrue(element is not None)
+
+    def test_current_release_tracking_none(self):
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(
+            PackageUpstreamTracking.NONE, view.current_release_tracking)
+        self.assertId(view, 'no-upstream-version')
+
+    def test_current_release_tracking_current(self):
+        self.makeUpstreamRelease('1.5')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(
+            PackageUpstreamTracking.CURRENT, view.current_release_tracking)
+        self.assertId(view, 'current-upstream-version')
+
+    def test_current_release_tracking_older(self):
+        self.makeUpstreamRelease('1.4')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(
+            PackageUpstreamTracking.OLDER, view.current_release_tracking)
+        self.assertId(view, 'older-upstream-version')
+
+    def test_current_release_tracking_newer(self):
+        self.makeUpstreamRelease('1.6')
+        view = create_initialized_view(
+            self.source_package, name='+upstream-connections')
+        self.assertEqual(
+            PackageUpstreamTracking.NEWER, view.current_release_tracking)
+        self.assertId(view, 'newer-upstream-version')

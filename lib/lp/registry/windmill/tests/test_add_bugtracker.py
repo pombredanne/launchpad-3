@@ -91,7 +91,8 @@ class TestAddBugTracker(WindmillTestCase):
     def test_adding_bugtracker_for_project(self):
         test_inline_add_bugtracker(
             self.client,
-            url='http://launchpad.dev:8085/bzr/+configure-bugtracker',
+            url='%s/bzr/+configure-bugtracker'
+                 % RegistryWindmillLayer.base_url,
             name='test_inline_add_bugtracker_for_project')
 
 

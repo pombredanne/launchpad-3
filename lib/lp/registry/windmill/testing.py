@@ -15,4 +15,8 @@ from canonical.testing.layers import BaseWindmillLayer
 class RegistryWindmillLayer(BaseWindmillLayer):
     """Layer for Registry Windmill tests."""
 
-    base_url = 'http://launchpad.dev:8085/'
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url()
+        super(RegistryWindmillLayer, cls).setUp()
+
