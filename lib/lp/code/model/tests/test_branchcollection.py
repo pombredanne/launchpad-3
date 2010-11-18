@@ -640,6 +640,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         self.assertEqual([mp1], list(proposals))
 
     def test_merge_proposals_merging_revno(self):
+        """Specifying merged_revnos selects the correct merge proposals."""
         target = self.factory.makeBranch()
         mp1 = self.factory.makeBranchMergeProposal(target_branch=target)
         mp2 = self.factory.makeBranchMergeProposal(target_branch=target)

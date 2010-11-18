@@ -362,7 +362,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getMergeProposals(self, status=None, visible_by_user=None,
                           merged_revnos=None):
-        """See `IHasMergeProposals`."""
+        """See `IBranch`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,

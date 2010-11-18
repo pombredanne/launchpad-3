@@ -2815,7 +2815,8 @@ class TestWebservice(TestCaseWithFactory):
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
 
-    def test_getMergeProposals(self):
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
         mp = self.factory.makeBranchMergeProposal()
         launchpad = launchpadlib_for('test', mp.registrant,
             service_root="http://api.launchpad.dev:8085")
