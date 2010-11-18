@@ -25,15 +25,16 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatistic,
     ILaunchpadStatisticSet,
-    IPersonSet,
-    QuestionStatus,
     )
+from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.model.question import Question
+from lp.app.enums import ServiceUsage
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import Product
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.pofile import POFile
@@ -165,7 +166,7 @@ class LaunchpadStatisticSet:
     def _updateRosettaStatistics(self, ztm):
         self.update(
                 'products_using_rosetta',
-                Product.selectBy(official_rosetta=True).count()
+                Product.selectBy(translations_usage=ServiceUsage.LAUNCHPAD).count()
                 )
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()

@@ -20,7 +20,6 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     Desc,
-    In,
     Int,
     Join,
     Or,
@@ -51,7 +50,10 @@ from canonical.launchpad.components.storm_operators import (
     Match,
     RANK,
     )
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -1143,16 +1145,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         publishing_condition = ''
         if publishing_distroseries is not None:
-            publishing_condition = """
-                AND EXISTS (
-                    SELECT 1
-                    FROM SourcePackageRelease spr
-                        JOIN SourcePackagePublishingHistory spph
-                            ON spph.sourcepackagerelease = spr.id
-                    WHERE spr.sourcepackagename = SourcePackageName.id
-                        AND spph.distroseries = %d
-                    )""" % (
-                publishing_distroseries.id)
+            origin += [
+                Join(SourcePackageRelease,
+                    SourcePackageRelease.sourcepackagename ==
+                        SourcePackageName.id),
+                Join(SourcePackagePublishingHistory,
+                    SourcePackagePublishingHistory.sourcepackagerelease ==
+                        SourcePackageRelease.id),
+                ]
+            publishing_condition = (
+                "AND SourcePackagePublishingHistory.distroseries = %d"
+                % publishing_distroseries.id)
 
         packaging_query = """
             SELECT 1
@@ -1179,8 +1182,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    quote(text), quote_like(text), has_packaging_condition,
                    publishing_condition)
         dsp_caches_with_ranks = store.using(*origin).find(
-            find_spec, condition).order_by('rank DESC')
-
+            find_spec, condition).order_by(
+                'rank DESC, DistributionSourcePackageCache.name')
+        dsp_caches_with_ranks.config(distinct=True)
         return dsp_caches_with_ranks
 
     def searchSourcePackages(
@@ -1221,8 +1225,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRelease.sourcepackagename == SourcePackageName.id,
             DistributionSourcePackageCache.sourcepackagename ==
                 SourcePackageName.id,
-            In(
-                DistributionSourcePackageCache.archiveID,
+            DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids))
 
     def searchBinaryPackages(self, package_name, exact_match=False):
@@ -1233,7 +1236,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if exact_match:
             find_spec = self._binaryPackageSearchClause + (
-                BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+                BinaryPackageRelease.binarypackagename
+                    == BinaryPackageName.id,
                 )
             match_clause = (BinaryPackageName.name == package_name,)
         else:
@@ -1242,8 +1246,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # DistributionSourcePackageCache records.
             find_spec = (
                 DistributionSourcePackageCache.distribution == self,
-                In(
-                    DistributionSourcePackageCache.archiveID,
+                DistributionSourcePackageCache.archiveID.is_in(
                     self.all_distro_archive_ids))
             match_clause = (
                 DistributionSourcePackageCache.binpkgnames.like(
@@ -1257,7 +1260,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchBinaryPackagesFTI(self, package_name):
         """See `IDistribution`."""
         search_vector_column = DistroSeriesPackageCache.fti
-        query_function = FTQ(package_name)
+        query_function = FTQ(ensure_unicode(package_name))
         rank = RANK(search_vector_column, query_function)
 
         extra_clauses = (

@@ -18,7 +18,7 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
+from canonical.launchpad.database.message import (
     MessageJob,
     MessageJobAction,
     MessageSet,

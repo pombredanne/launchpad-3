@@ -215,7 +215,7 @@ cache when it's updated.
   >>> warty.searchPackages('foobar').count()
   1
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.distroseriespackagecache import (
   ...      DistroSeriesPackageCache)
 
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(

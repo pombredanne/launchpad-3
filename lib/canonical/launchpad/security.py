@@ -51,6 +51,7 @@ from lp.blueprints.interfaces.specificationsubscription import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -61,7 +62,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
@@ -114,6 +114,10 @@ from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IProjectGroupMilestone,
+    )
+from lp.registry.interfaces.nameblacklist import (
+    INameBlacklist,
+    INameBlacklistSet,
     )
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
@@ -1672,6 +1676,26 @@ def can_edit_team(team, user):
         return True
     else:
         return team in user.person.getAdministratedTeams()
+
+
+class ViewNameBlacklist(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.View'
+    usedfor = INameBlacklist
+
+
+class EditNameBlacklist(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = INameBlacklist
+
+
+class ViewNameBlacklistSet(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.View'
+    usedfor = INameBlacklistSet
+
+
+class EditNameBlacklistSet(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = INameBlacklistSet
 
 
 class ViewLanguageSet(AnonymousAuthorization):

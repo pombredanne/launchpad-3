@@ -74,3 +74,5 @@ lib/canonical/buildd/launchpad-files/*
 .project
 .pydevproject
 librarian.log
+configs/testrunner_*
+configs/testrunner-appserver_*

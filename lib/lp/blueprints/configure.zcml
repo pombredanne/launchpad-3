@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
@@ -237,5 +238,7 @@
       provides="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet">
     <allow interface="lp.blueprints.interfaces.specificationmessage.ISpecificationMessageSet"/>
   </securedutility>
+
+  <webservice:register module="lp.blueprints.interfaces.webservice" />
 
 </configure>

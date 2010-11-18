@@ -20,7 +20,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    In,
     SQL,
     )
 from storm.locals import Int
@@ -186,17 +185,12 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631: Once data migration has
-        # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.  At that
-        # time it should also be converted to a Storm query and the issue with
-        # has_translatables resolved.
         return Product.select('''
             Product.project = %s AND
-            Product.official_rosetta = TRUE AND
+            Product.translations_usage = %s AND
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id
-            ''' % sqlvalues(self),
+            ''' % sqlvalues(self, ServiceUsage.LAUNCHPAD),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
 
@@ -342,9 +336,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         if not self.products:
             return []
-        product_ids = sqlvalues(*self.products)
+        product_ids = [product.id for product in self.products]
         return get_bug_tags_open_count(
-            In(BugTask.productID, product_ids), user)
+            BugTask.productID.is_in(product_ids), user)
 
     def _getBugTaskContextClause(self):
         """See `HasBugsBase`."""

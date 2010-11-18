@@ -24,13 +24,15 @@ from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import TestCaseWithFactory
-from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -305,8 +307,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # Setting one of the suggestions as current will leave
         # them both 'reviewed' and thus hidden.
-        current_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset)
+        shared_suggestion.approve(sr_pofile, self.factory.makePerson())
         self.assertContentEqual(
             [],
             self.potmsgset.getLocalTranslationMessages(
@@ -870,8 +871,9 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
         self.potmsgset.dismissAllSuggestions(
             self.pofile, self.factory.makePerson(), self.now())
         transaction.commit()
-        current = self.potmsgset.getCurrentTranslationMessage(
-            self.potemplate, self.pofile.language)
+        current = self.potmsgset.getCurrentTranslation(
+            self.potemplate, self.pofile.language,
+            self.potemplate.translation_side)
         self.assertNotEqual(None, current)
         self.assertEqual([None], current.translations)
         # All suggestions are gone.
@@ -1711,6 +1713,199 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
             potmsgset.setCurrentTranslation,
             pofile, pofile.potemplate.owner, translations, origin,
             lock_timestamp=lock_timestamp)
+
+
+class BaseTestGetCurrentTranslation(object):
+    layer = DatabaseFunctionalLayer
+
+    def test_no_translation(self):
+        # getCurrentTranslation returns None when there's no translation.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
+
+    def test_basic_get(self):
+        # getCurrentTranslation gets the current translation
+        # for a message.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
+        origin = RosettaTranslationOrigin.SCM
+        message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations, origin)
+
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertEqual(message, current)
+
+    def test_requires_side(self):
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        self.assertRaises(
+            AssertionError,
+            potmsgset.getCurrentTranslation,
+            pofile.potemplate, pofile.language, None)
+
+    def test_other_languages_ignored(self):
+        # getCurrentTranslation never returns a translation for another
+        # language.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        pofile_other_language = self.factory.makePOFile(
+            potemplate=pofile.potemplate)
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
+        origin = RosettaTranslationOrigin.SCM
+        message = potmsgset.setCurrentTranslation(
+            pofile_other_language, pofile.potemplate.owner,
+            translations, origin)
+
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
+
+    def test_other_diverged_no_translation(self):
+        # getCurrentTranslation gets the current upstream translation
+        # for a message.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        pofile_other = self._makeOtherPOFile(pofile, potmsgset)
+
+        # Create a diverged translation in pofile_other.
+        translations = {
+            0: self.factory.getUniqueString('translation'), }
+        suggestion = potmsgset.submitSuggestion(
+            pofile_other, pofile_other.potemplate.owner, translations)
+        suggestion.approveAsDiverged(
+            pofile_other, pofile_other.potemplate.owner)
+
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertIs(None, current)
+
+    def test_other_side(self):
+        # getCurrentTranslation gets the current translation
+        # for a message depending on the side that is specified.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        pofile_other = self._makeOtherPOFile(pofile, potmsgset)
+
+        # Create current translations in 'pofile' and 'pofile_other'.
+        translations_here = {
+            0: self.factory.getUniqueString('here'), }
+        translations_other = {
+            0: self.factory.getUniqueString('other'), }
+        origin = RosettaTranslationOrigin.SCM
+
+        current_translation = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner,
+            translations_here, origin)
+        other_translation = potmsgset.setCurrentTranslation(
+            pofile_other, pofile_other.potemplate.owner,
+            translations_other, origin)
+
+        self.assertEquals(
+            current_translation,
+            potmsgset.getCurrentTranslation(
+                pofile_other.potemplate, pofile_other.language,
+                self.this_side))
+        self.assertEquals(
+            other_translation,
+            potmsgset.getCurrentTranslation(
+                pofile.potemplate, pofile.language, self.other_side))
+
+    def test_prefers_diverged(self):
+        # getCurrentTranslation prefers a diverged translation if
+        # it's available for the given potemplate.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+
+        # Create both a shared and a diverged translation in pofile.
+        translations_shared = {
+            0: self.factory.getUniqueString('shared'), }
+        translations_diverged = {
+            0: self.factory.getUniqueString('diverged'), }
+        origin = RosettaTranslationOrigin.SCM
+        shared_message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations_shared, origin)
+        diverged_message = potmsgset.submitSuggestion(
+            pofile, pofile.potemplate.owner, translations_diverged)
+        diverged_message.approveAsDiverged(pofile, pofile.potemplate.owner)
+
+        current = potmsgset.getCurrentTranslation(
+            pofile.potemplate, pofile.language, self.this_side)
+        self.assertEquals(diverged_message, current)
+
+    def test_shared_when_requested(self):
+        # getCurrentTranslation returns a shared translation even with
+        # diverged translation present if shared one was asked for.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+
+        # Create both a shared and a diverged translation in pofile.
+        translations_shared = {
+            0: self.factory.getUniqueString('shared'), }
+        translations_diverged = {
+            0: self.factory.getUniqueString('diverged'), }
+        origin = RosettaTranslationOrigin.SCM
+        shared_message = potmsgset.setCurrentTranslation(
+            pofile, pofile.potemplate.owner, translations_shared, origin)
+        diverged_message = potmsgset.submitSuggestion(
+            pofile, pofile.potemplate.owner, translations_diverged)
+        diverged_message.approveAsDiverged(pofile, pofile.potemplate.owner)
+
+        current = potmsgset.getCurrentTranslation(
+            None, pofile.language, self.this_side)
+        self.assertEquals(shared_message, current)
+
+
+class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,
+                                            TestCaseWithFactory):
+    """getCurrentTranslation working on an upstream POFile."""
+
+    def setUp(self):
+        super(TestGetCurrentTranslationForUpstreams, self).setUp(
+            'carlos@canonical.com')
+        self.this_side = TranslationSide.UPSTREAM
+        self.other_side = TranslationSide.UBUNTU
+
+    def _makePOFileAndPOTMsgSet(self):
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeOtherPOFile(self, pofile, potmsgset):
+        sp = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            name=pofile.potemplate.name,
+            distroseries=sp.distroseries,
+            sourcepackagename=sp.sourcepackagename)
+        pofile_other = self.factory.makePOFile(potemplate=potemplate,
+                                               language=pofile.language)
+        potmsgset.setSequence(potemplate, 1)
+        return pofile_other
+
+
+class TestGetCurrentTranslationForUbuntu(BaseTestGetCurrentTranslation,
+                                         TestCaseWithFactory):
+    """getCurrentTranslation working on an Ubuntu POFile."""
+
+    def setUp(self):
+        super(TestGetCurrentTranslationForUbuntu, self).setUp(
+            'carlos@canonical.com')
+        self.this_side = TranslationSide.UBUNTU
+        self.other_side = TranslationSide.UPSTREAM
+
+    def _makePOFileAndPOTMsgSet(self):
+        sp = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sp.distroseries,
+            sourcepackagename=sp.sourcepackagename)
+        pofile = self.factory.makePOFile(potemplate=potemplate)
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        return pofile, potmsgset
+
+    def _makeOtherPOFile(self, pofile, potmsgset):
+        potemplate = self.factory.makePOTemplate(name=pofile.potemplate.name)
+        pofile_other = self.factory.makePOFile(potemplate=potemplate,
+                                               language=pofile.language)
+        potmsgset.setSequence(potemplate, 1)
+        return pofile_other
 
 
 class TestCheckForConflict(TestCaseWithFactory):

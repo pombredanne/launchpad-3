@@ -9,11 +9,11 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 import pytz
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
@@ -22,7 +22,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 
-class TestTranslatableMessageBase(TestCaseWithFactory):
+class TestTranslatableMessageBase:
     """Common setup for `TranslatableMessage`."""
 
     layer = ZopelessDatabaseLayer
@@ -47,24 +47,33 @@ class TestTranslatableMessageBase(TestCaseWithFactory):
     def _createTranslation(self, translation=None, is_current_ubuntu=False,
                            is_current_upstream=False, is_diverged=False,
                            date_updated=None):
-        is_suggestion = not (
-            is_current_ubuntu or is_current_upstream or is_diverged)
         if translation is not None:
             translation = [translation]
-        if is_suggestion:
-            return self.factory.makeSuggestion(
-                pofile=self.pofile, potmsgset=self.potmsgset,
-                translations=translation, date_created=date_updated)
-        else:
-            return self.factory.makeTranslationMessage(
+
+        if is_current_upstream:
+            message = self.factory.makeCurrentTranslationMessage(
                 pofile=self.pofile, potmsgset=self.potmsgset,
                 translations=translation,
-                is_current_upstream=is_current_upstream,
-                force_diverged=is_diverged,
-                date_updated=date_updated)
+                current_other=is_current_ubuntu,
+                diverged=is_diverged)
+            if date_updated is not None:
+                naked_message = removeSecurityProxy(message)
+                naked_message.date_created = date_updated
+                naked_message.date_reviewed = date_updated
+        else:
+            message = self.factory.makeSuggestion(
+                pofile=self.pofile, potmsgset=self.potmsgset,
+                translations=translation, date_created=date_updated)
+            message.is_current_ubuntu = is_current_ubuntu
+            self.assertFalse(
+                is_diverged,
+                "Diverging message to a template it's not current in.")
+
+        return message
 
 
-class TestTranslatableMessage(TestTranslatableMessageBase):
+class TestTranslatableMessage(TestTranslatableMessageBase,
+                              TestCaseWithFactory):
     """Test of `TranslatableMessage` properties and methods."""
 
     def test_sequence(self):
@@ -88,8 +97,8 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         self.assertTrue(message.is_untranslated)
 
     def test_is_current_diverged(self):
-        translation = self._createTranslation(is_current_ubuntu=True,
-                                              is_diverged=True)
+        translation = self._createTranslation(
+            is_current_upstream=True, is_diverged=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertTrue(message.is_current_diverged)
 
@@ -118,7 +127,7 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         self.assertEqual(3, message.number_of_plural_forms)
 
     def test_getCurrentTranslation(self):
-        translation = self._createTranslation(is_current_ubuntu=True)
+        translation = self._createTranslation(is_current_upstream=True)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         current = message.getCurrentTranslation()
         self.assertEqual(translation, current)
@@ -137,7 +146,8 @@ class TestTranslatableMessage(TestTranslatableMessageBase):
         self.assertEqual(translation, shared)
 
 
-class TestTranslatableMessageExternal(TestTranslatableMessageBase):
+class TestTranslatableMessageExternal(TestTranslatableMessageBase,
+                                      TestCaseWithFactory):
     """Test of `TranslatableMessage` methods for external translations."""
 
     def setUp(self):
@@ -177,7 +187,8 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase):
         self.assertContentEqual([self.external_suggestion], externals)
 
 
-class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
+class TestTranslatableMessageSuggestions(TestTranslatableMessageBase,
+                                         TestCaseWithFactory):
     """Test of `TranslatableMessage` methods for getting suggestions."""
 
     def gen_now(self):
@@ -191,15 +202,15 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         self.now = self.gen_now().next
         self.suggestion1 = self._createTranslation(date_updated=self.now())
         self.current = self._createTranslation(
-            is_current_ubuntu=True, date_updated=self.now())
+            is_current_upstream=True, date_updated=self.now())
         self.suggestion2 = self._createTranslation(date_updated=self.now())
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
 
     def test_getAllSuggestions(self):
         # There are three different methods to return.
         suggestions = self.message.getAllSuggestions()
-        self.assertContentEqual([self.suggestion1, self.suggestion2],
-                                suggestions)
+        self.assertContentEqual(
+            [self.suggestion1, self.suggestion2], suggestions)
 
     def test_getDismissedSuggestions(self):
         # There are three different methods to return.
@@ -215,11 +226,6 @@ class TestTranslatableMessageSuggestions(TestTranslatableMessageBase):
         # Add a suggestion that is newer than the current translation and
         # dismiss it. Also show that getSuggestions only returns translations
         # that are newer than the current one unless only_new is set to False.
-
         self.message.dismissAllSuggestions(self.potemplate.owner, self.now())
         suggestions = self.message.getUnreviewedSuggestions()
         self.assertContentEqual([], suggestions)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

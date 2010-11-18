@@ -17,6 +17,7 @@ __all__ = [
     'CannotSwitchPrivacy',
     'ComponentNotFound',
     'CannotRestrictArchitectures',
+    'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
     'DistroSeriesNotFound',

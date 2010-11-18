@@ -20,13 +20,19 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import SQL
+from storm.expr import (
+    Coalesce,
+    Desc,
+    Or,
+    SQL,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import (
@@ -137,7 +143,6 @@ class POTMsgSet(SQLBase):
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence')
-    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -327,6 +332,33 @@ class POTMsgSet(SQLBase):
         return self._getUsedTranslationMessage(
             None, language, current=True)
 
+    def getCurrentTranslation(self, potemplate, language, side):
+        """See `IPOTMsgSet`."""
+        assert side is not None, "Translation side must be specified."
+        traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
+        flag = removeSecurityProxy(traits.getFlag(TranslationMessage))
+
+        clauses = [
+            flag == True,
+            TranslationMessage.potmsgsetID == self.id,
+            TranslationMessage.languageID == language.id,
+            ]
+
+        if potemplate is None:
+            # Look only for a shared translation.
+            clauses.append(TranslationMessage.potemplate == None)
+        else:
+            clauses.append(Or(
+                TranslationMessage.potemplate == None,
+                TranslationMessage.potemplateID == potemplate.id))
+
+        # Return a diverged translation if it exists, and fall back
+        # to the shared one otherwise.
+        result = Store.of(self).find(
+            TranslationMessage, *clauses).order_by(
+              Desc(Coalesce(TranslationMessage.potemplateID, -1))).first()
+        return result
+
     def getLocalTranslationMessages(self, potemplate, language,
                                     include_dismissed=False,
                                     include_unreviewed=True):
@@ -341,7 +373,8 @@ class POTMsgSet(SQLBase):
             "msgstr%(form)d IS NOT NULL", "OR")
         query += " AND (%s)" % msgstr_clause
         if include_dismissed != include_unreviewed:
-            current = self.getCurrentTranslationMessage(potemplate, language)
+            current = self.getCurrentTranslation(
+                potemplate, language, potemplate.translation_side)
             if current is not None:
                 if current.date_reviewed is None:
                     comparing_date = current.date_created
@@ -874,7 +907,6 @@ class POTMsgSet(SQLBase):
                 matching_message = TranslationMessage(
                     potmsgset=self,
                     potemplate=pofile.potemplate,
-                    pofile=pofile,
                     language=pofile.language,
                     origin=origin,
                     submitter=submitter,
@@ -1025,17 +1057,23 @@ class POTMsgSet(SQLBase):
 
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
-        assert(lock_timestamp is not None)
-        current = self.getCurrentTranslationMessage(
-            self.potemplate, pofile.language)
+        assert lock_timestamp is not None, "lock_timestamp is required."
+
+        template = pofile.potemplate
+        language = pofile.language
+        side = template.translation_side
+        current = self.getCurrentTranslation(template, language, side)
+
         if current is None:
-            # Create an empty translation message.
-            current = self.updateTranslation(
-                pofile, reviewer, [], False, lock_timestamp)
+            # Create or activate an empty translation message.
+            current = self.setCurrentTranslation(
+                pofile, reviewer, {}, RosettaTranslationOrigin.ROSETTAWEB,
+                lock_timestamp=lock_timestamp)
         else:
             # Check for translation conflicts and update review fields.
             self._maybeRaiseTranslationConflict(current, lock_timestamp)
-            current.markReviewed(reviewer, lock_timestamp)
+        current.markReviewed(reviewer, lock_timestamp)
+        assert self.getCurrentTranslation(template, language, side)
 
     def _nameMessageStatus(self, message, translation_side_traits):
         """Figure out the decision-matrix status of a message.

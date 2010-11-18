@@ -52,7 +52,7 @@ So let's make a contribution.
 
     >>> contributor = factory.makePerson(displayname="Contri Butor")
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> translation = factory.makeTranslationMessage(pofile, potmsgset,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile, potmsgset,
     ...     translator=contributor, reviewer=contributor,
     ...     translations=['A translation made by a contributor.'])
     >>> view = POFileBaseView(pofile, LaunchpadTestRequest())
