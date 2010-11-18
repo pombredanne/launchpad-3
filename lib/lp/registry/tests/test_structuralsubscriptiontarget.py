@@ -67,7 +67,7 @@ class StructuralSubscriptionTestBase:
 
 
 class RestrictedStructuralSubscription(StructuralSubscriptionTestBase):
-    # Tests suitable for a target that restricts structural subscriptions.
+    """Tests suitable for a target that restricts structural subscriptions."""
 
     def test_target_implements_structural_subscription_target(self):
         self.assertTrue(verifyObject(IStructuralSubscriptionTarget,
@@ -128,8 +128,10 @@ class RestrictedStructuralSubscription(StructuralSubscriptionTestBase):
 
 
 class UnrestrictedStructuralSubscription(RestrictedStructuralSubscription):
-    # Tests suitable for a target that does not restrict structural
-    # subscriptions.
+    """
+    Tests suitable for a target that does not restrict structural
+    subscriptions.
+    """
 
     def test_structural_subscription_by_ordinary_user(self):
         # ordinary users can subscribe themselves
@@ -431,8 +433,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         # filter, the subscription is still found.
         self.bugtask.transitionToImportance(
             BugTaskImportance.CRITICAL, self.target.owner)
-        # XXX Current implementation does not select distinct subscriptions.
-        self.assertSubscriptions([self.subscription, self.subscription])
+        self.assertSubscriptions([self.subscription])
 
         # If the bugtask is adjusted to no longer match the criteria of the
         # first filter, the subscription is still found.

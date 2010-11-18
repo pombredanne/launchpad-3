@@ -7,6 +7,7 @@ __all__ = [
     ]
 
 from storm.expr import (
+    Alias,
     And,
     CompoundOper,
     Except,
@@ -81,10 +82,17 @@ class BugFilterSetBuilder:
                 BugSubscriptionFilter.id == None,
                 self.base_conditions))
 
-    def _subscriptions_matching_x(self, join, extra_condition, **extra):
+    def _filters_matching_x(self, join, extra_condition, **extra):
         return Select(
-            StructuralSubscription.id,
-            tables=(StructuralSubscription, BugSubscriptionFilter, join),
+            columns=(
+                # Alias this column so it can be selected in
+                # subscriptions_matching.
+                Alias(
+                    BugSubscriptionFilter.structural_subscription_id,
+                    "structural_subscription_id"),
+                BugSubscriptionFilter.id),
+            tables=(
+                StructuralSubscription, BugSubscriptionFilter, join),
             where=And(
                 BugSubscriptionFilter.structural_subscription_id == (
                     StructuralSubscription.id),
@@ -93,8 +101,8 @@ class BugFilterSetBuilder:
             **extra)
 
     @property
-    def subscriptions_matching_status(self):
-        """Subscriptions with the given bugtask's status."""
+    def filters_matching_status(self):
+        """Filters with the given bugtask's status."""
         join = LeftJoin(
             BugSubscriptionFilterStatus,
             BugSubscriptionFilterStatus.filter_id == (
@@ -102,11 +110,11 @@ class BugFilterSetBuilder:
         condition = Or(
             BugSubscriptionFilterStatus.id == None,
             BugSubscriptionFilterStatus.status == self.status)
-        return self._subscriptions_matching_x(join, condition)
+        return self._filters_matching_x(join, condition)
 
     @property
-    def subscriptions_matching_importance(self):
-        """Subscriptions with the given bugtask's importance."""
+    def filters_matching_importance(self):
+        """Filters with the given bugtask's importance."""
         join = LeftJoin(
             BugSubscriptionFilterImportance,
             BugSubscriptionFilterImportance.filter_id == (
@@ -114,47 +122,47 @@ class BugFilterSetBuilder:
         condition = Or(
             BugSubscriptionFilterImportance.id == None,
             BugSubscriptionFilterImportance.importance == self.importance)
-        return self._subscriptions_matching_x(join, condition)
+        return self._filters_matching_x(join, condition)
 
     @property
-    def subscriptions_tags_include_empty(self):
-        """Subscriptions with no tags required."""
+    def filters_tags_include_empty(self):
+        """Filters with no tags required."""
         join = LeftJoin(
             BugSubscriptionFilterTag,
             And(BugSubscriptionFilterTag.filter_id == (
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilterTag.include))
-        return self._subscriptions_matching_x(
+        return self._filters_matching_x(
             join, BugSubscriptionFilterTag.id == None)
 
     @property
-    def subscriptions_tags_include_match_any(self):
-        """Subscriptions including any of the bug's tags."""
+    def filters_tags_include_match_any(self):
+        """Filters including any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
                 BugSubscriptionFilter.id),
             BugSubscriptionFilterTag.include,
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self._subscriptions_matching_x(
+        return self._filters_matching_x(
             BugSubscriptionFilterTag, condition)
 
     @property
-    def subscriptions_tags_exclude_match_any(self):
-        """Subscriptions excluding any of the bug's tags."""
+    def filters_tags_exclude_match_any(self):
+        """Filters excluding any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
                 BugSubscriptionFilter.id),
             Not(BugSubscriptionFilterTag.include),
             Not(BugSubscriptionFilter.find_all_tags),
             In(BugSubscriptionFilterTag.tag, self.tags))
-        return self._subscriptions_matching_x(
+        return self._filters_matching_x(
             BugSubscriptionFilterTag, condition)
 
-    def _subscriptions_tags_match_all(self, extra_condition):
+    def _filters_tags_match_all(self, extra_condition):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in self.tags)
-        return self._subscriptions_matching_x(
+        return self._filters_matching_x(
             BugSubscriptionFilterTag,
             And(
                 BugSubscriptionFilterTag.filter_id == (
@@ -163,58 +171,70 @@ class BugFilterSetBuilder:
                 self.filter_conditions,
                 extra_condition),
             group_by=(
-                StructuralSubscription.id,
+                BugSubscriptionFilter.structural_subscription_id,
                 BugSubscriptionFilter.id),
             having=ArrayContains(
                 SQL(tags_array), ArrayAgg(
                     BugSubscriptionFilterTag.tag)))
 
     @property
-    def subscriptions_tags_include_match_all(self):
-        """Subscriptions including the bug's tags."""
-        return self._subscriptions_tags_match_all(
+    def filters_tags_include_match_all(self):
+        """Filters including the bug's tags."""
+        return self._filters_tags_match_all(
             BugSubscriptionFilterTag.include)
 
     @property
-    def subscriptions_tags_exclude_match_all(self):
-        """Subscriptions excluding the bug's tags."""
-        return self._subscriptions_tags_match_all(
+    def filters_tags_exclude_match_all(self):
+        """Filters excluding the bug's tags."""
+        return self._filters_tags_match_all(
             Not(BugSubscriptionFilterTag.include))
 
     @property
-    def subscriptions_tags_include(self):
-        """Subscriptions with tag filters including the bug."""
+    def filters_tags_include(self):
+        """Filters with tag filters including the bug."""
         return Union(
-            self.subscriptions_tags_include_empty,
-            self.subscriptions_tags_include_match_any,
-            self.subscriptions_tags_include_match_all)
+            self.filters_tags_include_empty,
+            self.filters_tags_include_match_any,
+            self.filters_tags_include_match_all)
 
     @property
-    def subscriptions_tags_exclude(self):
-        """Subscriptions with tag filters excluding the bug."""
+    def filters_tags_exclude(self):
+        """Filters with tag filters excluding the bug."""
         return Union(
-            self.subscriptions_tags_exclude_match_any,
-            self.subscriptions_tags_exclude_match_all)
+            self.filters_tags_exclude_match_any,
+            self.filters_tags_exclude_match_all)
 
     @property
-    def subscriptions_tags_match(self):
-        """Subscriptions with tag filters matching the bug."""
+    def filters_tags_match(self):
+        """Filters with tag filters matching the bug."""
         if len(self.tags) == 0:
-            # The subscription's required tags must be an empty set. The
-            # subscription's excluded tags can be anything so no condition is
-            # needed.
-            return self.subscriptions_tags_include_empty
+            # The filter's required tags must be an empty set. The filter's
+            # excluded tags can be anything so no condition is needed.
+            return self.filters_tags_include_empty
         else:
             return Except(
-                self.subscriptions_tags_include,
-                self.subscriptions_tags_exclude)
+                self.filters_tags_include,
+                self.filters_tags_exclude)
+
+    @property
+    def filters_matching(self):
+        """Filters matching the bug."""
+        return Intersect(
+            self.filters_matching_status,
+            self.filters_matching_importance,
+            self.filters_tags_match)
 
     @property
     def subscriptions_matching(self):
-        """Subscriptions matching the bug."""
+        """Subscriptions with one or more filters matching the bug."""
+        return Select(
+            # I don't know of a more Storm-like way of doing this.
+            SQL("filters_matching.structural_subscription_id"),
+            tables=Alias(self.filters_matching, "filters_matching"),
+            distinct=True)
+
+    @property
+    def subscriptions(self):
         return Union(
             self.subscriptions_without_filters,
-            Intersect(
-                self.subscriptions_matching_status,
-                self.subscriptions_matching_importance,
-                self.subscriptions_tags_match))
+            self.subscriptions_matching)

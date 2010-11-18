@@ -470,4 +470,4 @@ class StructuralSubscriptionTargetMixin:
         return Store.of(self.__helper.pillar).find(
             StructuralSubscription, In(
                 StructuralSubscription.id,
-                set_builder.subscriptions_matching))
+                set_builder.subscriptions))
