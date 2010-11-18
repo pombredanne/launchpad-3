@@ -259,16 +259,15 @@ class ProxiedLibraryFileAlias:
 
     The URL's output by this decorator will always point at the webapp. This is
     useful when:
-     - we are proxying files via the webapp (as we do at the moment)
-     - when the webapp has to be contacted to get access to a file (the case
-       for restricted files in the future)
+     - the webapp has to be contacted to get access to a file (required for
+       restricted files).
      - files might change from public to private and thus not work even if the
        user has access to the once its private, unless they go via the webapp.
 
     This should be used anywhere we are outputting URL's to LibraryFileAliases
     other than directly in rendered pages. For rendered pages, using a
     LibraryFileAlias directly is OK as at that point the status of the file
-    is know.
+    is known.
 
     Overrides `ILibraryFileAlias.http_url` to always point to the webapp URL,
     even when called from the webservice domain.
