@@ -45,6 +45,8 @@ BUILDOUT_BIN = \
     bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
     bin/twistd bin/update-download-cache bin/windmill
 
+BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -140,10 +142,12 @@ sprite_image:
 	${SHHH} bin/sprite-util create-image
 
 jsbuild_lazr: bin/jsbuild
-	# We absolutely do not want to include the lazr.testing module and its
-	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
-	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
+	# We absolutely do not want to include the lazr.testing module and
+	# its jsTestDriver test harness modifications in the lazr.js and
+	# launchpad.js roll-up files.  They fiddle with built-in functions!
+	# See Bug 482340.
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
+	-c $(LAZR_BUILT_JS_ROOT)/yui
 
 jsbuild: jsbuild_lazr bin/jsbuild bin/jssize buildout_bin
 	${SHHH} bin/jsbuild \
@@ -177,8 +181,8 @@ buildonce_eggs: buildout_bin
 	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
-# warning before the eggs directory is made.  The target for the eggs directory
-# is only there for deployment convenience.
+# warning before the eggs directory is made.  The target for the eggs
+# directory is only there for deployment convenience.
 # Note that the buildout version must be maintained here and in versions.cfg
 # to make sure that the build does not go over the network.
 bin/buildout: download-cache eggs
@@ -199,7 +203,8 @@ $(BUILDOUT_BIN): buildout_bin
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
-buildout_bin: bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+buildout_bin: bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
+		$(BUILDOUT_TEMPLATES)
 	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
@@ -407,7 +412,8 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
-	cp configs/development/local-vostok-apache /etc/apache2/sites-available/local-vostok
+	cp configs/development/local-vostok-apache \
+		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
 	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
@@ -432,8 +438,9 @@ ID: compile
 
 lp.sfood:
 	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts -I lib/contrib \
-	-I lib/canonical/not-used lib/canonical lib/lp 2>/dev/null | grep -v contrib/ \
+	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
+	-I lib/contrib -I lib/canonical/not-used lib/canonical \
+	lib/lp 2>/dev/null | grep -v contrib/ \
 	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
 	| grep -v schoolbell > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
@@ -465,10 +472,10 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug stop\
-	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_merge \
-	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs build_eggs\
-	sprite_css sprite_image css_combine compile check_schema pydoctor
+.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+	stop start run ftest_build ftest_inplace test_build test_inplace \
+	pagetests check check_merge schema default launchpad.pot \
+	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
+	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
+	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
+	sprite_image css_combine compile check_schema pydoctor
