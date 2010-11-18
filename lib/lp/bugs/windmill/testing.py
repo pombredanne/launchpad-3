@@ -15,4 +15,8 @@ from canonical.testing.layers import BaseWindmillLayer
 class BugsWindmillLayer(BaseWindmillLayer):
     """Layer for Bugs Windmill tests."""
 
-    base_url = 'http://bugs.launchpad.dev:8085/'
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url('bugs')
+        super(BugsWindmillLayer, cls).setUp()
+
