@@ -36,7 +36,6 @@ from lp.translations.interfaces.translationcommonformat import (
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
-    TranslationValidationStatus,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
@@ -815,17 +814,6 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetChangedInUbuntu())
         self.assertEquals(found_translations, [self.potmsgset])
 
-    def test_getPOTMsgSetWithErrors(self):
-        # Test listing of POTMsgSets with errors in translations.
-        translation = self.factory.makeSharedTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Imported translation"], is_current_upstream=True)
-        removeSecurityProxy(translation).validation_status = (
-            TranslationValidationStatus.UNKNOWNERROR)
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(found_translations, [self.potmsgset])
-
     def test_updateStatistics(self):
         # Test that updating statistics keeps working.
 
@@ -1360,46 +1348,6 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # Order is unchanged for the previous template.
         potmsgsets = list(
             self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(
-            [self.potmsgset1, self.potmsgset2], potmsgsets)
-
-    def test_getPOTMsgSetWithErrors_ordering(self):
-        # Suggest a translation on both POTMsgSets in devel_pofile,
-        # so they are returned with getPOTMsgSetWithNewSuggestions() call.
-        imported1 = self.factory.makeSharedTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset1,
-            translations=["Imported"],
-            is_current_upstream=True)
-        removeSecurityProxy(imported1).validation_status = (
-            TranslationValidationStatus.UNKNOWNERROR)
-        imported2 = self.factory.makeSharedTranslationMessage(
-            pofile=self.devel_pofile,
-            potmsgset=self.potmsgset2,
-            translations=["Another imported"],
-            is_current_upstream=True)
-        removeSecurityProxy(imported2).validation_status = (
-            TranslationValidationStatus.UNKNOWNERROR)
-
-        potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(
-            [self.potmsgset1, self.potmsgset2], potmsgsets)
-
-        # Insert these two POTMsgSets into self.stable_potemplate in reverse
-        # order.
-        self.potmsgset2.setSequence(self.stable_potemplate, 1)
-        self.potmsgset1.setSequence(self.stable_potemplate, 2)
-
-        # And they are returned in the new order as desired.
-        potmsgsets = list(
-            self.stable_pofile.getPOTMsgSetWithErrors())
-        self.assertEquals(
-            [self.potmsgset2, self.potmsgset1], potmsgsets)
-
-        # Order is unchanged for the previous template.
-        potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetWithErrors())
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
