@@ -193,7 +193,6 @@ class BugFilterSetBuilder:
     def filters_matching_include_tags(self):
         """Filters with tag filters including the bug."""
         return Union(
-            self.filters_without_include_tags,
             self.filters_matching_any_include_tags,
             self.filters_matching_all_include_tags)
 
@@ -213,7 +212,8 @@ class BugFilterSetBuilder:
             return self.filters_without_include_tags
         else:
             return Except(
-                self.filters_matching_include_tags,
+                Union(self.filters_without_include_tags,
+                      self.filters_matching_include_tags),
                 self.filters_matching_exclude_tags)
 
     @property
