@@ -9,7 +9,6 @@ Test Setup
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.person import IPersonSet
