@@ -12,8 +12,10 @@ from storm.expr import (
     Or,
     )
 from storm.store import Store
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     TranslationValidationStatus,
@@ -113,17 +115,22 @@ def summarize_current_translations(pofile, potmsgset):
      * list of all other diverged translations (not including the one
        diverged in `pofile`) or an empty list if there are none.
     """
-    current_shared = potmsgset.getCurrentTranslationMessage(
-        None, pofile.language)
-    current_diverged = potmsgset.getCurrentTranslationMessage(
-        pofile.potemplate, pofile.language)
+    template = pofile.potemplate
+    language = pofile.language
+    side = template.translation_side
+
+    current_shared = potmsgset.getCurrentTranslation(None, language, side)
+    current_diverged = potmsgset.getCurrentTranslation(
+        template, language, side)
     if current_diverged is not None and not current_diverged.is_diverged:
         current_diverged = None
 
-    other_shared = potmsgset.getImportedTranslationMessage(
-        None, pofile.language)
-    other_diverged = potmsgset.getImportedTranslationMessage(
-        pofile.potemplate, pofile.language)
+    traits = getUtility(ITranslationSideTraitsSet).getTraits(side)
+    other_side = traits.other_side_traits.side
+
+    other_shared = potmsgset.getCurrentTranslation(None, language, other_side)
+    other_diverged = potmsgset.getCurrentTranslation(
+        template, language, other_side)
     assert other_diverged is None or other_diverged.potemplate is None, (
         "There is a diverged 'other' translation for "
         "this same template, which should be impossible.")
@@ -133,7 +140,7 @@ def summarize_current_translations(pofile, potmsgset):
     diverged = []
     for suggestion in all_used:
         if ((suggestion.potemplate is not None and
-             suggestion.potemplate != pofile.potemplate) and
+             suggestion.potemplate != template) and
             (suggestion.is_current_ubuntu or
              suggestion.is_current_upstream)):
             # It's diverged for another template and current somewhere.
