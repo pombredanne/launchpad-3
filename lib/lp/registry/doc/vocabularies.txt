@@ -189,7 +189,7 @@ Reflects the available distribution series.  Results are ordered by
 `name`
 
     >>> distroseries_vocabulary = get_naked_vocab(
-    ...     None,"DistroSeries")
+    ...     None, "DistroSeries")
     >>> for term in distroseries_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
             ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest

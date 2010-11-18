@@ -66,7 +66,7 @@ class LinkCheckerAPI:
 
     def check_branch_links(self, links):
         """Check links of the form /+branch/foo/bar"""
-        invalid_links = []
+        invalid_links = {}
         branch_lookup = getUtility(IBranchLookup)
         for link in links:
             path = link.strip('/')[len('+branch/'):]
@@ -74,6 +74,11 @@ class LinkCheckerAPI:
                 branch_lookup.getByLPPath(path)
             except (CannotHaveLinkedBranch, InvalidNamespace,
                     InvalidProductName, NoLinkedBranch, NoSuchBranch,
-                    NotFoundError):
-                invalid_links.append(link)
+                    NotFoundError) as e:
+                invalid_links[link] = self._error_message(e)
         return invalid_links
+
+    def _error_message(self, ex):
+        if hasattr(ex, 'display_message'):
+            return ex.display_message
+        return str(ex)

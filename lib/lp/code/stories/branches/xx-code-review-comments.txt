@@ -178,12 +178,11 @@ shown as part of the conversation at the time they were pushed to Launchpad.
 
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'conversation')
-    lp://dev/... updated on 2009-09-11
+    lp://dev/... updated on 2009-09-12
     1. By ... on 2009-09-11
     Testing commits in conversation
     2. By ... on 2009-09-11
     and it works!
-    lp://dev/... updated on 2009-09-12
     3. By ... on 2009-09-12
     Testing commits in conversation
     4. By ... on 2009-09-12
