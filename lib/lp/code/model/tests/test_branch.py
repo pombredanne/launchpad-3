@@ -66,7 +66,6 @@ from lp.code.errors import (
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
     )
-from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
@@ -2757,7 +2756,8 @@ class TestMergeQueue(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         config = simplejson.dumps({
             'path': '/',
-            'test': 'make test',})
+            'test': 'make test',
+            })
 
         with person_logged_in(branch.owner):
             branch.setMergeQueueConfig(config)
