@@ -927,7 +927,7 @@ class PreloadBugtaskTargets(MultipleParams):
         # It is possible to join additional tables in the search query
         # in order to load related Storm objects during the query.
         store = Store.of(self.bugtasks[0])
-        store.reset()
+        store.invalidate()
 
         # If we do not prejoin the owner, two queries a run
         # in order to retrieve the owner of the bugtask.
@@ -940,7 +940,7 @@ class PreloadBugtaskTargets(MultipleParams):
         # If we join the table person on bugtask.owner == person.id
         # the owner object is loaded in the query that retrieves the
         # bugtasks.
-        store.reset()
+        store.invalidate()
         with StormStatementRecorder() as recorder:
             params = self.getBugTaskSearchParams(user=None)
             found_tasks = self.runSearch(

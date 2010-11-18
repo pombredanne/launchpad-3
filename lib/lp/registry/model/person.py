@@ -886,6 +886,7 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        prejoins = kwargs.pop('prejoins', [])
         if search_params is None and len(args) == 0:
             # this method is called via webapi directly
             # calling this method on a Person object directly via the
@@ -900,15 +901,18 @@ class Person(
                 # method, see docstring of
                 # `lazr.restful.declarations.webservice_error()`
                 raise e
-            return getUtility(IBugTaskSet).search(*search_params)
+            return getUtility(IBugTaskSet).search(
+                *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
-            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+            return HasBugsBase.searchTasks(
+                self, search_params, prejoins=prejoins, **kwargs)
         else:
             # Otherwise pass all positional arguments to the
             # implementation in BugTaskSet.
-            return getUtility(IBugTaskSet).search(search_params, *args)
+            return getUtility(IBugTaskSet).search(
+                search_params, *args, prejoins=prejoins)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
