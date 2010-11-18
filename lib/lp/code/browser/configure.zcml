@@ -147,8 +147,7 @@
         name="+index"
         template="../templates/bazaar-index.pt" />
     <browser:page
-        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-        layer="lp.code.publisher.CodeLayer"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         permission="zope.Public"
         class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
         facet="branches"

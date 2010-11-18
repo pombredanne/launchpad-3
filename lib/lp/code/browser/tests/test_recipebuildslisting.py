@@ -15,7 +15,7 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import IBazaarApplication
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.recipebuild import RecipeBuildRecord
@@ -108,7 +108,7 @@ class TestRecipeBuildView(TestCaseWithFactory, RecipeBuildsTestMixin):
     def test_recipebuildrecords(self):
         records = self._makeRecipeBuildRecords(10, 5)
         login(ANONYMOUS)
-        root = getUtility(IBazaarApplication)
+        root = getUtility(ILaunchpadRoot)
         view = create_initialized_view(root, "+daily-builds", rootsite='code')
         # It's easier to do it this way than sorted() since __lt__ doesn't
         # work properly on zope proxies.
@@ -125,7 +125,7 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
         naked_recipebuild = removeSecurityProxy(record.recipebuild)
         naked_distribution = removeSecurityProxy(
             naked_recipebuild.distribution)
-        root = getUtility(IBazaarApplication)
+        root = getUtility(ILaunchpadRoot)
         text = self.getMainText(root, '+daily-builds', no_login)
         expected_text = """
             Recently Completed Daily Recipe Builds
@@ -151,7 +151,7 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
         self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
 
     def test_recipebuild_listing_no_records(self):
-        root = getUtility(IBazaarApplication)
+        root = getUtility(ILaunchpadRoot)
         text = self.getMainText(root, '+daily-builds')
         expected_text = """
             No recently completed daily builds found.
