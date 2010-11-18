@@ -666,7 +666,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Distribution series: Secret Squirrel
 
             Latest builds
-            Status Time Distribution series Archive
+            Status When complete Distribution series Archive
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
@@ -686,7 +686,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
@@ -712,9 +712,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 starting in .* \(estimated\) i386
+              chocolate - 0\+r42 in .* \(estimated\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_completed_binary_build(self):
@@ -743,7 +743,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
               chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
@@ -753,7 +753,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         recipe = self.makeRecipe()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             This recipe has not been built yet.""", self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
@@ -762,7 +762,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
@@ -780,8 +780,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.factory.makeBuilder()
         pattern = """\
             Latest builds
-            Status Time Distribution series Archive
-            Pending build starting in .* \(estimated\) Secret Squirrel Secret PPA
+            Status .* Archive
+            Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents"""

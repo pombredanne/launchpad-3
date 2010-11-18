@@ -93,7 +93,7 @@
           <thead>
             <tr>
               <th>Status</th>
-              <th>Time</th>
+              <th>When complete</th>
               <th>Distribution series</th>
               <th>Archive</th>
             </tr>
@@ -107,22 +107,12 @@
                 <a tal:content="buildview/status"
                    tal:attributes="href build/fmt:url"></a>
               </td>
-              <td tal:define="is_building build/status/enumvalue:BUILDING">
-                <tal:building condition="is_building">
-                  Started
-                  <span tal:attributes="title build/date_started/fmt:datetime"
-                        tal:content="build/date_started/fmt:approximatedate"
-                        >5 minutes ago</span>
-                </tal:building>
-                <tal:not-building condition="not: is_building">
-                  <tal:estimate condition="buildview/estimate">
-                    starting
-                  </tal:estimate>
-                  <tal:date replace="buildview/date/fmt:displaydate" />
-                  <tal:estimate condition="buildview/estimate">
-                    (estimated)
-                  </tal:estimate>
-                </tal:not-building>
+              <td>
+                <tal:date replace="buildview/date/fmt:displaydate" />
+                <tal:estimate condition="buildview/estimate">
+                  (estimated)
+                </tal:estimate>
+
                 <tal:build-log define="file build/log"
                                tal:condition="file">
                   <a class="sprite download"
@@ -147,27 +137,10 @@
                      tal:attributes="href binary/fmt:url">package - version</a>
                 </td>
                 <td>
-
-                  <tal:pending condition="binaryview/dispatch_time_estimate_available"
-                               define="eta binary/buildqueue_record/getEstimatedJobStartTime;">
-                    starting <tal:eta
-                    replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
+                  <tal:date replace="binaryview/date/fmt:displaydate" />
+                  <tal:estimate condition="binaryview/estimate">
                     (estimated)
-                  </tal:pending>
-
-                  <tal:building condition="binary/status/enumvalue:BUILDING">
-                    <li>
-                      started
-                      <span tal:attributes="title binary/date_started/fmt:datetime"
-                            tal:content="binary/date_started/fmt:approximatedate"
-                            >5 minutes ago</span>
-                    </li>
-                  </tal:building>
-
-                  <tal:built condition="binary/date_finished">
-                    <span tal:attributes="title binary/date_finished/fmt:datetime"
-                        tal:content="binary/date_finished/fmt:displaydate">2008-01-01</span>
-                  </tal:built>
+                  </tal:estimate>
 
                   <tal:build-log define="file binary/log"
                                  tal:condition="file">
@@ -175,7 +148,6 @@
                        tal:attributes="href binary/log_url">buildlog</a>
                     (<span tal:replace="file/content/filesize/fmt:bytes" />)
                   </tal:build-log>
-
                 </td>
                 <td class="indent">
                   <a class="sprite distribution"
