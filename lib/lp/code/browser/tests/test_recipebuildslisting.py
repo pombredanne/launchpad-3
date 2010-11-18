@@ -16,7 +16,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    BaseLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.soyuz.enums import ArchivePurpose
@@ -126,7 +129,8 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
         naked_distribution = removeSecurityProxy(
             naked_recipebuild.distribution)
         root = getUtility(ILaunchpadRoot)
-        text = self.getMainText(root, '+daily-builds', no_login)
+        text = self.getMainText(
+            root, '+daily-builds', rootsite='code', no_login=no_login)
         expected_text = """
             Recently Completed Daily Recipe Builds
             .*
@@ -152,7 +156,7 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
 
     def test_recipebuild_listing_no_records(self):
         root = getUtility(ILaunchpadRoot)
-        text = self.getMainText(root, '+daily-builds')
+        text = self.getMainText(root, '+daily-builds', rootsite='code')
         expected_text = """
             No recently completed daily builds found.
             """
@@ -163,3 +167,9 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
 
     def test_recipebuild_listing_with_user(self):
         self._test_recipebuild_listing()
+
+    def test_recipebuild_url(self):
+        root_url = BaseLayer.appserver_root_url(facet='code')
+        user_browser = self.getUserBrowser("%s/+daily-builds" % root_url)
+        self.assertEqual(
+            user_browser.url, "%s/+daily-builds" % root_url)
