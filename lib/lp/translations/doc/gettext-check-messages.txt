@@ -179,7 +179,7 @@ The --dry-run option makes the script abort all its database changes.
     INFO Dry run.  Not making any changes.
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
+    INFO ... (ubuntu): format specifications ... are not the same
     DEBUG Commit point.
     ABORT
     DEBUG Commit point.
