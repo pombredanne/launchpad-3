@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATUSES',
     'SeriesMixin',
     ]
 
@@ -19,6 +20,13 @@ from lp.registry.interfaces.series import (
     SeriesStatus,
     )
 
+ACTIVE_STATUSES = [
+    SeriesStatus.DEVELOPMENT,
+    SeriesStatus.FROZEN,
+    SeriesStatus.CURRENT,
+    SeriesStatus.SUPPORTED,
+    ]
+
 
 class SeriesMixin:
     """See `ISeriesMixin`."""
@@ -29,12 +37,7 @@ class SeriesMixin:
 
     @property
     def active(self):
-        return self.status in [
-            SeriesStatus.DEVELOPMENT,
-            SeriesStatus.FROZEN,
-            SeriesStatus.CURRENT,
-            SeriesStatus.SUPPORTED,
-            ]
+        return self.status in ACTIVE_STATUSES
 
     @property
     def bug_supervisor(self):
