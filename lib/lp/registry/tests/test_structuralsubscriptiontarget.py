@@ -418,7 +418,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         subscription_filter1 = self.subscription.newBugFilter()
         subscription_filter1.statuses = [BugTaskStatus.CONFIRMED]
         subscription_filter2 = self.subscription.newBugFilter()
-        subscription_filter2.importances = [BugTaskImportance.CRITICAL]
+        subscription_filter2.tags = [u"foo"]
 
         # With the filter the subscription is not found.
         self.assertSubscriptions([])
@@ -431,8 +431,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
         # If the filter is adjusted to also match the criteria of the second
         # filter, the subscription is still found.
-        self.bugtask.transitionToImportance(
-            BugTaskImportance.CRITICAL, self.target.owner)
+        self.bugtask.bug.tags = [u"foo"]
         self.assertSubscriptions([self.subscription])
 
         # If the bugtask is adjusted to no longer match the criteria of the
