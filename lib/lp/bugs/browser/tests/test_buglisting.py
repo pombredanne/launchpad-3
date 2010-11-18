@@ -8,10 +8,11 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     find_tags_by_class,
     )
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     BrowserTestCase,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -142,3 +143,24 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
             bug_target.bugtracker = self.factory.makeBugTracker()
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(bug_target.bugtracker, view.external_bugtracker)
+
+    def test_product_without_packaging_also_in_ubuntu_is_none(self):
+        bug_target = self.factory.makeProduct()
+        login_person(bug_target.owner)
+        bug_target.official_malone = True
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        self.assertEqual(None, find_tag_by_id(view(), 'also-in-ubuntu'))
+
+    def test_product_with_packaging_also_in_ubuntu(self):
+        bug_target = self.factory.makeProduct()
+        login_person(bug_target.owner)
+        bug_target.official_malone = True
+        self.factory.makePackagingLink(
+            productseries=bug_target.development_focus, in_ubuntu=True)
+        view = create_initialized_view(
+            bug_target, '+bugs', principal=bug_target.owner)
+        content = find_tag_by_id(view.render(), 'also-in-ubuntu')
+        link = canonical_url(
+            bug_target.ubuntu_packages[0], force_local_path=True)
+        self.assertEqual(link, content.a['href'])
