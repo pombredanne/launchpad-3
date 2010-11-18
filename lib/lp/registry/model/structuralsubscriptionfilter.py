@@ -82,7 +82,14 @@ class BugFilterSetBuilder:
                 BugSubscriptionFilter.id == None,
                 self.base_conditions))
 
-    def _filters_matching_x(self, join, extra_condition, **extra):
+    def _filters_matching_x(self, join, where_condition, **extra):
+        # The expressions returned by this function are used in set (union,
+        # intersect, except) operations at the *filter* level. However, the
+        # interesting result of these set operations is the structural
+        # subscription, hence both columns are included in the expressions
+        # generated. Since a structural subscription can have zero or more
+        # filters, and a filter can never be associated with more than one
+        # subscription, the set operations are unaffected.
         return Select(
             columns=(
                 # Alias this column so it can be selected in
@@ -97,7 +104,7 @@ class BugFilterSetBuilder:
                 BugSubscriptionFilter.structural_subscription_id == (
                     StructuralSubscription.id),
                 self.filter_conditions,
-                extra_condition),
+                where_condition),
             **extra)
 
     @property
@@ -159,7 +166,7 @@ class BugFilterSetBuilder:
         return self._filters_matching_x(
             BugSubscriptionFilterTag, condition)
 
-    def _filters_matching_all_x_tags(self, extra_condition):
+    def _filters_matching_all_x_tags(self, where_condition):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in self.tags)
         return self._filters_matching_x(
@@ -169,7 +176,7 @@ class BugFilterSetBuilder:
                     BugSubscriptionFilter.id),
                 BugSubscriptionFilter.find_all_tags,
                 self.filter_conditions,
-                extra_condition),
+                where_condition),
             group_by=(
                 BugSubscriptionFilter.structural_subscription_id,
                 BugSubscriptionFilter.id),
