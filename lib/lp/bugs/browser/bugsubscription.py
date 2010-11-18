@@ -267,11 +267,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self.user is None:
             return
 
-        if self._use_advanced_features:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
-            self._setUpBugNotificationLevelField()
-        else:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
+        self.form_fields += formlib.form.Fields(self._subscription_field)
+        self._setUpBugNotificationLevelField()
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
