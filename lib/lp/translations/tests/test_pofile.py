@@ -35,6 +35,7 @@ from lp.translations.interfaces.translationcommonformat import (
     )
 from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
@@ -1088,7 +1089,32 @@ class TestTranslationCredits(TestCaseWithFactory):
                                         canonical_url(person))
                              for person in self.pofile.contributors]))
 
-    def test_prepareTranslationCredits_extending(self):
+    def test_prepareTranslationCredits_noop(self):
+        # With no contributions, translator credits message is not None,
+        # yet it's ignored in prepareTranslationCredits.
+        credits = self.credits_potmsgset.getCurrentTranslation(
+            self.potemplate, self.pofile.language,
+            self.potemplate.translation_side)
+        self.assertIsNot(None, credits)
+        self.assertIs(
+            None,
+            self.pofile.prepareTranslationCredits(self.credits_potmsgset))
+
+    def test_prepareTranslationCredits_gnome(self):
+        # Preparing translation credits for GNOME-like credits message.
+        translator = self.factory.makePerson(
+            name=u'the-translator',
+            displayname=u'Launchpad Translator')
+        upstream_credits = self.credits_potmsgset.setCurrentTranslation(
+            self.pofile, translator, {0: 'upstream credits'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            u'upstream credits\n\n'
+            'Launchpad Contributions:\n'
+            '  Launchpad Translator http://launchpad.dev/~the-translator',
+            self.pofile.prepareTranslationCredits(self.credits_potmsgset))
+
+    def test_prepareTranslationCredits_gnome_extending(self):
         # This test ensures that continuous updates to the translation credits
         # don't result in duplicate entries.
         # Only the 'translator-credits' message is covered right now.
@@ -1128,6 +1154,74 @@ class TestTranslationCredits(TestCaseWithFactory):
         self.assertEquals(
             self.compose_launchpad_credits_text(imported_credits_text),
             credits_text)
+
+    def test_prepareTranslationCredits_old_kde_names(self):
+        # Preparing translation credits for old (pre-KDE4) KDE-like
+        # credits message for contributor names.
+        translator = self.factory.makePerson(
+            displayname=u'Launchpad Translator')
+        kde_names_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate,
+            singular=u'_: NAME OF TRANSLATORS\nYour names')
+        upstream_credits = kde_names_potmsgset.setCurrentTranslation(
+            self.pofile, translator,
+            {0: 'Upstream credits'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            u'Upstream credits, ,Launchpad Contributions:,'
+            'Launchpad Translator',
+            self.pofile.prepareTranslationCredits(kde_names_potmsgset))
+
+    def test_prepareTranslationCredits_old_kde_emails(self):
+        # Preparing translation credits for old (pre-KDE4) KDE-like
+        # credits message for contributor emails.
+        translator = self.factory.makePerson(
+            email=u'translator@launchpad')
+        kde_emails_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate,
+            singular=u'_: EMAIL OF TRANSLATORS\nYour emails')
+        upstream_credits = kde_emails_potmsgset.setCurrentTranslation(
+            self.pofile, translator,
+            {0: 'translator@upstream'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            u'translator@upstream,,,translator@launchpad',
+            self.pofile.prepareTranslationCredits(kde_emails_potmsgset))
+
+    def test_prepareTranslationCredits_kde_names(self):
+        # Preparing translation credits for new (KDE4 and later)
+        # KDE-like credits message for contributor names.
+        translator = self.factory.makePerson(
+            displayname=u'Launchpad Translator')
+        kde_names_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate,
+            context=u'NAME OF TRANSLATORS',
+            singular=u'Your names')
+        upstream_credits = kde_names_potmsgset.setCurrentTranslation(
+            self.pofile, translator,
+            {0: 'Upstream credits'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            u'Upstream credits, ,Launchpad Contributions:,'
+            'Launchpad Translator',
+            self.pofile.prepareTranslationCredits(kde_names_potmsgset))
+
+    def test_prepareTranslationCredits_kde_emails(self):
+        # Preparing translation credits for new (KDE4 and later)
+        # KDE-like credits message for contributor emails.
+        translator = self.factory.makePerson(
+            email=u'translator@launchpad')
+        kde_emails_potmsgset = self.factory.makePOTMsgSet(
+            potemplate=self.potemplate,
+            context=u'EMAIL OF TRANSLATORS',
+            singular=u'Your emails')
+        upstream_credits = kde_emails_potmsgset.setCurrentTranslation(
+            self.pofile, translator,
+            {0: 'translator@upstream'},
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
+        self.assertEquals(
+            u'translator@upstream,,,translator@launchpad',
+            self.pofile.prepareTranslationCredits(kde_emails_potmsgset))
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
