@@ -318,6 +318,24 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
                 pofile.potemplate.productseries,
                 date_in_the_future)))
 
+    def test_findChangedPOFiles_unchanged_template_changed(self):
+        # If a POFile has been changed before changed_since date,
+        # and template has been updated after it, POFile is still
+        # considered changed and thus returned.
+        pofile = self.factory.makePOFile()
+        date_in_the_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(1))
+        date_in_the_far_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(2))
+        pofile.potemplate.date_last_updated = date_in_the_far_future
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                date_in_the_future)))
+
 
 class TestExportToStackedBranch(TestCaseWithFactory):
     """Test workaround for bzr bug 375013."""
