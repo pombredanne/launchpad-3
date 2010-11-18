@@ -224,7 +224,7 @@ translation credits.
 
 And the statistics reflect it.
 
-    >>> pofile.rosettaCount()
+    >>> pofile.currentCount()
     1
 
 
