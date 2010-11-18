@@ -1119,7 +1119,7 @@ The new package sets are added to 'umbrella' by passing their names. Please
 note that non-existent package sets (e.g. 'not-there') are simply ignored.
 
     >>> to_be_added = (
-    ...     'gnome', 'x-win', 'universe', 'multiverse', 'not-there')
+    ...     u'gnome', u'x-win', u'universe', u'multiverse', u'not-there')
     >>> umbrella_ps.addSubsets(to_be_added)
     >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
       4 -> mozilla
@@ -1131,7 +1131,7 @@ note that non-existent package sets (e.g. 'not-there') are simply ignored.
 Package subsets can be removed in a similar fashion. Non-existent sets
 or sets which are not (direct) subsets are ignored again.
 
-    >>> to_be_removed = ('umbrella', 'universe', 'multiverse', 'not-mine')
+    >>> to_be_removed = (u'umbrella', u'universe', u'multiverse', u'not-mine')
     >>> umbrella_ps.removeSubsets(to_be_removed)
     >>> print_data(umbrella_ps.setsIncluded(direct_inclusion=True))
       4 -> mozilla

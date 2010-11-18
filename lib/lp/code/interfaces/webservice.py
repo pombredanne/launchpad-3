@@ -32,29 +32,6 @@ __all__ = [
     'TooManyBuilds',
     ]
 
-__all__ = [
-    'BranchCreatorNotMemberOfOwnerTeam',
-    'BranchCreatorNotOwner',
-    'BranchExists',
-    'BranchMergeProposalExists',
-    'BuildAlreadyPending',
-    'CodeImportAlreadyRunning',
-    'CodeImportNotInReviewedState',
-    'IBranch',
-    'IBranchMergeProposal',
-    'IBranchSet',
-    'IBranchSubscription',
-    'ICodeImport',
-    'ICodeReviewComment',
-    'ICodeReviewVoteReference',
-    'IDiff',
-    'IPreviewDiff',
-    'ISourcePackageRecipe',
-    'ISourcePackageRecipeBuild',
-    'IStaticDiff',
-    'TooManyBuilds',
-    ]
-
 # The exceptions are imported so that they can produce the special
 # status code defined by webservice_error when they are raised.
 from lp.code.errors import (
@@ -72,6 +49,7 @@ from lp.code.interfaces.branch import (
     IBranchSet,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -85,6 +63,10 @@ from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
+
+
+IBranchMergeQueue['branches'].value_type.schema = IBranch
+
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
