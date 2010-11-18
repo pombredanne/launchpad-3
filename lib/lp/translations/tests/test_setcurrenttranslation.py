@@ -1148,10 +1148,6 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
             potemplate=potemplate, sequence=1)
 
 
-# XXX JeroenVermeulen 2010-06-29 bug=546310: we can activate this once
-# getCurrentTranslation and getImportedTranslation "change sides" based
-# on the current template: lp:~danilo/launchpad/use-upstream-translations.
-
 class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
                                          TestCaseWithFactory):
 
