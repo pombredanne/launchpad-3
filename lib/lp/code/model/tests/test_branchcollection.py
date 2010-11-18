@@ -650,8 +650,11 @@ class TestBranchMergeProposals(TestCaseWithFactory):
             mp3.markAsMerged(321)
         collection = self.all_branches
         result = collection.getMergeProposals(
-            target_branch=target, merged_revno=123)
+            target_branch=target, merged_revnos=[123])
         self.assertEqual(sorted([mp1, mp2]), sorted(result))
+        result = collection.getMergeProposals(
+            target_branch=target, merged_revnos=[123, 321])
+        self.assertEqual(sorted([mp1, mp2, mp3]), sorted(result))
 
     def test_target_branch_private(self):
         # The target branch must be in the branch collection, as must the

@@ -591,12 +591,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)),
-        merged_revno=Int(title=_('The target-branch revno of the merge.')))
+        merged_revnos=List(Int(
+            title=_('The target-branch revno of the merge.'))))
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
     def getMergeProposals(status=None, visible_by_user=None,
-                          merged_revno=None):
+                          merged_revnos=None):
         """Return matching BranchMergeProposals."""
 
     def scheduleDiffUpdates():

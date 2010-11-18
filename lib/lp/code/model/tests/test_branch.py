@@ -2825,7 +2825,7 @@ class TestWebservice(TestCaseWithFactory):
             target = ws_object(launchpad, mp.target_branch)
             mp = ws_object(launchpad, mp)
         self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revno=123)))
+            status=['Merged'], merged_revnos=[123])))
 
 
 def test_suite():
