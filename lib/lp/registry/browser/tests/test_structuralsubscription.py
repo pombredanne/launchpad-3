@@ -282,5 +282,35 @@ class TestMilestoneAdvancedSubscriptionFeatures(
         self.target = self.factory.makeMilestone()
 
 
+class TestStructuralSubscriptionView(TestCaseWithFactory):
+    """General tests for the StructuralSubscriptionView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_next_url_set_to_context(self):
+        # When the StructuralSubscriptionView form is submitted, the
+        # view's next_url is set to the canonical_url of the current
+        # target.
+        target = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            harness = LaunchpadFormHarness(
+                target, StructuralSubscriptionView,
+                # We need to specify this so that the assertEqual()
+                # below works. The LaunchpadTestRequest uses 127.0.0.1
+                # by default for its hostname.
+                request_environ={
+                    'SERVER_URL':         'http://launchpad.dev',
+                    'HTTP_HOST':          'launchpad.dev',
+                    })
+            form_data = {
+                'field.subscribe_me': 'on',
+                }
+            harness.submit('save', form_data)
+            self.assertEqual(
+                canonical_url(target),
+                harness.view.next_url,
+                "Next URL does not match target's canonical_url.")
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

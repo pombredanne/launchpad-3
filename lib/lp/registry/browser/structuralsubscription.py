@@ -205,7 +205,7 @@ class StructuralSubscriptionView(LaunchpadFormView,
         self._handleUserSubscription(data)
         self._handleTeamSubscriptions(data)
         self._handleDriverChanges(data)
-        self.next_url = canonical_url(self.context) + '/+subscribe'
+        self.next_url = canonical_url(self.context)
 
     def _handleUserSubscription(self, data):
         """Process the subscription for the user."""
