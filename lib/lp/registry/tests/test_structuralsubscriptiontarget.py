@@ -409,6 +409,37 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
         self.bug.tags = ["bar", "baz"]
         self.assertSubscriptions([self.subscription])
 
+    def test_getSubscriptionsForBugTask_any_filter_is_a_match(self):
+        # If a subscription has multiple filters, the subscription is selected
+        # when any filter is found to match. Put another way, the filters are
+        # ORed together.
+        subscription_filter1 = self.subscription.newBugFilter()
+        subscription_filter1.statuses = [BugTaskStatus.CONFIRMED]
+        subscription_filter2 = self.subscription.newBugFilter()
+        subscription_filter2.importances = [BugTaskImportance.CRITICAL]
+
+        # With the filter the subscription is not found.
+        self.assertSubscriptions([])
+
+        # If the bugtask is adjusted to match the criteria of the first filter
+        # but not those of the second, the subscription is found.
+        self.bugtask.transitionToStatus(
+            BugTaskStatus.CONFIRMED, self.ordinary_subscriber)
+        self.assertSubscriptions([self.subscription])
+
+        # If the filter is adjusted to also match the criteria of the second
+        # filter, the subscription is still found.
+        self.bugtask.transitionToImportance(
+            BugTaskImportance.CRITICAL, self.target.owner)
+        # XXX Current implementation does not select distinct subscriptions.
+        self.assertSubscriptions([self.subscription, self.subscription])
+
+        # If the bugtask is adjusted to no longer match the criteria of the
+        # first filter, the subscription is still found.
+        self.bugtask.transitionToStatus(
+            BugTaskStatus.INPROGRESS, self.ordinary_subscriber)
+        self.assertSubscriptions([self.subscription])
+
 
 class TestStructuralSubscriptionForDistro(
     RestrictedStructuralSubscription, TestCaseWithFactory):
