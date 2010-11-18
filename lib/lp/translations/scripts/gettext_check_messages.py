@@ -118,7 +118,7 @@ class GettextCheckMessages(LaunchpadScript):
         self._log_bad_message(translationmessage, error)
         is_current_anywhere = (
             translationmessage.is_current_ubuntu or
-            translationmessage.is_current_upstream) 
+            translationmessage.is_current_upstream)
         if is_current_anywhere:
             translationmessage.is_current_ubuntu = False
             translationmessage.is_current_upstream = False
