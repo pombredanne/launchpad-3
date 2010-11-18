@@ -1573,8 +1573,9 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product._ownerID,
-            ).config(distinct=True).order_by(Product.title)
+            Person.id == Product._ownerID).config(
+                distinct=True).order_by(Product.title)
+
 
         # We only want Product - the other tables are just to populate
         # the cache.
@@ -1592,12 +1593,12 @@ class ProductSet:
                         ProductSeries.Product = Product.id
                     JOIN POTemplate ON
                         POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.official_rosetta
+                    WHERE Product.active AND Product.translations_usage = %s
                     ORDER BY place
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(maximumproducts),
+            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

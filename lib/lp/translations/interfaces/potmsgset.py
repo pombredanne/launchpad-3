@@ -102,8 +102,6 @@ class IPOTMsgSet(Interface):
 
     sequence = Attribute("The ordering of this set within its file.")
 
-    potemplate = Attribute("The template this set is associated with.")
-
     commenttext = Attribute("The manual comments this set has.")
 
     filereferences = Attribute("The files where this set appears.")

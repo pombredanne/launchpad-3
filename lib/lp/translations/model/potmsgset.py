@@ -143,7 +143,6 @@ class POTMsgSet(SQLBase):
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
         notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence')
-    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate')
     commenttext = StringCol(dbName='commenttext', notNull=False)
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
@@ -1058,10 +1057,13 @@ class POTMsgSet(SQLBase):
 
     def dismissAllSuggestions(self, pofile, reviewer, lock_timestamp):
         """See `IPOTMsgSet`."""
+        assert lock_timestamp is not None, "lock_timestamp is required."
+
         template = pofile.potemplate
         language = pofile.language
         side = template.translation_side
         current = self.getCurrentTranslation(template, language, side)
+
         if current is None:
             # Create or activate an empty translation message.
             current = self.setCurrentTranslation(
