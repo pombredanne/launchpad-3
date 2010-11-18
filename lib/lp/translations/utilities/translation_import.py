@@ -482,7 +482,7 @@ class FileImporter(object):
             return None
         return potmsgset.setCurrentTranslation(
             self.pofile, self.last_translator, credits,
-            RosettaTranslationOrigin.SCM, self.share_with_other_side)
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
 
     def _validateMessage(self, potmsgset, message,
                          translations, message_data):
