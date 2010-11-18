@@ -60,4 +60,3 @@ class LaunchpadFormHarness:
 
     def redirectionTarget(self):
         return self.request.response.getHeader('location')
-        self.request_environ = request_environ

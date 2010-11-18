@@ -300,8 +300,8 @@ class TestStructuralSubscriptionView(TestCaseWithFactory):
                 # below works. The LaunchpadTestRequest uses 127.0.0.1
                 # by default for its hostname.
                 request_environ={
-                    'SERVER_URL':         'http://launchpad.dev',
-                    'HTTP_HOST':          'launchpad.dev',
+                    'SERVER_URL': 'http://launchpad.dev',
+                    'HTTP_HOST': 'launchpad.dev',
                     })
             form_data = {
                 'field.subscribe_me': 'on',
@@ -311,6 +311,7 @@ class TestStructuralSubscriptionView(TestCaseWithFactory):
                 canonical_url(target),
                 harness.view.next_url,
                 "Next URL does not match target's canonical_url.")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
