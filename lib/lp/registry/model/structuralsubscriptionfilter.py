@@ -125,7 +125,7 @@ class BugFilterSetBuilder:
         return self._filters_matching_x(join, condition)
 
     @property
-    def filters_tags_include_empty(self):
+    def filters_without_include_tags(self):
         """Filters with no tags required."""
         join = LeftJoin(
             BugSubscriptionFilterTag,
@@ -136,7 +136,7 @@ class BugFilterSetBuilder:
             join, BugSubscriptionFilterTag.id == None)
 
     @property
-    def filters_tags_include_match_any(self):
+    def filters_matching_any_include_tags(self):
         """Filters including any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
@@ -148,7 +148,7 @@ class BugFilterSetBuilder:
             BugSubscriptionFilterTag, condition)
 
     @property
-    def filters_tags_exclude_match_any(self):
+    def filters_matching_any_exclude_tags(self):
         """Filters excluding any of the bug's tags."""
         condition = And(
             BugSubscriptionFilterTag.filter_id == (
@@ -159,7 +159,7 @@ class BugFilterSetBuilder:
         return self._filters_matching_x(
             BugSubscriptionFilterTag, condition)
 
-    def _filters_tags_match_all(self, extra_condition):
+    def _filters_matching_all_x_tags(self, extra_condition):
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in self.tags)
         return self._filters_matching_x(
@@ -178,43 +178,43 @@ class BugFilterSetBuilder:
                     BugSubscriptionFilterTag.tag)))
 
     @property
-    def filters_tags_include_match_all(self):
+    def filters_matching_all_include_tags(self):
         """Filters including the bug's tags."""
-        return self._filters_tags_match_all(
+        return self._filters_matching_all_x_tags(
             BugSubscriptionFilterTag.include)
 
     @property
-    def filters_tags_exclude_match_all(self):
+    def filters_matching_all_exclude_tags(self):
         """Filters excluding the bug's tags."""
-        return self._filters_tags_match_all(
+        return self._filters_matching_all_x_tags(
             Not(BugSubscriptionFilterTag.include))
 
     @property
-    def filters_tags_include(self):
+    def filters_matching_include_tags(self):
         """Filters with tag filters including the bug."""
         return Union(
-            self.filters_tags_include_empty,
-            self.filters_tags_include_match_any,
-            self.filters_tags_include_match_all)
+            self.filters_without_include_tags,
+            self.filters_matching_any_include_tags,
+            self.filters_matching_all_include_tags)
 
     @property
-    def filters_tags_exclude(self):
+    def filters_matching_exclude_tags(self):
         """Filters with tag filters excluding the bug."""
         return Union(
-            self.filters_tags_exclude_match_any,
-            self.filters_tags_exclude_match_all)
+            self.filters_matching_any_exclude_tags,
+            self.filters_matching_all_exclude_tags)
 
     @property
-    def filters_tags_match(self):
+    def filters_matching_tags(self):
         """Filters with tag filters matching the bug."""
         if len(self.tags) == 0:
             # The filter's required tags must be an empty set. The filter's
             # excluded tags can be anything so no condition is needed.
-            return self.filters_tags_include_empty
+            return self.filters_without_include_tags
         else:
             return Except(
-                self.filters_tags_include,
-                self.filters_tags_exclude)
+                self.filters_matching_include_tags,
+                self.filters_matching_exclude_tags)
 
     @property
     def filters_matching(self):
@@ -222,7 +222,7 @@ class BugFilterSetBuilder:
         return Intersect(
             self.filters_matching_status,
             self.filters_matching_importance,
-            self.filters_tags_match)
+            self.filters_matching_tags)
 
     @property
     def subscriptions_matching(self):
