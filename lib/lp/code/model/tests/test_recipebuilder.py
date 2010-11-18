@@ -164,8 +164,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
@@ -231,8 +232,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries, logger))
