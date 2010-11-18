@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.windmill.testing.constants import (
+    FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
@@ -61,7 +62,8 @@ class LanguagesFilterTest(WindmillTestCase):
         # "Not-matching" message is hidden and languages are visible.
         self.client.asserts.assertProperty(
             id=u'no_filter_matches',
-            validator='className|unseen')
+            validator='className|unseen',
+            timeout=FOR_ELEMENT)
         self._assert_languages_visible({
             u'German': True,
             u'Mende': True,
