@@ -56,18 +56,15 @@ from lp.testing import (
 from lp.testing.matchers import Provides
 
 
-class StructuralSubscriptionTestBase:
+class RestrictedStructuralSubscriptionTestBase:
+    """Tests suitable for a target that restricts structural subscriptions."""
 
     def setUp(self):
-        super(StructuralSubscriptionTestBase, self).setUp()
+        super(RestrictedStructuralSubscriptionTestBase, self).setUp()
         self.ordinary_subscriber = self.factory.makePerson()
         self.bug_supervisor_subscriber = self.factory.makePerson()
         self.team_owner = self.factory.makePerson()
         self.team = self.factory.makeTeam(owner=self.team_owner)
-
-
-class RestrictedStructuralSubscription(StructuralSubscriptionTestBase):
-    """Tests suitable for a target that restricts structural subscriptions."""
 
     def test_target_implements_structural_subscription_target(self):
         self.assertTrue(verifyObject(IStructuralSubscriptionTarget,
@@ -127,7 +124,8 @@ class RestrictedStructuralSubscription(StructuralSubscriptionTestBase):
             self.ordinary_subscriber, self.ordinary_subscriber)
 
 
-class UnrestrictedStructuralSubscription(RestrictedStructuralSubscription):
+class UnrestrictedStructuralSubscriptionTestBase(
+    RestrictedStructuralSubscriptionTestBase):
     """
     Tests suitable for a target that does not restrict structural
     subscriptions.
@@ -174,7 +172,7 @@ class UnrestrictedStructuralSubscription(RestrictedStructuralSubscription):
             None)
 
 
-class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
+class FilteredStructuralSubscriptionTestBase:
     """Tests for filtered structural subscriptions."""
 
     layer = LaunchpadFunctionalLayer
@@ -187,6 +185,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
     def setUp(self):
         super(FilteredStructuralSubscriptionTestBase, self).setUp()
+        self.ordinary_subscriber = self.factory.makePerson()
         login_person(self.ordinary_subscriber)
         self.target = self.makeTarget()
         self.bugtask = self.makeBugTask()
@@ -442,7 +441,7 @@ class FilteredStructuralSubscriptionTestBase(StructuralSubscriptionTestBase):
 
 
 class TestStructuralSubscriptionForDistro(
-    RestrictedStructuralSubscription, TestCaseWithFactory):
+    RestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -513,7 +512,7 @@ class TestStructuralSubscriptionFiltersForDistro(
 
 
 class TestStructuralSubscriptionForProduct(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -530,7 +529,7 @@ class TestStructuralSubscriptionFiltersForProduct(
 
 
 class TestStructuralSubscriptionForDistroSourcePackage(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -548,7 +547,7 @@ class TestStructuralSubscriptionFiltersForDistroSourcePackage(
 
 
 class TestStructuralSubscriptionForMilestone(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -569,7 +568,7 @@ class TestStructuralSubscriptionFiltersForMilestone(
 
 
 class TestStructuralSubscriptionForDistroSeries(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -587,7 +586,7 @@ class TestStructuralSubscriptionFiltersForDistroSeries(
 
 
 class TestStructuralSubscriptionForProjectGroup(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -609,7 +608,7 @@ class TestStructuralSubscriptionFiltersForProjectGroup(
 
 
 class TestStructuralSubscriptionForProductSeries(
-    UnrestrictedStructuralSubscription, TestCaseWithFactory):
+    UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
