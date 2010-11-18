@@ -1102,14 +1102,16 @@ class TestTranslationCredits(TestCaseWithFactory):
 
     def test_prepareTranslationCredits_gnome(self):
         # Preparing translation credits for GNOME-like credits message.
-        upstream_translator = self.factory.makePerson(
-            name=u'upstream-translator',
-            displayname=u'Upstream Translator')
+        translator = self.factory.makePerson(
+            name=u'the-translator',
+            displayname=u'Launchpad Translator')
         upstream_credits = self.credits_potmsgset.setCurrentTranslation(
-            self.pofile, upstream_translator, {0: 'upstream credits'},
+            self.pofile, translator, {0: 'upstream credits'},
             RosettaTranslationOrigin.SCM, share_with_other_side=True)
         self.assertEquals(
-            self.compose_launchpad_credits_text(u'upstream credits'),
+            u'upstream credits\n\n'
+            'Launchpad Contributions:\n'
+            '  Launchpad Translator http://launchpad.dev/~the-translator',
             self.pofile.prepareTranslationCredits(self.credits_potmsgset))
 
     def test_prepareTranslationCredits_gnome_extending(self):
