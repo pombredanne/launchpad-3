@@ -22,6 +22,8 @@ __all__ = [
     'InvalidDuplicateValue',
     ]
 
+from textwrap import dedent
+
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -307,9 +309,18 @@ class IBug(IPrivacy, IHasLinkedBranches):
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
             readonly=True))
-    tags = exported(
-        List(title=_("Tags"), description=_("Separated by whitespace."),
-             value_type=Tag(), required=False))
+    tags = exported(List(
+        title=_("Tags"),
+        description=_(dedent("""
+            The tags applied to this bug.
+
+            Web service:
+                The list of tags is whitespace delimited.
+
+            Launchpadlib:
+                The list of tags is represented as a sequence of strings.
+            """)),
+            value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
         description=_(

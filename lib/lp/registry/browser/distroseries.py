@@ -77,7 +77,8 @@ from lp.registry.browser.structuralsubscription import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
-    IDistroSeriesDifferenceSource)
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
