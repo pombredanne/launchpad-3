@@ -67,7 +67,41 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.utilities.sanitize import (
+    sanitize_translations_from_webui,
+    )
 from lp.translations.utilities.validate import GettextValidationError
+
+
+def revert_unselected_translations(translations, current_message,
+                                   plural_indices_to_store):
+    """Revert translations that the user entered but did not select.
+
+    :param translations: a dict mapping plural forms to their respective
+        translation strings.  Will be modified in-place.
+    :param current_message: the current `TranslationMessage`.  Its
+        translations are substituted for corresponding ones that the
+        user entered without selecting their radio buttons.
+    :param plural_indices_to_store: a sequence of plural form numbers
+        that the user did select new translations for.
+    """
+    output = {}
+    if current_message is not None:
+        output.update(enumerate(current_message.translations))
+    output.update(translations)
+    return output
+
+
+def contains_translations(translations):
+    """Does `translations` contain any nonempty translations?
+
+    :param translations: a dict mapping plural forms to their respective
+        translation strings.
+    """
+    for text in translations.itervalues():
+        if text is not None and len(text) != 0:
+            return True
+    return False
 
 
 class POTMsgSetBatchNavigator(BatchNavigator):
@@ -357,6 +391,16 @@ class BaseTranslationView(LaunchpadView):
                 "Your form submission did not contain the lock_timestamp "
                 "that tells Launchpad when the submitted form was generated.")
 
+    @cachedproperty
+    def share_with_other_side(self):
+        """Should these translations be shared with the other side?"""
+        template = self.pofile.potemplate
+        language = self.pofile.language
+        policy = template.getTranslationPolicy()
+        return policy.sharesTranslationsWithOtherSide(
+            self.user, language, sourcepackage=template.sourcepackage)
+
+
     #
     # API Hooks
     #
@@ -398,44 +442,34 @@ class BaseTranslationView(LaunchpadView):
 
         if self.form_posted_dismiss_suggestions.get(potmsgset, False):
             try:
-                potmsgset.dismissAllSuggestions(self.pofile,
-                                                self.user,
-                                                self.lock_timestamp)
+                potmsgset.dismissAllSuggestions(
+                    self.pofile, self.user, self.lock_timestamp)
             except TranslationConflict, e:
                 return unicode(e)
+            self._observeTranslationUpdate(potmsgset)
             return None
 
         translations = self.form_posted_translations.get(potmsgset, {})
         if not translations:
             # A post with no content -- not an error, but nothing to be
             # done.
-            # XXX: kiko 2006-09-28: I'm not sure but I suspect this could
-            # be an UnexpectedFormData.
             return None
 
-        plural_indices_to_store = (
+        template = self.pofile.potemplate
+        language = self.pofile.language
+
+        current_message = potmsgset.getCurrentTranslation(
+            template, language, template.translation_side)
+
+        translations = revert_unselected_translations(
+            translations, current_message,
             self.form_posted_translations_has_store_flag.get(potmsgset, []))
 
-        translationmessage = potmsgset.getCurrentTranslationMessage(
-            self.pofile.potemplate, self.pofile.language)
+        translations = sanitize_translations_from_webui(
+            potmsgset.singular_text, translations, self.pofile.plural_forms)
 
-        # If the user submitted a translation without checking its checkbox,
-        # we assume they don't want to save it. We revert any submitted value
-        # to its current active translation.
-        has_translations = False
-        for index in translations:
-            if index not in plural_indices_to_store:
-                if (translationmessage is not None and
-                    translationmessage.translations[index] is not None):
-                    translations[index] = (
-                        translationmessage.translations[index])
-                else:
-                    translations[index] = u''
-            if translations[index]:
-                # There are translations
-                has_translations = True
-
-        if translationmessage is None and not has_translations:
+        has_translations = contains_translations(translations)
+        if current_message is None and not has_translations:
             # There is no current translation yet, neither we get any
             # translation submitted, so we don't need to store anything.
             return None
@@ -444,36 +478,50 @@ class BaseTranslationView(LaunchpadView):
         force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
         try:
-            potmsgset.updateTranslation(
-                self.pofile, self.user, translations,
-                is_current_upstream=False,
-                lock_timestamp=self.lock_timestamp,
-                force_suggestion=force_suggestion,
-                force_diverged=force_diverge)
-
-            empty_suggestions = self._areSuggestionsEmpty(translations)
-            if (force_suggestion and
-                self.user_is_official_translator and
-                empty_suggestions):
-                # The user requested that the message be reviewed,
-                # without suggesting a new translation.  Reset the
-                # current translation so that it can be reviewed again.
-                potmsgset.old_resetCurrentTranslation(
-                    self.pofile, self.lock_timestamp)
-
-        except TranslationConflict:
-            return (
-                u'Somebody else changed this translation since you started.'
-                u' To avoid accidentally reverting work done by others, we'
-                u' added your translations as suggestions, so please review'
-                u' current values.')
+            potmsgset.validateTranslations(translations)
         except GettextValidationError, e:
             # Save the error message gettext gave us to show it to the
             # user.
             return unicode(e)
-        else:
-            self._observeTranslationUpdate(potmsgset)
-            return None
+
+        if has_translations:
+            message = potmsgset.submitSuggestion(
+                self.pofile, self.user, translations)
+
+        if self.user_is_official_translator:
+            try:
+                if force_suggestion:
+                    # The translator has requested that this translation
+                    # be reviewed.  That means we clear the current
+                    # translation, demoting the existing message to a
+                    # suggestion.
+                    if not has_translations:
+                        # Forcing a suggestion has a different meaning
+                        # for an empty translation: "someone should review
+                        # the _existing_ translation."  Which also means
+                        # that the existing translation is demoted to a
+                        # suggestion.
+                        potmsgset.resetCurrentTranslation(
+                            self.pofile, lock_timestamp=self.lock_timestamp,
+                            share_with_other_side=self.share_with_other_side)
+                elif force_diverge:
+                    message.approveAsDiverged(
+                        self.pofile, self.user,
+                        lock_timestamp=self.lock_timestamp)
+                else:
+                    message.approve(
+                        self.pofile, self.user,
+                        share_with_other_side=self.share_with_other_side,
+                        lock_timestamp=self.lock_timestamp)
+            except TranslationConflict:
+                return (
+                    u"This translation has changed since you last saw it.  "
+                    u"To avoid accidentally reverting work done by others, "
+                    u"we added your translations as suggestions.  "
+                    u"Please review the current values.")
+
+        self._observeTranslationUpdate(potmsgset)
+        return None
 
     def _areSuggestionsEmpty(self, suggestions):
         """Return true if all suggestions are empty strings or None."""

@@ -257,6 +257,16 @@ class IPOTMsgSet(Interface):
             parameter set.
         """
 
+    def validateTranslations(translations):
+        """Validate `translations` against gettext.
+
+        aises `GettextValidationError` if there is a problem with the
+        translations.
+
+        :param translations: A dict mapping plural forms to translated
+            strings.
+        """
+
     def submitSuggestion(pofile, submitter, new_translations):
         """Submit a suggested translation for this message.
 
