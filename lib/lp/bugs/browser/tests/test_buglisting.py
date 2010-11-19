@@ -132,7 +132,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
 
 class BugTargetMixin:
-    """Test helpers for setting up `IBugTargets`."""
+    """Test helpers for setting up `IBugTarget` tests."""
 
     def _makeBugTargetProduct(self, bug_tracker=None, packaging=False):
         """Return a product that may use Launchpad or an external bug tracker.
@@ -206,7 +206,7 @@ class TestBugTaskSearchListingViewDSP(TestCaseWithFactory, BugTargetMixin):
     layer = DatabaseFunctionalLayer
 
     def _getBugTarget(self, obj):
-        """Return the `IBugTarget` undertest.
+        """Return the `IBugTarget` under test.
 
         Return the object that was passed. Sub-classes can redefine
         this method.
@@ -251,5 +251,5 @@ class TestBugTaskSearchListingViewDSP(TestCaseWithFactory, BugTargetMixin):
 class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):
 
         def _getBugTarget(self, dsp):
-            """Return the current `ISourcePackage`."""
+            """Return the current `ISourcePackage` for the dsp."""
             return dsp.development_version
