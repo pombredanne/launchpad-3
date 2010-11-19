@@ -259,7 +259,8 @@ class DistributionSourcePackageBaseView:
              if not_empty(spr.changelog_entry)])
         unique_bugs = extract_bug_numbers(the_changelog)
         self._bug_data = list(
-            getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
+            getUtility(IBugSet).getByNumbers(
+                [int(key) for key in unique_bugs.keys()]))
         # Preload email/person data only if user is logged on. In the opposite
         # case the emails in the changelog will be obfuscated anyway and thus
         # cause no database lookups.

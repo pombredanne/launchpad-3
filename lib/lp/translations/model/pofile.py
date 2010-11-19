@@ -27,7 +27,6 @@ from storm.expr import (
     And,
     Coalesce,
     Exists,
-    In,
     Join,
     LeftJoin,
     Not,
@@ -1574,7 +1573,7 @@ class POFileSet:
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
         if untranslated:
             message_select = Select(
                 True,
