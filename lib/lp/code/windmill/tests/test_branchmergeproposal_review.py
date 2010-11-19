@@ -45,7 +45,7 @@ class TestRequestReview(WindmillTestCase):
 
         client.open(url=''.join([
             windmill.settings['TEST_URL'],
-            '/~name12/gnome-terminal/klingon/']))
+            '~name12/gnome-terminal/klingon/']))
         client.waits.forPageLoad(timeout=u'10000')
 
         link = u'//a[@class="menu-link-register_merge sprite add"]'
