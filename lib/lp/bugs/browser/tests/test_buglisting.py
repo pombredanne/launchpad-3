@@ -132,7 +132,7 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _makeProduct(self, bug_tracker=None):
+    def _makeProduct(self, bug_tracker=None, packaging=False):
         """Return a product that may use Launchpad or an external bug tracker.
 
         bug_tracker may be None, 'launchpad', or 'external'.
@@ -144,6 +144,9 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
                     product.official_malone = True
                 else:
                     product.bugtracker = self.factory.makeBugTracker()
+        if packaging:
+            self.factory.makePackagingLink(
+                productseries=product.development_focus, in_ubuntu=True)
         return product
 
     def test_external_bugtracker_is_none(self):
@@ -179,10 +182,9 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-ubuntu'))
 
     def test_product_with_packaging_also_in_ubuntu(self):
-        bug_target = self._makeProduct(bug_tracker='launchpad')
+        bug_target = self._makeProduct(
+            bug_tracker='launchpad', packaging=True)
         login_person(bug_target.owner)
-        self.factory.makePackagingLink(
-            productseries=bug_target.development_focus, in_ubuntu=True)
         view = create_initialized_view(
             bug_target, '+bugs', principal=bug_target.owner)
         content = find_tag_by_id(view.render(), 'also-in-ubuntu')
@@ -191,10 +193,9 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(link, content.a['href'])
 
     def test_DSP_with_upstream_launchpad_project(self):
-        upstream_project = self._makeProduct(bug_tracker='launchpad')
+        upstream_project = self._makeProduct(
+            bug_tracker='launchpad', packaging=True)
         login_person(upstream_project.owner)
-        self.factory.makePackagingLink(
-            productseries=upstream_project.development_focus, in_ubuntu=True)
         bug_target = upstream_project.distrosourcepackages[0]
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
@@ -204,10 +205,8 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(link, content.a['href'])
 
     def test_DSP_with_upstream_nonlaunchpad_project(self):
-        upstream_project = self._makeProduct()
+        upstream_project = self._makeProduct(packaging=True)
         login_person(upstream_project.owner)
-        self.factory.makePackagingLink(
-            productseries=upstream_project.development_focus, in_ubuntu=True)
         bug_target = upstream_project.distrosourcepackages[0]
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
