@@ -295,11 +295,7 @@ class TestStructuralSubscriptionView(TestCaseWithFactory):
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
         with person_logged_in(person):
-            form_data = {
-                'field.subscribe_me': 'on',
-                }
-            view = create_initialized_view(
-                target, name='+subscribe', form=form_data)
+            view = create_initialized_view(target, name='+subscribe')
             self.assertEqual(
                 canonical_url(target), view.next_url,
                 "Next URL does not match target's canonical_url.")
