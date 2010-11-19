@@ -163,6 +163,10 @@ class LaunchpadStatisticSet:
             Product.selectBy(license_reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         self.update(
                 'products_using_rosetta',
                 Product.selectBy(

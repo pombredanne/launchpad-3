@@ -24,7 +24,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.enum import ServiceUsage
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPerson
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -278,13 +278,17 @@ class TranslationsPerson:
         # translation focus.
         distrojoin_conditions = And(
             Distribution.id == DistroSeries.distributionID,
-            Distribution._translations_usage == ServiceUsage.LAUNCHPAD,
+            Distribution.translations_usage == ServiceUsage.LAUNCHPAD,
             Distribution.translation_focusID == DistroSeries.id)
 
         DistroJoin = LeftJoin(Distribution, distrojoin_conditions)
 
         ProductSeriesJoin = LeftJoin(
             ProductSeries, ProductSeries.id == POTemplate.productseriesID)
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
             Product._translations_usage == ServiceUsage.LAUNCHPAD))

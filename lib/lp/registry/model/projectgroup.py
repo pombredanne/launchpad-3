@@ -186,6 +186,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def translatables(self):
         """See `IProjectGroup`."""
         store = Store.of(Product)
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         return store.find(Product,
             Product.project == self,
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
