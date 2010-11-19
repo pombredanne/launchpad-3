@@ -545,13 +545,16 @@ class BugFilterSetBuilder:
                 self.base_conditions))
 
     def _filters_matching_x(self, join, where_condition, **extra):
-        # The expressions returned by this function are used in set (union,
-        # intersect, except) operations at the *filter* level. However, the
-        # interesting result of these set operations is the structural
-        # subscription, hence both columns are included in the expressions
-        # generated. Since a structural subscription can have zero or more
-        # filters, and a filter can never be associated with more than one
-        # subscription, the set operations are unaffected.
+        """Return an expression yielding `(subscription_id, filter_id)` rows.
+
+        The expressions returned by this function are used in set (union,
+        intersect, except) operations at the *filter* level. However, the
+        interesting result of these set operations is the structural
+        subscription, hence both columns are included in the expressions
+        generated. Since a structural subscription can have zero or more
+        filters, and a filter can never be associated with more than one
+        subscription, the set operations are unaffected.
+        """
         return Select(
             columns=(
                 # Alias this column so it can be selected in
