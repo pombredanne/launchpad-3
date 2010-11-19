@@ -632,6 +632,12 @@ class BugFilterSetBuilder:
             BugSubscriptionFilterTag, condition)
 
     def _filters_matching_all_x_tags(self, where_condition):
+        """Return an expression yielding `(subscription_id, filter_id)` rows.
+
+        This joins to `BugSubscriptionFilterTag` and calls up to
+        `_filters_matching_x`, and groups by filter. Conditions are added to
+        ensure that all rows in each group are a subset of the bug's tags.
+        """
         tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
             quote(tag) for tag in self.tags)
         return self._filters_matching_x(
