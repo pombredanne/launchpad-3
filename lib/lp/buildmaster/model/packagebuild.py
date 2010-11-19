@@ -373,7 +373,7 @@ class PackageBuildDerived:
             d = self.buildqueue_record.builder.cleanSlave()
 
             # Remove BuildQueue record.
-            return d.addcallBack(
+            return d.addCallback(
                 lambda x:self.buildqueue_record.destroySelf())
 
         d = slave.getFiles(filenames_to_download)
