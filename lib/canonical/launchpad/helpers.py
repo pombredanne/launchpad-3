@@ -25,7 +25,7 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,

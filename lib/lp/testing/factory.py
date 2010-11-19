@@ -37,7 +37,6 @@ from operator import (
     )
 import os
 from random import randint
-import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -47,6 +46,7 @@ import warnings
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
+import simplejson
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -1116,7 +1116,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return namespace.createBranch(branch_type, name, creator)
 
     def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
-                             description=None, configuration=None):
+                             description=None, configuration=None,
+                             branches=None):
         """Create a BranchMergeQueue."""
         if name is None:
             name = unicode(self.getUniqueString('queue'))
@@ -1131,7 +1132,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = getUtility(IBranchMergeQueueSource).new(
-            name, owner, registrant, description, configuration)
+            name, owner, registrant, description, configuration, branches)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
@@ -2361,7 +2362,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None, variant=None):
+                   create_sharing=False, language=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2371,11 +2372,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        pofile = potemplate.newPOFile(language_code,
-                                      create_sharing=create_sharing)
-        if variant is not None:
-            removeSecurityProxy(pofile).variant = variant
-        return pofile
+        return potemplate.newPOFile(language_code,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):

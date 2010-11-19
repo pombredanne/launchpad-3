@@ -94,6 +94,12 @@
     <allow attributes="browserDefault
                        __call__"/>
   </class>
+  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
+  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
@@ -148,6 +154,11 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
   </securedutility>
+  <securedutility
+      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
+      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
+  </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -191,13 +202,13 @@
 
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
-      class="canonical.launchpad.xmlrpc.BranchSetAPI"
+      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
+      class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
-      class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+      interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
+      class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
 
   <!-- Branch Merge Proposal -->

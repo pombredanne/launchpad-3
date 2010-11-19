@@ -1079,8 +1079,7 @@ class IPublishingSet(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive,
-        get_builds=None):
+    def getBuildStatusSummariesForSourceIdsAndArchive(source_ids, archive):
         """Return a summary of the build statuses for source publishing ids.
 
         This method collects all the builds for the provided source package
@@ -1095,9 +1094,6 @@ class IPublishingSet(Interface):
         :param archive: The archive which will be used to filter the source
                         ids.
         :type archive: `IArchive`
-        :param get_builds: Optional override to replace database querying for
-            build records. This is used in the ArchivePublication adapter code
-            path and should be avoided where possible.
         :return: A dict consisting of the overall status summaries for the
             given ids that belong in the archive. For example:
                 {
@@ -1108,8 +1104,7 @@ class IPublishingSet(Interface):
         :rtype: ``dict``.
         """
 
-    def getBuildStatusSummaryForSourcePublication(source_publication,
-        get_builds=None):
+    def getBuildStatusSummaryForSourcePublication(source_publication):
         """Return a summary of the build statuses for this source
         publication.
 
@@ -1117,13 +1112,6 @@ class IPublishingSet(Interface):
         for details. The call is just proxied here so that it can also be
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
-
-        :param get_builds: An optional callback to replace the database lookup
-            builds. This is used by some adapters as part of a preloading
-            strategy - but the preferred form is to have
-            getBuildStatusSummariesForSourceIdsAndArchive (which this call
-            delegates to) perform the initial and only loading of the build
-            records.
         """
 
     def getNearestAncestor(

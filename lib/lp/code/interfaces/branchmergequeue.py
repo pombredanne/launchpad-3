@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IBranchMergeQueue',
     'IBranchMergeQueueSource',
+    'user_has_special_merge_queue_access',
     ]
 
 from lazr.restful.declarations import (
@@ -21,6 +22,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
     Datetime,
@@ -30,6 +32,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
@@ -113,3 +116,14 @@ class IBranchMergeQueueSource(Interface):
         :param registrant: The registrant of the queue.
         :param branches: A list of branches to add to the queue.
         """
+
+
+def user_has_special_merge_queue_access(user):
+    """Admins and bazaar experts have special access.
+
+    :param user: A 'Person' or None.
+    """
+    if user is None:
+        return False
+    celebs = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)

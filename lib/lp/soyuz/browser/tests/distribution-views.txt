@@ -94,11 +94,11 @@ instead:
     False
     >>> for package in distro_pkg_search_view.search_results:
     ...     print package.name
-    netapplet
     alsa-utils
+    commercialpackage
     foobar
     mozilla-firefox
-    commercialpackage
+    netapplet
 
 Unless the distribution being searched does not support binaries, in which
 cases it will always be on source:
