@@ -2541,7 +2541,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
         if pofile is None:
-            pofile = self.makePOFile('nl')
+            pofile = self.makePOFile()
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
         if translator is None:
@@ -2551,7 +2551,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if translations is None:
             translations = {0: self.getUniqueString()}
         else:
-            translations = sanitize_translations_from_webui(translations)
+            translations = sanitize_translations_from_webui(
+                potmsgset.singular_text, translations,
+                pofile.language.pluralforms)
 
         message = potmsgset.setCurrentTranslation(
             pofile, translator, translations,
