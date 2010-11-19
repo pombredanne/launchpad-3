@@ -144,11 +144,11 @@ ${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${I
 sprite_image:
 	${SHHH} bin/sprite-util create-image
 
+# We absolutely do not want to include the lazr.testing module and
+# its jsTestDriver test harness modifications in the lazr.js and
+# launchpad.js roll-up files.  They fiddle with built-in functions!
+# See Bug 482340.
 jsbuild_lazr: bin/jsbuild
-	# We absolutely do not want to include the lazr.testing module and
-	# its jsTestDriver test harness modifications in the lazr.js and
-	# launchpad.js roll-up files.  They fiddle with built-in functions!
-	# See Bug 482340.
 	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
 	-c $(LAZR_BUILT_JS_ROOT)/yui
 
