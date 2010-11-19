@@ -12,8 +12,8 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
-    'ITimelineProductSeries',
     'NoSuchProductSeries',
+    'ITimelineProductSeries',
     ]
 
 from lazr.restful.declarations import (
@@ -39,6 +39,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Field,
     Int,
     TextLine,
     )
@@ -114,32 +115,6 @@ def validate_release_glob(value):
         return True
     else:
         raise LaunchpadValidationError('Invalid release URL pattern.')
-
-
-class ITimelineProductSeries(Interface):
-    """Minimal product series info for the timeline."""
-
-    # XXX: EdwinGrubbs 2010-11-18 bug=
-    # lazr.restful can't batch basic python types such as dicts, so this
-    # interface is necessary.
-    export_as_webservice_entry()
-
-   #name = IProductSeries['name']
-
-   #status = IProductSeries['status']
-
-   #is_development_focus = exported(
-   #    Bool(title=_("Is series the development focus of the project"),
-   #         required=True))
-
-    uri = exported(
-        TextLine(title=_("Series URI"), required=False,
-            description=_('foo')))
-
-   #landmarks = exported(
-   #    CollectionField(title=_("List of milestones and releases")))
-
-
 
 
 class IProductSeriesEditRestricted(Interface):
@@ -336,7 +311,7 @@ class IProductSeriesPublic(
     @operation_parameters(
         include_inactive=Bool(title=_("Include inactive"),
                               required=False, default=False))
-    @operation_returns_entry(ITimelineProductSeries)
+    #@operation_returns_entry(ITimelineProductSeries)
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
@@ -350,6 +325,36 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
+
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=
+    # lazr.restful can't batch basic python types such as dicts, so this
+    # interface is necessary.
+    export_as_webservice_entry()
+
+    name = IProductSeries['name']
+
+    status = IProductSeries['status']
+   #status = exported(
+   #    Choice(
+   #        title=_('Status'), required=True, vocabulary=SeriesStatus,
+   #        default=SeriesStatus.DEVELOPMENT))
+
+    product = IProductSeries['product']
+
+    is_development_focus = exported(
+        Bool(title=_("Is series the development focus of the project"),
+             required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+    landmarks = exported(
+        Field(title=_("List of milestones and releases")))
 
 
 class IProductSeriesSet(Interface):

@@ -1,9 +1,9 @@
 If you know the email address of a person/team, it's possible to
 retrieve it using that email.
 
-    >>> daf = webservice.get(
-    ...     "/people?ws.op=getByEmail&email=daf@canonical.com").jsonBody()
-    >>> daf['name']
+    >>> #daf = webservice.get(
+    ... #    "/people?ws.op=getByEmail&email=daf@canonical.com").jsonBody()
+    >>> #daf['name']
     u'daf'
 
 "get_timeline" returns a lightweight representation of the series'
@@ -17,3 +17,11 @@ milestones and releases.
      u'name': u'foobadoo',
      u'status': u'Active Development',
      u'uri': u'/babadoo/foobadoo'}
+
+Project timeline:
+
+    >>> timeline = webservice.named_get(
+    ...     '/firefox',
+    ...     "get_timeline",
+    ...     include_inactive=True).jsonBody()
+    >>> print pretty(timeline)

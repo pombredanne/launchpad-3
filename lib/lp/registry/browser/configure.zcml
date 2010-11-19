@@ -1684,6 +1684,10 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
+    <browser:url
+        for="lp.registry.interfaces.productseries.ITimelineProductSeries"
+        path_expression="name"
+        attribute_to_parent="product"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.INavigationMenu"
         for="lp.registry.browser.productseries.IProductSeriesInvolved"

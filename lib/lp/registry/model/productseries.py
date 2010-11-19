@@ -642,21 +642,24 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         return TimelineProductSeries(
             name=self.name,
             is_development_focus=self.is_development_focus,
-            status=self.status.title,
+            status=self.status,
             uri=canonical_url(self, path_only_if_possible=True),
-            landmarks=landmarks)
+            landmarks=landmarks,
+            product=self.product)
 
 
 class TimelineProductSeries:
     """See `ITimelineProductSeries`."""
     implements(ITimelineProductSeries)
 
-    def __init__(self, name, status, is_development_focus, uri, landmarks):
+    def __init__(self, name, status, is_development_focus, uri, landmarks,
+                 product):
         self.name = name
         self.status = status
         self.is_development_focus = is_development_focus
         self.uri = uri
         self.landmarks = landmarks
+        self.product = product
 
 
 class ProductSeriesSet:
