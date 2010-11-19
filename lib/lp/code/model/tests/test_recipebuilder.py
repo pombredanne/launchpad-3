@@ -282,8 +282,13 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         def check_dispatch(ignored):
             logger.buffer.seek(0)
+
             self.assertEquals(
-                "DEBUG: Initiating build 1-someid on http://fake:0000\n",
+                "INFO: Sending chroot file for recipe build to "
+                "bob-de-bouwer\n",
+                logger.buffer.readline())
+            self.assertEquals(
+                "INFO: Initiating build 1-someid on http://fake:0000\n",
                 logger.buffer.readline())
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
@@ -293,7 +298,8 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
+            self.assertEqual(
+                build_args[4], job._extraBuildArgs(distroarchseries))
         return d.addCallback(check_dispatch)
 
     def test_dispatchBuildToSlave_nochroot(self):

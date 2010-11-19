@@ -177,25 +177,6 @@ rejection notice to Anne.
     From: itest-one-...@lists.launchpad.dev
     To: anne.person@example.com
     ...
-    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    ...
-    X-MailFrom: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    X-RcptTo: anne.person@example.com
-    <BLANKLINE>
-    Your request to the Itest-one mailing list
-    <BLANKLINE>
-        Posting of your message titled "An unsubscribed post"
-    <BLANKLINE>
-    has been rejected by the list moderator.  The moderator gave the
-    following reason for rejecting your request:
-    <BLANKLINE>
-    "[No reason given]"
-    <BLANKLINE>
-    Any questions or comments should be directed to the list administrator
-    at:
-    <BLANKLINE>
-        itest-one-owner@lists.launchpad.dev
 
 Anne posts another message to the mailing list, but she is still not
 subscribed to it.  The team administrator deems this message to be spam and
