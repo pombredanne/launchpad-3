@@ -37,6 +37,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class FakeLaunchpadRequest(FakeRequest):
@@ -285,7 +286,7 @@ class TestMilestoneAdvancedSubscriptionFeatures(
 class TestStructuralSubscriptionView(TestCaseWithFactory):
     """General tests for the StructuralSubscriptionView."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_next_url_set_to_context(self):
         # When the StructuralSubscriptionView form is submitted, the
@@ -294,24 +295,11 @@ class TestStructuralSubscriptionView(TestCaseWithFactory):
         target = self.factory.makeProduct()
         person = self.factory.makePerson()
         with person_logged_in(person):
-            harness = LaunchpadFormHarness(
-                target, StructuralSubscriptionView,
-                # We need to specify this so that the assertEqual()
-                # below works. The LaunchpadTestRequest uses 127.0.0.1
-                # by default for its hostname.
-                request_environ={
-                    'SERVER_URL': 'http://launchpad.dev',
-                    'HTTP_HOST': 'launchpad.dev',
-                    })
             form_data = {
                 'field.subscribe_me': 'on',
                 }
-            harness.submit('save', form_data)
+            view = create_initialized_view(
+                target, name='+subscribe', form=form_data)
             self.assertEqual(
-                canonical_url(target),
-                harness.view.next_url,
+                canonical_url(target), view.next_url,
                 "Next URL does not match target's canonical_url.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

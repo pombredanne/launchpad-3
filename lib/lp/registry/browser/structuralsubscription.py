@@ -80,6 +80,10 @@ class StructuralSubscriptionView(LaunchpadFormView,
     def label(self):
         return self.page_title
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """See LaunchpadFormView."""
         LaunchpadFormView.setUpFields(self)
@@ -205,7 +209,6 @@ class StructuralSubscriptionView(LaunchpadFormView,
         self._handleUserSubscription(data)
         self._handleTeamSubscriptions(data)
         self._handleDriverChanges(data)
-        self.next_url = canonical_url(self.context)
 
     def _handleUserSubscription(self, data):
         """Process the subscription for the user."""
