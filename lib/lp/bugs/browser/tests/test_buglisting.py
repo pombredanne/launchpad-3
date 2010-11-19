@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -128,11 +131,10 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
                       "portlet-tags should not be shown.")
 
 
-class TestBugTaskSearchListingView(TestCaseWithFactory):
+class BugTargetMixin:
+    """Test helpers for setting up `IBugTargets`."""
 
-    layer = DatabaseFunctionalLayer
-
-    def _makeProduct(self, bug_tracker=None, packaging=False):
+    def _makeBugTargetProduct(self, bug_tracker=None, packaging=False):
         """Return a product that may use Launchpad or an external bug tracker.
 
         bug_tracker may be None, 'launchpad', or 'external'.
@@ -149,13 +151,19 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
                 productseries=product.development_focus, in_ubuntu=True)
         return product
 
+
+class TestBugTaskSearchListingViewProduct(TestCaseWithFactory,
+                                          BugTargetMixin):
+
+    layer = DatabaseFunctionalLayer
+
     def test_external_bugtracker_is_none(self):
-        bug_target = self._makeProduct()
+        bug_target = self._makeBugTargetProduct()
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(None, view.external_bugtracker)
 
     def test_external_bugtracker(self):
-        bug_target = self._makeProduct(bug_tracker='external')
+        bug_target = self._makeBugTargetProduct(bug_tracker='external')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(bug_target.bugtracker, view.external_bugtracker)
 
@@ -165,24 +173,24 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(False, view.has_bugtracker)
 
     def test_has_bugtracker_external_is_true(self):
-        bug_target = self._makeProduct(bug_tracker='external')
+        bug_target = self._makeBugTargetProduct(bug_tracker='external')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(True, view.has_bugtracker)
 
     def test_has_bugtracker_launchpad_is_true(self):
-        bug_target = self._makeProduct(bug_tracker='launchpad')
+        bug_target = self._makeBugTargetProduct(bug_tracker='launchpad')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(True, view.has_bugtracker)
 
     def test_product_without_packaging_also_in_ubuntu_is_none(self):
-        bug_target = self._makeProduct(bug_tracker='launchpad')
+        bug_target = self._makeBugTargetProduct(bug_tracker='launchpad')
         login_person(bug_target.owner)
         view = create_initialized_view(
             bug_target, '+bugs', principal=bug_target.owner)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-ubuntu'))
 
     def test_product_with_packaging_also_in_ubuntu(self):
-        bug_target = self._makeProduct(
+        bug_target = self._makeBugTargetProduct(
             bug_tracker='launchpad', packaging=True)
         login_person(bug_target.owner)
         view = create_initialized_view(
@@ -192,11 +200,24 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
             bug_target.ubuntu_packages[0], force_local_path=True)
         self.assertEqual(link, content.a['href'])
 
-    def test_DSP_with_upstream_launchpad_project(self):
-        upstream_project = self._makeProduct(
+
+class TestBugTaskSearchListingViewDSP(TestCaseWithFactory, BugTargetMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def _getBugTarget(self, dsp):
+        """Return the current `IDistributionSourcePackage`.
+
+        Subclasses can redefine this
+        """
+        return dsp
+
+    def test_package_with_upstream_launchpad_project(self):
+        upstream_project = self._makeBugTargetProduct(
             bug_tracker='launchpad', packaging=True)
         login_person(upstream_project.owner)
-        bug_target = upstream_project.distrosourcepackages[0]
+        bug_target = self._getBugTarget(
+            upstream_project.distrosourcepackages[0])
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(upstream_project, view.upstream_launchpad_project)
@@ -204,18 +225,30 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         link = canonical_url(upstream_project, rootsite='bugs')
         self.assertEqual(link, content.a['href'])
 
-    def test_DSP_with_upstream_nonlaunchpad_project(self):
-        upstream_project = self._makeProduct(packaging=True)
+    def test_package_with_upstream_nonlaunchpad_project(self):
+        upstream_project = self._makeBugTargetProduct(packaging=True)
         login_person(upstream_project.owner)
-        bug_target = upstream_project.distrosourcepackages[0]
+        bug_target = self._getBugTarget(
+            upstream_project.distrosourcepackages[0])
         view = create_initialized_view(
             bug_target, '+bugs', principal=upstream_project.owner)
         self.assertEqual(None, view.upstream_launchpad_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
 
-    def test_DSP_without_upstream_project(self):
-        bug_target = self.factory.makeDistributionSourcePackage('test-dsp')
+    def test_package_without_upstream_project(self):
+        observer = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage(
+            'test-dsp', distribution=getUtility(ILaunchpadCelebrities).ubuntu)
+        bug_target = self._getBugTarget(dsp)
+        login_person(observer)
         view = create_initialized_view(
-            bug_target, '+bugs', principal=bug_target.distribution.owner)
+            bug_target, '+bugs', principal=observer)
         self.assertEqual(None, view.upstream_launchpad_project)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-upstream'))
+
+
+class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):
+
+        def _getBugTarget(self, dsp):
+            """Return the current `ISourcePackage`."""
+            return dsp.development_version
