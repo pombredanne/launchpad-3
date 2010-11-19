@@ -2549,8 +2549,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if reviewer is None:
             reviewer = self.makePerson()
         if translations is None:
-            translations = [self.getUniqueString()]
-        translations = sanitize_translations_from_webui(translations)
+            translations = {0: self.getUniqueString()}
+        else:
+            translations = sanitize_translations_from_webui(translations)
 
         message = potmsgset.setCurrentTranslation(
             pofile, translator, translations,
