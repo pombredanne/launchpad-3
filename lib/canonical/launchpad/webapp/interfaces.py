@@ -532,7 +532,7 @@ class OAuthPermission(DBEnumeratedType):
         """)
 
     DESKTOP_INTEGRATION = DBItem(60, """
-        Desktop Integration
+        Integrate an entire system
 
         Every application running on your desktop will have read-write
         access to your Launchpad account, including to your private

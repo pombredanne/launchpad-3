@@ -34,6 +34,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
@@ -59,6 +60,7 @@ from zope.schema import (
 from zope.schema.interfaces import IObject
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import patch_reference_property
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from lp.services.fields import (
@@ -200,7 +202,24 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
 
 
 class IBugTracker(Interface):
-    """A remote bug system."""
+    """A remote bug system.
+
+    Launchpadlib example: What bug tracker is used for a distro source
+    package?
+
+    ::
+
+        product = source_package.upstream_product
+        if product:
+            tracker = product.bug_tracker
+            if not tracker:
+                project = product.project_group
+                if project:
+                    tracker = project.bug_tracker
+        if tracker:
+            print "%s at %s" %(tracker.bug_tracker_type, tracker.base_url)
+
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'))
@@ -359,16 +378,20 @@ class IBugTracker(Interface):
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
     @export_write_operation()
     def addRemoteComponentGroup(component_group_name):
         """Adds a new component group to the bug tracker"""
 
+    @export_read_operation()
+    @operation_returns_collection_of(Interface)
     def getAllRemoteComponentGroups():
         """Return collection of all component groups for this bug tracker"""
 
     @operation_parameters(
         component_group_name=TextLine(
             title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
@@ -498,11 +521,11 @@ class IBugTrackerComponent(Interface):
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    is_visible = Bool(
+    is_visible = exported(Bool(
         title=_('Is Visible?'),
         description=_("Should the component be shown in "
                       "the Launchpad web interface?"),
-        readonly=True)
+        ))
     is_custom = Bool(
         title=_('Is Custom?'),
         description=_("Was the component added locally in "
@@ -513,17 +536,19 @@ class IBugTrackerComponent(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
-            description=_('The name of a software component'
-                          'in a remote bug tracker')))
+            description=_("The name of a software component "
+                          "as shown in Launchpad.")))
 
-# XXX: Bug 644794 will implement this link
-#    distro_source_package = exported(
-#        Reference(
-#            title=_('Distribution Source Package'),
-#            schema=Interface,
-#            description=_('The distribution source package for this '
-#                          'component, if one has been defined.')))
+    distro_source_package = exported(
+        Reference(
+            Interface,
+            title=_("Distribution Source Package"),
+            description=_("The distribution source package object that "
+                          "should be linked to this component."),
+            required=False))
+
+    component_group = exported(
+        Reference(title=_('Component Group'), schema=Interface))
 
 
 class IBugTrackerComponentGroup(Interface):
@@ -538,10 +563,11 @@ class IBugTrackerComponentGroup(Interface):
     name = exported(
         Text(
             title=_('Name'),
-            constraint=name_validator,
             description=_('The name of the bug tracker product.')))
     components = exported(
-        Reference(title=_('Components'), schema=IBugTrackerComponent))
+        CollectionField(
+            title=_('Components.'),
+            value_type=Reference(schema=IBugTrackerComponent)))
     bug_tracker = exported(
         Reference(title=_('BugTracker'), schema=IBugTracker))
 
@@ -552,6 +578,12 @@ class IBugTrackerComponentGroup(Interface):
     @export_write_operation()
     def addComponent(component_name):
         """Adds a component to be tracked as part of this component group"""
+
+
+# Patch in a mutual reference between IBugTrackerComponent and
+# IBugTrackerComponentGroup.
+patch_reference_property(
+    IBugTrackerComponent, "component_group", IBugTrackerComponentGroup)
 
 
 class IRemoteBug(Interface):

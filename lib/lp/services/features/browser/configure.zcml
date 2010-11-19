@@ -16,7 +16,7 @@
 	 is for admins only.
     -->
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         class="lp.services.features.browser.edit.FeatureControlView"
         name="+feature-rules"
         permission="launchpad.Edit"

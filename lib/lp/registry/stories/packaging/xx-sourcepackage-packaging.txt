@@ -46,10 +46,6 @@ project. He sets the upstream packaging link and sees that it is set.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'upstreams'))
     the Mozilla Project...Mozilla Thunderbird...trunk...
-    Bug supervisor: no
-    Bug tracker: no
-    Branch: no
-    Translations: no
 
 He sees the "Show upstream links" link and takes a look at the project's
 packaging in distributions.

@@ -107,6 +107,7 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
+from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -495,6 +496,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.oopses = []
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -561,6 +563,8 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        if hasattr(naked_user, '_password_cleartext_cached'):
+            password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
@@ -716,7 +720,7 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        self.client.open(url=self.layer.appserver_root_url())
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -725,16 +729,19 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = ''
 
     _yui_results = None
-    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
         self.test_path = test_path
-        self.yui_runner_url = self._view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(id='complete')
         response = client.commands.getPageText()
@@ -992,7 +999,10 @@ def set_feature_flag(name, value, scope=u'default', priority=1):
     assert getattr(features.per_thread, 'features', None) is not None
     flag = FeatureFlag(
         scope=scope, flag=name, value=value, priority=priority)
-    getFeatureStore().add(flag)
+    store = getFeatureStore()
+    store.add(flag)
+    # Make sure that the feature is saved into the db right now.
+    store.flush()
 
 
 def validate_mock_class(mock_class):

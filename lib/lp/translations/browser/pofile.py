@@ -26,7 +26,6 @@ from zope.publisher.browser import FileUpload
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -36,6 +35,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from lp.app.errors import (
@@ -854,7 +854,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                     "template." % id)
 
             error = self._storeTranslations(potmsgset)
-            if error and potmsgset.getSequence(potmsgset.potemplate) != 0:
+            if error and potmsgset.getSequence(self.context.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #

@@ -8,7 +8,6 @@ __all__ = ['MigrateVariantsProcess']
 
 import logging
 
-from storm.expr import In
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -70,15 +69,16 @@ class ReplacerMixin:
             self.start_at = None
         else:
             if self.title == 'TranslationMessage':
-                results = self.store.find(TranslationMessage,
-                                          In(TranslationMessage.id, object_ids))
-                results.set(TranslationMessage.language==self.language,
-                            variant=None)
+                results = self.store.find(
+                    TranslationMessage,
+                    TranslationMessage.id.is_in(object_ids))
+                results.set(
+                    TranslationMessage.language==self.language, variant=None)
             else:
-                results = self.store.find(POFile,
-                                          In(POFile.id, object_ids))
-                results.set(POFile.language==self.language,
-                            variant=None)
+                results = self.store.find(
+                    POFile, POFile.id.is_in(object_ids))
+                results.set(
+                    POFile.language==self.language, variant=None)
 
             self.transaction.commit()
             self.transaction.begin()

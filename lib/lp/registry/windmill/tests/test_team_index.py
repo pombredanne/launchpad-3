@@ -24,7 +24,7 @@ class TestTeamIndex(WindmillTestCase):
 
     def test_addmember(self):
         self.client.open(
-            url=u'http://launchpad.dev:8085/~testing-spanish-team')
+            url=u'%s/~testing-spanish-team' % RegistryWindmillLayer.base_url)
 
         lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
 

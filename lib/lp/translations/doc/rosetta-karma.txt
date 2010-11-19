@@ -11,8 +11,9 @@ like SQLObjects are not persistent between transactions.
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.karma import IKarmaActionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from lp.translations.model.potemplate import POTemplate
 

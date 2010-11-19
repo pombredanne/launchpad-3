@@ -12,7 +12,7 @@ from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import TestCaseWithFactory
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationimporter import (
     OutdatedTranslationError,
     )
