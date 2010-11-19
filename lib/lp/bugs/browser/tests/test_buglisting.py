@@ -132,15 +132,27 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def _makeProduct(self, bug_tracker=None):
+        """Return a product that may use Launchpad or an external bug tracker.
+
+        bug_tracker may be None, 'launchpad', or 'external'.
+        """
+        product = self.factory.makeProduct()
+        if bug_tracker is not None:
+            with person_logged_in(product.owner):
+                if bug_tracker == 'launchpad':
+                    product.official_malone = True
+                else:
+                    product.bugtracker = self.factory.makeBugTracker()
+        return product
+
     def test_external_bugtracker_is_none(self):
-        bug_target = self.factory.makeProduct()
+        bug_target = self._makeProduct()
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(None, view.external_bugtracker)
 
     def test_external_bugtracker(self):
-        bug_target = self.factory.makeProduct()
-        with person_logged_in(bug_target.owner):
-            bug_target.bugtracker = self.factory.makeBugTracker()
+        bug_target = self._makeProduct(bug_tracker='external')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(bug_target.bugtracker, view.external_bugtracker)
 
@@ -150,31 +162,25 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(False, view.has_bugtracker)
 
     def test_has_bugtracker_external_is_true(self):
-        bug_target = self.factory.makeProduct()
-        with person_logged_in(bug_target.owner):
-            bug_target.bugtracker = self.factory.makeBugTracker()
+        bug_target = self._makeProduct(bug_tracker='external')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(True, view.has_bugtracker)
 
     def test_has_bugtracker_launchpad_is_true(self):
-        bug_target = self.factory.makeProduct()
-        with person_logged_in(bug_target.owner):
-            bug_target.official_malone = True
+        bug_target = self._makeProduct(bug_tracker='launchpad')
         view = create_initialized_view(bug_target, '+bugs')
         self.assertEqual(True, view.has_bugtracker)
 
     def test_product_without_packaging_also_in_ubuntu_is_none(self):
-        bug_target = self.factory.makeProduct()
+        bug_target = self._makeProduct(bug_tracker='launchpad')
         login_person(bug_target.owner)
-        bug_target.official_malone = True
         view = create_initialized_view(
             bug_target, '+bugs', principal=bug_target.owner)
         self.assertEqual(None, find_tag_by_id(view(), 'also-in-ubuntu'))
 
     def test_product_with_packaging_also_in_ubuntu(self):
-        bug_target = self.factory.makeProduct()
+        bug_target = self._makeProduct(bug_tracker='launchpad')
         login_person(bug_target.owner)
-        bug_target.official_malone = True
         self.factory.makePackagingLink(
             productseries=bug_target.development_focus, in_ubuntu=True)
         view = create_initialized_view(
@@ -185,9 +191,8 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(link, content.a['href'])
 
     def test_DSP_with_upstream_launchpad_project(self):
-        upstream_project = self.factory.makeProduct()
+        upstream_project = self._makeProduct(bug_tracker='launchpad')
         login_person(upstream_project.owner)
-        upstream_project.official_malone = True
         self.factory.makePackagingLink(
             productseries=upstream_project.development_focus, in_ubuntu=True)
         bug_target = upstream_project.distrosourcepackages[0]
@@ -199,7 +204,7 @@ class TestBugTaskSearchListingView(TestCaseWithFactory):
         self.assertEqual(link, content.a['href'])
 
     def test_DSP_with_upstream_nonlaunchpad_project(self):
-        upstream_project = self.factory.makeProduct()
+        upstream_project = self._makeProduct()
         login_person(upstream_project.owner)
         self.factory.makePackagingLink(
             productseries=upstream_project.development_focus, in_ubuntu=True)
