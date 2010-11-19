@@ -34,6 +34,9 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # Do not add bin/buildout to this list.
 # It is impossible to get buildout to tell us all the files it would
 # build, since each egg's setup.py doesn't tell us that information.
+#
+# NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
+# buildout.
 BUILDOUT_BIN = \
     $(PY) bin/apiindex bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
@@ -57,10 +60,10 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-hosted_branches: buildout_bin
+hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(API_INDEX): $(BZR_VERSION_INFO) buildout_bin
+$(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
@@ -68,12 +71,12 @@ $(API_INDEX): $(BZR_VERSION_INFO) buildout_bin
 apidoc: compile $(API_INDEX)
 
 # Run by PQM.
-check_merge: buildout_bin
+check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
-check_db_merge: buildout_bin
+check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
 
 check_config: build
@@ -111,16 +114,16 @@ check_mailman: build
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
 		--layer=MailmanLayer
 
-lint: buildout_bin
+lint: ${PY}
 	@bash ./bin/lint.sh
 
-lint-verbose: buildout_bin
+lint-verbose: ${PY}
 	@bash ./bin/lint.sh -v
 
-xxxreport: buildout_bin
+xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
-check-configs: buildout_bin
+check-configs: $(PY)
 	${PY} utilities/check-configs.py
 
 pagetests: build
@@ -149,7 +152,7 @@ jsbuild_lazr: bin/jsbuild
 	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
 	-c $(LAZR_BUILT_JS_ROOT)/yui
 
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize buildout_bin
+jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 	${SHHH} bin/jsbuild \
 		$(JSFLAGS) \
 		-n launchpad \
@@ -177,7 +180,7 @@ else
 	@exit 1
 endif
 
-buildonce_eggs: buildout_bin
+buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
@@ -185,33 +188,45 @@ buildonce_eggs: buildout_bin
 # directory is only there for deployment convenience.
 # Note that the buildout version must be maintained here and in versions.cfg
 # to make sure that the build does not go over the network.
+#
+# buildout won't touch files that would have the same contents, but for Make's
+# sake we need them to get fresh timestamps, so we touch them after building.
 bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs \
 		--version=1.5.1
+	touch --no-create $@
 
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want eggs: they are the expensive bits,
 # and the other bits might run into problems like bug 575037.  This
 # target runs buildout, and then removes everything created except for
 # the eggs.
-build_eggs: buildout_bin clean_buildout
-
-$(BUILDOUT_BIN): buildout_bin
+build_eggs: $(BUILDOUT_BIN)
 
 # This builds bin/py and all the other bin files except bin/buildout.
 # Remove the target before calling buildout to ensure that buildout
 # updates the timestamp.
-buildout_bin: bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
+buildout_bin: $(BUILDOUT_BIN)
+
+# buildout won't touch files that would have the same contents, but for Make's
+# sake we need them to get fresh timestamps, so we touch them after building.
+#
+# If we listed every target on the left-hand side, a parallel make would try
+# multiple copies of this rule to build them all.  Instead, we nominally build
+# just $(PY), and everything else is implicitly updated by that.
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 		$(BUILDOUT_TEMPLATES)
-	$(RM) $@
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
+	touch $@
+
+$(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
 # bin/compile_templates is responsible for building all chameleon templates,
 # of which there is currently one, but of which many more are coming.
-compile: buildout_bin $(BZR_VERSION_INFO)
+compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
