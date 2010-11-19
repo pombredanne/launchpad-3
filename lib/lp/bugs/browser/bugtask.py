@@ -2303,7 +2303,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
 
-    @property
+    @cachedproperty
     def external_bugtracker(self):
         """External bug tracking system designated for the context.
 
@@ -2314,6 +2314,39 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return None
         else:
             return has_external_bugtracker.getExternalBugTracker()
+
+    @property
+    def has_bugtracker(self):
+        usage = IServiceUsage(self.context)
+        uses_lp = usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+        if self.external_bugtracker or uses_lp:
+            return True
+        return False
+
+    @property
+    def upstream_launchpad_project(self):
+        """The linked upstream project for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        if self._sourcePackageContext():
+            sp = self.context
+        elif self._distroSourcePackageContext():
+            sp = self.context.development_version
+        else:
+            sp = None
+        if sp is not None:
+            packaging = sp.packaging
+            if packaging is not None:
+                product = packaging.productseries.product
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+                    return product
+        return None
 
     @property
     def page_title(self):
