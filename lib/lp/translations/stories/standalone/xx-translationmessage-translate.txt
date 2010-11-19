@@ -588,8 +588,9 @@ from.
     >>> login('foo.bar@canonical.com')
     >>> pofile = factory.makePOFile('sr')
     >>> potmsgset = factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-    >>> translationmessage = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
+    ...     potmsgset=potmsgset, pofile=pofile,
+    ...     translations=[u"shared translation"])
     >>> translationmessage.setPOFile(pofile)
     >>> message_url = '/'.join(
     ...     [canonical_url(translationmessage, rootsite='translations'),
@@ -638,10 +639,9 @@ translation.
 
     >>> shared_html_id = 'msgset_%d_%s_suggestion_%d_0' % (
     ...     potmsgset.id, pofile.language.code, translationmessage.id)
-    >>> extract_text(find_tag_by_id(browser.contents, shared_html_id))
-    u'shared translation'
+    >>> shared_message_tag = find_tag_by_id(browser.contents, shared_html_id)
+    >>> print extract_text(shared_message_tag)
+    shared translation
 
     >>> extract_text(find_tag_by_id(browser.contents, html_id))
     u'diverged'
-
-

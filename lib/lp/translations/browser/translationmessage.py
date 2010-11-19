@@ -484,7 +484,9 @@ class BaseTranslationView(LaunchpadView):
             # user.
             return unicode(e)
 
-        if has_translations:
+        is_suggestion = (
+            force_suggestion or not self.user_is_official_translator)
+        if has_translations or not is_suggestion:
             message = potmsgset.submitSuggestion(
                 self.pofile, self.user, translations)
 
@@ -514,6 +516,7 @@ class BaseTranslationView(LaunchpadView):
                         share_with_other_side=self.share_with_other_side,
                         lock_timestamp=self.lock_timestamp)
             except TranslationConflict:
+                self._observeTranslationUpdate(potmsgset)
                 return (
                     u"This translation has changed since you last saw it.  "
                     u"To avoid accidentally reverting work done by others, "
