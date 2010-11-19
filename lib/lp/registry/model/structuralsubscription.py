@@ -518,11 +518,15 @@ class BugFilterSetBuilder:
         # Set up common filter conditions.
         if len(self.tags) == 0:
             self.filter_conditions = And(
-                BugSubscriptionFilter.include_any_tags == False,
+                # When the bug has no tags, filters with include_any_tags set
+                # can never match.
+                Not(BugSubscriptionFilter.include_any_tags),
                 self.base_conditions)
         else:
             self.filter_conditions = And(
-                BugSubscriptionFilter.exclude_any_tags == False,
+                # When the bug has tags, filters with exclude_any_tags set can
+                # never match.
+                Not(BugSubscriptionFilter.exclude_any_tags),
                 self.base_conditions)
 
     @property
