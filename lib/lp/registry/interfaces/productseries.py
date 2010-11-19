@@ -12,6 +12,7 @@ __all__ = [
     'IProductSeriesEditRestricted',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'ITimelineProductSeries',
     'NoSuchProductSeries',
     ]
 
@@ -22,6 +23,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     exported,
     operation_parameters,
+    operation_returns_entry,
     rename_parameters_as,
     )
 from lazr.restful.fields import (
@@ -72,6 +74,7 @@ from lp.services.fields import (
     ContentNameField,
     PersonChoice,
     Title,
+    URIField,
     )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -111,6 +114,32 @@ def validate_release_glob(value):
         return True
     else:
         raise LaunchpadValidationError('Invalid release URL pattern.')
+
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=
+    # lazr.restful can't batch basic python types such as dicts, so this
+    # interface is necessary.
+    export_as_webservice_entry()
+
+   #name = IProductSeries['name']
+
+   #status = IProductSeries['status']
+
+   #is_development_focus = exported(
+   #    Bool(title=_("Is series the development focus of the project"),
+   #         required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+   #landmarks = exported(
+   #    CollectionField(title=_("List of milestones and releases")))
+
+
 
 
 class IProductSeriesEditRestricted(Interface):
@@ -307,6 +336,7 @@ class IProductSeriesPublic(
     @operation_parameters(
         include_inactive=Bool(title=_("Include inactive"),
                               required=False, default=False))
+    @operation_returns_entry(ITimelineProductSeries)
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
