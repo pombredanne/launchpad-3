@@ -360,8 +360,9 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchMergeProposal.queue_status NOT IN %s
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
-        """See `IHasMergeProposals`."""
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revnos=None):
+        """See `IBranch`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
@@ -369,7 +370,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status, target_branch=self)
+        return collection.getMergeProposals(
+            status, target_branch=self, merged_revnos=merged_revnos)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""

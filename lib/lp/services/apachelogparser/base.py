@@ -204,15 +204,21 @@ def get_host_date_status_and_request(line):
 
 def get_method_and_path(request):
     """Extract the method of the request and path of the requested file."""
-    L = request.split()
-    # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
-    if len(L) == 2:
-        method, path = L
+    method, ignore, rest = request.partition(' ')
+    # In the below, the common case is that `first` is the path and `last` is
+    # the protocol.
+    first, ignore, last = rest.rpartition(' ')
+    if first == '':
+        # HTTP 1.0 requests might omit the HTTP version so we cope with them.
+        path = last
+    elif not last.startswith('HTTP'):
+        # We cope with HTTP 1.0 protocol without HTTP version *and* a
+        # space in the path (see bug 676489 for example).
+        path = rest
     else:
-        method, path, protocol = L
-
+        # This is the common case.
+        path = first
     if path.startswith('http://') or path.startswith('https://'):
         uri = URI(path)
         path = uri.path
-
     return method, path
