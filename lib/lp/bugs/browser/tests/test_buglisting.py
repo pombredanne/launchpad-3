@@ -205,12 +205,13 @@ class TestBugTaskSearchListingViewDSP(TestCaseWithFactory, BugTargetMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def _getBugTarget(self, dsp):
-        """Return the current `IDistributionSourcePackage`.
+    def _getBugTarget(self, obj):
+        """Return the `IBugTarget` undertest.
 
-        Subclasses can redefine this
+        Return the object that was passed. Sub-classes can redefine
+        this method.
         """
-        return dsp
+        return obj
 
     def test_package_with_upstream_launchpad_project(self):
         upstream_project = self._makeBugTargetProduct(
