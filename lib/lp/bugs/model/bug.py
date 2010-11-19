@@ -48,7 +48,6 @@ from storm.expr import (
     And,
     Count,
     Func,
-    In,
     LeftJoin,
     Max,
     Not,
@@ -176,7 +175,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.person import (
     Person,
     ValidPersonCache,
@@ -225,8 +223,8 @@ def get_bug_tags_open_count(context_condition, user):
 
     :return: A list of tuples, (tag name, open bug count).
     """
-    open_statuses_condition = In(
-        BugTask.status, sqlvalues(*UNRESOLVED_BUGTASK_STATUSES))
+    open_statuses_condition = BugTask.status.is_in(
+        UNRESOLVED_BUGTASK_STATUSES)
     columns = [
         BugTag.tag,
         Count(),
@@ -320,8 +318,6 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    mentoring_offers = SQLMultipleJoin(
-            'MentoringOffer', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin(
         'Bug', joinColumn='duplicateof', orderBy='id')
     specifications = SQLRelatedJoin('Specification', joinColumn='bug',
@@ -425,7 +421,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         return Store.of(self).find(
             Person,
-            In(Person.id, self.user_ids_affected_with_dupes))
+            Person.id.is_in(self.user_ids_affected_with_dupes))
 
     @property
     def users_affected_count_with_dupes(self):
@@ -442,9 +438,9 @@ class Bug(SQLBase):
 
         :param include_content: If True retrieve the content for the messages
             too.
-        :param include_parents: If True retrieve the object for parent messages
-            too. If False the parent attribute will be *forced* to None to
-            reduce database lookups.
+        :param include_parents: If True retrieve the object for parent
+            messages too. If False the parent attribute will be *forced* to
+            None to reduce database lookups.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
@@ -454,16 +450,18 @@ class Bug(SQLBase):
             to_messages = lambda rows: [row[0] for row in rows]
         else:
             to_messages = lambda rows: rows
+
         def eager_load_owners(messages):
-            # Because we may have multiple owners, we spend less time in storm
-            # with very large bugs by not joining and instead querying a second
-            # time. If this starts to show high db time, we can left outer join
-            # instead.
+            # Because we may have multiple owners, we spend less time
+            # in storm with very large bugs by not joining and instead
+            # querying a second time. If this starts to show high db
+            # time, we can left outer join instead.
             owner_ids = set(message.ownerID for message in messages)
             owner_ids.discard(None)
             if not owner_ids:
                 return
             list(store.find(Person, Person.id.is_in(owner_ids)))
+
         def eager_load_content(messages):
             # To avoid the complexity of having multiple rows per
             # message, or joining in the database (though perhaps in
@@ -483,11 +481,13 @@ class Bug(SQLBase):
                 cache = get_property_cache(message)
                 cache.text_contents = Message.chunks_text(
                     chunk_map[message.id])
+
         def eager_load(rows, slice_info):
             messages = to_messages(rows)
             eager_load_owners(messages)
             if include_content:
                 eager_load_content(messages)
+
         def index_message(row, index):
             # convert row to an IndexedMessage
             if include_parents:
@@ -916,10 +916,13 @@ BugMessage""" % sqlvalues(self.id))
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
+
         assert person is not None
+
         def cache_unsubscribed(rows):
             if not rows:
                 self._unsubscribed_cache.add(person)
+
         def cache_subscriber(row):
             _, subscriber, subscription = row
             if subscription.bug_id == self.id:
@@ -956,6 +959,14 @@ BugMessage""" % sqlvalues(self.id))
             SQL("""Person.id = TeamParticipation.team"""),
             ).order_by(Person.name),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
+
+    def getSubscriptionForPerson(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        return store.find(
+            BugSubscription,
+            BugSubscription.person == person,
+            BugSubscription.bug == self).one()
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1388,42 +1399,6 @@ BugMessage""" % sqlvalues(self.id))
     def getQuestionCreatedFromBug(self):
         """See `IBug`."""
         return self._question_from_bug
-
-    def canMentor(self, user):
-        """See `ICanBeMentored`."""
-        if user is None:
-            return False
-        if self.duplicateof is not None or self.is_complete:
-            return False
-        if bool(self.isMentor(user)):
-            return False
-        if not user.teams_participated_in:
-            return False
-        return True
-
-    def isMentor(self, user):
-        """See `ICanBeMentored`."""
-        return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
-
-    def offerMentoring(self, user, team):
-        """See `ICanBeMentored`."""
-        # if an offer exists, then update the team
-        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
-        if mentoringoffer is not None:
-            mentoringoffer.team = team
-            return mentoringoffer
-        # if no offer exists, create one from scratch
-        mentoringoffer = MentoringOffer(owner=user, team=team,
-            bug=self)
-        notify(ObjectCreatedEvent(mentoringoffer, user=user))
-        return mentoringoffer
-
-    def retractMentoring(self, user):
-        """See `ICanBeMentored`."""
-        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
-        if mentoringoffer is not None:
-            notify(ObjectDeletedEvent(mentoringoffer, user=user))
-            MentoringOffer.delete(mentoringoffer.id)
 
     def getMessageChunks(self):
         """See `IBug`."""
@@ -1942,15 +1917,17 @@ BugMessage""" % sqlvalues(self.id))
     def attachments(self):
         """See `IBug`.
 
-        This property does eager loading of the index_messages so that the API
-        which wants the message_link for the attachment can answer that without
-        O(N^2) overhead. As such it is moderately expensive to call (it
-        currently retrieves all messages before any attachments, and does this
-        when attachments is evaluated, not when the resultset is processed).
+        This property does eager loading of the index_messages so that
+        the API which wants the message_link for the attachment can
+        answer that without O(N^2) overhead. As such it is moderately
+        expensive to call (it currently retrieves all messages before
+        any attachments, and does this when attachments is evaluated,
+        not when the resultset is processed).
         """
         message_to_indexed = {}
         for message in self._indexed_messages(include_parents=False):
             message_to_indexed[message.id] = message
+
         def set_indexed_message(row):
             attachment = row[0]
             # row[1] - the LibraryFileAlias is now in the storm cache and
@@ -2227,7 +2204,7 @@ class BugSet:
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
-        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        result_set = store.find(Bug, Bug.id.is_in(bug_numbers))
         return result_set.order_by('id')
 
     def dangerousGetAllBugs(self):

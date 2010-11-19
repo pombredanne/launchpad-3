@@ -78,7 +78,7 @@ class ImportQueueEntryTest(WindmillTestCase):
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/+imports/1'
+        start_url = '%s/+imports/1' % TranslationsWindmillLayer.base_url
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
         user.ensure_login(client)

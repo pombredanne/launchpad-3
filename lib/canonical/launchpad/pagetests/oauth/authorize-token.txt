@@ -279,7 +279,7 @@ we'll create such a consumer, and then a request token for that consumer.
 
     >>> login('foo.bar@canonical.com')
     >>> consumer = factory.makeOAuthConsumer(
-    ...     "System-wide: Ubuntu desktop (mycomputer)")
+    ...     "System-wide: Ubuntu (mycomputer)")
     >>> logout()
 
     >>> token = request_token_for(consumer)
@@ -293,7 +293,7 @@ desktop.
     ...     authorize_token_main_content(
     ...         'allow_permission=DESKTOP_INTEGRATION'))
     Confirm Computer Access
-    The Ubuntu desktop called mycomputer wants access to your
+    The Ubuntu computer called mycomputer wants access to your
     Launchpad account. If you allow this, every application running on
     mycomputer will have read-write access to your Launchpad account,
     including to your private data.
@@ -394,7 +394,7 @@ token is approved and has no expiration date.
     >>> token = integrate_desktop("Until I Disable It")
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
-    The Ubuntu desktop called mycomputer now has access to your
+    The Ubuntu computer called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
     start using its Launchpad integration features.
 
@@ -416,13 +416,12 @@ one hour.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
-    The Ubuntu desktop called mycomputer now has access to your
+    The Ubuntu computer called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
     start using its Launchpad integration features.
     The integration you just authorized will expire in 59 minutes. At
-    that time, you'll have to re-authorize the Ubuntu desktop called
-    mycomputer, if you want to keep using its Launchpad integration
-    features.
+    that time, you'll have to re-authorize mycomputer, if you want to
+    keep using its Launchpad integration features.
 
     >>> print token.is_reviewed
     True
@@ -480,9 +479,8 @@ cannot be exchanged for an access token.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     You decided against desktop integration
-    You decided not to give the Ubuntu desktop called mycomputer
-    access to your Launchpad account. You can always change your mind
-    later.
+    You decided not to give mycomputer access to your Launchpad
+    account. You can always change your mind later.
 
     >>> print token.is_reviewed
     True

@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -179,17 +179,45 @@ def main(options):
         reset_permissions(con, config, options)
 
 
+def list_identifiers(identifiers):
+    """List all of `identifiers` as SQL, quoted and separated by commas.
+
+    :param identifiers: A sequence of SQL identifiers.
+    :return: A comma-separated SQL string consisting of all identifiers
+        passed in.  Each will be quoted for use in SQL.
+    """
+    return ', '.join([
+        quote_identifier(identifier) for identifier in identifiers])
+
+
+def add_to_dict(dictionary, key, addition):
+    """Add `addition` to `dictionary[key]`.
+
+    :param dictionary: A `dict` mapping items like `key` to items like
+        `addition`.
+    :param key: An index into `dictionary`, whether new or already
+        present.
+    :param addition: A value to add to whatever is already in
+        `dictionary[key]`.  If `key` is not present, the value is
+        set to `addition` instead of having it added.
+    """
+    if key in dictionary:
+        dictionary[key] += addition
+    else:
+        dictionary[key] = addition
+
+
 def reset_permissions(con, config, options):
     schema = DbSchema(con)
+    all_users = list_identifiers(schema.users)
+
     cur = CursorWrapper(con.cursor())
 
     # Add our two automatically maintained groups
     for group in ['read', 'admin']:
         if group in schema.principals:
-            for user in schema.users:
-                cur.execute("ALTER GROUP %s DROP USER %s" % (
-                    quote_identifier(group), quote_identifier(user)
-                    ))
+            cur.execute("ALTER GROUP %s DROP USER %s" % (
+                    quote_identifier(group), all_users))
         else:
             cur.execute("CREATE GROUP %s" % quote_identifier(group))
             schema.groups.append(group)
@@ -215,11 +243,8 @@ def reset_permissions(con, config, options):
         for username in [section_name, '%s_ro' % section_name]:
             if username in schema.principals:
                 if type_ == 'group':
-                    for member in schema.users:
-                        cur.execute(
-                            "REVOKE %s FROM %s" % (
-                                quote_identifier(username),
-                                quote_identifier(member)))
+                    cur.execute("REVOKE %s FROM %s" % (
+                        quote_identifier(username), all_users))
                 else:
                     # Note - we don't drop the user because it might own
                     # objects in other databases. We need to ensure they are
@@ -269,6 +294,8 @@ def reset_permissions(con, config, options):
 
     # Revoke all privs from known groups. Don't revoke anything for
     # users or groups not defined in our security.cfg.
+    revocations = {}
+    # Gather all revocations.
     for section_name in config.sections():
         for obj in schema.values():
             if obj.type == 'function':
@@ -276,16 +303,22 @@ def reset_permissions(con, config, options):
             else:
                 t = 'TABLE'
 
-            roles = [quote_identifier(section_name)]
+            item = "%s %s" % (t, obj.fullname)
+
+            roles = [section_name]
             if section_name != 'public':
-                roles.append(quote_identifier(section_name + '_ro'))
-            for role in roles:
-                cur.execute(
-                    'REVOKE ALL ON %s %s FROM %s' % (t, obj.fullname, role))
-                if schema.has_key(obj.seqname):
-                    cur.execute(
-                        'REVOKE ALL ON SEQUENCE %s FROM %s'
-                        % (obj.seqname, role))
+                roles.append(section_name + '_ro')
+
+            add_to_dict(revocations, item, roles)
+
+            if schema.has_key(obj.seqname):
+                add_to_dict(revocations, "SEQUENCE %s" % obj.seqname, roles)
+
+    # Now batch up and execute all revocations.
+    for item, roles in revocations.iteritems():
+        if roles:
+            cur.execute(
+                "REVOKE ALL ON %s FROM %s" % (item, list_identifiers(roles)))
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
@@ -293,6 +326,10 @@ def reset_permissions(con, config, options):
     found = set()
 
     # Set permissions as per config file
+
+    functions = set()
+    tables = set()
+
     for username in config.sections():
         for obj_name, perm in config.items(username):
             if '.' not in obj_name:
@@ -316,29 +353,18 @@ def reset_permissions(con, config, options):
                 who_ro = quote_identifier('%s_ro' % username)
 
             if obj.type == 'function':
+                functions.add(obj.fullname)
                 cur.execute(
                     'GRANT %s ON FUNCTION %s TO %s'
                     % (perm, obj.fullname, who))
                 cur.execute(
-                    'GRANT EXECUTE ON FUNCTION %s TO GROUP read'
-                    % obj.fullname)
-                cur.execute(
-                    'GRANT ALL ON FUNCTION %s TO GROUP admin'
-                    % obj.fullname)
-                cur.execute(
                     'GRANT EXECUTE ON FUNCTION %s TO GROUP %s'
                     % (obj.fullname, who_ro))
             else:
+                tables.add(obj.fullname)
                 cur.execute(
                     'GRANT %s ON TABLE %s TO %s'
                     % (perm, obj.fullname, who))
-                if obj.fullname not in SECURE_TABLES:
-                    cur.execute(
-                        'GRANT SELECT ON TABLE %s TO GROUP read'
-                        % obj.fullname)
-                cur.execute(
-                    'GRANT ALL ON TABLE %s TO GROUP admin'
-                    % obj.fullname)
                 cur.execute(
                     'GRANT SELECT ON TABLE %s TO %s'
                     % (obj.fullname, who_ro))
@@ -360,6 +386,23 @@ def reset_permissions(con, config, options):
                     cur.execute(
                         'GRANT SELECT ON %s TO %s'
                         % (obj.seqname, who_ro))
+
+    # A few groups get special rights to every function or table.  Batch
+    # the schema manipulations to save time.
+    if functions:
+        functions_text = ', '.join(functions)
+        cur.execute(
+            "GRANT EXECUTE ON FUNCTION %s TO GROUP read" % functions_text)
+        cur.execute(
+            "GRANT ALL ON FUNCTION %s TO GROUP admin" % functions_text)
+    if tables:
+        tables_text = ', '.join(tables)
+        cur.execute("GRANT ALL ON TABLE %s TO GROUP admin" % tables_text)
+    nonsecure_tables = tables - set(SECURE_TABLES)
+    if nonsecure_tables:
+        nonsecure_tables_text = ', '.join(nonsecure_tables)
+        cur.execute(
+            "GRANT SELECT ON TABLE %s TO GROUP read" % nonsecure_tables_text)
 
     # Set permissions on public schemas
     public_schemas = [

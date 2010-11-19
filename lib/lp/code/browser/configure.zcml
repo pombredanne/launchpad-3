@@ -1262,7 +1262,7 @@
             permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
-            template="../../app/templates/generic-edit.pt"/>
+            template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
@@ -1318,6 +1318,56 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+merge-queues"
+            template="../templates/branchmergequeue-listing.pt"/>
+
+        <browser:page
+            for="*"
+            layer="lp.code.publisher.CodeLayer"
+            name="+bmq-macros"
+            permission="zope.Public"
+            template="../templates/branchmergequeue-macros.pt"/>
+
+
+    </facet>
+
+    <browser:url
+        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+        attribute_to_parent="owner"
+        path_expression="string:+merge-queues/${name}"
+        rootsite="code" />
+
+    <browser:menus
+        classes="BranchMergeQueueContextMenu"
+        module="lp.code.browser.branchmergequeue"/>
+
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            name="+index"
+            layer="lp.code.publisher.CodeLayer" />
+        <browser:page
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
+            name="+index"
+            template="../templates/branchmergequeue-index.pt"
+            permission="zope.Public" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
+            name="+create-queue"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.Edit" />
+
     </facet>
 
 </configure>

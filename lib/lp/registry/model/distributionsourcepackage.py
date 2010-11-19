@@ -19,9 +19,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    In,
     Join,
-    Lower,
     Max,
     Sum,
     )
@@ -428,7 +426,7 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackageRelease, SourcePackagePublishingHistory),
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
-            In(SourcePackagePublishingHistory.archiveID,
+            SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
             SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id,
@@ -542,7 +540,7 @@ class DistributionSourcePackage(BugTargetBase,
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
             (EmailAddress, Person),
-            In(Lower(EmailAddress.email), email_addresses))
+            EmailAddress.email.lower().is_in(email_addresses))
         return result_set
 
     @classmethod

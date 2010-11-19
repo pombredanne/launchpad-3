@@ -46,6 +46,7 @@ import warnings
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
+import simplejson
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -60,16 +61,15 @@ from zope.security.proxy import (
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
-    )
-from canonical.launchpad.interfaces import (
-    IMasterStore,
-    IStore,
     )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
@@ -83,6 +83,10 @@ from canonical.launchpad.interfaces.emailaddress import (
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager,
@@ -98,10 +102,8 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -113,6 +115,10 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICveSet,
+    )
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -130,7 +136,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSet
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueueSource
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
@@ -259,14 +265,12 @@ from lp.testing import (
     temp_dir,
     time_counter,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus,
-    )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
@@ -1111,6 +1115,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         namespace = target.getNamespace(owner)
         return namespace.createBranch(branch_type, name, creator)
 
+    def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
+                             description=None, configuration=None,
+                             branches=None):
+        """Create a BranchMergeQueue."""
+        if name is None:
+            name = unicode(self.getUniqueString('queue'))
+        if owner is None:
+            owner = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
+        if description is None:
+            description = unicode(self.getUniqueString('queue-description'))
+        if configuration is None:
+            configuration = unicode(simplejson.dumps({
+                self.getUniqueString('key'): self.getUniqueString('value')}))
+
+        queue = getUtility(IBranchMergeQueueSource).new(
+            name, owner, registrant, description, configuration, branches)
+        return queue
+
     def enableDefaultStackingForProduct(self, product, branch=None):
         """Give 'product' a default stacked-on branch.
 
@@ -1148,22 +1172,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             ubuntu_branches.teamowner)
         return branch
 
-    def makeBranchMergeQueue(self, name=None):
-        """Create a new multi branch merge queue."""
-        if name is None:
-            name = self.getUniqueString('name')
-        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
-            registrant=self.makePerson(),
-            owner=self.makePerson(),
-            name=name,
-            summary=self.getUniqueString())
-
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
                                 preview_diff=None, date_created=None,
-                                description=None):
+                                description=None, reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1188,8 +1202,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranchTargetBranch(target)
         if registrant is None:
             registrant = self.makePerson()
+        review_requests = []
+        if reviewer is not None:
+            review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
-            registrant, target_branch,
+            registrant, target_branch, review_requests=review_requests,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
             description=description, date_created=date_created)
 
@@ -1255,6 +1272,34 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
         return preview_diff
+
+    def makeIncrementalDiff(self, merge_proposal=None, old_revision=None,
+                            new_revision=None):
+        diff = self.makeDiff()
+        if merge_proposal is None:
+            source_branch = self.makeBranch()
+        else:
+            source_branch = merge_proposal.source_branch
+        def make_revision(parent=None):
+            sequence = source_branch.revision_history.count() + 1
+            if parent is None:
+                parent_ids = []
+            else:
+                parent_ids = [parent.revision_id]
+            branch_revision = self.makeBranchRevision(
+                source_branch, sequence=sequence,
+                revision_date=self.getUniqueDate(), parent_ids=parent_ids)
+            return branch_revision.revision
+        if old_revision is None:
+            old_revision = make_revision()
+        if merge_proposal is None:
+            merge_proposal = self.makeBranchMergeProposal(
+                date_created=self.getUniqueDate(),
+                source_branch=source_branch)
+        if new_revision is None:
+            new_revision = make_revision(old_revision)
+        return merge_proposal.generateIncrementalDiff(
+            old_revision, new_revision, diff)
 
     def makeStaticDiff(self):
         return StaticDiff.acquireFromText(
@@ -1324,28 +1369,35 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             '', parent.revision_id, None, None, None)
         branch.updateScannedDetails(parent, sequence)
 
-    def makeBranchRevision(self, branch, revision_id, sequence=None,
-                           parent_ids=None):
+    def makeBranchRevision(self, branch, revision_id=None, sequence=None,
+                           parent_ids=None, revision_date=None):
         revision = self.makeRevision(
-            rev_id=revision_id, parent_ids=parent_ids)
+            rev_id=revision_id, parent_ids=parent_ids,
+            revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
     def makeBug(self, product=None, owner=None, bug_watch_url=None,
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
-                status=None):
+                status=None, distribution=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
 
-        :param product: If the product is not set, one is created
-            and this is used as the primary bug target.
+        :param product: If the product is not set, and if the parameter
+            distribution is not set, a product is created and this is
+            used as the primary bug target.
         :param owner: The reporter of the bug. If not set, one is created.
         :param bug_watch_url: If specified, create a bug watch pointing
             to this URL.
+        :param distribution: If set, the distribution is used as the
+            default bug target.
+
+        At least one of the parameters distribution and product must be
+        None, otherwise, an assertion error will be raised.
         """
-        if product is None:
+        if product is None and distribution is None:
             product = self.makeProduct()
         if owner is None:
             owner = self.makePerson()
@@ -1357,7 +1409,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner, title, comment=comment, private=private,
             datecreated=date_created, description=description,
             status=status)
-        create_bug_params.setBugTarget(product=product)
+        create_bug_params.setBugTarget(
+            product=product, distribution=distribution)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
@@ -1391,7 +1444,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
 
         if IProductSeries.providedBy(target):
-            # We can't have a series task without a distribution task.
+            # We can't have a series task without a product task.
             self.makeBugTask(bug, target.product)
         if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
@@ -1420,7 +1473,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if bug_tracker is None:
             bug_tracker = self.makeBugTracker()
 
@@ -1431,7 +1484,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 custom=None):
         """Make a new bug tracker component."""
         if name is None:
-            name = u'default'
+            name = self.getUniqueUnicode()
         if component_group is None:
             component_group = self.makeBugTrackerComponentGroup()
         if custom is None:
@@ -1617,7 +1670,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW):
+                          status=SpecificationDefinitionStatus.NEW,
+                          implementation_status=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1633,7 +1687,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
-        return getUtility(ISpecificationSet).new(
+        spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
@@ -1642,6 +1696,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner=owner,
             product=product,
             distribution=distribution)
+        if implementation_status is not None:
+            naked_spec = removeSecurityProxy(spec)
+            naked_spec.implementation_status = implementation_status
+            naked_spec.updateLifecycleStatus(owner)
+        return spec
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
@@ -1801,7 +1860,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
-                              merge_proposal=None):
+                              merge_proposal=None, date_created=DEFAULT):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -1815,7 +1874,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 merge_proposal = self.makeBranchMergeProposal(
                     registrant=sender)
         return merge_proposal.createComment(
-            sender, subject, body, vote, vote_tag, parent)
+            sender, subject, body, vote, vote_tag, parent,
+            _date_created=date_created)
 
     def makeCodeReviewVoteReference(self):
         bmp = removeSecurityProxy(self.makeBranchMergeProposal())
@@ -1936,6 +1996,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if versions is None:
             versions = {}
 
+        base_version = versions.get('base')
+        if base_version is not None:
+            for series in [derived_series, derived_series.parent_series]:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    version=base_version,
+                    sourcepackagename=source_package_name,
+                    status=PackagePublishingStatus.SUPERSEDED)
+
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
 
@@ -1955,8 +2024,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name, difference_type,
-            status=status)
+            derived_series, source_package_name)
+
+        removeSecurityProxy(diff).status = status
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
@@ -2635,7 +2705,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             creator = self.makePerson()
 
         if version is None:
-            version = self.getUniqueString('version')
+            version = unicode(self.getUniqueInteger()) + 'version'
 
         return distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=sourcepackagename,
@@ -3160,8 +3230,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeLaunchpadService(self, person=None):
         if person is None:
             person = self.makePerson()
+        from canonical.testing import BaseLayer
         launchpad = launchpadlib_for("test", person,
-            service_root="http://api.launchpad.dev:8085")
+            service_root=BaseLayer.appserver_root_url("api"))
         login_person(person)
         return launchpad
 
@@ -3223,6 +3294,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         request_token = self.makeOAuthRequestToken(
             consumer, reviewed_by=owner, access_level=access_level)
         return request_token.createAccessToken()
+
+    def makeCVE(self, sequence, description=None,
+                cvestate=CveStatus.CANDIDATE):
+        """Create a new CVE record."""
+        if description is None:
+            description = self.getUniqueString()
+        return getUtility(ICveSet).new(sequence, description, cvestate)
 
 
 # Some factory methods return simple Python types. We don't add
