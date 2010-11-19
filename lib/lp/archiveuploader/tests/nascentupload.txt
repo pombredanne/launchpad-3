@@ -770,7 +770,7 @@ rights to all components from 'ubuntu-team' to 'mark':
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> from canonical.launchpad.database import ArchivePermission
+  >>> from lp.soyuz.model.archivepermission import ArchivePermission
   >>> new_uploader = getUtility(IPersonSet).getByName('mark')
   >>> for permission in ArchivePermission.select():
   ...     permission.person = new_uploader

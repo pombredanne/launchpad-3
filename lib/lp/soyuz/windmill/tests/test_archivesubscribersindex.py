@@ -64,8 +64,9 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
 
         self.lpuser.ensure_login(client)
 
-        client.open(url='http://launchpad.dev:8085/~joe-bloggs/'
-                        '+archive/myppa/+subscriptions')
+        client.open(url='%s/~joe-bloggs/'
+                        '+archive/myppa/+subscriptions'
+                        % SoyuzWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Click on the JS add access action.

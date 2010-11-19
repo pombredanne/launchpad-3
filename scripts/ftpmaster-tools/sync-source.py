@@ -40,10 +40,6 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    IPersonSet,
-    )
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts,
     logger,
@@ -55,6 +51,8 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import (

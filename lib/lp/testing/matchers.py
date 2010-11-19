@@ -5,13 +5,11 @@ __metaclass__ = type
 __all__ = [
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
-    'DoesNotStartWith',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
     'Provides',
     'ProvidesAndIsProxied',
-    'StartsWith',
     ]
 
 from testtools.content import Content
@@ -189,42 +187,6 @@ class ProvidesAndIsProxied(Matcher):
         if mismatch is not None:
             return mismatch
         return IsProxied().match(matchee)
-
-
-class DoesNotStartWith(Mismatch):
-
-    def __init__(self, matchee, expected):
-        """Create a DoesNotStartWith Mismatch.
-
-        :param matchee: the string that did not match.
-        :param expected: the string that `matchee` was expected to start
-            with.
-        """
-        self.matchee = matchee
-        self.expected = expected
-
-    def describe(self):
-        return "'%s' does not start with '%s'." % (
-            self.matchee, self.expected)
-
-
-class StartsWith(Matcher):
-    """Checks whether one string starts with another."""
-
-    def __init__(self, expected):
-        """Create a StartsWith Matcher.
-
-        :param expected: the string that matchees should start with.
-        """
-        self.expected = expected
-
-    def __str__(self):
-        return "Starts with '%s'." % self.expected
-
-    def match(self, matchee):
-        if not matchee.startswith(self.expected):
-            return DoesNotStartWith(matchee, self.expected)
-        return None
 
 
 class DoesNotContain(Mismatch):

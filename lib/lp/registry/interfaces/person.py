@@ -27,7 +27,6 @@ __all__ = [
     'ImmutableVisibilityError',
     'InvalidName',
     'NoSuchPerson',
-    'PPACreationError',
     'PersonCreationRationale',
     'PersonVisibility',
     'PersonalStanding',
@@ -61,7 +60,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -896,6 +894,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     @export_read_operation()
     def getRecipe(name):
         """Return the person's recipe with the given name."""
+
+    def getMergeQueue(name):
+        """Return the person's merge queue with the given name."""
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
@@ -2206,11 +2207,6 @@ class NoSuchPerson(NameLookupFailed):
 
     _message_prefix = "No such person"
 
-
-class PPACreationError(Exception):
-    """Raised when there is an issue creating a new PPA."""
-
-    webservice_error(400) # Bad Request
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [

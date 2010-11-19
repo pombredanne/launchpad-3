@@ -983,26 +983,26 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         source_package_ids = [
             package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
+        # Construct a table of just current releases for the desired SPNs.
+        origin = SQL("""
+            SourcePackageRelease
+            JOIN (
+                SELECT
+                    spr.id as sourcepackagerelease, MAX(spph.id)
                 FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
+                    SourcePackageRelease spr
                 WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
+                    spr.sourcepackagename IN %s AND
                     spph.sourcepackagerelease = spr.id AND
                     spph.archive IN %s AND
                     spph.status IN %s AND
-                    spph.distroseries = %s)
+                    spph.distroseries = %s
+                GROUP BY spr.id)
+                AS spph ON SourcePackageRelease.id = spph.sourcepackagerelease
             """ % sqlvalues(
                 source_package_ids, self.distribution.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
+                active_publishing_status, self))
+        releases = IStore(self).using(origin).find(SourcePackageRelease)
         return dict(
             (self.getSourcePackage(release.sourcepackagename),
              DistroSeriesSourcePackageRelease(self, release))

@@ -13,6 +13,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -65,7 +66,8 @@ class InitialiseDistroSeries:
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
         self.arches = arches
-        self.packagesets = packagesets
+        self.packagesets = [
+            ensure_unicode(packageset) for packageset in packagesets]
         self.rebuild = rebuild
         self._store = IMasterStore(DistroSeries)
 

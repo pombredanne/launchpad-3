@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-latest-bugs"
   tal:condition="view/latestBugTasks"
-  tal:content="cache:private, 1 hour">
+  tal:content="cache:private noparam, 1 hour">
   <h2><span class="see-all"><a
       tal:attributes="href context/fmt:url:bugs">All bugs</a></span>
     Latest bugs reported</h2>
