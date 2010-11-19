@@ -282,6 +282,9 @@ from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
     )
+from lp.translations.utilities.sanitize import (
+    sanitize_translations_from_webui
+    )
 
 
 SPACE = ' '
@@ -2547,9 +2550,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             reviewer = self.makePerson()
         if translations is None:
             translations = [self.getUniqueString()]
-        if isinstance(translations, list):
-            # Support the list-of-strings format for convenience.
-            translations = dict(enumerate(translations))
+        translations = sanitize_translations_from_webui(translations)
 
         message = potmsgset.setCurrentTranslation(
             pofile, translator, translations,
