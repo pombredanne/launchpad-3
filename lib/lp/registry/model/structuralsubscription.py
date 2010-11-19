@@ -506,6 +506,14 @@ class BugFilterSetBuilder:
     """A convenience class to build queries for getSubscriptionsForBugTask."""
 
     def __init__(self, bugtask, level, join_condition):
+        """Initialize a new set builder for bug filters.
+
+        :param bugtask: The `IBugTask` to match against.
+        :param level: A member of `BugNotificationLevel`.
+        :param join_condition: A condition for selecting structural
+            subscriptions. Generally this should limit the subscriptions to a
+            particular target (i.e. project or distribution).
+        """
         self.status = bugtask.status
         self.importance = bugtask.importance
         # The list() gets around some weirdness with security proxies; Storm
