@@ -2317,6 +2317,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def has_bugtracker(self):
+        """Does the `IBugTarget` have a bug tracker or use Launchpad?"""
         usage = IServiceUsage(self.context)
         uses_lp = usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
         if self.external_bugtracker or uses_lp:
@@ -2325,7 +2326,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
     @property
     def upstream_launchpad_project(self):
-        """The linked upstream project for the package.
+        """The linked upstream `IProduct` for the package.
 
         If this `IBugTarget` is a `IDistributionSourcePackage` or an
         `ISourcePackage` and it is linked to an upstream project that uses
