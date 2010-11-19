@@ -64,7 +64,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # POTMsgSets) but it also needs to set up test conditions which
         # requires other privileges.
         super(TestPOTMsgSetMerging, self).setUp(user=ADMIN_EMAIL)
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestPOTMsgSetMerging, self).setUpProduct()
 
     def test_matchedPOTMsgSetsShare(self):
@@ -255,7 +255,7 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         """
         super(TestPOTMsgSetMergingAndTranslations, self).setUp(
             user=ADMIN_EMAIL)
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestPOTMsgSetMergingAndTranslations, self).setUpProduct()
 
     def test_sharingDivergedMessages(self):
@@ -376,7 +376,7 @@ class TestTranslationMessageNonMerging(TestCaseWithFactory,
 
     def setUp(self):
         super(TestTranslationMessageNonMerging, self).setUp(user=ADMIN_EMAIL)
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestTranslationMessageNonMerging, self).setUpProduct()
 
     def test_MessagesAreNotSharedAcrossPOTMsgSets(self):
@@ -403,8 +403,7 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
 
     def setUp(self):
         super(TestTranslationMessageMerging, self).setUp(user=ADMIN_EMAIL)
-        transaction.commit()
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestTranslationMessageMerging, self).setUpProduct()
 
     def test_messagesCanStayDiverged(self):
@@ -566,7 +565,7 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
 
     def setUp(self):
         super(TestRemoveDuplicates, self).setUp(user=ADMIN_EMAIL)
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestRemoveDuplicates, self).setUpProduct()
 
     def test_duplicatesAreCleanedUp(self):
@@ -736,7 +735,7 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
 
     def setUp(self):
         super(TestSharingMigrationPerformance, self).setUp()
-        self.layer.switchDbUser('postgres')
+        self.becomeDbUser('postgres')
         super(TestSharingMigrationPerformance, self).setUpProduct()
 
     def _flushDbObjects(self):
