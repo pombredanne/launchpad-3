@@ -832,11 +832,15 @@ class BuilderSet(object):
     def __iter__(self):
         return iter(Builder.select())
 
-    def __getitem__(self, name):
+    def getByName(self, name):
+        """See IBuilderSet."""
         try:
             return Builder.selectOneBy(name=name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
+
+    def __getitem__(self, name):
+        return self.getByName(name)
 
     def new(self, processor, url, name, title, description, owner,
             active=True, virtualized=False, vm_host=None, manual=True):
