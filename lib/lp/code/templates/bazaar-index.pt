@@ -111,6 +111,15 @@
         </div>
       </div>
       <div class="clear"></div>
+      <div id="build-recipes">
+        <h2>Source Package Recipe Builds</h2>
+        <p id="recipe-summary">
+          A bzr-builder "recipe" is a description of the steps needed to
+          construct a package from the various bzr branches.
+        </p>
+        <a href="/+daily-builds">Recent recipe builds&#8230;</a>
+      </div>
+      <div class="clear"></div>
       <div id="application-footer" tal:content="cache:public,30 minutes">
         <div>
           <strong tal:content="view/branch_count">123</strong>
@@ -125,9 +134,6 @@
             <strong tal:content="view/import_count">123</strong>
             imported branches
           </a>
-        </div>
-        <div>
-          <a href="/+daily-builds">Recent recipe builds&#8230;</a>
         </div>
         <div>
           Launchpad uses <a href="http://bazaar.canonical.com/">Bazaar</a>

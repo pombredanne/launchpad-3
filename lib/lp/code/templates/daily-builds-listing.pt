@@ -20,8 +20,12 @@
       </tal:block>
 
       <tal:block tal:condition="dailybuilds">
-        <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper"/>
-        <table class="listing sortable" id="daily-build-listing">
+
+        <tal:needs-batch condition="view/batchnav/has_multiple_pages">
+          <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper"/>
+        </tal:needs-batch>
+
+        <table tal:attributes="class view/batchnav/table_class" id="daily-build-listing">
           <thead>
             <tr>
               <th>
