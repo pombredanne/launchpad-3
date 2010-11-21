@@ -94,6 +94,12 @@
     <allow attributes="browserDefault
                        __call__"/>
   </class>
+  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
+  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
@@ -147,6 +153,11 @@
       class="lp.code.model.revisioncache.GenericRevisionCollection"
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
+  </securedutility>
+  <securedutility
+      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
+      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
   </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
