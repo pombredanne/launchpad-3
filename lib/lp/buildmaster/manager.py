@@ -151,10 +151,12 @@ class SlaveScanner:
         if failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
             CannotResumeHost, BuildDaemonError, CannotFetchFile):
-            self.logger.info("Scanning failed with: %s" % error_message)
+            self.logger.info("Scanning %s failed with: %s" % (
+                self.builder_name, error_message))
         else:
-            self.logger.info("Scanning failed with: %s\n%s" %
-                (failure.getErrorMessage(), failure.getTraceback()))
+            self.logger.info("Scanning %s failed with: %s\n%s" % (
+                self.builder_name, failure.getErrorMessage(),
+                failure.getTraceback()))
 
         # Decide if we need to terminate the job or fail the
         # builder.

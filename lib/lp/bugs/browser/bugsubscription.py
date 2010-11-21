@@ -133,6 +133,10 @@ class AdvancedSubscriptionMixin:
 
     def _setUpBugNotificationLevelField(self):
         """Set up the bug_notification_level field."""
+        if not self._use_advanced_features:
+            # If advanced features are disabled, do nothing.
+            return
+
         self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(
             self._bug_notification_level_field)
@@ -263,11 +267,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self.user is None:
             return
 
-        if self._use_advanced_features:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
-            self._setUpBugNotificationLevelField()
-        else:
-            self.form_fields += formlib.form.Fields(self._subscription_field)
+        self.form_fields += formlib.form.Fields(self._subscription_field)
+        self._setUpBugNotificationLevelField()
         self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
             RadioWidget)
 
