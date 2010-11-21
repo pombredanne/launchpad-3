@@ -28,7 +28,7 @@ class RecipeBuildBatchNavigator(BatchNavigator):
 class CompletedDailyBuildsView(LaunchpadView):
     @property
     def page_title(self):
-        return 'Recently Completed Daily Recipe Builds'
+        return 'Most Recently Completed Daily Recipe Builds'
 
     def initialize(self):
         LaunchpadView.initialize(self)

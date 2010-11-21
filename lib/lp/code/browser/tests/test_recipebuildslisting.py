@@ -132,8 +132,7 @@ class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
         text = self.getMainText(
             root, '+daily-builds', rootsite='code', no_login=no_login)
         expected_text = """
-            Recently Completed Daily Recipe Builds
-            .*
+            Most Recently Completed Daily Recipe Builds
             Source Package
             Recipe
             Recipe Owner
