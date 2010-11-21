@@ -40,8 +40,9 @@ class RecipeBuildFilter(EnumeratedType):
         Show only recipe builds completed within last 30 days.
         """)
 
-    
+
 class RecipeBuildBatchNavigator(BatchNavigator):
+
     @property
     def table_class(self):
         if self.has_multiple_pages:
