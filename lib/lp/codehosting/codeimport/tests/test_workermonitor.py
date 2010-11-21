@@ -88,8 +88,6 @@ fix_bug_2518()
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
-    run_tests_with = AsynchronousDeferredRunTest
-
     class StubWorkerMonitor:
 
         def __init__(self):
@@ -101,8 +99,7 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
     def setUp(self):
         self.worker_monitor = self.StubWorkerMonitor()
         self.log_file = StringIO.StringIO()
-        ProcessTestsMixin.setUp(self)
-        TestCase.setUp(self)
+        super(TestWorkerMonitorProtocol, self).setUp()
 
     def makeProtocol(self):
         """See `ProcessTestsMixin.makeProtocol`."""
