@@ -20,6 +20,7 @@ from sqlobject import SQLObjectNotFound
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    AsynchronousDeferredRunTestForBrokenTwisted,
     )
 
 from twisted.internet import (
@@ -97,7 +98,8 @@ class HTTPServerTestSetup(TacTestSetup):
 
 class TestProberProtocolAndFactory(TestCase):
 
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
+        timeout=20)
 
     def setUp(self):
         super(TestProberProtocolAndFactory, self).setUp()

@@ -10,8 +10,12 @@ import xmlrpclib
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
+
+from twisted.internet.base import DelayedCall
+DelayedCall.debug = True
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
@@ -1008,7 +1012,7 @@ class TestSlaveTimeouts(TestCase):
     # Testing that the methods that call callRemote() all time out
     # as required.
 
-    run_tests_with = AsynchronousDeferredRunTest
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted
 
     def setUp(self):
         super(TestSlaveTimeouts, self).setUp()
@@ -1087,7 +1091,8 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
     """Tests that need more of Launchpad to run."""
 
     layer = LaunchpadZopelessLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
+        timeout=20)
 
     def setUp(self):
         super(TestSlaveWithLibrarian, self).setUp()
