@@ -10,12 +10,12 @@ import xmlrpclib
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
+    SynchronousDeferredRunTest,
     )
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.client import getPage
 
 from zope.component import getUtility
@@ -36,7 +36,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
-    TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
@@ -1047,17 +1046,15 @@ class TestSlaveTimeouts(TestCase):
             self.slave.build(None, None, None, None, None))
 
 
-class TestSlaveConnectionTimeouts(TrialTestCase):
+class TestSlaveConnectionTimeouts(TestCase):
     # Testing that we can override the default 30 second connection
     # timeout.
 
-    layer = TwistedLayer
+    run_test = SynchronousDeferredRunTest
 
     def setUp(self):
         super(TestSlaveConnectionTimeouts, self).setUp()
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
         self.clock = Clock()
         self.proxy = ProxyWithConnectionTimeout("fake_url")
         self.slave = self.slave_helper.getClientSlave(
@@ -1066,12 +1063,7 @@ class TestSlaveConnectionTimeouts(TrialTestCase):
     def test_connection_timeout(self):
         # The default timeout of 30 seconds should not cause a timeout,
         # only the config value should.
-        timeout_config = """
-        [builddmaster]
-        socket_timeout: 180
-        """
-        config.push('timeout', timeout_config)
-        self.addCleanup(config.pop, 'timeout')
+        self.pushConfig('builddmaster', socket_timeout=180)
 
         d = self.slave.echo()
         # Advance past the 30 second timeout.  The real reactor will
@@ -1081,15 +1073,9 @@ class TestSlaveConnectionTimeouts(TrialTestCase):
         self.clock.advance(31)
         self.assertFalse(d.called)
 
-        # Now advance past the real socket timeout and expect a
-        # Failure.
-
-        def got_timeout(failure):
-            self.assertIsInstance(failure.value, CancelledError)
-
-        d.addBoth(got_timeout)
         self.clock.advance(config.builddmaster.socket_timeout + 1)
         self.assertTrue(d.called)
+        return assert_fails_with(d, CancelledError)
 
     def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
         # Make sure that BuilderSlaves use the custom proxy class.
