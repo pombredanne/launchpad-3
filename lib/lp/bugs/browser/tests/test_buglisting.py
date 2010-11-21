@@ -131,7 +131,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
                       "portlet-tags should not be shown.")
 
 
-class BugTargetMixin:
+class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""
 
     def _makeBugTargetProduct(self, bug_tracker=None, packaging=False):
@@ -152,8 +152,7 @@ class BugTargetMixin:
         return product
 
 
-class TestBugTaskSearchListingViewProduct(TestCaseWithFactory,
-                                          BugTargetMixin):
+class TestBugTaskSearchListingViewProduct(BugTargetTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -201,7 +200,7 @@ class TestBugTaskSearchListingViewProduct(TestCaseWithFactory,
         self.assertEqual(link, content.a['href'])
 
 
-class TestBugTaskSearchListingViewDSP(TestCaseWithFactory, BugTargetMixin):
+class TestBugTaskSearchListingViewDSP(BugTargetTestCase):
 
     layer = DatabaseFunctionalLayer
 
