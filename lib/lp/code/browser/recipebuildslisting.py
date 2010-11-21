@@ -63,7 +63,7 @@ class CompletedDailyBuildsView(LaunchpadFormView):
 
     @property
     def page_title(self):
-        return 'Recently Completed Daily Recipe Builds'
+        return 'Most Recently Completed Daily Recipe Builds'
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
