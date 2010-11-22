@@ -9,9 +9,9 @@ __all__ = [
     'VALID_AMI_OWNERS',
     ]
 
+from collections import defaultdict
 import cStringIO
 from datetime import datetime
-from itertools import groupby
 from operator import itemgetter
 import re
 import sys
@@ -172,7 +172,7 @@ class EC2Account:
         # cannot share a location string, we need to make sure that the search
         # result for this image is unique, or throw an error because the
         # choice of image is ambiguous.
-        search_results = []
+        results = defaultdict(list)
 
         # Find the images with the highest revision numbers and locations that
         # match the regex.
@@ -181,13 +181,9 @@ class EC2Account:
             match = self._image_match(image.location)
             if match is not None:
                 revision = int(match.group(1))
-                search_results.append((revision, image))
+                results[revision].append(image)
 
-        # Sort and group by revision.
-        get_revision = itemgetter(0)
-        search_results.sort(key=get_revision, reverse=True)
-        for revision, group in groupby(search_results, get_revision):
-            yield revision, [image for (revision, image) in group]
+        return sorted(results.iteritems(), key=itemgetter(0), reverse=True)
 
     def acquire_image(self, machine_id):
         """Get the image.
