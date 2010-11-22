@@ -430,9 +430,9 @@ We submit it
       <td>
       </td><td>
         <div>
-          Somebody else changed this translation since you started. To avoid
+          This translation has changed since you last saw it.  To avoid
           accidentally reverting work done by others, we added your
-           translations as suggestions, so please review current values.
+          translations as suggestions.  Please review the current values.
         </div>
       </td>
     </tr>
