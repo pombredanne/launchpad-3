@@ -331,7 +331,7 @@ class ITimelineProductSeries(Interface):
     # XXX: EdwinGrubbs 2010-11-18 bug=677671
     # lazr.restful can't batch a DecoratedResultSet returning basic
     # python types such as dicts, so this interface is necessary.
-    export_as_webservice_entry()
+    export_as_webservice_entry('timeline_project_series')
 
     name = IProductSeries['name']
 
