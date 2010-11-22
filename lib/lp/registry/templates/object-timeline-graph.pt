@@ -54,12 +54,39 @@
               }
 
               var display_graph = function(result) {
-                  var timeline_data = result.entries.reverse();
-                  // The timeline for a productseries needs to be wrapped
-                  // in an array.
-                  if (!Y.Lang.isArray(timeline_data)) {
-                      timeline_data = [timeline_data];
+                  // The result for a single productseries needs to be
+                  // wrapped in an array just as all the series for a
+                  // product would be.
+                  var entries = null;
+                  if (result.entries === undefined) {
+                      entries = [result];
                   }
+                  else {
+                      entries = result.entries;
+                  }
+
+                  # XXX: EdwinGrubbs 2010-11-18 bug=677671
+                  # The get_timeline() REST method used to return an
+                  # arbitrary chunk of JSON. Since lazr.restful can only
+                  # batch entries, the LP.client is now wrapping in
+                  # objects that provide more functionality for the
+                  # entries, so we need to unwrap it before providing
+                  # the info to the TimelineGraph object.
+                  var timeline_data = [];
+                  Y.each(entries.reverse(), function(series, i) {
+                      var plain_series = {};
+                      var fields = [
+                          'is_development_focus',
+                          'landmarks',
+                          'name',
+                          'status',
+                          'uri'
+                          ];
+                      Y.each(fields, function(field, j) {
+                          plain_series[field] = series.get(field);
+                      });
+                      timeline_data.push(plain_series);
+                  });
 
                   // Don't display graph if there are zero milestones or
                   // releases.
