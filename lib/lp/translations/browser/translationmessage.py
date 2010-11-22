@@ -389,6 +389,29 @@ class BaseTranslationView(LaunchpadView):
     # and _submitTranslations().
     #
 
+    def _receiveTranslations(self, potmsgset):
+        """Process and store submitted translations for `potmsgset`.
+
+        :return: An error string in case of failure, or None otherwise.
+        """
+        try:
+            self._storeTranslations(potmsgset)
+        except GettextValidationError, e:
+            return unicode(e)
+        except TranslationConflict:
+            # The translations are demoted to suggestions, but they may
+            # still affect the "messages with new suggestions" filter.
+            self._observeTranslationUpdate(potmsgset)
+            return """
+                This translation has changed since you last saw it.  To avoid
+                accidentally reverting work done by others, we added your
+                translations as suggestions.  Please review the current
+                values.
+                """
+        else:
+            self._observeTranslationUpdate(potmsgset)
+            return None
+
     def _storeTranslations(self, potmsgset):
         """Store the translation submitted for a POTMsgSet.
 
@@ -834,32 +857,9 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
             CurrentTranslationMessageZoomedView, self.context, pofile=pofile,
             can_edit=can_edit, error=self.error)
 
-    def _receiveTranslations(self, potmsgset):
-        """Process and store submitted translations for `potmsgset`.
-
-        :return: An error string in case of failure, or None otherwise.
-        """
-        try:
-            self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
-            return unicode(e)
-        except TranslationConflict:
-            # The translations are demoted to suggestions, but they may
-            # still affect the "messages with new suggestions" filter.
-            self._observeTranslationUpdate(potmsgset)
-            return """
-                This translation has changed since you last saw it.  To avoid
-                accidentally reverting work done by others, we added your
-                translations as suggestions.  Please review the current
-                values.
-                """
-        else:
-            self._observeTranslationUpdate(potmsgset)
-            return None
-
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
-        self.error = self._storeTranslations(self.context.potmsgset)
+        self.error = self._receiveTranslations(self.context.potmsgset)
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "
