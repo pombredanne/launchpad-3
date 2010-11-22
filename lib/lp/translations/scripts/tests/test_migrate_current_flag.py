@@ -143,3 +143,41 @@ class TestUpdaterLoop(TestCaseWithFactory):
         self.assertFalse(imported.is_imported)
         self.assertTrue(translation.is_imported)
         self.assertTrue(translation.is_current)
+
+    def test_updateTranslationMessages_other_language(self):
+        # If there was a previous imported message in another language
+        # it is not unset.
+        pofile = self.factory.makePOFile()
+        pofile_other = self.factory.makePOFile(potemplate=pofile.potemplate)
+        imported = self.factory.makeTranslationMessage(
+            pofile=pofile_other, is_imported=True)
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=imported.potmsgset, is_imported=False)
+        self.assertTrue(imported.is_imported)
+        self.assertTrue(imported.is_current)
+        self.assertFalse(translation.is_imported)
+        self.assertTrue(translation.is_current)
+
+        self.migrate_loop._updateTranslationMessages([translation.id])
+        self.assertTrue(imported.is_imported)
+        self.assertTrue(imported.is_current)
+        self.assertTrue(translation.is_imported)
+        self.assertTrue(translation.is_current)
+
+    def test_updateTranslationMessages_diverged(self):
+        # If there was a previous diverged message, it is not
+        # touched.
+        pofile = self.factory.makePOFile()
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, is_imported=False)
+        diverged_imported = self.factory.makeTranslationMessage(
+            pofile=pofile, force_diverged=True, is_imported=True,
+            potmsgset=translation.potmsgset)
+        self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
+        self.assertTrue(diverged_imported.is_imported)
+        self.assertTrue(diverged_imported.is_current)
+
+        self.migrate_loop._updateTranslationMessages([translation.id])
+        self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
+        self.assertTrue(diverged_imported.is_imported)
+        self.assertTrue(diverged_imported.is_current)
