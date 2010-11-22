@@ -309,7 +309,6 @@ class IProductSeriesPublic(
     @operation_parameters(
         include_inactive=Bool(title=_("Include inactive"),
                               required=False, default=False))
-    #@operation_returns_entry(ITimelineProductSeries)
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
