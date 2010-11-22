@@ -206,23 +206,20 @@ class EC2Account:
             # they can deal with it.
             return self.conn.get_image(machine_id)
 
-        try:
-            revision, images = next(self.find_images())
-        except StopIteration:
-            # No matching image.
+        images_by_revision = self.find_images()
+        if len(images_by_revision) == 0:
             raise RuntimeError(
                 "You don't have access to a test-runner image.\n"
                 "Request access and try again.\n")
-        else:
-            self.log('Using machine image version %d\n' % revision)
-            try:
-                [image] = images
-            except ValueError:
-                raise ValueError(
-                    'More than one image of revision %d found: %r' % (
-                        revision, images))
-            else:
-                return image
+
+        revision, images = images_by_revision[0]
+        if len(images) > 1:
+            raise ValueError(
+                'More than one image of revision %d found: %r' % (
+                    revision, images))
+
+        self.log('Using machine image version %d\n' % revision)
+        return images[0]
 
     def get_instance(self, instance_id):
         """Look in all of our reservations for an instance with the given ID.
