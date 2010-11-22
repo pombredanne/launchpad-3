@@ -449,12 +449,30 @@ class BaseTranslationView(LaunchpadView):
     # and _submitTranslations().
     #
 
+    def _receiveTranslations(self, potmsgset):
+        """Process and store submitted translations for `potmsgset`.
+
+        :return: An error string in case of failure, or None otherwise.
+        """
+        try:
+            self._storeTranslations(potmsgset)
+        except GettextValidationError, e:
+            return unicode(e)
+        except TranslationConflict, e:
+            # The translations are demoted to suggestions, but they may
+            # still affect the "messages with new suggestions" filter.
+            self._observeTranslationUpdate(potmsgset)
+            return unicode(e)
+        else:
+            self._observeTranslationUpdate(potmsgset)
+            return None
+
     def _storeTranslations(self, potmsgset):
         """Store the translation submitted for a POTMsgSet.
 
-        :raise GettextValidationError: in case the submitted translation
+        :raises GettextValidationError: if the submitted translation
             fails gettext validation.  The translation is not stored.
-        :raise TranslationConflict: if the current translations have
+        :raises TranslationConflict: if the current translations have
             changed since the translator/reviewer last saw them.  The
             submitted translations are stored as suggestions.
         """
@@ -463,13 +481,13 @@ class BaseTranslationView(LaunchpadView):
         if self.form_posted_dismiss_suggestions.get(potmsgset, False):
             potmsgset.dismissAllSuggestions(
                 self.pofile, self.user, self.lock_timestamp)
-            return None
+            return
 
         translations = self.form_posted_translations.get(potmsgset, {})
         if not translations:
             # A post with no content -- not an error, but nothing to be
             # done.
-            return None
+            return
 
         template = self.pofile.potemplate
         language = self.pofile.language
@@ -488,7 +506,7 @@ class BaseTranslationView(LaunchpadView):
         if current_message is None and not has_translations:
             # There is no current translation yet, neither we get any
             # translation submitted, so we don't need to store anything.
-            return None
+            return
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
         force_diverge = self.form_posted_diverge.get(potmsgset, False)
@@ -519,8 +537,6 @@ class BaseTranslationView(LaunchpadView):
             else:
                 self._approveTranslation(
                     message, force_diverge=force_diverge)
-
-        return None
 
     def _approveTranslation(self, message, force_diverge=False):
         """Approve `message`."""
@@ -908,24 +924,6 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         self.translationmessage_view = self._prepareView(
             CurrentTranslationMessageZoomedView, self.context, pofile=pofile,
             can_edit=can_edit, error=self.error)
-
-    def _receiveTranslations(self, potmsgset):
-        """Process and store submitted translations for `potmsgset`.
-
-        :return: An error string in case of failure, or None otherwise.
-        """
-        try:
-            self._storeTranslations(potmsgset)
-        except GettextValidationError, e:
-            return unicode(e)
-        except TranslationConflict, e:
-            # The translations are demoted to suggestions, but they may
-            # still affect the "messages with new suggestions" filter.
-            self._observeTranslationUpdate(potmsgset)
-            return unicode(e)
-        else:
-            self._observeTranslationUpdate(potmsgset)
-            return None
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
