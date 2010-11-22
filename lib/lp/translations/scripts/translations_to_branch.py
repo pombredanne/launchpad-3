@@ -174,7 +174,8 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         for template in subset:
             for pofile in template.pofiles:
                 if (changed_since is None or
-                    pofile.date_changed > changed_since):
+                    pofile.date_changed > changed_since or
+                    template.date_last_updated > changed_since):
                     yield pofile
 
 
