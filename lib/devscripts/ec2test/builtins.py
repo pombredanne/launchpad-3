@@ -613,6 +613,22 @@ class cmd_update_image(EC2Command):
         instance.bundle(ami_name, credentials)
 
 
+class cmd_images(EC2Command):
+    """Display all available images.
+
+    The first in the list is the default image.
+    """
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        for revision, images in account.find_images():
+            self.outf.write("%5d  %s\n" % (revision, images[0].id))
+            for image in images[1:]:
+                self.outf.write("       %s\n" % image.id)
+
+
 class cmd_help(EC2Command):
     """Show general help or help for a command."""
 

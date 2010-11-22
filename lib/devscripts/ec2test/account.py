@@ -14,6 +14,8 @@ import sys
 import urllib
 
 from datetime import datetime
+from itertools import groupby
+from operator import itemgetter
 
 from boto.exception import EC2ResponseError
 from devscripts.ec2test.session import EC2SessionName
@@ -161,6 +163,31 @@ class EC2Account:
         self.delete_previous_security_groups()
         self.delete_previous_key_pairs()
 
+    def find_images(self):
+        # We are trying to find an image that has a location that matches a
+        # regex (see definition of _image_match, above). Part of that regex is
+        # expected to be an integer with the semantics of a revision number.
+        # The image location with the highest revision number is the one that
+        # should be chosen. Because AWS does not guarantee that two images
+        # cannot share a location string, we need to make sure that the search
+        # result for this image is unique, or throw an error because the
+        # choice of image is ambiguous.
+        search_results = []
+
+        # Find the images with the highest revision numbers and locations that
+        # match the regex.
+        for image in self.conn.get_all_images(owners=VALID_AMI_OWNERS):
+            match = self._image_match(image.location)
+            if match is not None:
+                revision = int(match.group(1))
+                search_results.append((revision, image))
+
+        # Sort and group by revision.
+        get_revision = itemgetter(0)
+        search_results.sort(key=get_revision, reverse=True)
+        for revision, group in groupby(search_results, get_revision):
+            yield revision, [image for (revision, image) in group]
+
     def acquire_image(self, machine_id):
         """Get the image.
 
@@ -182,48 +209,23 @@ class EC2Account:
             # they can deal with it.
             return self.conn.get_image(machine_id)
 
-        # We are trying to find an image that has a location that matches a
-        # regex (see definition of _image_match, above). Part of that regex is
-        # expected to be an integer with the semantics of a revision number.
-        # The image location with the highest revision number is the one that
-        # should be chosen. Because AWS does not guarantee that two images
-        # cannot share a location string, we need to make sure that the search
-        # result for this image is unique, or throw an error because the
-        # choice of image is ambiguous.
-        search_results = None
-
-        # Find the images with the highest revision numbers and locations that
-        # match the regex.
-        for image in self.conn.get_all_images(owners=VALID_AMI_OWNERS):
-            match = self._image_match(image.location)
-            if match:
-                revision = int(match.group(1))
-                if (search_results is None
-                    or search_results['revision'] < revision):
-                    # Then we have our first, highest match.
-                    search_results = {'revision': revision, 'images': [image]}
-                elif search_results['revision'] == revision:
-                    # Another image that matches and is equally high.
-                    search_results['images'].append(image)
-
-        # No matching image.
-        if search_results is None:
+        try:
+            revision, images = next(self.find_images())
+        except StopIteration:
+            # No matching image.
             raise RuntimeError(
                 "You don't have access to a test-runner image.\n"
                 "Request access and try again.\n")
-
-        # More than one matching image.
-        if len(search_results['images']) > 1:
-            raise ValueError(
-                ('more than one image of revision %(revision)d found: '
-                 '%(images)r') % search_results)
-
-        # We could put a minimum image version number check here.
-        image = search_results['images'][0]
-        self.log(
-            'Using machine image version %d\n'
-            % (search_results['revision'],))
-        return image
+        else:
+            self.log('Using machine image version %d\n' % revision)
+            try:
+                [image] = images
+            except ValueError:
+                raise ValueError(
+                    'More than one image of revision %d found: %r' % (
+                        revision, images))
+            else:
+                return image
 
     def get_instance(self, instance_id):
         """Look in all of our reservations for an instance with the given ID.
