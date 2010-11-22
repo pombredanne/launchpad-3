@@ -65,13 +65,13 @@
                       entries = result.entries;
                   }
 
-                  # XXX: EdwinGrubbs 2010-11-18 bug=677671
-                  # The get_timeline() REST method used to return an
-                  # arbitrary chunk of JSON. Since lazr.restful can only
-                  # batch entries, the LP.client is now wrapping in
-                  # objects that provide more functionality for the
-                  # entries, so we need to unwrap it before providing
-                  # the info to the TimelineGraph object.
+                  // XXX: EdwinGrubbs 2010-11-18 bug=677671
+                  // The get_timeline() REST method used to return an
+                  // arbitrary chunk of JSON. Since lazr.restful can only
+                  // batch entries, the LP.client is now wrapping in
+                  // objects that provide more functionality for the
+                  // entries, so we need to unwrap it before providing
+                  // the info to the TimelineGraph object.
                   var timeline_data = [];
                   Y.each(entries.reverse(), function(series, i) {
                       var plain_series = {};
