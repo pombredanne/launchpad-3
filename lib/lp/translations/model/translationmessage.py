@@ -136,7 +136,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.browser_pofile = pofile
         self.potemplate = pofile.potemplate
         self.language = pofile.language
-        self.variant = None
         self.potmsgset = potmsgset
         self.date_created = datetime.now(UTC)
         self.submitter = None
@@ -217,9 +216,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         default=None)
     language = ForeignKey(
         foreignKey='Language', dbName='language', notNull=False, default=None)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     potmsgset = ForeignKey(
         foreignKey='POTMsgSet', dbName='potmsgset', notNull=True)
     date_created = UtcDateTimeCol(

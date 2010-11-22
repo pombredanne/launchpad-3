@@ -122,6 +122,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if chroot is None:
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
+        logger.info(
+            "Sending chroot file for recipe build to %s" % self._builder.name)
         d = self._builder.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
@@ -131,7 +133,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1
-            logger.debug(
+            logger.info(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
             return self._builder.slave.build(

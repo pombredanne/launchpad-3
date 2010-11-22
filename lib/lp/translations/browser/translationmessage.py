@@ -458,11 +458,16 @@ class BaseTranslationView(LaunchpadView):
             self._storeTranslations(potmsgset)
         except GettextValidationError, e:
             return unicode(e)
-        except TranslationConflict, e:
+        except TranslationConflict:
             # The translations are demoted to suggestions, but they may
             # still affect the "messages with new suggestions" filter.
             self._observeTranslationUpdate(potmsgset)
-            return unicode(e)
+            return """
+                This translation has changed since you last saw it.  To avoid
+                accidentally reverting work done by others, we added your
+                translations as suggestions.  Please review the current
+                values.
+                """
         else:
             self._observeTranslationUpdate(potmsgset)
             return None
@@ -927,7 +932,7 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
-        self.error = self._storeTranslations(self.context.potmsgset)
+        self.error = self._receiveTranslations(self.context.potmsgset)
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "

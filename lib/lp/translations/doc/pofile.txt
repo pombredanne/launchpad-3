@@ -52,9 +52,6 @@ except for untranslated messages.
     >>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
     0
 
-    >>> dummy_pofile.getPOTMsgSetWithErrors().count()
-    0
-
     >>> dummy_pofile.getPOTMsgSetUntranslated().count()
     22
 
@@ -1047,76 +1044,6 @@ If we submit non-upstream translation, it's rejected.
     ...     alsa_template, alsa_translation.language)
     >>> print current.translations
     [u'Happy translator']
-
-In automatically generated credits, alsa_translation.owner is now
-credited as well.
-
-    >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
-    ...     u'translation-credits')
-    >>> print alsa_translation.prepareTranslationCredits(
-    ...     potmsgset)
-    Happy translator
-    Launchpad Contributions:
-    Carlos ...
-
-Emails of translators just has the dummy translation.
-
-    >>> emails_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
-    ...     u"_: EMAIL OF TRANSLATORS\nYour emails")
-    >>> current = emails_of_translators.getCurrentTranslationMessage(
-    ...     alsa_template, alsa_translation.language)
-    >>> print current.translations
-    [u'This is a dummy translation so that
-    the credits are counted as translated.']
-
-But now credits Carlos when prepared automatically.  Two empty emails
-are added to make formatting nicer (first one is used as a separation
-between package and Launchpad contributors, and second is empty email
-for 'Launchpad Contributions' title; see bug #133817 for details).
-
-    >>> print alsa_translation.prepareTranslationCredits(
-    ...     emails_of_translators)
-    ,,carlos@canonical.com
-
-Names of translators just has the dummy translation.
-
-    >>> names_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
-    ...     u"_: NAME OF TRANSLATORS\nYour names")
-    >>> current = names_of_translators.getCurrentTranslationMessage(
-    ...     alsa_template, alsa_translation.language)
-    >>> print current.translations
-    [u'This is a dummy translation so that
-    the credits are counted as translated.']
-
-But now names credit Carlos when prepared automatically.  As above, an
-empty name is added first to serve as a separator, and "Launchpad
-Contributions:" is used as a header for the added credits.
-
-    >>> print alsa_translation.prepareTranslationCredits(
-    ...     names_of_translators)
-    ,Launchpad Contributions:,Carlos P... M...
-
-Lets add a newly supported KDE context message with credit strings split
-into two: context and message, instead of a single message with embedded
-context.
-
-    >>> new_kde_name_credits = alsa_template.createMessageSetFromText(
-    ...     singular_text=u"Your names", plural_text=None,
-    ...     context=u"NAME OF TRANSLATORS")
-
-prepareTranslationCredits works on such messages as well:
-
-    >>> print alsa_translation.prepareTranslationCredits(new_kde_name_credits)
-    ,Launchpad Contributions:,Carlos P... M...
-
-Similar happens for email credits as with name credits.
-
-    >>> new_kde_email_credits = alsa_template.createMessageSetFromText(
-    ...     singular_text=u"Your emails", plural_text=None,
-    ...     context=u"EMAIL OF TRANSLATORS")
-    >>> print alsa_translation.prepareTranslationCredits(
-    ...     new_kde_email_credits)
-    ,,carlos@canonical.com
 
 
 POFileToTranslationFileDataAdapter

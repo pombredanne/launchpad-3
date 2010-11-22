@@ -249,6 +249,17 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                 harness.submit('save', form_data)
                 self.assertTrue(harness.hasErrors())
 
+    def test_extra_features_hidden_without_feature_flag(self):
+        # If the malone.advanced-subscriptions.enabled flag is turned
+        # off, the bug_notification_level field doesn't appear on the
+        # form.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            harness = LaunchpadFormHarness(
+                self.target, StructuralSubscriptionView)
+            form_fields = harness.view.form_fields
+            self.assertIs(
+                None, form_fields.get('bug_notification_level'))
 
 class TestProductSeriesAdvancedSubscriptionFeatures(
     TestStructuralSubscriptionAdvancedFeaturesBase):

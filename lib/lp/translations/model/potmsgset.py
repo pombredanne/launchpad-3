@@ -5,15 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
+    'credits_message_str',
     'POTMsgSet',
     ]
 
 
-import datetime
 import logging
 import re
 
-import pytz
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -56,7 +55,10 @@ from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -1601,17 +1603,20 @@ class POTMsgSet(SQLBase):
         if not self.is_translation_credit:
             return
 
-        if self.getSharedTranslationMessage(pofile.language) is not None:
+        shared_upstream_translation = self.getCurrentTranslation(
+            None, pofile.language, TranslationSide.UPSTREAM)
+
+        if shared_upstream_translation is not None:
             return
 
         # The credits message has a fixed "translator."
         translator = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        self.updateTranslation(
-            pofile, translator, [credits_message_str],
-            is_current_upstream=False, allow_credits=True,
-            force_shared=True, force_edition_rights=True,
-            lock_timestamp=datetime.datetime.now(pytz.UTC))
+        generated_translation = self.setCurrentTranslation(
+            pofile, translator, {0: credits_message_str},
+            RosettaTranslationOrigin.LAUNCHPAD_GENERATED,
+            share_with_other_side=True)
+        generated_translation.shareIfPossible()
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""

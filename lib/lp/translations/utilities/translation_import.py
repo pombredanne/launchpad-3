@@ -482,7 +482,7 @@ class FileImporter(object):
             return None
         return potmsgset.setCurrentTranslation(
             self.pofile, self.last_translator, credits,
-            RosettaTranslationOrigin.SCM, self.share_with_other_side)
+            RosettaTranslationOrigin.SCM, share_with_other_side=True)
 
     def _validateMessage(self, potmsgset, message,
                          translations, message_data):
@@ -563,13 +563,6 @@ class FileImporter(object):
             potmsgset, new_message, sanitized_translations, message_data)
         if validation_ok and self.is_editor:
             return self._approveMessage(potmsgset, new_message, message_data)
-
-        if self.translation_import_queue_entry.by_maintainer:
-            # XXX: henninge 2010-09-21: Mixed models!
-            # This is mimicking the old behavior to still mark these messages
-            # as "imported". Will have to be removed when
-            # getPOTMsgSetsWithErrors is updated to the new model.
-            new_message.makeCurrentUpstream(True)
 
         return new_message
 
