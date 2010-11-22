@@ -23,5 +23,7 @@ RENAME TO tm__potmsgset__template__language__diverged__upstream__key;
 ALTER INDEX translationmessage__language__submitter__idx
 RENAME TO tm__language__submitter__idx;
 
--- XXX: Update patch number!
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0)
+ALTER TABLE TranslationImportQueueEntry
+    RENAME COLUMN is_published TO by_maintainer;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 30, 0)
