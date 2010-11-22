@@ -349,7 +349,7 @@ class TestHelpers(TestCaseWithFactory):
         for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             self.assertTrue(
                 contains_translations({plural_form: self.getUniqueString()}))
-        
+
     def test_contains_translations_ignores_empty_strings(self):
         self.assertFalse(contains_translations({0: u''}))
 
