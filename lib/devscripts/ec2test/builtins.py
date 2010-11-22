@@ -188,7 +188,6 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
-
 DEFAULT_TEST_OPTIONS = '--subunit -vvv'
 
 
@@ -409,7 +408,8 @@ class cmd_land(EC2Command):
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
         if rollback and (no_qa or incremental):
-            print "--rollback option used. Ignoring --no-qa and --incremental."
+            print (
+                "--rollback option used. Ignoring --no-qa and --incremental.")
         try:
             commit_message = mp.build_commit_message(
                 commit_text, testfix, no_qa, incremental, rollback=rollback)
