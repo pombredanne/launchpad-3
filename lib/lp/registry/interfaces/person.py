@@ -1075,10 +1075,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         since it inherits from `IPerson`) is a member of himself
         (i.e. `person1.inTeam(person1)`).
 
-        :param team: One of an object providing `IPerson`, the string name of a
-            team or `None`. If a string was supplied the team is looked up.
+        :param team: One of an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
         :return: A bool with the result of the membership lookup. When looking
-            up the team from a string finds nothing or team was `None` then 
+            up the team from a string finds nothing or team was `None` then
             `False` is returned.
         """
 
