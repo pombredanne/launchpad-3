@@ -171,10 +171,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             translations=[DIVERGED_ENGLISH_STRING], force_diverged=True)
         self.assertEquals(potmsgset.singular_text, ENGLISH_STRING)
 
-    def test_getCurrentTranslationMessageOrDummy_returns_real_tm(self):
+    def test_getCurrentTranslationMessageOrDummy_returns_upstream_tm(self):
         pofile = self.factory.makePOFile('nl')
-        message = self.factory.makeCurrentTranslationMessage(
-            pofile=pofile, current_other=True)
+        message = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertEqual(
+            message,
+            message.potmsgset.getCurrentTranslationMessageOrDummy(pofile))
+
+    def test_getCurrentTranslationMessageOrDummy_returns_ubuntu_tm(self):
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = self.factory.makePOFile(potemplate=template)
+        message = self.factory.makeCurrentTranslationMessage(pofile=pofile)
 
         self.assertEqual(
             message,
@@ -187,11 +198,27 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         message = potmsgset.getCurrentTranslationMessageOrDummy(pofile)
         self.assertIsInstance(message, DummyTranslationMessage)
 
-    def test_getCurrentTranslationMessageOrDummy_dummy_is_current(self):
-        # getCurrentDummyTranslationMessage returns a current message.
+    def test_getCurrentTranslationMessageOrDummy_dummy_is_upstream(self):
+        # When getCurrentDummyTranslationMessage creates a dummy for an
+        # upstream translation, the dummy is current for upstream (but
+        # not for Ubuntu).
         pofile = self.factory.makePOFile('fy')
         dummy = self.potmsgset.getCurrentTranslationMessageOrDummy(pofile)
         self.assertTrue(dummy.is_current_upstream)
+        self.assertFalse(dummy.is_current_ubuntu)
+
+    def test_getCurrentTranslationMessageOrDummy_dummy_is_ubuntu(self):
+        # When getCurrentDummyTranslationMessage creates a dummy for an
+        # Ubuntu translation, the dummy is current for Ubuntu (but
+        # not upstream).
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = self.factory.makePOFile(potemplate=template)
+        dummy = self.potmsgset.getCurrentTranslationMessageOrDummy(pofile)
+        self.assertTrue(dummy.is_current_ubuntu)
+        self.assertFalse(dummy.is_current_upstream)
 
     def test_getCurrentTranslationMessage(self):
         """Test how shared and diverged current translation messages
