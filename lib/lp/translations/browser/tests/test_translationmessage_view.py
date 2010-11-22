@@ -260,7 +260,8 @@ class TestResetTranslations(TestCaseWithFactory):
         self.assertEqual([], self.getLocalSuggestions())
         with person_logged_in(self.factory.makePerson()):
             self.submitForcedEmptySuggestion()
-        self.assertIn(self.current_translation, self.getLocalSuggestions())
+        self.assertEqual(
+            [self.current_translation], self.getLocalSuggestions())
 
     def test_unprivileged_user_cannot_reset(self):
         # When a user without editing privileges on the translation
