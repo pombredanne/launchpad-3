@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recipe build listings."""
-from canonical.launchpad.testing.pages import find_tag_by_id, extract_text
 
 __metaclass__ = type
 
@@ -16,6 +15,10 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import (
     BaseLayer,
