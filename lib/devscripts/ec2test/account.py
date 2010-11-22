@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'VALID_AMI_OWNERS',
     'EC2Account',
+    'VALID_AMI_OWNERS',
     ]
 
 import cStringIO
