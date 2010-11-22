@@ -21,6 +21,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     SQL,
+    Join,
     )
 from storm.locals import Int
 from storm.store import Store
@@ -185,16 +186,20 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        store = Store.of(Product)
+        store = Store.of(self)
+        origin = [
+            Product,
+            Join(ProductSeries, Product.id == ProductSeries.productID),
+            Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
+            ]
         # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.
-        return store.find(Product,
-            Product.project == self,
+        return store.using(*origin).find(
+            Product,
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
-            Product == ProductSeries.product,
-            POTemplate.productseries == ProductSeries).config(distinct=True)
+            ).config(distinct=True)
 
     def has_translatable(self):
         """See `IProjectGroup`."""
