@@ -350,7 +350,6 @@ TranslationMessageSuggestions
 This class keeps all suggestions available for a concrete
 ITranslationMessage.
 
-    >>> from datetime import datetime
     >>> import pytz
     >>> from zope.component import getUtility
     >>> from lp.translations.browser.translationmessage import (
