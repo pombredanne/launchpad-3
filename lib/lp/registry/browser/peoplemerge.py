@@ -243,6 +243,8 @@ class AdminTeamMergeView(AdminMergeBaseView):
         if self.target_person is self.registry_experts:
             for team in self.dupe_person.teams_participated_in:
                 self.dupe_person.retractTeamMembership(team, self.user)
+        # TODO 
+        # flush_database_updates()
         super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):

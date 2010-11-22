@@ -1472,6 +1472,7 @@ class Person(
 
         # Remove all members from the TeamParticipation table
         # except for the team, itself.
+        # TODO: this needs to kill the tp entries for indirect connections between person and teams. Right now it's only killing the TP for the direct team and members
         participants = store.find(
             TeamParticipation,
             TeamParticipation.teamID == self.id,
@@ -3989,6 +3990,7 @@ class PersonSet:
             cur.execute('UPDATE %s SET %s=%d WHERE %s=%d' % (
                 src_tab, src_col, to_person.id, src_col, from_person.id))
 
+        # TODO this needs to NEVER happen for teams
         self._mergeTeamMembership(cur, from_id, to_id)
 
         # Flag the person as merged
