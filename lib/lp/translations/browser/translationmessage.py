@@ -10,12 +10,14 @@ __metaclass__ = type
 
 __all__ = [
     'BaseTranslationView',
+    'contains_translations',
     'CurrentTranslationMessageAppMenus',
     'CurrentTranslationMessageFacets',
     'CurrentTranslationMessageIndexView',
     'CurrentTranslationMessagePageView',
     'CurrentTranslationMessageView',
     'CurrentTranslationMessageZoomedView',
+    'revert_unselected_translations',
     'TranslationMessageSuggestions',
     ]
 
@@ -79,12 +81,15 @@ def revert_unselected_translations(translations, current_message,
     """Revert translations that the user entered but did not select.
 
     :param translations: a dict mapping plural forms to their respective
-        translation strings.  Will be modified in-place.
+        translation strings.
     :param current_message: the current `TranslationMessage`.  Its
         translations are substituted for corresponding ones that the
         user entered without selecting their radio buttons.
     :param plural_indices_to_store: a sequence of plural form numbers
         that the user did select new translations for.
+    :return: a dict similar to `translations`, but with any translations
+        that are not in `plural_indices_to_store` reset to what they
+        were in `current_message` (if any).
     """
     output = {}
     if current_message is not None:

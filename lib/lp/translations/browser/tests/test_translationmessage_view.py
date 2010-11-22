@@ -28,8 +28,10 @@ from lp.testing import (
 from lp.testing.views import create_view
 from lp.translations.enums import TranslationPermission
 from lp.translations.browser.translationmessage import (
+    contains_translations,
     CurrentTranslationMessagePageView,
     CurrentTranslationMessageView,
+    revert_unselected_translations,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer
@@ -333,3 +335,21 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
         with person_logged_in(decliner):
             view = self._makeView()
             self.assertRaises(UnexpectedFormData, view._checkSubmitConditions)
+
+
+class TestHelpers(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_contains_translations_is_false_for_empty_dict(self):
+        self.assertFalse(contains_translations({}))
+
+    def test_contains_translations_finds_translations(self):
+        self.assertTrue(contains_translations({0: u'foo'}))
+        self.assertTrue(contains_translations({1: u'foo'}))
+        
+    def test_contains_translations_ignores_empty_strings(self):
+        self.assertFalse(contains_translations({0: u''}))
+
+    def test_contains_translations_ignores_nones(self):
+        self.assertFalse(contains_translations({0: None}))
