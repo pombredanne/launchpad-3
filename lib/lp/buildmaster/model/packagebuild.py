@@ -470,8 +470,8 @@ class PackageBuildDerived:
             # properly presented in the Web UI. We will discuss it in
             # the next Paris Summit, infinity has some ideas about how
             # to use this content. For now we just ensure it's stored.
-            self.buildqueue_record.reset()
             d = self.buildqueue_record.builder.cleanSlave()
+            self.buildqueue_record.reset()
             return d
 
         d = self.storeBuildInfo(self, librarian, slave_status)
