@@ -3,8 +3,10 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE Product
-    ADD COLUMN file_bug_duplicate_search BOOLEAN NOT NULL DEFAULT True;
+    ADD COLUMN disable_bugfiling_duplicate_search
+        BOOLEAN NOT NULL DEFAULT False;
 ALTER TABLE DistributionSourcePackage
-    ADD COLUMN file_bug_duplicate_search BOOLEAN NOT NULL DEFAULT True;
+    ADD COLUMN disable_bugfiling_duplicate_search
+        BOOLEAN NOT NULL DEFAULT False;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);

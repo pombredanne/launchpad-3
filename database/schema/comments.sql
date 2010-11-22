@@ -527,7 +527,7 @@ COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matchin
 COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
 COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-COMMENT ON COLUMN DistributionSourcePackage.file_bug_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+COMMENT ON COLUMN DistributionSourcePackage.disable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- DistributionSourcePackageCache
 
@@ -712,7 +712,7 @@ COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remot
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-COMMENT ON COLUMN Product.file_bug_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
+COMMENT ON COLUMN Product.disable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
