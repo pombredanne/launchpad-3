@@ -835,7 +835,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            error = self._storeTranslations(potmsgset)
+            error = self._receiveTranslations(potmsgset)
             if error and potmsgset.getSequence(self.context.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
