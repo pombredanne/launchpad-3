@@ -69,10 +69,12 @@ class TranslationMessageImportedFlagUpdater:
             tables=[PreviousImported, CurrentTranslation],
             where=And(
                 PreviousImported.is_imported == True,
-                PreviousImported.potmsgsetID == CurrentTranslation.potmsgsetID,
+                (PreviousImported.potmsgsetID ==
+                 CurrentTranslation.potmsgsetID),
                 Or(And(PreviousImported.potemplate == None,
                        CurrentTranslation.potemplate == None),
-                   PreviousImported.potemplateID == CurrentTranslation.potemplateID),
+                   (PreviousImported.potemplateID ==
+                    CurrentTranslation.potemplateID)),
                 PreviousImported.languageID == CurrentTranslation.languageID,
                 CurrentTranslation.id.is_in(tm_ids)))
 
