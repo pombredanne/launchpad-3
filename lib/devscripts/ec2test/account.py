@@ -28,6 +28,7 @@ VALID_AMI_OWNERS = (
     '366009196755', # salgado
     '036590675370', # jml
     '038531743404', # jelmer
+    '444667466231', # allenap
     # ...anyone else want in on the fun?
     )
 
