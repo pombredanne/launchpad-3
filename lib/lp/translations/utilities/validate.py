@@ -31,15 +31,14 @@ def validate_translation(original_singular, original_plural,
     msg = gettextpo.PoMessage()
     msg.set_msgid(original_singular)
 
-    if original_plural is not None:
-        # It has plural forms.
+    if original_plural is None:
+        # Basic, single-form message.
+        msg.set_msgstr(translations.get(0))
+    else:
+        # Message with plural forms.
         msg.set_msgid_plural(original_plural)
         for form, translation in translations.iteritems():
             msg.set_msgstr_plural(form, translation)
-    elif 0 in translations:
-        msg.set_msgstr(translations[0])
-    else:
-        pass
 
     for flag in flags:
         msg.set_format(flag, True)
