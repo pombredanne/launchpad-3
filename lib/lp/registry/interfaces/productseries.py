@@ -23,7 +23,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     exported,
     operation_parameters,
-    operation_returns_entry,
     rename_parameters_as,
     )
 from lazr.restful.fields import (
@@ -75,7 +74,6 @@ from lp.services.fields import (
     ContentNameField,
     PersonChoice,
     Title,
-    URIField,
     )
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
