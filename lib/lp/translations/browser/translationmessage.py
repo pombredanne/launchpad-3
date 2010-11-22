@@ -58,6 +58,7 @@ from lp.translations.browser.browser_helpers import (
     )
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     ITranslationMessageSet,
@@ -983,22 +984,26 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.force_diverge = force_diverge
         self.user_is_official_translator = can_edit
         self.form_is_writeable = form_is_writeable
-        if self.context.is_current_upstream:
-            # The imported translation matches the current one.
+
+        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            pofile.potemplate)
+        if side_traits.other_side_traits.getFlag(self.context):
+            # The shared translation for the other side matches the current
+            # one.
             self.imported_translationmessage = self.context
         else:
             self.imported_translationmessage = (
-                self.context.potmsgset.getImportedTranslationMessage(
-                    self.pofile.potemplate,
-                    self.pofile.language))
+                self.context.potmsgset.getCurrentTranslation(
+                    self.pofile.potemplate, self.pofile.language,
+                    side_traits.other_side_traits.side))
 
         if self.context.potemplate is None:
             # Shared translation is current.
             self.shared_translationmessage = None
         else:
             self.shared_translationmessage = (
-                self.context.potmsgset.getSharedTranslationMessage(
-                    self.pofile.language))
+                self.context.potmsgset.getCurrentTranslation(
+                    None, self.pofile.language, side_traits.side))
             if (self.shared_translationmessage ==
                 self.imported_translationmessage):
                 # If it matches the imported message, we don't care.
@@ -1061,6 +1066,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.current_series.distribution.displayname,
                     self.current_series.name)
 
+        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.pofile.potemplate)
 
         # Initialise the translation dictionaries used from the
         # translation form.
@@ -1084,7 +1091,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.submitter == self.context.reviewer)
             is_same_date = (
                 self.context.date_created == self.context.date_reviewed)
-            if self.context.is_current_upstream:
+            if side_traits.other_side_traits.getFlag(self.context):
                 # Imported one matches the current one.
                 imported_submission = None
             elif self.imported_translationmessage is not None:
@@ -1147,7 +1154,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if (not self.context.is_current_upstream and
+            if (not side_traits.other_side_traits.getFlag(self.context) and
                 self.imported_translationmessage is not None):
                 translation_entry['html_id_imported_suggestion'] = (
                     self.imported_translationmessage.makeHTMLID(
@@ -1252,8 +1259,10 @@ class CurrentTranslationMessageView(LaunchpadView):
 
         language = self.pofile.language
         potmsgset = self.context.potmsgset
+        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.pofile.potemplate)
 
-        if not self.context.is_current_upstream:
+        if not side_traits.other_side_traits.getFlag(self.context):
             imported = self.imported_translationmessage
         else:
             imported = None
@@ -1304,8 +1313,9 @@ class CurrentTranslationMessageView(LaunchpadView):
             # User is asking for alternative language suggestions.
             alt_pofile = self.pofile.potemplate.getPOFileByLang(
                 self.sec_lang.code)
-            alt_current = potmsgset.getCurrentTranslationMessage(
-                self.pofile.potemplate, self.sec_lang)
+            alt_current = potmsgset.getCurrentTranslation(
+                self.pofile.potemplate, self.sec_lang,
+                self.pofile.potemplate.translation_side)
             if alt_current is not None:
                 alt_current.setPOFile(alt_pofile)
             if alt_current is not None:
