@@ -11,7 +11,8 @@ import logging
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import Count, Select
+from storm.info import ClassAlias
+from storm.expr import And, Count, Or, Select
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
@@ -59,12 +60,25 @@ class TranslationMessageImportedFlagUpdater:
 
     def _updateTranslationMessages(self, tm_ids):
         # Unset imported messages that might be in the way.
+        PreviousImported = ClassAlias(
+            TranslationMessage, 'PreviousImported')
+        CurrentTranslation = ClassAlias(
+            TranslationMessage, 'CurrentTranslation')
+        previous_imported_select = Select(
+            PreviousImported.id,
+            tables=[PreviousImported, CurrentTranslation],
+            where=And(
+                PreviousImported.is_imported == True,
+                PreviousImported.potmsgsetID == CurrentTranslation.potmsgsetID,
+                Or(And(PreviousImported.potemplate == None,
+                       CurrentTranslation.potemplate == None),
+                   PreviousImported.potemplateID == CurrentTranslation.potemplateID),
+                PreviousImported.languageID == CurrentTranslation.languageID,
+                CurrentTranslation.id.is_in(tm_ids)))
+
         previous_imported = self.store.find(
             TranslationMessage,
-            TranslationMessage.is_imported == True,
-            TranslationMessage.potmsgsetID.is_in(
-                Select(TranslationMessage.potmsgsetID,
-                       TranslationMessage.id.is_in(tm_ids))))
+            TranslationMessage.id.is_in(previous_imported_select))
         previous_imported.set(is_imported=False)
         translations = self.store.find(
             TranslationMessage,
