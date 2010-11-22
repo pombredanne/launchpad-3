@@ -33,6 +33,7 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
     revert_unselected_translations,
     )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer
 
@@ -344,12 +345,54 @@ class TestHelpers(TestCaseWithFactory):
     def test_contains_translations_is_false_for_empty_dict(self):
         self.assertFalse(contains_translations({}))
 
-    def test_contains_translations_finds_translations(self):
-        self.assertTrue(contains_translations({0: u'foo'}))
-        self.assertTrue(contains_translations({1: u'foo'}))
+    def test_contains_translations_finds_any_translations(self):
+        for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            self.assertTrue(
+                contains_translations({plural_form: self.getUniqueString()}))
         
     def test_contains_translations_ignores_empty_strings(self):
         self.assertFalse(contains_translations({0: u''}))
 
     def test_contains_translations_ignores_nones(self):
         self.assertFalse(contains_translations({0: None}))
+
+    def test_revert_unselected_translations_accepts_selected(self):
+        # Translations for plural forms in plural_indices_to_store stay
+        # intact.
+        translations = {0: self.getUniqueString()}
+        self.assertEqual(
+            translations,
+            revert_unselected_translations(translations, None, [0]))
+
+    def test_revert_unselected_translations_reverts_to_existing(self):
+        # Translations for plural forms not in plural_indices_to_store
+        # are reverted to those found in the current translation
+        # message, if any.
+        new_translations = {0: self.getUniqueString()}
+        original_translations = {0: self.getUniqueString()}
+        current_message = self.factory.makeTranslationMessage(
+            translations=original_translations)
+        self.assertEqual(
+            original_translations,
+            revert_unselected_translations(
+                new_translations, current_message, []))
+
+    def test_revert_unselected_translations_reverts_to_empty_string(self):
+        # If there is no current message, any translation not in
+        # plural_indices_to_store is set to the empty string.
+        translations = {0: self.getUniqueString()}
+        self.assertEqual(
+            {0: u''}, revert_unselected_translations(translations, None, []))
+
+    def test_revert_unselected_translations_handles_missing_plurals(self):
+        # When reverting based on a current message that does not
+        # translate the given plural form, the new translation is the
+        # empty string.
+        new_translations = {1: self.getUniqueString()}
+        original_translations = {0: self.getUniqueString()}
+        current_message = self.factory.makeTranslationMessage(
+            translations=original_translations)
+        self.assertEqual(
+            {1: u''},
+            revert_unselected_translations(
+                new_translations, current_message, []))

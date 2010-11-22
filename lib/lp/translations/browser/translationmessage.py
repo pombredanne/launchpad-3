@@ -91,10 +91,20 @@ def revert_unselected_translations(translations, current_message,
         that are not in `plural_indices_to_store` reset to what they
         were in `current_message` (if any).
     """
+    if current_message is None:
+        original_translations = {}
+    else:
+        original_translations = dict(enumerate(current_message.translations))
+
     output = {}
-    if current_message is not None:
-        output.update(enumerate(current_message.translations))
-    output.update(translations)
+    for plural_form, translation in translations.iteritems():
+        if plural_form in plural_indices_to_store:
+            output[plural_form] = translation
+        elif original_translations.get(plural_form) is None:
+            output[plural_form] = u''
+        else:
+            output[plural_form] = original_translations[plural_form]
+
     return output
 
 
