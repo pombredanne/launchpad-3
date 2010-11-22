@@ -736,7 +736,8 @@ class IProductPublic(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
 
-    def getVersionSortedSeries(statuses=None, filter_statuses=None):
+    def getVersionSortedSeries(statuses=None, filter_statuses=None,
+                               ascending=False):
         """Return all the series sorted by the name field as a version.
 
         The development focus field is an exception. It will always
@@ -746,6 +747,8 @@ class IProductPublic(
                          which are in the given statuses.
         :param filter_statuses: Filter out any series with statuses listed in
                                 filter_statuses.
+        :param ascending: Sort in ascending or descending order.
+                          Default descending.
         """
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,

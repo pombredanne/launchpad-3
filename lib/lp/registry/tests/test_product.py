@@ -145,6 +145,19 @@ class TestProduct(TestCaseWithFactory):
             [u'trunk', u'3b', u'3a', u'3', u'2', u'1', u'beta', u'alpha'],
             [series.name for series in product.getVersionSortedSeries()])
 
+    def test_getVersionSortedSeries_sorting(self):
+        # The ascending parameter can reverse the sort order.
+        product = self.factory.makeProduct()
+        for name in ('1', '2', '3', '3a', '3b', 'alpha', 'beta'):
+            self.factory.makeProductSeries(product=product, name=name)
+        ascending = [
+            series.name
+            for series in product.getVersionSortedSeries(ascending=True)]
+        descending = [
+            series.name
+            for series in product.getVersionSortedSeries(ascending=False)]
+        self.assertEqual(ascending, list(reversed(descending)))
+
     def test_getVersionSortedSeries_with_specific_statuses(self):
         # The obsolete series should be included in the results if
         # statuses=[SeriesStatus.OBSOLETE]. The development focus will

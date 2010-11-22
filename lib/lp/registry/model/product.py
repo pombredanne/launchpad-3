@@ -983,7 +983,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
 
-    def getVersionSortedSeries(self, statuses=None, filter_statuses=None):
+    def getVersionSortedSeries(self, statuses=None, filter_statuses=None,
+                               ascending=False):
         """See `IProduct`."""
         store = Store.of(self)
         dev_focus = store.find(
@@ -1003,12 +1004,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # The query will be much slower if the version_sort_key is not
         # the first thing that is sorted, since it won't be able to use
         # the productseries_name_sort index.
-        other_series.order_by(SQL('version_sort_key(name) DESC'))
+        if ascending is True:
+            sort = 'version_sort_key(name) ASC'
+        else:
+            sort = 'version_sort_key(name) DESC'
+        other_series.order_by(SQL(sort))
         # UNION ALL must be used to preserve the sort order from the
         # separate queries. The sorting should not be done after
         # unioning the two queries, because that will prevent it from
         # being able to use the productseries_name_sort index.
-        return dev_focus.union(other_series, all=True)
+        if ascending is True:
+            return other_series.union(dev_focus, all=True)
+        else:
+            return dev_focus.union(other_series, all=True)
 
     @property
     def obsolete_translatable_series(self):

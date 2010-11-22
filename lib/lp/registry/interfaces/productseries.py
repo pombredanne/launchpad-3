@@ -330,18 +330,14 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
 class ITimelineProductSeries(Interface):
     """Minimal product series info for the timeline."""
 
-    # XXX: EdwinGrubbs 2010-11-18 bug=
-    # lazr.restful can't batch basic python types such as dicts, so this
-    # interface is necessary.
+    # XXX: EdwinGrubbs 2010-11-18 bug=677671
+    # lazr.restful can't batch a DecoratedResultSet returning basic
+    # python types such as dicts, so this interface is necessary.
     export_as_webservice_entry()
 
     name = IProductSeries['name']
 
     status = IProductSeries['status']
-   #status = exported(
-   #    Choice(
-   #        title=_('Status'), required=True, vocabulary=SeriesStatus,
-   #        default=SeriesStatus.DEVELOPMENT))
 
     product = IProductSeries['product']
 
