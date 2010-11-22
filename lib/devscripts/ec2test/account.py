@@ -10,18 +10,17 @@ __all__ = [
     ]
 
 import cStringIO
+from datetime import datetime
+from itertools import groupby
+from operator import itemgetter
 import re
 import sys
 import urllib
 
-from datetime import datetime
-from itertools import groupby
-from operator import itemgetter
-
 from boto.exception import EC2ResponseError
 from devscripts.ec2test.session import EC2SessionName
-
 import paramiko
+
 
 VALID_AMI_OWNERS = {
     '255383312499': 'gary',

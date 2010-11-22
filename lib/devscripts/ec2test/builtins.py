@@ -8,25 +8,30 @@ __all__ = []
 
 import os
 import pdb
+import socket
 import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
-from bzrlib.option import ListOption, Option
-
-import socket
-
+from bzrlib.option import (
+    ListOption,
+    Option,
+    )
 from devscripts import get_launchpad_root
-
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES,
+    DEFAULT_INSTANCE_TYPE,
+    EC2Instance,
+    )
 from devscripts.ec2test.session import EC2SessionName
-from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
+from devscripts.ec2test.testrunner import (
+    EC2TestRunner,
+    TRUNK_BRANCH,
+    )
 
 # Options accepted by more than one command.
 
