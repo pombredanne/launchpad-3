@@ -14,9 +14,6 @@ from testtools.deferredruntest import (
     SynchronousDeferredRunTest,
     )
 
-from twisted.internet.base import DelayedCall
-DelayedCall.debug = True
-
 from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
