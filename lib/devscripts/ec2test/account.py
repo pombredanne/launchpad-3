@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'VALID_AMI_OWNERS',
     'EC2Account',
     ]
 
@@ -22,17 +23,17 @@ from devscripts.ec2test.session import EC2SessionName
 
 import paramiko
 
-VALID_AMI_OWNERS = (
-    '255383312499', # gary
-    '559320013529', # flacoste
-    '200337130613', # mwhudson
-    '889698597288', # henninge
-    '366009196755', # salgado
-    '036590675370', # jml
-    '038531743404', # jelmer
-    '444667466231', # allenap
+VALID_AMI_OWNERS = {
+    '255383312499': 'gary',
+    '559320013529': 'flacoste',
+    '200337130613': 'mwhudson',
+    '889698597288': 'henninge',
+    '366009196755': 'salgado',
+    '036590675370': 'jml',
+    '038531743404': 'jelmer',
+    '444667466231': 'allenap',
     # ...anyone else want in on the fun?
-    )
+    }
 
 AUTH_FAILURE_MESSAGE = """\
 POSSIBLE CAUSES OF ERROR:
@@ -176,7 +177,8 @@ class EC2Account:
 
         # Find the images with the highest revision numbers and locations that
         # match the regex.
-        for image in self.conn.get_all_images(owners=VALID_AMI_OWNERS):
+        images = self.conn.get_all_images(owners=tuple(VALID_AMI_OWNERS))
+        for image in images:
             match = self._image_match(image.location)
             if match is not None:
                 revision = int(match.group(1))
