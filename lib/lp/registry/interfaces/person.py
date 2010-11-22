@@ -1551,6 +1551,11 @@ class IPersonEditRestricted(Interface):
         to INVITATION_DECLINED.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text(required=False))
+    @export_write_operation()
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
@@ -2238,6 +2243,7 @@ params_to_fix = [
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
     (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['retractTeamMembership'], 'team'),
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
