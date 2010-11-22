@@ -20,6 +20,7 @@ import socket
 
 from devscripts import get_launchpad_root
 
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
     AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
@@ -623,10 +624,13 @@ class cmd_images(EC2Command):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
+        format = "%5s  %-12s  %-12s  %s\n"
+        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
         for revision, images in account.find_images():
-            self.outf.write("%5d  %s\n" % (revision, images[0].id))
-            for image in images[1:]:
-                self.outf.write("       %s\n" % image.id)
+            for image in images:
+                self.outf.write(format % (
+                        revision, image.id, image.ownerId,
+                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
 
 
 class cmd_help(EC2Command):
