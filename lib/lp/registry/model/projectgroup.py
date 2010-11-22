@@ -203,7 +203,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def has_translatable(self):
         """See `IProjectGroup`."""
-        return self.translatables().is_empty()
+        return not self.translatables().is_empty()
 
     def has_branches(self):
         """ See `IProjectGroup`."""

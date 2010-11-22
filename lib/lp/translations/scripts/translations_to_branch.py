@@ -320,7 +320,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
             ProductSeries,
             And(
                 Product.translations_usage == ServiceUsage.LAUNCHPAD,
-                Product.translations_branch != None))
+                ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
         # testing.
