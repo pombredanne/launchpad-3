@@ -11,6 +11,7 @@ import errno
 import os
 import pwd
 import re
+from resource import RLIMIT_AS, setrlimit
 import socket
 from subprocess import call, Popen, PIPE
 import sys
@@ -206,6 +207,7 @@ def ensure_virtualized():
 
 
 if __name__ == '__main__':
+    setrlimit(RLIMIT_AS, (1000000000, -1))
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)

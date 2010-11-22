@@ -49,7 +49,10 @@ from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
     SourcePackageRecipe,
     )
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild,
+    SourcePackageRecipeBuildJob,
+    )
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
@@ -482,7 +485,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_destroySelf_clears_release(self):
+    def test_destroySelf_preserves_release(self):
         # Destroying a sourcepackagerecipe removes references to its builds
         # from their releases.
         recipe = self.factory.makeSourcePackageRecipe()
@@ -492,7 +495,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build, release.source_package_recipe_build)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()
-        self.assertIs(None, release.source_package_recipe_build)
+        self.assertIsNot(None, release.source_package_recipe_build)
+
+    def test_destroySelf_retains_build(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        store = Store.of(build)
+        store.flush()
+        build_id = build.id
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertEqual(recipe, build.recipe)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertIs(None, build.recipe)
         transaction.commit()
 
     def test_findStaleDailyBuilds(self):

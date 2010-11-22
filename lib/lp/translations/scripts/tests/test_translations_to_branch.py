@@ -3,6 +3,8 @@
 
 """Acceptance test for the translations-export-to-branch script."""
 
+import datetime
+import pytz
 import re
 from textwrap import dedent
 
@@ -277,6 +279,62 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         self.assertEqual(
             "Launchpad Translations on behalf of %s" % branch.owner.name,
             committer.getBzrCommitterID())
+
+    def test_findChangedPOFiles(self):
+        # Returns all POFiles changed in a productseries after a certain
+        # date.
+        date_in_the_past = (
+            datetime.datetime.now(pytz.UTC) - datetime.timedelta(1))
+        pofile = self.factory.makePOFile()
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                changed_since=date_in_the_past)))
+
+    def test_findChangedPOFiles_all(self):
+        # If changed_since date is passed in as None, all POFiles are
+        # returned.
+        pofile = self.factory.makePOFile()
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries, changed_since=None)))
+
+    def test_findChangedPOFiles_unchanged(self):
+        # If a POFile has been changed before changed_since date,
+        # it is not returned.
+        pofile = self.factory.makePOFile()
+        date_in_the_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(1))
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                date_in_the_future)))
+
+    def test_findChangedPOFiles_unchanged_template_changed(self):
+        # If a POFile has been changed before changed_since date,
+        # and template has been updated after it, POFile is still
+        # considered changed and thus returned.
+        pofile = self.factory.makePOFile()
+        date_in_the_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(1))
+        date_in_the_far_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(2))
+        pofile.potemplate.date_last_updated = date_in_the_far_future
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                date_in_the_future)))
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):

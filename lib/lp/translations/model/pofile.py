@@ -77,6 +77,7 @@ from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
     )
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
@@ -92,11 +93,11 @@ from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError,
     )
 from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
+    RosettaTranslationOrigin,
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
-from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.potmsgset import POTMsgSet, credits_message_str
 from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
@@ -336,9 +337,6 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -460,12 +458,15 @@ class POFile(SQLBase, POFileMixIn):
         assert credits_type != TranslationCreditsType.NOT_CREDITS, (
             "Calling prepareTranslationCredits on a message with "
             "msgid '%s'." % potmsgset.singular_text)
-        imported = potmsgset.getImportedTranslationMessage(
-            self.potemplate, self.language)
-        if imported is None:
+        upstream = potmsgset.getCurrentTranslation(
+            None, self.language, TranslationSide.UPSTREAM)
+        if (upstream is None or
+            upstream.origin == RosettaTranslationOrigin.LAUNCHPAD_GENERATED or
+            upstream.translations[0] == credits_message_str):
             text = None
         else:
-            text = imported.translations[0]
+            text = upstream.translations[0]
+
         if credits_type == TranslationCreditsType.KDE_EMAILS:
             emails = []
             if text is not None:
@@ -732,20 +733,6 @@ class POFile(SQLBase, POFileMixIn):
         clause_tables.insert(0, POTMsgSet)
         query = ' AND '.join(clauses)
         return self._getOrderedPOTMsgSets(clause_tables, query)
-
-    def getPOTMsgSetWithErrors(self):
-        """See `IPOFile`."""
-        clauses = self._getClausesForPOFileMessages()
-        clauses.extend([
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_upstream IS TRUE',
-            'TranslationMessage.validation_status <> %s' % sqlvalues(
-                TranslationValidationStatus.OK),
-            ])
-
-        query = ' AND '.join(clauses)
-        origin = [POTMsgSet, TranslationMessage, TranslationTemplateItem]
-        return self._getOrderedPOTMsgSets(origin, query)
 
     def messageCount(self):
         """See `IRosettaStats`."""
@@ -1182,7 +1169,6 @@ class DummyPOFile(POFileMixIn):
         self.id = None
         self.potemplate = potemplate
         self.language = language
-        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None
@@ -1247,10 +1233,6 @@ class DummyPOFile(POFileMixIn):
         return EmptyResultSet()
 
     def getPOTMsgSetChangedInUbuntu(self):
-        """See `IPOFile`."""
-        return EmptyResultSet()
-
-    def getPOTMsgSetWithErrors(self):
         """See `IPOFile`."""
         return EmptyResultSet()
 

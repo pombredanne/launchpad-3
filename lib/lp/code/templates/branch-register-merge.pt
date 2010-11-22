@@ -69,7 +69,7 @@
                 review_type = document.getElementById('field.review_type');
                 review_type.disabled = (reviewer == '');
               };
-              Y.on('change',
+              Y.on('blur',
                   function(e) {
                     reviewer_changed(e.target.get('value'))
                   },
