@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0703
@@ -13,21 +13,16 @@ import httplib
 import logging
 import os
 from StringIO import StringIO
+import unittest
 
 from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
-
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    AsynchronousDeferredRunTestForBrokenTwisted,
-    )
-
 from twisted.internet import (
     defer,
     reactor,
     )
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
 import canonical
@@ -35,8 +30,10 @@ from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
+    TwistedLayer,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
@@ -67,8 +64,6 @@ from lp.registry.scripts.distributionmirror_prober import (
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
     )
-from lp.testing import TestCase
-from lp.registry.model.distributionmirror import DistributionMirror
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -96,13 +91,11 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocolAndFactory(TestCase):
+class TestProberProtocolAndFactory(TrialTestCase):
 
-    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
-        timeout=20)
+    layer = TwistedLayer
 
     def setUp(self):
-        super(TestProberProtocolAndFactory, self).setUp()
         self.orig_proxy = os.getenv('http_proxy')
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
@@ -115,7 +108,6 @@ class TestProberProtocolAndFactory(TestCase):
                      '404': u'http://localhost:%s/invalid-mirror' % self.port}
 
     def tearDown(self):
-        super(TestProberProtocolAndFactory, self).tearDown()
         restore_http_proxy(self.orig_proxy)
         return self.listening_port.stopListening()
 
@@ -197,13 +189,13 @@ class TestProberProtocolAndFactory(TestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-infinite-loop' % self.port)
         deferred = prober.probe()
-        return assert_fails_with(deferred, InfiniteLoopDetected)
+        return self.assertFailure(deferred, InfiniteLoopDetected)
 
     def test_redirectawareprober_fail_on_unknown_scheme(self):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return assert_fails_with(deferred, UnknownURLScheme)
+        return self.assertFailure(deferred, UnknownURLScheme)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -231,15 +223,15 @@ class TestProberProtocolAndFactory(TestCase):
 
     def test_notfound(self):
         d = self._createProberAndProbe(self.urls['404'])
-        return assert_fails_with(d, BadResponseCode)
+        return self.assertFailure(d, BadResponseCode)
 
     def test_500(self):
         d = self._createProberAndProbe(self.urls['500'])
-        return assert_fails_with(d, BadResponseCode)
+        return self.assertFailure(d, BadResponseCode)
 
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
-        return assert_fails_with(d, ProberTimeout)
+        return self.assertFailure(d, ProberTimeout)
 
 
     def test_prober_user_agent(self):
@@ -285,7 +277,7 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
-class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -297,8 +289,6 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
     host = 'foo.bar'
 
     def setUp(self):
-        super(
-            TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).setUp()
         self.orig_host_requests = dict(
             distributionmirror_prober.host_requests)
         self.orig_host_timeouts = dict(
@@ -308,9 +298,6 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         # Restore the globals that our tests fiddle with.
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
-        super(
-            TestProberFactoryRequestTimeoutRatioWithoutTwisted,
-            self).tearDown()
 
     def _createProberStubConnectAndProbe(self, requests, timeouts):
         """Create a ProberFactory object with a URL inside self.host and call
@@ -371,7 +358,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         self.failIf(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -382,10 +369,9 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
     actually connect to the server.
     """
 
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
+    layer = TwistedLayer
 
     def setUp(self):
-        super(TestProberFactoryRequestTimeoutRatioWithTwisted, self).setUp()
         self.orig_host_requests = dict(
             distributionmirror_prober.host_requests)
         self.orig_host_timeouts = dict(
@@ -400,7 +386,6 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
 
     def tearDown(self):
         # Restore the globals that our tests fiddle with.
-        super(TestProberFactoryRequestTimeoutRatioWithTwisted, self).tearDown()
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
         return self.listening_port.stopListening()
@@ -444,13 +429,12 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
 
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
-        return assert_fails_with(d, ConnectionSkipped)
+        return self.assertFailure(d, ConnectionSkipped)
 
 
-class TestMultiLock(TestCase):
+class TestMultiLock(unittest.TestCase):
 
     def setUp(self):
-        super(TestMultiLock, self).setUp()
         self.lock_one = defer.DeferredLock()
         self.lock_two = defer.DeferredLock()
         self.multi_lock = MultiLock(self.lock_one, self.lock_two)
@@ -527,7 +511,7 @@ class TestMultiLock(TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
 
-class TestRedirectAwareProberFactoryAndProtocol(TestCase):
+class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -616,12 +600,10 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(TestCase):
-
+class TestMirrorCDImageProberCallbacks(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestMirrorCDImageProberCallbacks, self).setUp()
         self.layer.switchDbUser(config.distributionmirrorprober.dbuser)
         self.logger = logging.getLogger('distributionmirror-prober')
         self.logger.errorCalled = False
@@ -690,12 +672,10 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         self.failUnless(self.logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(TestCase):
-
+class TestArchiveMirrorProberCallbacks(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestArchiveMirrorProberCallbacks, self).setUp()
         mirror = DistributionMirror.get(1)
         warty = DistroSeries.get(1)
         pocket = PackagePublishingPocket.RELEASE
@@ -759,14 +739,13 @@ class TestArchiveMirrorProberCallbacks(TestCase):
             mirror_distro_series_source.id)
 
 
-class TestProbeFunctionSemaphores(TestCase):
+class TestProbeFunctionSemaphores(unittest.TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestProbeFunctionSemaphores, self).setUp()
         self.logger = None
         # RequestManager uses a mutable class attribute (host_locks) to ensure
         # all of its instances share the same locks. We don't want our tests
@@ -849,7 +828,7 @@ class TestProbeFunctionSemaphores(TestCase):
         restore_http_proxy(orig_proxy)
 
 
-class TestCDImageFileListFetching(TestCase):
+class TestCDImageFileListFetching(unittest.TestCase):
 
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
@@ -858,7 +837,7 @@ class TestCDImageFileListFetching(TestCase):
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
 
 
-class TestLoggingMixin(TestCase):
+class TestLoggingMixin(unittest.TestCase):
 
     def _fake_gettime(self):
         # Fake the current time.
@@ -883,3 +862,7 @@ class TestLoggingMixin(TestCase):
         logger.log_file.seek(0)
         message = logger.log_file.read()
         self.assertNotEqual(None, message)
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
