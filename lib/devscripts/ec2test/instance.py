@@ -19,10 +19,8 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-
-import paramiko
-
 from devscripts.ec2test.session import EC2SessionName
+import paramiko
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
