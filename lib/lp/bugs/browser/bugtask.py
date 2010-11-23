@@ -143,13 +143,9 @@ from canonical.launchpad.searchbuilder import (
     )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -182,6 +178,12 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
@@ -924,7 +926,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         # comments to the activity_for_comments list.  For each
         # activity dict we use the person responsible for the first
         # activity item as the owner of the list of activities.
-        activity_by_date = []
         for date, activity_dict in activity_log.items():
             activity_and_comments.append({
                 'activity': activity_dict,

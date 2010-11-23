@@ -64,7 +64,7 @@ example schema:
 A form that handles all fields in the schema needs only set the
 "schema" attribute:
 
-  >>> from canonical.launchpad.webapp import LaunchpadFormView
+  >>> from lp.app.browser.launchpadform import LaunchpadFormView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> class FormTestView1(LaunchpadFormView):
