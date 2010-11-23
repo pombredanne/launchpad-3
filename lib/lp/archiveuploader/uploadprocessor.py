@@ -519,9 +519,9 @@ class UploadProcessor:
                     self.ztm.abort()
 
             if upload.is_rejected:
-                logger.warn("Upload was rejected:")
+                logger.info("Upload was rejected:")
                 for msg in upload.rejections:
-                    logger.warn("\t%s" % msg)
+                    logger.info("\t%s" % msg)
 
             if self.dry_run:
                 logger.info("Dry run, aborting transaction.")
