@@ -14,6 +14,7 @@ and it tracks all Browser instances to ensure that they are closed.  This
 latter prevents open socket leaks even when the doctest doesn't explicitly
 close or delete the browser instance.
 """
+from lazr.uri._uri import URI
 
 __metaclass__ = type
 __all__ = [
@@ -120,6 +121,21 @@ class Browser(_Browser):
             fix_exception_name(e)
             raise
         self._stop_timer()
+
+    @property
+    def vhost(self):
+        uri = URI(self.url)
+        return '%s://%s' % (uri.scheme, uri.host)
+
+    @property
+    def rooturl(self):
+        uri = URI(self.url)
+        return '%s://%s:%s' % (uri.scheme, uri.host, uri.port)
+
+    @property
+    def urlpath(self):
+        uri = URI(self.url)
+        return uri.path
 
 
 def setUp(test):

@@ -13,9 +13,9 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
 PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
+
 
 class TestInlineSubscribing(WindmillTestCase):
 
@@ -31,8 +31,9 @@ class TestInlineSubscribing(WindmillTestCase):
         """
         client = self.client
 
+        bug_url = u'%s/bugs/%%s' % BugsWindmillLayer.base_url
         # Open a bug page and wait for it to finish loading.
-        client.open(url=BUG_URL % 11)
+        client.open(url=bug_url % 11)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
@@ -142,7 +143,7 @@ class TestInlineSubscribing(WindmillTestCase):
 
         # Test unsubscribing via the remove icon for duplicates.
         # First, go to bug 6 and subscribe.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -152,7 +153,7 @@ class TestInlineSubscribing(WindmillTestCase):
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         client.asserts.assertNode(xpath=PERSON_LINK % u'Foo Bar')
         # Bug 6 is a dupe of bug 5, so go to bug 5 to unsubscribe.
-        client.open(url=BUG_URL % 5)
+        client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -162,7 +163,7 @@ class TestInlineSubscribing(WindmillTestCase):
             xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
         client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
         # Then back to bug 6 to confirm the duplicate is also unsubscribed.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -177,7 +178,7 @@ class TestInlineSubscribing(WindmillTestCase):
         # dealing with a duplicate and an indirect subscription.
         lpuser.SAMPLE_PERSON.ensure_login(client)
         # Go to bug 6, the dupe, and subscribe.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -186,7 +187,7 @@ class TestInlineSubscribing(WindmillTestCase):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Now back to bug 5.
-        client.open(url=BUG_URL % 5)
+        client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -217,7 +218,7 @@ class TestInlineSubscribing(WindmillTestCase):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Go to bug 6, the dupe, and subscribe.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -226,7 +227,7 @@ class TestInlineSubscribing(WindmillTestCase):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Now back to bug 5. Confirm there are 2 subscriptions.
-        client.open(url=BUG_URL % 5)
+        client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id='direct-subscriber-12', timeout=FOR_ELEMENT)
@@ -246,6 +247,7 @@ class TestInlineSubscribing(WindmillTestCase):
         client.asserts.assertNotNode(
             xpath=(u'//div[@id="subscribers-from-duplicates"]'
                    '/div/a[@name="Sample Person"]'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

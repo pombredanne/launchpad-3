@@ -30,7 +30,8 @@ class TesPersonPickerWidget(WindmillTestCase):
         client = self.client
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
-        client.open(url=u'http://launchpad.dev:8085/people/+requestmerge')
+        client.open(url=u'%s/people/+requestmerge'
+                    % RegistryWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(id=u'show-widget-field-dupe_person',
                                 timeout=constants.FOR_ELEMENT)

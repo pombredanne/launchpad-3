@@ -27,7 +27,7 @@ class TestOfficialBugTags(WindmillTestCase):
 
     # Firefox is a product - an official bug tags target.
 
-        client.open(url='http://bugs.launchpad.dev:8085/firefox')
+        client.open(url='%s/firefox' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.FOO_BAR.ensure_login(client)
 

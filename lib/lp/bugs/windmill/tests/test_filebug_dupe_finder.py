@@ -11,8 +11,6 @@ from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 
 
-FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
-
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/div'
 FORM_OVERLAY_CANCEL = (
     u'//div[@id="duplicate-overlay-bug-4"]'
@@ -30,6 +28,7 @@ FORM_VISIBLE = (
 BUG_INFO_HIDDEN = 'style.height|0px'
 BUG_INFO_SHOWN_JS = 'element.style.height != "0px"'
 
+
 class TestDupeFinder(WindmillTestCase):
 
     layer = BugsWindmillLayer
@@ -46,7 +45,7 @@ class TestDupeFinder(WindmillTestCase):
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Go to the +filebug page for Firefox
-        client.open(url=FILEBUG_URL)
+        client.open(url=u'%s/firefox/+filebug' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Ensure the "search" field has finished loading, then enter a simple
@@ -118,6 +117,7 @@ class TestDupeFinder(WindmillTestCase):
         client.asserts.assertText(
             xpath=u'//div[@class="message"]',
             validator="Required input is missing.")
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

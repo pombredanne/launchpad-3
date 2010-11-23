@@ -41,7 +41,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client = self.client
 
         # Open a bug page and wait for it to finish loading
-        client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
+        client.open(url=u'%s/bugs/15' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
@@ -133,7 +133,7 @@ class TestMarkDuplicate(WindmillTestCase):
             timeout=constants.FOR_ELEMENT)
 
         # When we go back to the page for the duplicate bug...
-        client.open(url=u'http://bugs.launchpad.dev:8085/bugs/15')
+        client.open(url=u'%s/bugs/15' % BugsWindmillLayer.base_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)

@@ -563,6 +563,8 @@ class TestCaseWithFactory(TestCase):
             user = self.factory.makePerson(password=password)
         naked_user = removeSecurityProxy(user)
         email = naked_user.preferredemail.email
+        if hasattr(naked_user, '_password_cleartext_cached'):
+            password = naked_user._password_cleartext_cached
         logout()
         browser = setupBrowser(
             auth="Basic %s:%s" % (str(email), password))
@@ -718,7 +720,7 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        self.client.open(url=self.layer.appserver_root_url())
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -727,16 +729,19 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = ''
 
     _yui_results = None
-    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
         self.test_path = test_path
-        self.yui_runner_url = self._view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         # This is very fragile for some reason, so we need a long delay here.
         client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
