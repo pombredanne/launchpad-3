@@ -1847,7 +1847,7 @@ class BugTaskSet:
         if params.bug_commenter:
             bug_commenter_clause = """
             BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, BugMessage, Message
+                SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
                 WHERE Message.owner = %(bug_commenter)s
                     AND Message.id = BugMessage.message
                     AND BugTask.bug = BugMessage.bug
