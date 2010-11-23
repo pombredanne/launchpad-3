@@ -66,8 +66,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
             False, False, None, None, True, pofile=self.pofile, can_edit=True)
         self.view.initialize()
 
-    def _makeTranslation(self, translation=None,
-                         suggestion=False, is_packaged=False):
+    def _makeTranslation(self, translation=None, suggestion=False):
         if translation is None:
             translations = None
         elif isinstance(translation, list):
@@ -81,44 +80,38 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
                 translator=self.owner,
                 date_created=self.now())
         else:
-            message = self.factory.makeTranslationMessage(
+            message = self.factory.makeCurrentTranslationMessage(
                 self.pofile, self.potmsgset,
                 translations=translations,
-                suggestion=suggestion,
-                is_current_upstream=is_packaged,
-                translator=self.owner,
-                date_updated=self.now())
+                translator=self.owner, reviewer=self.owner)
         message.browser_pofile = self.pofile
         return message
 
-    def _assertConfirmEmptyPluralPackaged(self,
-                                          can_confirm_and_dismiss,
-                                          can_dismiss_on_empty,
-                                          can_dismiss_on_plural,
-                                          can_dismiss_packaged):
+    def _assertConfirmEmptyPlural(self,
+                                  can_confirm_and_dismiss,
+                                  can_dismiss_on_empty,
+                                  can_dismiss_on_plural):
         assert self.view is not None
         self.assertEqual(
             [can_confirm_and_dismiss,
                can_dismiss_on_empty,
-               can_dismiss_on_plural,
-               can_dismiss_packaged],
+               can_dismiss_on_plural],
             [self.view.can_confirm_and_dismiss,
                self.view.can_dismiss_on_empty,
-               self.view.can_dismiss_on_plural,
-               self.view.can_dismiss_packaged])
+               self.view.can_dismiss_on_plural])
 
     def test_no_suggestion(self):
         # If there is no suggestion, nothing can be dismissed.
         message = self._makeTranslation()
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, False, False)
+        self._assertConfirmEmptyPlural(False, False, False)
 
     def test_local_suggestion(self):
         # If there is a local suggestion, it can be dismissed.
         message = self._makeTranslation()
         suggestion = self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, False)
+        self._assertConfirmEmptyPlural(True, False, False)
 
     def test_local_suggestion_on_empty(self):
         # If there is a local suggestion on an empty message, it is dismissed
@@ -126,7 +119,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         message = self._makeTranslation("")
         suggestion = self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, True, False, False)
+        self._assertConfirmEmptyPlural(False, True, False)
 
     def test_local_suggestion_on_plural(self):
         # If there is a suggestion on a plural message, it is dismissed
@@ -137,59 +130,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         suggestion = self._makeTranslation(["singular_sugg", "plural_sugg"],
                                          suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, True, False)
-
-        # XXX JeroenVermeulen 2010-11-22: Disabling this test
-        # temporarily.  We must re-enable it before completing the
-        # migration of CurrentTranslationMessageTranslateView to the
-        # Recife model.  Currently this is the only test that still
-        # breaks after a partial migration of model code and that view
-        # (as needed to complete the update of _storeTranslations).
-    def XXX_disabled_test_packaged_suggestion(self):
-        # If there is a packaged suggestion, it can be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
-        message = self._makeTranslation()
-        new_packaged = self._makeTranslation(is_packaged=True)
-        self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, True)
-
-    def test_packaged_suggestion_on_empty(self):
-        # If there is an empty suggestion on an empty message,
-        # it is dismissed in a different place.
-        packaged = self._makeTranslation(is_packaged=True)
-        message = self._makeTranslation("")
-        new_packaged = self._makeTranslation(is_packaged=True)
-        self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, True, False, True)
-
-    def test_packaged_suggestion_on_plural(self):
-        # If there is a suggestion on a plural message, it is dismissed
-        # in yet a different place.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                singular="msgid_singular", plural="msgid_plural")
-        packaged = self._makeTranslation(["singular_trans", "plural_trans"],
-                                         is_packaged=True)
-        message = self._makeTranslation(["singular_trans", "plural_trans"])
-        new_packaged = self._makeTranslation(["singular_new", "plural_new"],
-                                             is_packaged=True)
-        self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, True, True)
-
-    def test_packaged_suggestion_old(self):
-        # If there is an older packaged suggestion, it cannot be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
-        message = self._makeTranslation()
-        self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, False, False)
-
-    def test_packaged_old_local_new(self):
-        # If there is an older packaged suggestion, but a newer local
-        # suggestion, only the local suggestion can be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
-        message = self._makeTranslation()
-        suggestion = self._makeTranslation(suggestion=True)
-        self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, False)
+        self._assertConfirmEmptyPlural(False, False, True)
 
 
 class TestResetTranslations(TestCaseWithFactory):
