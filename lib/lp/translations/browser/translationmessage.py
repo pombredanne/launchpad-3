@@ -1265,13 +1265,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
         language = self.pofile.language
         potmsgset = self.context.potmsgset
-        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
-            self.pofile.potemplate)
-
-        if not side_traits.other_side_traits.getFlag(self.context):
-            imported = self.other_translationmessage
-        else:
-            imported = None
+        other = self.other_translationmessage
 
         # Show suggestions only when you can actually do something with them
         # (i.e. you are logged in and have access to at least submit
@@ -1339,8 +1333,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion per plural form.
         for index in self.pluralform_indices:
             self.seen_translations = set([self.context.translations[index]])
-            if imported:
-                self.seen_translations.add(imported.translations[index])
+            if other is not None:
+                self.seen_translations.add(other.translations[index])
             local_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     'Suggestions', local, index, local_to_pofile=True))
