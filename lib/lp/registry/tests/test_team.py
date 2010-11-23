@@ -13,11 +13,14 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     ITeamPublic,
+    PersonVisibility,
     TeamMembershipRenewalPolicy,
     )
+from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -186,3 +189,23 @@ class TestDefaultMembershipPeriod(TestCaseWithFactory):
 
     def test_default_membership_period_maximum(self):
         ITeamPublic['defaultmembershipperiod'].validate(3650)
+
+
+class TestVisibilityConsistencyWarning(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestVisibilityConsistencyWarning, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_celebrity('admin')
+
+    def test_no_warning_for_PersonTransferJob(self):
+        member = self.factory.makePerson()
+        metadata = ('some', 'arbitrary', 'metadata')
+        person_transfer_job = PersonTransferJob(
+            member, self.team,
+            PersonTransferJobType.MEMBERSHIP_NOTIFICATION, metadata)
+        self.assertEqual(
+            None,
+            self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
