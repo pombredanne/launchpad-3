@@ -1017,7 +1017,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         if side_traits.other_side_traits.getFlag(self.context):
             # The shared translation for the other side matches the current
             # one.
-            self.other_translationmessage = self.context
+            self.other_translationmessage = None
         else:
             self.other_translationmessage = (
                 self.context.potmsgset.getCurrentTranslation(
