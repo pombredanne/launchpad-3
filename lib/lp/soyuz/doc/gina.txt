@@ -215,6 +215,11 @@ Check if the changelog message was stored correcly:
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
+Check that the changelog was uploaded to the librarian correctly:
+
+    >>> print x11p.changelog.content.sha1
+    759bd2df0d886f9f06c383048afb90eaa81418f6
+
 Same for the copyright:
 
     >>> print x11p.copyright
