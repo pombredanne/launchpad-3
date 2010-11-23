@@ -801,8 +801,9 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        assert(self.mailing_list is not None), (
-            'No mailing list: %s' % self.context.name)
+        self.request.response.addInfoNotification(
+            '%s does not have a mailing list.' % self.context.displayname)
+        return self.request.response.redirect(canonical_url(self.context))
 
     @cachedproperty
     def hold_count(self):
