@@ -1017,24 +1017,26 @@ class CurrentTranslationMessageView(LaunchpadView):
         if side_traits.other_side_traits.getFlag(self.context):
             # The shared translation for the other side matches the current
             # one.
-            self.imported_translationmessage = self.context
+            self.other_translationmessage = self.context
         else:
-            self.imported_translationmessage = (
+            self.other_translationmessage = (
                 self.context.potmsgset.getCurrentTranslation(
                     self.pofile.potemplate, self.pofile.language,
                     side_traits.other_side_traits.side))
 
         if self.context.potemplate is None:
-            # Shared translation is current.
+            # Current translation is shared.
             self.shared_translationmessage = None
         else:
-            self.shared_translationmessage = (
+            # Current translation is diverged, find the shared one.
+            shared_translationmessage = (
                 self.context.potmsgset.getCurrentTranslation(
                     None, self.pofile.language, side_traits.side))
-            if (self.shared_translationmessage ==
-                self.imported_translationmessage):
-                # If it matches the imported message, we don't care.
+            if (shared_translationmessage == self.other_translationmessage):
+                # If it matches the other message, we don't care.
                 self.shared_translationmessage = None
+            else:
+                self.shared_translationmessage = shared_translationmessage
 
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
@@ -1092,15 +1094,12 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.current_series.distribution.displayname,
                     self.current_series.name)
 
-        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
-            self.pofile.potemplate)
-
         # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
         for index in self.pluralform_indices:
             current_translation = self.getCurrentTranslation(index)
-            imported_translation = self.getImportedTranslation(index)
+            other_translation = self.getImportedTranslation(index)
             shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
             if (submitted_translation is None and
@@ -1117,18 +1116,17 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.submitter == self.context.reviewer)
             is_same_date = (
                 self.context.date_created == self.context.date_reviewed)
-            if side_traits.other_side_traits.getFlag(self.context):
-                # Imported one matches the current one.
-                imported_submission = None
-            elif self.imported_translationmessage is not None:
+            if self.other_translationmessage is None:
+                other_submission = None
+            else:
                 pofile = (
-                    self.imported_translationmessage.ensureBrowserPOFile())
+                    self.other_translationmessage.ensureBrowserPOFile())
                 if pofile is None:
-                    imported_submission = None
+                    other_submission = None
                 else:
-                    imported_submission = (
+                    other_submission = (
                         convert_translationmessage_to_submission(
-                            message=self.imported_translationmessage,
+                            message=self.other_translationmessage,
                             current_message=self.context,
                             plural_form=index,
                             pofile=pofile,
@@ -1136,8 +1134,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                             is_empty=False,
                             packaged=True,
                             local_to_pofile=True))
-            else:
-                imported_submission = None
 
             diverged_and_have_shared = (
                 self.context.potemplate is not None and
@@ -1164,9 +1160,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'current_translation': text_to_html(
                     current_translation, self.context.potmsgset.flags),
                 'submitted_translation': submitted_translation,
-                'imported_translation': text_to_html(
-                    imported_translation, self.context.potmsgset.flags),
-                'imported_translation_message': imported_submission,
+                'other_translation': text_to_html(
+                    other_translation, self.context.potmsgset.flags),
+                'other_translation_message': other_submission,
                 'shared_translation': text_to_html(
                     shared_translation, self.context.potmsgset.flags),
                 'shared_translation_message': shared_submission,
@@ -1180,10 +1176,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if (not side_traits.other_side_traits.getFlag(self.context) and
-                self.imported_translationmessage is not None):
+            if self.other_translationmessage is not None:
                 translation_entry['html_id_imported_suggestion'] = (
-                    self.imported_translationmessage.makeHTMLID(
+                    self.other_translationmessage.makeHTMLID(
                         'suggestion'))
 
             if self.message_must_be_hidden:
@@ -1274,7 +1269,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             self.pofile.potemplate)
 
         if not side_traits.other_side_traits.getFlag(self.context):
-            imported = self.imported_translationmessage
+            imported = self.other_translationmessage
         else:
             imported = None
 
@@ -1395,10 +1390,10 @@ class CurrentTranslationMessageView(LaunchpadView):
                 index, self.pofile.language.displayname))
 
         if is_current_upstream:
-            if self.imported_translationmessage is None:
+            if self.other_translationmessage is None:
                 return None
 
-            translation = self.imported_translationmessage.translations[index]
+            translation = self.other_translationmessage.translations[index]
         elif is_shared:
             if self.shared_translationmessage is None:
                 return None
