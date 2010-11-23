@@ -1414,13 +1414,6 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
-    def getAssignedMilestonesFromSearch(search_results):
-        """Returns distinct milestones for the given tasks.
-
-        :param search_results: A result set yielding BugTask objects,
-            typically the result of calling `BugTaskSet.search()`.
-        """
-
     def getStatusCountsForProductSeries(user, product_series):
         """Returns status counts for a product series' bugs.
 

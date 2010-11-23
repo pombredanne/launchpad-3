@@ -3,6 +3,10 @@
 
 __metaclass__ = type
 
+from storm.expr import LeftJoin
+from storm.store import Store
+from testtools.matchers import Equals
+
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -10,7 +14,15 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.testing import BrowserTestCase
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.model.person import Person
+from lp.testing import (
+    BrowserTestCase,
+    StormStatementRecorder,
+    )
+
+from lp.testing.matchers import HasQueryCount
+from lp.testing.views import create_initialized_view
 
 
 class TestBugTaskSearchListingView(BrowserTestCase):
@@ -120,3 +132,19 @@ class TestBugTaskSearchListingView(BrowserTestCase):
         self.assertIs(None,
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
+
+    def test_searchUnbatched_can_preload_objects(self):
+        # BugTaskSearchListingView.searchUnbatched() can optionally
+        # preload objects while retureving the bugtasks.
+        product = self.factory.makeProduct()
+        bugtask_1 = self.factory.makeBug(product=product).default_bugtask
+        bugtask_2 = self.factory.makeBug(product=product).default_bugtask
+        view = create_initialized_view(product, '+bugs')
+        Store.of(product).invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            bugtasks = list(view.searchUnbatched(prejoins=prejoins))
+            self.assertEqual(
+                [bugtask_1, bugtask_2], bugtasks)
+            [bugtask.owner for bugtask in bugtasks]
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
