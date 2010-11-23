@@ -364,6 +364,35 @@ class TestHelpers(TestCaseWithFactory):
             translations,
             revert_unselected_translations(translations, None, [0]))
 
+    def test_revert_unselected_translations_handles_plurals(self):
+        translated_forms = range(3)
+        translations = dict(
+            (form, self.getUniqueString()) for form in translated_forms)
+
+        self.assertEqual(
+            translations,
+            revert_unselected_translations(
+                translations, None, translated_forms))
+
+    def test_revert_unselected_translations_selects_forms_separately(self):
+        # If some of the translated forms are accepted and some aren't,
+        # revert_unselected_translations will keep those that were and
+        # revert the rest.
+        translations = {
+            0: self.getUniqueString(),
+            1: self.getUniqueString(),
+        }
+        resulting_translations = revert_unselected_translations(
+            translations, None, [0])
+        self.assertEqual(translations[0], resulting_translations[0])
+        self.assertNotEqual(translations[1], resulting_translations[1])
+        self.assertEqual(u'', resulting_translations[1])
+
+    def test_revert_unselected_translations_ignores_untranslated_form(self):
+        translations = {0: self.getUniqueString()}
+        self.assertNotIn(
+            1, revert_unselected_translations(translations, None, [1]))
+
     def test_revert_unselected_translations_reverts_to_existing(self):
         # Translations for plural forms not in plural_indices_to_store
         # are reverted to those found in the current translation
