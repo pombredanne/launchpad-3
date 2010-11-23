@@ -114,8 +114,10 @@
       <div id="build-recipes">
         <h2>Source Package Recipe Builds</h2>
         <p id="recipe-summary">
-          A bzr-builder "recipe" is a description of the steps needed to
-          construct a package from the various bzr branches.
+          Launchpad can use recipes to automatically build Ubuntu packages
+          from Bazaar branches.<br/>
+          (<a href="https://help.launchpad.net/Packaging/SourceBuilds">
+          Learn more about recipes.</a>)
         </p>
         <a href="/+daily-builds">Recent recipe builds&#8230;</a>
       </div>
