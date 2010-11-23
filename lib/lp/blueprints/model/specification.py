@@ -78,9 +78,11 @@ from lp.blueprints.model.sprint import Sprint
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.product import IProduct
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -183,7 +185,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
-    # attributes
     @property
     def target(self):
         """See ISpecification."""
@@ -191,23 +192,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
             return self.product
         return self.distribution
 
-    def retarget(self, product=None, distribution=None):
+    def setTarget(self, target):
         """See ISpecification."""
-        # FIXME: should raise specific errors
-        # FIXME: those errors should have webservice_error = 400
-        assert not (product and distribution)
-        assert (product or distribution)
-        target = product or distribution
+        if IProduct.providedBy(target):
+            self.product = target
+            self.distribution = None
+        elif IDistribution.providedBy(target):
+            self.product = None
+            self.distribution = target
+        else:
+            raise AssertionError("Unknown target: %s" % target)
 
-        # if we are not changing anything, then return
-        if self.product == product and self.distribution == distribution:
+    def retarget(self, target):
+        """See ISpecification."""
+        if self.target == target:
             return
 
         self.validateMove(target)
 
-        # we must lose any goal we have set and approved/declined because we
-        # are moving to a different product that will have different
-        # policies and drivers
+        # We must lose any goal we have set and approved/declined because we
+        # are moving to a different target that will have different
+        # policies and drivers.
         self.productseries = None
         self.distroseries = None
         self.goalstatus = SpecificationGoalStatus.PROPOSED
@@ -215,15 +220,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self.date_goal_proposed = None
         self.milestone = None
 
-        # set the new values
-        self.product = product
-        self.distribution = distribution
+        self.setTarget(target)
         self.priority = SpecificationPriority.UNDEFINED
         self.direction_approved = False
 
     def validateMove(self, target):
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
+        """See ISpecification."""
         if target.getSpecification(self.name) is not None:
             raise TargetAlreadyHasSpecification(target, self.name)
 

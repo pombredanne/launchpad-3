@@ -207,9 +207,27 @@ class INewSpecificationTarget(Interface):
                     required=True, vocabulary='DistributionOrProduct')
 
 
-class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
-    IHasLinkedBranches):
-    """A Specification."""
+class ISpecificationEditRestricted(Interface):
+    """Specification's attributes and methods protected with launchpad.Edit.
+    """
+
+    def setTarget(target):
+        """Set this specification's target.
+
+        :param target: an IProduct or IDistribution.
+        """
+
+    def retarget(target):
+        """Move the spec to the given target.
+
+        The new target must be an IProduct or IDistribution.
+        """
+
+
+class ISpecificationPublic(
+        INewSpecification, INewSpecificationTarget, IHasOwner,
+        IHasLinkedBranches):
+    """Specification's public attributes and methods."""
 
     export_as_webservice_entry()
 
@@ -344,11 +362,6 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         default=SpecificationLifecycleStatus.NOTSTARTED,
         readonly=True)
 
-    def retarget(product=None, distribution=None):
-        """Retarget the spec to a new product or distribution. One of
-        product or distribution must be None (but not both).
-        """
-
     def validateMove(target):
         """Check that the specification can be moved to the target."""
 
@@ -451,6 +464,10 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
+
+
+class ISpecification(ISpecificationPublic, ISpecificationEditRestricted):
+    """A Specification."""
 
 
 class ISpecificationSet(IHasSpecifications):

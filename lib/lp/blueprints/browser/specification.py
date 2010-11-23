@@ -685,18 +685,8 @@ class SpecificationRetargetingView(LaunchpadFormView):
 
     @action(_('Retarget Blueprint'), name='retarget')
     def register_action(self, action, data):
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        target = data['target']
-        product = distribution = None
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        else:
-            raise AssertionError('Unknown target.')
         try:
-            self.context.retarget(product=product, distribution=distribution)
+            self.context.retarget(data['target'])
         except TargetAlreadyHasSpecification, e:
             return str(e)
         self._nextURL = canonical_url(self.context)

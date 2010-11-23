@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -46,8 +47,14 @@ class SpecificationTests(TestCaseWithFactory):
         specification2 = self.factory.makeSpecification(
             product=product2, name="foo")
         self.assertRaises(
-            TargetAlreadyHasSpecification, specification1.retarget,
-            product=product2)
+            TargetAlreadyHasSpecification, 
+            removeSecurityProxy(specification1).retarget, product2)
+
+    def test_retarget_is_protected(self):
+        specification = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        self.assertRaises(
+            Unauthorized, getattr, specification, 'retarget')
 
     def test_validate_move_existing_specification(self):
         """An error is raised by validateMove if the name is already taken."""
@@ -60,3 +67,22 @@ class SpecificationTests(TestCaseWithFactory):
         self.assertRaises(
             TargetAlreadyHasSpecification, specification1.validateMove,
             product2)
+
+    def test_setTarget(self):
+        product = self.factory.makeProduct()
+        specification = self.factory.makeSpecification(product=product)
+        self.assertEqual(product, specification.target)
+        self.assertIs(None, specification.distribution)
+
+        distribution = self.factory.makeDistribution()
+        removeSecurityProxy(specification).setTarget(distribution)
+
+        self.assertEqual(distribution, specification.target)
+        self.assertEqual(distribution, specification.distribution)
+        self.assertIs(None, specification.product)
+
+    def test_setTarget_is_protected(self):
+        specification = self.factory.makeSpecification(
+            product=self.factory.makeProduct())
+        self.assertRaises(
+            Unauthorized, getattr, specification, 'setTarget')
