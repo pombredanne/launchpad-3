@@ -1099,7 +1099,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.translation_dictionaries = []
         for index in self.pluralform_indices:
             current_translation = self.getCurrentTranslation(index)
-            other_translation = self.getImportedTranslation(index)
+            other_translation = self.getOtherTranslation(index)
             shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
             if (submitted_translation is None and
@@ -1376,23 +1376,18 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
-    def getOfficialTranslation(self, index, is_current_upstream=False,
-                               is_shared=False):
-        """Return current or imported translation for plural form 'index'."""
+    def getOfficialTranslation(self, index, is_other=False, is_shared=False):
+        """Return current translation on either side for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.pofile.language.displayname))
 
-        if is_current_upstream:
-            if self.other_translationmessage is None:
-                return None
-
-            translation = self.other_translationmessage.translations[index]
-        elif is_shared:
+        if is_shared:
             if self.shared_translationmessage is None:
                 return None
-
             translation = self.shared_translationmessage.translations[index]
+        elif is_other and self.other_translationmessage is not None:
+            translation = self.other_translationmessage.translations[index]
         else:
             translation = self.context.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
@@ -1407,9 +1402,9 @@ class CurrentTranslationMessageView(LaunchpadView):
         """Return the current translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index)
 
-    def getImportedTranslation(self, index):
-        """Return the imported translation for the pluralform 'index'."""
-        return self.getOfficialTranslation(index, is_current_upstream=True)
+    def getOtherTranslation(self, index):
+        """Return the other-side translation for the pluralform 'index'."""
+        return self.getOfficialTranslation(index, is_other=True)
 
     def getSharedTranslation(self, index):
         """Return the shared translation for the pluralform 'index'."""
