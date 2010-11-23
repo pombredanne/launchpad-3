@@ -48,11 +48,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -65,6 +61,12 @@ from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
@@ -693,7 +695,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         :return: A dictionary containing the current welcome message.
         """
-        context = self.context
         if self.mailing_list is not None:
             return dict(welcome_message=self.mailing_list.welcome_message)
         else:
