@@ -31,7 +31,8 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
 
         # Open a new sprint page and wait for it to finish loading.
         self.client.open(
-            url=u'http://blueprints.launchpad.dev:8085/sprints/+new')
+            url=u'%s/sprints/+new'
+                % self.layer.appserver_root_url('blueprints'))
         self.client.waits.forPageLoad(timeout=u'20000')
         self.client.waits.forElement(link=u'Choose...', timeout=u'8000')
 

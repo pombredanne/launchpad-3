@@ -1,4 +1,5 @@
-= Distributions =
+Distributions
+=============
 
 At the top level we provide the collection of all distributions, with
 Ubuntu and its flavours being the first on the list.
@@ -50,7 +51,8 @@ And for every distribution we publish most of its attributes.
     title: u'Ubuntu Linux'
 
 
-== Distribution Custom Operations ==
+Distribution Custom Operations
+==============================
 
 Distribution has some custom operations.
 
@@ -113,11 +115,11 @@ packages matching (substring) the given text.
 
     >>> for entry in alsa_results['entries']:
     ...     print entry['self_link']
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/commercialpackage
+    http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/mozilla-firefox
     http://.../ubuntu/+source/netapplet
-    http://.../ubuntu/+source/alsa-utils
-    http://.../ubuntu/+source/foobar
-    http://.../ubuntu/+source/commercialpackage
 
 "getArchive" returns a distribution archive (not a PPA) with the given name.
 
@@ -190,7 +192,6 @@ returning None if there isn't one.
     >>> antarctica_patch_target = webservice.named_get(
     ...     ubuntu['self_link'], 'getMirrorByName',
     ...     name='mirror.showa.antarctica.org-archive').jsonBody()
-    ... )
 
     >>> response = karl_webservice.patch(
     ...     antarctica_patch_target['self_link'], 'application/json',

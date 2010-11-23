@@ -55,6 +55,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -137,6 +140,7 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -156,7 +160,6 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -979,6 +982,30 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
 
+    def getVersionSortedSeries(self, filter_obsolete=False):
+        """See `IProduct`."""
+        store = Store.of(self)
+        dev_focus = store.find(
+            ProductSeries,
+            ProductSeries.id == self.development_focus.id)
+        other_series_conditions = [
+            ProductSeries.product == self,
+            ProductSeries.id != self.development_focus.id,
+            ]
+        if filter_obsolete is True:
+            other_series_conditions.append(
+                ProductSeries.status != SeriesStatus.OBSOLETE)
+        other_series = store.find(ProductSeries, other_series_conditions)
+        # The query will be much slower if the version_sort_key is not
+        # the first thing that is sorted, since it won't be able to use
+        # the productseries_name_sort index.
+        other_series.order_by(SQL('version_sort_key(name) DESC'))
+        # UNION ALL must be used to preserve the sort order from the
+        # separate queries. The sorting should not be done after
+        # unioning the two queries, because that will prevent it from
+        # being able to use the productseries_name_sort index.
+        return dev_focus.union(other_series, all=True)
+
     @property
     def obsolete_translatable_series(self):
         """See `IProduct`."""
@@ -1551,7 +1578,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return prejoin(results)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

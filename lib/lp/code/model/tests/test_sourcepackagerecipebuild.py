@@ -24,6 +24,8 @@ from canonical.testing.layers import (
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.buildmaster.tests.test_packagebuild import (
     TestGetUploadMethodsMixin,
@@ -299,6 +301,23 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         build.destroySelf()
         self.assertIs(None, release.source_package_recipe_build)
         transaction.commit()
+
+    def test_destroySelf_destroys_referenced(self):
+        # Destroying a sourcepackagerecipebuild also destroys the
+        # PackageBuild and BuildFarmJob it references.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        store = Store.of(build)
+        naked_build = removeSecurityProxy(build)
+        # Ensure database ids are set.
+        store.flush()
+        package_build_id = naked_build.package_build_id
+        build_farm_job_id = naked_build.package_build.build_farm_job_id
+        build.destroySelf()
+        result = store.find(PackageBuild, PackageBuild.id == package_build_id)
+        self.assertIs(None, result.one())
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
 
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
