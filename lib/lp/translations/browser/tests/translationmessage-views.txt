@@ -291,9 +291,9 @@ We do the submission with that lock_timestamp.
     There is an error in the translation you provided. Please correct it
     before continuing.
     >>> print translationmessage_page_view.error
-    Somebody else changed this translation since you started. To avoid
+    This translation has changed since you last saw it.  To avoid
     accidentally reverting work done by others, we added your translations
-    as suggestions, so please review current values.
+    as suggestions.  Please review the current values.
     >>> transaction.commit()
 
 This submission is not saved because there is another modification, this

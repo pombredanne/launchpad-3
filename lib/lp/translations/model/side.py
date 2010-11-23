@@ -65,11 +65,7 @@ class TranslationSideTraitsSet:
 
     def getForTemplate(self, potemplate):
         """See `ITranslationSideTraitsSet`."""
-        if potemplate.productseries is not None:
-            side = TranslationSide.UPSTREAM
-        else:
-            side = TranslationSide.UBUNTU
-        return self.getTraits(side)
+        return self.getTraits(potemplate.translation_side)
 
     def getAllTraits(self):
         """See `ITranslationSideTraitsSet`."""

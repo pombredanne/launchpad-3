@@ -377,7 +377,7 @@ class BaseTranslationView(LaunchpadView):
 
         Implementing this method is complicated. It needs to find out
         what TranslationMessage were updated in the form post, call
-        _storeTranslations() for each of those, check for errors that
+        _receiveTranslations() for each of those, check for errors that
         may have occurred during that (displaying them using
         addErrorNotification), and otherwise call _redirectToNextPage if
         everything went fine.
@@ -389,29 +389,50 @@ class BaseTranslationView(LaunchpadView):
     # and _submitTranslations().
     #
 
+    def _receiveTranslations(self, potmsgset):
+        """Process and store submitted translations for `potmsgset`.
+
+        :return: An error string in case of failure, or None otherwise.
+        """
+        try:
+            self._storeTranslations(potmsgset)
+        except GettextValidationError, e:
+            return unicode(e)
+        except TranslationConflict:
+            # The translations are demoted to suggestions, but they may
+            # still affect the "messages with new suggestions" filter.
+            self._observeTranslationUpdate(potmsgset)
+            return """
+                This translation has changed since you last saw it.  To avoid
+                accidentally reverting work done by others, we added your
+                translations as suggestions.  Please review the current
+                values.
+                """
+        else:
+            self._observeTranslationUpdate(potmsgset)
+            return None
+
     def _storeTranslations(self, potmsgset):
         """Store the translation submitted for a POTMsgSet.
 
-        Return a string with an error if one occurs, otherwise None.
+        :raises GettextValidationError: if the submitted translation
+            fails gettext validation.  The translation is not stored.
+        :raises TranslationConflict: if the current translations have
+            changed since the translator/reviewer last saw them.  The
+            submitted translations are stored as suggestions.
         """
         self._extractFormPostedTranslations(potmsgset)
 
         if self.form_posted_dismiss_suggestions.get(potmsgset, False):
-            try:
-                potmsgset.dismissAllSuggestions(self.pofile,
-                                                self.user,
-                                                self.lock_timestamp)
-            except TranslationConflict, e:
-                return unicode(e)
+            potmsgset.dismissAllSuggestions(
+                self.pofile, self.user, self.lock_timestamp)
             return None
 
         translations = self.form_posted_translations.get(potmsgset, {})
         if not translations:
             # A post with no content -- not an error, but nothing to be
             # done.
-            # XXX: kiko 2006-09-28: I'm not sure but I suspect this could
-            # be an UnexpectedFormData.
-            return None
+            return
 
         plural_indices_to_store = (
             self.form_posted_translations_has_store_flag.get(potmsgset, []))
@@ -438,42 +459,27 @@ class BaseTranslationView(LaunchpadView):
         if translationmessage is None and not has_translations:
             # There is no current translation yet, neither we get any
             # translation submitted, so we don't need to store anything.
-            return None
+            return
 
         force_suggestion = self.form_posted_needsreview.get(potmsgset, False)
         force_diverge = self.form_posted_diverge.get(potmsgset, False)
 
-        try:
-            potmsgset.updateTranslation(
-                self.pofile, self.user, translations,
-                is_current_upstream=False,
-                lock_timestamp=self.lock_timestamp,
-                force_suggestion=force_suggestion,
-                force_diverged=force_diverge)
+        potmsgset.updateTranslation(
+            self.pofile, self.user, translations,
+            is_current_upstream=False,
+            lock_timestamp=self.lock_timestamp,
+            force_suggestion=force_suggestion,
+            force_diverged=force_diverge)
 
-            empty_suggestions = self._areSuggestionsEmpty(translations)
-            if (force_suggestion and
-                self.user_is_official_translator and
-                empty_suggestions):
-                # The user requested that the message be reviewed,
-                # without suggesting a new translation.  Reset the
-                # current translation so that it can be reviewed again.
-                potmsgset.old_resetCurrentTranslation(
-                    self.pofile, self.lock_timestamp)
-
-        except TranslationConflict:
-            return (
-                u'Somebody else changed this translation since you started.'
-                u' To avoid accidentally reverting work done by others, we'
-                u' added your translations as suggestions, so please review'
-                u' current values.')
-        except GettextValidationError, e:
-            # Save the error message gettext gave us to show it to the
-            # user.
-            return unicode(e)
-        else:
-            self._observeTranslationUpdate(potmsgset)
-            return None
+        empty_suggestions = self._areSuggestionsEmpty(translations)
+        if (force_suggestion and
+            self.user_is_official_translator and
+            empty_suggestions):
+            # The user requested that the message be reviewed,
+            # without suggesting a new translation.  Reset the
+            # current translation so that it can be reviewed again.
+            potmsgset.old_resetCurrentTranslation(
+                self.pofile, self.lock_timestamp)
 
     def _areSuggestionsEmpty(self, suggestions):
         """Return true if all suggestions are empty strings or None."""
@@ -853,7 +859,7 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
 
     def _submitTranslations(self):
         """See `BaseTranslationView._submitTranslations`."""
-        self.error = self._storeTranslations(self.context.potmsgset)
+        self.error = self._receiveTranslations(self.context.potmsgset)
         if self.error:
             self.request.response.addErrorNotification(
                 "There is an error in the translation you provided. "
