@@ -201,6 +201,7 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         login_celebrity('admin')
 
     def test_no_warning_for_PersonTransferJob(self):
+        # An entry in the PersonTransferJob table does not cause a warning.
         member = self.factory.makePerson()
         metadata = ('some', 'arbitrary', 'metadata')
         person_transfer_job = PersonTransferJob(
