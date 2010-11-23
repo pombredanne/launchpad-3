@@ -101,7 +101,7 @@
       <tal:uses_launchpad_bugtracker
         condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <tal:has_bugtasks condition="context/has_bugtasks">
-        <div class="portlet-top" style="margin-bottom:2em">
+        <div id="simple-bug-search" class="portlet-top" style="margin-bottom:2em">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
           />
