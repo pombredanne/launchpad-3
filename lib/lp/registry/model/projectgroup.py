@@ -198,6 +198,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # should be fixed to use translations_usage.
         return store.using(*origin).find(
             Product,
+            Product.project == self.id,
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
             ).config(distinct=True)
 

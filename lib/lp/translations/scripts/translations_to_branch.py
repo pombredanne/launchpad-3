@@ -319,7 +319,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         productseries = self.store.using(product_join).find(
             ProductSeries,
             And(
-                Product.translations_usage == ServiceUsage.LAUNCHPAD,
+                Product._translations_usage == ServiceUsage.LAUNCHPAD,
                 ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
