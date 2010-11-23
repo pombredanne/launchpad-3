@@ -349,6 +349,9 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         product or distribution must be None (but not both).
         """
 
+    def validateMove(target):
+        """Check that the specification can be moved to the target."""
+
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 

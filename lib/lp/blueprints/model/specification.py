@@ -60,6 +60,7 @@ from lp.blueprints.enums import (
     SpecificationPriority,
     SpecificationSort,
     )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
@@ -192,19 +193,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def retarget(self, product=None, distribution=None):
         """See ISpecification."""
+        # FIXME: should raise specific errors
+        # FIXME: those errors should have webservice_error = 400
         assert not (product and distribution)
         assert (product or distribution)
-
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        if product:
-            assert product.getSpecification(self.name) is None
-        elif distribution:
-            assert distribution.getSpecification(self.name) is None
+        target = product or distribution
 
         # if we are not changing anything, then return
         if self.product == product and self.distribution == distribution:
             return
+
+        self.validateMove(target)
 
         # we must lose any goal we have set and approved/declined because we
         # are moving to a different product that will have different
@@ -221,6 +220,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
         self.distribution = distribution
         self.priority = SpecificationPriority.UNDEFINED
         self.direction_approved = False
+
+    def validateMove(self, target):
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if target.getSpecification(self.name) is not None:
+            raise TargetAlreadyHasSpecification(target, self.name)
 
     @property
     def goal(self):
@@ -259,6 +264,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # the goal should now also not have a decider
         self.goal_decider = None
         self.date_goal_decided = None
+        if goal is not None:
+            is_driver = False
+            for driver in goal.drivers:
+                if proposer.inTeam(driver):
+                    is_driver = True
+                    break
+            if is_driver:
+                self.acceptBy(proposer)
 
     def acceptBy(self, decider):
         """See ISpecification."""
