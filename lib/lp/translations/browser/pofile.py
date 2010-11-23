@@ -824,11 +824,11 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _buildTranslationMessageViews(self, for_potmsgsets):
         """Build translation message views for all potmsgsets given."""
+        can_edit = self.context.canEditTranslations(self.user)
         for potmsgset in for_potmsgsets:
             translationmessage = (
                 potmsgset.getCurrentTranslationMessageOrDummy(self.context))
             error = self.errors.get(potmsgset)
-            can_edit = self.context.canEditTranslations(self.user)
 
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
