@@ -229,8 +229,6 @@ class ISpecificationPublic(
         IHasLinkedBranches):
     """Specification's public attributes and methods."""
 
-    export_as_webservice_entry()
-
     # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied
     #      specification to an attribute of another SQL object
@@ -468,6 +466,8 @@ class ISpecificationPublic(
 
 class ISpecification(ISpecificationPublic, ISpecificationEditRestricted):
     """A Specification."""
+
+    export_as_webservice_entry()
 
 
 class ISpecificationSet(IHasSpecifications):
