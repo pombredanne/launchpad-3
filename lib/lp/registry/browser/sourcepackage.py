@@ -115,6 +115,11 @@ def get_register_upstream_url(source_package):
     distroseries_string = "%s/%s" % (
         source_package.distroseries.distribution.name,
         source_package.distroseries.name)
+    current_release = source_package.currentrelease
+    if current_release is not None and current_release.homepage is not None:
+        homepage = current_release.homepage
+    else:
+        homepage = ''
     params = {
         '_return_url': canonical_url(source_package),
         'field.source_package_name': source_package.sourcepackagename.name,
@@ -122,6 +127,7 @@ def get_register_upstream_url(source_package):
         'field.name': source_package.name,
         'field.displayname': displayname,
         'field.title': displayname,
+        'field.homepageurl': homepage,
         'field.__visited_steps__': ProjectAddStepOne.step_name,
         'field.actions.continue': 'Continue',
         }

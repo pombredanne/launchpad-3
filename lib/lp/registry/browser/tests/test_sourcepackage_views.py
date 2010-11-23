@@ -10,6 +10,7 @@ import urllib
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -67,7 +68,7 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         self.assertEqual((expected_base, expected_params),
                          (base, params))
 
-    def test_get_register_upstream_url_summary(self):
+    def _makePublishedSourcePackage(self):
         test_publisher = SoyuzTestPublisher()
         test_data = test_publisher.makeSourcePackageSummaryData()
         source_package_name = (
@@ -79,7 +80,10 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         # updateDistroSeriesPackageCache reconnects the db, so the
         # objects need to be reloaded.
         distroseries = getUtility(IDistroSeriesSet).get(distroseries_id)
-        source_package = distroseries.getSourcePackage(source_package_name)
+        return distroseries.getSourcePackage(source_package_name)
+
+    def test_get_register_upstream_url_summary(self):
+        source_package = self._makePublishedSourcePackage()
         url = get_register_upstream_url(source_package)
         expected_base = '/projects/+new'
         expected_params = [
@@ -130,7 +134,9 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             distroseries=FakeDistroSeries(
                 name='walrus',
                 distribution=FakeDistribution(name='zoobuntu')),
-            releases=[releases])
+            releases=[releases],
+            currentrelease=Faker(homepage=None),
+            )
 
         url = get_register_upstream_url(source_package)
         expected_base = '/projects/+new'
@@ -147,6 +153,32 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
                               + 'summary for baz\n'
                               + 'summary for foo'),
             ('field.title', 'Foo'),
+            ]
+        base, query = urllib.splitquery(url)
+        params = cgi.parse_qsl(query)
+        self.assertEqual((expected_base, expected_params),
+                         (base, params))
+
+    def test_get_register_upstream_url_homepage(self):
+        source_package = self._makePublishedSourcePackage()
+        # SourcePackageReleases cannot be modified by users.
+        removeSecurityProxy(
+            source_package.currentrelease).homepage = 'http://eg.dom/bonkers'
+        url = get_register_upstream_url(source_package)
+        expected_base = '/projects/+new'
+        expected_params = [
+            ('_return_url',
+             'http://launchpad.dev/youbuntu/busy/+source/bonkers'),
+            ('field.__visited_steps__', 'projectaddstep1'),
+            ('field.actions.continue', 'Continue'),
+            ('field.displayname', 'Bonkers'),
+            ('field.distroseries', 'youbuntu/busy'),
+            ('field.homepageurl', 'http://eg.dom/bonkers'),
+            ('field.name', 'bonkers'),
+            ('field.source_package_name', 'bonkers'),
+            ('field.summary', 'summary for flubber-bin\n'
+                              + 'summary for flubber-lib'),
+            ('field.title', 'Bonkers'),
             ]
         base, query = urllib.splitquery(url)
         params = cgi.parse_qsl(query)
