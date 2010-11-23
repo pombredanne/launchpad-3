@@ -289,12 +289,12 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
     def contributors(self):
         return tuple(self.context.contributors)
 
-    @property
+    @cachedproperty
     def user_can_edit(self):
         """Does the user have full edit rights for this translation?"""
         return self.context.canEditTranslations(self.user)
 
-    @property
+    @cachedproperty
     def user_can_suggest(self):
         """Is the user allowed to make suggestions here?"""
         return self.context.canAddSuggestions(self.user)
