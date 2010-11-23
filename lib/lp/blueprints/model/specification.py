@@ -264,14 +264,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # the goal should now also not have a decider
         self.goal_decider = None
         self.date_goal_decided = None
-        if goal is not None:
-            is_driver = False
-            for driver in goal.drivers:
-                if proposer.inTeam(driver):
-                    is_driver = True
-                    break
-            if is_driver:
-                self.acceptBy(proposer)
+        if goal is not None and goal.personHasDriverRights(proposer):
+            self.acceptBy(proposer)
 
     def acceptBy(self, decider):
         """See ISpecification."""
@@ -671,7 +665,7 @@ class HasSpecificationsMixin:
 
     def _specification_sort(self, sort):
         """Return the storm sort order for 'specifications'.
-        
+
         :param sort: As per HasSpecificationsMixin.specifications.
         """
         # sort by priority descending, by default
@@ -684,7 +678,7 @@ class HasSpecificationsMixin:
 
     def _preload_specifications_people(self, query):
         """Perform eager loading of people and their validity for query.
-        
+
         :param query: a string query generated in the 'specifications'
             method.
         :return: A DecoratedResultSet with Person precaching setup.

@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import SpecificationGoalStatus
@@ -19,7 +21,7 @@ class SpecificationTests(TestCaseWithFactory):
         product = self.factory.makeProduct()
         proposer = self.factory.makePerson()
         productseries = self.factory.makeProductSeries(product=product)
-        productseries.driver = proposer
+        removeSecurityProxy(productseries).driver = proposer
         specification = self.factory.makeSpecification(product=product)
         specification.proposeGoal(productseries, proposer)
         self.assertEqual(

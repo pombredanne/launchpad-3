@@ -14,6 +14,8 @@ from operator import attrgetter
 from sqlobject import StringCol
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.launchpad import IPersonRoles
+
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
@@ -48,9 +50,19 @@ class SeriesMixin:
 
     @property
     def drivers(self):
-        """See `ISeriesMixin`."""
+        """See `IHasDrivers`."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.parent.drivers)
         drivers.discard(None)
         return sorted(drivers, key=attrgetter('displayname'))
+
+    # XXX: Dear reviewer, I don't quite like this name but the only other
+    # reasonable name I can think of is canBeDrivenBy(person).
+    # Suggestions appreciated.
+    def personHasDriverRights(self, person):
+        """See `IHasDrivers`."""
+        person_roles = IPersonRoles(person)
+        return (person_roles.isOneOfDrivers(self) or
+                person_roles.isOwner(self) or
+                person_roles.in_admin)
