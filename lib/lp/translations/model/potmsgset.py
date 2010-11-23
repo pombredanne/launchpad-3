@@ -274,8 +274,9 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslationMessageOrDummy(self, pofile):
         """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        template = pofile.potemplate
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
         if current is None:
             dummy = DummyTranslationMessage(pofile, self)
             side = pofile.potemplate.translation_side
@@ -497,8 +498,9 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         if timestamp is None:
             return False
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        template = pofile.potemplate
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
         if current is None:
             return False
         date_updated = current.date_created
