@@ -146,5 +146,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
             bugtasks = list(view.searchUnbatched(prejoins=prejoins))
             self.assertEqual(
                 [bugtask_1, bugtask_2], bugtasks)
+            # If the table prejoin failed, then this will issue two
+            # additional SQL queries
             [bugtask.owner for bugtask in bugtasks]
         self.assertThat(recorder, HasQueryCount(Equals(1)))
