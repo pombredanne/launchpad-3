@@ -69,12 +69,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     UnexpectedFormData,
     )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession,
     logInPrincipal,
@@ -97,6 +91,12 @@ from canonical.launchpad.webapp.tests.test_login import (
     SRegResponse_fromSuccessResponse_stubbed,
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,

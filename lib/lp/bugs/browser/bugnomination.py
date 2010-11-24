@@ -22,10 +22,7 @@ from zope.publisher.interfaces import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -34,6 +31,11 @@ from canonical.launchpad.webapp.interfaces import (
     IPrimaryContext,
     )
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bug import BugContextMenu
 from lp.bugs.interfaces.bugnomination import (
     IBugNomination,
