@@ -274,8 +274,9 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslationMessageOrDummy(self, pofile):
         """See `IPOTMsgSet`."""
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        template = pofile.potemplate
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
         if current is None:
             dummy = DummyTranslationMessage(pofile, self)
             side = pofile.potemplate.translation_side
@@ -497,8 +498,9 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         if timestamp is None:
             return False
-        current = self.getCurrentTranslationMessage(
-            pofile.potemplate, pofile.language)
+        template = pofile.potemplate
+        current = self.getCurrentTranslation(
+            template, pofile.language, template.translation_side)
         if current is None:
             return False
         date_updated = current.date_created
@@ -532,6 +534,11 @@ class POTMsgSet(SQLBase):
 
         return sanitized_translations
 
+    def validateTranslations(self, translations):
+        """See `IPOTMsgSet`."""
+        validate_translation(
+            self.singular_text, self.plural_text, translations, self.flags)
+
     def _validate_translations(self, translations, ignore_errors):
         """Validate all the `translations` and return a validation_status."""
         # By default all translations are correct.
@@ -540,9 +547,7 @@ class POTMsgSet(SQLBase):
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
-            validate_translation(
-                self.singular_text, self.plural_text,
-                translations, self.flags)
+            self.validateTranslations(translations)
         except GettextValidationError:
             if ignore_errors:
                 # The translations are stored anyway, but we set them as
