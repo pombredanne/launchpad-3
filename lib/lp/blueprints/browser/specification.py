@@ -65,14 +65,9 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
-    safe_action,
     stepthrough,
     stepto,
     )
@@ -82,6 +77,13 @@ from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationDefinitionStatus

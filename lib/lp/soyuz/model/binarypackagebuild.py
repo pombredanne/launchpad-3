@@ -14,7 +14,6 @@ import apt_pkg
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
-    In,
     Join,
     LeftJoin,
     )
@@ -315,7 +314,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def distroarchseriesbinarypackages(self):
         """See `IBuild`."""
         # Avoid circular import by importing locally.
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
             self.distro_arch_series, bp)
@@ -821,7 +820,7 @@ class BinaryPackageBuildSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             BinaryPackageBuild,
-            In(BinaryPackageBuild.distro_arch_series_id, archseries_ids),
+            BinaryPackageBuild.distro_arch_series_id.is_in(archseries_ids),
             BinaryPackageBuild.package_build == PackageBuild.id,
             PackageBuild.build_farm_job == BuildFarmJob.id,
             BuildFarmJob.status == BuildStatus.NEEDSBUILD)
@@ -1177,7 +1176,7 @@ class BinaryPackageBuildSet:
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
              LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
-            In(BinaryPackageBuild.id, build_ids))
+            BinaryPackageBuild.id.is_in(build_ids))
 
         # Force query execution so that the ancillary data gets fetched
         # and added to StupidCache.

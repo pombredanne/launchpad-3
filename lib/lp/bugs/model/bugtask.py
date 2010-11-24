@@ -35,12 +35,12 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
-    AutoTables,
     Desc,
     In,
     Join,
     LeftJoin,
     Or,
+    Select,
     SQL,
     )
 from storm.store import (
@@ -161,6 +161,7 @@ from lp.registry.interfaces.structuralsubscription import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -667,16 +668,11 @@ class BugTask(SQLBase, BugTaskMixin):
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             user, self.bug.title, **context_params)
 
-        # Make sure to exclude the current BugTask from the list of
-        # matching tasks. We use 4*limit as an arbitrary value here to
-        # make sure we select more than :limit: bugtasks.
-        matching_bugtasks = [
-            bug_task for bug_task in matching_bugtasks[:4*limit]
-            if bug_task != self]
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, user, limit)
-        return matching_bugs
+
+        # Make sure to exclude the bug of the current bugtask.
+        return [bug for bug in matching_bugs if bug.id != self.bugID]
 
     def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
@@ -1322,6 +1318,7 @@ def _make_cache_user_can_view_bug(user):
     :seealso: get_bug_privacy_filter_with_decorator
     """
     userid = user.id
+
     def cache_user_can_view_bug(bugtask):
         get_property_cache(bugtask.bug)._known_viewers = set([userid])
         return bugtask
@@ -1495,13 +1492,14 @@ class BugTaskSet:
 
         bug_ids = list(set(bugtask.bugID for bugtask in bugtasks))
         bug_ids_with_specifications = set(IStore(SpecificationBug).find(
-                SpecificationBug.bugID, In(SpecificationBug.bugID, bug_ids)))
+            SpecificationBug.bugID,
+            SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
-                BugBranch.bugID, In(BugBranch.bugID, bug_ids)))
+                BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
 
         # Cache all bugs at once to avoid one query per bugtask. We
         # could rely on the Storm cache, but this is explicit.
-        bugs = dict(IStore(Bug).find((Bug.id, Bug), In(Bug.id, bug_ids)))
+        bugs = dict(IStore(Bug).find((Bug.id, Bug), Bug.id.is_in(bug_ids)))
 
         badge_properties = {}
         for bugtask in bugtasks:
@@ -1610,7 +1608,9 @@ class BugTaskSet:
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
+        join_tables = []
         decorators = []
+        has_duplicate_results = False
 
         # These arguments can be processed in a loop without any other
         # special handling.
@@ -1666,7 +1666,7 @@ class BugTaskSet:
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
-            # Circular.
+            # Prevent circular import problems.
             from lp.registry.model.product import Product
             clauseTables.append(Product)
             extra_clauses.append("BugTask.product = Product.id")
@@ -1717,46 +1717,54 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            structural_subscriber_clause = ("""BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE BugTask.product = StructuralSubscription.product
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distribution = StructuralSubscription.distribution
-                  AND BugTask.sourcepackagename =
-                      StructuralSubscription.sourcepackagename
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distroseries = StructuralSubscription.distroseries
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.milestone = StructuralSubscription.milestone
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.productseries = StructuralSubscription.productseries
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription, Product
-                WHERE
-                  BugTask.product = Product.id
-                  AND Product.project = StructuralSubscription.project
-                  AND StructuralSubscription.subscriber = %(personid)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, StructuralSubscription
-                WHERE
-                  BugTask.distribution = StructuralSubscription.distribution
-                  AND StructuralSubscription.sourcepackagename is NULL
-                  AND StructuralSubscription.subscriber = %(personid)s)""" %
-                sqlvalues(personid=params.structural_subscriber))
-            extra_clauses.append(structural_subscriber_clause)
+            ssub_match_product = (
+                BugTask.productID ==
+                StructuralSubscription.productID)
+            ssub_match_productseries = (
+                BugTask.productseriesID ==
+                StructuralSubscription.productseriesID)
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            ssub_match_project = And(
+                Product.projectID ==
+                StructuralSubscription.projectID,
+                BugTask.product == Product.id)
+            ssub_match_distribution = (
+                BugTask.distributionID ==
+                StructuralSubscription.distributionID)
+            ssub_match_sourcepackagename = (
+                BugTask.sourcepackagenameID ==
+                StructuralSubscription.sourcepackagenameID)
+            ssub_match_null_sourcepackagename = (
+                StructuralSubscription.sourcepackagename == None)
+            ssub_match_distribution_with_optional_package = And(
+                ssub_match_distribution, Or(
+                    ssub_match_sourcepackagename,
+                    ssub_match_null_sourcepackagename))
+            ssub_match_distribution_series = (
+                BugTask.distroseriesID ==
+                StructuralSubscription.distroseriesID)
+            ssub_match_milestone = (
+                BugTask.milestoneID ==
+                StructuralSubscription.milestoneID)
+
+            join_clause = Or(
+                ssub_match_product,
+                ssub_match_productseries,
+                ssub_match_project,
+                ssub_match_distribution_with_optional_package,
+                ssub_match_distribution_series,
+                ssub_match_milestone)
+
+            join_tables.append(
+                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
+            join_tables.append(
+                (StructuralSubscription,
+                 Join(StructuralSubscription, join_clause)))
+            extra_clauses.append(
+                'StructuralSubscription.subscriber = %s'
+                % sqlvalues(params.structural_subscriber))
+            has_duplicate_results = True
 
         if params.component:
             clauseTables += [SourcePackagePublishingHistory,
@@ -1839,7 +1847,7 @@ class BugTaskSet:
         if params.bug_commenter:
             bug_commenter_clause = """
             BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, BugMessage, Message
+                SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
                 WHERE Message.owner = %(bug_commenter)s
                     AND Message.id = BugMessage.message
                     AND BugTask.bug = BugMessage.bug
@@ -1926,11 +1934,14 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
                 return obj
-        return query, clauseTables, orderby_arg, decorator
+        return (
+            query, clauseTables, orderby_arg, decorator, join_tables,
+            has_duplicate_results)
 
     def _buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
@@ -2158,6 +2169,108 @@ class BugTaskSet:
             ', '.join(tables), ' AND '.join(clauses))
         return clause
 
+    def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
+        """Build the parameter list for Store.using().
+
+        :param join_tables: A sequence of tables that should be joined
+            as returned by buildQuery(). Each element has the form
+            (table, join), where table is the table to join and join
+            is a Storm Join or LeftJoin instance.
+        :param prejoin_tables: A sequence of tables that should additionally
+            be joined. Each element has the form (table, join),
+            where table is the table to join and join is a Storm Join
+            or LeftJoin instance.
+        :param clauseTables: A sequence of tables that should appear in
+            the FROM clause of a query. The join condition is defined in
+            the WHERE clause.
+
+        Tables may appear simultaneously in join_tables, prejoin_tables
+        and in clauseTables. This method ensures that each table
+        appears exactly once in the returned sequence.
+        """
+        origin = [BugTask]
+        already_joined = set(origin)
+        for table, join in join_tables:
+            origin.append(join)
+            already_joined.add(table)
+        for table, join in prejoin_tables:
+            if table not in already_joined:
+                origin.append(join)
+                already_joined.add(table)
+        for table in clauseTables:
+            if table not in already_joined:
+                origin.append(table)
+        return origin
+
+    def _search(self, resultrow, prejoins, params, *args, **kw):
+        """Return a Storm result set for the given search parameters.
+
+        :param resultrow: The type of data returned by the query.
+        :param prejoins: A sequence of Storm SQL row instances which are
+            pre-joined.
+        :param params: A BugTaskSearchParams instance.
+        :param args: optional additional BugTaskSearchParams instances,
+        """
+        store = IStore(BugTask)
+        [query, clauseTables, orderby, bugtask_decorator, join_tables,
+        has_duplicate_results] = self.buildQuery(params)
+        if len(args) == 0:
+            if has_duplicate_results:
+                origin = self.buildOrigin(join_tables, [], clauseTables)
+                outer_origin = self.buildOrigin([], prejoins, [])
+                subquery = Select(BugTask.id, where=SQL(query), tables=origin)
+                resultset = store.using(*outer_origin).find(
+                    resultrow, In(BugTask.id, subquery))
+            else:
+                origin = self.buildOrigin(join_tables, prejoins, clauseTables)
+                resultset = store.using(*origin).find(resultrow, query)
+            if prejoins:
+                decorator = lambda row: bugtask_decorator(row[0])
+            else:
+                decorator = bugtask_decorator
+
+            resultset.order_by(orderby)
+            return DecoratedResultSet(resultset, result_decorator=decorator)
+
+        bugtask_fti = SQL('BugTask.fti')
+        inner_resultrow = (BugTask, bugtask_fti)
+        origin = self.buildOrigin(join_tables, [], clauseTables)
+        resultset = store.using(*origin).find(inner_resultrow, query)
+
+        decorators = [bugtask_decorator]
+        for arg in args:
+            [query, clauseTables, ignore, decorator, join_tables,
+             has_duplicate_results] = self.buildQuery(arg)
+            origin = self.buildOrigin(join_tables, [], clauseTables)
+            next_result = store.using(*origin).find(inner_resultrow, query)
+            resultset = resultset.union(next_result)
+            # NB: assumes the decorators are all compatible.
+            # This may need revisiting if e.g. searches on behalf of different
+            # users are combined.
+            decorators.append(decorator)
+
+        def prejoin_decorator(row):
+            bugtask = row[0]
+            for decorator in decorators:
+                bugtask = decorator(bugtask)
+            return bugtask
+
+        def simple_decorator(bugtask):
+            for decorator in decorators:
+                bugtask = decorator(bugtask)
+            return bugtask
+
+        origin = [Alias(resultset._get_select(), "BugTask")]
+        if prejoins:
+            origin += [join for table, join in prejoins]
+            decorator = prejoin_decorator
+        else:
+            decorator = simple_decorator
+
+        result = store.using(*origin).find(resultrow)
+        result.order_by(orderby)
+        return DecoratedResultSet(result, result_decorator=decorator)
+
     def search(self, params, *args, **kwargs):
         """See `IBugTaskSet`.
 
@@ -2165,93 +2278,28 @@ class BugTaskSet:
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
         """
-        # Circular.
+        # Prevent circular import problems.
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
         _noprejoins = kwargs.get('_noprejoins', False)
-        store = IStore(BugTask)
-        query, clauseTables, orderby, bugtask_decorator = self.buildQuery(
-            params)
-        if len(args) == 0:
-            if _noprejoins:
-                resultset = store.find(BugTask,
-                    AutoTables(SQL("1=1"), clauseTables),
-                    query)
-                decorator = bugtask_decorator
-            else:
-                tables = clauseTables + [Product, SourcePackageName]
-                origin = [
-                    BugTask,
-                    LeftJoin(Bug, BugTask.bug == Bug.id),
-                    LeftJoin(Product, BugTask.product == Product.id),
-                    LeftJoin(
-                        SourcePackageName,
-                        BugTask.sourcepackagename == SourcePackageName.id),
-                    ]
-                # NB: these may work with AutoTables, but its hard to tell,
-                # this way is known to work.
-                if BugNomination in tables:
-                    # The relation is already in query.
-                    origin.append(BugNomination)
-                if BugSubscription in tables:
-                    # The relation is already in query.
-                    origin.append(BugSubscription)
-                if SourcePackageRelease in tables:
-                    origin.append(SourcePackageRelease)
-                if SourcePackagePublishingHistory in tables:
-                    origin.append(SourcePackagePublishingHistory)
-                resultset = store.using(*origin).find(
-                    (BugTask, Product, SourcePackageName, Bug),
-                    AutoTables(SQL("1=1"), tables),
-                    query)
-                decorator=lambda row: bugtask_decorator(row[0])
-            resultset.order_by(orderby)
-            return DecoratedResultSet(resultset, result_decorator=decorator)
-
-        bugtask_fti = SQL('BugTask.fti')
-        result = store.find((BugTask, bugtask_fti), query,
-                            AutoTables(SQL("1=1"), clauseTables))
-        decorators = [bugtask_decorator]
-        for arg in args:
-            query, clauseTables, dummy, decorator = self.buildQuery(arg)
-            result = result.union(
-                store.find((BugTask, bugtask_fti), query,
-                           AutoTables(SQL("1=1"), clauseTables)))
-            # NB: assumes the decorators are all compatible.
-            # This may need revisiting if e.g. searches on behalf of different
-            # users are combined.
-            decorators.append(decorator)
-        def decorator(row):
-            bugtask = row[0]
-            for decorator in decorators:
-                bugtask = decorator(bugtask)
-            return bugtask
-
-        # Build up the joins.
-        # TODO: implement _noprejoins for this code path: as of 20100818 it
-        # has been silently disabled because clients of the API were setting
-        # prejoins=[] which had no effect; this TODO simply notes the reality
-        # already existing when it was added.
-        joins = Alias(result._get_select(), "BugTask")
-        joins = Join(joins, Bug, BugTask.bug == Bug.id)
-        joins = LeftJoin(joins, Product, BugTask.product == Product.id)
-        joins = LeftJoin(joins, SourcePackageName,
-                         BugTask.sourcepackagename == SourcePackageName.id)
-
-        result = store.using(joins).find(
-            (BugTask, Bug, Product, SourcePackageName))
-        result.order_by(orderby)
-        return DecoratedResultSet(result, result_decorator=decorator)
+        if _noprejoins:
+            prejoins = []
+            resultrow = BugTask
+        else:
+            prejoins = [
+                (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
+                (Product, LeftJoin(Product, BugTask.product == Product.id)),
+                (SourcePackageName,
+                 LeftJoin(
+                     SourcePackageName,
+                     BugTask.sourcepackagename == SourcePackageName.id)),
+                ]
+            resultrow = (BugTask, Bug, Product, SourcePackageName, )
+        return self._search(resultrow, prejoins, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        query, clauseTables, orderby, decorator = self.buildQuery(
-            params)
-        store = IStore(BugTask)
-        resultset = store.find(BugTask.bugID,
-            AutoTables(SQL("1=1"), clauseTables), query)
-        resultset.order_by(orderby)
-        return resultset
+        return self._search(BugTask.bugID, [], params).result_set
 
     def getAssignedMilestonesFromSearch(self, search_results):
         """See `IBugTaskSet`."""
@@ -2288,7 +2336,7 @@ class BugTaskSet:
             else:
                 store = search_results._store
             milestones = store.find(
-                Milestone, In(Milestone.id, milestone_ids))
+                Milestone, Milestone.id.is_in(milestone_ids))
             return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
@@ -2854,8 +2902,9 @@ class BugTaskSet:
                 for subscription in subscriptions))
 
         if recipients is not None:
-            # We need to process subscriptions, so pull all the subscribes into
-            # the cache, then update recipients with the subscriptions.
+            # We need to process subscriptions, so pull all the
+            # subscribers into the cache, then update recipients
+            # with the subscriptions.
             subscribers = list(subscribers)
             for subscription in subscriptions:
                 recipients.addStructuralSubscriber(

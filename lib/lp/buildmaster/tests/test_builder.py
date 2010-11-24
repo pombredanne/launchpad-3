@@ -43,6 +43,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import CannotResumeHost
+from lp.buildmaster.model.builder import (
+    BuilderSlave,
+    ProxyWithConnectionTimeout,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
@@ -68,7 +72,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login_as,
@@ -77,6 +80,17 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+
+
+def make_publisher():
+    """Make a test publisher.
+
+    Exists only to work around circular import problems. When the
+    canonical/launchpad/database/__init__.py globs go away, this can probably
+    go away too.
+    """
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class TestBuilder(TestCaseWithFactory):
@@ -117,18 +131,21 @@ class TestBuilder(TestCaseWithFactory):
         self.assertIs(None, bq)
 
 
-class TestBuilderWithTrial(TrialTestCase):
+class TestBuilderWithTrialBase(TrialTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBuilderWithTrial, self)
+        super(TestBuilderWithTrialBase, self)
         self.slave_helper = SlaveTestHelpers()
         self.slave_helper.setUp()
         self.addCleanup(self.slave_helper.cleanUp)
         self.factory = LaunchpadObjectFactory()
         login_as(ANONYMOUS)
         self.addCleanup(logout)
+
+
+class TestBuilderWithTrial(TestBuilderWithTrialBase):
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -188,9 +205,7 @@ class TestBuilderWithTrial(TrialTestCase):
         d = builder.handleTimeout(QuietFakeLogger(), 'blah')
         return self.assertFailure(d, CannotResumeHost)
 
-    def _setupRecipeBuildAndBuilder(self):
-        # Helper function to make a builder capable of building a
-        # recipe, returning both.
+    def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
@@ -202,8 +217,22 @@ class TestBuilderWithTrial(TrialTestCase):
         chroot = self.factory.makeLibraryFileAlias()
         das.addOrUpdateChroot(chroot)
         distroseries.nominatedarchindep = das
+        return builder, distroseries, das
+
+    def _setupRecipeBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # recipe, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
         build = self.factory.makeSourcePackageRecipeBuild(
             distroseries=distroseries)
+        return builder, build
+
+    def _setupBinaryBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # binary package, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroarchseries, builder=builder)
         return builder, build
 
     def test_findAndStartJob_returns_candidate(self):
@@ -308,8 +337,34 @@ class TestBuilderWithTrial(TrialTestCase):
             self.assertNotIn('clean', building_slave.call_log)
         return d.addCallback(check_slave_calls)
 
+    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
+        # See bug 671242
+        # When a job is destroyed, the builder's behaviour should be reset
+        # too so that we don't traceback when the wrong behaviour tries
+        # to access a non-existent job.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        building_slave = BuildingSlave()
+        builder.setSlaveForTesting(building_slave)
+        candidate.markAsBuilding(builder)
 
-class TestBuilderSlaveStatus(TestBuilderWithTrial):
+        # At this point we should see a valid behaviour on the builder:
+        self.assertNotIdentical(
+            IdleBuildBehavior, builder.current_build_behavior)
+
+        # Now reset the job and try to rescue the builder.
+        candidate.destroySelf()
+        self.layer.txn.commit()
+        builder = getUtility(IBuilderSet)[builder.name]
+        d = builder.rescueIfLost()
+        def check_builder(ignored):
+            self.assertIsInstance(
+                removeSecurityProxy(builder.current_build_behavior),
+                IdleBuildBehavior)
+        return d.addCallback(check_builder)
+
+
+class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
 
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
@@ -389,7 +444,7 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidateBase, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         # Create some i386 builders ready to build PPA builds.  Two
@@ -462,7 +517,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
     def setUp(self):
         super(TestFindBuildCandidatePPAWithSingleBuilder, self).setUp()
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
 
         self.bob_builder = getUtility(IBuilderSet)['bob']
@@ -724,7 +779,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.builder = self.factory.makeBuilder(name='builder')
 
         # Have a publisher and a ppa handy for some of the tests below.
-        self.publisher = SoyuzTestPublisher()
+        self.publisher = make_publisher()
         self.publisher.prepareBreezyAutotest()
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
 
@@ -1006,6 +1061,56 @@ class TestSlaveTimeouts(TrialTestCase):
     def test_timeout_build(self):
         return self.assertCancelled(
             self.slave.build(None, None, None, None, None))
+
+
+class TestSlaveConnectionTimeouts(TrialTestCase):
+    # Testing that we can override the default 30 second connection
+    # timeout.
+
+    layer = TwistedLayer
+
+    def setUp(self):
+        super(TestSlaveConnectionTimeouts, self).setUp()
+        self.slave_helper = SlaveTestHelpers()
+        self.slave_helper.setUp()
+        self.addCleanup(self.slave_helper.cleanUp)
+        self.clock = Clock()
+        self.proxy = ProxyWithConnectionTimeout("fake_url")
+        self.slave = self.slave_helper.getClientSlave(
+            reactor=self.clock, proxy=self.proxy)
+
+    def test_connection_timeout(self):
+        # The default timeout of 30 seconds should not cause a timeout,
+        # only the config value should.
+        timeout_config = """
+        [builddmaster]
+        socket_timeout: 180
+        """
+        config.push('timeout', timeout_config)
+        self.addCleanup(config.pop, 'timeout')
+
+        d = self.slave.echo()
+        # Advance past the 30 second timeout.  The real reactor will
+        # never call connectTCP() since we're not spinning it up.  This
+        # avoids "connection refused" errors and simulates an
+        # environment where the endpoint doesn't respond.
+        self.clock.advance(31)
+        self.assertFalse(d.called)
+
+        # Now advance past the real socket timeout and expect a
+        # Failure.
+
+        def got_timeout(failure):
+            self.assertIsInstance(failure.value, CancelledError)
+
+        d.addBoth(got_timeout)
+        self.clock.advance(config.builddmaster.socket_timeout + 1)
+        self.assertTrue(d.called)
+
+    def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
+        # Make sure that BuilderSlaves use the custom proxy class.
+        slave = BuilderSlave.makeBuilderSlave("url", "host")
+        self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 
 class TestSlaveWithLibrarian(TrialTestCase):

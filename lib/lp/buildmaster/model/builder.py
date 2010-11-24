@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'Builder',
     'BuilderSet',
+    'ProxyWithConnectionTimeout',
     'rescueBuilderIfLost',
     'updateBuilderStatus',
     ]
@@ -99,6 +100,41 @@ class QuietQueryFactory(xmlrpc._QueryFactory):
     noisy = False
 
 
+class ProxyWithConnectionTimeout(xmlrpc.Proxy):
+    """Extend Twisted's Proxy to provide a configurable connection timeout."""
+
+    def __init__(self, url, user=None, password=None, allowNone=False,
+                 useDateTime=False, timeout=None):
+        xmlrpc.Proxy.__init__(
+            self, url, user, password, allowNone, useDateTime)
+        if timeout is None:
+            self.timeout = config.builddmaster.socket_timeout
+        else:
+            self.timeout = timeout
+
+    def callRemote(self, method, *args):
+        """Basically a carbon copy of the parent but passes the timeout
+        to connectTCP."""
+
+        def cancel(d):
+            factory.deferred = None
+            connector.disconnect()
+        factory = self.queryFactory(
+            self.path, self.host, method, self.user,
+            self.password, self.allowNone, args, cancel, self.useDateTime)
+        if self.secure:
+            from twisted.internet import ssl
+            connector = default_reactor.connectSSL(
+                self.host, self.port or 443, factory,
+                ssl.ClientContextFactory(),
+                timeout=self.timeout)
+        else:
+            connector = default_reactor.connectTCP(
+                self.host, self.port or 80, factory,
+                timeout=self.timeout)
+        return factory.deferred
+
+
 class BuilderSlave(object):
     """Add in a few useful methods for the XMLRPC slave.
 
@@ -141,7 +177,7 @@ class BuilderSlave(object):
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
         if proxy is None:
-            server_proxy = xmlrpc.Proxy(rpc_url, allowNone=True)
+            server_proxy = ProxyWithConnectionTimeout(rpc_url, allowNone=True)
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
@@ -213,7 +249,7 @@ class BuilderSlave(object):
         :param libraryfilealias: An `ILibraryFileAlias`.
         """
         url = libraryfilealias.http_url
-        logger.debug(
+        logger.info(
             "Asking builder on %s to ensure it has file %s (%s, %s)" % (
                 self._file_cache_url, libraryfilealias.filename, url,
                 libraryfilealias.content.sha1))
@@ -350,6 +386,11 @@ class Builder(SQLBase):
     # give up and mark it builderok=False.
     FAILURE_THRESHOLD = 5
 
+    def __storm_invalidated__(self):
+        """Clear cached properties."""
+        super(Builder, self).__storm_invalidated__()
+        self._current_build_behavior = None
+
     def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
         if not safe_hasattr(self, '_current_build_behavior'):
@@ -427,7 +468,7 @@ class Builder(SQLBase):
             return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
         logger = self._getSlaveScannerLogger()
-        logger.debug("Resuming %s (%s)" % (self.name, self.url))
+        logger.info("Resuming %s (%s)" % (self.name, self.url))
 
         d = self.slave.resume()
         def got_resume_ok((stdout, stderr, returncode)):
@@ -791,11 +832,15 @@ class BuilderSet(object):
     def __iter__(self):
         return iter(Builder.select())
 
-    def __getitem__(self, name):
+    def getByName(self, name):
+        """See IBuilderSet."""
         try:
             return Builder.selectOneBy(name=name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
+
+    def __getitem__(self, name):
+        return self.getByName(name)
 
     def new(self, processor, url, name, title, description, owner,
             active=True, virtualized=False, vm_host=None, manual=True):

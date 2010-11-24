@@ -37,7 +37,6 @@ __all__ = [
     'ITeam',
     'ITeamMembership',
     'IWikiName',
-    'PPACreationError',
     ]
 
 from lp.registry.interfaces.commercialsubscription import (
@@ -72,7 +71,6 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     ITeam,
-    PPACreationError,
     )
 from lp.registry.interfaces.pillar import (
     IPillar,
