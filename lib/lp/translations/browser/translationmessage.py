@@ -1574,8 +1574,8 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.html_id, self.html_id)
 
     @property
-    def dismissable_class_packaged(self):
-        """The class string for dismissable packaged translations."""
+    def dismissable_class_other(self):
+        """The class string for dismissable other translations."""
         if self.can_dismiss_other:
             return self.dismissable_class
         # Buttons are always dismissable.
