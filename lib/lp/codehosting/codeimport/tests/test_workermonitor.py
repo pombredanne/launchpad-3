@@ -200,7 +200,7 @@ class FakeCodeImportScheduleEndpointProxy:
             raise self.no_such_job_exception
 
 
-class TestWorkerMonitorUnit( TestCase):
+class TestWorkerMonitorUnit(TestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
     We have to pay attention to the fact that several of the methods of the
@@ -434,6 +434,7 @@ class TestWorkerMonitorUnit( TestCase):
     def test_callFinishJobLogsTracebackOnFailure(self):
         # When callFinishJob is called with a failure, it dumps the traceback
         # of the failure into the log file.
+        self.layer.force_dirty_database()
         worker_monitor = self.makeWorkerMonitorWithJob()
         ret = worker_monitor.callFinishJob(makeFailure(RuntimeError))
         def check_log_file(ignored):
