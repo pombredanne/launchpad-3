@@ -18,14 +18,16 @@ from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
     enabled_with_permission,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (

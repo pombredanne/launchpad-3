@@ -749,6 +749,18 @@ Accepting or declining a membership invitation:
     >>> webservice.get("/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
 
+The retractTeamMembership method allows a team admin to remove his team from
+another team.
+
+    >>> print webservice.named_post(
+    ...     landscape_developers['self_link'], 'retractTeamMembership',
+    ...     {}, team=ubuntu_team['self_link'], comment='bye bye')
+    HTTP/1.1 200 Ok
+    ...
+    >>> webservice.get("/~ubuntu-team/+member/landscape-developers"
+    ...     ).jsonBody()['status']
+    u'Deactivated'
+
 To check whether or not a given person is a participant in a team, use the
 'inTeam' custom operation.
 
