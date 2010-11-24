@@ -22,12 +22,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.mailinglist import (

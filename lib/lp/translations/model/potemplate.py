@@ -17,6 +17,7 @@ __all__ = [
 
 import datetime
 import logging
+import operator
 import os
 import re
 
@@ -56,6 +57,9 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -65,7 +69,6 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import RosettaImportStatus
@@ -1066,10 +1069,11 @@ class POTemplateSubset:
         else:
             store = Store.of(self.distroseries)
             if do_prejoin:
-                query = prejoin(store.find(
+                query = DecoratedResultSet(store.find(
                     (POTemplate, SourcePackageName),
                     (POTemplate.sourcepackagenameID ==
-                     SourcePackageName.id), condition))
+                     SourcePackageName.id), condition),
+                     operator.itemgetter(0))
             else:
                 query = store.find(POTemplate, condition)
 
