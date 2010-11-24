@@ -14,9 +14,6 @@ from canonical.launchpad.interfaces.launchpad import IPersonRoles
 
 class HasDriversMixin:
 
-    # XXX: Dear reviewer, I don't quite like this name but the only other
-    # reasonable name I can think of is canBeDrivenBy(person).
-    # Suggestions appreciated.
     def personHasDriverRights(self, person):
         """See `IHasDrivers`."""
         person_roles = IPersonRoles(person)
