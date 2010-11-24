@@ -570,8 +570,8 @@ class cmd_update_image(EC2Command):
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
-        instance.check_bundling_prerequisites()
-
+        instance.check_bundling_prerequisites(
+            ami_name, credentials)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
             extra_update_image_command, ami_name, credentials, public)
