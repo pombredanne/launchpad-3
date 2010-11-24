@@ -96,7 +96,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
                         self.pofile.potemplate)
                 side_traits.setFlag(message, False)
                 side_traits.other_side_traits.setFlag(message, True)
-                 
+
         message.browser_pofile = self.pofile
         return message
 

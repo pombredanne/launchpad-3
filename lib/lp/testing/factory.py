@@ -283,7 +283,7 @@ from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
     )
 from lp.translations.utilities.sanitize import (
-    sanitize_translations_from_webui
+    sanitize_translations_from_webui,
     )
 
 
