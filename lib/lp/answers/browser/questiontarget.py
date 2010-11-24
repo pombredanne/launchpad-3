@@ -51,12 +51,8 @@ from canonical.launchpad.helpers import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     Link,
-    safe_action,
     stepthrough,
     stepto,
     urlappend,
@@ -77,6 +73,12 @@ from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    safe_action,
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError

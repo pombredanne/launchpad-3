@@ -2092,13 +2092,12 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('persontransferjob', 'minor_person'),
+            ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
             ('sshkey', 'person'),
             ('structuralsubscription', 'subscriber'),
-            # Private-membership teams can have members, but they
-            # cannot be members of other teams.
             ('teammembership', 'team'),
-            # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
             # Skip mailing lists because if the mailing list is purged, it's
@@ -2106,9 +2105,8 @@ class Person(
             ('mailinglist', 'team'),
             ])
 
-        # Private teams may participate in more areas of Launchpad than
-        # Private Membership teams.  The following relationships are allowable
-        # for Private teams and thus should be skipped.
+        # The following relationships are allowable for Private teams and
+        # thus should be skipped.
         if new_value == PersonVisibility.PRIVATE:
             skip.update([('bugsubscription', 'person'),
                          ('bugtask', 'assignee'),
