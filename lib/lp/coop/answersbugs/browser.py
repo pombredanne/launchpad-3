@@ -13,11 +13,11 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,

@@ -41,13 +41,9 @@ from zope.schema import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -57,7 +53,14 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -315,6 +318,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('owner', RecipeOwnerWidget)
 
     def initialize(self):
         # XXX: rockstar: This should be removed when source package recipes
@@ -406,7 +410,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
-
 
     @property
     def initial_values(self):

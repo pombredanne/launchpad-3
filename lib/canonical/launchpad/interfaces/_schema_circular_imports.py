@@ -169,6 +169,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
