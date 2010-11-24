@@ -550,6 +550,7 @@ COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference ca
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
 COMMENT ON COLUMN DistroSeriesDifference.source_version IS 'The version of the package in the derived series.';
 COMMENT ON COLUMN DistroSeriesDifference.parent_source_version IS 'The version of the package in the parent series.';
+COMMENT ON COLUMN DistroSeriesDifference.base_version IS 'The common base version of the package for the derived and parent series.';
 
 -- DistroSeriesDifferenceMessage
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';

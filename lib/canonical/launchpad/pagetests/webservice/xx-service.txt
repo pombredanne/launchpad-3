@@ -30,58 +30,6 @@ No other versions are available.
     HTTP/1.1 404 Not Found
     ...
 
-No beta team redirection
-========================
-
-Members of the beta team aren't redirected to the beta site on API call.
-
-(Enable beta redirection for demonstration purpose)
-
-    >>> from canonical.config import config
-    >>> beta_data = """
-    ...     [launchpad]
-    ...     beta_testers_redirection_host = beta.launchpad.dev
-    ...     """
-    >>> config.push('beta_data', beta_data)
-
-    >>> from lp.testing import ANONYMOUS, login, logout
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login(ANONYMOUS)
-    >>> beta_admin = getUtility(IPersonSet).getByEmail(
-    ...     'beta-admin@launchpad.net')
-    >>> beta_user = webservice_for_person(beta_admin)
-    >>> logout()
-
-A request to the web site is redirected:
-
-    >>> print http('GET /~launchpad-beta-owner HTTP/1.1\n'
-    ... 'Host: launchpad.dev\n'
-    ... 'Authorization: Basic %s\n' %
-    ...     "beta-admin@launchpad.net:test".encode('base64'))
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://beta.launchpad.dev/~launchpad-beta-owner
-    ...
-
-But not a request to the web service:
-
-    >>> print beta_user.get("/~launchpad-beta-owner")
-    HTTP/1.1 200 Ok
-    ...
-
-    >>> ignored = config.pop('beta_data')
-
-Resources not exposed on the web service
-========================================
-
-Soyuz build set (exposed on the web at /builders) are not available on the
-web service:
-
-    >>> print webservice.get("/builders")
-    HTTP/1.1 404 Not Found
-    ...
 
 Anonymous requests
 ==================
@@ -118,6 +66,7 @@ anonymous request, and it can't reject that request just because it
 doesn't recognize the client.
 
     >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> print consumer_set.getByKey('another-new-consumer')
     None

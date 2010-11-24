@@ -23,8 +23,8 @@ COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    import sha
-    return sha.new(args[0]).hexdigest()
+    import hashlib
+    return hashlib.sha1(args[0]).hexdigest()
 $$;
 
 COMMENT ON FUNCTION sha1(text) IS
@@ -1814,3 +1814,26 @@ LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
 'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
+        return '~' + match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';

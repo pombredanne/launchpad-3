@@ -32,7 +32,8 @@ Retrieve the blob and make sure it got stored correctly.
 
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
-    >>> from canonical.launchpad.database import TemporaryBlobStorage
+    >>> from canonical.launchpad.database.temporaryblobstorage import (
+    ...     TemporaryBlobStorage)
     >>> blob = TemporaryBlobStorage.byUuid(ticket)
     >>> blob.blob
     'abcd\x00efg'

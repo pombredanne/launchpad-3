@@ -130,7 +130,10 @@ from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_distrotask,
@@ -240,7 +243,6 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -620,8 +622,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView,
-                  FeedsMixin):
+class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     override_title_breadcrumbs = True
@@ -2086,12 +2087,11 @@ class BugTaskListingItem:
     """
     delegates(IBugTask, 'bugtask')
 
-    def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
+    def __init__(self, bugtask, has_bug_branch,
                  has_specification, has_patch, request=None,
                  target_context=None):
         self.bugtask = bugtask
         self.review_action_widget = None
-        self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
         self.has_patch = has_patch
@@ -2141,7 +2141,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
             target_context = self.target_context
         return BugTaskListingItem(
             bugtask,
-            badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'],
             badge_property['has_patch'],
@@ -2303,6 +2302,52 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
+
+    @cachedproperty
+    def external_bugtracker(self):
+        """External bug tracking system designated for the context.
+
+        :returns: `IBugTracker` or None
+        """
+        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
+        if has_external_bugtracker is None:
+            return None
+        else:
+            return has_external_bugtracker.getExternalBugTracker()
+
+    @property
+    def has_bugtracker(self):
+        """Does the `IBugTarget` have a bug tracker or use Launchpad?"""
+        usage = IServiceUsage(self.context)
+        uses_lp = usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+        if self.external_bugtracker or uses_lp:
+            return True
+        return False
+
+    @property
+    def upstream_launchpad_project(self):
+        """The linked upstream `IProduct` for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        if self._sourcePackageContext():
+            sp = self.context
+        elif self._distroSourcePackageContext():
+            sp = self.context.development_version
+        else:
+            sp = None
+        if sp is not None:
+            packaging = sp.packaging
+            if packaging is not None:
+                product = packaging.productseries.product
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+                    return product
+        return None
 
     @property
     def page_title(self):

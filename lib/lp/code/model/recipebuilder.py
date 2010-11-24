@@ -117,38 +117,44 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                 self.build.distroseries.displayname))
-
+        args = self._extraBuildArgs(distroarchseries, logger)
         chroot = distroarchseries.getChroot()
         if chroot is None:
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
-        self._builder.slave.cacheFile(logger, chroot)
+        logger.info(
+            "Sending chroot file for recipe build to %s" % self._builder.name)
+        d = self._builder.slave.cacheFile(logger, chroot)
 
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
-        chroot_sha1 = chroot.content.sha1
-        logger.debug(
-            "Initiating build %s on %s" % (buildid, self._builder.url))
+        def got_cache_file(ignored):
+            # Generate a string which can be used to cross-check when obtaining
+            # results so we know we are referring to the right database object in
+            # subsequent runs.
+            buildid = "%s-%s" % (self.build.id, build_queue_id)
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            chroot_sha1 = chroot.content.sha1
+            logger.info(
+                "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(distroarchseries, logger)
-        status, info = self._builder.slave.build(
-            cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
+            return self._builder.slave.build(
+                cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
+
+        def log_build_result((status, info)):
+            message = """%s (%s):
+            ***** RESULT *****
+            %s
+            %s: %s
+            ******************
+            """ % (
+                self._builder.name,
+                self._builder.url,
+                args,
+                status,
+                info,
+                )
+            logger.info(message)
+
+        return d.addCallback(got_cache_file).addCallback(log_build_result)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

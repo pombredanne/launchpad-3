@@ -286,8 +286,13 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
 
         def check_dispatch(ignored):
             logger.buffer.seek(0)
+
             self.assertEquals(
-                "DEBUG: Initiating build 1-someid on http://fake:0000\n",
+                "INFO: Sending chroot file for recipe build to "
+                "bob-de-bouwer\n",
+                logger.buffer.readline())
+            self.assertEquals(
+                "INFO: Initiating build 1-someid on http://fake:0000\n",
                 logger.buffer.readline())
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
