@@ -164,8 +164,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
@@ -231,8 +232,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries, logger))
@@ -282,8 +284,13 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         def check_dispatch(ignored):
             logger.buffer.seek(0)
+
             self.assertEquals(
-                "DEBUG: Initiating build 1-someid on http://fake:0000\n",
+                "INFO: Sending chroot file for recipe build to "
+                "bob-de-bouwer\n",
+                logger.buffer.readline())
+            self.assertEquals(
+                "INFO: Initiating build 1-someid on http://fake:0000\n",
                 logger.buffer.readline())
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
@@ -293,7 +300,8 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]
-            self.assertEqual(build_args[4], job._extraBuildArgs(distroarchseries))
+            self.assertEqual(
+                build_args[4], job._extraBuildArgs(distroarchseries))
         return d.addCallback(check_dispatch)
 
     def test_dispatchBuildToSlave_nochroot(self):

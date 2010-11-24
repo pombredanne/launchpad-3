@@ -80,16 +80,16 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.lazr.utils import smartquote
+from canonical.widgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
-from canonical.widgets import LaunchpadRadioWidget
 from lp.app.enums import ServiceUsage
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
