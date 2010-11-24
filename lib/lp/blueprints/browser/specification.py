@@ -753,7 +753,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
         SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
         NEW = SpecificationDefinitionStatus.NEW
         self.context.superseded_by = data['superseded_by']
-        # FIXME: shouldn't be in the view
+        # XXX: salgado, 2010-11-24, bug=680880: This logic should be in model
+        # code.
         if data['superseded_by'] is not None:
             # set the state to superseded
             self.context.definition_status = SUPERSEDED
@@ -1194,7 +1195,6 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     def validate(self, data):
         branch = data.get('branch')
         if branch:
-            # FIXME: shouldn't be in the view
             branchlink = self.context.getBranchLink(branch)
             if branchlink is not None:
                 self.setFieldError('branch', 'This branch has already '
