@@ -684,11 +684,8 @@ class SpecificationRetargetingView(LaunchpadFormView):
                 target.displayname)
 
     @action(_('Retarget Blueprint'), name='retarget')
-    def register_action(self, action, data):
-        try:
-            self.context.retarget(data['target'])
-        except TargetAlreadyHasSpecification, e:
-            return str(e)
+    def retarget_action(self, action, data):
+        self.context.retarget(data['target'])
         self._nextURL = canonical_url(self.context)
 
     @property
