@@ -37,37 +37,6 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_get_register_upstream_url_displayname(self):
-        distroseries = self.factory.makeDistroRelease(
-            distribution=self.factory.makeDistribution(name='zoobuntu'),
-            name='walrus')
-        source_package = self.factory.makeSourcePackage(
-            distroseries=distroseries,
-            sourcepackagename='python-super-package')
-        url = get_register_upstream_url(source_package)
-        expected_base = '/projects/+new'
-        expected_params = [
-            ('_return_url',
-             'http://launchpad.dev/zoobuntu/walrus/'
-             '+source/python-super-package'),
-            ('field.__visited_steps__', 'projectaddstep1'),
-            ('field.actions.continue', 'Continue'),
-            # The sourcepackagename 'python-super-package' is split on
-            # the hyphens, and each word is capitalized.
-            ('field.displayname', 'Python Super Package'),
-            ('field.distroseries', 'zoobuntu/walrus'),
-            ('field.name', 'python-super-package'),
-            # The summary is missing, since the source package doesn't
-            # have a binary package release, and parse_qsl() excludes
-            # empty params.
-            ('field.source_package_name', 'python-super-package'),
-            ('field.title', 'Python Super Package'),
-            ]
-        base, query = urllib.splitquery(url)
-        params = cgi.parse_qsl(query)
-        self.assertEqual((expected_base, expected_params),
-                         (base, params))
-
     def _makePublishedSourcePackage(self):
         test_publisher = SoyuzTestPublisher()
         test_data = test_publisher.makeSourcePackageSummaryData()
@@ -82,27 +51,55 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         distroseries = getUtility(IDistroSeriesSet).get(distroseries_id)
         return distroseries.getSourcePackage(source_package_name)
 
+    def assertInQueryString(self, url, field, value):
+        base, query = urllib.splitquery(url)
+        params = cgi.parse_qsl(query)
+        self.assertTrue((field, value) in params)
+
+    def test_get_register_upstream_url_fields(self):
+        distroseries = self.factory.makeDistroRelease(
+            distribution=self.factory.makeDistribution(name='zoobuntu'),
+            name='walrus')
+        source_package = self.factory.makeSourcePackage(
+            distroseries=distroseries,
+            sourcepackagename='python-super-package')
+        url = get_register_upstream_url(source_package)
+        base, query = urllib.splitquery(url)
+        self.assertEqual('/projects/+new', base)
+        params = cgi.parse_qsl(query)
+        expected_params = [
+            ('_return_url',
+             'http://launchpad.dev/zoobuntu/walrus/'
+             '+source/python-super-package'),
+            ('field.__visited_steps__', 'projectaddstep1'),
+            ('field.actions.continue', 'Continue'),
+            ('field.displayname', 'Python Super Package'),
+            ('field.distroseries', 'zoobuntu/walrus'),
+            ('field.name', 'python-super-package'),
+            ('field.source_package_name', 'python-super-package'),
+            ('field.title', 'Python Super Package'),
+            ]
+        self.assertEqual(expected_params, params)
+
+    def test_get_register_upstream_url_displayname(self):
+        # The sourcepackagename 'python-super-package' is split on
+        # the hyphens, and each word is capitalized.
+        distroseries = self.factory.makeDistroRelease(
+            distribution=self.factory.makeDistribution(name='zoobuntu'),
+            name='walrus')
+        source_package = self.factory.makeSourcePackage(
+            distroseries=distroseries,
+            sourcepackagename='python-super-package')
+        url = get_register_upstream_url(source_package)
+        self.assertInQueryString(
+            url, 'field.displayname', 'Python Super Package')
+
     def test_get_register_upstream_url_summary(self):
         source_package = self._makePublishedSourcePackage()
         url = get_register_upstream_url(source_package)
-        expected_base = '/projects/+new'
-        expected_params = [
-            ('_return_url',
-             'http://launchpad.dev/youbuntu/busy/+source/bonkers'),
-            ('field.__visited_steps__', 'projectaddstep1'),
-            ('field.actions.continue', 'Continue'),
-            ('field.displayname', 'Bonkers'),
-            ('field.distroseries', 'youbuntu/busy'),
-            ('field.name', 'bonkers'),
-            ('field.source_package_name', 'bonkers'),
-            ('field.summary', 'summary for flubber-bin\n'
-                              + 'summary for flubber-lib'),
-            ('field.title', 'Bonkers'),
-            ]
-        base, query = urllib.splitquery(url)
-        params = cgi.parse_qsl(query)
-        self.assertEqual((expected_base, expected_params),
-                         (base, params))
+        self.assertInQueryString(
+            url, 'field.summary',
+            'summary for flubber-bin\nsummary for flubber-lib')
 
     def test_get_register_upstream_url_summary_duplicates(self):
 
@@ -137,27 +134,10 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
             releases=[releases],
             currentrelease=Faker(homepage=None),
             )
-
         url = get_register_upstream_url(source_package)
-        expected_base = '/projects/+new'
-        expected_params = [
-            ('_return_url',
-             'http://launchpad.dev/zoobuntu/walrus/+source/foo'),
-            ('field.__visited_steps__', 'projectaddstep1'),
-            ('field.actions.continue', 'Continue'),
-            ('field.displayname', 'Foo'),
-            ('field.distroseries', 'zoobuntu/walrus'),
-            ('field.name', 'foo'),
-            ('field.source_package_name', 'foo'),
-            ('field.summary', 'summary for bar\n'
-                              + 'summary for baz\n'
-                              + 'summary for foo'),
-            ('field.title', 'Foo'),
-            ]
-        base, query = urllib.splitquery(url)
-        params = cgi.parse_qsl(query)
-        self.assertEqual((expected_base, expected_params),
-                         (base, params))
+        self.assertInQueryString(
+            url, 'field.summary',
+            'summary for bar\nsummary for baz\nsummary for foo')
 
     def test_get_register_upstream_url_homepage(self):
         source_package = self._makePublishedSourcePackage()
@@ -165,25 +145,8 @@ class TestSourcePackageViewHelpers(TestCaseWithFactory):
         removeSecurityProxy(
             source_package.currentrelease).homepage = 'http://eg.dom/bonkers'
         url = get_register_upstream_url(source_package)
-        expected_base = '/projects/+new'
-        expected_params = [
-            ('_return_url',
-             'http://launchpad.dev/youbuntu/busy/+source/bonkers'),
-            ('field.__visited_steps__', 'projectaddstep1'),
-            ('field.actions.continue', 'Continue'),
-            ('field.displayname', 'Bonkers'),
-            ('field.distroseries', 'youbuntu/busy'),
-            ('field.homepageurl', 'http://eg.dom/bonkers'),
-            ('field.name', 'bonkers'),
-            ('field.source_package_name', 'bonkers'),
-            ('field.summary', 'summary for flubber-bin\n'
-                              + 'summary for flubber-lib'),
-            ('field.title', 'Bonkers'),
-            ]
-        base, query = urllib.splitquery(url)
-        params = cgi.parse_qsl(query)
-        self.assertEqual((expected_base, expected_params),
-                         (base, params))
+        self.assertInQueryString(
+            url, 'field.homepageurl', 'http://eg.dom/bonkers')
 
 
 class TestSourcePackageUpstreamConnectionsView(TestCaseWithFactory):
