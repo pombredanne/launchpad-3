@@ -10,9 +10,13 @@ from datetime import (
 from new import classobj
 import pytz
 import sys
+from testtools.matchers import Equals
 import unittest
 
 from zope.component import getUtility
+
+from storm.expr import Join
+from storm.store import Store
 
 from canonical.launchpad.searchbuilder import (
     all,
@@ -31,6 +35,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -39,10 +44,13 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.person import Person
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class SearchTestBase:
@@ -907,12 +915,39 @@ class PreloadBugtaskTargets(MultipleParams):
     def setUp(self):
         super(PreloadBugtaskTargets, self).setUp()
 
-    def runSearch(self, params, *args):
+    def runSearch(self, params, *args, **kw):
         """Run BugTaskSet.search() and preload bugtask target objects."""
-        return list(self.bugtask_set.search(params, *args, _noprejoins=False))
+        return list(self.bugtask_set.search(
+            params, *args, _noprejoins=False, **kw))
 
     def resultValuesForBugtasks(self, expected_bugtasks):
         return expected_bugtasks
+
+    def test_preload_additional_objects(self):
+        # It is possible to join additional tables in the search query
+        # in order to load related Storm objects during the query.
+        store = Store.of(self.bugtasks[0])
+        store.invalidate()
+
+        # If we do not prejoin the owner, two queries a run
+        # in order to retrieve the owner of the bugtask.
+        with StormStatementRecorder() as recorder:
+            params = self.getBugTaskSearchParams(user=None)
+            found_tasks = self.runSearch(params)
+            found_tasks[0].owner
+            self.assertTrue(len(recorder.statements) > 1)
+
+        # If we join the table person on bugtask.owner == person.id
+        # the owner object is loaded in the query that retrieves the
+        # bugtasks.
+        store.invalidate()
+        with StormStatementRecorder() as recorder:
+            params = self.getBugTaskSearchParams(user=None)
+            found_tasks = self.runSearch(
+                params,
+                prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
+            found_tasks[0].owner
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 class NoPreloadBugtaskTargets(MultipleParams):
