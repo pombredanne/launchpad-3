@@ -1139,7 +1139,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                             pofile=pofile,
                             legal_warning_needed=False,
                             is_empty=False,
-                            packaged=True,
+                            other_side=True,
                             local_to_pofile=True))
 
             diverged_and_have_shared = (
@@ -1643,7 +1643,7 @@ class Submission:
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
-    is_empty=False, packaged=False, local_to_pofile=False):
+    is_empty=False, other_side=False, local_to_pofile=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1673,9 +1673,9 @@ def convert_translationmessage_to_submission(
         current_message.potmsgset.makeHTMLID(u'%s_suggestion_%s_%s' % (
             message.language.code, message.id,
             plural_form)))
-    if packaged:
+    if other_side:
         submission.row_html_id = current_message.potmsgset.makeHTMLID(
-            'packaged')
+            'other')
         submission.origin_html_id = submission.row_html_id + '_origin'
     else:
         submission.row_html_id = ''
