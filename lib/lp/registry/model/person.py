@@ -1470,6 +1470,37 @@ class Person(
         # flush its caches.
         store.invalidate()
 
+        # Remove all indirect TeamParticipation entries resulting from this
+        # team. If this were just a select, it would be a complicated but
+        # feasible set of joins. Since it's a delete, we have to use 
+        # some sub selects.
+        cur.execute('''
+            DELETE FROM TeamParticipation
+                WHERE 
+                    -- The person needs to be a member of the team in question
+                    person IN
+                        (SELECT person from TeamParticipation WHERE
+                            team = %(team)s) AND
+                    
+                    -- The teams being deleted should be teams that this team
+                    -- is a member of.
+                    team IN 
+                        (SELECT team from TeamMembership WHERE
+                            person = %(team)s) AND
+
+                    -- The person needs to not have direct membership in the
+                    -- team.
+                    person NOT IN
+                        (SELECT tm1.person from TeamMembership tm1
+                            INNER JOIN TeamMembership tm2 ON
+                                tm1.team = tm2.team
+                            WHERE tm2.person = %(team)s)
+            ''',dict(team=self.id))
+
+        # Since we've updated the database behind Storm's back yet again,
+        # we need to flush its caches, again.
+        store.invalidate()
+
         # Remove all members from the TeamParticipation table
         # except for the team, itself.
         participants = store.find(
@@ -1478,34 +1509,6 @@ class Person(
             TeamParticipation.personID != self.id)
         participants.remove()
 
-        # Remove all indirect TeamParticipation entries resulting from this
-        # team.
-        TPGiven = ClassAlias(TeamParticipation, "TP1")
-        TPTarget = ClassAlias(TeamParticipation, "TP2")
-        TMGiven = ClassAlias(TeamMembership, "TM1")
-        TMTarget = ClassAlias(TeamMembership, "TM2")
-        store = Store.of(self)
-        # This query is joining team participation against itself to find all
-        # TP entries for all of its members, then has two rounds of joining
-        # to team membership to find team participation entries without direct
-        # membership entries and then to filter out TP entries that don't result
-        # from the given team. There has to be a simpler way, but it evades me.
-        origin = [
-            TPGiven,
-            Join(TPTarget, TPGiven.personID == TPTarget.personID),
-            LeftJoin(TMTarget,
-                And(TPTarget.personID == TMTarget.personID,
-                    TPTarget.teamID == TMTarget.teamID)),
-            Join(TMGiven, TPGiven.teamID == TMGiven.personID),
-            ]
-        participants = store.using(*origin).find(
-            TPTarget,
-            And(
-                TPTarget.teamID == TMGiven.teamID,
-                TMTarget.team is not None,
-                TPGiven.teamID == self.id))
-        import pdb; pdb.set_trace()
-        participants.remove()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
