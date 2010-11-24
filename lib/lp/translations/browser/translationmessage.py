@@ -1017,29 +1017,30 @@ class CurrentTranslationMessageView(LaunchpadView):
         if side_traits.other_side_traits.getFlag(self.context):
             # The shared translation for the other side matches the current
             # one.
-            self.imported_translationmessage = self.context
+            self.other_translationmessage = None
         else:
-            self.imported_translationmessage = (
+            self.other_translationmessage = (
                 self.context.potmsgset.getCurrentTranslation(
                     self.pofile.potemplate, self.pofile.language,
                     side_traits.other_side_traits.side))
 
         if self.context.potemplate is None:
-            # Shared translation is current.
+            # Current translation is shared.
             self.shared_translationmessage = None
         else:
-            self.shared_translationmessage = (
+            # Current translation is diverged, find the shared one.
+            shared_translationmessage = (
                 self.context.potmsgset.getCurrentTranslation(
                     None, self.pofile.language, side_traits.side))
-            if (self.shared_translationmessage ==
-                self.imported_translationmessage):
-                # If it matches the imported message, we don't care.
+            if (shared_translationmessage == self.other_translationmessage):
+                # If it matches the other message, we don't care.
                 self.shared_translationmessage = None
+            else:
+                self.shared_translationmessage = shared_translationmessage
 
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
-        self.can_dismiss_packaged = False
 
         # Initialize to True, allowing POFileTranslateView to override.
         self.zoomed_in_view = True
@@ -1093,15 +1094,12 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.current_series.distribution.displayname,
                     self.current_series.name)
 
-        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
-            self.pofile.potemplate)
-
         # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
         for index in self.pluralform_indices:
             current_translation = self.getCurrentTranslation(index)
-            imported_translation = self.getImportedTranslation(index)
+            other_translation = self.getOtherTranslation(index)
             shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
             if (submitted_translation is None and
@@ -1118,18 +1116,17 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.context.submitter == self.context.reviewer)
             is_same_date = (
                 self.context.date_created == self.context.date_reviewed)
-            if side_traits.other_side_traits.getFlag(self.context):
-                # Imported one matches the current one.
-                imported_submission = None
-            elif self.imported_translationmessage is not None:
+            if self.other_translationmessage is None:
+                other_submission = None
+            else:
                 pofile = (
-                    self.imported_translationmessage.ensureBrowserPOFile())
+                    self.other_translationmessage.ensureBrowserPOFile())
                 if pofile is None:
-                    imported_submission = None
+                    other_submission = None
                 else:
-                    imported_submission = (
+                    other_submission = (
                         convert_translationmessage_to_submission(
-                            message=self.imported_translationmessage,
+                            message=self.other_translationmessage,
                             current_message=self.context,
                             plural_form=index,
                             pofile=pofile,
@@ -1137,8 +1134,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                             is_empty=False,
                             packaged=True,
                             local_to_pofile=True))
-            else:
-                imported_submission = None
 
             diverged_and_have_shared = (
                 self.context.potemplate is not None and
@@ -1165,9 +1160,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'current_translation': text_to_html(
                     current_translation, self.context.potmsgset.flags),
                 'submitted_translation': submitted_translation,
-                'imported_translation': text_to_html(
-                    imported_translation, self.context.potmsgset.flags),
-                'imported_translation_message': imported_submission,
+                'other_translation': text_to_html(
+                    other_translation, self.context.potmsgset.flags),
+                'other_translation_message': other_submission,
                 'shared_translation': text_to_html(
                     shared_translation, self.context.potmsgset.flags),
                 'shared_translation_message': shared_submission,
@@ -1181,10 +1176,9 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if (not side_traits.other_side_traits.getFlag(self.context) and
-                self.imported_translationmessage is not None):
+            if self.other_translationmessage is not None:
                 translation_entry['html_id_imported_suggestion'] = (
-                    self.imported_translationmessage.makeHTMLID(
+                    self.other_translationmessage.makeHTMLID(
                         'suggestion'))
 
             if self.message_must_be_hidden:
@@ -1202,42 +1196,27 @@ class CurrentTranslationMessageView(LaunchpadView):
         # HTML id for singular form of this message
         self.html_id_singular = self.context.makeHTMLID('translation_0')
 
-    def _set_dismiss_flags(self, local_suggestions, imported):
+    def _set_dismiss_flags(self, local_suggestions):
         """Set dismissal flags.
 
         The flags are all initialized as False.
 
         :param local_suggestions: The list of local suggestions.
-        :param imported: The imported (packaged) translation for this
-            message or None if there is no such translation.
         """
         # Only official translators can dismiss anything.
         if not self.user_is_official_translator:
             return
 
-        if imported is not None:
-            date_reviewed = self.context.date_reviewed
-            if date_reviewed is None:
-                has_new_imported = True
-            else:
-                has_new_imported = imported.date_created > date_reviewed
-        else:
-            has_new_imported = False
-
-        # If there are no local suggestion or a newly imported string,
-        # nothing can be dismissed.
-        if not (len(local_suggestions) > 0 or has_new_imported):
+        # If there are no local suggestions, nothing can be dismissed.
+        if len(local_suggestions) == 0:
             return
 
-        # OK, let's set some flags.
-        self.can_dismiss_packaged = has_new_imported
         if self.is_plural:
             self.can_dismiss_on_plural = True
+        elif self.getCurrentTranslation(0) is None:
+            self.can_dismiss_on_empty = True
         else:
-            if self.getCurrentTranslation(0) is None:
-                self.can_dismiss_on_empty = True
-            else:
-                self.can_confirm_and_dismiss = True
+            self.can_confirm_and_dismiss = True
 
     def _setOnePOFile(self, messages):
         """Return a list of messages that all have a browser_pofile set.
@@ -1286,13 +1265,7 @@ class CurrentTranslationMessageView(LaunchpadView):
 
         language = self.pofile.language
         potmsgset = self.context.potmsgset
-        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
-            self.pofile.potemplate)
-
-        if not side_traits.other_side_traits.getFlag(self.context):
-            imported = self.imported_translationmessage
-        else:
-            imported = None
+        other = self.other_translationmessage
 
         # Show suggestions only when you can actually do something with them
         # (i.e. you are logged in and have access to at least submit
@@ -1308,7 +1281,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
 
-            self._set_dismiss_flags(local, imported)
+            self._set_dismiss_flags(local)
 
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
@@ -1360,8 +1333,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion per plural form.
         for index in self.pluralform_indices:
             self.seen_translations = set([self.context.translations[index]])
-            if imported:
-                self.seen_translations.add(imported.translations[index])
+            if other is not None:
+                self.seen_translations.add(other.translations[index])
             local_suggestions = (
                 self._buildTranslationMessageSuggestions(
                     'Suggestions', local, index, local_to_pofile=True))
@@ -1403,23 +1376,18 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.seen_translations = iterable_submissions.seen_translations
         return iterable_submissions
 
-    def getOfficialTranslation(self, index, is_current_upstream=False,
-                               is_shared=False):
-        """Return current or imported translation for plural form 'index'."""
+    def getOfficialTranslation(self, index, is_other=False, is_shared=False):
+        """Return current translation on either side for plural form 'index'."""
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.pofile.language.displayname))
 
-        if is_current_upstream:
-            if self.imported_translationmessage is None:
-                return None
-
-            translation = self.imported_translationmessage.translations[index]
-        elif is_shared:
+        if is_shared:
             if self.shared_translationmessage is None:
                 return None
-
             translation = self.shared_translationmessage.translations[index]
+        elif is_other and self.other_translationmessage is not None:
+            translation = self.other_translationmessage.translations[index]
         else:
             translation = self.context.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
@@ -1434,9 +1402,9 @@ class CurrentTranslationMessageView(LaunchpadView):
         """Return the current translation for the pluralform 'index'."""
         return self.getOfficialTranslation(index)
 
-    def getImportedTranslation(self, index):
-        """Return the imported translation for the pluralform 'index'."""
-        return self.getOfficialTranslation(index, is_current_upstream=True)
+    def getOtherTranslation(self, index):
+        """Return the other-side translation for the pluralform 'index'."""
+        return self.getOfficialTranslation(index, is_other=True)
 
     def getSharedTranslation(self, index):
         """Return the shared translation for the pluralform 'index'."""
@@ -1581,18 +1549,15 @@ class CurrentTranslationMessageView(LaunchpadView):
         return 3
 
     @property
-    def dismissable_class(self):
-        """The class string for dismissable parts."""
-        return "%s_dismissable %s_dismissable_button" % (
-                    self.html_id, self.html_id)
+    def dismissable_button_class(self):
+        """The class string that deactivates only buttons on dismissal."""
+        return "%s_dismissable_button" % self.html_id
 
     @property
-    def dismissable_class_packaged(self):
-        """The class string for dismissable packaged translations."""
-        if self.can_dismiss_packaged:
-            return self.dismissable_class
-        # Buttons are always dismissable.
-        return "%s_dismissable_button" % self.html_id
+    def dismissable_class(self):
+        """The class string for dismissable parts."""
+        return "%s_dismissable %s" % (
+                    self.html_id, self.dismissable_button_class)
 
 
 class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
