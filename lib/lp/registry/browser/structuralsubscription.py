@@ -23,15 +23,17 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distributionsourcepackage import (
