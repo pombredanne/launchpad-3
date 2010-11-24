@@ -1469,7 +1469,7 @@ class Person(
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
-
+        
         # Remove all indirect TeamParticipation entries resulting from this
         # team. If this were just a select, it would be a complicated but
         # feasible set of joins. Since it's a delete, we have to use 
@@ -1490,11 +1490,11 @@ class Person(
 
                     -- The person needs to not have direct membership in the
                     -- team.
-                    person NOT IN
+                    NOT EXISTS 
                         (SELECT tm1.person from TeamMembership tm1
-                            INNER JOIN TeamMembership tm2 ON
-                                tm1.team = tm2.team
-                            WHERE tm2.person = %(team)s)
+                            WHERE
+                                tm1.person = TeamParticipation.person and
+                                tm1.team = TeamParticipation.team);
             ''',dict(team=self.id))
 
         # Since we've updated the database behind Storm's back yet again,
