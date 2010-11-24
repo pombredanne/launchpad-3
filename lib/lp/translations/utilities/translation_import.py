@@ -32,6 +32,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
     )
@@ -113,28 +114,30 @@ class ExistingPOFileInDatabase:
     """All existing translations for a PO file.
 
     Fetches all information needed to compare messages to be imported in one
-    go. Used to speed up PO file import."""
+    go.  Used to speed up PO file import.
+    """
 
-    def __init__(self, pofile, is_current_upstream=False):
+    def __init__(self, pofile, simulate_timeout=False):
         self.pofile = pofile
-        self.is_current_upstream = is_current_upstream
 
         # Dict indexed by (msgid, context) containing current
         # TranslationMessageData: doing this for the speed.
-        self.ubuntu_messages = {}
+        self.current_messages = {}
         # Messages which have been seen in the file: messages which exist
         # in the database, but not in the import, will be expired.
         self.seen = set()
 
-        # Contains upstream but inactive translations.
-        self.upstream_messages = {}
-
         # Pre-fill self.ubuntu_messages and self.upstream_messages with data.
-        self._fetchDBRows()
+        self._fetchDBRows(simulate_timeout=simulate_timeout)
 
-    def _fetchDBRows(self):
+    def _getFlagName(self):
+        """Get the name of the database is_current flag to look for."""
+        return getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.pofile.potemplate).flag_name
+
+    def _fetchDBRows(self, simulate_timeout=False):
         msgstr_joins = [
-            "LEFT OUTER JOIN POTranslation pt%d "
+            "LEFT OUTER JOIN POTranslation AS pt%d "
             "ON pt%d.id = TranslationMessage.msgstr%d" % (form, form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
@@ -147,121 +150,110 @@ class ExistingPOFileInDatabase:
             'translation_joins': '\n'.join(msgstr_joins),
             'language': quote(self.pofile.language),
             'potemplate': quote(self.pofile.potemplate),
+            'flag': self._getFlagName(),
         }
 
-        sql = '''
-        SELECT
-            POMsgId.msgid AS msgid,
-            POMsgID_Plural.msgid AS msgid_plural,
-            context,
-            date_reviewed,
-            is_current_ubuntu,
-            is_current_upstream,
-            %(translation_columns)s
-          FROM POTMsgSet
+        sql = """
+            SELECT
+                POMsgId.msgid AS msgid,
+                POMsgID_Plural.msgid AS msgid_plural,
+                context,
+                date_reviewed,
+                %(translation_columns)s
+            FROM POTMsgSet
             JOIN TranslationTemplateItem ON
-              TranslationTemplateItem.potmsgset = POTMsgSet.id AND
-              TranslationTemplateItem.potemplate = %(potemplate)s
+                TranslationTemplateItem.potmsgset = POTMsgSet.id AND
+                TranslationTemplateItem.potemplate = %(potemplate)s
             JOIN TranslationMessage ON
-              POTMsgSet.id=TranslationMessage.potmsgset AND
-              (TranslationMessage.potemplate = %(potemplate)s OR
-               TranslationMessage.potemplate IS NULL) AND
-              TranslationMessage.language = %(language)s
+                POTMsgSet.id=TranslationMessage.potmsgset AND (
+                    TranslationMessage.potemplate = %(potemplate)s OR
+                    TranslationMessage.potemplate IS NULL) AND
+                TranslationMessage.language = %(language)s
             %(translation_joins)s
             JOIN POMsgID ON
-              POMsgID.id=POTMsgSet.msgid_singular
+                POMsgID.id = POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
-              POMsgID_Plural.id=POTMsgSet.msgid_plural
-          WHERE
-              (is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)
-          ORDER BY
-            TranslationTemplateItem.sequence,
-            TranslationMessage.potemplate NULLS LAST
-          ''' % substitutions
+                POMsgID_Plural.id = POTMsgSet.msgid_plural
+            WHERE
+                %(flag)s IS TRUE
+            ORDER BY
+                TranslationTemplateItem.sequence,
+                TranslationMessage.potemplate NULLS LAST
+          """ % substitutions
 
         cur = cursor()
         try:
-            # XXX 2009-09-14 DaniloSegan (bug #408718):
-            # this statement causes postgres to eat the diskspace
-            # from time to time.  Let's wrap it up in a timeout.
-            timeout = config.poimport.statement_timeout
+            # XXX JeroenVermeulen 2010-11-24 bug=680802: We set a
+            # timeout to work around bug 408718, but the query is
+            # simpler now.  See if we still need this.
 
             # We have to commit what we've got so far or we'll lose
             # it when we hit TimeoutError.
             transaction.commit()
 
-            if timeout == 'timeout':
+            if simulate_timeout:
                 # This is used in tests.
+                timeout = '1ms'
                 query = "SELECT pg_sleep(2)"
-                timeout = '1s'
             else:
-                timeout = 1000 * int(timeout)
+                timeout = 1000 * int(config.poimport.statement_timeout)
                 query = sql
             cur.execute("SET statement_timeout to %s" % quote(timeout))
             cur.execute(query)
         except TimeoutError:
-            # Restart the transaction and return empty SelectResults.
+            # XXX JeroenVermeulen 2010-11-24 bug=680802: Log this so we
+            # know whether it still happens.
             transaction.abort()
-            transaction.begin()
-            cur.execute("SELECT 1 WHERE 1=0")
+            return
+
         rows = cur.fetchall()
 
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
-        for (msgid, msgid_plural, context, date, is_current_ubuntu,
-             is_current_upstream, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
-             msgstr5) in rows:
+        for row in rows:
+            (
+                msgid,
+                msgid_plural,
+                context,
+                date,
+                msgstr0,
+                msgstr1,
+                msgstr2,
+                msgstr3,
+                msgstr4,
+                msgstr5,
+            ) = row
 
-            if not is_current_ubuntu and not is_current_upstream:
-                # We don't care about non-current and non-imported messages
-                # yet.  To be part of super-fast-imports-phase2.
-                continue
+            key = (msgid, msgid_plural, context)
+            if key in self.current_messages:
+                message = self.current_messages[key]
+            else:
+                message = TranslationMessageData()
+                self.current_messages[key] = message
 
-            update_caches = []
-            if is_current_ubuntu:
-                update_caches.append(self.ubuntu_messages)
-            if is_current_upstream:
-                update_caches.append(self.upstream_messages)
+                message.context = context
+                message.msgid_singular = msgid
+                message.msgid_plural = msgid_plural
 
-            for look_at in update_caches:
-                if (msgid, msgid_plural, context) in look_at:
-                    message = look_at[(msgid, msgid_plural, context)]
-                else:
-                    message = TranslationMessageData()
-                    look_at[(msgid, msgid_plural, context)] = message
-
-                    message.context = context
-                    message.msgid_singular = msgid
-                    message.msgid_plural = msgid_plural
-
-                for plural in range(TranslationConstants.MAX_PLURAL_FORMS):
-                    local_vars = locals()
-                    msgstr = local_vars.get('msgstr' + str(plural), None)
-                    if (msgstr is not None and
-                        ((len(message.translations) > plural and
-                          message.translations[plural] is None) or
-                         (len(message.translations) <= plural))):
-                        message.addTranslation(plural, msgstr)
+            for plural in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+                local_vars = locals()
+                msgstr = local_vars.get('msgstr' + str(plural), None)
+                if (msgstr is not None and
+                    ((len(message.translations) > plural and
+                      message.translations[plural] is None) or
+                     (len(message.translations) <= plural))):
+                    message.addTranslation(plural, msgstr)
 
     def markMessageAsSeen(self, message):
         """Marks a message as seen in the import, to avoid expiring it."""
-        self.seen.add((message.msgid_singular, message.msgid_plural,
-                       message.context))
+        self.seen.add(self._getMessageKey(message))
 
     def getUnseenMessages(self):
         """Return a set of messages present in the database but not seen
         in the file being imported.
         """
-        unseen = set()
-        for (singular, plural, context) in self.ubuntu_messages:
-            if (singular, plural, context) not in self.seen:
-                unseen.add((singular, plural, context))
-        for (singular, plural, context) in self.upstream_messages:
-            if ((singular, plural, context) not in self.ubuntu_messages and
-                (singular, plural, context) not in self.seen):
-                unseen.add((singular, plural, context))
-        return unseen
+        return self.current_messages - self.seen
 
     def _getMessageKey(self, message):
         """Return tuple identifying `message`.
@@ -271,38 +263,18 @@ class ExistingPOFileInDatabase:
         """
         return (message.msgid_singular, message.msgid_plural, message.context)
 
-    def isAlreadyTranslatedTheSame(self, message, pool):
+    def isAlreadyTranslatedTheSame(self, message):
         """Does `pool` have a message that's just like `message`?
 
         :param message: a message being processed from import.
         :param pool: a dict mapping message keys to messages; should be
             either `self.upstream_messages` or `self.ubuntu_messages`.
         """
-        key = self._getMessageKey(message)
-        msg_in_db = pool.get(key)
+        msg_in_db = self.current_messages.get(self._getMessageKey(message))
         if msg_in_db is None:
             return False
         else:
             return is_identical_translation(msg_in_db, message)
-
-    def isAlreadyTranslatedTheSameInUbuntu(self, message):
-        """Check whether this message is already translated in exactly
-        the same way.
-        """
-        return self.isAlreadyTranslatedTheSame(message, self.ubuntu_messages)
-
-    def isAlreadyTranslatedTheSameUpstream(self, message):
-        """Is this translation already the current upstream one?
-
-        If this translation is already present in the database as the
-        'is_current_upstream' translation, and we are processing an
-        upstream upload, it does not need changing.
-        """
-        if self.is_current_upstream:
-            return self.isAlreadyTranslatedTheSame(
-                message, self.upstream_messages)
-        else:
-            return False
 
 
 class TranslationImporter:
@@ -578,13 +550,6 @@ class FileImporter(object):
         """
         raise NotImplementedError
 
-    def finishImport(self):
-        """Perform finishing steps after all messages have been imported.
-
-        This method may be implemented by the derived class, if such steps
-        are necessary.
-        """
-
     def importFile(self):
         """Import a parsed file into the database.
 
@@ -597,14 +562,8 @@ class FileImporter(object):
         self.errors = []
 
         for message in self.translation_file.messages:
-            if not message.msgid_singular:
-                # The message has no msgid, we ignore it and jump to next
-                # message.
-                continue
-
-            self.importMessage(message)
-
-        self.finishImport()
+            if message.msgid_singular:
+                self.importMessage(message)
 
         return self.errors, self.translation_file.syntax_warnings
 
@@ -809,9 +768,7 @@ class POFileImporter(FileImporter):
                 self.pofile.canEditTranslations(
                     self.translation_import_queue_entry.importer))
 
-        by_maintainer = self.translation_import_queue_entry.by_maintainer
-        self.pofile_in_db = ExistingPOFileInDatabase(
-            self.pofile, is_current_upstream=by_maintainer)
+        self.pofile_in_db = ExistingPOFileInDatabase(self.pofile)
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
@@ -845,12 +802,8 @@ class POFileImporter(FileImporter):
         """See FileImporter."""
         # Mark this message as seen in the import
         self.pofile_in_db.markMessageAsSeen(message)
-        if self.translation_import_queue_entry.by_maintainer:
-            if self.pofile_in_db.isAlreadyTranslatedTheSameUpstream(message):
-                return
-        else:
-            if self.pofile_in_db.isAlreadyTranslatedTheSameInUbuntu(message):
-                return
+        if self.pofile_in_db.isAlreadyTranslatedTheSame(message):
+            return
 
         potmsgset = self.getOrCreatePOTMsgSet(message)
         if potmsgset.getSequence(self.potemplate) == 0:
@@ -872,20 +825,3 @@ class POFileImporter(FileImporter):
             if self.translation_import_queue_entry.by_maintainer:
                 translation_message.was_obsolete_in_last_import = (
                     message.is_obsolete)
-
-    def finishImport(self):
-        """ Mark messages that were not imported. """
-        # Get relevant messages from DB.
-        unseen = self.pofile_in_db.getUnseenMessages()
-        for unseen_message in unseen:
-            (msgid, plural, context) = unseen_message
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
-                msgid, plural_text=plural, context=context)
-            if potmsgset is not None:
-                previous_upstream_message = (
-                    potmsgset.getImportedTranslationMessage(
-                    self.potemplate, self.pofile.language))
-                if previous_upstream_message is not None:
-                    # The message was not imported this time, it
-                    # therefore looses its imported status.
-                    previous_upstream_message.is_current_upstream = False
