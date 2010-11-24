@@ -742,14 +742,6 @@ class HasSpecificationsMixin:
         """See IHasSpecifications."""
         return self.specifications(filter=[SpecificationFilter.ALL]).count()
 
-    def getAllSpecifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications
-
-    def getValidSpecifications(self):
-        """See IHasSpecifications."""
-        return self.valid_specifications
-
 
 class SpecificationSet(HasSpecificationsMixin):
     """The set of feature specifications."""
@@ -903,23 +895,13 @@ class SpecificationSet(HasSpecificationsMixin):
     def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None,
-        priority=SpecificationPriority.UNDEFINED,
-        goalstatus=SpecificationGoalStatus.PROPOSED,
-        productseries=None, distroseries=None,
-        goal_proposer=None, date_goal_proposed=None, milestone=None,
-        date_completed=None, completer=None, goal_decider=None,
-        date_goal_decided=None):
+        priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,
             approver=approver, product=product, distribution=distribution,
-            assignee=assignee, drafter=drafter, whiteboard=whiteboard,
-            goalstatus=goalstatus, productseries=productseries,
-            distroseries=distroseries, goal_proposer=goal_proposer,
-            date_goal_proposed=date_goal_proposed, milestone=milestone,
-            date_completed=date_completed, completer=completer,
-            goal_decider=goal_decider, date_goal_decided=date_goal_decided)
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""

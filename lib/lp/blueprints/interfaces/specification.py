@@ -52,12 +52,8 @@ from lp.blueprints.enums import (
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     ContentNameField,
@@ -221,6 +217,7 @@ class INewSpecificationTarget(Interface):
 
     Requires the user to specify a distribution or a product as a target.
     """
+    # XXX: Must export this as well, with setTarget as the mutator.
     target = Choice(title=_("For"),
                     description=_("The project for which this proposal is "
                                   "being made."),
@@ -267,31 +264,24 @@ class ISpecificationPublic(
         PublicPersonChoice(
             title=_('Owner'), required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
-    # target
-    product = exported(
-        ReferenceChoice(title=_('Project'), required=False,
-               vocabulary='Product', schema=IProduct),
-        exported_as='project')
-    distribution = exported(
-        ReferenceChoice(title=_('Distribution'), required=False,
-               vocabulary='Distribution', schema=IDistribution))
 
-    # series
-    productseries = exported(
-        ReferenceChoice(title=_('Series Goal'), required=False,
-               vocabulary='FilteredProductSeries',
-               description=_(
-                "Choose a series in which you would like to deliver "
-                "this feature. Selecting '(no value)' will clear the goal."),
-               schema=IProductSeries),
-        exported_as='project_series')
-    distroseries = exported(
-        ReferenceChoice(title=_('Series Goal'), required=False,
-               vocabulary='FilteredDistroSeries',
-               description=_(
-                "Choose a series in which you would like to deliver "
-                "this feature. Selecting '(no value)' will clear the goal."),
-               schema=IDistroSeries))
+    product = Choice(title=_('Project'), required=False,
+                     vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+                          vocabulary='Distribution')
+
+    productseries = Choice(
+        title=_('Series Goal'), required=False,
+        vocabulary='FilteredProductSeries',
+        description=_(
+             "Choose a series in which you would like to deliver "
+             "this feature. Selecting '(no value)' will clear the goal."))
+    distroseries = Choice(
+        title=_('Series Goal'), required=False,
+        vocabulary='FilteredDistroSeries',
+        description=_(
+            "Choose a series in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
 
     # milestone
     milestone = exported(
@@ -303,14 +293,15 @@ class ISpecificationPublic(
             schema=IMilestone))
 
     # nomination to a series for release management
+    # XXX: It'd be nice to export goal as read-only, but it's tricky because
+    # users will need to be aware of goalstatus as what's returned by .goal
+    # may not be the accepted goal.
     goal = Attribute("The series for which this feature is a goal.")
-    goalstatus = exported(
-        Choice(
-            title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
-            default=SpecificationGoalStatus.PROPOSED, description=_(
-                "Whether or not the drivers have accepted this feature as "
-                "a goal for the targeted series.")),
-        exported_as='goal_status')
+    goalstatus = Choice(
+        title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
+        default=SpecificationGoalStatus.PROPOSED, description=_(
+            "Whether or not the drivers have accepted this feature as "
+            "a goal for the targeted series."))
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")

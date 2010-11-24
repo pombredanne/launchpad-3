@@ -357,15 +357,15 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
     def assertNamesOfSpecificationsAre(self, names, specifications):
         self.assertEqual(names, [s.name for s in specifications])
 
-    def test_product_getAllSpecifications(self):
+    def test_product_all_specifications(self):
         product = self.makeProduct()
         self.factory.makeSpecification(product=product, name="spec1")
         self.factory.makeSpecification(product=product, name="spec2")
         product_on_webservice = self.getPillarOnWebservice(product)
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], product_on_webservice.getAllSpecifications())
+            ["spec1", "spec2"], product_on_webservice.all_specifications)
 
-    def test_product_getValidSpecifications(self):
+    def test_product_valid_specifications(self):
         product = self.makeProduct()
         self.factory.makeSpecification(product=product, name="spec1")
         self.factory.makeSpecification(
@@ -373,9 +373,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         product_on_webservice = self.getPillarOnWebservice(product)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], product_on_webservice.getValidSpecifications())
+            ["spec1"], product_on_webservice.valid_specifications)
 
-    def test_distribution_getAllSpecifications(self):
+    def test_distribution_all_specifications(self):
         distribution = self.makeDistribution()
         self.factory.makeSpecification(
             distribution=distribution, name="spec1")
@@ -383,9 +383,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
             distribution=distribution, name="spec2")
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], distro_on_webservice.getAllSpecifications())
+            ["spec1", "spec2"], distro_on_webservice.all_specifications)
 
-    def test_distribution_getValidSpecifications(self):
+    def test_distribution_valid_specifications(self):
         distribution = self.makeDistribution()
         self.factory.makeSpecification(
             distribution=distribution, name="spec1")
@@ -394,9 +394,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
             definition_status=SpecificationDefinitionStatus.OBSOLETE)
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], distro_on_webservice.getValidSpecifications())
+            ["spec1"], distro_on_webservice.valid_specifications)
 
-    def test_distroseries_getAllSpecifications(self):
+    def test_distroseries_all_specifications(self):
         distribution = self.makeDistribution()
         distroseries = self.factory.makeDistroSeries(
             name='maudlin', distribution=distribution)
@@ -413,9 +413,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
             name_or_version="maudlin")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            distroseries_on_webservice.getAllSpecifications())
+            distroseries_on_webservice.all_specifications)
 
-    def test_distroseries_getValidSpecifications(self):
+    def test_distroseries_valid_specifications(self):
         distribution = self.makeDistribution()
         distroseries = self.factory.makeDistroSeries(
             name='maudlin', distribution=distribution)
@@ -439,9 +439,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
             name_or_version="maudlin")
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec3"],
-            distroseries_on_webservice.getValidSpecifications())
+            distroseries_on_webservice.valid_specifications)
 
-    def test_productseries_getAllSpecifications(self):
+    def test_productseries_all_specifications(self):
         product = self.makeProduct()
         productseries = self.factory.makeProductSeries(
             product=product, name="fooix-dev")
@@ -454,9 +454,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         series_on_webservice = product_on_webservice.getSeries(
             name="fooix-dev")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], series_on_webservice.getAllSpecifications())
+            ["spec1", "spec2"], series_on_webservice.all_specifications)
 
-    def test_productseries_getValidSpecifications(self):
+    def test_productseries_valid_specifications(self):
         product = self.makeProduct()
         productseries = self.factory.makeProductSeries(
             product=product, name="fooix-dev")
@@ -477,9 +477,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # Should this be different to the results for distroseries?
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2", "spec3"],
-            series_on_webservice.getAllSpecifications())
+            series_on_webservice.valid_specifications)
 
-    def test_projectgroup_getAllSpecifications(self):
+    def test_projectgroup_all_specifications(self):
         productgroup = self.factory.makeProject()
         other_productgroup = self.factory.makeProject()
         product1 = self.factory.makeProduct(project=productgroup)
@@ -496,9 +496,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # Should this be different to the results for distroseries?
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            product_on_webservice.getAllSpecifications())
+            product_on_webservice.all_specifications)
 
-    def test_projectgroup_getValidSpecifications(self):
+    def test_projectgroup_valid_specifications(self):
         productgroup = self.factory.makeProject()
         other_productgroup = self.factory.makeProject()
         product1 = self.factory.makeProduct(project=productgroup)
@@ -515,9 +515,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         # Should this be different to the results for distroseries?
         self.assertNamesOfSpecificationsAre(
             ["spec1", "spec2"],
-            product_on_webservice.getValidSpecifications())
+            product_on_webservice.valid_specifications)
 
-    def test_person_getAllSpecifications(self):
+    def test_person_all_specifications(self):
         person = self.factory.makePerson(name="james-w")
         product = self.factory.makeProduct()
         self.factory.makeSpecification(
@@ -531,9 +531,9 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         person_on_webservice = launchpadlib.load(
             str(launchpadlib._root_uri) + '/~james-w')
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], person_on_webservice.getAllSpecifications())
+            ["spec1", "spec2"], person_on_webservice.all_specifications)
 
-    def test_person_getValidSpecifications(self):
+    def test_person_valid_specifications(self):
         person = self.factory.makePerson(name="james-w")
         product = self.factory.makeProduct()
         self.factory.makeSpecification(
@@ -547,4 +547,4 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         person_on_webservice = launchpadlib.load(
             str(launchpadlib._root_uri) + '/~james-w')
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], person_on_webservice.getAllSpecifications())
+            ["spec1", "spec2"], person_on_webservice.valid_specifications)

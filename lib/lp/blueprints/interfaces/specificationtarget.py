@@ -22,7 +22,6 @@ from zope.schema import TextLine
 from lazr.restful.declarations import (
     export_read_operation,
     operation_parameters,
-    operation_returns_collection_of,
     operation_returns_entry,
     )
 
@@ -36,6 +35,7 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
+    # XXX: Export this as a collection
     all_specifications = Attribute(
         'A list of all specifications, regardless of status or approval '
         'or completion, for this object.')
@@ -44,6 +44,7 @@ class IHasSpecifications(Interface):
         'A true or false indicator of whether or not this object has any '
         'specifications associated with it, regardless of their status.')
 
+    # XXX: Export this as a collection
     valid_specifications = Attribute(
         'A list of all specifications that are not obsolete.')
 
@@ -71,16 +72,6 @@ class IHasSpecifications(Interface):
         and approver will not be prejoined. This can be used in
         situations in which these are not rendered.
         """
-
-    @operation_returns_collection_of(Interface) # really ISpecification
-    @export_read_operation()
-    def getAllSpecifications():
-        """Return all the specifications associated with this object."""
-
-    @operation_returns_collection_of(Interface) # really ISpecification
-    @export_read_operation()
-    def getValidSpecifications():
-        """Return all the non-obsolete specifications for this object."""
 
 
 class ISpecificationTarget(IHasSpecifications):
