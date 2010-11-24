@@ -8,6 +8,8 @@ __metaclass__ = type
 from functools import partial
 from urlparse import urlparse
 
+from lazr.restfulclient.errors import BadRequest
+from testtools.matchers import StartsWith
 import transaction
 
 from canonical.database.sqlbase import flush_database_updates
@@ -25,7 +27,6 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.matchers import StartsWith
 
 
 class TestBugSubscriptionFilterBase:
@@ -70,9 +71,12 @@ class TestBugSubscriptionFilterAPI(
     layer = AppServerLayer
 
     def test_visible_attributes(self):
+        # Bug subscription filters are not private objects. All attributes are
+        # visible to everyone.
         transaction.commit()
-        get_ws_object = partial(
-            ws_object, self.factory.makeLaunchpadService())
+        # Create a service for a new person.
+        service = self.factory.makeLaunchpadService()
+        get_ws_object = partial(ws_object, service)
         ws_subscription = get_ws_object(self.subscription)
         ws_subscription_filter = get_ws_object(self.subscription_filter)
         self.assertEqual(
@@ -99,3 +103,23 @@ class TestBugSubscriptionFilterAPI(
         self.assertEqual(
             list(self.subscription_filter.tags),
             ws_subscription_filter.tags)
+
+    def test_structural_subscription_cannot_be_modified(self):
+        # Bug filters cannot be moved from one structural subscription to
+        # another. In other words, the structural_subscription field is
+        # read-only.
+        user = self.factory.makePerson(name=u"baz")
+        with person_logged_in(self.owner):
+            user_subscription = self.structure.addBugSubscription(user, user)
+        transaction.commit()
+        # Create a service for the structure owner.
+        service = self.factory.makeLaunchpadService(self.owner)
+        get_ws_object = partial(ws_object, service)
+        ws_user_subscription = get_ws_object(user_subscription)
+        ws_subscription_filter = get_ws_object(self.subscription_filter)
+        ws_subscription_filter.structural_subscription = ws_user_subscription
+        error = self.assertRaises(BadRequest, ws_subscription_filter.lp_save)
+        self.assertEqual(400, error.response.status)
+        self.assertEqual(
+            self.subscription,
+            self.subscription_filter.structural_subscription)
