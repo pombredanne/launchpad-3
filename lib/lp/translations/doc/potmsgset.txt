@@ -542,14 +542,14 @@ gracefully accepted.
     ...     u'%d contact', u'%d contacts')
     >>> pofile_es.plural_forms
     2
-    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
-    ...     {0: u'foo %d', 1: None}, is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, plural_potmsgset, foobar,
+    ...     translations={0: u'foo %d', 1: None})
     >>> message.is_complete
     False
-    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
-    ...     {0: None}, is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, plural_potmsgset, foobar,
+    ...     translations={0: None})
     >>> message.is_complete
     False
 
@@ -580,18 +580,17 @@ so for now, the system guesses that it has two.
 
 The message we're looking at is translated to two plural forms.
 
-    >>> message_with_two_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner, ['%d fu', '%d fuitl'],
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_two_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl'])
 
 When an otherwise identical translation with three comes along, the
 third form is ignored because it falls outside the current 2 forms.
 The "new" translation message is the same one we already had.
 
-    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner,
-    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_three_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl', '%d fuitlx'])
     >>> message_with_three_forms == message_with_two_forms
     True
 
@@ -602,10 +601,9 @@ new translation message.
     >>> zap.pluralforms = 3
     >>> zap.pluralexpression = 'n % 3'
 
-    >>> message_with_three_forms = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner,
-    ...     ['%d fu', '%d fuitl', '%d fuitlx'], is_current_upstream=False,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_three_forms = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu', '%d fuitl', '%d fuitlx'])
     >>> message_with_three_forms == message_with_two_forms
     False
 
@@ -618,9 +616,9 @@ When a new translation is submitted, again identical in the first form,
 no new message is created.  Instead, the closest existing match (the
 one with two forms) is updated.
 
-    >>> message_with_one_form = pm_potmsgset.updateTranslation(
-    ...     pm_translation, pm_template.owner, ['%d fu'],
-    ...     is_current_upstream=False, lock_timestamp=datetime.now(pytz.UTC))
+    >>> message_with_one_form = factory.makeCurrentTranslationMessage(
+    ...     pm_translation, pm_potmsgset, pm_template.owner,
+    ...     translations=['%d fu'])
 
     >>> message_with_one_form == message_with_two_forms
     True
@@ -939,12 +937,12 @@ To put 'external' suggestions in database, let's translate the
     >>> spanish_pofile = alsa_potemplate.getPOFileByLang('es')
     >>> spanish = spanish_pofile.language
 
-    >>> new_translation = translator_credits.updateTranslation(spanish_pofile,
-    ...     carlos, {0: u'Some Translator'}, is_current_upstream=True,
-    ...     lock_timestamp=datetime.now(pytz.UTC))
+    >>> new_translation = factory.makeCurrentTranslationMessage(
+    ...     spanish_pofile, translator_credits, carlos,
+    ...     translations={0: u'Some Translator'})
 
-    >>> current = translator_credits.getCurrentTranslationMessage(
-    ...     alsa_potemplate, spanish)
+    >>> current = translator_credits.getCurrentTranslation(
+    ...     alsa_potemplate, spanish, alsa_potemplate.translation_side)
     >>> current.translations
     [u'Some Translator']
 
