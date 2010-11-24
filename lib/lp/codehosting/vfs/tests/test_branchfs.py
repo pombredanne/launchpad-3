@@ -7,8 +7,12 @@
 
 __metaclass__ = type
 
+import codecs
 import os
+import sys
 import unittest
+import xmlrpclib
+from StringIO import StringIO
 
 from bzrlib import errors
 from bzrlib.bzrdir import (
@@ -256,6 +260,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         deferred = self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
+
         def check_control_file((transport, path)):
             self.assertEqual(
                 'default_stack_on = /%s\n' % branch.unique_name,
@@ -274,6 +279,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
 
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -290,6 +296,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         deferred = self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual('.bzr/README', path)
             self.assertEqual(True, transport.is_readonly())
@@ -301,6 +308,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
         deferred = self.server.createBranch(branch_url)
         deferred = self.assertFailure(deferred, errors.PermissionDenied)
+
         def check_exception(exception):
             self.assertEqual(branch_url, exception.path)
             self.assertEqual(
@@ -329,6 +337,7 @@ class LaunchpadInternalServerTests:
 
         deferred = self.server.translateVirtualPath(
             '/%s/.bzr/README' % (branch.unique_name,))
+
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -394,7 +403,6 @@ class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
         self.requester = self.factory.makePerson()
         self.server = DirectDatabaseLaunchpadServer(
             'lp-test://', MemoryTransport())
-
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
@@ -616,6 +624,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.readv, '%s/.bzr/hello.txt' % branch.unique_name,
             [(3, 2)])
+
         def get_chunk(generator):
             return generator.next()[1]
         deferred.addCallback(get_chunk)
@@ -631,6 +640,7 @@ class LaunchpadTransportTests:
         deferred = self._ensureDeferred(
             transport.put_bytes,
             '%s/.bzr/goodbye.txt' % branch.unique_name, "Goodbye")
+
         def check_bytes_written(ignored):
             self.assertEqual(
                 "Goodbye", backing_transport.get_bytes('goodbye.txt'))
@@ -805,6 +815,7 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
     skip = None
 
     def _ensureDeferred(self, function, *args, **kwargs):
+
         def call_function_and_check_not_deferred():
             ret = function(*args, **kwargs)
             self.assertFalse(
@@ -1015,6 +1026,64 @@ class TestBranchChangedNotification(TestCaseWithTransport):
         self.assertFormatStringsPassed(branch)
 
 
+class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
+    """Test handling of errors when branchChange is called."""
+
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self._server = None
+        frontend = InMemoryFrontend()
+        self.factory = frontend.getLaunchpadObjectFactory()
+        self.codehosting_api = frontend.getCodehostingEndpoint()
+        self.codehosting_api.branchChanged = self._replacement_branchChanged
+        self.requester = self.factory.makePerson()
+        self.backing_transport = MemoryTransport()
+        self.disable_directory_isolation()
+
+        # Trap stderr.
+        self._real_stderr = sys.stderr
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
+
+    def tearDown(self):
+        sys.stderr = self._real_stderr
+        TestCaseWithTransport.tearDown(self)
+
+    def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
+                                   last_revision, *format_strings):
+        raise xmlrpclib.Fault(-1, "An error")
+
+    def get_server(self):
+        if self._server is None:
+            self._server = LaunchpadServer(
+                XMLRPCWrapper(self.codehosting_api), self.requester.id,
+                self.backing_transport)
+            self._server.start_server()
+            self.addCleanup(self._server.stop_server)
+        return self._server
+
+    def test_branchChanged_stderr_text(self):
+        # An unexpected error invoking branchChanged() results in a user
+        # friendly error printed to stderr (and not a traceback).
+
+        # Unlocking a branch calls branchChanged on the branch filesystem
+        # endpoint. We will then check the error handling.
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        branch.lock_write()
+        branch.unlock()
+        stderr_text = sys.stderr.getvalue()
+
+        fault_text = """
+        "<Fault 380: 'An unexpected error has occurred while updating a
+        Launchpad branch. Please report a Launchpad bug and quote:
+        OOPS-.*'>"
+        """
+        expected_text = ' '.join([fault_text for x in range(2)])
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected_text, stderr_text)
+
+
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
@@ -1091,4 +1160,3 @@ class TestGetLPServer(TestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

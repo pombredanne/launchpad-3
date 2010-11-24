@@ -145,7 +145,7 @@ class BadUrlScheme(BadUrl):
 # directories that Bazaar creates as part of regular operation. We support
 # only two numbered backups to avoid indefinite space usage.
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr', 'backup.bzr.~1~',
-	'backup.bzr.~2~')
+    'backup.bzr.~2~')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
@@ -504,10 +504,12 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # Launchpad branch.
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
+
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
             failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
+
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
