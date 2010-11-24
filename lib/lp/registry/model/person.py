@@ -1472,11 +1472,39 @@ class Person(
 
         # Remove all members from the TeamParticipation table
         # except for the team, itself.
-        # TODO: this needs to kill the tp entries for indirect connections between person and teams. Right now it's only killing the TP for the direct team and members
         participants = store.find(
             TeamParticipation,
             TeamParticipation.teamID == self.id,
             TeamParticipation.personID != self.id)
+        participants.remove()
+
+        # Remove all indirect TeamParticipation entries resulting from this
+        # team.
+        TPGiven = ClassAlias(TeamParticipation, "TP1")
+        TPTarget = ClassAlias(TeamParticipation, "TP2")
+        TMGiven = ClassAlias(TeamMembership, "TM1")
+        TMTarget = ClassAlias(TeamMembership, "TM2")
+        store = Store.of(self)
+        # This query is joining team participation against itself to find all
+        # TP entries for all of its members, then has two rounds of joining
+        # to team membership to find team participation entries without direct
+        # membership entries and then to filter out TP entries that don't result
+        # from the given team. There has to be a simpler way, but it evades me.
+        origin = [
+            TPGiven,
+            Join(TPTarget, TPGiven.personID == TPTarget.personID),
+            LeftJoin(TMTarget,
+                And(TPTarget.personID == TMTarget.personID,
+                    TPTarget.teamID == TMTarget.teamID)),
+            Join(TMGiven, TPGiven.teamID == TMGiven.personID),
+            ]
+        participants = store.using(*origin).find(
+            TPTarget,
+            And(
+                TPTarget.teamID == TMGiven.teamID,
+                TMTarget.team is not None,
+                TPGiven.teamID == self.id))
+        import pdb; pdb.set_trace()
         participants.remove()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
