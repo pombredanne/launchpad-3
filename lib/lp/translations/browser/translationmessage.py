@@ -1183,11 +1183,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.context.makeHTMLID('translation_%d' % index),
                 }
 
-            if self.other_translationmessage is not None:
-                translation_entry['html_id_imported_suggestion'] = (
-                    self.other_translationmessage.makeHTMLID(
-                        'suggestion'))
-
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
                 # info that we don't want to show to anonymous users.
