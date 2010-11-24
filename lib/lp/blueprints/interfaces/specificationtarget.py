@@ -17,6 +17,16 @@ from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.schema import TextLine
+
+from lazr.restful.declarations import (
+    export_read_operation,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    )
+
+from canonical.launchpad import _
 
 
 class IHasSpecifications(Interface):
@@ -62,6 +72,15 @@ class IHasSpecifications(Interface):
         situations in which these are not rendered.
         """
 
+    @operation_returns_collection_of(Interface) # really ISpecification
+    @export_read_operation()
+    def getAllSpecifications():
+        """Return all the specifications associated with this object."""
+
+    @operation_returns_collection_of(Interface) # really ISpecification
+    @export_read_operation()
+    def getValidSpecifications():
+        """Return all the non-obsolete specifications for this object."""
 
 
 class ISpecificationTarget(IHasSpecifications):
@@ -69,6 +88,10 @@ class ISpecificationTarget(IHasSpecifications):
     specifications directly attached to them.
     """
 
+    @operation_parameters(
+        name=TextLine(title=_('The name of the specification')))
+    @operation_returns_entry(Interface) # really ISpecification
+    @export_read_operation()
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.

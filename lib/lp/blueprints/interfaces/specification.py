@@ -19,7 +19,12 @@ __all__ = [
     ]
 
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+    exported,
+    export_as_webservice_entry,
+    )
+from lazr.restful.fields import ReferenceChoice
+
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -47,7 +52,12 @@ from lp.blueprints.enums import (
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     ContentNameField,
@@ -119,48 +129,58 @@ class SpecURLField(TextLine):
 class INewSpecification(Interface):
     """A schema for a new specification."""
 
-    name = SpecNameField(
-        title=_('Name'), required=True, readonly=False,
-        description=_(
-            "May contain lower-case letters, numbers, and dashes. "
-            "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial."))
-    title = Title(
-        title=_('Title'), required=True, description=_(
-            "Describe the feature as clearly as possible in up to 70 "
-            "characters. This title is displayed in every feature "
-            "list or report."))
-    specurl = SpecURLField(
-        title=_('Specification URL'), required=False,
-        description=_(
-            "The URL of the specification. This is usually a wiki page."),
-        constraint=valid_webref)
-    summary = Summary(
-        title=_('Summary'), required=True, description=_(
-            "A single-paragraph description of the feature. "
-            "This will also be displayed in most feature listings."))
-    definition_status = Choice(
-        title=_('Definition Status'),
-        vocabulary=SpecificationDefinitionStatus,
-        default=SpecificationDefinitionStatus.NEW,
-        description=_(
-            "The current status of the process to define the "
-            "feature and get approval for the implementation plan."))
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False,
-        description=_("The person responsible for implementing the feature."),
-        vocabulary='ValidPersonOrTeam')
-    drafter = PublicPersonChoice(
-        title=_('Drafter'), required=False,
-        description=_(
-                "The person responsible for drafting the specification."),
-        vocabulary='ValidPersonOrTeam')
-    approver = PublicPersonChoice(
-        title=_('Approver'), required=False,
-        description=_(
-            "The person responsible for approving the specification, "
-            "and for reviewing the code when it's ready to be landed."),
-        vocabulary='ValidPersonOrTeam')
+    name = exported(
+        SpecNameField(
+            title=_('Name'), required=True, readonly=False,
+            description=_(
+                "May contain lower-case letters, numbers, and dashes. "
+                "It will be used in the specification url. "
+                "Examples: mozilla-type-ahead-find, postgres-smart-serial.")))
+    title = exported(
+        Title(
+            title=_('Title'), required=True, description=_(
+                "Describe the feature as clearly as possible in up to 70 "
+                "characters. This title is displayed in every feature "
+                "list or report.")))
+    specurl = exported(
+        SpecURLField(
+            title=_('Specification URL'), required=False,
+            description=_(
+                "The URL of the specification. This is usually a wiki page."),
+            constraint=valid_webref),
+        exported_as="specification_url")
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=True, description=_(
+                "A single-paragraph description of the feature. "
+                "This will also be displayed in most feature listings.")))
+    definition_status = exported(
+        Choice(
+            title=_('Definition Status'),
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
+            description=_(
+                "The current status of the process to define the "
+                "feature and get approval for the implementation plan.")))
+    assignee = exported(
+        PublicPersonChoice(
+            title=_('Assignee'), required=False,
+            description=_(
+                "The person responsible for implementing the feature."),
+            vocabulary='ValidPersonOrTeam'))
+    drafter = exported(
+        PublicPersonChoice(
+            title=_('Drafter'), required=False,
+            description=_(
+                    "The person responsible for drafting the specification."),
+                vocabulary='ValidPersonOrTeam'))
+    approver = exported(
+        PublicPersonChoice(
+            title=_('Approver'), required=False,
+            description=_(
+                "The person responsible for approving the specification, "
+                "and for reviewing the code when it's ready to be landed."),
+            vocabulary='ValidPersonOrTeam'))
 
 
 class INewSpecificationProjectTarget(Interface):
@@ -235,46 +255,62 @@ class ISpecificationPublic(
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
-    priority = Choice(
-        title=_('Priority'), vocabulary=SpecificationPriority,
-        default=SpecificationPriority.UNDEFINED, required=True)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+    priority = exported(
+        Choice(
+            title=_('Priority'), vocabulary=SpecificationPriority,
+            default=SpecificationPriority.UNDEFINED, required=True))
+    datecreated = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    owner = exported(
+        PublicPersonChoice(
+            title=_('Owner'), required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
     # target
-    product = Choice(title=_('Project'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
+    product = exported(
+        ReferenceChoice(title=_('Project'), required=False,
+               vocabulary='Product', schema=IProduct),
+        exported_as='project')
+    distribution = exported(
+        ReferenceChoice(title=_('Distribution'), required=False,
+               vocabulary='Distribution', schema=IDistribution))
 
     # series
-    productseries = Choice(title=_('Series Goal'), required=False,
-        vocabulary='FilteredProductSeries',
-        description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
-    distroseries = Choice(title=_('Series Goal'), required=False,
-        vocabulary='FilteredDistroSeries',
-        description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
+    productseries = exported(
+        ReferenceChoice(title=_('Series Goal'), required=False,
+               vocabulary='FilteredProductSeries',
+               description=_(
+                "Choose a series in which you would like to deliver "
+                "this feature. Selecting '(no value)' will clear the goal."),
+               schema=IProductSeries),
+        exported_as='project_series')
+    distroseries = exported(
+        ReferenceChoice(title=_('Series Goal'), required=False,
+               vocabulary='FilteredDistroSeries',
+               description=_(
+                "Choose a series in which you would like to deliver "
+                "this feature. Selecting '(no value)' will clear the goal."),
+               schema=IDistroSeries))
 
     # milestone
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_(
-            "The milestone in which we would like this feature to be "
-            "delivered."))
+    milestone = exported(
+        ReferenceChoice(
+            title=_('Milestone'), required=False, vocabulary='Milestone',
+            description=_(
+                "The milestone in which we would like this feature to be "
+                "delivered."),
+            schema=IMilestone))
 
     # nomination to a series for release management
     goal = Attribute("The series for which this feature is a goal.")
-    goalstatus = Choice(
-        title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
-        default=SpecificationGoalStatus.PROPOSED, description=_(
-            "Whether or not the drivers have accepted this feature as "
-            "a goal for the targeted series."))
+    goalstatus = exported(
+        Choice(
+            title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
+            default=SpecificationGoalStatus.PROPOSED, description=_(
+                "Whether or not the drivers have accepted this feature as "
+                "a goal for the targeted series.")),
+        exported_as='goal_status')
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
@@ -283,10 +319,11 @@ class ISpecificationPublic(
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_(
-            "Any notes on the status of this spec you would like to make. "
-            "Your changes will override the current text."))
+    whiteboard = exported(
+        Text(title=_('Status Whiteboard'), required=False,
+             description=_(
+                "Any notes on the status of this spec you would like to "
+                "make. Your changes will override the current text.")))
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
