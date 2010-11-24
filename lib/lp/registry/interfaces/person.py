@@ -1075,10 +1075,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         since it inherits from `IPerson`) is a member of himself
         (i.e. `person1.inTeam(person1)`).
 
-        :param team: One of an object providing `IPerson`, the string name of a
-            team or `None`. If a string was supplied the team is looked up.
+        :param team: Either an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
         :return: A bool with the result of the membership lookup. When looking
-            up the team from a string finds nothing or team was `None` then 
+            up the team from a string finds nothing or team was `None` then
             `False` is returned.
         """
 
@@ -1551,6 +1551,11 @@ class IPersonEditRestricted(Interface):
         to INVITATION_DECLINED.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text(required=False))
+    @export_write_operation()
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
@@ -2238,6 +2243,7 @@ params_to_fix = [
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
     (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['retractTeamMembership'], 'team'),
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
