@@ -1379,7 +1379,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         return iterable_submissions
 
     def getOfficialTranslation(self, index, is_other=False, is_shared=False):
-        """Return current translation on either side for plural form 'index'."""
+        """Return current translation on either side for plural form 'index'.
+        """
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.pofile.language.displayname))
