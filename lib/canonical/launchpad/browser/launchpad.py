@@ -89,6 +89,14 @@ from canonical.launchpad.webapp.interfaces import (
     INavigationMenu,
     )
 from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import (
+    ExportedFolder,
+    ExportedImageFolder,
+    )
+from canonical.widgets.project import ProjectScopeWidget
+from lp.answers.interfaces.questioncollection import IQuestionSet
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
@@ -99,14 +107,6 @@ from lp.app.browser.tales import (
     MenuAPI,
     PageTemplateContextsAPI,
     )
-from canonical.launchpad.webapp.url import urlappend
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import (
-    ExportedFolder,
-    ExportedImageFolder,
-    )
-from canonical.widgets.project import ProjectScopeWidget
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.errors import (
     GoneError,
     NotFoundError,
@@ -131,7 +131,7 @@ from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
-from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
@@ -584,7 +584,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mentoring': IMentoringOfferSet,
+        '+nameblacklist': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
@@ -688,28 +688,11 @@ class LaunchpadRootNavigation(Navigation):
         if WebServiceLayer.providedBy(self.request):
             return None
 
-        mainsite_host = config.vhost.mainsite.hostname
-
         # If the hostname for our URL isn't under the main site
         # (e.g. shipit.ubuntu.com), don't redirect.
         uri = URI(self.request.getURL())
-        if not uri.host.endswith(mainsite_host):
+        if not uri.host.endswith(config.vhost.mainsite.hostname):
             return None
-
-        beta_host = config.launchpad.beta_testers_redirection_host
-        user = getUtility(ILaunchBag).user
-        # Test to see if the user is None before attempting to get the
-        # launchpad_beta_testers celebrity.  In the odd test where the
-        # database is empty the series of tests will work.
-        if user is None:
-            user_is_beta_tester = False
-        else:
-            beta_testers = (
-                getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
-            if user.inTeam(beta_testers):
-                user_is_beta_tester = True
-            else:
-                user_is_beta_tester = False
 
         # If the request is for a bug then redirect straight to that bug.
         bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
@@ -722,30 +705,13 @@ class LaunchpadRootNavigation(Navigation):
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
                 raise Unauthorized("Bug %s is private" % bug_number)
-            uri = URI(canonical_url(bug.default_bugtask))
-            if beta_host is not None and user_is_beta_tester:
-                # Alter the host name to point at the beta target.
-                new_host = uri.host[:-len(mainsite_host)] + beta_host
-                uri = uri.replace(host=new_host)
-        else:
-            # If no redirection host is set or the user is not a beta tester,
-            # don't redirect.
-            if beta_host is None or not user_is_beta_tester:
-                return None
-            # Alter the host name to point at the beta target.
-            new_host = uri.host[:-len(mainsite_host)] + beta_host
-            uri = uri.replace(host=new_host)
-            # Complete the URL from the environment.
-            uri = uri.replace(path=self.request['PATH_INFO'])
-            query_string = self.request.get('QUERY_STRING')
-            if query_string:
-                uri = uri.replace(query=query_string)
-
-        # Empty the traversal stack, since we're redirecting.
-        self.request.setTraversalStack([])
-
-        # And perform a temporary redirect.
-        return RedirectionView(str(uri), self.request, status=303)
+            # Empty the traversal stack, since we're redirecting.
+            self.request.setTraversalStack([])
+            # And perform a temporary redirect.
+            return RedirectionView(canonical_url(bug.default_bugtask),
+                self.request, status=303)
+        # Explicit catchall - do not redirect.
+        return None
 
     def publishTraverse(self, request, name):
         beta_redirection_view = self._getBetaRedirectionView()

@@ -12,7 +12,7 @@ software. It can be part of a ProjectGroup or it can be standalone.
     ...     IProduct,
     ...     IProductSet,
     ...     )
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -25,6 +25,16 @@ going to demonstrate.
 Now lets get the utility we use to interact with sets of products.
 
     >>> productset = getUtility(IProductSet)
+
+We also need to do some setup for other tests, which need alsa-utils
+configured for services.
+
+    >>> from lp.app.enums import ServiceUsage
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
 
 Verify that p (a Product object) correctly implements IProduct.
 
@@ -410,7 +420,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 

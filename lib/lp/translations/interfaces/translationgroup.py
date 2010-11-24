@@ -11,13 +11,8 @@ __all__ = [
     'ITranslationPolicy',
     'ITranslationGroup',
     'ITranslationGroupSet',
-    'TranslationPermission',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -38,55 +33,7 @@ from lp.services.fields import (
     Title,
     URIField,
     )
-
-
-class TranslationPermission(DBEnumeratedType):
-    """Translation Permission System
-
-    Projects groups, products and distributions can all have content that
-    needs to be translated. In this case, Launchpad Translations allows them
-    to decide how open they want that translation process to be. At one
-    extreme, anybody can add or edit any translation, without review. At the
-    other, only the designated translator for that group in that language can
-    add or edit its translation files. This schema enumerates the options.
-    """
-
-    OPEN = DBItem(1, """
-        Open
-
-        This group allows totally open access to its translations. Any
-        logged-in user can add or edit translations in any language, without
-        any review.""")
-
-    STRUCTURED = DBItem(20, """
-        Structured
-
-        This group has designated translators for certain languages. In
-        those languages, people who are not designated translators can only
-        make suggestions. However, in languages which do not yet have a
-        designated translator, anybody can edit the translations directly,
-        with no further review.""")
-
-    RESTRICTED = DBItem(100, """
-        Restricted
-
-        This group allows only designated translators to edit the
-        translations of its files. You can become a designated translator
-        either by joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators can still make
-        suggestions for new translations, but those suggestions need to be
-        reviewed before being accepted by the designated translator.""")
-
-    CLOSED = DBItem(200, """
-        Closed
-
-        This group allows only designated translators to edit or add
-        translations. You can become a designated translator either by
-        joining an existing language translation team for this
-        project, or by getting permission to start a new team for a new
-        language. People who are not designated translators will not be able
-        to add suggestions.""")
+from lp.translations.enums import TranslationPermission
 
 
 class ITranslationPolicy(Interface):

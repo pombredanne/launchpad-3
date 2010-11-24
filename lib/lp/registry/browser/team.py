@@ -44,7 +44,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -78,7 +77,6 @@ from lp.registry.interfaces.mailinglist import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    IPerson,
     IPersonSet,
     ITeam,
     ITeamContactAddressForm,
@@ -742,15 +740,15 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         The list must exist and be in one of the REGISTERED, DECLINED, FAILED,
         or INACTIVE states.  Further, the user doing the purging, must be
-        a Launchpad administrator or mailing list expert.
+        an owner, Launchpad administrator or mailing list expert.
         """
-        requester = IPerson(self.request.principal, None)
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if (requester is None or
-            (not requester.inTeam(celebrities.admin) and
-             not requester.inTeam(celebrities.mailing_list_experts))):
+        is_moderator = check_permission('launchpad.Moderate', self.context)
+        is_mailing_list_manager = check_permission(
+            'launchpad.MailingListManager', self.context)
+        if is_moderator or is_mailing_list_manager:
+            return self.getListInState(*PURGE_STATES) is not None
+        else:
             return False
-        return self.getListInState(*PURGE_STATES) is not None
 
 
 class TeamMailingListSubscribersView(LaunchpadView):
@@ -803,8 +801,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        assert(self.mailing_list is not None), (
-            'No mailing list: %s' % self.context.name)
+        if self.mailing_list is None:
+            self.request.response.addInfoNotification(
+                '%s does not have a mailing list.' % self.context.displayname)
+            return self.request.response.redirect(canonical_url(self.context))
 
     @cachedproperty
     def hold_count(self):
@@ -1077,6 +1077,8 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
+        # Clear the newmember widget so that the user can add another member.
+        self.widgets['newmember'].setRenderedValue(None)
 
 
 class TeamMapView(LaunchpadView):

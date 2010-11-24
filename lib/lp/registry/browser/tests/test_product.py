@@ -6,20 +6,31 @@
 __metaclass__ = type
 
 import datetime
-import unittest
 
 import pytz
+
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import ProductLicenseMixin
-from lp.registry.interfaces.product import License
+from lp.registry.interfaces.product import (
+    License,
+    IProductSet,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
-from lp.testing.views import create_view
+from lp.testing.service_usage_helpers import set_service_usage
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestProductLicenseMixin(TestCaseWithFactory):
@@ -102,5 +113,59 @@ class TestProductLicenseMixin(TestCaseWithFactory):
         self.assertEqual('2005-06-15', result)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestProductConfiguration(TestCaseWithFactory):
+    """Tests the configuration links and helpers."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductConfiguration, self).setUp()
+        self.product = self.factory.makeProduct()
+
+    def test_registration_not_done(self):
+        # The registration done property on the product index view
+        # tells you if all the configuration work is done, based on
+        # usage enums.
+
+        # At least one usage enum is unknown, so registration done is false.
+        self.assertEqual(
+            self.product.codehosting_usage,
+            ServiceUsage.UNKNOWN)
+        view = create_view(self.product, '+get-involved')
+        self.assertFalse(view.registration_done)
+
+        set_service_usage(
+            self.product.name,
+            codehosting_usage="EXTERNAL",
+            bug_tracking_usage="LAUNCHPAD",
+            answers_usage="EXTERNAL",
+            translations_usage="NOT_APPLICABLE")
+        view = create_view(self.product, '+get-involved')
+        self.assertTrue(view.registration_done)
+
+
+class TestProductAddView(TestCaseWithFactory):
+    """Tests the configuration links and helpers."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductAddView, self).setUp()
+        self.product_set = getUtility(IProductSet)
+        # Marker allowing us to reset the config.
+        config.push(self.id(), '')
+        self.addCleanup(config.pop, self.id())
+
+    def test_staging_message_is_not_demo(self):
+        view = create_initialized_view(self.product_set, '+new')
+        message = find_tag_by_id(view.render(), 'staging-message')
+        self.assertTrue(message is not None)
+
+    def test_staging_message_is_demo(self):
+        config.push('staging-test', '''
+            [launchpad]
+            is_demo: true
+            ''')
+        view = create_initialized_view(self.product_set, '+new')
+        message = find_tag_by_id(view.render(), 'staging-message')
+        self.assertEqual(None, message)

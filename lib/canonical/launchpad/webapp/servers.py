@@ -912,6 +912,10 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         """See `IPublicationRequest`."""
         self.principal = principal
 
+    def clearSecurityPolicyCache(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return
+
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.

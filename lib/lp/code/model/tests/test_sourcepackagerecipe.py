@@ -41,6 +41,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -50,7 +51,10 @@ from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
     SourcePackageRecipe,
     )
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuildJob
+from lp.code.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild,
+    SourcePackageRecipeBuildJob,
+    )
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
@@ -65,10 +69,12 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.testing import (
     ANONYMOUS,
+    feature_flags,
     launchpadlib_for,
     login,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     ws_object,
     )
@@ -78,6 +84,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageRecipe, self).setUp()
+        self.useContext(feature_flags())
 
     def test_implements_interface(self):
         """SourcePackageRecipe implements ISourcePackageRecipe."""
@@ -347,6 +357,15 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
             PackagePublishingPocket.RELEASE)
 
+    def test_recipes_enabled_config(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        self.assertFalse(recipes_enabled())
+
+    def test_recipes_enabled_flag(self):
+        self.pushConfig('build_from_branch', enabled=False)
+        set_feature_flag(u'code.recipes_enabled', u'on')
+        self.assertTrue(recipes_enabled())
+
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
         requester = self.factory.makePerson(name='requester')
@@ -468,7 +487,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # Show no database constraints were violated
         Store.of(recipe).flush()
 
-    def test_destroySelf_clears_release(self):
+    def test_destroySelf_preserves_release(self):
         # Destroying a sourcepackagerecipe removes references to its builds
         # from their releases.
         recipe = self.factory.makeSourcePackageRecipe()
@@ -478,7 +497,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build, release.source_package_recipe_build)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()
-        self.assertIs(None, release.source_package_recipe_build)
+        self.assertIsNot(None, release.source_package_recipe_build)
+
+    def test_destroySelf_retains_build(self):
+        # Destroying a sourcepackagerecipe removes references to its builds
+        # from their releases.
+        recipe = self.factory.makeSourcePackageRecipe()
+        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        store = Store.of(build)
+        store.flush()
+        build_id = build.id
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertEqual(recipe, build.recipe)
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        build = store.find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id == build_id).one()
+        self.assertIsNot(None, build)
+        self.assertIs(None, build.recipe)
         transaction.commit()
 
     def test_findStaleDailyBuilds(self):

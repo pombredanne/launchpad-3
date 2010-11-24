@@ -118,6 +118,12 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -125,7 +131,6 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSubset,
     )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueueEntry,
     )
 
@@ -164,6 +169,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -212,6 +219,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -380,7 +388,7 @@ patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistroSeries)
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -486,6 +494,10 @@ patch_collection_return_type(
 patch_reference_property(
     IBugTrackerComponent, "distro_source_package",
     IDistributionSourcePackage)
+
+# IHasTranslationTemplates
+patch_collection_return_type(
+    IHasTranslationTemplates, 'getTranslationTemplates', IPOTemplate)
 
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)

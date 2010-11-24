@@ -16,8 +16,11 @@ specific Storm tools to cope with our master and slave store arrangement.
     ...     ISlaveStore,
     ...     IStore,
     ...     )
-    >>> from canonical.launchpad.database import (
-    ...     Account, AccountPassword, EmailAddress)
+    >>> from canonical.launchpad.database.account import (
+    ...     Account,
+    ...     AccountPassword,
+    ...     )
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from zope.security.proxy import ProxyFactory
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.person import Person

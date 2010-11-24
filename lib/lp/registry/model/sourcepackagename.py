@@ -23,6 +23,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.helpers import ensure_unicode
 from lp.app.errors import NotFoundError
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.sourcepackagename import (
@@ -62,6 +63,7 @@ class SourcePackageNameSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        name = ensure_unicode(name)
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
@@ -145,7 +147,7 @@ def getSourcePackageDescriptions(
 
     descriptions = {}
     for binarypackagename, sourcepackagename in cur.fetchall():
-        if not descriptions.has_key(sourcepackagename):
+        if not sourcepackagename in descriptions:
             descriptions[sourcepackagename] = (
                 "Source of: %s" % binarypackagename)
         else:

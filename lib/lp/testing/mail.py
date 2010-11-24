@@ -10,7 +10,7 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IMailBox
+from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail import (
     get_msgid,
     MailController,

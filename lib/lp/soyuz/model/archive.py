@@ -81,6 +81,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
+    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -348,6 +349,11 @@ class Archive(SQLBase):
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
+
+    @property
+    def is_partner(self):
+        """See `IArchive`."""
+        return self.purpose == ArchivePurpose.PARTNER
 
     @property
     def is_copy(self):
@@ -834,6 +840,12 @@ class Archive(SQLBase):
 
         return permission
 
+    def getComponentsForSeries(self, distroseries):
+        if self.is_partner:
+            return [getUtility(IComponentSet)['partner']]
+        else:
+            return distroseries.components
+
     def updateArchiveCache(self):
         """See `IArchive`."""
         # Compiled regexp to remove puntication.
@@ -1101,7 +1113,7 @@ class Archive(SQLBase):
 
     def checkUploadToPocket(self, distroseries, pocket):
         """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PARTNER:
+        if self.is_partner:
             if pocket not in (
                 PackagePublishingPocket.RELEASE,
                 PackagePublishingPocket.PROPOSED):
@@ -1701,6 +1713,24 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
+    
+    @classmethod
+    def validatePPA(self, person, proposed_name):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if person.isTeam() and (
+            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            return "Open teams cannot have PPAs."
+        if proposed_name is not None and proposed_name == ubuntu.name:
+            return (
+                "A PPA cannot have the same name as its distribution.")
+        if proposed_name is None:
+            proposed_name = 'ppa'
+        try:
+            person.getPPAByName(proposed_name)
+        except NoSuchPPA:
+            return None
+        else:
+            return "You already have a PPA named '%s'." % proposed_name
 
 
 class ArchiveSet:

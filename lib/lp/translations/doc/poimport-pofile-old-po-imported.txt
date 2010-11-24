@@ -31,8 +31,7 @@ Here are some imports we need to get this test running.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 

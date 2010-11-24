@@ -94,6 +94,12 @@
     <allow attributes="browserDefault
                        __call__"/>
   </class>
+  <class class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
+  <class class="lp.code.model.branchmergequeuecollection.VisibleBranchMergeQueueCollection">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IBranchMergeQueueCollection"/>
+  </class>
   <class class="lp.code.model.branchcollection.GenericBranchCollection">
     <allow interface="lp.code.interfaces.branchcollection.IBranchCollection"/>
   </class>
@@ -148,6 +154,11 @@
       provides="lp.code.interfaces.revisioncache.IRevisionCache">
     <allow interface="lp.code.interfaces.revisioncache.IRevisionCache"/>
   </securedutility>
+  <securedutility
+      class="lp.code.model.branchmergequeuecollection.GenericBranchMergeQueueCollection"
+      provides="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues">
+    <allow interface="lp.code.interfaces.branchmergequeuecollection.IAllBranchMergeQueues"/>
+  </securedutility>
   <adapter
       for="lp.registry.interfaces.person.IPerson"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -191,13 +202,13 @@
 
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
-      class="canonical.launchpad.xmlrpc.BranchSetAPI"
+      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
+      class="lp.code.xmlrpc.branch.BranchSetAPI"
       permission="launchpad.AnyPerson"/>
   <xmlrpc:view
       for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
-      interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
-      class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+      interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
+      class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
 
   <!-- Branch Merge Proposal -->
@@ -233,6 +244,7 @@
                     review_diff
                     next_preview_diff_job
                     preview_diff
+                    getIncrementalDiffs
                     votes
                     all_comments
                     related_bugs
@@ -245,7 +257,8 @@
                     isValidTransition
                     getUnlandedSourceBranchRevisions
                     root_message_id
-                    getUsersVoteReference"/>
+                    getUsersVoteReference
+                    generateIncrementalDiff"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.Edit"
@@ -305,6 +318,11 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJobSource"/>
   </securedutility>
 
+  <class
+  class="lp.code.model.branchmergeproposaljob.GenerateIncrementalDiffJob">
+    <allow interface="lp.code.interfaces.branchmergeproposal.IGenerateIncrementalDiffJob"/>
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
+  </class>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJob" />
     <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
@@ -878,6 +896,10 @@
   <!-- Diffs -->
   <class class="lp.code.model.diff.Diff">
     <allow interface="lp.code.interfaces.diff.IDiff" />
+  </class>
+  <class class="lp.code.model.diff.IncrementalDiff">
+    <allow interface="lp.code.interfaces.diff.IDiff" />
+    <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
   </class>
   <class class="lp.code.model.diff.StaticDiff">
     <allow interface="lp.code.interfaces.diff.IStaticDiff" />

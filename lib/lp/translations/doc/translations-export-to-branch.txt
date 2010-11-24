@@ -186,6 +186,8 @@ the time it last exported them, it won't export them again.
     >>> script.simulated_latest_commit = now
     >>> main_pofile.date_changed = now - timedelta(days=3)
     >>> module_pofile.date_changed = now - timedelta(days=4)
+    >>> module_pofile.potemplate.date_last_updated = now - timedelta(days=5)
+    >>> transaction.commit()
     >>> old_pofile.date_changed = now - timedelta(days=5)
 
     >>> script.main()
