@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from zope.interface.verify import verifyObject
 
-from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.enums import RosettaImportStatus
