@@ -28,7 +28,6 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -46,6 +45,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
+    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -197,13 +197,9 @@ class SourcePackageRecipe(Storm):
         store = Store.of(self)
         self.distroseries.clear()
         self._recipe_data.instructions.find().remove()
-
-        def destroyBuilds(pending):
-            builds = self.getBuilds(pending=pending)
-            for build in builds:
-                build.destroySelf()
-        destroyBuilds(pending=True)
-        destroyBuilds(pending=False)
+        builds = store.find(
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self)
+        builds.set(recipe_id=None)
         store.remove(self._recipe_data)
         store.remove(self)
 
@@ -215,7 +211,7 @@ class SourcePackageRecipe(Storm):
     def requestBuild(self, archive, requester, distroseries, pocket,
                      manual=False):
         """See `ISourcePackageRecipe`."""
-        if not config.build_from_branch.enabled:
+        if not recipes_enabled():
             raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest

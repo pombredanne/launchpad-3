@@ -51,7 +51,6 @@ __all__ = [
     'reconnect_stores',
     ]
 
-import atexit
 import datetime
 import errno
 import gc
@@ -109,7 +108,8 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
@@ -587,11 +587,6 @@ class MemcachedLayer(BaseLayer):
         pidfile = MemcachedLayer.getPidFile()
         open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
 
-        # Register an atexit hook just in case tearDown doesn't get
-        # invoked for some perculiar reason.
-        if not BaseLayer.persist_test_services:
-            atexit.register(kill_by_pidfile, pidfile)
-
     @classmethod
     @profiled
     def tearDown(cls):
@@ -637,8 +632,6 @@ class LibrarianLayer(BaseLayer):
 
     _is_setup = False
 
-    _atexit_call = None
-
     @classmethod
     @profiled
     def setUp(cls):
@@ -651,7 +644,6 @@ class LibrarianLayer(BaseLayer):
         the_librarian = LibrarianTestSetup()
         the_librarian.setUp()
         LibrarianLayer._check_and_reset()
-        cls._atexit_call = atexit.register(the_librarian.tearDown)
 
     @classmethod
     @profiled
@@ -666,11 +658,6 @@ class LibrarianLayer(BaseLayer):
                     )
         LibrarianLayer._check_and_reset()
         LibrarianTestSetup().tearDown()
-        # Remove the atexit handler, since we've already done the work.
-        atexit._exithandlers = [
-            handler for handler in atexit._exithandlers
-            if handler[0] != cls._atexit_call]
-        cls._atexit_call = None
 
     @classmethod
     @profiled
@@ -921,24 +908,6 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     def tearDown(cls):
         pass
     
-    @classmethod
-    def tearDownHelper(cls):
-        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
-
-        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
-        why atexit is used, but because test runners delegate rather than
-        returning, the librarian and other servers are only killed *at the end
-        of the whole test run*, which leads to multiple instances running, so
-        we manually run the teardown for these layers.
-        """
-        try:
-            MemcachedLayer.tearDown()
-        finally:
-            try:
-                LibrarianLayer.tearDown()
-            finally:
-                DatabaseLayer.tearDown()
-
     @classmethod
     @profiled
     def testSetUp(cls):
@@ -1238,7 +1207,6 @@ class GoogleServiceLayer(BaseLayer):
     def setUp(cls):
         google = GoogleServiceTestSetup()
         google.setUp()
-        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
@@ -1295,11 +1263,6 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @profiled
     def setUp(cls):
         pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1409,7 +1372,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def tearDown(cls):
         if not globalregistry.base.unregisterUtility(cls._mailbox):
             raise NotImplementedError('failed to unregister mailbox')
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1572,7 +1534,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
             PageTestLayer.profiler = Profile()
         else:
             PageTestLayer.profiler = None
-        file_handler = logging.FileHandler('pagetests-access.log', 'w')
+        file_handler = logging.FileHandler('logs/pagetests-access.log', 'w')
         file_handler.setFormatter(logging.Formatter())
         logger = PythonLogger('pagetests-access')
         logger.logger.addHandler(file_handler)
@@ -1730,9 +1692,6 @@ class LayerProcessController:
         log.propagate = False
         cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
-        # Make sure that the smtp server is killed even if tearDown() is
-        # skipped, which can happen if FunctionalLayer is in the mix.
-        atexit.register(cls.stopSMTPServer)
 
     @classmethod
     @profiled
@@ -1743,9 +1702,6 @@ class LayerProcessController:
         cls._cleanUpStaleAppServer()
         cls._runAppServer()
         cls._waitUntilAppServerIsReady()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.stopAppServer)
 
     @classmethod
     @profiled

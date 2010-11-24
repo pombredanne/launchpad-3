@@ -36,7 +36,7 @@ Not everyone can modify it however:
     Content-Type: text/plain
     X-Lazr-Oopsid: OOPS-...
     <BLANKLINE>
-    (<Product at 0x...>, 'bug_reporting_guidelines', 'launchpad.Edit')
+    (..., 'bug_reporting_guidelines', 'launchpad.BugSupervisor')
     <BLANKLINE>
     Traceback (most recent call last):
     ...

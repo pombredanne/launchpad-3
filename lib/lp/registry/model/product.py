@@ -55,6 +55,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -90,7 +93,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -137,12 +140,12 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
@@ -157,23 +160,22 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,
     )
-from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translationimportqueue import (
+from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+from lp.translations.model.potemplate import POTemplate
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -980,6 +982,30 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
 
+    def getVersionSortedSeries(self, filter_obsolete=False):
+        """See `IProduct`."""
+        store = Store.of(self)
+        dev_focus = store.find(
+            ProductSeries,
+            ProductSeries.id == self.development_focus.id)
+        other_series_conditions = [
+            ProductSeries.product == self,
+            ProductSeries.id != self.development_focus.id,
+            ]
+        if filter_obsolete is True:
+            other_series_conditions.append(
+                ProductSeries.status != SeriesStatus.OBSOLETE)
+        other_series = store.find(ProductSeries, other_series_conditions)
+        # The query will be much slower if the version_sort_key is not
+        # the first thing that is sorted, since it won't be able to use
+        # the productseries_name_sort index.
+        other_series.order_by(SQL('version_sort_key(name) DESC'))
+        # UNION ALL must be used to preserve the sort order from the
+        # separate queries. The sorting should not be done after
+        # unioning the two queries, because that will prevent it from
+        # being able to use the productseries_name_sort index.
+        return dev_focus.union(other_series, all=True)
+
     @property
     def obsolete_translatable_series(self):
         """See `IProduct`."""
@@ -1018,27 +1044,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return packages[0]
         # capitulate
         return None
-
-    @property
-    def mentoring_offers(self):
-        """See `IProduct`"""
-        via_specs = MentoringOffer.select("""
-            Specification.product = %s AND
-            Specification.id = MentoringOffer.specification
-            """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause + ")",
-            clauseTables=['Specification'],
-            distinct=True)
-        via_bugs = MentoringOffer.select("""
-            BugTask.product = %s AND
-            BugTask.bug = MentoringOffer.bug AND
-            BugTask.bug = Bug.id AND
-            Bug.private IS FALSE
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask', 'Bug'],
-            distinct=True)
-        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def translationgroups(self):
@@ -1568,12 +1573,13 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product._ownerID,
-            ).config(distinct=True).order_by(Product.title)
+            Person.id == Product._ownerID).config(
+                distinct=True).order_by(Product.title)
+
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return prejoin(results)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
@@ -1587,12 +1593,12 @@ class ProductSet:
                         ProductSeries.Product = Product.id
                     JOIN POTemplate ON
                         POTemplate.productseries = ProductSeries.id
-                    WHERE Product.active AND Product.official_rosetta
+                    WHERE Product.active AND Product.translations_usage = %s
                     ORDER BY place
                 ) AS randomized_products
                 LIMIT %s
             )
-            ''' % quote(maximumproducts),
+            ''' % sqlvalues(ServiceUsage.LAUNCHPAD, maximumproducts),
             distinct=True,
             orderBy='Product.title')
 

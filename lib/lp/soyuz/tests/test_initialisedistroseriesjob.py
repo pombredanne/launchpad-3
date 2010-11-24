@@ -6,15 +6,12 @@ import subprocess
 import sys
 
 from storm.exceptions import IntegrityError
-from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
@@ -26,7 +23,6 @@ from lp.soyuz.model.initialisedistroseriesjob import (
 from lp.soyuz.scripts.initialise_distroseries import InitialisationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-from lp.testing.matchers import Contains
 
 
 class InitialiseDistroSeriesJobTests(TestCaseWithFactory):

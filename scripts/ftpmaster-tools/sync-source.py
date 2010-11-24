@@ -40,10 +40,6 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import (
-    IDistributionSet,
-    IPersonSet,
-    )
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts,
     logger,
@@ -51,6 +47,12 @@ from canonical.launchpad.scripts import (
     )
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmaster import (
@@ -89,14 +91,15 @@ def reject(str, prefix="Rejected: "):
     if str:
         reject_message += prefix + str + "\n"
 
+
 # Following two functions are borrowed and (modified) from apt-listchanges
 def urgency_to_numeric(u):
     urgency_map = {
-        'low' : 1,
-        'medium' : 2,
-        'high' : 3,
-        'emergency' : 4,
-        'critical' : 4,
+        'low': 1,
+        'medium': 2,
+        'high': 3,
+        'emergency': 4,
+        'critical': 4,
         }
     return urgency_map.get(u.lower(), 1)
 
@@ -248,22 +251,20 @@ def parse_control(control_filename):
 
 def extract_source(dsc_filename):
     # Create and move into a temporary directory
-    tmpdir = tempfile.mktemp()
-    os.mkdir(tmpdir)
+    tmpdir = tempfile.mkdtemp()
     old_cwd = os.getcwd()
-    os.chdir(tmpdir)
 
     # Extract the source package
-    cmd = "dpkg-source -sn -x %s" % (dsc_filename)
-    (result, output) = commands.getstatusoutput(cmd)
-    if (result != 0):
-        print " * command was '%s'" % (cmd)
-        print dak_utils.prefix_multi_line_string(
-            output, " [dpkg-source output:] "), ""
+    try:
+        extract_dpkg_source(dsc_filename, tmpdir)
+    except DpkgSourceError, e:
+        print " * command was '%s'" % (e.command)
+        print e.output
         dak_utils.fubar(
             "'dpkg-source -x' failed for %s [return code: %s]." %
-            (dsc_filename, result))
+            (dsc_filename, e.result))
 
+    os.chdir(tmpdir)
     return (old_cwd, tmpdir)
 
 
@@ -299,12 +300,12 @@ def cleanup_source(tmpdir, old_cwd, dsc):
 
 def check_dsc(dsc, current_sources, current_binaries):
     source = dsc["source"]
-    if current_sources.has_key(source):
+    if source in current_sources:
         source_component = current_sources[source][1]
     else:
         source_component = "universe"
     for binary in map(string.strip, dsc["binary"].split(',')):
-        if current_binaries.has_key(binary):
+        if binary in current_binaries:
             (current_version, current_component) = current_binaries[binary]
 
             # Check that a non-main source package is not trying to
@@ -322,7 +323,7 @@ def check_dsc(dsc, current_sources, current_binaries):
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
             ubuntu_bin = current_binaries[binary][0].find("ubuntu")
-            if not Options.force and  ubuntu_bin != -1:
+            if not Options.force and ubuntu_bin != -1:
                 dak_utils.fubar(
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
@@ -346,7 +347,8 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         if signing_rules == "must be signed and valid":
             if (gpg_pre[0] != "-----BEGIN PGP SIGNED MESSAGE-----" or
                 gpg_post[0] != "-----BEGIN PGP SIGNATURE-----"):
-                dak_utils.fubar("signature for %s invalid %r %r" % (dsc_filename, gpg_pre, gpg_post))
+                dak_utils.fubar("signature for %s invalid %r %r" % (
+                    dsc_filename, gpg_pre, gpg_post))
 
     dsc_files = dict((entry['name'], entry) for entry in dsc['files'])
     check_dsc(dsc, current_sources, current_binaries)
@@ -410,8 +412,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
             status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE
-            )
+            pocket=PackagePublishingPocket.RELEASE)
     else:
         spp = []
         for package in arguments:
@@ -429,7 +430,7 @@ def read_current_source(distro_series, valid_component=None, arguments=None):
                 pkg, version, component))
             continue
 
-        if not S.has_key(pkg):
+        if pkg not in S:
             S[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(S[pkg][0], version) < 0:
@@ -465,7 +466,7 @@ def read_current_binaries(distro_series):
     #             version = bp.binarypackagerelease.version
     #             pkg = bp.binarypackagerelease.binarypackagename.name
     #
-    #             if not B.has_key(pkg):
+    #             if pkg not in B:
     #                 B[pkg] = [version, component]
     #             else:
     #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -493,7 +494,7 @@ def read_current_binaries(distro_series):
 
     print "Getting binaries for %s..." % (distro_series.name)
     for (pkg, version, component) in cur.fetchall():
-        if not B.has_key(pkg):
+        if pkg not in B:
             B[pkg] = [version, component]
         else:
             if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
@@ -518,7 +519,7 @@ def read_Sources(filename, origin):
         pkg = Sources.Section.Find("Package")
         version = Sources.Section.Find("Version")
 
-        if S.has_key(pkg) and apt_pkg.VersionCompare(
+        if pkg in S and apt_pkg.VersionCompare(
             S[pkg]["version"], version) > 0:
             continue
 
@@ -544,7 +545,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
-    if not Sources.has_key(pkg):
+    if pkg not in Sources:
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
 
     syncsource = SyncSource(Sources[pkg]["files"], origin, Log,
@@ -557,7 +558,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         dak_utils.fubar("Fetching files failed: %s" % (str(e),))
 
     if dsc_filename is None:
-        dak_utils.fubar("No dsc filename in %r" % Sources[pkg]["files"].keys())
+        dak_utils.fubar(
+            "No dsc filename in %r" % Sources[pkg]["files"].keys())
 
     import_dsc(os.path.abspath(dsc_filename), suite, previous_version,
                origin["dsc"], files_from_librarian, requested_by, origin,
@@ -583,7 +585,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         stat_count += 1
         dest_version = Suite.get(pkg, [None, ""])[0]
 
-        if not Sources.has_key(pkg):
+        if pkg not in Sources:
             if not Options.all:
                 dak_utils.fubar("%s: not found" % (pkg))
             else:
@@ -591,7 +593,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                 stat_us += 1
                 continue
 
-        if Blacklisted.has_key(pkg):
+        if pkg in Blacklisted:
             print "[BLACKLISTED] %s_%s" % (pkg, dest_version)
             stat_blacklisted += 1
             continue

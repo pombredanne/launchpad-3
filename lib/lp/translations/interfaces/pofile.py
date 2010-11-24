@@ -42,9 +42,9 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.person import IPerson
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
@@ -65,9 +65,6 @@ class IPOFile(IRosettaStats):
     language = Choice(
         title=_('Language of this PO file.'),
         vocabulary='Language', required=True)
-
-    variant = TextLine(
-        title=_('The language variant for this translation file.'))
 
     title = TextLine(
         title=_('The translation file title.'), required=True, readonly=True)

@@ -9,6 +9,7 @@ from datetime import datetime
 import unittest
 
 import pytz
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -16,6 +17,10 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICve,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.code.enums import (
@@ -54,7 +59,6 @@ from lp.testing.matchers import (
     IsProxied,
     Provides,
     ProvidesAndIsProxied,
-    StartsWith,
     )
 
 
@@ -491,6 +495,24 @@ class TestFactory(TestCaseWithFactory):
     def test_makeSuiteSourcePackage_returns_ISuiteSourcePackage(self):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertThat(ssp, ProvidesAndIsProxied(ISuiteSourcePackage))
+
+    # makeCVE
+    def test_makeCVE_returns_cve(self):
+        cve = self.factory.makeCVE(sequence='2000-1234')
+        self.assertThat(cve, ProvidesAndIsProxied(ICve))
+
+    def test_makeCVE_uses_sequence(self):
+        cve = self.factory.makeCVE(sequence='2000-1234')
+        self.assertEqual('2000-1234', cve.sequence)
+
+    def test_makeCVE_uses_description(self):
+        cve = self.factory.makeCVE(sequence='2000-1234', description='foo')
+        self.assertEqual('foo', cve.description)
+
+    def test_makeCVE_uses_cve_status(self):
+        cve = self.factory.makeCVE(
+            sequence='2000-1234', cvestate=CveStatus.DEPRECATED)
+        self.assertEqual(CveStatus.DEPRECATED, cve.status)
 
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):

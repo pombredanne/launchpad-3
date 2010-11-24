@@ -27,7 +27,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
     IEmailAddress,

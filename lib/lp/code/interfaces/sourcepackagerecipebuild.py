@@ -58,8 +58,7 @@ class ISourcePackageRecipeBuild(IPackageBuild):
         title=_("The person who wants this to be done."))
 
     recipe = Object(
-        schema=ISourcePackageRecipe, required=True,
-        title=_("The recipe being built."))
+        schema=ISourcePackageRecipe, title=_("The recipe being built."))
 
     manifest = Object(
         schema=ISourcePackageRecipeData, title=_(
