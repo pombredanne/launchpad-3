@@ -59,7 +59,6 @@ from canonical.launchpad.browser.feeds import (
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.searchbuilder import any
@@ -1275,18 +1274,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
-
-    @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
-
-        :returns: `IBugTracker` or None
-        """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
 
     @property
     def bugtracker(self):

@@ -98,7 +98,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.suggestion import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.launchpadform import (

@@ -53,6 +53,7 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
@@ -326,6 +327,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('owner', RecipeOwnerWidget)
 
     def initialize(self):
         # XXX: rockstar: This should be removed when source package recipes
@@ -417,7 +419,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
-
 
     @property
     def initial_values(self):

@@ -96,6 +96,7 @@ from lp.code.browser.branchmergeproposallisting import (
     PersonActiveReviewsView,
     PersonProductActiveReviewsView,
     )
+from lp.code.browser.branchmergequeuelisting import HasMergeQueuesMenuMixin
 from lp.code.browser.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
@@ -851,18 +852,19 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
                 .scanned())
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchesMenu(ApplicationMenu, HasMergeQueuesMenuMixin):
 
     usedfor = IPerson
     facet = 'branches'
     links = ['registered', 'owned', 'subscribed', 'addbranch',
-             'active_reviews']
+             'active_reviews', 'mergequeues']
     extra_attributes = [
         'active_review_count',
         'owned_branch_count',
         'registered_branch_count',
         'show_summary',
         'subscribed_branch_count',
+        'mergequeue_count',
         ]
 
     def _getCountCollection(self):
