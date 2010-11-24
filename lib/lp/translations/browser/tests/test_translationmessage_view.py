@@ -11,6 +11,7 @@ from datetime import (
     )
 
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -33,6 +34,9 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
     revert_unselected_translations,
     )
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer
@@ -53,8 +57,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         super(TestCurrentTranslationMessage_can_dismiss, self).setUp()
         self.owner = self.factory.makePerson()
         self.potemplate = self.factory.makePOTemplate(owner=self.owner)
-        self.pofile = self.factory.makePOFile('eo',
-                                              potemplate=self.potemplate)
+        self.pofile = self.factory.makePOFile(potemplate=self.potemplate)
         self.potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         self.view = None
         self.now = self._gen_now().next
@@ -67,7 +70,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self.view.initialize()
 
     def _makeTranslation(self, translation=None,
-                         suggestion=False, is_packaged=False):
+                         suggestion=False, is_other=False):
         if translation is None:
             translations = None
         elif isinstance(translation, list):
@@ -81,115 +84,110 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
                 translator=self.owner,
                 date_created=self.now())
         else:
-            message = self.factory.makeTranslationMessage(
-                self.pofile, self.potmsgset,
+            date_created = self.now()
+            date_reviewed = date_created
+            message = self.factory.makeCurrentTranslationMessage(
+                self.pofile, self.potmsgset, translator=self.owner,
                 translations=translations,
-                suggestion=suggestion,
-                is_current_upstream=is_packaged,
-                translator=self.owner,
-                date_updated=self.now())
+                date_created=date_created, date_reviewed=date_reviewed)
+            if is_other:
+                side_traits = getUtility(
+                    ITranslationSideTraitsSet).getForTemplate(
+                        self.pofile.potemplate)
+                side_traits.setFlag(message, False)
+                side_traits.other_side_traits.setFlag(message, True)
+                 
         message.browser_pofile = self.pofile
         return message
 
-    def _assertConfirmEmptyPluralPackaged(self,
+    def _assertConfirmEmptyPluralOther(self,
                                           can_confirm_and_dismiss,
                                           can_dismiss_on_empty,
                                           can_dismiss_on_plural,
-                                          can_dismiss_packaged):
+                                          can_dismiss_other):
         assert self.view is not None
         self.assertEqual(
             [can_confirm_and_dismiss,
                can_dismiss_on_empty,
                can_dismiss_on_plural,
-               can_dismiss_packaged],
+               can_dismiss_other],
             [self.view.can_confirm_and_dismiss,
                self.view.can_dismiss_on_empty,
                self.view.can_dismiss_on_plural,
-               self.view.can_dismiss_packaged])
+               self.view.can_dismiss_other])
 
     def test_no_suggestion(self):
         # If there is no suggestion, nothing can be dismissed.
         message = self._makeTranslation()
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, False, False)
+        self._assertConfirmEmptyPluralOther(False, False, False, False)
 
     def test_local_suggestion(self):
         # If there is a local suggestion, it can be dismissed.
         message = self._makeTranslation()
-        suggestion = self._makeTranslation(suggestion=True)
+        self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, False)
+        self._assertConfirmEmptyPluralOther(True, False, False, False)
 
     def test_local_suggestion_on_empty(self):
         # If there is a local suggestion on an empty message, it is dismissed
         # in a different place.
         message = self._makeTranslation("")
-        suggestion = self._makeTranslation(suggestion=True)
+        self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, True, False, False)
+        self._assertConfirmEmptyPluralOther(False, True, False, False)
 
     def test_local_suggestion_on_plural(self):
         # If there is a suggestion on a plural message, it is dismissed
         # in yet a different place.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                singular="msgid_singular", plural="msgid_plural")
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular="msgid_singular", plural="msgid_plural")
         message = self._makeTranslation(["singular_trans", "plural_trans"])
-        suggestion = self._makeTranslation(["singular_sugg", "plural_sugg"],
-                                         suggestion=True)
+        self._makeTranslation(
+            ["singular_sugg", "plural_sugg"], suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, True, False)
+        self._assertConfirmEmptyPluralOther(False, False, True, False)
 
-        # XXX JeroenVermeulen 2010-11-22: Disabling this test
-        # temporarily.  We must re-enable it before completing the
-        # migration of CurrentTranslationMessageTranslateView to the
-        # Recife model.  Currently this is the only test that still
-        # breaks after a partial migration of model code and that view
-        # (as needed to complete the update of _storeTranslations).
-    def XXX_disabled_test_packaged_suggestion(self):
-        # If there is a packaged suggestion, it can be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
+    def test_other_translation(self):
+        # If there is an other translation that is newer than the current
+        # translation, it can be dismissed.
         message = self._makeTranslation()
-        new_packaged = self._makeTranslation(is_packaged=True)
+        self._makeTranslation(is_other=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, True)
+        self._assertConfirmEmptyPluralOther(True, False, False, True)
 
-    def test_packaged_suggestion_on_empty(self):
-        # If there is an empty suggestion on an empty message,
-        # it is dismissed in a different place.
-        packaged = self._makeTranslation(is_packaged=True)
+    def test_other_translation_on_empty(self):
+        # With an empty message, it is dismissed in a different place.
         message = self._makeTranslation("")
-        new_packaged = self._makeTranslation(is_packaged=True)
+        self._makeTranslation(is_other=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, True, False, True)
+        self._assertConfirmEmptyPluralOther(False, True, False, True)
 
-    def test_packaged_suggestion_on_plural(self):
+    def test_other_translation_on_plural(self):
         # If there is a suggestion on a plural message, it is dismissed
         # in yet a different place.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                singular="msgid_singular", plural="msgid_plural")
-        packaged = self._makeTranslation(["singular_trans", "plural_trans"],
-                                         is_packaged=True)
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular="msgid_singular", plural="msgid_plural")
         message = self._makeTranslation(["singular_trans", "plural_trans"])
-        new_packaged = self._makeTranslation(["singular_new", "plural_new"],
-                                             is_packaged=True)
+        self._makeTranslation(["singular_new", "plural_new"], is_other=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, True, True)
+        self._assertConfirmEmptyPluralOther(False, False, True, True)
 
-    def test_packaged_suggestion_old(self):
-        # If there is an older packaged suggestion, it cannot be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
+    def test_other_translation_old(self):
+        # If there is an older other translation, it cannot be dismissed.
+        self._makeTranslation(is_other=True)
         message = self._makeTranslation()
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(False, False, False, False)
+        self._assertConfirmEmptyPluralOther(False, False, False, False)
 
-    def test_packaged_old_local_new(self):
-        # If there is an older packaged suggestion, but a newer local
+    def test_other_translation_old_local_new(self):
+        # If there is an older other translation, but a newer local
         # suggestion, only the local suggestion can be dismissed.
-        packaged = self._makeTranslation(is_packaged=True)
+        self._makeTranslation(is_other=True)
         message = self._makeTranslation()
-        suggestion = self._makeTranslation(suggestion=True)
+        self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPluralPackaged(True, False, False, False)
+        self._assertConfirmEmptyPluralOther(True, False, False, False)
 
 
 class TestResetTranslations(TestCaseWithFactory):
