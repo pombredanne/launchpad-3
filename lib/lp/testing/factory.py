@@ -2506,7 +2506,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeCurrentTranslationMessage(self, pofile=None, potmsgset=None,
                                       translator=None, reviewer=None,
                                       translations=None, diverged=False,
-                                      current_other=False):
+                                      current_other=False,
+                                      date_created=None, date_reviewed=None):
         """Create a `TranslationMessage` and make it current.
 
         This is similar to `makeTranslationMessage`, except:
@@ -2535,6 +2536,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param diverged: Create a diverged message?
         :param current_other: Should the message also be current on the
             other translation side?  (Cannot be combined with `diverged`).
+        :param date_created: Force a specific creation date instead of 'now'.
+        :param date_reviewed: Force a specific review date instead of 'now'.
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
@@ -2557,11 +2560,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pofile, translator, translations,
             RosettaTranslationOrigin.ROSETTAWEB,
             share_with_other_side=current_other)
+        naked_message = removeSecurityProxy(message)
 
         if diverged:
-            removeSecurityProxy(message).potemplate = pofile.potemplate
+            naked_message.potemplate = pofile.potemplate
 
-        message.markReviewed(reviewer)
+        if date_created is not None:
+            naked_message.date_created = date_created
+        message.markReviewed(reviewer, date_reviewed)
+
         return message
 
     def makeDivergedTranslationMessage(self, pofile=None, potmsgset=None,
