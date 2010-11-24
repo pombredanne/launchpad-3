@@ -21,13 +21,15 @@ from zope.schema import TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.code.enums import (
     CodeImportMachineOfflineReason,
     CodeImportMachineState,

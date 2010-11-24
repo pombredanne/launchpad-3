@@ -8,24 +8,30 @@ __all__ = []
 
 import os
 import pdb
+import socket
 import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
-from bzrlib.option import ListOption, Option
-
-import socket
-
+from bzrlib.option import (
+    ListOption,
+    Option,
+    )
 from devscripts import get_launchpad_root
-
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES,
+    DEFAULT_INSTANCE_TYPE,
+    EC2Instance,
+    )
 from devscripts.ec2test.session import EC2SessionName
-from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
+from devscripts.ec2test.testrunner import (
+    EC2TestRunner,
+    TRUNK_BRANCH,
+    )
 
 # Options accepted by more than one command.
 
@@ -186,7 +192,6 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
             test_branch = '.'
     branches = [data.split('=', 1) for data in branch]
     return branches, test_branch
-
 
 
 DEFAULT_TEST_OPTIONS = '--subunit -vvv'
@@ -409,7 +414,8 @@ class cmd_land(EC2Command):
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
         if rollback and (no_qa or incremental):
-            print "--rollback option used. Ignoring --no-qa and --incremental."
+            print (
+                "--rollback option used. Ignoring --no-qa and --incremental.")
         try:
             commit_message = mp.build_commit_message(
                 commit_text, testfix, no_qa, incremental, rollback=rollback)
@@ -611,6 +617,25 @@ class cmd_update_image(EC2Command):
             'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
+
+
+class cmd_images(EC2Command):
+    """Display all available images.
+
+    The first in the list is the default image.
+    """
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        format = "%5s  %-12s  %-12s  %s\n"
+        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
+        for revision, images in account.find_images():
+            for image in images:
+                self.outf.write(format % (
+                        revision, image.id, image.ownerId,
+                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
 
 
 class cmd_help(EC2Command):

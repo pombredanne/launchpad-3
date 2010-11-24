@@ -73,17 +73,17 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.launchpad.webapp.menu import structured
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
-from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import MenuAPI
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
