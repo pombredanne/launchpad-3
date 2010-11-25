@@ -77,7 +77,10 @@ from lp.translations.interfaces.potmsgset import (
     BrokenTextError,
     TranslationCreditsType,
     )
-from lp.translations.interfaces.side import TranslationSide
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
@@ -1106,14 +1109,21 @@ class POFile(SQLBase, POFileMixIn):
         sort_columns = ', '.join(sort_column_names)
 
         main_select = "SELECT %s" % columns
+
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
+        params = {
+            'flag': flag_name,
+            'language': quote(self.language),
+        }
         query = main_select + """
             FROM TranslationTemplateItem
             LEFT JOIN TranslationMessage ON
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
-                TranslationMessage.is_current_ubuntu IS TRUE AND
-                TranslationMessage.language = %s
-            """ % sqlvalues(self.language)
+                TranslationMessage.%(flag)s IS TRUE AND
+                TranslationMessage.language = %(language)s
+            """ % params
 
         for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             alias = "potranslation%d" % form
