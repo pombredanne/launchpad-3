@@ -30,14 +30,10 @@ from zope.lifecycleevent import ObjectCreatedEvent
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -47,6 +43,12 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
 from canonical.widgets import HiddenUserWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
     IBuilder,

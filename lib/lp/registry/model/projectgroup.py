@@ -21,6 +21,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     SQL,
+    Join,
     )
 from storm.locals import Int
 from storm.store import Store
@@ -104,6 +105,7 @@ from lp.registry.model.structuralsubscription import (
     )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
+from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
@@ -185,22 +187,25 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def translatables(self):
         """See `IProjectGroup`."""
-        return Product.select('''
-            Product.project = %s AND
-            Product.translations_usage = %s AND
-            Product.id = ProductSeries.product AND
-            POTemplate.productseries = ProductSeries.id
-            ''' % sqlvalues(self, ServiceUsage.LAUNCHPAD),
-            clauseTables=['ProductSeries', 'POTemplate'],
-            distinct=True)
+        store = Store.of(self)
+        origin = [
+            Product,
+            Join(ProductSeries, Product.id == ProductSeries.productID),
+            Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
+            ]
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
+        return store.using(*origin).find(
+            Product,
+            Product.project == self.id,
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            ).config(distinct=True)
 
     def has_translatable(self):
         """See `IProjectGroup`."""
-        # XXX: BradCrittenden 2010-10-12 bug=659078: The test should be
-        # converted to use is_empty but the implementation in storm's
-        # sqlobject wrapper is broken.
-        # return not self.translatables().is_empty()
-        return self.translatables().count() != 0
+        return not self.translatables().is_empty()
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,

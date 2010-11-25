@@ -32,7 +32,7 @@ class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
     export_as_webservice_collection(IBug)
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, prejoins=[]):
         """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")

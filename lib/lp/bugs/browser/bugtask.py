@@ -130,7 +130,10 @@ from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    IHasExternalBugTracker,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_distrotask,
@@ -143,13 +146,9 @@ from canonical.launchpad.searchbuilder import (
     )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -182,6 +181,12 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
@@ -924,7 +929,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         # comments to the activity_for_comments list.  For each
         # activity dict we use the person responsible for the first
         # activity item as the owner of the list of activities.
-        activity_by_date = []
         for date, activity_dict in activity_log.items():
             activity_and_comments.append({
                 'activity': activity_dict,
@@ -2300,6 +2304,52 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
 
+    @cachedproperty
+    def external_bugtracker(self):
+        """External bug tracking system designated for the context.
+
+        :returns: `IBugTracker` or None
+        """
+        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
+        if has_external_bugtracker is None:
+            return None
+        else:
+            return has_external_bugtracker.getExternalBugTracker()
+
+    @property
+    def has_bugtracker(self):
+        """Does the `IBugTarget` have a bug tracker or use Launchpad?"""
+        usage = IServiceUsage(self.context)
+        uses_lp = usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD
+        if self.external_bugtracker or uses_lp:
+            return True
+        return False
+
+    @property
+    def upstream_launchpad_project(self):
+        """The linked upstream `IProduct` for the package.
+
+        If this `IBugTarget` is a `IDistributionSourcePackage` or an
+        `ISourcePackage` and it is linked to an upstream project that uses
+        Launchpad to track bugs, return the `IProduct`. Otherwise,
+        return None
+
+        :returns: `IProduct` or None
+        """
+        if self._sourcePackageContext():
+            sp = self.context
+        elif self._distroSourcePackageContext():
+            sp = self.context.development_version
+        else:
+            sp = None
+        if sp is not None:
+            packaging = sp.packaging
+            if packaging is not None:
+                product = packaging.productseries.product
+                if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
+                    return product
+        return None
+
     @property
     def page_title(self):
         return "Bugs in %s" % self.context.title
@@ -2629,7 +2679,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self._getBatchNavigator(unbatchedTasks)
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: Text that must occur in the bug report. If
@@ -2647,7 +2697,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params)
+        tasks = context.searchTasks(search_params, prejoins=prejoins)
         return tasks
 
     def getWidgetValues(

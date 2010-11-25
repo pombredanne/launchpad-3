@@ -48,11 +48,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -66,6 +62,12 @@ from canonical.widgets import (
     LaunchpadRadioWidget,
     )
 from lp.app.browser.tales import PersonFormatterAPI
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
@@ -693,7 +695,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
 
         :return: A dictionary containing the current welcome message.
         """
-        context = self.context
         if self.mailing_list is not None:
             return dict(welcome_message=self.mailing_list.welcome_message)
         else:
@@ -801,8 +802,10 @@ class TeamMailingListModerationView(MailingListTeamBaseView):
         super(TeamMailingListModerationView, self).__init__(context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-        assert(self.mailing_list is not None), (
-            'No mailing list: %s' % self.context.name)
+        if self.mailing_list is None:
+            self.request.response.addInfoNotification(
+                '%s does not have a mailing list.' % self.context.displayname)
+            return self.request.response.redirect(canonical_url(self.context))
 
     @cachedproperty
     def hold_count(self):

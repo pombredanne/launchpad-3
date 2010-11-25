@@ -31,9 +31,11 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     GetitemNavigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI

@@ -21,13 +21,15 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
-    action,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
     stepthrough,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import NotFoundError
 from lp.hardwaredb.interfaces.hwdb import (
     HWSubmissionMissingFields,
