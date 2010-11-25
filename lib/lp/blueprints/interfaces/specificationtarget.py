@@ -20,9 +20,14 @@ from zope.interface import (
 from zope.schema import TextLine
 
 from lazr.restful.declarations import (
+    exported,
     export_read_operation,
     operation_parameters,
     operation_returns_entry,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
     )
 
 from canonical.launchpad import _
@@ -35,18 +40,25 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    # XXX: Export this as a collection
-    all_specifications = Attribute(
-        'A list of all specifications, regardless of status or approval '
-        'or completion, for this object.')
+    all_specifications = exported(
+        CollectionField(
+            title=_("All specifications"),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True,
+            description=_(
+                'A list of all specifications, regardless of status or '
+                'approval or completion, for this object.')))
 
     has_any_specifications = Attribute(
         'A true or false indicator of whether or not this object has any '
         'specifications associated with it, regardless of their status.')
 
-    # XXX: Export this as a collection
-    valid_specifications = Attribute(
-        'A list of all specifications that are not obsolete.')
+    valid_specifications = exported(
+        CollectionField(
+            title=_("Valid specifications"),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True,
+            description=_('All specifications that are not obsolete.')))
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")

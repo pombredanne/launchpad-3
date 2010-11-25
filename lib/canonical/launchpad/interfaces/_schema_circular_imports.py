@@ -34,7 +34,10 @@ from canonical.launchpad.interfaces.message import (
     )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
-from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -521,3 +524,9 @@ patch_reference_property(IProductSeries, 'product', IProduct)
 # ISpecificationTarget
 patch_entry_return_type(
     ISpecificationTarget, 'getSpecification', ISpecification)
+
+# IHasSpecifications
+patch_collection_property(
+    IHasSpecifications, 'all_specifications', ISpecification)
+patch_collection_property(
+    IHasSpecifications, 'valid_specifications', ISpecification)
