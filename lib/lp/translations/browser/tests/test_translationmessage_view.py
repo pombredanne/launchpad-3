@@ -77,25 +77,27 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
             translations = translation
         else:
             translations = [translation]
-        if suggestion:
+        date_created = self.now()
+        date_reviewed = date_created
+        if suggestion or is_other:
             message = self.factory.makeSuggestion(
                 self.pofile, self.potmsgset,
                 translations=translations,
                 translator=self.owner,
-                date_created=self.now())
+                date_created=date_created)
+            if is_other:
+                # Activate and review on the other side.
+                side_traits = getUtility(
+                    ITranslationSideTraitsSet).getForTemplate(
+                        self.pofile.potemplate)
+                side_traits.other_side_traits.setFlag(message, True)
+                message.markReviewed(
+                    self.factory.makePerson(), date_reviewed)
         else:
-            date_created = self.now()
-            date_reviewed = date_created
             message = self.factory.makeCurrentTranslationMessage(
                 self.pofile, self.potmsgset, translator=self.owner,
                 translations=translations,
                 date_created=date_created, date_reviewed=date_reviewed)
-            if is_other:
-                side_traits = getUtility(
-                    ITranslationSideTraitsSet).getForTemplate(
-                        self.pofile.potemplate)
-                side_traits.setFlag(message, False)
-                side_traits.other_side_traits.setFlag(message, True)
 
         message.browser_pofile = self.pofile
         return message
@@ -105,6 +107,22 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
                                           can_dismiss_on_empty,
                                           can_dismiss_on_plural,
                                           can_dismiss_other):
+        """ Test the state of all four flags.
+
+        In the view and the template the flags are used to determine if and
+        where the "dismiss suggestion" checkbox is displayed. There are
+        three locations for it, depending on whether the translation is empty
+        or not or if it has plurals. They are therefore mutually exclusive
+        and the tests show that. In addition, the "can_dismiss_other" flag
+        allows for the "In Ubuntu" or "In Upstream" line to be grayed out
+        upon dismissal. This flag is only used in the view to select the
+        right css class to achieve that.
+        
+        :param can_confirm_and_dismiss: The expected stage of that flag.
+        :param can_dismiss_on_empty: The expected stage of that flag.
+        :param can_dismiss_on_plural: The expected stage of that flag.
+        :param can_dismiss_other: The expected stage of that flag.
+        """
         assert self.view is not None
         self.assertEqual(
             [can_confirm_and_dismiss,
