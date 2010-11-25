@@ -100,6 +100,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -114,7 +115,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin, TranslationPolicyMixin):
+                   HasMilestonesMixin, HasDriversMixin,
+                   TranslationPolicyMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -193,7 +195,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.
