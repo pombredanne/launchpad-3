@@ -24,7 +24,7 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
 
     def getLaunchpadlib(self):
         user = self.factory.makePerson()
-        return launchpadlib_for("testing", user)
+        return launchpadlib_for("testing", user, version='devel')
 
     def getSpecOnWebservice(self, spec_object):
         launchpadlib = self.getLaunchpadlib()
@@ -78,13 +78,20 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         self.spec_object = self.makeSimpleSpecification()
         return self.getSpecOnWebservice(self.spec_object)
 
-    def test_can_retrieve_representation(self):
+    def test_representation_is_empty_on_1_dot_0(self):
+        # ISpecification is exposed on the 1.0 version so that they can be
+        # linked against branches, but none of its fields is exposed on that
+        # version as we expect it to undergo significant refactorings before
+        # it's ready for prime time.
         spec = self.makeSimpleSpecification()
         user = self.factory.makePerson()
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
+        expected_keys = sorted(
+            [u'self_link', u'http_etag', u'resource_type_link'])
         self.assertEqual(response.status, 200)
+        self.assertEqual(sorted(response.jsonBody().keys()), expected_keys)
 
     def test_representation_contains_name(self):
         spec = self.getSimpleSpecificationResponse()

@@ -23,6 +23,7 @@ from lazr.restful.declarations import (
     exported,
     export_as_webservice_entry,
     export_read_operation,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
     )
@@ -48,7 +49,8 @@ class IHasSpecifications(Interface):
             readonly=True,
             description=_(
                 'A list of all specifications, regardless of status or '
-                'approval or completion, for this object.')))
+                'approval or completion, for this object.')),
+        ('devel', dict(exported=True)), exported=False)
 
     has_any_specifications = Attribute(
         'A true or false indicator of whether or not this object has any '
@@ -62,7 +64,8 @@ class IHasSpecifications(Interface):
             description=_(
                 'All specifications that are not obsolete. When called from '
                 'an ISpecificationGoal it will also exclude the ones that '
-                'have not been accepted for that goal')))
+                'have not been accepted for that goal')),
+        ('devel', dict(exported=True)), exported=False)
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")
@@ -101,6 +104,7 @@ class ISpecificationTarget(IHasSpecifications):
         name=TextLine(title=_('The name of the specification')))
     @operation_returns_entry(Interface) # really ISpecification
     @export_read_operation()
+    @operation_for_version('devel')
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.

@@ -134,25 +134,29 @@ class INewSpecification(Interface):
             description=_(
                 "May contain lower-case letters, numbers, and dashes. "
                 "It will be used in the specification url. "
-                "Examples: mozilla-type-ahead-find, postgres-smart-serial.")))
+                "Examples: mozilla-type-ahead-find, postgres-smart-serial.")),
+        ('devel', dict(exported=True)), exported=False)
     title = exported(
         Title(
             title=_('Title'), required=True, description=_(
                 "Describe the feature as clearly as possible in up to 70 "
                 "characters. This title is displayed in every feature "
-                "list or report.")))
+                "list or report.")),
+        ('devel', dict(exported=True)), exported=False)
     specurl = exported(
         SpecURLField(
             title=_('Specification URL'), required=False,
             description=_(
                 "The URL of the specification. This is usually a wiki page."),
             constraint=valid_webref),
-        exported_as="specification_url")
+        ('devel', dict(exported=True, exported_as='specification_url')),
+        exported=False)
     summary = exported(
         Summary(
             title=_('Summary'), required=True, description=_(
                 "A single-paragraph description of the feature. "
-                "This will also be displayed in most feature listings.")))
+                "This will also be displayed in most feature listings.")),
+        ('devel', dict(exported=True)), exported=False)
     definition_status = exported(
         Choice(
             title=_('Definition Status'),
@@ -160,26 +164,30 @@ class INewSpecification(Interface):
             default=SpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
-                "feature and get approval for the implementation plan.")))
+                "feature and get approval for the implementation plan.")),
+        ('devel', dict(exported=True)), exported=False)
     assignee = exported(
         PublicPersonChoice(
             title=_('Assignee'), required=False,
             description=_(
                 "The person responsible for implementing the feature."),
-            vocabulary='ValidPersonOrTeam'))
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
     drafter = exported(
         PublicPersonChoice(
             title=_('Drafter'), required=False,
             description=_(
                     "The person responsible for drafting the specification."),
-                vocabulary='ValidPersonOrTeam'))
+                vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
     approver = exported(
         PublicPersonChoice(
             title=_('Approver'), required=False,
             description=_(
                 "The person responsible for approving the specification, "
                 "and for reviewing the code when it's ready to be landed."),
-            vocabulary='ValidPersonOrTeam'))
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
 
 
 class INewSpecificationProjectTarget(Interface):
@@ -228,7 +236,7 @@ class INewSpecificationTarget(Interface):
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        readonly=True)
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
 
 class ISpecificationEditRestricted(Interface):
@@ -262,15 +270,18 @@ class ISpecificationPublic(
     priority = exported(
         Choice(
             title=_('Priority'), vocabulary=SpecificationPriority,
-            default=SpecificationPriority.UNDEFINED, required=True))
+            default=SpecificationPriority.UNDEFINED, required=True),
+        ('devel', dict(exported=True)), exported=False)
     datecreated = exported(
         Datetime(
             title=_('Date Created'), required=True, readonly=True),
-        exported_as='date_created')
+        ('devel', dict(exported=True, exported_as='date_created')),
+        exported=False)
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, readonly=True,
-            vocabulary='ValidPersonOrTeam'))
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
 
     product = Choice(title=_('Project'), required=False,
                      vocabulary='Product')
@@ -297,7 +308,8 @@ class ISpecificationPublic(
             description=_(
                 "The milestone in which we would like this feature to be "
                 "delivered."),
-            schema=IMilestone))
+            schema=IMilestone),
+        ('devel', dict(exported=True)), exported=False)
 
     # nomination to a series for release management
     # XXX: It'd be nice to export goal as read-only, but it's tricky because
@@ -321,7 +333,8 @@ class ISpecificationPublic(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
                 "Any notes on the status of this spec you would like to "
-                "make. Your changes will override the current text.")))
+                "make. Your changes will override the current text.")),
+        ('devel', dict(exported=True)), exported=False)
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
