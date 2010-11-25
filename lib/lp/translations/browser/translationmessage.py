@@ -1048,6 +1048,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
+        self.can_dismiss_other = False
 
         # Initialize to True, allowing POFileTranslateView to override.
         self.zoomed_in_view = True
@@ -1198,27 +1199,38 @@ class CurrentTranslationMessageView(LaunchpadView):
         # HTML id for singular form of this message
         self.html_id_singular = self.context.makeHTMLID('translation_0')
 
-    def _set_dismiss_flags(self, local_suggestions):
+    def _set_dismiss_flags(self, local_suggestions, other):
         """Set dismissal flags.
 
-        The flags are all initialized as False.
+        The flags have been initialized to False in the constructor. This
+        method activates the right ones.
 
         :param local_suggestions: The list of local suggestions.
+        :param other: The translation on the other side for this
+            message or None if there is no such translation.
         """
         # Only official translators can dismiss anything.
         if not self.user_is_official_translator:
             return
 
-        # If there are no local suggestions, nothing can be dismissed.
-        if len(local_suggestions) == 0:
+        # If there is an other-side translation that is newer than the
+        # context, it can be dismissed.
+        self.can_dismiss_other = other is not None and (
+            self.context.date_reviewed is None or
+            self.context.date_reviewed < other.date_created)
+
+        # If there are no local suggestion and no new other-side translation
+        # nothing can be dismissed.
+        if len(local_suggestions) == 0 and not self.can_dismiss_other:
             return
 
         if self.is_plural:
             self.can_dismiss_on_plural = True
-        elif self.getCurrentTranslation(0) is None:
-            self.can_dismiss_on_empty = True
         else:
-            self.can_confirm_and_dismiss = True
+            if self.getCurrentTranslation(0) is None:
+                self.can_dismiss_on_empty = True
+            else:
+                self.can_confirm_and_dismiss = True
 
     def _setOnePOFile(self, messages):
         """Return a list of messages that all have a browser_pofile set.
@@ -1283,7 +1295,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 key=operator.attrgetter("date_created"),
                 reverse=True)
 
-            self._set_dismiss_flags(local)
+            self._set_dismiss_flags(local, other)
 
             for suggestion in local:
                 suggestion.setPOFile(self.pofile)
@@ -1552,15 +1564,18 @@ class CurrentTranslationMessageView(LaunchpadView):
         return 3
 
     @property
-    def dismissable_button_class(self):
-        """The class string that deactivates only buttons on dismissal."""
-        return "%s_dismissable_button" % self.html_id
-
-    @property
     def dismissable_class(self):
         """The class string for dismissable parts."""
-        return "%s_dismissable %s" % (
-                    self.html_id, self.dismissable_button_class)
+        return "%s_dismissable %s_dismissable_button" % (
+                    self.html_id, self.html_id)
+
+    @property
+    def dismissable_class_other(self):
+        """The class string for dismissable other translations."""
+        if self.can_dismiss_other:
+            return self.dismissable_class
+        # Buttons are always dismissable.
+        return "%s_dismissable_button" % self.html_id
 
 
 class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):

@@ -11,6 +11,7 @@ from datetime import (
     )
 
 import pytz
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -33,6 +34,9 @@ from lp.translations.browser.translationmessage import (
     CurrentTranslationMessageView,
     revert_unselected_translations,
     )
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.publisher import TranslationsLayer
@@ -53,8 +57,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         super(TestCurrentTranslationMessage_can_dismiss, self).setUp()
         self.owner = self.factory.makePerson()
         self.potemplate = self.factory.makePOTemplate(owner=self.owner)
-        self.pofile = self.factory.makePOFile('eo',
-                                              potemplate=self.potemplate)
+        self.pofile = self.factory.makePOFile(potemplate=self.potemplate)
         self.potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         self.view = None
         self.now = self._gen_now().next
@@ -66,71 +69,143 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
             False, False, None, None, True, pofile=self.pofile, can_edit=True)
         self.view.initialize()
 
-    def _makeTranslation(self, translation=None, suggestion=False):
+    def _makeTranslation(self, translation=None,
+                         suggestion=False, is_other=False):
         if translation is None:
             translations = None
         elif isinstance(translation, list):
             translations = translation
         else:
             translations = [translation]
-        if suggestion:
+        date_created = self.now()
+        date_reviewed = date_created
+        if suggestion or is_other:
             message = self.factory.makeSuggestion(
                 self.pofile, self.potmsgset,
                 translations=translations,
                 translator=self.owner,
-                date_created=self.now())
+                date_created=date_created)
+            if is_other:
+                # Activate and review on the other side.
+                side_traits = getUtility(
+                    ITranslationSideTraitsSet).getForTemplate(
+                        self.pofile.potemplate)
+                side_traits.other_side_traits.setFlag(message, True)
+                message.markReviewed(
+                    self.factory.makePerson(), date_reviewed)
         else:
             message = self.factory.makeCurrentTranslationMessage(
-                self.pofile, self.potmsgset,
+                self.pofile, self.potmsgset, translator=self.owner,
                 translations=translations,
-                translator=self.owner, reviewer=self.owner)
+                date_created=date_created, date_reviewed=date_reviewed)
+
         message.browser_pofile = self.pofile
         return message
 
-    def _assertConfirmEmptyPlural(self,
-                                  can_confirm_and_dismiss,
-                                  can_dismiss_on_empty,
-                                  can_dismiss_on_plural):
+    def _assertConfirmEmptyPluralOther(self,
+                                          can_confirm_and_dismiss,
+                                          can_dismiss_on_empty,
+                                          can_dismiss_on_plural,
+                                          can_dismiss_other):
+        """ Test the state of all four flags.
+
+        In the view and the template the flags are used to determine if and
+        where the "dismiss suggestion" checkbox is displayed. There are
+        three locations for it, depending on whether the translation is empty
+        or not or if it has plurals. They are therefore mutually exclusive
+        and the tests show that. In addition, the "can_dismiss_other" flag
+        allows for the "In Ubuntu" or "In Upstream" line to be grayed out
+        upon dismissal. This flag is only used in the view to select the
+        right css class to achieve that.
+        
+        :param can_confirm_and_dismiss: The expected stage of that flag.
+        :param can_dismiss_on_empty: The expected stage of that flag.
+        :param can_dismiss_on_plural: The expected stage of that flag.
+        :param can_dismiss_other: The expected stage of that flag.
+        """
         assert self.view is not None
         self.assertEqual(
             [can_confirm_and_dismiss,
                can_dismiss_on_empty,
-               can_dismiss_on_plural],
+               can_dismiss_on_plural,
+               can_dismiss_other],
             [self.view.can_confirm_and_dismiss,
                self.view.can_dismiss_on_empty,
-               self.view.can_dismiss_on_plural])
+               self.view.can_dismiss_on_plural,
+               self.view.can_dismiss_other])
 
     def test_no_suggestion(self):
         # If there is no suggestion, nothing can be dismissed.
         message = self._makeTranslation()
         self._createView(message)
-        self._assertConfirmEmptyPlural(False, False, False)
+        self._assertConfirmEmptyPluralOther(False, False, False, False)
 
     def test_local_suggestion(self):
         # If there is a local suggestion, it can be dismissed.
         message = self._makeTranslation()
-        suggestion = self._makeTranslation(suggestion=True)
+        self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPlural(True, False, False)
+        self._assertConfirmEmptyPluralOther(True, False, False, False)
 
     def test_local_suggestion_on_empty(self):
         # If there is a local suggestion on an empty message, it is dismissed
         # in a different place.
         message = self._makeTranslation("")
-        suggestion = self._makeTranslation(suggestion=True)
+        self._makeTranslation(suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPlural(False, True, False)
+        self._assertConfirmEmptyPluralOther(False, True, False, False)
 
     def test_local_suggestion_on_plural(self):
         # If there is a suggestion on a plural message, it is dismissed
         # in yet a different place.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                singular="msgid_singular", plural="msgid_plural")
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular="msgid_singular", plural="msgid_plural")
         message = self._makeTranslation(["singular_trans", "plural_trans"])
-        suggestion = self._makeTranslation(["singular_sugg", "plural_sugg"],
-                                         suggestion=True)
+        self._makeTranslation(
+            ["singular_sugg", "plural_sugg"], suggestion=True)
         self._createView(message)
-        self._assertConfirmEmptyPlural(False, False, True)
+        self._assertConfirmEmptyPluralOther(False, False, True, False)
+
+    def test_other_translation(self):
+        # If there is an other-side translation that is newer than the
+        # current translation, it can be dismissed.
+        message = self._makeTranslation()
+        self._makeTranslation(is_other=True)
+        self._createView(message)
+        self._assertConfirmEmptyPluralOther(True, False, False, True)
+
+    def test_other_translation_on_empty(self):
+        # With an empty message, it is dismissed in a different place.
+        message = self._makeTranslation("")
+        self._makeTranslation(is_other=True)
+        self._createView(message)
+        self._assertConfirmEmptyPluralOther(False, True, False, True)
+
+    def test_other_translation_on_plural(self):
+        # If there is a suggestion on a plural message, it is dismissed
+        # in yet a different place.
+        self.potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular="msgid_singular", plural="msgid_plural")
+        message = self._makeTranslation(["singular_trans", "plural_trans"])
+        self._makeTranslation(["singular_new", "plural_new"], is_other=True)
+        self._createView(message)
+        self._assertConfirmEmptyPluralOther(False, False, True, True)
+
+    def test_other_translation_old(self):
+        # If there is an older other-side translation, it cannot be dismissed.
+        self._makeTranslation(is_other=True)
+        message = self._makeTranslation()
+        self._createView(message)
+        self._assertConfirmEmptyPluralOther(False, False, False, False)
+
+    def test_other_translation_old_local_new(self):
+        # If there is an older other-side translation, but a newer local
+        # suggestion, only the local suggestion can be dismissed.
+        self._makeTranslation(is_other=True)
+        message = self._makeTranslation()
+        self._makeTranslation(suggestion=True)
+        self._createView(message)
+        self._assertConfirmEmptyPluralOther(True, False, False, False)
 
 
 class TestResetTranslations(TestCaseWithFactory):

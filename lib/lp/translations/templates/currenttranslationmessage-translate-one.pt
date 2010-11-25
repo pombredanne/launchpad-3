@@ -390,7 +390,7 @@
       define="
         section_title view/other_title;
         submission translation_dictionary/other_translation_message;
-        dismissable view/dismissable_button_class;
+        dismissable view/dismissable_class_other;
         form_is_writeable view/form_is_writeable;
         user_is_official_translator view/user_is_official_translator;
         ">
@@ -402,7 +402,7 @@
       define="
         section_title string:Shared:;
         submission translation_dictionary/shared_translation_message;
-        dismissable view/dismissable_button_class;
+        dismissable view/dismissable_class_other;
         form_is_writeable view/form_is_writeable;
         user_is_official_translator view/user_is_official_translator;
         ">
