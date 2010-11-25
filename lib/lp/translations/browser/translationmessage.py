@@ -1202,7 +1202,8 @@ class CurrentTranslationMessageView(LaunchpadView):
     def _set_dismiss_flags(self, local_suggestions, other):
         """Set dismissal flags.
 
-        The flags are all initialized as False.
+        The flags have been initialized to False in the constructor. This
+        method activates the right ones.
 
         :param local_suggestions: The list of local suggestions.
         :param other: The translation on the other side for this
@@ -1212,22 +1213,17 @@ class CurrentTranslationMessageView(LaunchpadView):
         if not self.user_is_official_translator:
             return
 
-        if other is not None:
-            date_reviewed = self.context.date_reviewed
-            if date_reviewed is None:
-                has_new_other = True
-            else:
-                has_new_other = other.date_created > date_reviewed
-        else:
-            has_new_other = False
+        # If there is an other-side translation that is newer than the
+        # context, it can be dismissed.
+        self.can_dismiss_other = other is not None and (
+            self.context.date_reviewed is None or
+            self.context.date_reviewed < other.date_created)
 
-        # If there are no local suggestion or a newly imported string,
+        # If there are no local suggestion and no new other-side translation
         # nothing can be dismissed.
-        if not (len(local_suggestions) > 0 or has_new_other):
+        if len(local_suggestions) == 0 and not self.can_dismiss_other:
             return
 
-        # OK, let's set some flags.
-        self.can_dismiss_other = has_new_other
         if self.is_plural:
             self.can_dismiss_on_plural = True
         else:
