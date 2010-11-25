@@ -13,7 +13,8 @@ to that branch.
     >>> stdout
     ''
     >>> print stderr
-    INFO Creating lockfile: /var/lock/launchpad-translations-export-to-branch.lock
+    INFO Creating lockfile:
+    /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
     INFO Processed 0 item(s); 0 failure(s), 0 unpushed branch(es).
 
