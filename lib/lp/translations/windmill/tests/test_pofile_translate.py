@@ -156,14 +156,11 @@ class POFileTranslationActions(WindmillTestCase):
         potmsgset.setSequence(potemplate, 1)
         potmsgset_id = potmsgset.id
 
-        current_translation = self.factory.makeTranslationMessage(
+        current_translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=['current'])
         transaction.commit()
         suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
-        # XXX henninge 2010-08-13 bug=597539: The view code depends on the
-        # pofile attribute being set.
-        removeSecurityProxy(suggestion).pofile = pofile
         transaction.commit()
         logout()
 
