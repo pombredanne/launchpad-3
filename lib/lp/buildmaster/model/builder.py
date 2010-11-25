@@ -512,39 +512,26 @@ class Builder(SQLBase):
         else:
             d = defer.succeed(None)
 
-        def resume_done(ignored):
+        def ping_done(ignored):
             return self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
-        def eb_slave_failure(failure):
-            failure.trap(BuildSlaveFailure)
-            e = failure.value
-            self.failBuilder(
-                "Exception (%s) when setting up to new job" % (e,))
-
-        def eb_cannot_fetch_file(failure):
-            failure.trap(CannotFetchFile)
-            e = failure.value
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (self.name, self.url, e.file_url, e.error_information)
-            raise BuildDaemonError(message)
-
-        def eb_socket_error(failure):
-            failure.trap(socket.error)
-            e = failure.value
-            error_message = "Exception (%s) when setting up new job" % (e,)
-            d = self.handleTimeout(logger, error_message)
-            return d.addBoth(lambda ignored: failure)
+        def resume_done(ignored):
+            # Before we try and contact the resumed slave, we're going
+            # to send it a message.  This is to ensure it's accepting
+            # packets from the outside world, because testing has shown
+            # that the first packet will randomly fail for no apparent
+            # reason.  This could be a quirk of the Xen guest, we're not
+            # sure.  We also don't care about the result from this message,
+            # just that it's sent, hence the "addBoth".
+            if self.virtualized:
+                d = self.slave.echo("ping")
+            else:
+                d = defer.succeed(None)
+            d.addBoth(ping_done)
+            return d
 
         d.addCallback(resume_done)
-        d.addErrback(eb_slave_failure)
-        d.addErrback(eb_cannot_fetch_file)
-        d.addErrback(eb_socket_error)
         return d
 
     def failBuilder(self, reason):
