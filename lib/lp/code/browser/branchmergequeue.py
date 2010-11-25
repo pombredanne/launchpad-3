@@ -15,11 +15,13 @@ from zope.component import getUtility
 from zope.interface import Interface
 
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    LaunchpadFormView,
     LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
     )
 from lp.code.interfaces.branchmergequeue import (
     IBranchMergeQueue,

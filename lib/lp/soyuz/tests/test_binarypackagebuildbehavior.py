@@ -11,8 +11,11 @@ import shutil
 import tempfile
 import transaction
 
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
+
 from twisted.internet import defer
-from twisted.trial import unittest as trialtest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -20,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 from lp.buildmaster.enums import (
     BuildStatus,
@@ -43,17 +46,11 @@ from lp.soyuz.adapters.archivedependencies import (
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
-    PackagePublishingStatus,
     )
-from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
-    )
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import TestCaseWithFactory
 
 
-class TestBinaryBuildPackageBehavior(trialtest.TestCase):
+class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.
 
     In particular, these tests are about how the BinaryPackageBuildBehavior
@@ -63,13 +60,11 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
     interesting parameters.
     """
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         super(TestBinaryBuildPackageBehavior, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
     def assertExpectedInteraction(self, ignored, call_log, builder, build,
@@ -266,7 +261,7 @@ class TestBinaryBuildPackageBehavior(trialtest.TestCase):
             str(e))
 
 
-class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
+class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.
 
     Using various mock slaves, we check how updateBuild() behaves in
@@ -280,7 +275,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     # examine that behaviour separately somehow, but the old tests gave
     # NO clue as to what, exactly, they were testing.
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _cleanup(self):
         if os.path.exists(config.builddmaster.root):
@@ -288,9 +284,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviorBuildCollection, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
         self.layer.switchDbUser('testadmin')
 
         self.builder = self.factory.makeBuilder()
@@ -310,10 +303,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
         are set."""
-        self.assertNotIdentical(None, build.builder)
-        self.assertNotIdentical(None, build.date_finished)
-        self.assertNotIdentical(None, build.duration)
-        self.assertNotIdentical(None, build.log)
+        self.assertIsNot(None, build.builder)
+        self.assertIsNot(None, build.date_finished)
+        self.assertIsNot(None, build.duration)
+        self.assertIsNot(None, build.log)
 
     def test_packagefail_collection(self):
         # When a package fails to build, make sure the builder notes are
@@ -363,7 +356,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(
                 "Builder returned BUILDERFAIL when asked for its status",
                 self.builder.failnotes)
-            self.assertIdentical(None, self.candidate.builder)
+            self.assertIs(None, self.candidate.builder)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
@@ -374,7 +367,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
     def test_building_collection(self):
         # The builder is still building the package.
         self.builder.setSlaveForTesting(BuildingSlave())
-        
+
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
             self.assertEqual("This is a build log", self.candidate.logtail)
@@ -412,7 +405,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
             self.assertEqual(self.build.status, BuildStatus.UPLOADING)
             # We do not store any upload log information when the binary
             # upload processing succeeded.
-            self.assertIdentical(None, self.build.upload_log)
+            self.assertIs(None, self.build.upload_log)
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
@@ -422,9 +415,9 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         self.builder.setSlaveForTesting(waiting_slave)
         score = self.candidate.lastscore
 
-        def got_update(ignored):       
-            self.assertIdentical(None, self.candidate.builder)
-            self.assertIdentical(None, self.candidate.date_started)
+        def got_update(ignored):
+            self.assertIs(None, self.candidate.builder)
+            self.assertIs(None, self.candidate.date_started)
             self.assertEqual(score, self.candidate.lastscore)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             job = self.candidate.specific_job.job
@@ -449,7 +442,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
         # The new librarian file is stored compressed with a .gz
         # extension and text/plain file type for easy viewing in
         # browsers, as it decompresses and displays the file inline.
-        self.assertTrue(logfile_lfa.filename).endswith('_FULLYBUILT.txt.gz')
+        self.assertTrue(logfile_lfa.filename.endswith('_FULLYBUILT.txt.gz'))
         self.assertEqual('text/plain', logfile_lfa.mimetype)
         self.layer.txn.commit()
 
@@ -490,4 +483,3 @@ class TestBinaryBuildPackageBehaviorBuildCollection(trialtest.TestCase):
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
-
