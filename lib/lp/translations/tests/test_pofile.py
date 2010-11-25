@@ -887,7 +887,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
     def test_TranslationFileData_adapter(self):
         # Test that exporting works correctly with shared and diverged
         # messages.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset,
             translations=["Shared translation"])
@@ -904,11 +904,11 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
                             "Shared translation")])
 
         # When we add a diverged translation, only that is exported.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset,
             translations=["Diverged translation"],
-            force_diverged=True)
+            diverged=True)
 
         # Get the adapter and extract only English singular and
         # first translation form from all messages.
