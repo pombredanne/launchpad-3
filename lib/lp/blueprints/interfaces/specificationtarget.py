@@ -21,6 +21,7 @@ from zope.schema import TextLine
 
 from lazr.restful.declarations import (
     exported,
+    export_as_webservice_entry,
     export_read_operation,
     operation_parameters,
     operation_returns_entry,
@@ -90,6 +91,8 @@ class ISpecificationTarget(IHasSpecifications):
     """An interface for the objects which actually have unique
     specifications directly attached to them.
     """
+
+    export_as_webservice_entry()
 
     @operation_parameters(
         name=TextLine(title=_('The name of the specification')))
