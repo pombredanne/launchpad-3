@@ -139,46 +139,6 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec = self.getSimpleSpecificationResponse()
         self.assertEqual(self.whiteboard, spec.whiteboard)
 
-    def test_representation_with_no_whiteboard(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add a whiteboard
-        self.assertEqual(None, spec_object.whiteboard)
-        spec = self.getSpecOnWebservice(spec_object)
-        # Check that it is None on the webservice too
-        self.assertEqual(None, spec.whiteboard)
-
-    def test_representation_with_no_approver(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add an approver
-        self.assertEqual(None, spec_object.approver)
-        spec = self.getSpecOnWebservice(spec_object)
-        # Check that it is None on the webservice too
-        self.assertEqual(None, spec.approver)
-
-    def test_representation_with_no_drafter(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add an drafter
-        self.assertEqual(None, spec_object.drafter)
-        spec = self.getSpecOnWebservice(spec_object)
-        # Check that it is None on the webservice too
-        self.assertEqual(None, spec.drafter)
-
-    def test_representation_with_no_assignee(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add an assignee
-        self.assertEqual(None, spec_object.assignee)
-        spec = self.getSpecOnWebservice(spec_object)
-        # Check that it is None on the webservice too
-        self.assertEqual(None, spec.assignee)
-
-    def test_representation_with_no_specification_url(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add an specurl
-        self.assertEqual(None, spec_object.specurl)
-        spec = self.getSpecOnWebservice(spec_object)
-        # Check that it is None on the webservice too
-        self.assertEqual(None, spec.specification_url)
-
     def test_representation_contains_milestone(self):
         product = self.makeProduct()
         productseries = self.factory.makeProductSeries(product=product)
@@ -188,13 +148,6 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
             product=product, goal=productseries, milestone=milestone)
         spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual("1.0", spec.milestone.name)
-
-    def test_representation_empty_milestone(self):
-        spec_object = self.factory.makeSpecification()
-        # Check that the factory didn't add a milestone
-        self.assertEqual(None, spec_object.milestone)
-        spec = self.getSpecOnWebservice(spec_object)
-        self.assertEqual(None, spec.milestone)
 
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
@@ -209,12 +162,6 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         spec = product_on_webservice.getSpecification(name="some-spec")
         self.assertEqual("some-spec", spec.name)
         self.assertEqual("fooix", spec.target.name)
-
-    def test_get_specification_not_found(self):
-        product = self.makeProduct()
-        product_on_webservice = self.getPillarOnWebservice(product)
-        spec = product_on_webservice.getSpecification(name="nonexistant")
-        self.assertEqual(None, spec)
 
     def test_get_specification_on_distribution(self):
         distribution = self.makeDistribution()
@@ -252,13 +199,20 @@ class SpecificationTargetTests(SpecificationWebserviceTestCase):
         self.assertEqual("some-spec", spec.name)
         self.assertEqual("foobuntu", spec.target.name)
 
+    def test_get_specification_not_found(self):
+        product = self.makeProduct()
+        product_on_webservice = self.getPillarOnWebservice(product)
+        spec = product_on_webservice.getSpecification(name="nonexistant")
+        self.assertEqual(None, spec)
+
 
 class IHasSpecificationsTests(SpecificationWebserviceTestCase):
     """Tests for accessing IHasSpecifications methods over the webservice."""
     layer = DatabaseFunctionalLayer
 
-    def assertNamesOfSpecificationsAre(self, names, specifications):
-        self.assertEqual(names, [s.name for s in specifications])
+    def assertNamesOfSpecificationsAre(self, expected_names, specifications):
+        names = [s.name for s in specifications]
+        self.assertEqual(sorted(expected_names), sorted(names))
 
     def test_product_all_specifications(self):
         product = self.makeProduct()
