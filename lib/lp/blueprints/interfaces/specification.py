@@ -157,6 +157,9 @@ class INewSpecification(Interface):
                 "A single-paragraph description of the feature. "
                 "This will also be displayed in most feature listings.")),
         ('devel', dict(exported=True)), exported=False)
+    # XXX: salgado, 2010-11-25, bug=680880: We need a method for changing the
+    # definition_status because when that happens we may need to call
+    # updateLifecycleStatus().
     definition_status = exported(
         Choice(
             title=_('Definition Status'),
@@ -165,7 +168,7 @@ class INewSpecification(Interface):
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True)), exported=False)
+        ('devel', dict(exported=True, readonly=True)), exported=False)
     assignee = exported(
         PublicPersonChoice(
             title=_('Assignee'), required=False,
