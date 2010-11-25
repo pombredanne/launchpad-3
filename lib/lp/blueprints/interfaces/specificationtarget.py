@@ -59,7 +59,10 @@ class IHasSpecifications(Interface):
             title=_("Valid specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True,
-            description=_('All specifications that are not obsolete.')))
+            description=_(
+                'All specifications that are not obsolete. When called from '
+                'an ISpecificationGoal it will also exclude the ones that '
+                'have not been accepted for that goal')))
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")
