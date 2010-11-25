@@ -211,7 +211,14 @@ def get_person_or_team(person_name_or_email):
 def ensure_not_weakly_authenticated(signed_msg, context,
                                     error_template='not-signed.txt',
                                     no_key_template='key-not-registered.txt'):
-    """Make sure that the current principal is not weakly authenticated."""
+    """Make sure that the current principal is not weakly authenticated.
+
+    NB: While handling an email, the authentication state is stored partly in
+    properties of the message object, and partly in the current security
+    principal.  As a consequence this function will only work correctly if the
+    message has just been passed through authenticateEmail -- you can't give
+    it an arbitrary message object.
+    """
     cur_principal = get_current_principal()
     # The security machinery doesn't know about
     # IWeaklyAuthenticatedPrincipal yet, so do a manual
@@ -232,7 +239,18 @@ def ensure_not_weakly_authenticated(signed_msg, context,
 
 def ensure_sane_signature_timestamp(timestamp, context,
                                     error_template='old-signature.txt'):
-    """Ensure the signature was generated recently but not in the future."""
+    """Ensure the signature was generated recently but not in the future.
+
+    If the timestamp is wrong, the message is rejected rather than just
+    treated as untrusted, so that the user gets a chance to understand
+    the problem.  Therefore, this raises an error rather than returning
+    a value.
+
+    :param context: Short user-readable description of the place
+        the problem occurred.
+    :raises IncomingEmailError: if the timestamp is stale or implausible,
+        containing a message based on the context and template.
+    """
     fourty_eight_hours = 48 * 60 * 60
     ten_minutes = 10 * 60
     now = time.time()
