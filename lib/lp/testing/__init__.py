@@ -46,6 +46,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+import codecs
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -864,7 +865,7 @@ class ZopeTestInSubProcess:
             result = super(ZopeTestResult, result)
             # Accept the result from the child process.
             protocol = subunit.TestProtocolServer(result)
-            protocol.readFrom(fdread)
+            protocol.readFrom(codecs.getreader("utf8")(fdread))
             fdread.close()
             os.waitpid(pid, 0)
 
