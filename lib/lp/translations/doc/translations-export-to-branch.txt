@@ -107,7 +107,7 @@ have Dutch translations.
     ...     pofile = factory.makePOFile(
     ...         'nl', potemplate=template, owner=gazblachko.owner)
     ...
-    ...     factory.makeTranslationMessage(
+    ...     factory.makeCurrentTranslationMessage(
     ...         pofile=pofile, potmsgset=potmsgset,
     ...         translator=gazblachko.owner, reviewer=gazblachko.owner,
     ...         translations=['%s msgstr' % name])
@@ -234,7 +234,7 @@ won't work, so we email a notification to the branch owner.
     >>> potmsgset = factory.makePOTMsgSet(template)
     >>> pofile = removeSecurityProxy(
     ...     factory.makePOFile('nl', potemplate=template))
-    >>> tm = factory.makeTranslationMessage(
+    >>> tm = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner)
 
     >>> server = get_rw_server(direct_database=True)
