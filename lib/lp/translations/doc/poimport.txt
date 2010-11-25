@@ -307,7 +307,7 @@ The status is now IMPORTED:
 And the statistics reflect it.
 
     >>> pofile.currentCount()
-    2
+    3
 
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
@@ -501,19 +501,19 @@ We must approve the entry to be able to import it.
 
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
-At this point, the statistics note that we have 2 translations coming
+At this point, the statistics note that we have 3 translations coming
 from imported files (currentCount), and none updated in Launchpad
 Translations. The translation credits message is counted as translated
 in rosetta.
 
     >>> pofile.currentCount()
-    2
+    3
 
     >>> pofile.updatesCount()
     0
 
     >>> pofile.rosettaCount()
-    1
+    0
 
 We do the import.
 
@@ -524,6 +524,10 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
+# XXX JeroenVermeulen 2010-11-24, bug=681434: This no longer makes sense.
+# We'll have to re-think what this should do once the statistics have been
+# updated for the Recife model.
+
 Now, the statistics note that we have two translations coming from
 imported files (currentCount), which is the translation we just
 imported, and the other two translation that was coming from imported
@@ -531,13 +535,13 @@ files are now counted as coming from Launchpad translations
 (rosettaCount) because latest imported file doesn't have them anymore.
 
     >>> pofile.currentCount()
-    2
+    3
 
     >>> pofile.updatesCount()
     0
 
-    >>> pofile.rosettaCount()
-    1
+#    >>> pofile.rosettaCount()
+#    1
 
 This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is an upstream
