@@ -167,8 +167,8 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self._assertConfirmEmptyPluralOther(False, False, True, False)
 
     def test_other_translation(self):
-        # If there is an other translation that is newer than the current
-        # translation, it can be dismissed.
+        # If there is an other-side translation that is newer than the
+        # current translation, it can be dismissed.
         message = self._makeTranslation()
         self._makeTranslation(is_other=True)
         self._createView(message)
@@ -192,14 +192,14 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         self._assertConfirmEmptyPluralOther(False, False, True, True)
 
     def test_other_translation_old(self):
-        # If there is an older other translation, it cannot be dismissed.
+        # If there is an older other-side translation, it cannot be dismissed.
         self._makeTranslation(is_other=True)
         message = self._makeTranslation()
         self._createView(message)
         self._assertConfirmEmptyPluralOther(False, False, False, False)
 
     def test_other_translation_old_local_new(self):
-        # If there is an older other translation, but a newer local
+        # If there is an older other-side translation, but a newer local
         # suggestion, only the local suggestion can be dismissed.
         self._makeTranslation(is_other=True)
         message = self._makeTranslation()
