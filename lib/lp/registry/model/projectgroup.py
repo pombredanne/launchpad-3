@@ -100,6 +100,7 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -113,7 +114,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin):
+                   HasMilestonesMixin, HasDriversMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
