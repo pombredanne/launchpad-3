@@ -524,6 +524,7 @@ class Builder(SQLBase):
             # reason.  This could be a quirk of the Xen guest, we're not
             # sure.  We also don't care about the result from this message,
             # just that it's sent, hence the "addBoth".
+            # See bug 586359.
             if self.virtualized:
                 d = self.slave.echo("ping")
             else:
