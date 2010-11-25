@@ -599,6 +599,35 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
+    def test_team_without_super_teams_is_fine(self):
+        # A team with no members and no super teams
+        # merges without errors
+        test_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+       
+        login_person(test_team.teamowner) 
+        test_team.deactivateAllMembers(
+            comment='',
+            reviewer=test_team.teamowner)
+        self.person_set.merge(test_team, target_team)
+
+    def test_team_with_super_teams_raises_error(self):
+        # A team with no members but with superteams 
+        # raises an assertion error.
+        test_team = self.factory.makeTeam()
+        super_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+       
+        login_person(test_team.teamowner) 
+        test_team.join(super_team, test_team.teamowner)
+        
+        def doMerge():
+            test_team.deactivateAllMembers(
+                comment='',
+                reviewer=test_team.teamowner)
+            self.person_set.merge(test_team, target_team)
+
+        self.assertRaises(AssertionError, doMerge)
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer

@@ -3844,6 +3844,9 @@ class PersonSet:
             raise AssertionError(
                 "Only teams without active members can be merged")
 
+        if from_person.is_team and from_person.super_teams.count() > 0:
+            raise AssertionError(
+                "Only teams without super teams can be merged.")
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)
