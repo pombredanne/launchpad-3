@@ -620,7 +620,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        
+
         def doMerge():
             test_team.deactivateAllMembers(
                 comment='',
