@@ -49,7 +49,10 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     )
-from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
@@ -217,11 +220,15 @@ class INewSpecificationTarget(Interface):
 
     Requires the user to specify a distribution or a product as a target.
     """
-    # XXX: Must export this as well, with setTarget as the mutator.
-    target = Choice(title=_("For"),
-                    description=_("The project for which this proposal is "
-                                  "being made."),
-                    required=True, vocabulary='DistributionOrProduct')
+    # Exported as readonly for simplicity, but could be exported as read-write
+    # using setTarget() as the mutator.
+    target = exported(
+        ReferenceChoice(
+            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            description=_(
+                "The project for which this proposal is being made."),
+            schema=ISpecificationTarget),
+        readonly=True)
 
 
 class ISpecificationEditRestricted(Interface):
