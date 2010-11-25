@@ -506,7 +506,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.3 deb-version 0\+\{revno\}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
