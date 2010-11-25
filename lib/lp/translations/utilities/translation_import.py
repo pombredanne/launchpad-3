@@ -212,18 +212,10 @@ class ExistingPOFileInDatabase:
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for row in rows:
-            (
-                msgid,
-                msgid_plural,
-                context,
-                date,
-                msgstr0,
-                msgstr1,
-                msgstr2,
-                msgstr3,
-                msgstr4,
-                msgstr5,
-            ) = row
+            msgid, msgid_plural, context, date = row[:4]
+            # The last part of the row is msgstr0 .. msgstr5. Store them
+            # in a dict indexed by the number of the plural form.
+            msgstrs = dict(enumerate(row[4:]))
 
             key = (msgid, msgid_plural, context)
             if key in self.current_messages:
@@ -237,8 +229,7 @@ class ExistingPOFileInDatabase:
                 message.msgid_plural = msgid_plural
 
             for plural in xrange(TranslationConstants.MAX_PLURAL_FORMS):
-                local_vars = locals()
-                msgstr = local_vars.get('msgstr' + str(plural), None)
+                msgstr = msgstrs.get(plural, None)
                 if (msgstr is not None and
                     ((len(message.translations) > plural and
                       message.translations[plural] is None) or

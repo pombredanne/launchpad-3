@@ -524,8 +524,8 @@ The status is now IMPORTED:
     >>> print entry.status.name
     IMPORTED
 
-# XXX JeroenVermeulen 2010-11-24: This no longer makes sense.  We'll
-# have to re-think what this should do once the statistics have been
+# XXX JeroenVermeulen 2010-11-24, bug=681434: This no longer makes sense.
+# We'll have to re-think what this should do once the statistics have been
 # updated for the Recife model.
 
 Now, the statistics note that we have two translations coming from

@@ -5,10 +5,11 @@
 
 __metaclass__ = type
 
-from zope.interface.verify import verifyObject
+import transaction
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import Provides
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
@@ -32,8 +33,7 @@ class TranslationImporterTestCase(TestCaseWithFactory):
 
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.assertTrue(
-            verifyObject(ITranslationImporter, TranslationImporter()))
+        self.assertThat(TranslationImporter(), Provides(ITranslationImporter))
 
     def testGetImporterByFileFormat(self):
         """Check whether we get the right importer from the file format."""
@@ -214,7 +214,6 @@ class TranslationImporterTestCase(TestCaseWithFactory):
     def test_unseen_messages_stay_intact(self):
         # If an import does not mention a particular msgid, that msgid
         # keeps its current translation.
-        #librarian = self.useFixture(FakeLibrarian())
         pofile = self.factory.makePOFile()
         template = pofile.potemplate
         potmsgset1 = self.factory.makePOTMsgSet(template, sequence=1)
@@ -239,7 +238,6 @@ class TranslationImporterTestCase(TestCaseWithFactory):
             status=RosettaImportStatus.APPROVED, content=text)
         entry.pofile = pofile
         entry.status = RosettaImportStatus.APPROVED
-        import transaction
         transaction.commit()
 
         self.assertTrue(existing_translation.is_current_upstream)
