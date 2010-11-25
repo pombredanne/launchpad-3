@@ -107,7 +107,9 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
-from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -120,11 +122,14 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.services.osutils import override_environ
 from lp.services import features
 from lp.services.features.flags import FeatureController
-from lp.services.features.model import getFeatureStore, FeatureFlag
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -489,7 +494,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 self.addDetail("oops-%d" % i, content)
 
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
@@ -541,7 +546,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
@@ -712,7 +717,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
