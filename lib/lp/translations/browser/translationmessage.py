@@ -60,7 +60,10 @@ from lp.translations.browser.browser_helpers import (
     )
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
-from lp.translations.interfaces.side import ITranslationSideTraitsSet
+from lp.translations.interfaces.side import (
+    ITranslationSideTraitsSet,
+    TranslationSide,
+    )
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     ITranslationMessageSet,
@@ -1038,6 +1041,10 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.shared_translationmessage = shared_translationmessage
 
+        if side_traits.side == TranslationSide.UPSTREAM:
+            self.other_title = u"In Ubuntu:"
+        else:
+            self.other_title = u"In Upstream:"
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
@@ -1132,7 +1139,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                             pofile=pofile,
                             legal_warning_needed=False,
                             is_empty=False,
-                            packaged=True,
+                            other_side=True,
                             local_to_pofile=True))
 
             diverged_and_have_shared = (
@@ -1175,11 +1182,6 @@ class CurrentTranslationMessageView(LaunchpadView):
                 'html_id_translation':
                     self.context.makeHTMLID('translation_%d' % index),
                 }
-
-            if self.other_translationmessage is not None:
-                translation_entry['html_id_imported_suggestion'] = (
-                    self.other_translationmessage.makeHTMLID(
-                        'suggestion'))
 
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
@@ -1377,7 +1379,8 @@ class CurrentTranslationMessageView(LaunchpadView):
         return iterable_submissions
 
     def getOfficialTranslation(self, index, is_other=False, is_shared=False):
-        """Return current translation on either side for plural form 'index'."""
+        """Return current translation on either side for plural form 'index'.
+        """
         assert index in self.pluralform_indices, (
             'There is no plural form #%d for %s language' % (
                 index, self.pofile.language.displayname))
@@ -1641,7 +1644,7 @@ class Submission:
 
 def convert_translationmessage_to_submission(
     message, current_message, plural_form, pofile, legal_warning_needed,
-    is_empty=False, packaged=False, local_to_pofile=False):
+    is_empty=False, other_side=False, local_to_pofile=False):
     """Turn a TranslationMessage to an object used for rendering a submission.
 
     :param message: A TranslationMessage.
@@ -1671,9 +1674,9 @@ def convert_translationmessage_to_submission(
         current_message.potmsgset.makeHTMLID(u'%s_suggestion_%s_%s' % (
             message.language.code, message.id,
             plural_form)))
-    if packaged:
+    if other_side:
         submission.row_html_id = current_message.potmsgset.makeHTMLID(
-            'packaged')
+            'other')
         submission.origin_html_id = submission.row_html_id + '_origin'
     else:
         submission.row_html_id = ''

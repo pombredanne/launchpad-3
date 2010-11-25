@@ -388,7 +388,7 @@
 
     <tal:other_translation
       define="
-        section_title string:Other:;
+        section_title view/other_title;
         submission translation_dictionary/other_translation_message;
         dismissable view/dismissable_button_class;
         form_is_writeable view/form_is_writeable;
