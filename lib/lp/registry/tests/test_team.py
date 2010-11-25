@@ -222,7 +222,7 @@ class TestMembershipManagement(TestCaseWithFactory):
         self.anotherteam = self.factory.makeTeam(name='another')
         self.targetteam = self.factory.makeTeam(name='target')
         self.person = self.factory.makePerson()
-        login_celebrity('admin') 
+        login_celebrity('admin')
         self.person.join(self.targetteam)
         self.person.join(self.sharedteam)
         self.person.join(self.anotherteam)

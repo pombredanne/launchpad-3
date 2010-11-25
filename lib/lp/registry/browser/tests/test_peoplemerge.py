@@ -141,7 +141,8 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
 
-    def test_merge_team_as_delete_with_super_teams_into_registry_experts(self):
+    def test_merge_team_as_delete_with_super_teams_into_registry_experts(
+            self):
         # Super team memberships are removed.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
