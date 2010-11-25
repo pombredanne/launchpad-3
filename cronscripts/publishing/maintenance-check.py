@@ -81,15 +81,20 @@ UNSUPPORTED_DISTRO_RELEASED = [
 
 
 # germinate output base directory
-BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
+BASE_URL = os.environ.get(
+    "MAINTENANCE_CHECK_BASE_URL", 
+    "http://people.canonical.com/~ubuntu-archive/germinate-output/")
 
 # hints dir url, hints file is "$distro.hints" by default
 # (e.g. lucid.hints)
-HINTS_DIR_URL = "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS"
+HINTS_DIR_URL = os.environ.get(
+    "MAINTENANCE_CHECK_HINTS_DIR_URL", 
+    "http://people.canonical.com/~ubuntu-archive/seeds/platform.%s/SUPPORTED_HINTS")
 
 # we need the archive root to parse the Sources file to support
 # by-source hints
-ARCHIVE_ROOT = "http://archive.ubuntu.com/ubuntu"
+ARCHIVE_ROOT = os.environ.get(
+    "MAINTENANCE_CHECK_ARCHIVE_ROOT", "http://archive.ubuntu.com/ubuntu")
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
