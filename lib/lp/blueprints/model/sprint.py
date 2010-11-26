@@ -42,13 +42,14 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
+from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.hasdrivers import HasDriversMixin
 
 
-class Sprint(SQLBase, HasDriversMixin):
+class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     """See `ISprint`."""
 
     implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
@@ -93,7 +94,7 @@ class Sprint(SQLBase, HasDriversMixin):
         """See IHasDrivers."""
         if self.driver is not None:
             return [self.driver, self.owner]
-        return [self.owner,]
+        return [self.owner]
 
     # useful joins
     attendees = SQLRelatedJoin('Person',
@@ -141,7 +142,7 @@ class Sprint(SQLBase, HasDriversMixin):
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness

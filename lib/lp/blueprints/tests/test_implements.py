@@ -39,6 +39,10 @@ class ImplementsIHasSpecificationsTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.assertProvides(distroseries, IHasSpecifications)
 
+    def test_sprint_implements_IHasSpecifications(self):
+        sprint = self.factory.makeSprint()
+        self.assertProvides(sprint, IHasSpecifications)
+
 
 class ImplementsISpecificationTargetTests(TestCaseWithFactory):
     """Test that various objects implement ISpecificationTarget."""
