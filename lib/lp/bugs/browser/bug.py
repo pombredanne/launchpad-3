@@ -71,12 +71,8 @@ from canonical.launchpad.searchbuilder import (
     greater_than,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -93,6 +89,12 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from canonical.widgets.project import ProjectScopeWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import (

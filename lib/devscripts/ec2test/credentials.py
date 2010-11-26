@@ -12,10 +12,9 @@ __all__ = [
 import os
 
 import boto
-
 from bzrlib.errors import BzrCommandError
-
 from devscripts.ec2test.account import EC2Account
+
 
 class CredentialsError(BzrCommandError):
     """Raised when AWS credentials could not be loaded."""
@@ -62,3 +61,10 @@ class EC2Credentials:
         """
         conn = boto.connect_ec2(self.identifier, self.secret)
         return EC2Account(name, conn)
+
+    def connect_s3(self):
+        """Connect to S3 with these credentials.
+
+        :return: A `boto.s3.connection.S3Connection` with these credentials.
+        """
+        return boto.connect_s3(self.identifier, self.secret)

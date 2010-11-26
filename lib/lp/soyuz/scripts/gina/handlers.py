@@ -17,6 +17,7 @@ __all__ = [
     'DistroHandler',
     ]
 
+from cStringIO import StringIO
 import os
 import re
 
@@ -31,6 +32,7 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import log
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
@@ -624,11 +626,7 @@ class SourcePackageHandler:
         to_upload = check_not_in_librarian(src.files, src.archive_root,
                                            src.directory)
 
-        #
-        # DO IT! At this point, we've decided we have everything we need
-        # to create the SPR.
-        #
-
+        # Create the SourcePackageRelease (SPR)
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
@@ -645,7 +643,7 @@ class SourcePackageHandler:
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog_entry=src.changelog,
+            changelog_entry=src.changelog_entry,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
             build_conflicts=src.build_conflicts,
@@ -660,6 +658,15 @@ class SourcePackageHandler:
             upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
+
+        # Upload the changelog to the Librarian
+        if src.changelog is not None:
+            changelog_lfa = getUtility(ILibraryFileAliasSet).create(
+                "changelog",
+                len(src.changelog),
+                StringIO(src.changelog),
+                "text/x-debian-source-changelog")
+            spr.changelog = changelog_lfa
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.

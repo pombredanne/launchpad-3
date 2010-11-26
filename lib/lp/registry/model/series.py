@@ -19,6 +19,8 @@ from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
     )
+from lp.registry.model.hasdrivers import HasDriversMixin
+
 
 ACTIVE_STATUSES = [
     SeriesStatus.DEVELOPMENT,
@@ -28,7 +30,7 @@ ACTIVE_STATUSES = [
     ]
 
 
-class SeriesMixin:
+class SeriesMixin(HasDriversMixin):
     """See `ISeriesMixin`."""
 
     implements(ISeriesMixin)
@@ -51,7 +53,7 @@ class SeriesMixin:
 
     @property
     def drivers(self):
-        """See `ISeriesMixin`."""
+        """See `IHasDrivers`."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.parent.drivers)

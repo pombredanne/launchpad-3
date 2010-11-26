@@ -59,19 +59,13 @@ from canonical.launchpad.browser.feeds import (
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
-    safe_action,
     urlappend,
     )
 from canonical.launchpad.webapp.authorization import check_permission
@@ -80,7 +74,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from lp.app.browser.tales import BugTrackerFormatterAPI
 from canonical.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
@@ -91,6 +84,14 @@ from canonical.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
@@ -1273,18 +1274,6 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """
         service_usage = IServiceUsage(self.context)
         return service_usage.bug_tracking_usage
-
-    @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
-
-        :returns: `IBugTracker` or None
-        """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
 
     @property
     def bugtracker(self):

@@ -2277,6 +2277,9 @@ class BugTaskSet:
         :param _noprejoins: Private internal parameter to BugTaskSet which
             disables all use of prejoins : consolidated from code paths that
             claim they were inefficient and unwanted.
+        :param prejoins: A sequence of tuples (table, table_join) which
+            which should be pre-joined in addition to the default prejoins.
+            This parameter has no effect if _noprejoins is True.
         """
         # Prevent circular import problems.
         from lp.registry.model.product import Product
@@ -2286,6 +2289,7 @@ class BugTaskSet:
             prejoins = []
             resultrow = BugTask
         else:
+            requested_joins = kwargs.get('prejoins', [])
             prejoins = [
                 (Bug, LeftJoin(Bug, BugTask.bug == Bug.id)),
                 (Product, LeftJoin(Product, BugTask.product == Product.id)),
@@ -2293,51 +2297,17 @@ class BugTaskSet:
                  LeftJoin(
                      SourcePackageName,
                      BugTask.sourcepackagename == SourcePackageName.id)),
-                ]
-            resultrow = (BugTask, Bug, Product, SourcePackageName, )
+                ] + requested_joins
+            resultrow = (BugTask, Bug, Product, SourcePackageName)
+            additional_result_objects = [
+                table for table, join in requested_joins
+                if table not in resultrow]
+            resultrow = resultrow + tuple(additional_result_objects)
         return self._search(resultrow, prejoins, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], params).result_set
-
-    def getAssignedMilestonesFromSearch(self, search_results):
-        """See `IBugTaskSet`."""
-        # XXX: Gavin Panella 2009-03-05 bug=338184: There is currently
-        # no clean way to get the underlying Storm ResultSet from an
-        # SQLObjectResultSet, so we must remove the security proxy for
-        # a moment.
-        if ISQLObjectResultSet.providedBy(search_results):
-            search_results = removeSecurityProxy(search_results)._result_set
-        # Check that we have a Storm result set before we start doing
-        # things with it.
-        assert IResultSet.providedBy(search_results), (
-            "search_results must provide IResultSet or ISQLObjectResultSet")
-        # Remove ordering and make distinct.
-        search_results = search_results.order_by().config(distinct=True)
-        # Get milestone IDs.
-        milestone_ids = [
-            milestone_id for milestone_id in (
-                search_results.values(BugTask.milestoneID))
-            if milestone_id is not None]
-        # Query for milestones.
-        if len(milestone_ids) == 0:
-            return []
-        else:
-            # Import here because of cyclic references.
-            from lp.registry.model.milestone import (
-                Milestone, milestone_sort_key)
-            # We need the store that was used, we have no objects to key off
-            # of other than the search result, and Store.of() doesn't
-            # currently work on result sets. Additionally it may be a
-            # DecoratedResultSet.
-            if zope_isinstance(search_results, DecoratedResultSet):
-                store = removeSecurityProxy(search_results).result_set._store
-            else:
-                store = search_results._store
-            milestones = store.find(
-                Milestone, Milestone.id.is_in(milestone_ids))
-            return sorted(milestones, key=milestone_sort_key, reverse=True)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
