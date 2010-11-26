@@ -373,7 +373,7 @@ class Builder(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    builderok = BoolCol(dbName='builderok', notNull=True)
+    _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
     speedindex = IntCol(dbName='speedindex')
@@ -427,6 +427,16 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
+
+    def _getBuilderok(self):
+        return self._builderok
+
+    def _setBuilderok(self, value):
+        self._builderok = value
+        if value is True:
+            self.resetFailureCount()
+
+    builderok = property(_getBuilderok, _setBuilderok)
 
     def gotFailure(self):
         """See `IBuilder`."""
@@ -836,7 +846,7 @@ class BuilderSet(object):
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=manual)
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -884,5 +894,5 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(builderok=True, processor=processor,
+        return Builder.selectBy(_builderok=True, processor=processor,
                                 virtualized=virtualized)
