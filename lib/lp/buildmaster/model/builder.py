@@ -858,7 +858,7 @@ class BuilderSet(object):
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, active=active,
                        virtualized=virtualized, vm_host=vm_host,
-                       builderok=True, manual=manual)
+                       _builderok=True, manual=manual)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -906,5 +906,5 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(builderok=True, processor=processor,
+        return Builder.selectBy(_builderok=True, processor=processor,
                                 virtualized=virtualized)
