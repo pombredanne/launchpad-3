@@ -25,12 +25,10 @@ from canonical.launchpad.browser.librarian import (
     ProxiedLibraryFileAlias,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     StandardLaunchpadFacets,
@@ -40,6 +38,10 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.utils import safe_hasattr
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.buildmaster.enums import BuildStatus
 from lp.services.job.interfaces.job import JobStatus

@@ -128,7 +128,9 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         # Super team memberships are removed.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
+        login_celebrity('admin')
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
+        login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)

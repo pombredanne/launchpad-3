@@ -3,12 +3,12 @@
 BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
-   >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.webapp.testing import verifyObject
    >>> from lp.soyuz.interfaces.binarypackagerelease import (
    ...     IBinaryPackageRelease,
    ...     IBinaryPackageReleaseSet,
    ...     )
+   >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
    >>> firefox_bin_release = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)

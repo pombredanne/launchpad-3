@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=F0401
 
+from __future__ import with_statement
+
 """Unit tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -18,7 +20,9 @@ import pytz
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    removeSecurityProxy,
+    )
 
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
@@ -34,6 +38,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalChangeStatusView,
     BranchMergeProposalContextMenu,
     BranchMergeProposalMergedView,
+    BranchMergeProposalResubmitView,
     BranchMergeProposalVoteView,
     DecoratedCodeReviewVoteReference,
     ICodeReviewNewRevisions,
@@ -53,7 +58,11 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.testing import (
+    BrowserTestCase,
+    feature_flags,
     login_person,
+    set_feature_flag,
+    person_logged_in,
     TestCaseWithFactory,
     time_counter,
     )
@@ -501,7 +510,7 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         self.assertOnePendingReview(proposal, reviewer)
         self.assertIs(None, proposal.description)
 
-    def test_register_request_review_type(self):
+    def test_register_request_review_type_branch_reviewer(self):
         # We can ask for a specific review type. The target branch has a
         # reviewer so that reviewer should be used.
         target_branch, reviewer = self._makeTargetBranchWithReviewer()
@@ -513,6 +522,96 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         proposal = self._getSourceProposal(target_branch)
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
         self.assertIs(None, proposal.description)
+
+
+class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
+    """Test BranchMergeProposalResubmitView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def createView(self):
+        """Create the required view."""
+        context = self.factory.makeBranchMergeProposal()
+        self.useContext(person_logged_in(context.registrant))
+        view = BranchMergeProposalResubmitView(
+            context, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def test_resubmit_action(self):
+        """resubmit_action resubmits the proposal."""
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+             'break_link': False,
+            })
+        self.assertEqual(new_proposal.supersedes, context)
+        self.assertEqual(new_proposal.source_branch, context.source_branch)
+        self.assertEqual(new_proposal.target_branch, context.target_branch)
+        self.assertEqual(
+            new_proposal.prerequisite_branch, context.prerequisite_branch)
+
+    def test_resubmit_action_change_branches(self):
+        """Changing the branches changes the branches in the new proposal."""
+        view = self.createView()
+        target = view.context.source_branch.target
+        new_source = self.factory.makeBranchTargetBranch(target)
+        new_target = self.factory.makeBranchTargetBranch(target)
+        new_prerequisite = self.factory.makeBranchTargetBranch(target)
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': new_source, 'target_branch': new_target,
+             'prerequisite_branch': new_prerequisite,
+             'description': 'description',
+             'break_link': False,
+             })
+        self.assertEqual(new_proposal.supersedes, view.context)
+        self.assertEqual(new_proposal.source_branch, new_source)
+        self.assertEqual(new_proposal.target_branch, new_target)
+        self.assertEqual(new_proposal.prerequisite_branch, new_prerequisite)
+
+    def test_resubmit_action_break_link(self):
+        """Enabling break_link prevents linking the old and new proposals."""
+        view = self.createView()
+        context = view.context
+        new_proposal = view.resubmit_action.success(
+            {'source_branch': context.source_branch,
+             'target_branch': context.target_branch,
+             'prerequisite_branch': context.prerequisite_branch,
+             'description': None,
+             'break_link': True,
+            })
+        self.assertIs(None, new_proposal.supersedes)
+
+
+class TestResubmitBrowser(BrowserTestCase):
+    """Browser tests for resubmitting branch merge proposals."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_resubmit_text(self):
+        """The text of the resubmit page is as expected."""
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        text = self.getMainText(bmp, '+resubmit')
+        expected = (
+            'Resubmit proposal to merge.*'
+            'Source Branch:.*'
+            'Target Branch:.*'
+            'Prerequisite Branch:.*'
+            'Description.*'
+            'Start afresh.*')
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
+
+    def test_resubmit_controls(self):
+        """Proposals can be resubmitted using the browser."""
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
+        browser = self.getViewBrowser(bmp, '+resubmit')
+        browser.getControl('Description').value = 'flibble'
+        browser.getControl('Resubmit').click()
+        self.assertEqual('flibble', bmp.superseded_by.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):
@@ -619,6 +718,40 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
+
+    def makeRevisionGroups(self):
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date)
+        first_commit = datetime(2009, 9, 9, tzinfo=pytz.UTC)
+        add_revision_to_branch(
+            self.factory, bmp.source_branch, first_commit)
+        login_person(bmp.registrant)
+        bmp.requestReview(review_date)
+        revision_date = review_date + timedelta(days=1)
+        revisions = []
+        for date in range(2):
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revision_date += timedelta(days=1)
+        return bmp, revisions
+
+    def test_getRevisionsIncludesIncrementalDiffs(self):
+        bmp, revisions = self.makeRevisionGroups()
+        diff = self.factory.makeIncrementalDiff(merge_proposal=bmp,
+                old_revision=revisions[1].revision.getLefthandParent(),
+                new_revision=revisions[3].revision)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        view = create_initialized_view(bmp, '+index')
+        comments = view.conversation.comments
+        self.assertEqual(
+            [diff],
+            [comment.diff for comment in comments])
 
     def test_CodeReviewNewRevisions_implements_ICodeReviewNewRevisions(self):
         # The browser helper class implements its interface.
@@ -822,6 +955,27 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+
+class TestBranchMergeProposal(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_conversation(self):
+        source_branch = self.factory.makeBranch()
+        parent = add_revision_to_branch(self.factory, source_branch,
+            self.factory.getUniqueDate()).revision
+        bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
+            date_created = self.factory.getUniqueDate(),
+            source_branch=source_branch)
+        revision = add_revision_to_branch(self.factory, bmp.source_branch,
+            self.factory.getUniqueDate()).revision
+        diff = self.factory.makeDiff()
+        bmp.generateIncrementalDiff(parent, revision, diff)
+        self.useContext(feature_flags())
+        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        browser = self.getViewBrowser(bmp)
+        assert 'unf_pbasyvpgf' in browser.contents
 
 
 class TestLatestProposalsForEachBranch(TestCaseWithFactory):

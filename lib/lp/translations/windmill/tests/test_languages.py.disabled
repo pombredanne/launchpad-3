@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.windmill.testing.constants import (
+    FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
@@ -53,7 +54,7 @@ class LanguagesFilterTest(WindmillTestCase):
         French, because neither its name nor language code contain 'de'.
         """
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/+languages'
+        start_url = '%s/+languages' % TranslationsWindmillLayer.base_url
         # Go to the languages page
         self.client.open(url=start_url)
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)
@@ -61,7 +62,8 @@ class LanguagesFilterTest(WindmillTestCase):
         # "Not-matching" message is hidden and languages are visible.
         self.client.asserts.assertProperty(
             id=u'no_filter_matches',
-            validator='className|unseen')
+            validator='className|unseen',
+            timeout=FOR_ELEMENT)
         self._assert_languages_visible({
             u'German': True,
             u'Mende': True,

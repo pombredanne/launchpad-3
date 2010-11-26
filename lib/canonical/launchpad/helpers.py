@@ -25,7 +25,7 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
@@ -582,3 +582,48 @@ def english_list(items, conjunction='and'):
     else:
         items[-1] = '%s %s' % (conjunction, items[-1])
         return ', '.join(items)
+
+
+def ensure_unicode(string):
+    r"""Return input as unicode. None is passed through unharmed.
+
+    Do not use this method. This method exists only to help migration
+    of legacy code where str objects were being passed into contexts
+    where unicode objects are required. All invokations of
+    ensure_unicode() should eventually be removed.
+
+    This differs from the builtin unicode() function, as a TypeError
+    exception will be raised if the parameter is not a basestring or if
+    a raw string is not ASCII.
+
+    >>> ensure_unicode(u'hello')
+    u'hello'
+
+    >>> ensure_unicode('hello')
+    u'hello'
+
+    >>> ensure_unicode(u'A'.encode('utf-16')) # Not ASCII
+    Traceback (most recent call last):
+    ...
+    TypeError: '\xff\xfeA\x00' is not US-ASCII
+
+    >>> ensure_unicode(42)
+    Traceback (most recent call last):
+    ...
+    TypeError: 42 is not a basestring (<type 'int'>)
+
+    >>> ensure_unicode(None) is None
+    True
+    """
+    if string is None:
+        return None
+    elif isinstance(string, unicode):
+        return string
+    elif isinstance(string, basestring):
+        try:
+            return string.decode('US-ASCII')
+        except UnicodeDecodeError:
+            raise TypeError("%s is not US-ASCII" % repr(string))
+    else:
+        raise TypeError(
+            "%r is not a basestring (%r)" % (string, type(string)))

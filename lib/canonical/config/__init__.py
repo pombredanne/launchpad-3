@@ -58,8 +58,7 @@ TREE_ROOT = os.path.abspath(
 # The directories containing instances configuration directories.
 CONFIG_ROOT_DIRS = [
     os.path.join(TREE_ROOT, 'configs'),
-    os.path.join(TREE_ROOT, 'production-configs')
-    ]
+    os.path.join(TREE_ROOT, 'production-configs')]
 
 
 def find_instance_name():
@@ -100,6 +99,7 @@ class CanonicalConfig:
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
     """
+
     def __init__(self, instance_name=None, process_name=None):
         """Create a new instance of CanonicalConfig.
 
@@ -251,6 +251,15 @@ class CanonicalConfig:
                 </configure>""" % self.config_dir
         loader.close()
 
+    def appserver_root_url(self, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
+        root_url = str(getattr(self.vhost, facet).rooturl)
+        if not ensureSlash:
+            return root_url.rstrip('/')
+        if not root_url.endswith('/'):
+            return root_url+'/'
+        return root_url
+
     def __getattr__(self, name):
         self._getConfig()
         # Check first if it's not one of the name added directly
@@ -288,6 +297,7 @@ def url(value):
         raise ValueError('No protocol in URL')
     value = urlunparse(bits)
     return value
+
 
 def urlbase(value):
     """ZConfig validator for url bases
