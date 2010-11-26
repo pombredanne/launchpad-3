@@ -32,7 +32,7 @@ from lp.translations.model.translationtemplateitem import (
     )
 
 
-class TranslationMessageImportedFlagUpdater:
+class TranslationMessageUpstreamFlagUpdater:
     implements(ITunableLoop)
     """Populates is_current_upstream flag from is_current_ubuntu flag."""
 
@@ -131,7 +131,7 @@ class MigrateCurrentFlagProcess:
             ProductSeries.productID == Product.id,
             ).group_by(Product).having(Count(POTemplate.id) > 0)
 
-    def getCurrentNonimportedTranslations(self, product):
+    def getCurrentNonUpstreamTranslations(self, product):
         """Get TranslationMessage.ids that need migration for a `product`."""
         return self.store.find(
             TranslationMessage.id,
@@ -155,8 +155,8 @@ class MigrateCurrentFlagProcess:
                 "Migrating %s translations (%d of %d)..." % (
                     product.name, current_product, total_products))
 
-            tm_ids = self.getCurrentNonimportedTranslations(product)
-            tm_loop = TranslationMessageImportedFlagUpdater(
+            tm_ids = self.getCurrentNonUpstreamTranslations(product)
+            tm_loop = TranslationMessageUpstreamFlagUpdater(
                 self.transaction, self.logger, tm_ids)
             DBLoopTuner(tm_loop, 5, minimum_chunk_size=100).run()
 

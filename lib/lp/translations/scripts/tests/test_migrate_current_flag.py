@@ -9,7 +9,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.scripts.migrate_current_flag import (
     MigrateCurrentFlagProcess,
-    TranslationMessageImportedFlagUpdater,
+    TranslationMessageUpstreamFlagUpdater,
     )
 
 
@@ -49,15 +49,15 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         self.assertContentEqual(
             sampledata_products + [product], list(products))
 
-    def test_getCurrentNonimportedTranslations_empty(self):
+    def test_getCurrentNonUpstreamTranslations_empty(self):
         # For a product with no translations no messages are returned.
         potemplate = self.factory.makePOTemplate()
         results = list(
-            self.migrate_process.getCurrentNonimportedTranslations(
+            self.migrate_process.getCurrentNonUpstreamTranslations(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonimportedTranslations_noncurrent(self):
+    def test_getCurrentNonUpstreamTranslations_noncurrent(self):
         # For a product with non-current translations no messages
         # are returned.
         potemplate = self.factory.makePOTemplate()
@@ -67,11 +67,11 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         pofile = self.factory.makePOFile(potemplate=potemplate)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
         results = list(
-            self.migrate_process.getCurrentNonimportedTranslations(
+            self.migrate_process.getCurrentNonUpstreamTranslations(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonimportedTranslations_current_imported(self):
+    def test_getCurrentNonUpstreamTranslations_current_imported(self):
         # For a product with both flasg set, no messages are returned.
         potemplate = self.factory.makePOTemplate()
         potmsgset = self.factory.makePOTMsgSet(
@@ -82,11 +82,11 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             pofile=pofile, potmsgset=potmsgset)
         translation.is_current_ubuntu = True
         results = list(
-            self.migrate_process.getCurrentNonimportedTranslations(
+            self.migrate_process.getCurrentNonUpstreamTranslations(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonimportedTranslations_current_nonimported(self):
+    def test_getCurrentNonUpstreamTranslations_current_nonimported(self):
         # For a product with current, non-imported translations,
         # that translation is returned.
         potemplate = self.factory.makePOTemplate()
@@ -98,7 +98,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             pofile=pofile, potmsgset=potmsgset)
         translation.is_current_ubuntu = True
         results = list(
-            self.migrate_process.getCurrentNonimportedTranslations(
+            self.migrate_process.getCurrentNonUpstreamTranslations(
                 potemplate.productseries.product))
         self.assertContentEqual([translation.id], results)
 
@@ -114,7 +114,7 @@ class TestUpdaterLoop(TestCaseWithFactory):
         self.layer.switchDbUser('postgres')
         super(TestUpdaterLoop, self).setUp(user='mark@example.com')
         self.logger = logging.getLogger("migrate-current-flag")
-        self.migrate_loop = TranslationMessageImportedFlagUpdater(
+        self.migrate_loop = TranslationMessageUpstreamFlagUpdater(
             self.layer.txn, self.logger, [])
 
     def test_updateTranslationMessages_base(self):
