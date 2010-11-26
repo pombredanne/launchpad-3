@@ -66,9 +66,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadFormView,
     Link,
     )
 from canonical.launchpad.webapp.authorization import (
@@ -83,6 +81,10 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import MenuAPI
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranchSet,

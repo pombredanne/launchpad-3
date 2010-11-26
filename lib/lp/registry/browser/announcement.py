@@ -36,11 +36,6 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadFormView,
-    )
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
@@ -51,6 +46,11 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     )
 from canonical.widgets import AnnouncementDateWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.services.fields import (
     AnnouncementDate,
