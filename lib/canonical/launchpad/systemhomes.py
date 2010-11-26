@@ -127,9 +127,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, prejoins=[]):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(
+            search_params, prejoins=prejoins)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
@@ -235,8 +236,10 @@ class RosettaApplication:
         """See `IRosettaApplication`."""
         projects = getUtility(ITranslationsOverview)
         for project in projects.getMostTranslatedPillars():
-            yield { 'pillar' : project['pillar'],
-                    'font_size' : project['weight'] * 10 }
+            yield {
+                'pillar': project['pillar'],
+                'font_size': project['weight'] * 10,
+                }
 
     def translatable_distroseriess(self):
         """See `IRosettaApplication`."""

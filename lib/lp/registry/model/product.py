@@ -55,6 +55,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -153,11 +156,11 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -284,7 +287,7 @@ class UnDeactivateable(Exception):
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasSpecificationsMixin, HasSprintsMixin,
+              HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
@@ -1576,7 +1579,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return prejoin(results)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""
