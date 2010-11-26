@@ -617,6 +617,13 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         self.callbacks = MirrorCDImageProberCallbacks(
             mirror, warty, flavour, log_file)
 
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+
     def test_mirrorcdimageseries_creation_and_deletion(self):
         callbacks = self.callbacks
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
@@ -685,6 +692,13 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         self.callbacks = ArchiveMirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
 
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
+
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
         # ProberTimeout, BadResponseCode or ConnectionSkipped failures.
@@ -752,6 +766,13 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
         # to interfere with each other, though, so we'll clean
         # RequestManager.host_locks here.
         RequestManager.host_locks.clear()
+
+    def tearDown(self):
+        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
+        # calls around.  They need to be updated to use Twisted correctly.
+        # For the meantime, just blat the reactor.
+        for delayed_call in reactor.getDelayedCalls():
+            delayed_call.cancel()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')

@@ -194,8 +194,13 @@ class LibrarianServerFixture(TacTestSetup):
         # error.
         return os.path.join(self.root, 'librarian.log')
 
+    def logChunks(self):
+        """Get a list with the contents of the librarian log in it."""
+        return open(self.logfile, 'rb').readlines()
+
 
 _global_fixture = LibrarianServerFixture()
+
 
 def LibrarianTestSetup():
     """Support the stateless lie."""
