@@ -3,7 +3,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Migrate current flag to imported flag on project translations."""
+"""Migrate ubuntu flag to upstream flag on project translations."""
 
 import _pythonpath
 
@@ -13,10 +13,10 @@ from lp.translations.scripts.migrate_current_flag import (
 
 
 class MigrateTranslationFlags(LaunchpadScript):
-    """Go through all POFiles and TranslationMessages and get rid of variants.
+    """Go through translations for projects and set is_current_upstream flag
 
-    Replaces use of `variant` field with a new language with the code
-    corresponding to the 'previous language'@'variant'.
+    Sets the is_current_upstream flag for all current translations in projects
+    so that they appear as current in the new model.
     """
 
     def main(self):

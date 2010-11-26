@@ -1,6 +1,47 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Test the is_current_ubuntu to is_current_upstream migration.
+
+This test and the script it is testing lives in two worlds because it migrates
+data from the old model to the new. Since the naming and meaning of the flags
+have changed, the code and comments may sometimes be confusing. Here a
+little guide:
+
+Old model                            New Model
+---------                            ---------
+The is_current flag marks a          The is_current_ubuntu flag marks a
+translation as being currently in    translation as being currently used in
+use int the project or package       the Ubuntu source package that the
+that the POFile of this translation  translation is linked to.
+belongs to.
+
+The is_imported flag marks a         The is_current_upstream flag marks a 
+translation as having been imported  translation as being currently used in
+from an external source into this    the upstream project that this
+project or source package.           translation is linked to.
+
+Translations from projects and       Translations are shared between upstream      
+source packages are not shared.      projects and source packages.
+
+Ubuntu source packages can live quite happily int the new world because the
+meaning of the flag "is_current_ubuntu", which used to be called "is_current",
+remains the same for them.
+
+Projects on the other hand could loose all their translations because their
+former "current" translation would then be "current in the source package"
+but not in the project itself. For this reason, all current messages in
+source packages need to get their "is_current_upstream" flag set. This may
+currently not be the case because it used to be called "is_imported" and
+the messages may not have been imported from an external source.
+
+The factory creates POTemplates and POFiles in projects if not directed
+otherwise, which is what we need in this test. When setting up tests, though,
+the old model has to be mimicked by setting "is_current_ubuntu" to True
+although the translation is meant to be "is_current_upstream". This script
+is about fixing exactly that, so don't get confused when reading the tests. 
+"""
+
 __metaclass__ = type
 
 import logging
@@ -71,7 +112,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonUpstreamTranslations_current_imported(self):
+    def test_getCurrentNonUpstreamTranslations_current_upstream(self):
         # For a product with both flasg set, no messages are returned.
         potemplate = self.factory.makePOTemplate()
         potmsgset = self.factory.makePOTMsgSet(
@@ -86,8 +127,8 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonUpstreamTranslations_current_nonimported(self):
-        # For a product with current, non-imported translations,
+    def test_getCurrentNonUpstreamTranslations_current_nonupstream(self):
+        # For a product with current, non-upstream translations,
         # that translation is returned.
         potemplate = self.factory.makePOTemplate()
         potmsgset = self.factory.makePOTMsgSet(
@@ -127,7 +168,7 @@ class TestUpdaterLoop(TestCaseWithFactory):
         self.migrate_loop._updateTranslationMessages([translation.id])
         self.assertTrue(translation.is_current_upstream)
 
-    def test_updateTranslationMessages_unsetting_imported(self):
+    def test_updateTranslationMessages_unsetting_upstream(self):
         # If there was a previous upstream message, it is unset
         # first.
         pofile = self.factory.makePOFile()
