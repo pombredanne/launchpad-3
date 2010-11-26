@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the integration between Twisted's logging and Launchpad's."""
@@ -13,15 +13,18 @@ import shutil
 import StringIO
 import tempfile
 from textwrap import dedent
-import unittest
 
 import pytz
+
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    flush_logged_errors,
+    )
+
 from twisted.python import log
-from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing.layers import TwistedLayer
 from lp.services.twistedsupport.loggingsupport import (
     LaunchpadLogFile,
     OOPSLoggingObserver,
@@ -30,7 +33,7 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     suppress_stderr,
     )
-from lp.testing import TestCase as LaunchpadTestCase
+from lp.testing import TestCase
 
 
 UTC = pytz.utc
@@ -38,9 +41,10 @@ UTC = pytz.utc
 
 class LoggingSupportTests(TestCase):
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
+        super(LoggingSupportTests, self).setUp()
         self.temp_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.temp_dir)
         config.push('testing', dedent("""
@@ -59,6 +63,7 @@ class LoggingSupportTests(TestCase):
     def tearDown(self):
         config.pop('testing')
         globalErrorUtility.configure()
+        super(LoggingSupportTests, self).tearDown()
 
     def assertLogMatches(self, pattern):
         """Assert that the messages logged by self.logger matches a regexp."""
@@ -73,13 +78,13 @@ class LoggingSupportTests(TestCase):
         error_time = datetime.datetime.now(UTC)
         fail = makeFailure(RuntimeError)
         log.err(fail, error_time=error_time)
-        self.flushLoggedErrors(RuntimeError)
+        flush_logged_errors(RuntimeError)
         oops = globalErrorUtility.getOopsReport(error_time)
         self.assertEqual(oops.type, 'RuntimeError')
         self.assertLogMatches('^Logged OOPS id.*')
 
 
-class TestLaunchpadLogFile(LaunchpadTestCase):
+class TestLaunchpadLogFile(TestCase):
 
     def setUp(self):
         super(TestLaunchpadLogFile, self).setUp()
@@ -138,11 +143,11 @@ class TestLaunchpadLogFile(LaunchpadTestCase):
         self.assertEqual(['test.log'], self.listTestFiles())
         self.assertEqual([], log_file.listLogs())
 
-        ignored_file = self.createTestFile('boing')
+        self.createTestFile('boing')
         self.assertEqual([], log_file.listLogs())
 
-        old_log = self.createTestFile('test.log.2000-12-31')
-        compressed_log = self.createTestFile('test.log.2000-12-30.bz2')
+        self.createTestFile('test.log.2000-12-31')
+        self.createTestFile('test.log.2000-12-30.bz2')
         self.assertEqual(
             ['test.log.2000-12-31', 'test.log.2000-12-30.bz2'],
             [os.path.basename(log_path) for log_path in log_file.listLogs()])
@@ -178,8 +183,4 @@ class TestLaunchpadLogFile(LaunchpadTestCase):
         self.assertEqual(
             ['test.log', 'test.log.2.bz2', 'test.log.3'],
             self.listTestFiles())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
 

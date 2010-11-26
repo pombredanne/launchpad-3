@@ -10,7 +10,6 @@ from storm.expr import (
     And,
     LeftJoin,
     Or,
-    SQL,
     )
 from storm.store import Store
 from zope.component import (
@@ -488,56 +487,13 @@ class StructuralSubscriptionTargetMixin:
                     BugSubscriptionFilter.id)),
             ]
 
-        # An ARRAY[] expression for the given bug's tags.
-        tags_array = "ARRAY[%s]::TEXT[]" % ",".join(
-            quote(tag) for tag in bugtask.bug.tags)
-
-        # The tags a subscription requests for inclusion.
-        tags_include_expr = (
-            "SELECT tag FROM BugSubscriptionFilterTag "
-            "WHERE filter = BugSubscriptionFilter.id AND include")
-        tags_include_array = "ARRAY(%s)" % tags_include_expr
-        tags_include_is_empty = SQL(
-            "ARRAY[]::TEXT[] = %s" % tags_include_array)
-
-        # The tags a subscription requests for exclusion.
-        tags_exclude_expr = (
-            "SELECT tag FROM BugSubscriptionFilterTag "
-            "WHERE filter = BugSubscriptionFilter.id AND NOT include")
-        tags_exclude_array = "ARRAY(%s)" % tags_exclude_expr
-        tags_exclude_is_empty = SQL(
-            "ARRAY[]::TEXT[] = %s" % tags_exclude_array)
-
-        # Choose the correct expression depending on the find_all_tags flag.
-        def tags_find_all_combinator(find_all_expr, find_any_expr):
-            return SQL(
-                "CASE WHEN BugSubscriptionFilter.find_all_tags "
-                "THEN (%s) ELSE (%s) END" % (find_all_expr, find_any_expr))
-
         if len(bugtask.bug.tags) == 0:
             tag_conditions = [
                 BugSubscriptionFilter.include_any_tags == False,
-                # The subscription's required tags must be an empty set.
-                tags_include_is_empty,
-                # The subscription's excluded tags can be anything so no
-                # condition is needed.
                 ]
         else:
             tag_conditions = [
                 BugSubscriptionFilter.exclude_any_tags == False,
-                # The bug's tags must contain the subscription's required tags
-                # if find_all_tags is set, else there must be an intersection.
-                Or(tags_include_is_empty,
-                   tags_find_all_combinator(
-                        "%s @> %s" % (tags_array, tags_include_array),
-                        "%s && %s" % (tags_array, tags_include_array))),
-                # The bug's tags must not contain the subscription's excluded
-                # tags if find_all_tags is set, else there must not be an
-                # intersection.
-                Or(tags_exclude_is_empty,
-                   tags_find_all_combinator(
-                        "NOT (%s @> %s)" % (tags_array, tags_exclude_array),
-                        "NOT (%s && %s)" % (tags_array, tags_exclude_array))),
                 ]
 
         conditions = [
