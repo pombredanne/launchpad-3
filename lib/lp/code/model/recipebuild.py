@@ -23,17 +23,12 @@ from storm.expr import (
     Select)
 from storm import Undef
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -70,6 +65,11 @@ class RecipeBuildRecord(namedtuple(
             hash(self.archive.name) ^
             hash(self.most_recent_build_time))
 
+    @property
+    def distro_source_package(self):
+        return self.recipebuild.distribution.getSourcePackage(
+            self.sourcepackagename)
+
 
 class RecipeBuildRecordSet:
     """See `IRecipeBuildRecordSet`."""
@@ -79,7 +79,7 @@ class RecipeBuildRecordSet:
     def findCompletedDailyBuilds(self, epoch_days=30):
         """See `IRecipeBuildRecordSet`."""
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = ISlaveStore(SourcePackageRecipe)
         tables = [
             SourcePackageRecipe,
             Join(Person,
@@ -144,10 +144,10 @@ class RecipeBuildRecordSet:
             result_set, _makeRecipeBuildRecord)
 
 
-# XXX: wallyworld Nov 2010
-# storm's Count() implementation is broken for distinct with > 1 column
-# see bug 675377
+# XXX: wallyworld 2010-11-26 bug=675377: storm's Count() implementation is
+# broken for distinct with > 1 column
 class CountDistinct(Expr):
+
     __slots__ = ("columns")
 
     def __init__(self, columns):
@@ -163,6 +163,7 @@ def compile_countdistinct(compile, countselect, state):
 
 
 class RecipeBuildRecordResultSet(DecoratedResultSet):
+    """A ResultSet which can count() queries with group by."""
 
     def count(self, expr=Undef, distinct=True):
         """This count() knows how to handle result sets with group by."""

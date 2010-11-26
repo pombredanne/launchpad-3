@@ -7,6 +7,7 @@
 
 This module should not contain tests (but it should be tested).
 """
+from lp.code.model.recipebuild import RecipeBuildRecord
 
 __metaclass__ = type
 __all__ = [
@@ -36,11 +37,13 @@ from operator import (
     isSequenceType,
     )
 import os
+from pytz import UTC
 from random import randint
 import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
+import transaction
 from types import InstanceType
 import warnings
 
@@ -1279,6 +1282,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_branch = self.makeBranch()
         else:
             source_branch = merge_proposal.source_branch
+
         def make_revision(parent=None):
             sequence = source_branch.revision_history.count() + 1
             if parent is None:
@@ -2262,6 +2266,80 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             virtualized=virtualized)
         store.add(bq)
         return bq
+
+    def makeRecipeBuildRecords(
+        self, num_records=1, num_records_outside_epoch=0, epoch_days=30):
+        """Create some recipe build records.
+
+        A RecipeBuildRecord is a named tuple. Some records will be created
+        with archive of type ArchivePurpose.PRIMARY, others with type
+        ArchivePurpose.PPA.
+        :param num_records: the number of records within the specified time
+         window.
+        :param num_records_outside_epoch: the number of records outside the
+         specified time window.
+        :param epoch_days: the time window to use when creating records.
+        """
+
+        distroseries = self.makeDistroRelease()
+        sourcepackagename = self.makeSourcePackageName()
+        sourcepackage = self.makeSourcePackage(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        recipeowner = self.makePerson()
+        recipe = self.makeSourcePackageRecipe(
+            build_daily=True,
+            owner=recipeowner,
+            name="Recipe_"+sourcepackagename.name,
+            distroseries=distroseries)
+
+        result = []
+        for x in range(num_records+num_records_outside_epoch):
+            # Ensure we have both ppa and primary archives
+            if x%2 == 0:
+                purpose = ArchivePurpose.PPA
+            else:
+                purpose = ArchivePurpose.PRIMARY
+            archive = self.makeArchive(purpose=purpose)
+            sprb = self.makeSourcePackageRecipeBuild(
+                requester=recipeowner,
+                recipe=recipe,
+                archive=archive,
+                sourcepackage=sourcepackage,
+                distroseries=distroseries)
+            spr = self.makeSourcePackageRelease(
+                source_package_recipe_build=sprb,
+                archive=archive,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
+            binary_build = self.makeBinaryPackageBuild(
+                    source_package_release=spr)
+            naked_build = removeSecurityProxy(binary_build)
+            naked_build.queueBuild()
+            naked_build.status = BuildStatus.FULLYBUILT
+
+            from random import randrange
+            offset = randrange(0, epoch_days)
+            now = datetime.now(UTC)
+            if x >= num_records:
+                offset = epoch_days + 1 + offset
+            naked_build.date_finished = (
+                now - timedelta(days=offset))
+            naked_build.date_started = (
+                naked_build.date_finished - timedelta(minutes=5))
+            rbr = RecipeBuildRecord(
+                removeSecurityProxy(sourcepackagename),
+                removeSecurityProxy(recipeowner),
+                removeSecurityProxy(archive),
+                removeSecurityProxy(sprb),
+                naked_build.date_finished.replace(tzinfo=None))
+
+            if x < num_records:
+                result.append(rbr)
+        # We need to explicitly commit because if don't, the records don't
+        # appear in the slave datastore.
+        transaction.commit()
+        return result
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.

@@ -1002,7 +1002,7 @@
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
     <allow attributes="sourcepackagename recipeowner recipebuild archive
-                        most_recent_build_time"/>
+                        most_recent_build_time distro_source_package"/>
   </class>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">

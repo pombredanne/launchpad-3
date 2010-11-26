@@ -6,12 +6,6 @@
 __metaclass__ = type
 
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-from pytz import UTC
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -20,9 +14,6 @@ from canonical.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
     )
-from lp.buildmaster.enums import BuildStatus
-from lp.code.model.recipebuild import RecipeBuildRecord
-from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -32,84 +23,15 @@ from lp.testing import (
 from lp.testing.views import create_initialized_view
 
 
-class RecipeBuildsTestMixin:
-
-    def _makeRecipeBuildRecords(
-            self, num_records=1, num_records_outside_epoch=0):
-        """Create some recipe build records.
-
-        :param num_records: the number of records within the time window of
-         30 days which will be displayed in the view.
-        :param num_records_outside_epoch: the number of records outside the
-         time window which should not be displayed.
-        """
-
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries)
-        recipeowner = self.factory.makePerson()
-        recipe = self.factory.makeSourcePackageRecipe(
-            build_daily=True,
-            owner=recipeowner,
-            name="Recipe_"+sourcepackagename.name,
-            distroseries=distroseries)
-
-        result = []
-        for x in range(num_records+num_records_outside_epoch):
-            # Ensure we have both ppa and primary archives
-            if x%2 == 0:
-                purpose = ArchivePurpose.PPA
-            else:
-                purpose = ArchivePurpose.PRIMARY
-            archive = self.factory.makeArchive(purpose=purpose)
-            sprb = self.factory.makeSourcePackageRecipeBuild(
-                requester=recipeowner,
-                recipe=recipe,
-                archive=archive,
-                sourcepackage=sourcepackage,
-                distroseries=distroseries)
-            spr = self.factory.makeSourcePackageRelease(
-                source_package_recipe_build=sprb,
-                archive=archive,
-                sourcepackagename=sourcepackagename,
-                distroseries=distroseries)
-            binary_build = self.factory.makeBinaryPackageBuild(
-                    source_package_release=spr)
-            naked_build = removeSecurityProxy(binary_build)
-            naked_build.queueBuild()
-            naked_build.status = BuildStatus.FULLYBUILT
-
-            from random import randrange
-            offset = randrange(0, 30)
-            now = datetime.now(UTC)
-            if x >= num_records:
-                offset = 31 + offset
-            naked_build.date_finished = (
-                now - timedelta(days=offset))
-            naked_build.date_started = (
-                naked_build.date_finished - timedelta(minutes=5))
-            rbr = RecipeBuildRecord(
-                removeSecurityProxy(sourcepackagename),
-                removeSecurityProxy(recipeowner),
-                removeSecurityProxy(archive),
-                removeSecurityProxy(sprb),
-                naked_build.date_finished.replace(tzinfo=None))
-
-            if x < num_records:
-                result.append(rbr)
-        import transaction
-        transaction.commit()
-        return result
-
-
-class TestRecipeBuildView(TestCaseWithFactory, RecipeBuildsTestMixin):
+class TestRecipeBuildView(TestCaseWithFactory):
+    """Tests for `CompletedDailyBuildsView`."""
 
     layer = DatabaseFunctionalLayer
 
     def test_recipebuildrecords(self):
-        records = self._makeRecipeBuildRecords(10, 5)
+        # Check that the view is created from the url and loads the expected
+        # records.
+        records = self.factory.makeRecipeBuildRecords(10, 5)
         login(ANONYMOUS)
         root = getUtility(ILaunchpadRoot)
         view = create_initialized_view(root, "+daily-builds", rootsite='code')
@@ -119,55 +41,51 @@ class TestRecipeBuildView(TestCaseWithFactory, RecipeBuildsTestMixin):
         self.assertEqual(set(records), set(view.dailybuilds))
 
 
-class TestRecipeBuildListing(BrowserTestCase, RecipeBuildsTestMixin):
-
+class TestRecipeBuildListing(BrowserTestCase):
+    """Browser tests for the Recipe Build Listing page."""
     layer = DatabaseFunctionalLayer
 
     def _test_recipebuild_listing(self, no_login=False):
-        [record] = self._makeRecipeBuildRecords(1, 5)
+        # Test the content of the listing when there is data.
+        [record] = self.factory.makeRecipeBuildRecords(1, 5)
         naked_recipebuild = removeSecurityProxy(record.recipebuild)
         naked_distribution = removeSecurityProxy(
             naked_recipebuild.distribution)
         root = getUtility(ILaunchpadRoot)
         text = self.getMainText(
             root, '+daily-builds', rootsite='code', no_login=no_login)
-        expected_text = """
-            Most Recently Completed Daily Recipe Builds
-            Source Package
-            Recipe
-            Recipe Owner
-            Archive
-            Most Recent Build Time
-            %s
-            %s
-            %s
-            %s
-            %s
-            %s
-            """ % (naked_distribution.displayname,
-                  record.sourcepackagename,
-                  naked_recipebuild.recipe.name,
-                  record.recipeowner.displayname,
-                  record.archive.displayname,
-                  record.most_recent_build_time.strftime('%Y-%m-%d %H:%M:%S'))
-
+        expected_text = '\n'.join(str(item) for item in (
+                """Most Recently Completed Daily Recipe Builds
+                Source Package
+                Recipe
+                Recipe Owner
+                Archive
+                Most Recent Build Time""",
+                naked_distribution.displayname,
+                record.sourcepackagename.name,
+                naked_recipebuild.recipe.name,
+                record.recipeowner.displayname,
+                record.archive.displayname,
+                record.most_recent_build_time.strftime('%Y-%m-%d %H:%M:%S')))
         self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
 
     def test_recipebuild_listing_no_records(self):
+        # Test the expected text when there is no data.
         root = getUtility(ILaunchpadRoot)
         text = self.getMainText(root, '+daily-builds', rootsite='code')
-        expected_text = """
-            No recently completed daily builds found.
-            """
+        expected_text = "No recently completed daily builds found."
         self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
 
     def test_recipebuild_listing_anonymous(self):
+        # Ensure we can see the listing when we are not logged in.
         self._test_recipebuild_listing(no_login=True)
 
     def test_recipebuild_listing_with_user(self):
+        # Ensure we can see the listing when we are logged in.
         self._test_recipebuild_listing()
 
     def test_recipebuild_url(self):
+        # Check the browser URL is as expected.
         root_url = BaseLayer.appserver_root_url(facet='code')
         user_browser = self.getUserBrowser("%s/+daily-builds" % root_url)
         self.assertEqual(

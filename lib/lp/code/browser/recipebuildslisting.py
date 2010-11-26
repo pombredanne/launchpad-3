@@ -17,6 +17,8 @@ from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 
 
 class RecipeBuildBatchNavigator(BatchNavigator):
+    """A Batch Navigator turn activate table sorting for single page views."""
+
     @property
     def table_class(self):
         if self.has_multiple_pages:
@@ -26,6 +28,8 @@ class RecipeBuildBatchNavigator(BatchNavigator):
 
 
 class CompletedDailyBuildsView(LaunchpadView):
+    """The view to show completed builds for source package recipes."""
+
     @property
     def page_title(self):
         return 'Most Recently Completed Daily Recipe Builds'
