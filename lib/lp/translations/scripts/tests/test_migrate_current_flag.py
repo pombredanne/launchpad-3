@@ -90,15 +90,15 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         self.assertContentEqual(
             sampledata_products + [product], list(products))
 
-    def test_getCurrentNonUpstreamTranslations_empty(self):
+    def test_getTranslationsToMigrate_empty(self):
         # For a product with no translations no messages are returned.
         potemplate = self.factory.makePOTemplate()
         results = list(
-            self.migrate_process.getCurrentNonUpstreamTranslations(
+            self.migrate_process.getTranslationsToMigrate(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonUpstreamTranslations_noncurrent(self):
+    def test_getTranslationsToMigrate_noncurrent(self):
         # For a product with non-current translations no messages
         # are returned.
         potemplate = self.factory.makePOTemplate()
@@ -108,11 +108,11 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         pofile = self.factory.makePOFile(potemplate=potemplate)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
         results = list(
-            self.migrate_process.getCurrentNonUpstreamTranslations(
+            self.migrate_process.getTranslationsToMigrate(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonUpstreamTranslations_current_upstream(self):
+    def test_getTranslationsToMigrate_current_upstream(self):
         # For a product with both flasg set, no messages are returned.
         potemplate = self.factory.makePOTemplate()
         potmsgset = self.factory.makePOTMsgSet(
@@ -123,11 +123,11 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             pofile=pofile, potmsgset=potmsgset)
         translation.is_current_ubuntu = True
         results = list(
-            self.migrate_process.getCurrentNonUpstreamTranslations(
+            self.migrate_process.getTranslationsToMigrate(
                 potemplate.productseries.product))
         self.assertContentEqual([], results)
 
-    def test_getCurrentNonUpstreamTranslations_current_nonupstream(self):
+    def test_getTranslationsToMigrate_current_nonupstream(self):
         # For a product with current, non-upstream translations,
         # that translation is returned.
         potemplate = self.factory.makePOTemplate()
@@ -139,7 +139,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             pofile=pofile, potmsgset=potmsgset)
         translation.is_current_ubuntu = True
         results = list(
-            self.migrate_process.getCurrentNonUpstreamTranslations(
+            self.migrate_process.getTranslationsToMigrate(
                 potemplate.productseries.product))
         self.assertContentEqual([translation.id], results)
 

@@ -96,21 +96,21 @@ class TranslationMessageUpstreamFlagUpdater:
         # Unset upstream messages that might be in the way.
         PreviousUpstream = ClassAlias(
             TranslationMessage, 'PreviousUpstream')
-        CurrentTranslation = ClassAlias(
-            TranslationMessage, 'CurrentTranslation')
+        NewUpstream = ClassAlias(
+            TranslationMessage, 'NewUpstream')
         previous_upstream_select = Select(
             PreviousUpstream.id,
-            tables=[PreviousUpstream, CurrentTranslation],
+            tables=[PreviousUpstream, NewUpstream],
             where=And(
                 PreviousUpstream.is_current_upstream == True,
                 (PreviousUpstream.potmsgsetID ==
-                 CurrentTranslation.potmsgsetID),
+                 NewUpstream.potmsgsetID),
                 Or(And(PreviousUpstream.potemplate == None,
-                       CurrentTranslation.potemplate == None),
+                       NewUpstream.potemplate == None),
                    (PreviousUpstream.potemplateID ==
-                    CurrentTranslation.potemplateID)),
-                PreviousUpstream.languageID == CurrentTranslation.languageID,
-                CurrentTranslation.id.is_in(tm_ids)))
+                    NewUpstream.potemplateID)),
+                PreviousUpstream.languageID == NewUpstream.languageID,
+                NewUpstream.id.is_in(tm_ids)))
 
         previous_upstream = self.store.find(
             TranslationMessage,
@@ -163,7 +163,7 @@ class MigrateCurrentFlagProcess:
             ProductSeries.productID == Product.id,
             ).group_by(Product).having(Count(POTemplate.id) > 0)
 
-    def getCurrentNonUpstreamTranslations(self, product):
+    def getTranslationsToMigrate(self, product):
         """Get TranslationMessage.ids that need migration for a `product`."""
         return self.store.find(
             TranslationMessage.id,
