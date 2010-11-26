@@ -458,6 +458,14 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "package that has been published in the main distribution series, "
         "if one exists, or None.")
 
+    ancestor = exported(
+        Reference(
+            Interface, # Really ISourcePackageFilePublishing, see below.
+            title=_('Previous release'),
+            description=_('The previous release of this source package.'),
+            required=False, readonly=True,
+        ))
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
