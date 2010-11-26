@@ -37,6 +37,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class FakeLaunchpadRequest(FakeRequest):
@@ -249,6 +250,17 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
                 harness.submit('save', form_data)
                 self.assertTrue(harness.hasErrors())
 
+    def test_extra_features_hidden_without_feature_flag(self):
+        # If the malone.advanced-subscriptions.enabled flag is turned
+        # off, the bug_notification_level field doesn't appear on the
+        # form.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            harness = LaunchpadFormHarness(
+                self.target, StructuralSubscriptionView)
+            form_fields = harness.view.form_fields
+            self.assertIs(
+                None, form_fields.get('bug_notification_level'))
 
 class TestProductSeriesAdvancedSubscriptionFeatures(
     TestStructuralSubscriptionAdvancedFeaturesBase):
@@ -282,5 +294,19 @@ class TestMilestoneAdvancedSubscriptionFeatures(
         self.target = self.factory.makeMilestone()
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestStructuralSubscriptionView(TestCaseWithFactory):
+    """General tests for the StructuralSubscriptionView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_next_url_set_to_context(self):
+        # When the StructuralSubscriptionView form is submitted, the
+        # view's next_url is set to the canonical_url of the current
+        # target.
+        target = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(target, name='+subscribe')
+            self.assertEqual(
+                canonical_url(target), view.next_url,
+                "Next URL does not match target's canonical_url.")

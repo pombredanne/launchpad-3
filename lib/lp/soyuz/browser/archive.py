@@ -62,12 +62,8 @@ from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -95,6 +91,12 @@ from canonical.widgets.lazrjs import (
     TextLineEditorWidget,
     )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus

@@ -7,15 +7,23 @@ import os
 import signal
 import xmlrpclib
 
-from twisted.web.client import getPage
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    AsynchronousDeferredRunTestForBrokenTwisted,
+    SynchronousDeferredRunTest,
+    )
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.client import getPage
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.config import config
@@ -29,8 +37,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
-    TwistedLaunchpadZopelessLayer,
-    TwistedLayer,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
@@ -43,6 +49,10 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.interfaces.builder import CannotResumeHost
+from lp.buildmaster.model.builder import (
+    BuilderSlave,
+    ProxyWithConnectionTimeout,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
@@ -53,6 +63,7 @@ from lp.buildmaster.tests.mock_slaves import (
     CorruptBehavior,
     DeadProxy,
     LostBuildingBrokenSlave,
+    make_publisher,
     MockBuilder,
     OkSlave,
     SlaveTestHelpers,
@@ -69,24 +80,10 @@ from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
 from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
+    TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
-
-
-def make_publisher():
-    """Make a test publisher.
-
-    Exists only to work around circular import problems. When the
-    canonical/launchpad/database/__init__.py globs go away, this can probably
-    go away too.
-    """
-    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    return SoyuzTestPublisher()
 
 
 class TestBuilder(TestCaseWithFactory):
@@ -127,21 +124,14 @@ class TestBuilder(TestCaseWithFactory):
         self.assertIs(None, bq)
 
 
-class TestBuilderWithTrialBase(TrialTestCase):
+class TestBuilder(TestCaseWithFactory):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
-        super(TestBuilderWithTrialBase, self)
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
-
-
-class TestBuilderWithTrial(TestBuilderWithTrialBase):
+        super(TestBuilder, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -160,12 +150,12 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
         d = builder.resumeSlaveHost()
-        return self.assertFailure(d, CannotResumeHost)
+        return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
         builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
         d = builder.resumeSlaveHost()
-        return self.assertFailure(d, CannotResumeHost)
+        return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_success(self):
         reset_config = """
@@ -188,7 +178,7 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         d = builder.resumeSlaveHost()
-        return self.assertFailure(d, CannotResumeHost)
+        return assert_fails_with(d, CannotResumeHost)
 
     def test_handleTimeout_resume_failure(self):
         reset_fail_config = """
@@ -199,7 +189,7 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
         d = builder.handleTimeout(QuietFakeLogger(), 'blah')
-        return self.assertFailure(d, CannotResumeHost)
+        return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
@@ -345,8 +335,9 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
-        self.assertNotIdentical(
-            IdleBuildBehavior, builder.current_build_behavior)
+        self.assertFalse(
+            zope_isinstance(
+                builder.current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
@@ -360,10 +351,16 @@ class TestBuilderWithTrial(TestBuilderWithTrialBase):
         return d.addCallback(check_builder)
 
 
-class TestBuilderSlaveStatus(TestBuilderWithTrialBase):
-
+class TestBuilderSlaveStatus(TestCaseWithFactory):
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
+
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
+
+    def setUp(self):
+        super(TestBuilderSlaveStatus, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
@@ -811,24 +808,17 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 
-class TestSlave(TrialTestCase):
+class TestSlave(TestCase):
     """
     Integration tests for BuilderSlave that verify how it works against a
     real slave server.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
         super(TestSlave, self).setUp()
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-
-    # XXX: JonathanLange 2010-09-20 bug=643521: There are also tests for
-    # BuilderSlave in buildd-slave.txt and in other places. The tests here
-    # ought to become the canonical tests for BuilderSlave vs running buildd
-    # XML-RPC server interaction.
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     # XXX 2010-10-06 Julian bug=655559
     # This is failing on buildbot but not locally; it's trying to abort
@@ -925,7 +915,7 @@ class TestSlave(TrialTestCase):
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
         d = slave.sendFileToSlave('blahblah', None, None, None)
-        return self.assertFailure(d, CannotFetchFile)
+        return assert_fails_with(d, CannotFetchFile)
 
     def test_sendFileToSlave_actually_there(self):
         tachandler = self.slave_helper.getServerSlave()
@@ -1015,17 +1005,15 @@ class TestSlave(TrialTestCase):
         return d
 
 
-class TestSlaveTimeouts(TrialTestCase):
+class TestSlaveTimeouts(TestCase):
     # Testing that the methods that call callRemote() all time out
     # as required.
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted
 
     def setUp(self):
         super(TestSlaveTimeouts, self).setUp()
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
         self.clock = Clock()
         self.proxy = DeadProxy("url")
         self.slave = self.slave_helper.getClientSlave(
@@ -1033,7 +1021,7 @@ class TestSlaveTimeouts(TrialTestCase):
 
     def assertCancelled(self, d):
         self.clock.advance(config.builddmaster.socket_timeout + 1)
-        return self.assertFailure(d, CancelledError)
+        return assert_fails_with(d, CancelledError)
 
     def test_timeout_abort(self):
         return self.assertCancelled(self.slave.abort())
@@ -1059,19 +1047,53 @@ class TestSlaveTimeouts(TrialTestCase):
             self.slave.build(None, None, None, None, None))
 
 
-class TestSlaveWithLibrarian(TrialTestCase):
-    """Tests that need more of Launchpad to run."""
+class TestSlaveConnectionTimeouts(TestCase):
+    # Testing that we can override the default 30 second connection
+    # timeout.
 
-    layer = TwistedLaunchpadZopelessLayer
+    run_test = SynchronousDeferredRunTest
 
     def setUp(self):
-        super(TestSlaveWithLibrarian, self)
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
+        super(TestSlaveConnectionTimeouts, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
+        self.clock = Clock()
+        self.proxy = ProxyWithConnectionTimeout("fake_url")
+        self.slave = self.slave_helper.getClientSlave(
+            reactor=self.clock, proxy=self.proxy)
+
+    def test_connection_timeout(self):
+        # The default timeout of 30 seconds should not cause a timeout,
+        # only the config value should.
+        self.pushConfig('builddmaster', socket_timeout=180)
+
+        d = self.slave.echo()
+        # Advance past the 30 second timeout.  The real reactor will
+        # never call connectTCP() since we're not spinning it up.  This
+        # avoids "connection refused" errors and simulates an
+        # environment where the endpoint doesn't respond.
+        self.clock.advance(31)
+        self.assertFalse(d.called)
+
+        self.clock.advance(config.builddmaster.socket_timeout + 1)
+        self.assertTrue(d.called)
+        return assert_fails_with(d, CancelledError)
+
+    def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
+        # Make sure that BuilderSlaves use the custom proxy class.
+        slave = BuilderSlave.makeBuilderSlave("url", "host")
+        self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
+
+
+class TestSlaveWithLibrarian(TestCaseWithFactory):
+    """Tests that need more of Launchpad to run."""
+
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
+        timeout=20)
+
+    def setUp(self):
+        super(TestSlaveWithLibrarian, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def test_ensurepresent_librarian(self):
         # ensurepresent, when given an http URL for a file will download the

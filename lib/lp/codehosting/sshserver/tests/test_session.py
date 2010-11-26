@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SSH session support on the codehosting SSH server."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import socket
-import unittest
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import connection
@@ -116,7 +115,7 @@ class Test_WaitForExit(TestCase):
         # Note: The dataReceived code calls 'log.err' which ends up getting
         #      printed during the test run. How do I suppress that or even
         #      better, check that it does so?
-        #      self.flushLoggedErrors() doesn't seem to do anything.
+        #      flush_logged_errors() doesn't seem to do anything.
         self.exiter.dataReceived('bogus\n')
         self.assertEqual([('childConnectionLost', 'exit', 'invalid data'),
                           ('processEnded', (255 << 8))], self.proc.log)
@@ -250,8 +249,8 @@ class TestExecOnlySession(AvatarTestCase):
         self.failUnless(isinstance(session, ExecOnlySession),
                         "ISession(avatar) doesn't adapt to ExecOnlySession. "
                         "Got %r instead." % (session,))
-        self.assertIdentical(self.avatar, session.avatar)
-        self.assertIdentical(reactor, session.reactor)
+        self.assertIs(self.avatar, session.avatar)
+        self.assertIs(reactor, session.reactor)
 
     def test_environment(self):
         # The environment for the executed process can be specified in the
@@ -344,8 +343,8 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to RestrictedExecOnlySession. "
             "Got %r instead." % (session,))
-        self.assertIdentical(self.avatar, session.avatar)
-        self.assertIdentical(reactor, session.reactor)
+        self.assertIs(self.avatar, session.avatar)
+        self.assertIs(reactor, session.reactor)
         self.assertEqual('foo', session.allowed_command)
         self.assertEqual('bar baz', session.executed_command_template)
 
@@ -412,7 +411,3 @@ class TestSessionIntegration(AvatarTestCase):
              ['bzr', 'lp-serve',
               '--inet', str(self.avatar.user_id)],
              list(arguments))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

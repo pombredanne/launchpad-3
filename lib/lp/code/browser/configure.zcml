@@ -1325,6 +1325,24 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+merge-queues"
+            template="../templates/branchmergequeue-listing.pt"/>
+
+        <browser:page
+            for="*"
+            layer="lp.code.publisher.CodeLayer"
+            name="+bmq-macros"
+            permission="zope.Public"
+            template="../templates/branchmergequeue-macros.pt"/>
+
+
     </facet>
 
     <browser:url
