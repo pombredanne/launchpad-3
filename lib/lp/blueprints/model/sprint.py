@@ -45,9 +45,10 @@ from lp.blueprints.interfaces.sprint import (
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.hasdrivers import HasDriversMixin
 
 
-class Sprint(SQLBase):
+class Sprint(SQLBase, HasDriversMixin):
     """See `ISprint`."""
 
     implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
