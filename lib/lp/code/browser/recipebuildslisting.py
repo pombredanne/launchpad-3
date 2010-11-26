@@ -28,13 +28,14 @@ class RecipeBuildFilter(EnumeratedType):
     ALL = Item("""
         all
 
-        Show all completed recipe builds.
+        Show all most recently completed recipe builds.
         """)
 
     WITHIN_30_DAYS = Item("""
         within last 30 days
 
-        Show only recipe builds completed within last 30 days.
+        Show only recently completed recipe builds from within the last
+        30 days.
         """)
 
 
