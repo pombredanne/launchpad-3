@@ -48,7 +48,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
     def test_singular_message(self):
         # View information for a singular message.
         translator = self.factory.makePerson()
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[u'foo'], translator=translator)
         view = self._create_view()
@@ -66,7 +66,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         # View information for a message with plural.
         self.potmsgset.updatePluralForm(u'English plural')
         translator = self.factory.makePerson()
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[u'foo', u'bar'], translator=translator)
         view = self._create_view()
@@ -86,7 +86,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         TRANSLATION = u"foo \nbar"
         translator = self.factory.makePerson()
         self.potmsgset.updatePluralForm(u'English plural')
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[TRANSLATION], translator=translator)
         view = self._create_view()

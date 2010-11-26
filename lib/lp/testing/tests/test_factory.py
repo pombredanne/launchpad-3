@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
 from testtools.matchers import StartsWith
@@ -427,6 +426,20 @@ class TestFactory(TestCaseWithFactory):
         # And name is constructed from code as 'Language %(code)s'.
         self.assertEquals('Test language', language.englishname)
 
+    def test_makeLanguage_with_pluralforms(self):
+        # makeLanguage takes a number of plural forms for the language.
+        for number_of_forms in [None, 1, 3]:
+            language = self.factory.makeLanguage(pluralforms=number_of_forms)
+            self.assertEqual(number_of_forms, language.pluralforms)
+            self.assertEqual(
+                number_of_forms is None, language.pluralexpression is None)
+
+    def test_makeLanguage_with_plural_expression(self):
+        expression = '(n+1) % 5'
+        language = self.factory.makeLanguage(
+            pluralforms=5, plural_expression=expression)
+        self.assertEqual(expression, language.pluralexpression)
+
     # makeSourcePackagePublishingHistory
     def test_makeSourcePackagePublishingHistory_returns_ISPPH(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -495,6 +508,90 @@ class TestFactory(TestCaseWithFactory):
     def test_makeSuiteSourcePackage_returns_ISuiteSourcePackage(self):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertThat(ssp, ProvidesAndIsProxied(ISuiteSourcePackage))
+
+    def test_makeCurrentTranslationMessage_makes_shared_message(self):
+        tm = self.factory.makeCurrentTranslationMessage()
+        self.assertFalse(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_diverged_message(self):
+        tm = self.factory.makeCurrentTranslationMessage(diverged=True)
+        self.assertTrue(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_current_upstream(self):
+        pofile = self.factory.makePOFile(
+            'ka', potemplate=self.factory.makePOTemplate(
+                productseries=self.factory.makeProductSeries()))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_ubuntu(self):
+        package = self.factory.makeSourcePackage()
+        pofile = self.factory.makePOFile(
+            'kk', self.factory.makePOTemplate(
+                sourcepackagename=package.sourcepackagename,
+                distroseries=package.distroseries))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_tracking(self):
+        tm = self.factory.makeCurrentTranslationMessage(current_other=True)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_uses_given_translation(self):
+        translations = [
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            ]
+
+        tm = self.factory.makeCurrentTranslationMessage(
+            translations=translations)
+
+        self.assertEqual(
+            translations, [tm.msgstr0.translation, tm.msgstr1.translation])
+        self.assertIs(None, tm.msgstr2)
+
+    def test_makeCurrentTranslationMessage_sets_reviewer(self):
+        reviewer = self.factory.makePerson()
+
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=reviewer)
+
+        self.assertEqual(reviewer, tm.reviewer)
+
+    def test_makeCurrentTranslationMessage_creates_reviewer(self):
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=None)
+
+        self.assertNotEqual(None, tm.reviewer)
+
+    def test_makeDivergedTranslationMessage_upstream(self):
+        pofile = self.factory.makePOFile('ca')
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
+
+    def test_makeDivergedTranslationMessage_ubuntu(self):
+        potemplate = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        pofile = self.factory.makePOFile('eu', potemplate=potemplate)
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_ubuntu)
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
 
     # makeCVE
     def test_makeCVE_returns_cve(self):
@@ -705,7 +802,3 @@ class IsSecurityProxiedOrHarmlessTests(TestCaseWithFactory):
             is_security_proxied_or_harmless({1: unproxied_person}))
         self.assertFalse(
             is_security_proxied_or_harmless({unproxied_person: 1}))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
