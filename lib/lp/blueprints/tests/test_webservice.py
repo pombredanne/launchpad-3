@@ -77,6 +77,13 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(spec.summary, spec_webservice.summary)
 
+    def test_representation_contains_implementation_status(self):
+        spec = self.factory.makeSpecification()
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(
+            spec.implementation_status.title,
+            spec_webservice.implementation_status)
+
     def test_representation_contains_definition_status(self):
         spec = self.factory.makeSpecification()
         spec_webservice = self.getSpecOnWebservice(spec)

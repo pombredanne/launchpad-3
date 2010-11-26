@@ -348,11 +348,15 @@ class ISpecificationPublic(
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    implementation_status = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationImplementationStatus.UNKNOWN,
-        vocabulary=SpecificationImplementationStatus, description=_(
-        "The state of progress being made on the actual implementation or "
-        "delivery of this feature."))
+    implementation_status = exported(
+        Choice(
+            title=_("Implementation Status"), required=True,
+            default=SpecificationImplementationStatus.UNKNOWN,
+            vocabulary=SpecificationImplementationStatus,
+            description=_(
+                "The state of progress being made on the actual "
+                "implementation or delivery of this feature.")),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
