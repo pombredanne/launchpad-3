@@ -20,11 +20,11 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
     )
 from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.launchpadform import (
+from canonical.librarian.interfaces import UploadFailed
+from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from canonical.librarian.interfaces import UploadFailed
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 
 
