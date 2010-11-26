@@ -13,7 +13,10 @@ from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 

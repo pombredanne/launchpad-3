@@ -12,7 +12,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.model.pofile import DummyPOFile
 from lp.translations.model.potemplate import (
     get_pofiles_for,
     POTemplateSet,
@@ -28,6 +27,13 @@ class TestPOTemplate(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.potemplate = removeSecurityProxy(self.factory.makePOTemplate(
             translation_domain = "testdomain"))
+
+    def assertIsDummy(self, pofile):
+        """Assert that `pofile` is actually a `DummyPOFile`."""
+        # Avoid circular imports.
+        from lp.translations.model.pofile import DummyPOFile
+
+        self.assertEquals(DummyPOFile, type(pofile))
 
     def test_composePOFilePath(self):
         esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
@@ -69,7 +75,7 @@ class TestPOTemplate(TestCaseWithFactory):
         # Test basic behaviour of getDummyPOFile.
         language = self.factory.makeLanguage('sr@test')
         dummy = self.potemplate.getDummyPOFile(language)
-        self.assertEquals(DummyPOFile, type(dummy))
+        self.assertIsDummy(dummy)
 
     def test_getDummyPOFile_with_existing_pofile(self):
         # Test that getDummyPOFile fails when trying to get a DummyPOFile
@@ -88,7 +94,22 @@ class TestPOTemplate(TestCaseWithFactory):
         # This is just "assertNotRaises".
         dummy = self.potemplate.getDummyPOFile(language,
                                                check_for_existing=False)
-        self.assertEquals(DummyPOFile, type(dummy))
+        self.assertIsDummy(dummy)
+
+    def test_newPOFile_owner(self):
+        # The intended owner of a new POFile can be passed to newPOFile.
+        language = self.factory.makeLanguage('nl@test')
+        person = self.factory.makePerson()
+        pofile = self.potemplate.newPOFile(language.code, owner=person)
+        self.assertEqual(person, pofile.owner)
+
+    def test_getDummyPOFile_owner(self):
+        # The intended owner of a new DummyPOFile can be passed to
+        # getDummyPOFile.
+        language = self.factory.makeLanguage('nl@test')
+        person = self.factory.makePerson()
+        pofile = self.potemplate.getDummyPOFile(language, requester=person)
+        self.assertEqual(person, pofile.owner)
 
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.
@@ -102,6 +123,33 @@ class TestPOTemplate(TestCaseWithFactory):
 
         self.assertContentEqual([gnome_credits, kde_credits],
                                 self.potemplate.getTranslationCredits())
+
+    def test_awardKarma(self):
+        person = self.factory.makePerson()
+        template = self.factory.makePOTemplate()
+        karma_listener = self.installKarmaRecorder(
+            person=person, product=template.product)
+        action = 'translationsuggestionadded'
+
+        # This is not something that browser code or scripts should do,
+        # so we go behind the proxy.
+        removeSecurityProxy(template).awardKarma(person, action)
+
+        karma_events = karma_listener.karma_events
+        self.assertEqual(1, len(karma_events))
+        self.assertEqual(action, karma_events[0].action.name)
+
+    def test_translationtarget_can_be_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        self.assertEqual(productseries, template.translationtarget)
+
+    def test_translationtarget_can_be_sourcepackage(self):
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.assertEqual(package, template.translationtarget)
 
 
 class EquivalenceClassTestMixin:
@@ -463,6 +511,10 @@ class TestGetPOFilesFor(TestCaseWithFactory):
     def test_get_pofiles_for_untranslated_template(self):
         # If there is no POFile for a template in a language,
         # get_pofiles_for makes up a DummyPOFile.
+
+        # Avoid circular imports.
+        from lp.translations.model.pofile import DummyPOFile
+
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
-        self.assertTrue(isinstance(pofile, DummyPOFile))
+        self.assertIsInstance(pofile, DummyPOFile)

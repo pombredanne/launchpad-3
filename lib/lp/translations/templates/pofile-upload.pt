@@ -14,38 +14,11 @@
       <h2>Choose a file to upload</h2>
       <div class="fields">
         <input id="file_input" name="file" type="file" />
-        <div class="discreet">This should be a <code>.po</code> file and follow the <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy">translation import guidelines</a>.</div>
-      </div>
-
-      <h2>What kind of upload is this?</h2>
-      <div class="fields">
-        <div class="alignment">
-
-          <input id="user_type" name="upload_type" type="radio"
-                 value="user" checked="checked" class="selector"/>
-          <span class="content">
-            <label for="user_type">
-              Updated translation
-            </label>
-            <p class="discreet">
-              You have exported a PO file from Launchpad, worked on it
-              off-line, and now you want to contribute your updates back. (<a href="/+help/updated-upload.html" target="help">More about updated translations</a>)
-            </p>
-          </span>
-
-          <input id="upstream_type" name="upload_type" type="radio"
-                 value="upstream" class="selector"/>
-          <span class="content">
-            <label for="upstream_type">
-              Imported translation
-            </label>
-            <p class="discreet">
-              You want to upload a more recent translation from upstream
-              release or from a source package. (<a href="/+help/imported-upload.html" target="help">More about imported translations</a>)
-            </p>
-          </span>
+        <div class="discreet">This should be a <code>.po</code> file that
+          was previously exported from Launchpad and contains updated
+          translations.<br />
+          (<a href="/+help/pofile-upload.html" target="help">More about uploading updated translations</a>)
         </div>
-
       </div>
 
       <div class="actions">

@@ -81,9 +81,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
         # Attach it to the import queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
-        published = True
+        by_maintainer = True
         entry = translation_import_queue.addOrUpdateEntry(
-            self.firefox_template.path, en_US_xpi.read(), published,
+            self.firefox_template.path, en_US_xpi.read(), by_maintainer,
             self.importer, productseries=self.firefox_template.productseries,
             potemplate=self.firefox_template)
 

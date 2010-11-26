@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -19,9 +19,9 @@ from contextlib import contextmanager
 from datetime import timedelta
 from difflib import unified_diff
 from itertools import count
-import transaction
 
 from bzrlib.plugins.builder.recipe import RecipeParser
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zisinstance,

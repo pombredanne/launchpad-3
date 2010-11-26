@@ -25,7 +25,7 @@ give karma for it.
     User rejected a proposed branch merge.
     User rejected their own proposed branch merge.
 
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 

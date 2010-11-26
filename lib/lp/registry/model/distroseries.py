@@ -65,10 +65,11 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.app.errors import NotFoundError
 from lp.app.enums import (
+    service_uses_launchpad,
     ServiceUsage,
-    service_uses_launchpad)
+    )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
     SpecificationFilter,
