@@ -17,11 +17,8 @@ from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.app.browser.launchpadform import custom_widget, LaunchpadFormView
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 
 
