@@ -985,7 +985,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
     def _messages_html_id(self):
         order = []
         for message in self.translationmessage_views:
-            if (message.form_is_writeable):
+            if self.form_is_writeable:
                 for dictionary in message.translation_dictionaries:
                     order.append(
                         dictionary['html_id_translation'] + '_new')
