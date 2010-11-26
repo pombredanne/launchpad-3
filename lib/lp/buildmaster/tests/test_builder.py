@@ -247,6 +247,19 @@ class TestBuilder(TestCaseWithFactory):
             self.assertEqual(BuildStatus.BUILDING, build.status)
         return d.addCallback(check_build_started)
 
+    def test_virtual_job_dispatch_pings_before_building(self):
+        # We need to send a ping to the builder to work around a bug
+        # where sometimes the first network packet sent is dropped.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = builder.findAndStartJob()
+        def check_build_started(candidate):
+            self.assertIn(
+                ('echo', 'ping'), removeSecurityProxy(builder.slave).call_log)
+        return d.addCallback(check_build_started)
+
     def test_slave(self):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
