@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Choice
 
-from lazr.enum._enum import EnumeratedType, Item
+from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -42,6 +42,7 @@ class RecipeBuildFilter(EnumeratedType):
 
 
 class RecipeBuildBatchNavigator(BatchNavigator):
+    """A Batch Navigator turn activate table sorting for single page views."""
 
     @property
     def table_class(self):
@@ -52,6 +53,7 @@ class RecipeBuildBatchNavigator(BatchNavigator):
 
 
 class CompletedDailyBuildsView(LaunchpadFormView):
+    """The view to show completed builds for source package recipes."""
 
     class schema(Interface):
         when_completed_filter = Choice(
