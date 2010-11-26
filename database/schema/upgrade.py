@@ -32,17 +32,63 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 def main():
     con = connect(options.dbuser)
+    patches = get_patchlist(con)
+
     if replication.helpers.slony_installed(con):
         con.close()
         if options.commit is False:
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
+        con = connect(options.dbuser)
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
 
+    report_patch_times(con, patches)
+
     return 0
+
+
+def to_seconds(td):
+    """Convert a timedelta to seconds."""
+    return td.days * (24*60*60) + td.seconds + td.microseconds/1000000.0
+
+
+def report_patch_times(con, todays_patches):
+    """Report how long it took to apply the given patches."""
+    cur = con.cursor()
+
+    todays_patches = [patch_tuple for patch_tuple, patch_file
+        in todays_patches]
+
+    cur.execute("""
+        SELECT
+            major, minor, patch, start_time, end_time - start_time AS db_time
+        FROM LaunchpadDatabaseRevision
+        WHERE start_time > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('1 month' AS interval)
+        ORDER BY major, minor, patch
+        """)
+    for major, minor, patch, start_time, db_time in cur.fetchall():
+        if (major, minor, patch) in todays_patches:
+            continue
+        db_time = to_seconds(db_time)
+        start_time = start_time.strftime('%Y-%m-%d')
+        log.info(
+            "%d-%02d-%d applied %s in %0.1f seconds"
+            % (major, minor, patch, start_time, db_time))
+
+    for major, minor, patch in todays_patches:
+        cur.execute("""
+            SELECT end_time - start_time AS db_time
+            FROM LaunchpadDatabaseRevision
+            WHERE major = %s AND minor = %s AND patch = %s
+            """, (major, minor, patch))
+        db_time = cur.fetchone()[0]
+        log.info(
+            "%d-%02d-%d applied just now in %0.1f seconds",
+            major, minor, patch, to_seconds(db_time))
 
 
 def apply_patches_normal(con):
