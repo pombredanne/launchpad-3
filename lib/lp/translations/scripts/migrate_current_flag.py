@@ -1,7 +1,9 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Set 'is_imported' flag from 'is_current' for upstream projects."""
+"""Set 'is_current_upstream' flag from 'is_current_ubuntu' for upstream
+projects.
+"""
 
 __metaclass__ = type
 __all__ = ['MigrateCurrentFlagProcess']
@@ -32,7 +34,7 @@ from lp.translations.model.translationtemplateitem import (
 
 class TranslationMessageImportedFlagUpdater:
     implements(ITunableLoop)
-    """Populates is_imported flag from is_current flag on translations."""
+    """Populates is_current_upstream flag from is_current_ubuntu flag."""
 
     def __init__(self, transaction, logger, tm_ids):
         self.transaction = transaction
@@ -59,39 +61,39 @@ class TranslationMessageImportedFlagUpdater:
         return self.tm_ids[self.start_at: end_at]
 
     def _updateTranslationMessages(self, tm_ids):
-        # Unset imported messages that might be in the way.
-        PreviousImported = ClassAlias(
-            TranslationMessage, 'PreviousImported')
+        # Unset upstream messages that might be in the way.
+        PreviousUpstream = ClassAlias(
+            TranslationMessage, 'PreviousUpstream')
         CurrentTranslation = ClassAlias(
             TranslationMessage, 'CurrentTranslation')
-        previous_imported_select = Select(
-            PreviousImported.id,
-            tables=[PreviousImported, CurrentTranslation],
+        previous_upstream_select = Select(
+            PreviousUpstream.id,
+            tables=[PreviousUpstream, CurrentTranslation],
             where=And(
-                PreviousImported.is_imported == True,
-                (PreviousImported.potmsgsetID ==
+                PreviousUpstream.is_current_upstream == True,
+                (PreviousUpstream.potmsgsetID ==
                  CurrentTranslation.potmsgsetID),
-                Or(And(PreviousImported.potemplate == None,
+                Or(And(PreviousUpstream.potemplate == None,
                        CurrentTranslation.potemplate == None),
-                   (PreviousImported.potemplateID ==
+                   (PreviousUpstream.potemplateID ==
                     CurrentTranslation.potemplateID)),
-                PreviousImported.languageID == CurrentTranslation.languageID,
+                PreviousUpstream.languageID == CurrentTranslation.languageID,
                 CurrentTranslation.id.is_in(tm_ids)))
 
-        previous_imported = self.store.find(
+        previous_upstream = self.store.find(
             TranslationMessage,
-            TranslationMessage.id.is_in(previous_imported_select))
-        previous_imported.set(is_imported=False)
+            TranslationMessage.id.is_in(previous_upstream_select))
+        previous_upstream.set(is_current_upstream=False)
         translations = self.store.find(
             TranslationMessage,
             TranslationMessage.id.is_in(tm_ids))
-        translations.set(is_imported=True)
+        translations.set(is_current_upstream=True)
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`.
 
         Retrieve a batch of TranslationMessages in ascending id order,
-        and set is_imported flag to True on all of them.
+        and set is_current_upstream flag to True on all of them.
         """
         tm_ids = self.getNextBatch(chunk_size)
 
@@ -108,7 +110,7 @@ class TranslationMessageImportedFlagUpdater:
 
 
 class MigrateCurrentFlagProcess:
-    """Mark all translations as is_imported if they are is_current.
+    """Mark translations as is_current_upstream if they are is_current_ubuntu.
 
     Processes only translations for upstream projects, since Ubuntu
     source packages need no migration.
@@ -133,8 +135,8 @@ class MigrateCurrentFlagProcess:
         """Get TranslationMessage.ids that need migration for a `product`."""
         return self.store.find(
             TranslationMessage.id,
-            TranslationMessage.is_current == True,
-            TranslationMessage.is_imported == False,
+            TranslationMessage.is_current_ubuntu == True,
+            TranslationMessage.is_current_upstream == False,
             (TranslationMessage.potmsgsetID ==
              TranslationTemplateItem.potmsgsetID),
             TranslationTemplateItem.potemplateID == POTemplate.id,
