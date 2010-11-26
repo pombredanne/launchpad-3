@@ -17,12 +17,12 @@ use int the project or package       the Ubuntu source package that the
 that the POFile of this translation  translation is linked to.
 belongs to.
 
-The is_imported flag marks a         The is_current_upstream flag marks a 
+The is_imported flag marks a         The is_current_upstream flag marks a
 translation as having been imported  translation as being currently used in
 from an external source into this    the upstream project that this
 project or source package.           translation is linked to.
 
-Translations from projects and       Translations are shared between upstream      
+Translations from projects and       Translations are shared between upstream
 source packages are not shared.      projects and source packages.
 
 Ubuntu source packages can live quite happily int the new world because the
