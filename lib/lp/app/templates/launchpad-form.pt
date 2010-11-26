@@ -123,18 +123,7 @@
           </div>
           <div class="message" tal:condition="error"
                tal:content="structure error">Error message</div>
-          <tal:widget-help
-              define="use_structure widget/query:has-structured-doc"
-              condition="widget/hint">
-            <p class="formHelp" tal:content="widget/hint"
-               tal:condition="not: use_structure">
-              Some Help Text
-            </p>
-            <p class="formHelp" tal:content="structure widget/hint"
-               tal:condition="use_structure">
-              Some Structured Help Text
-            </p>
-          </tal:widget-help>
+          <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
       </div>
         </td>
       </tr>
@@ -160,18 +149,7 @@
             <div tal:content="structure widget">
               <input type="text" />
             </div>
-            <tal:widget-help
-                define="use_structure widget/query:has-structured-doc"
-                condition="widget/hint">
-              <p class="formHelp" tal:content="widget/hint"
-                 tal:condition="not: use_structure">
-                Some Help Text
-              </p>
-              <p class="formHelp" tal:content="structure widget/hint"
-                 tal:condition="use_structure">
-                Some Structured Help Text
-              </p>
-            </tal:widget-help>
+            <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
             </div>
           </td>
         </tr>
@@ -187,18 +165,7 @@
             tal:content="structure error"
             class="message"
           >Error message</div>
-          <tal:widget-help
-              define="use_structure widget/query:has-structured-doc"
-              condition="widget/hint">
-            <p class="formHelp" tal:content="widget/hint"
-               tal:condition="not: use_structure">
-              Some Help Text
-            </p>
-            <p class="formHelp" tal:content="structure widget/hint"
-               tal:condition="use_structure">
-              Some Structured Help Text
-            </p>
-          </tal:widget-help>
+          <metal:help-hint use-macro="widget/@@launchpad_form/help_hint" />
         </div>
         </td>
       </tr>
@@ -216,5 +183,20 @@
       </tal:block>
     </table>
   </metal:macro>
+
+  <metal:help-hint metal:define-macro="help_hint">
+    <tal:widget-help
+        define="use_structure widget/query:has-structured-doc"
+        condition="widget/hint">
+     <p class="formHelp" tal:content="widget/hint"
+         tal:condition="not: use_structure">
+        Some Help Text
+      </p>
+      <p class="formHelp" tal:content="structure widget/hint"
+         tal:condition="use_structure">
+        Some Structured Help Text
+      </p>
+    </tal:widget-help>
+  </metal:help-hint>
 
 </div>
