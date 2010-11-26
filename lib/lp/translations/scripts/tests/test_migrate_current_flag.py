@@ -12,7 +12,7 @@ Old model                            New Model
 ---------                            ---------
 The is_current flag marks a          The is_current_ubuntu flag marks a
 translation as being currently in    translation as being currently used in
-use int the project or package       the Ubuntu source package that the
+use in the project or package        the Ubuntu source package that the
 that the POFile of this translation  translation is linked to.
 belongs to.
 
@@ -24,14 +24,14 @@ project or source package.           translation is linked to.
 Translations from projects and       Translations are shared between upstream
 source packages are not shared.      projects and source packages.
 
-Ubuntu source packages can live quite happily int the new world because the
+Ubuntu source packages can live quite happily in the new world because the
 meaning of the flag "is_current_ubuntu", which used to be called "is_current",
 remains the same for them.
 
-Projects on the other hand could loose all their translations because their
+Projects on the other hand could lose all their translations because their
 former "current" translation would then be "current in the source package"
 but not in the project itself. For this reason, all current messages in
-source packages need to get their "is_current_upstream" flag set. This may
+projects need to get their "is_current_upstream" flag set. This may
 currently not be the case because it used to be called "is_imported" and
 the messages may not have been imported from an external source.
 
