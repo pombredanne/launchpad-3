@@ -373,7 +373,7 @@ class Builder(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
-    builderok = BoolCol(dbName='builderok', notNull=True)
+    _builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     virtualized = BoolCol(dbName='virtualized', default=True, notNull=True)
     speedindex = IntCol(dbName='speedindex')
@@ -427,6 +427,16 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
+
+    def _getBuilderok(self):
+        return self._builderok
+
+    def _setBuilderok(self, value):
+        self._builderok = value
+        if value is True:
+            self.resetFailureCount()
+
+    builderok = property(_getBuilderok, _setBuilderok)
 
     def gotFailure(self):
         """See `IBuilder`."""

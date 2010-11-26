@@ -86,7 +86,7 @@ from lp.testing import (
 from lp.testing.fakemethod import FakeMethod
 
 
-class TestBuilder(TestCaseWithFactory):
+class TestBuilderBasics(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
     layer = DatabaseFunctionalLayer
@@ -122,6 +122,14 @@ class TestBuilder(TestCaseWithFactory):
         active_job.builder = None
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
+
+    def test_setting_builderok_resets_failure_count(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.failure_count = 1
+        builder.builderok = False
+        self.assertEqual(1, builder.failure_count)
+        builder.builderok = True
+        self.assertEqual(0, builder.failure_count)
 
 
 class TestBuilder(TestCaseWithFactory):
