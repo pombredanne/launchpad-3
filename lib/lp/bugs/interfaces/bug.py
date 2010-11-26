@@ -22,6 +22,8 @@ __all__ = [
     'InvalidDuplicateValue',
     ]
 
+from textwrap import dedent
+
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -81,8 +83,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
 from lp.code.interfaces.branchlink import IHasLinkedBranches
-from lp.registry.enum import BugNotificationLevel
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
@@ -192,7 +192,7 @@ def optional_message_subject_field():
     return subject_field
 
 
-class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
+class IBug(IPrivacy, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 
@@ -309,9 +309,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
             readonly=True))
-    tags = exported(
-        List(title=_("Tags"), description=_("Separated by whitespace."),
-             value_type=Tag(), required=False))
+    tags = exported(List(
+        title=_("Tags"),
+        description=_(dedent("""
+            The tags applied to this bug.
+
+            Web service:
+                The list of tags is whitespace delimited.
+
+            Launchpadlib:
+                The list of tags is represented as a sequence of strings.
+            """)),
+            value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
         description=_(
@@ -493,12 +502,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         from duplicates.
         """
 
-    def getStructuralSubscribers(recipients=None, level=None):
-        """Return `IPerson`s subscribed to this bug's targets.
-
-        This takes into account bug subscription filters.
-        """
-
     def getSubscriptionsFromDuplicates():
         """Return IBugSubscriptions subscribed from dupes of this bug."""
 
@@ -511,6 +514,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         This call should be quite cheap to make and performs a single query.
 
         :return: An IResultSet.
+        """
+
+    def getSubscriptionForPerson(person):
+        """Return the `BugSubscription` for a `Person` to this `Bug`.
+
+        If no such `BugSubscription` exists, return None.
         """
 
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,

@@ -27,15 +27,14 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces import (
-    AccountStatus,
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
-    ILibraryFileAliasSet,
-    IMailBox,
-    IPerson,
-    IWeaklyAuthenticatedPrincipal,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mailnotification import (
@@ -51,13 +50,16 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
+from lp.registry.interfaces.person import IPerson
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
-# followed by a # '\n', and all '\n' that are not preceded by a '\r'.
+# followed by a '\n', and all '\n' that are not preceded by a '\r'.
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
+# Match trailing whitespace.
+trailing_whitespace = re.compile(r'[ \t]*((?=\r\n)|$)')
 
 def canonicalise_line_endings(text):
     r"""Canonicalise the line endings to '\r\n'.
@@ -73,6 +75,8 @@ def canonicalise_line_endings(text):
     """
     if non_canonicalised_line_endings.search(text):
         text = non_canonicalised_line_endings.sub('\r\n', text)
+    if trailing_whitespace.search(text):
+        text = trailing_whitespace.sub('', text)
     return text
 
 

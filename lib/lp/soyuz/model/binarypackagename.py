@@ -13,7 +13,6 @@ __all__ = [
 
 # SQLObject/SQLBase
 from sqlobject import (
-    CONTAINSSTRING,
     SQLObjectNotFound,
     StringCol,
     )
@@ -26,6 +25,8 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.helpers import ensure_unicode
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     NamedSQLObjectHugeVocabulary,
@@ -66,14 +67,16 @@ class BinaryPackageNameSet:
 
     def findByName(self, name):
         """Find binarypackagenames by its name or part of it."""
-        return BinaryPackageName.select(
-            CONTAINSSTRING(BinaryPackageName.q.name, name))
+        return IStore(BinaryPackageName).find(
+            BinaryPackageName,
+            BinaryPackageName.name.contains_string(ensure_unicode(name)))
 
     def queryByName(self, name):
-        return BinaryPackageName.selectOneBy(name=name)
+        return IStore(BinaryPackageName).find(
+            BinaryPackageName, name=ensure_unicode(name)).one()
 
     def new(self, name):
-        return BinaryPackageName(name=name)
+        return BinaryPackageName(name=ensure_unicode(name))
 
     def ensure(self, name):
         """Ensure that the given BinaryPackageName exists, creating it
@@ -81,6 +84,7 @@ class BinaryPackageNameSet:
 
         Returns the BinaryPackageName
         """
+        name = ensure_unicode(name)
         try:
             return self[name]
         except NotFoundError:

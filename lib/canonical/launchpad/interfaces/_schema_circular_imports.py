@@ -46,7 +46,11 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugtracker import (
+    IBugTracker,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
@@ -114,11 +118,20 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueueEntry,
     )
 
 
@@ -156,6 +169,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -204,6 +219,7 @@ IPreviewDiff['branch_merge_proposal'].schema = IBranchMergeProposal
 patch_reference_property(IPersonPublic, 'archive', IArchive)
 patch_collection_property(IPersonPublic, 'ppas', IArchive)
 patch_entry_return_type(IPersonPublic, 'getPPAByName', IArchive)
+patch_entry_return_type(IPersonPublic, 'createPPA', IArchive)
 
 IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
@@ -371,6 +387,8 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -435,6 +453,11 @@ patch_reference_property(IBugTask, 'owner', IPerson)
 # IBugWatch
 patch_reference_property(IBugWatch, 'owner', IPerson)
 
+# IHasTranslationImports
+patch_collection_return_type(
+    IHasTranslationImports, 'getTranslationImportQueueEntries',
+    ITranslationImportQueueEntry)
+
 # IIndexedMessage
 patch_reference_property(IIndexedMessage, 'inside', IBugTask)
 
@@ -460,6 +483,21 @@ patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
 
 # IBugTracker
 patch_reference_property(IBugTracker, 'owner', IPerson)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
+patch_collection_return_type(
+    IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+
+## IBugTrackerComponent
+patch_reference_property(
+    IBugTrackerComponent, "distro_source_package",
+    IDistributionSourcePackage)
+
+# IHasTranslationTemplates
+patch_collection_return_type(
+    IHasTranslationTemplates, 'getTranslationTemplates', IPOTemplate)
 
 # IPOTemplate
 patch_collection_property(IPOTemplate, 'pofiles', IPOFile)
@@ -474,7 +512,7 @@ patch_reference_property(IPOTemplateSharingSubset, 'product', IProduct)
 
 # IPerson
 patch_collection_return_type(
-        IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
+    IPerson, 'getBugSubscriberPackages', IDistributionSourcePackage)
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)

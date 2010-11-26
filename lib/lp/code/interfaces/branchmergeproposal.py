@@ -17,8 +17,10 @@ __all__ = [
     'ICodeReviewCommentEmailJobSource',
     'ICreateMergeProposalJob',
     'ICreateMergeProposalJobSource',
-    'IMergeProposalCreatedJob',
-    'IMergeProposalCreatedJobSource',
+    'IGenerateIncrementalDiffJob',
+    'IGenerateIncrementalDiffJobSource',
+    'IMergeProposalNeedsReviewEmailJob',
+    'IMergeProposalNeedsReviewEmailJobSource',
     'IMergeProposalUpdatedEmailJob',
     'IMergeProposalUpdatedEmailJobSource',
     'IReviewRequestedEmailJob',
@@ -45,6 +47,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from zope.event import notify
 from zope.interface import (
@@ -62,6 +65,7 @@ from zope.schema import (
     TextLine,
     )
 
+from canonical.database.constants import DEFAULT
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -112,25 +116,26 @@ class IBranchMergeProposal(IPrivacy):
             description=_('The person who registered the landing target.')))
 
     source_branch = exported(
-        Reference(
-            title=_('Source Branch'), schema=IBranch,
+        ReferenceChoice(
+            title=_('Source Branch'), schema=IBranch, vocabulary='Branch',
             required=True, readonly=True,
             description=_("The branch that has code to land.")))
 
     target_branch = exported(
-        Reference(
+        ReferenceChoice(
             title=_('Target Branch'),
-            schema=IBranch, required=True, readonly=True,
+            schema=IBranch, vocabulary='Branch', required=True, readonly=True,
             description=_(
                 "The branch that the source branch will be merged into.")))
 
     prerequisite_branch = exported(
-        Reference(
-            title=_('Dependent Branch'),
-            schema=IBranch, required=False, readonly=True,
-            description=_("The branch that the source branch branched from. "
-                          "If this is the same as the target branch, then "
-                          "leave this field blank.")))
+        ReferenceChoice(
+            title=_('Prerequisite Branch'),
+            schema=IBranch, vocabulary='Branch', required=False,
+            readonly=True, description=_(
+                "The branch that the source branch branched from. "
+                "If this branch is the same as the target branch, then "
+                "leave this field blank.")))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is determined by the involved branches.
@@ -430,13 +435,24 @@ class IBranchMergeProposal(IPrivacy):
         :type merge_reporter: ``Person``
         """
 
-    def resubmit(registrant):
+    def resubmit(registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT):
         """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
         user-entered data like the whiteboard.  All the current proposal's
         reviewers, including those who have only been nominated, are requested
         to review the new proposal.
+
+        :param registrant: The person registering the new proposal.
+        :param source_branch: The source_branch for the new proposal (defaults
+            to the current source_branch).
+        :param target_branch: The target_branch for the new proposal (defaults
+            to the current target_branch).
+        :param prerequisite_branch: The prerequisite_branch for the new
+            proposal (defaults to the current prerequisite_branch).
+        :param description: The description for the new proposal (defaults to
+            the current description).
         """
 
     def isMergable():
@@ -556,6 +572,10 @@ class IBranchMergeProposalJobSource(ITwistedJobSource):
     """A job source that will get all supported merge proposal jobs."""
 
 
+class IBranchMergeProposalJobSource(IJobSource):
+    """A job source that will get all supported merge proposal jobs."""
+
+
 class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate listings."""
 
@@ -633,15 +653,15 @@ class ICreateMergeProposalJobSource(IJobSource):
         """Return a CreateMergeProposalJob for this message."""
 
 
-class IMergeProposalCreatedJob(IRunnableJob):
-    """Interface for review diffs."""
+class IMergeProposalNeedsReviewEmailJob(IRunnableJob):
+    """Email about a merge proposal needing a review.."""
 
 
-class IMergeProposalCreatedJobSource(Interface):
-    """Interface for acquiring MergeProposalCreatedJobs."""
+class IMergeProposalNeedsReviewEmailJobSource(Interface):
+    """Interface for acquiring MergeProposalNeedsReviewEmailJobs."""
 
     def create(bmp):
-        """Create a MergeProposalCreatedJob for the specified Job."""
+        """Create a needs review email job for the specified proposal."""
 
 
 class IUpdatePreviewDiffJob(IRunnableJob):
@@ -661,6 +681,20 @@ class IUpdatePreviewDiffJobSource(Interface):
         """Return the UpdatePreviewDiffJob with this id."""
 
 
+class IGenerateIncrementalDiffJob(IRunnableJob):
+    """Interface for the job to update the diff for a merge proposal."""
+
+
+class IGenerateIncrementalDiffJobSource(Interface):
+    """Create or retrieve jobs that update preview diffs."""
+
+    def create(bmp, old_revision_id, new_revision_id):
+        """Create job to generate incremental diff for this merge proposal."""
+
+    def get(id):
+        """Return the GenerateIncrementalDiffJob with this id."""
+
+
 class ICodeReviewCommentEmailJob(IRunnableJob):
     """Interface for the job to send code review comment email."""
 
@@ -677,7 +711,9 @@ class ICodeReviewCommentEmailJobSource(Interface):
 class IReviewRequestedEmailJob(IRunnableJob):
     """Interface for the job to sends review request emails."""
 
-    reviewer = Attribute('The person or team asked to do the review.')
+    reviewer = Attribute('The person or team asked to do the review. '
+                         'If left blank, then the default reviewer for the '
+                         'selected target branch will be used.')
     requester = Attribute('The person who has asked for the review.')
 
 
@@ -713,6 +749,7 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
 # should be moved there.
+
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 

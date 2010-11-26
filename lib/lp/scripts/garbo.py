@@ -4,7 +4,10 @@
 """Database garbage collection."""
 
 __metaclass__ = type
-__all__ = ['DailyDatabaseGarbageCollector', 'HourlyDatabaseGarbageCollector']
+__all__ = [
+    'DailyDatabaseGarbageCollector',
+    'HourlyDatabaseGarbageCollector',
+    ]
 
 from datetime import (
     datetime,
@@ -15,9 +18,9 @@ import time
 from psycopg2 import IntegrityError
 import pytz
 from storm.locals import (
-    In,
     Max,
     Min,
+    Select,
     SQL,
     )
 import transaction
@@ -39,8 +42,8 @@ from canonical.launchpad.database.librarian import (
     )
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
-from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -58,6 +61,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
+from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
     RevisionAuthor,
@@ -193,6 +197,36 @@ class RevisionCachePruner(TunableLoop):
         """Delegate to the `IRevisionSet` implementation."""
         getUtility(IRevisionSet).pruneRevisionCache(chunk_size)
         transaction.commit()
+
+
+class CodeImportEventPruner(TunableLoop):
+    """Prune `CodeImportEvent`s that are more than a month old.
+
+    Events that happened more than 30 days ago are really of no
+    interest to us.
+    """
+
+    maximum_chunk_size = 10000
+    minimum_chunk_size = 500
+
+    def isDone(self):
+        store = IMasterStore(CodeImportEvent)
+        events = store.find(
+            CodeImportEvent,
+            CodeImportEvent.date_created < THIRTY_DAYS_AGO)
+        return events.any() is None
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+        store = IMasterStore(CodeImportEvent)
+        event_ids = Select(
+            [CodeImportEvent.id],
+            CodeImportEvent.date_created < THIRTY_DAYS_AGO,
+            limit=chunk_size)
+        num_removed = store.find(
+            CodeImportEvent, CodeImportEvent.id.is_in(event_ids)).remove()
+        transaction.commit()
+        self.log.debug("Removed %d old CodeImportEvents" % num_removed)
 
 
 class CodeImportResultPruner(TunableLoop):
@@ -513,7 +547,7 @@ class BugNotificationPruner(TunableLoop):
         ids_to_remove = list(self._to_remove()[:chunk_size])
         num_removed = IMasterStore(BugNotification).find(
             BugNotification,
-            In(BugNotification.id, ids_to_remove)).remove()
+            BugNotification.id.is_in(ids_to_remove)).remove()
         transaction.commit()
         self.log.debug("Removed %d rows" % num_removed)
 
@@ -545,7 +579,7 @@ class BranchJobPruner(TunableLoop):
             # constraint is ON DELETE CASCADE.
             IMasterStore(Job).find(
                 Job,
-                In(Job.id, ids_to_remove)).remove()
+                Job.id.is_in(ids_to_remove)).remove()
         else:
             self._is_done = True
         transaction.commit()
@@ -685,7 +719,7 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._to_remove()[:chunk_size])
         self.store.find(
-            BugAttachment, In(BugAttachment.id, ids_to_remove)).remove()
+            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
         transaction.commit()
 
 
@@ -850,6 +884,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,
+        CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
         ObsoleteBugAttachmentDeleter,

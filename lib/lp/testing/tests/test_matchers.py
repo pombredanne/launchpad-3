@@ -20,15 +20,15 @@ from zope.security.proxy import ProxyFactory
 from lp.testing import TestCase
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import (
+    Contains,
+    DoesNotContain,
     DoesNotCorrectlyProvide,
     DoesNotProvide,
-    DoesNotStartWith,
     HasQueryCount,
     IsNotProxied,
     IsProxied,
     Provides,
     ProvidesAndIsProxied,
-    StartsWith,
     )
 
 
@@ -226,34 +226,34 @@ class TestQueryMatching(TestCase):
             mismatch.describe())
 
 
-class DoesNotStartWithTests(TestCase):
+class DoesNotContainTests(TestCase):
 
     def test_describe(self):
-        mismatch = DoesNotStartWith("foo", "bar")
+        mismatch = DoesNotContain("foo", "bar")
         self.assertEqual(
-            "'foo' does not start with 'bar'.", mismatch.describe())
+            "'foo' does not contain 'bar'.", mismatch.describe())
 
 
-class StartsWithTests(TestCase):
+class ContainsTests(TestCase):
 
     def test_str(self):
-        matcher = StartsWith("bar")
-        self.assertEqual("Starts with 'bar'.", str(matcher))
+        matcher = Contains("bar")
+        self.assertEqual("Contains 'bar'.", str(matcher))
 
     def test_match(self):
-        matcher = StartsWith("bar")
-        self.assertIs(None, matcher.match("barf"))
+        matcher = Contains("bar")
+        self.assertIs(None, matcher.match("foo bar baz"))
 
     def test_mismatch_returns_does_not_start_with(self):
-        matcher = StartsWith("bar")
-        self.assertIsInstance(matcher.match("foo"), DoesNotStartWith)
+        matcher = Contains("bar")
+        self.assertIsInstance(matcher.match("foo"), DoesNotContain)
 
     def test_mismatch_sets_matchee(self):
-        matcher = StartsWith("bar")
+        matcher = Contains("bar")
         mismatch = matcher.match("foo")
         self.assertEqual("foo", mismatch.matchee)
 
     def test_mismatch_sets_expected(self):
-        matcher = StartsWith("bar")
+        matcher = Contains("bar")
         mismatch = matcher.match("foo")
         self.assertEqual("bar", mismatch.expected)

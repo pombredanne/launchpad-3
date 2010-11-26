@@ -4,8 +4,6 @@
 
 """Tests for the source package recipe view classes and templates."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 
@@ -18,9 +16,11 @@ from textwrap import dedent
 from mechanize import LinkNotFoundError
 from pytz import utc
 import transaction
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -121,7 +121,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -135,13 +135,13 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -168,7 +168,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getLink('Create packaging recipe').click()
 
         # The options for the owner include the Good Chefs team.
-        options = browser.getControl('Owner').displayOptions
+        options = browser.getControl(name='field.owner.owner').displayOptions
         self.assertEquals(
             ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
             sorted([str(option) for option in options]))
@@ -184,14 +184,43 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Build daily').click()
-        browser.getControl('Owner').displayValue = ['Good Chefs']
+        browser.getControl('Automatically build each day').click()
+        browser.getControl('Other').click()
+        browser.getControl(name='field.owner.owner').displayValue = [
+            'Good Chefs']
         browser.getControl('Create Recipe').click()
 
         login(ANONYMOUS)
         recipe = team.getRecipe(u'daily')
         self.assertEqual(team, recipe.owner)
         self.assertEqual('daily', recipe.name)
+
+    def test_create_new_recipe_suggests_user(self):
+        """The current user is suggested as a recipe owner, once."""
+        branch = self.factory.makeBranch(owner=self.chef)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\) Other:', text)
+
+    def test_create_new_recipe_suggests_user_team(self):
+        """If current user is a member of branch owner, it is suggested."""
+        team = self.factory.makeTeam(
+            name='branch-team', displayname='Branch Team',
+            members=[self.chef])
+        branch = self.factory.makeBranch(owner=team)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\)'
+            r' Branch Team \(branch-team\) Other:', text)
+
+    def test_create_new_recipe_ignores_non_user_team(self):
+        """If current user isn't a member of branch owner, it is ignored."""
+        team = self.factory.makeTeam(
+            name='branch-team', displayname='Branch Team')
+        branch = self.factory.makeBranch(owner=team)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\) Other:', text)
 
     def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
@@ -262,12 +291,13 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version 0+{revno}
+                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
                     'branch': branch.bzr_identity,
-                    'package_branch': package_branch.bzr_identity,}),
+                    'package_branch': package_branch.bzr_identity,
+                }),
             branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
@@ -279,7 +309,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
 
-        browser.getControl('Build daily').click()
+        browser.getControl('Automatically build each day').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[2]),
@@ -315,7 +345,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         with recipe_parser_newest_version(145.115):
             recipe = dedent(u'''\
-                # bzr-builder format 145.115 deb-version 0+{revno}
+                # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
                 %s
                 ''') % branch.bzr_identity
             browser = self.createRecipe(recipe, branch)
@@ -409,14 +439,74 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive:
             PPA 2
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            lp://dev/~chef/ratatouille/meat"""
+        main_text = extract_text(find_main_content(browser.contents))
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            pattern, main_text)
+
+    def test_admin_edit(self):
+        self.factory.makeDistroSeries(
+            displayname='Mumbly Midget', name='mumbly',
+            distribution=self.ppa.distribution)
+        product = self.factory.makeProduct(
+            name='ratatouille', displayname='Ratatouille')
+        veggie_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='veggies')
+        meat_branch = self.factory.makeBranch(
+            owner=self.chef, product=product, name='meat')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, registrant=self.chef,
+            name=u'things', description=u'This is a recipe',
+            distroseries=self.squirrel, branches=[veggie_branch],
+            daily_build_archive=self.ppa)
+
+        meat_path = meat_branch.bzr_identity
+        expert = getUtility(ILaunchpadCelebrities).admin.teamowner
+
+        browser = self.getUserBrowser(canonical_url(recipe), user=expert)
+        browser.getLink('Edit recipe').click()
+
+        # There shouldn't be a daily build archive property.
+        self.assertRaises(
+            LookupError,
+            browser.getControl,
+            name='field.daily_build_archive')
+
+        browser.getControl(name='field.name').value = 'fings'
+        browser.getControl('Description').value = 'This is stuff'
+        browser.getControl('Recipe text').value = (
+            MINIMAL_RECIPE_TEXT % meat_path)
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Mumbly Midget').click()
+        browser.getControl('Update Recipe').click()
+
+        pattern = """\
+            Master Chef's fings recipe
+            .*
+
+            Description
+            This is stuff
+
+            Recipe information
+            Build schedule: Built on request
+            Owner: Master Chef
+            Base branch: lp://dev/~chef/ratatouille/meat
+            Debian version: {debupstream}-0~{revno}
+            Daily build archive:
+            Secret PPA
+            Distribution series: Mumbly Midget
+            .*
+
+            Recipe contents
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -461,7 +551,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             distroseries=self.squirrel, branches=[veggie_branch])
 
         new_recipe_text = dedent(u'''\
-            # bzr-builder format 145.115 deb-version 0+{revno}
+            # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
             %s
             ''') % recipe.base_branch.bzr_identity
 
@@ -549,14 +639,14 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive:
             Secret PPA
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -600,24 +690,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
 
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             This recipe has not been built yet.""", self.getMainText(recipe))
 
@@ -626,7 +716,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
@@ -644,7 +734,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.makeBuildJob(recipe)
         self.factory.makeBuilder()
         pattern = """\
-            Build records
+            Latest builds
             Status Time Distribution series Archive
             Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)

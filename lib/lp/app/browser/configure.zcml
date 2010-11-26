@@ -98,6 +98,12 @@
       template="../templates/launchpad-search-form.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+check-links"
+      class="lp.app.browser.linkchecker.LinkCheckerAPI"
+      permission="zope.Public"/>
+
   <!-- TALES namespaces. -->
 
   <!-- TALES lp: namespace (should be deprecated) -->
@@ -193,6 +199,12 @@
 
   <adapter
       for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.BuildImageDisplayAPI"
+      name="image"
+      />
+  <adapter
+      for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.BuildImageDisplayAPI"
       name="image"

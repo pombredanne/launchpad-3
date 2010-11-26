@@ -17,8 +17,8 @@ Some initialisation tasks:
     ...     ILaunchpadCelebrities)
     >>> from lp.translations.scripts.language_pack import (
     ...    export_language_pack)
-    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 
@@ -140,10 +140,10 @@ last part based on .po files and the original en-US.xpi file. To achieve
 that, we export all translations for XPI files in a special directory:
 xpi/translation_domain/
 
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from lp.translations.model.potemplate import POTemplate
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> from lp.translations.model.potemplate import POTemplate
 
 Get hold of a person.
 
@@ -162,8 +162,9 @@ Sample data initialisation
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
 
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.utilities.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
 

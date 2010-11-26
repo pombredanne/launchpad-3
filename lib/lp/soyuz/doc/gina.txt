@@ -7,17 +7,17 @@ quiet mode over it.
 
 Get the current counts of stuff in the database:
 
-    >>> from canonical.launchpad.database import (
-    ...     SourcePackageRelease,
-    ...     SourcePackagePublishingHistory,
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
-    ...     EmailAddress,
-    ...     BinaryPackageRelease,
-    ...     BinaryPackageBuild)
+    ...     SourcePackagePublishingHistory)
     >>> from lp.registry.model.person import Person, WikiName
     >>> from lp.registry.model.teammembership import TeamParticipation
     >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
+    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> SSPPH = SourcePackagePublishingHistory
     >>> SBPPH = BinaryPackagePublishingHistory
 
@@ -35,8 +35,8 @@ Get the current counts of stuff in the database:
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from canonical.launchpad.database import (
-    ...     ProcessorFamily, DistroArchSeries)
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
+    >>> from lp.soyuz.model.processor import ProcessorFamily
     >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -133,7 +133,7 @@ Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
@@ -215,6 +215,21 @@ Check if the changelog message was stored correcly:
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
+Check that the changelog was uploaded to the librarian correctly:
+
+    >>> print x11p.changelog.read()
+    x11proto-damage (6.8.99.7-2) breezy; urgency=low
+    <BLANKLINE>
+      * Add dependency on x11proto-fixes-dev.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+    <BLANKLINE>
+    x11proto-damage (6.8.99.7-1) breezy; urgency=low
+    <BLANKLINE>
+      * First x11proto-damage release.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 16 May 2005 22:10:17 +1000
+
 Same for the copyright:
 
     >>> print x11p.copyright
@@ -267,7 +282,7 @@ Test ubuntu-meta in breezy, which was forcefully imported.
 And check that its files actually ended up in the librarian (these sha1sums
 were calculated directly on the files):
 
-    >>> from canonical.launchpad.database import SourcePackageReleaseFile
+    >>> from lp.soyuz.model.files import SourcePackageReleaseFile
     >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
     ...                                           orderBy="libraryfile")
     >>> for f in files:
@@ -346,7 +361,7 @@ python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 Check that the shlibs parsing and bin-only-NMU version handling works as
 expected:
 
-    >>> from canonical.launchpad.database import BinaryPackageName
+    >>> from lp.soyuz.model.binarypackagename import BinaryPackageName
     >>> n = BinaryPackageName.selectOneBy(name="rioutil")
     >>> rio = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
     >>> print rio.shlibdeps
@@ -439,7 +454,7 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
 2 being uploaded by mdz and 2 by doko).
 
     >>> from sqlobject import LIKE
-    >>> p = Person.selectOne(LIKE(Person.q.name, "cjwatson%"))
+    >>> p = Person.selectOne(LIKE(Person.q.name, u"cjwatson%"))
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
@@ -480,7 +495,7 @@ run.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
     ERROR   Error processing package files for clearlooks
-    -> http://...Error 2 running dpkg-source...clearlooks_0.6.2-1~hoary1.dsc)
+     -> http://...Error 2 unpacking source)
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)

@@ -31,9 +31,11 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     GetitemNavigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
@@ -47,13 +49,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     IEditTranslationImportQueueEntry,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationFileType,
     )

@@ -103,8 +103,8 @@ a different recipient list to unsigned ones; recipients for signed package
 uploads can be the signer, the maintainer and the changer, where these people 
 are different.  Unsigned packages only send notifications to the changer.
 
-  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> from zope.security.proxy import removeSecurityProxy
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
   >>> gpgkey = getUtility(IGPGKeySet).get(1)
   >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
 

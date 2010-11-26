@@ -8,6 +8,7 @@ Test harness for tests needing a PostgreSQL backend.
 __metaclass__ = type
 
 import os
+import random
 import time
 
 import psycopg2
@@ -275,7 +276,8 @@ rw_main_slave:  dbname=%s
                         raise
             finally:
                 con.close()
-            time.sleep(1)
+            # Let the other user complete their copying of the template DB.
+            time.sleep(random.random())
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         PgTestSetup._last_db = (self.template, self.dbname)
@@ -315,7 +317,6 @@ rw_main_slave:  dbname=%s
                 con = psycopg2.connect(self._connectionString(self.template))
             except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
-                    print x
                     return
                 raise
             try:

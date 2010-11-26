@@ -5,9 +5,9 @@
 Simple searching is possible on the distro source package bug view page.
 
   >>> from zope.component import getMultiAdapter, getUtility
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet)
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
   >>> debian = getUtility(IDistributionSet).get(3)
   >>> mozilla_firefox = getUtility(ISourcePackageNameSet).get(1)

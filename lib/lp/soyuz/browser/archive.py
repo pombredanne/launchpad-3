@@ -62,12 +62,8 @@ from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -95,6 +91,12 @@ from canonical.widgets.lazrjs import (
     TextLineEditorWidget,
     )
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -132,7 +134,6 @@ from lp.soyuz.interfaces.archive import (
     IArchiveEditDependenciesForm,
     IArchiveSet,
     IPPAActivateForm,
-    NoSuchPPA,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -150,6 +151,7 @@ from lp.soyuz.interfaces.publishing import (
     inactive_publishing_status,
     IPublishingSet,
     )
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -1813,22 +1815,9 @@ class ArchiveActivateView(LaunchpadFormView):
                 'The default PPA is already activated. Please specify a '
                 'name for the new PPA and resubmit the form.')
 
-        # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
-        # for Ubuntu distribution. This check should be revisited when we
-        # start supporting PPAs for other distribution (debian, mainly).
-        if proposed_name is not None and proposed_name == self.ubuntu.name:
-            self.setFieldError(
-                'name',
-                "Archives cannot have the same name as its distribution.")
-
-        try:
-            self.context.getPPAByName(proposed_name)
-        except NoSuchPPA:
-            pass
-        else:
-            self.setFieldError(
-                'name',
-                "You already have a PPA named '%s'." % proposed_name)
+        errors = Archive.validatePPA(self.context, proposed_name)
+        if errors is not None:
+            self.addError(errors)
 
         if default_ppa is None and not data.get('accepted'):
             self.setFieldError(
@@ -1847,11 +1836,9 @@ class ArchiveActivateView(LaunchpadFormView):
         # XXX cprov 2009-03-27 bug=188564: We currently only create PPAs
         # for Ubuntu distribution. PPA creation should be revisited when we
         # start supporting other distribution (debian, mainly).
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
-            distribution=ubuntu, name=name,
+            distribution=self.ubuntu, name=name,
             displayname=data['displayname'], description=data['description'])
 
         self.next_url = canonical_url(ppa)

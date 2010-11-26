@@ -35,13 +35,9 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -49,6 +45,12 @@ from canonical.launchpad.webapp import (
     )
 from canonical.lazr.utils import smartquote
 from canonical.widgets import DateTimeWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.browser import (
     BaseRdfView,
     MilestoneOverlayMixin,

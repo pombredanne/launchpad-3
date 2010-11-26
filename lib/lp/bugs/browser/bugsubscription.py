@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AdvancedSubscriptionMixin',
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
@@ -15,27 +16,32 @@ import cgi
 from lazr.delegates import delegates
 from simplejson import dumps
 
+from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.registry.enum import BugNotificationLevel
+from lp.services import features
+from lp.services.propertycache import cachedproperty
 
 
 class BugSubscriptionAddView(LaunchpadFormView):
@@ -74,42 +80,162 @@ class BugSubscriptionAddView(LaunchpadFormView):
     page_title = label
 
 
-class BugSubscriptionSubscribeSelfView(LaunchpadView,
-                                       ReturnToReferrerMixin):
+class AdvancedSubscriptionMixin:
+    """A mixin of advanced subscription code for views.
+
+    In order to use this mixin in a view the view must:
+     - Define a current_user_subscription property which returns the
+       current BugSubscription or StructuralSubscription for request.user.
+       If there's no subscription for the given user in the given
+       context, current_user_subscription must return None.
+     - Define a dict, _bug_notification_level_descriptions, which maps
+       BugNotificationLevel values to string descriptions for the
+       current context (see `BugSubscriptionSubscribeSelfView` for an
+       example).
+     - Update the view's setUpFields() to call
+       _setUpBugNotificationLevelField().
+    """
+
+    @cachedproperty
+    def _use_advanced_features(self):
+        """Return True if advanced subscriptions features are enabled."""
+        return features.getFeatureFlag(
+            'malone.advanced-subscriptions.enabled')
+
+    @cachedproperty
+    def _bug_notification_level_field(self):
+        """Return a custom form field for bug_notification_level."""
+        # We rebuild the items that we show in the field so that the
+        # labels shown are human readable and specific to the +subscribe
+        # form. The BugNotificationLevel descriptions are too generic.
+        bug_notification_level_terms = [
+            SimpleTerm(
+                level, level.name,
+                self._bug_notification_level_descriptions[level])
+            # We reorder the items so that COMMENTS comes first. We also
+            # drop the NOTHING option since it just makes the UI
+            # confusing.
+            for level in sorted(BugNotificationLevel.items, reverse=True)
+                if level != BugNotificationLevel.NOTHING
+            ]
+        bug_notification_vocabulary = SimpleVocabulary(
+            bug_notification_level_terms)
+
+        if self.current_user_subscription is not None:
+            default_value = (
+                self.current_user_subscription.bug_notification_level)
+        else:
+            default_value = BugNotificationLevel.COMMENTS
+
+        bug_notification_level_field = Choice(
+            __name__='bug_notification_level', title=_("Tell me when"),
+            vocabulary=bug_notification_vocabulary, required=True,
+            default=default_value)
+        return bug_notification_level_field
+
+    def _setUpBugNotificationLevelField(self):
+        """Set up the bug_notification_level field."""
+        if not self._use_advanced_features:
+            # If advanced features are disabled, do nothing.
+            return
+
+        self.form_fields = self.form_fields.omit('bug_notification_level')
+        self.form_fields += formlib.form.Fields(
+            self._bug_notification_level_field)
+        self.form_fields['bug_notification_level'].custom_widget = (
+            CustomWidgetFactory(RadioWidget))
+
+
+class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
+                                       ReturnToReferrerMixin,
+                                       AdvancedSubscriptionMixin):
     """A view to handle the +subscribe page for a bug."""
+
+    schema = IBugSubscription
+
+    # A mapping of BugNotificationLevel values to descriptions to be
+    # shown on the +subscribe page.
+    _bug_notification_level_descriptions = {
+        BugNotificationLevel.LIFECYCLE: (
+            "The bug is fixed or re-opened."),
+        BugNotificationLevel.METADATA: (
+            "Any change is made to this bug, other than a new comment "
+            "being added."),
+        BugNotificationLevel.COMMENTS: (
+            "A change is made to this bug or a new comment is added."),
+        }
+
+    @property
+    def field_names(self):
+        if self._use_advanced_features:
+            return ['bug_notification_level']
+        else:
+            return []
 
     @property
     def next_url(self):
         """Provided so returning to the page they came from works."""
-        referer = self.request.getHeader('referer')
+        referer = self._return_url
+        context_url = canonical_url(self.context)
 
         # XXX bdmurray 2010-09-30 bug=98437: work around zope's test
         # browser setting referer to localhost.
-        if referer and referer != 'localhost':
+        # We also ignore the current request URL and the context URL as
+        # far as referrers are concerned so that we can handle privacy
+        # issues properly.
+        ignored_referrer_urls = (
+            'localhost', self.request.getURL(), context_url)
+        if referer and referer not in ignored_referrer_urls:
             next_url = referer
+        elif self._redirecting_to_bug_list:
+            next_url = canonical_url(self.context.target, view_name="+bugs")
         else:
-            next_url = canonical_url(self.context)
+            next_url = context_url
         return next_url
 
     cancel_url = next_url
 
-    def initialize(self):
-        """Set up the needed widgets."""
+    @cachedproperty
+    def _subscribers_for_current_user(self):
+        """Return a dict of the subscribers for the current user."""
+        persons_for_user = {}
+        person_count = 0
         bug = self.context.bug
+        for person in bug.getSubscribersForPerson(self.user):
+            if person.id not in persons_for_user:
+                persons_for_user[person.id] = person
+                person_count += 1
 
-        # See render() for how this flag is used.
+        self._subscriber_count_for_current_user = person_count
+        return persons_for_user.values()
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        self._subscriber_count_for_current_user = 0
         self._redirecting_to_bug_list = False
+        super(BugSubscriptionSubscribeSelfView, self).initialize()
 
-        if self.user is None:
-            return
+    @cachedproperty
+    def current_user_subscription(self):
+        return self.context.bug.getSubscriptionForPerson(self.user)
 
-        # Set up widgets in order to handle subscription requests.
+    @cachedproperty
+    def _update_subscription_term(self):
+        return SimpleTerm(
+            'update-subscription', 'update-subscription',
+            'Update my current subscription')
+
+    @cachedproperty
+    def _subscription_field(self):
         subscription_terms = []
         self_subscribed = False
-        for person in bug.getSubscribersForPerson(self.user):
+        for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                subscription_terms.append(
-                    SimpleTerm(
+                if (self._use_advanced_features and
+                    self.user_is_subscribed_directly):
+                    subscription_terms.append(self._update_subscription_term)
+                subscription_terms.insert(
+                    0, SimpleTerm(
                         person, person.name,
                         'Unsubscribe me from this bug'))
                 self_subscribed = True
@@ -125,20 +251,74 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
                 SimpleTerm(
                     self.user, self.user.name, 'Subscribe me to this bug'))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        person_field = Choice(
-            __name__='subscription',
-            vocabulary=subscription_vocabulary, required=True)
-        self.subscription_widget = CustomWidgetFactory(RadioWidget)
-        setUpWidget(
-            self, 'subscription', person_field, IInputWidget, value=self.user)
+        if (self._use_advanced_features and
+            self.user_is_subscribed_directly):
+            default_subscription_value = self._update_subscription_term.value
+        else:
+            default_subscription_value = (
+                subscription_vocabulary.getTermByToken(self.user.name).value)
+        subscription_field = Choice(
+            __name__='subscription', title=_("Subscription options"),
+            vocabulary=subscription_vocabulary, required=True,
+            default=default_subscription_value)
+        return subscription_field
 
-        self.handleSubscriptionRequest()
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpFields()
+        if self.user is None:
+            return
 
-    def userIsSubscribed(self):
+        self.form_fields += formlib.form.Fields(self._subscription_field)
+        self._setUpBugNotificationLevelField()
+        self.form_fields['subscription'].custom_widget = CustomWidgetFactory(
+            RadioWidget)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
+        if self._use_advanced_features:
+            if self._subscriber_count_for_current_user == 0:
+                # We hide the subscription widget if the user isn't
+                # subscribed, since we know who the subscriber is and we
+                # don't need to present them with a single radio button.
+                self.widgets['subscription'].visible = False
+            else:
+                # We show the subscription widget when the user is
+                # subscribed via a team, because they can either
+                # subscribe theirself or unsubscribe their team.
+                self.widgets['subscription'].visible = True
+
+            if (self.user_is_subscribed and
+                self.user_is_subscribed_to_dupes_only):
+                # If the user is subscribed via a duplicate but is not
+                # directly subscribed, we hide the
+                # bug_notification_level field, since it's not used.
+                self.widgets['bug_notification_level'].visible = False
+
+    @cachedproperty
+    def user_is_subscribed_directly(self):
+        """Is the user subscribed directly to this bug?"""
+        return self.context.bug.isSubscribed(self.user)
+
+    @cachedproperty
+    def user_is_subscribed_to_dupes(self):
+        """Is the user subscribed to dupes of this bug?"""
+        return self.context.bug.isSubscribedToDupes(self.user)
+
+    @property
+    def user_is_subscribed(self):
         """Is the user subscribed to this bug?"""
         return (
-            self.context.bug.isSubscribed(self.user) or
-            self.context.bug.isSubscribedToDupes(self.user))
+            self.user_is_subscribed_directly or
+            self.user_is_subscribed_to_dupes)
+
+    @property
+    def user_is_subscribed_to_dupes_only(self):
+        """Is the user subscribed to this bug only via a dupe?"""
+        return (
+            self.user_is_subscribed_to_dupes and
+            not self.user_is_subscribed_directly)
 
     def shouldShowUnsubscribeFromDupesWarning(self):
         """Should we warn the user about unsubscribing and duplicates?
@@ -146,7 +326,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
         The warning should tell the user that, when unsubscribing, they
         will also be unsubscribed from dupes of this bug.
         """
-        if self.userIsSubscribed():
+        if self.user_is_subscribed:
             return True
 
         bug = self.context.bug
@@ -156,49 +336,28 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
 
         return False
 
-    def render(self):
-        """Render the bug list if the user has permission to see the bug."""
-        # Prevent normal rendering when redirecting to the bug list
-        # after unsubscribing from a private bug, because rendering the
-        # bug page would raise Unauthorized errors!
-        if self._redirecting_to_bug_list:
-            return u''
-        elif self._isSubscriptionRequest() and self.request.get('next_url'):
-            self.request.response.redirect(self.request.get('next_url'))
-            return u''
+    @action('Continue', name='continue')
+    def subscribe_action(self, action, data):
+        """Handle subscription requests."""
+        subscription_person = self.widgets['subscription'].getInputValue()
+        if self._use_advanced_features:
+            bug_notification_level = data.get('bug_notification_level', None)
         else:
-            return LaunchpadView.render(self)
+            bug_notification_level = None
 
-    def handleSubscriptionRequest(self):
-        """Subscribe or unsubscribe the user from the bug, if requested."""
-        if not self._isSubscriptionRequest():
-            return
-
-        subscription_person = self.subscription_widget.getInputValue()
-
-        # 'subscribe' appears in the request whether the request is to
-        # subscribe or unsubscribe. Since "subscribe someone else" is
-        # handled by a different view we can assume that 'subscribe' +
-        # current user as a parameter means "subscribe the current
-        # user", and any other kind of 'subscribe' request actually
-        # means "unsubscribe". (Yes, this *is* very confusing!)
-        if ('subscribe' in self.request.form and
+        if (subscription_person == self._update_subscription_term.value and
+            self.user_is_subscribed):
+            self._handleUpdateSubscription(level=bug_notification_level)
+        elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
-            self._handleSubscribe()
+            self._handleSubscribe(bug_notification_level)
         else:
             self._handleUnsubscribe(subscription_person)
+        self.request.response.redirect(self.next_url)
 
-    def _isSubscriptionRequest(self):
-        """Return True if the form contains subscribe/unsubscribe input."""
-        return (
-            self.user and
-            self.request.method == 'POST' and
-            'cancel' not in self.request.form and
-            self.subscription_widget.hasValidInput())
-
-    def _handleSubscribe(self):
+    def _handleSubscribe(self, level=None):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user, self.user)
+        self.context.bug.subscribe(self.user, self.user, level=level)
         self.request.response.addNotification(
             "You have been subscribed to this bug.")
 
@@ -215,7 +374,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
         when the bug is private. The user must be unsubscribed from all dupes
         too, or they would keep getting mail about this bug!
         """
-
         # ** Important ** We call unsubscribeFromDupes() before
         # unsubscribe(), because if the bug is private, the current user
         # will be prevented from calling methods on the main bug after
@@ -235,8 +393,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
             # longer see a private bug from which they've unsubscribed.
-            self.request.response.redirect(
-                canonical_url(self.context.target) + "/+bugs")
             self._redirecting_to_bug_list = True
 
     def _handleUnsubscribeOtherUser(self, user):
@@ -251,6 +407,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadView,
         self.request.response.addNotification(
             structured(
                 self._getUnsubscribeNotification(user, unsubed_dupes)))
+
+    def _handleUpdateSubscription(self, level):
+        """Handle updating a user's subscription."""
+        subscription = self.current_user_subscription
+        subscription.bug_notification_level = level
+        self.request.response.addNotification(
+            "Your subscription to this bug has been updated.")
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.
@@ -366,6 +529,7 @@ class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
 
     def render(self):
         """Override the default render() to return only JSON."""
+        self.request.response.setHeader('content-type', 'application/json')
         return self.subscriber_ids_js
 
 

@@ -258,6 +258,7 @@ class UploadProcessor:
             build.status = BuildStatus.FAILEDTOUPLOAD
             build.notify(extra_info="Uploading build %s failed." % upload)
             build.storeUploadLog(logger.buffer.getvalue())
+            self.ztm.commit()
 
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
@@ -518,9 +519,9 @@ class UploadProcessor:
                     self.ztm.abort()
 
             if upload.is_rejected:
-                logger.warn("Upload was rejected:")
+                logger.info("Upload was rejected:")
                 for msg in upload.rejections:
-                    logger.warn("\t%s" % msg)
+                    logger.info("\t%s" % msg)
 
             if self.dry_run:
                 logger.info("Dry run, aborting transaction.")

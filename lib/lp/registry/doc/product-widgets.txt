@@ -28,9 +28,9 @@ The custom field's missing value (i.e. None) represents the 'no bug tracker'
 option.  This is displayed by the widget as the project having a bug tracker
 in a specified external location.
 
-    >>> from lp.registry.interfaces.product import IProduct
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
+    >>> from lp.registry.interfaces.product import IProduct
 
     >>> product_bugtracker = IProduct['bugtracker'].bind(firefox)
     >>> widget = ProductBugTrackerWidget(
@@ -476,9 +476,9 @@ GhostWidget to suppress the markup.
 
 Launchpad form macros do not generate table rows for the GhostWidget.
 
-    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from canonical.config import config
-    >>> from canonical.launchpad.webapp.launchpadform import (
+    >>> from z3c.ptcompat import ViewPageTemplateFile
+    >>> from lp.app.browser.launchpadform import (
     ...     custom_widget, LaunchpadFormView)
 
     >>> class GhostWidgetView(LaunchpadFormView):

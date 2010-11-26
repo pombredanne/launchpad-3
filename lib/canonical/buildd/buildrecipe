@@ -7,10 +7,13 @@
 __metaclass__ = type
 
 
+import errno
 import os
 import pwd
+import re
+from resource import RLIMIT_AS, setrlimit
 import socket
-from subprocess import call
+from subprocess import call, Popen, PIPE
 import sys
 
 
@@ -19,6 +22,26 @@ RETCODE_FAILURE_INSTALL = 200
 RETCODE_FAILURE_BUILD_TREE = 201
 RETCODE_FAILURE_INSTALL_BUILD_DEPS = 202
 RETCODE_FAILURE_BUILD_SOURCE_PACKAGE = 203
+
+
+class NotVirtualized(Exception):
+    """Exception raised when not running in a virtualized environment."""
+
+
+class NoXenDetect(NotVirtualized):
+    """xen-detect not installed."""
+
+    def __init__(self):
+        NotVirtualized.__init__(self, 'xen-detect is not installed.')
+
+
+class BadXenDetect(NotVirtualized):
+    """xen-detect's output not not indicate that we are virtualized."""
+
+    def __init__(self, xen_detect_output):
+        NotVirtualized.__init__(
+            self, 'Bad xen-detect output: %s' % xen_detect_output)
+        self.xen_detect_output = xen_detect_output
 
 
 class RecipeBuilder:
@@ -64,6 +87,12 @@ class RecipeBuilder:
         As a side-effect, sets self.source_dir_relative.
         :return: a retcode from `bzr dailydeb`.
         """
+        try:
+            ensure_virtualized()
+        except NotVirtualized, e:
+            sys.stderr.write('Aborting on failed virtualization check:\n')
+            sys.stderr.write(str(e))
+            return 1
         assert not os.path.exists(self.tree_path)
         recipe_path = os.path.join(self.work_dir, 'recipe')
         manifest_path = os.path.join(self.tree_path, 'manifest')
@@ -159,7 +188,26 @@ def get_build_path(build_id, *extra):
     return os.path.join(
         os.environ["HOME"], "build-" + build_id, *extra)
 
+
+def ensure_virtualized():
+    """Raise an exception if not running in a virtualized environment.
+
+    Raises if unsure, or if not running under Xen.
+    """
+    try:
+        proc = Popen(['xen-detect'], stdout=PIPE)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise
+        raise NoXenDetect()
+    status_code = proc.wait()
+    output = proc.stdout.read()
+    if not re.match('Running in .* context on Xen', output):
+        raise BadXenDetect(output)
+
+
 if __name__ == '__main__':
+    setrlimit(RLIMIT_AS, (1000000000, -1))
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)

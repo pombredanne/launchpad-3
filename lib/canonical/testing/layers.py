@@ -51,7 +51,6 @@ __all__ = [
     'reconnect_stores',
     ]
 
-import atexit
 import datetime
 import errno
 import gc
@@ -109,7 +108,8 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
+from canonical.launchpad.interfaces.mailbox import IMailBox
+from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
@@ -283,6 +283,9 @@ class BaseLayer:
     @classmethod
     @profiled
     def setUp(cls):
+        # Set the default appserver config instance name.
+        # May be changed as required eg when running parallel tests.
+        cls.appserver_config_name = 'testrunner-appserver'
         BaseLayer.isSetUp = True
         cls.fixture = Fixture()
         cls.fixture.setUp()
@@ -382,7 +385,7 @@ class BaseLayer:
                     if thread not in BaseLayer._threads and thread.isAlive()]
 
         if BaseLayer.disable_thread_check:
-            new_threads = new_live_threads()
+            new_threads = None
         else:
             for loop in range(0,100):
                 # Check for tests that leave live threads around early.
@@ -400,6 +403,7 @@ class BaseLayer:
                     gc.collect()
                 else:
                     break
+            new_threads = new_live_threads()
 
         if new_threads:
             # BaseLayer.disable_thread_check is a mechanism to stop
@@ -520,6 +524,17 @@ class BaseLayer:
         finally:
             del frame # As per no-leak stack inspection in Python reference.
 
+    @classmethod
+    def appserver_config(cls):
+        """Return a config suitable for AppServer tests."""
+        return CanonicalConfig(cls.appserver_config_name)
+
+    @classmethod
+    def appserver_root_url(cls, facet='mainsite', ensureSlash=False):
+        """Return the correct app server root url for the given facet."""
+        return cls.appserver_config().appserver_root_url(
+                facet, ensureSlash)
+
 
 class MemcachedLayer(BaseLayer):
     """Provides tests access to a memcached.
@@ -580,11 +595,6 @@ class MemcachedLayer(BaseLayer):
         # Store the pidfile for other processes to kill.
         pidfile = MemcachedLayer.getPidFile()
         open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
-
-        # Register an atexit hook just in case tearDown doesn't get
-        # invoked for some perculiar reason.
-        if not BaseLayer.persist_test_services:
-            atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
     @profiled
@@ -804,7 +814,6 @@ class LibrarianLayer(DatabaseLayer):
         BaseLayer.config.add_section(cls.librarian_fixture.service_config)
         config.reloadConfig()
         cls._check_and_reset()
-        atexit.register(cls.librarian_fixture.tearDown)
 
     @classmethod
     @profiled
@@ -898,7 +907,7 @@ class LibrarianLayer(DatabaseLayer):
 
         This just involves restoring the config to the original value.
         """
-        LibrarianLayer._hidden = False
+        cls._hidden = False
         config.pop('hide_librarian')
 
 
@@ -928,24 +937,6 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     def tearDown(cls):
         pass
     
-    @classmethod
-    def tearDownHelper(cls):
-        """Helper for when LaunchpadLayer is mixed with unteardownable layers.
-
-        E.g. FunctionalLayer causes other layer tearDown to not occur, which is
-        why atexit is used, but because test runners delegate rather than
-        returning, the librarian and other servers are only killed *at the end
-        of the whole test run*, which leads to multiple instances running, so
-        we manually run the teardown for these layers.
-        """
-        try:
-            MemcachedLayer.tearDown()
-        finally:
-            try:
-                LibrarianLayer.tearDown()
-            finally:
-                DatabaseLayer.tearDown()
-
     @classmethod
     @profiled
     def testSetUp(cls):
@@ -1245,7 +1236,6 @@ class GoogleServiceLayer(BaseLayer):
     def setUp(cls):
         google = GoogleServiceTestSetup()
         google.setUp()
-        atexit.register(google.tearDown)
 
     @classmethod
     def tearDown(cls):
@@ -1302,11 +1292,6 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     @profiled
     def setUp(cls):
         pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1416,7 +1401,6 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def tearDown(cls):
         if not globalregistry.base.unregisterUtility(cls._mailbox):
             raise NotImplementedError('failed to unregister mailbox')
-        LaunchpadLayer.tearDownHelper()
 
     @classmethod
     @profiled
@@ -1579,7 +1563,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
             PageTestLayer.profiler = Profile()
         else:
             PageTestLayer.profiler = None
-        file_handler = logging.FileHandler('pagetests-access.log', 'w')
+        file_handler = logging.FileHandler('logs/pagetests-access.log', 'w')
         file_handler.setFormatter(logging.Formatter())
         logger = PythonLogger('pagetests-access')
         logger.logger.addHandler(file_handler)
@@ -1737,9 +1721,6 @@ class LayerProcessController:
         log.propagate = False
         cls.smtp_controller = SMTPController('localhost', 9025)
         cls.smtp_controller.start()
-        # Make sure that the smtp server is killed even if tearDown() is
-        # skipped, which can happen if FunctionalLayer is in the mix.
-        atexit.register(cls.stopSMTPServer)
 
     @classmethod
     @profiled
@@ -1750,9 +1731,6 @@ class LayerProcessController:
         cls._cleanUpStaleAppServer()
         cls._runAppServer()
         cls._waitUntilAppServerIsReady()
-        # Make sure that the app server is killed even if tearDown() is
-        # skipped.
-        atexit.register(cls.stopAppServer)
 
     @classmethod
     @profiled
@@ -2003,15 +1981,10 @@ class BaseWindmillLayer(AppServerLayer):
 
         # Patch the config to provide the port number and not use https.
         sites = (
-            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
-            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
-            ('vhost.blueprints',
-                'rooturl: http://blueprints.launchpad.dev:8085/'),
-            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
-            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
-            ('vhost.testopenid', 'rooturl: http://testopenid.dev:8085/'),
-            ('vhost.translations',
-                'rooturl: http://translations.launchpad.dev:8085/'))
+            (('vhost.%s' % sitename,
+            'rooturl: %s/' % cls.appserver_root_url(sitename))
+            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
+                            'code', 'testopenid', 'translations']))
         for site in sites:
             config.push('windmillsettings', "\n[%s]\n%s\n" % site)
         allvhosts.reload()
@@ -2082,7 +2055,7 @@ class BaseWindmillLayer(AppServerLayer):
         # driver from out here.
         config_text = dedent("""\
             START_FIREFOX = True
-            TEST_URL = '%s'
+            TEST_URL = '%s/'
             CONSOLE_LOG_LEVEL = %d
             """ % (cls.base_url, logging.NOTSET))
         cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
