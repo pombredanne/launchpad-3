@@ -172,6 +172,7 @@ def db_options(parser):
             dbname: %s
             """ % value)
         config.push('dbname_callback', config_data)
+        lp.dbname_override = value
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,

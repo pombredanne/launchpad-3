@@ -36,6 +36,7 @@ __all__ = [
 # office environment.
 dbhost = os.environ.get('LP_DBHOST', None)
 dbuser = os.environ.get('LP_DBUSER', None)
+dbname_override = os.environ.get('LP_DBNAME', None)
 
 
 def get_dbname():
@@ -43,12 +44,11 @@ def get_dbname():
 
     :return: The dbname for scripts.
     """
-    dbname = os.environ.get('LP_DBNAME', None)
-    if dbname is None:
-        match = re.search(r'dbname=(\S*)', dbconfig.main_master)
-        assert match is not None, 'Invalid main_master connection string'
-        dbname = match.group(1)
-    return dbname
+    if dbname_override is not None:
+        return dbname_override
+    match = re.search(r'dbname=(\S*)', dbconfig.main_master)
+    assert match is not None, 'Invalid main_master connection string'
+    return  match.group(1)
 
 
 if dbhost is None:
