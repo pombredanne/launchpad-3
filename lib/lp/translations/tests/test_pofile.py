@@ -1923,6 +1923,47 @@ class TestPOFile(TestCaseWithFactory):
                 "getTranslationRows does not sort obsolete messages "
                 "(sequence=0) to the end of the file.")
 
+    def test_getTranslationRows_obsolete_upstream(self):
+        # getTranslationRows includes translations marked as current
+        # that are for obsolete messages.
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
+        text = self.factory.getUniqueString()
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=potmsgset, translations=[text])
+
+        rows = list(self.pofile.getTranslationRows())
+        self.assertEqual(1, len(rows))
+        vpoexport = rows[0]
+        self.assertEqual(self.pofile, vpoexport.pofile)
+        self.assertEqual(potmsgset, vpoexport.potmsgset)
+        self.assertEqual(text, vpoexport.translation0)
+
+        # The message is included, but is still marked as obsolete.
+        self.assertEqual(0, vpoexport.sequence)
+
+    def test_getTranslationRows_obsolete_ubuntu(self):
+        # getTranslationRows handles obsolete messages for Ubuntu
+        # POFiles just like it does for upstream POFiles.
+        package = self.factory.makeSourcePackage()
+        self.potemplate = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.pofile = self.factory.makePOFile(potemplate=self.potemplate)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
+        text = self.factory.getUniqueString()
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=potmsgset, translations=[text])
+
+        rows = list(self.pofile.getTranslationRows())
+        self.assertEqual(1, len(rows))
+        vpoexport = rows[0]
+        self.assertEqual(self.pofile, vpoexport.pofile)
+        self.assertEqual(potmsgset, vpoexport.potmsgset)
+        self.assertEqual(text, vpoexport.translation0)
+
+        # The message is included, but is still marked as obsolete.
+        self.assertEqual(0, vpoexport.sequence)
+
     def test_markChanged_sets_date(self):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=14)
         self.pofile.markChanged(timestamp=timestamp)

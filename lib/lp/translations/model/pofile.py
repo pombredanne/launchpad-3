@@ -1138,7 +1138,6 @@ class POFile(SQLBase, POFileMixIn):
                  "TranslationMessage.potemplate = %s)" % template_id,
             ]
 
-
         if ignore_obsolete:
             conditions.append("TranslationTemplateItem.sequence <> 0")
 
@@ -1159,10 +1158,11 @@ class POFile(SQLBase, POFileMixIn):
         # they must either be in the current template (sequence != 0, so not
         # "obsolete") or be in the current imported version of the translation
         # (is_current_upstream), or both.
-        return self._selectRows(
-            ignore_obsolete=False,
-            where="TranslationTemplateItem.sequence <> 0 OR "
-                "is_current_upstream IS TRUE")
+        traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate)
+        flag = traits.flag_name
+        where = "TranslationTemplateItem.sequence <> 0 OR %s IS TRUE" % flag
+        return self._selectRows(ignore_obsolete=False, where=where)
 
     def getChangedRows(self):
         """See `IVPOExportSet`."""
@@ -1634,8 +1634,6 @@ class POFileToTranslationFileDataAdapter:
         diverged_messages = set()
         for row in rows:
             assert row.pofile == pofile, 'Got a row for a different IPOFile.'
-            assert row.sequence != 0 or row.is_current_upstream, (
-                "Got uninteresting row.")
 
             msg_key = (row.msgid_singular, row.msgid_plural, row.context)
             if row.diverged is not None:
