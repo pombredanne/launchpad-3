@@ -107,7 +107,9 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
-from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -120,11 +122,14 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.services.osutils import override_environ
 from lp.services import features
 from lp.services.features.flags import FeatureController
-from lp.services.features.model import getFeatureStore, FeatureFlag
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -497,7 +502,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.addDetail('librarian-log', content)
 
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         from lp.testing.factory import ObjectFactory
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
@@ -554,7 +559,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
@@ -725,7 +730,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
@@ -829,7 +834,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -847,7 +852,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
