@@ -27,5 +27,6 @@ echo "Unmounting chroot for build $BUILDID..."
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/var/cache/apt/archives"
+#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/shm"
 $GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts | \
       $CUT -d\  -f2 | $XARGS -r -n 1 $SUDO umount

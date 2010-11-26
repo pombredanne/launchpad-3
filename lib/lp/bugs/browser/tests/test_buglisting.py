@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+from storm.expr import LeftJoin
+from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -13,12 +16,17 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.model.person import Person
 from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -129,6 +137,24 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertIs(None,
                       find_tag_by_id(browser.contents, 'portlet-tags'),
                       "portlet-tags should not be shown.")
+
+    def test_searchUnbatched_can_preload_objects(self):
+        # BugTaskSearchListingView.searchUnbatched() can optionally
+        # preload objects while retureving the bugtasks.
+        product = self.factory.makeProduct()
+        bugtask_1 = self.factory.makeBug(product=product).default_bugtask
+        bugtask_2 = self.factory.makeBug(product=product).default_bugtask
+        view = create_initialized_view(product, '+bugs')
+        Store.of(product).invalidate()
+        with StormStatementRecorder() as recorder:
+            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            bugtasks = list(view.searchUnbatched(prejoins=prejoins))
+            self.assertEqual(
+                [bugtask_1, bugtask_2], bugtasks)
+            # If the table prejoin failed, then this will issue two
+            # additional SQL queries
+            [bugtask.owner for bugtask in bugtasks]
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 class BugTargetTestCase(TestCaseWithFactory):

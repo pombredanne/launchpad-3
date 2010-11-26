@@ -630,34 +630,38 @@ class LibrarianLayer(BaseLayer):
     """
     _reset_between_tests = True
 
-    _is_setup = False
+    librarian_fixture = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        cls._is_setup = True
-        if not LibrarianLayer._reset_between_tests:
+        if not cls._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        the_librarian = LibrarianTestSetup()
-        the_librarian.setUp()
-        LibrarianLayer._check_and_reset()
+        cls.librarian_fixture = LibrarianTestSetup()
+        cls.librarian_fixture.setUp()
+        cls._check_and_reset()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        if not cls._is_setup:
+        if cls.librarian_fixture is None:
             return
-        cls._is_setup = False
-        if not LibrarianLayer._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests not reset before LibrarianLayer "
-                    "shutdown"
-                    )
-        LibrarianLayer._check_and_reset()
-        LibrarianTestSetup().tearDown()
+        try:
+            cls._check_and_reset()
+        finally:
+            librarian = cls.librarian_fixture
+            cls.librarian_fixture = None
+            try:
+                if not cls._reset_between_tests:
+                    raise LayerInvariantError(
+                            "_reset_between_tests not reset before LibrarianLayer "
+                            "shutdown"
+                            )
+            finally:
+                librarian.cleanUp()
 
     @classmethod
     @profiled
@@ -676,20 +680,20 @@ class LibrarianLayer(BaseLayer):
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e)
                     )
-        if LibrarianLayer._reset_between_tests:
-            LibrarianTestSetup().clear()
+        if cls._reset_between_tests:
+            cls.librarian_fixture.clear()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        LibrarianLayer._check_and_reset()
+        cls._check_and_reset()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if LibrarianLayer._hidden:
-            LibrarianLayer.reveal()
-        LibrarianLayer._check_and_reset()
+        if cls._hidden:
+            cls.reveal()
+        cls._check_and_reset()
 
     # Flag maintaining state of hide()/reveal() calls
     _hidden = False
@@ -706,17 +710,17 @@ class LibrarianLayer(BaseLayer):
         We do this by altering the configuration so the Librarian client
         looks for the Librarian server on the wrong port.
         """
-        LibrarianLayer._hidden = True
-        if LibrarianLayer._fake_upload_socket is None:
+        cls._hidden = True
+        if cls._fake_upload_socket is None:
             # Bind to a socket, but don't listen to it.  This way we
             # guarantee that connections to the given port will fail.
-            LibrarianLayer._fake_upload_socket = socket.socket(
+            cls._fake_upload_socket = socket.socket(
                 socket.AF_INET, socket.SOCK_STREAM)
             assert config.librarian.upload_host == 'localhost', (
                 'Can only hide librarian if it is running locally')
-            LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
+            cls._fake_upload_socket.bind(('127.0.0.1', 0))
 
-        host, port = LibrarianLayer._fake_upload_socket.getsockname()
+        host, port = cls._fake_upload_socket.getsockname()
         librarian_data = dedent("""
             [librarian]
             upload_port: %s
@@ -730,7 +734,7 @@ class LibrarianLayer(BaseLayer):
 
         This just involves restoring the config to the original value.
         """
-        LibrarianLayer._hidden = False
+        cls._hidden = False
         config.pop('hide_librarian')
 
 
