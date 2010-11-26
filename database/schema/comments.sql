@@ -1780,7 +1780,7 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The closest ancestor this publishing record.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set

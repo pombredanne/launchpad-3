@@ -460,8 +460,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 
     ancestor = exported(
         Reference(
-            Interface, # Really ISourcePackageFilePublishing, see below.
-            title=_('Previous release'),
+            ISourcePackagePublishingHistory,
+            title=_('Ancestor'),
             description=_('The previous release of this source package.'),
             required=False, readonly=True,
         ))
