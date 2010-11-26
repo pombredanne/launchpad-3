@@ -146,13 +146,9 @@ from canonical.launchpad.searchbuilder import (
     )
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -185,6 +181,12 @@ from canonical.widgets.lazrjs import (
     )
 from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.tales import (
     FormattersAPI,
     ObjectImageDisplayAPI,
@@ -927,7 +929,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         # comments to the activity_for_comments list.  For each
         # activity dict we use the person responsible for the first
         # activity item as the owner of the list of activities.
-        activity_by_date = []
         for date, activity_dict in activity_log.items():
             activity_and_comments.append({
                 'activity': activity_dict,
@@ -2678,7 +2679,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self._getBatchNavigator(unbatchedTasks)
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: Text that must occur in the bug report. If
@@ -2696,7 +2697,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params)
+        tasks = context.searchTasks(search_params, prejoins=prejoins)
         return tasks
 
     def getWidgetValues(

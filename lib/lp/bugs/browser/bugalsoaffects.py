@@ -42,10 +42,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -55,6 +52,11 @@ from canonical.widgets.bugtask import (
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SearchForUpstreamPopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (

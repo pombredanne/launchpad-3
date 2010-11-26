@@ -23,15 +23,17 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugsubscription import AdvancedSubscriptionMixin
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -79,6 +81,10 @@ class StructuralSubscriptionView(LaunchpadFormView,
     @property
     def label(self):
         return self.page_title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
     def setUpFields(self):
         """See LaunchpadFormView."""
@@ -205,7 +211,6 @@ class StructuralSubscriptionView(LaunchpadFormView,
         self._handleUserSubscription(data)
         self._handleTeamSubscriptions(data)
         self._handleDriverChanges(data)
-        self.next_url = canonical_url(self.context) + '/+subscribe'
 
     def _handleUserSubscription(self, data):
         """Process the subscription for the user."""
