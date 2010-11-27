@@ -304,7 +304,7 @@ class BaseLayer:
             # about killing memcached - just do it quickly.
             kill_by_pidfile(MemcachedLayer.getPidFile(), num_polls=0)
             config_name = 'testrunner_%s' % test_instance
-            cls.make_config(config_name, 'testrunner', 'config')
+            cls.make_config(config_name, 'testrunner', 'config_fixture')
             app_config_name = 'testrunner-appserver_%s' % test_instance
             cls.make_config(
                 app_config_name, 'testrunner-appserver',
