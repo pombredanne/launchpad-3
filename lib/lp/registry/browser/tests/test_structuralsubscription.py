@@ -343,7 +343,7 @@ class TestSourcePackageStructuralSubscribersPortletView(
     TestStructuralSubscribersPortletViewBase):
 
     def setUpTarget(self):
-        distribution = self.factory.makeDistribution(title="Spam and Eggs")
-        sourcepackage = self.factory.makeSourcePackageName("foobar")
-        self.target = distribution.getSourcePackage("foobar")
+        distribution = self.factory.makeDistribution()
+        sourcepackage = self.factory.makeSourcePackageName()
+        self.target = distribution.getSourcePackage(sourcepackage.name)
 
