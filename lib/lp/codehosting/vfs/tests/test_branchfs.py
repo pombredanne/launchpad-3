@@ -4,11 +4,13 @@
 # pylint: disable-msg=W0231
 
 """Tests for the branch filesystem."""
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 
 __metaclass__ = type
 
 import codecs
 import os
+import re
 import sys
 import unittest
 import xmlrpclib
@@ -43,6 +45,7 @@ from bzrlib.urlutils import (
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
+from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
@@ -69,6 +72,7 @@ from lp.codehosting.vfs.branchfs import (
     UnknownTransportType,
     )
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
+from lp.services.job.runner import TimeoutError
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -1050,7 +1054,17 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
 
     def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
                                    last_revision, *format_strings):
-        raise xmlrpclib.Fault(-1, "An error")
+        """Log an oops and raise an xmlrpc fault."""
+
+        request = errorlog.ScriptRequest([
+                ('source', branch_id),
+                ('error-explanation', "An error occurred")])
+        try:
+            raise TimeoutError()
+        except TimeoutError:
+            f = sys.exc_info()
+            report = errorlog.globalErrorUtility.raising(f, request)
+            raise xmlrpclib.Fault(-1, report)
 
     def get_server(self):
         if self._server is None:
@@ -1065,7 +1079,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # An unexpected error invoking branchChanged() results in a user
         # friendly error printed to stderr (and not a traceback).
 
-        # Unlocking a branch calls branchChanged on the branch filesystem
+        # Unlocking a branch calls branchChanged x 2 on the branch filesystem
         # endpoint. We will then check the error handling.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
@@ -1074,14 +1088,41 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         branch.unlock()
         stderr_text = sys.stderr.getvalue()
 
-        fault_text = """
+        # The text printed to stderr should be like this:
+        # (we need the prefix text later for extracting the oopsid)
+        expected_fault_text_prefix = """
         "<Fault 380: 'An unexpected error has occurred while updating a
-        Launchpad branch. Please report a Launchpad bug and quote:
-        OOPS-.*'>"
-        """
-        expected_text = ' '.join([fault_text for x in range(2)])
+        Launchpad branch. Please report a Launchpad bug and quote:"""
+        expected_fault_text = expected_fault_text_prefix + " OOPS-.*'>\""
+
+        # For our test case, branchChanged() is called twice, hence 2 errors.
+        expected_stderr = ' '.join([expected_fault_text for x in range(2)])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected_text, stderr_text)
+            expected_stderr, stderr_text)
+
+        # Extract an oops id from the std error text.
+        # There will be 2 oops ids. The 2nd will be the oops for the last
+        # logged error report and the 1st will be in the error text from the
+        # error report.
+        oopsids = []
+        stderr_text = ' '.join(stderr_text.split())
+        expected_fault_text_prefix = ' '.join(
+            expected_fault_text_prefix.split())
+        parts = re.split(expected_fault_text_prefix, stderr_text)
+        for txt in parts:
+            if len(txt) == 0:
+                continue
+            txt = txt.strip()
+            # The oopsid ends with a '.'
+            oopsid = txt[:txt.find('.')]
+            oopsids.append(oopsid)
+
+        # Now check the error report.
+        self.assertEqual(len(oopsids), 2)
+        error_utility = ErrorReportingUtility()
+        error_report = error_utility.getLastOopsReport()
+        self.assertEqual(error_report.id, oopsids[1])
+        self.assertContainsString(error_report.tb_text, oopsids[0])
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):

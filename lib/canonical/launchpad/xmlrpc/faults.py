@@ -474,4 +474,3 @@ class OopsOccurred(LaunchpadFault):
     def __init__(self, server_op, oopsid):
         LaunchpadFault.__init__(self, server_op=server_op, oopsid=oopsid)
         self.oopsid = oopsid
-
