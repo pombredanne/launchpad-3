@@ -184,10 +184,10 @@ rw_main_master: dbname=%s
 rw_main_slave:  dbname=%s
 
 """ % (self.dbname, self.dbname)
-                if BaseLayer.config is not None:
-                    BaseLayer.config.add_section(section)
-                if BaseLayer.appserver_config is not None:
-                    BaseLayer.appserver_config.add_section(section)
+                if BaseLayer.config_fixture is not None:
+                    BaseLayer.config_fixture.add_section(section)
+                if BaseLayer.appserver_config_fixture is not None:
+                    BaseLayer.appserver_config_fixture.add_section(section)
             if config.instance_name in (
                 BaseLayer.config_name, BaseLayer.appserver_config_name):
                 config.reloadConfig()
