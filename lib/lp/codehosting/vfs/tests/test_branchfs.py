@@ -1037,6 +1037,9 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         self._real_stderr = sys.stderr
         sys.stderr = codecs.getwriter('utf8')(StringIO())
 
+        # To record generated oopsids
+        self.generated_oopsids = []
+
     def tearDown(self):
         sys.stderr = self._real_stderr
         TestCaseWithTransport.tearDown(self)
@@ -1053,6 +1056,8 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         except TimeoutError:
             f = sys.exc_info()
             report = errorlog.globalErrorUtility.raising(f, request)
+            # Record the id for checking later.
+            self.generated_oopsids.append(report.id)
             raise xmlrpclib.Fault(-1, report)
 
     def get_server(self):
@@ -1080,9 +1085,9 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # The text printed to stderr should be like this:
         # (we need the prefix text later for extracting the oopsid)
         expected_fault_text_prefix = """
-        "<Fault 380: 'An unexpected error has occurred while updating a
+        <Fault 380: 'An unexpected error has occurred while updating a
         Launchpad branch. Please report a Launchpad bug and quote:"""
-        expected_fault_text = expected_fault_text_prefix + " OOPS-.*'>\""
+        expected_fault_text = expected_fault_text_prefix + " OOPS-.*'>"
 
         # For our test case, branchChanged() is called twice, hence 2 errors.
         expected_stderr = ' '.join([expected_fault_text for x in range(2)])
@@ -1106,12 +1111,15 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
             oopsid = txt[:txt.find('.')]
             oopsids.append(oopsid)
 
-        # Now check the error report.
+        # Now check the error report - we just check the last one.
         self.assertEqual(len(oopsids), 2)
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
+        # The error report oopsid should match what's print to stderr.
         self.assertEqual(error_report.id, oopsids[1])
-        self.assertContainsString(error_report.tb_text, oopsids[0])
+        # The error report text should contain the root cause oopsid.
+        self.assertContainsString(
+            error_report.tb_text, self.generated_oopsids[1])
 
 
 class TestLaunchpadTransportReadOnly(BzrTestCase):

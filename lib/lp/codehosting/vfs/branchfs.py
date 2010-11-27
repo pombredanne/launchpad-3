@@ -61,6 +61,7 @@ __all__ = [
     'LaunchpadServer',
     ]
 
+import sys
 import xmlrpclib
 
 from bzrlib import urlutils
@@ -711,6 +712,9 @@ class LaunchpadServer(_BaseLaunchpadServer):
             self.unexpectedError(failure, request)
             fault = faults.OopsOccurred("updating a Launchpad branch",
                                         request.oopsid)
+            # Twisted's log.err used to write to stderr but it doesn't now so
+            # we will write to stderr as well as log.err.
+            print >> sys.stderr, repr(fault)
             log.err(repr(fault))
             return fault
         return deferred.addCallback(got_path_info).addErrback(handle_error)
