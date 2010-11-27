@@ -67,7 +67,7 @@ a separate method to pretty-print all the translations.
 A user can see all the submissions Carlos has made to this POFile.
 Note that 'english' in the first column indicates a msgid, and 'used',
 'old' or 'unused' indicate type of a translation ('used' if it is
-is_current, 'unused' if not current but unreviewed, and 'old' if it
+is_current_ubuntu, 'unused' if not current but unreviewed, and 'old' if it
 was reviewed and rejected).
 
     >>> print_shown_translations(anon_browser)

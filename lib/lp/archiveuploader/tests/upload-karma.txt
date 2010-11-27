@@ -11,8 +11,7 @@ Set up test fixtures
 
 Set up an event listener to show when karma gets assigned.
 
-    >>> from lp.registry.tests.karma import (
-    ...     KarmaAssignedEventListener)
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -82,7 +81,6 @@ Uploading to PPAs
 PPA uploads are always auto-accepted and we don't care about sponsors.  They
 will generate another different karma event for the uploader.
 
-    >>> from lp.archiveuploader.tests import getPolicy
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet

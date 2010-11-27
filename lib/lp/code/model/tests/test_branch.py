@@ -12,12 +12,12 @@ from datetime import (
     datetime,
     timedelta,
     )
-import simplejson
 from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
+import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
 import transaction
