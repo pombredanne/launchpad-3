@@ -4,7 +4,6 @@
 # pylint: disable-msg=W0231
 
 """Tests for the branch filesystem."""
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 
 __metaclass__ = type
 
@@ -46,6 +45,7 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
