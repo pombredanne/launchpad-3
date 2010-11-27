@@ -176,6 +176,10 @@ the process's name.
     >>> test_config.answertracker.days_before_expiration
     15
 
+    >>> # setInstance sets the LPCONFIG environment variable, so set it
+    >>> # back to the real value.
+    >>> config.setInstance(config.instance_name)
+
 The initial instance_name is set via the LPCONFIG environment variable.
 Because Config is designed to failover to the default development
 environment, and the testrunner overrides the environment and config,
