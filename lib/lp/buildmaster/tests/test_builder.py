@@ -86,7 +86,7 @@ from lp.testing import (
 from lp.testing.fakemethod import FakeMethod
 
 
-class TestBuilder(TestCaseWithFactory):
+class TestBuilderBasics(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
     layer = DatabaseFunctionalLayer
@@ -122,6 +122,14 @@ class TestBuilder(TestCaseWithFactory):
         active_job.builder = None
         bq = builder.getBuildQueue()
         self.assertIs(None, bq)
+
+    def test_setting_builderok_resets_failure_count(self):
+        builder = removeSecurityProxy(self.factory.makeBuilder())
+        builder.failure_count = 1
+        builder.builderok = False
+        self.assertEqual(1, builder.failure_count)
+        builder.builderok = True
+        self.assertEqual(0, builder.failure_count)
 
 
 class TestBuilder(TestCaseWithFactory):
@@ -245,6 +253,19 @@ class TestBuilder(TestCaseWithFactory):
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
             self.assertEqual(BuildStatus.BUILDING, build.status)
+        return d.addCallback(check_build_started)
+
+    def test_virtual_job_dispatch_pings_before_building(self):
+        # We need to send a ping to the builder to work around a bug
+        # where sometimes the first network packet sent is dropped.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = builder.findAndStartJob()
+        def check_build_started(candidate):
+            self.assertIn(
+                ('echo', 'ping'), removeSecurityProxy(builder.slave).call_log)
         return d.addCallback(check_build_started)
 
     def test_slave(self):
