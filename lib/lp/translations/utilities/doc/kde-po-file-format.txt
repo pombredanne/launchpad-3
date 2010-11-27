@@ -528,5 +528,4 @@ And the same happens with a translation:
     "_: Different Context\n"
     "Message"
     msgstr "Second translation"
-
-
+    ...

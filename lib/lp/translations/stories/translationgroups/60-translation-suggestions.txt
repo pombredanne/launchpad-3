@@ -83,10 +83,10 @@ These are old suggestions:
 
 And there's also a separate translation coming from upstream:
 
-    >>> print find_tag_by_id(browser.contents, "msgset_134_packaged")
+    >>> print find_tag_by_id(browser.contents, "msgset_134_other")
     <...<samp> </samp>tarjetas...
 
-    >>> print find_tag_by_id(browser.contents, "msgset_134_packaged_origin")
+    >>> print find_tag_by_id(browser.contents, "msgset_134_other_origin")
     <...
     ...Suggested by...Carlos Perelló Marín...2005-05-06...
 

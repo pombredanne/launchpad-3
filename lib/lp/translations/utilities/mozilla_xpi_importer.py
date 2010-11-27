@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -380,7 +380,7 @@ class MozillaXpiImporter:
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
-        self.is_published = False
+        self.by_maintainer = False
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -406,7 +406,7 @@ class MozillaXpiImporter:
         self.distroseries = translation_import_queue_entry.distroseries
         self.sourcepackagename = (
             translation_import_queue_entry.sourcepackagename)
-        self.is_published = translation_import_queue_entry.is_published
+        self.by_maintainer = translation_import_queue_entry.by_maintainer
 
         librarian_client = getUtility(ILibrarianClient)
         content = librarian_client.getFileByAlias(
