@@ -459,11 +459,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "if one exists, or None.")
 
     ancestor = Reference(
-        ISourcePackagePublishingHistory,
+        Interface, # Really ISourcePackagePublishingHistory
         title=_('Ancestor'),
         description=_('The previous release of this source package.'),
-        required=False, readonly=True,
-    )
+        required=False, readonly=True)
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
