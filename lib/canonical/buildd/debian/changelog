@@ -1,3 +1,22 @@
+launchpad-buildd (74) hardy-cat; urgency=low
+
+  [ Aaron Bentley]
+  * Memory-limit recipe builds. LP#676657
+
+  [ LaMont Jones]
+  * mount a tmpfs on /dev/shm in build chroots.  LP#671441
+
+  [Michael Bienia]
+  * Update regexes used for DEPWAIT.  LP#615286
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 23 Nov 2010 06:17:57 -0700
+
+launchpad-buildd (73) hardy-cat; urgency=low
+
+  * Revert to revision 70
+
+ -- LaMont Jones <lamont@canonical.com>  Thu, 28 Oct 2010 12:53:45 -0600
+
 launchpad-buildd (72) hardy-cat; urgency=low
 
   * break out readyservice.py from tachandler.py. LP#663828

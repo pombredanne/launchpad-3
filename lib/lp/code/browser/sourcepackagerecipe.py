@@ -41,13 +41,9 @@ from zope.schema import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -59,6 +55,12 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -303,10 +305,7 @@ class RecipeTextValidatorMixin:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
         except RecipeParseError, error:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.  '
-                '%(error)s' % {'error': error.problem})
+            self.setFieldError('recipe_text', str(error))
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):

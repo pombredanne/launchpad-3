@@ -26,7 +26,8 @@
           scrolling="no"
           width="100%" height="216px"></iframe>
   <script>
-  function timeline_iframe(auto_resize, include_inactive) {
+  <!--
+  function timeline_iframe(auto_resize, include_inactive, start, size) {
       var timeline_url = "+timeline-graph?";
       if (include_inactive == 'true') {
           timeline_url += "include_inactive=true&";
@@ -34,6 +35,15 @@
 
       if (auto_resize == 'true') {
           timeline_url += 'resize_frame=timeline-iframe&';
+      }
+
+      start = parseInt(start);
+      size = parseInt(size);
+      if (start != NaN && start >= 0) {
+          timeline_url += "start=" + start + "&";
+      }
+      if (size != NaN && size >= 1) {
+          timeline_url += "size=" + size + "&";
       }
       LPS.use('node', function(Y) {
           if (Y.UA.ie) {
@@ -49,15 +59,21 @@
           }, iframe);
       });
   }
+  -->
   </script>
   <script
     tal:define="
       auto_resize auto_resize | nothing;
-      include_inactive include_inactive | nothing"
+      include_inactive include_inactive | nothing;
+      start start | nothing;
+      size size | nothing"
     tal:content="string:
       timeline_iframe(
         '${auto_resize}',
-        '${include_inactive}');
+        '${include_inactive}',
+        '${start}',
+        '${size}'
+        );
       "/>
 </metal:timeline-iframe>
 

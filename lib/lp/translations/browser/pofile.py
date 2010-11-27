@@ -289,12 +289,12 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
     def contributors(self):
         return tuple(self.context.contributors)
 
-    @property
+    @cachedproperty
     def user_can_edit(self):
         """Does the user have full edit rights for this translation?"""
         return self.context.canEditTranslations(self.user)
 
-    @property
+    @cachedproperty
     def user_can_suggest(self):
         """Is the user allowed to make suggestions here?"""
         return self.context.canAddSuggestions(self.user)
@@ -824,11 +824,11 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _buildTranslationMessageViews(self, for_potmsgsets):
         """Build translation message views for all potmsgsets given."""
+        can_edit = self.context.canEditTranslations(self.user)
         for potmsgset in for_potmsgsets:
             translationmessage = (
                 potmsgset.getCurrentTranslationMessageOrDummy(self.context))
             error = self.errors.get(potmsgset)
-            can_edit = self.context.canEditTranslations(self.user)
 
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
@@ -984,11 +984,11 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def _messages_html_id(self):
         order = []
-        for message in self.translationmessage_views:
-            if (message.form_is_writeable):
-                for dictionary in message.translation_dictionaries:
-                    order.append(
-                        dictionary['html_id_translation'] + '_new')
+        if self.form_is_writeable:
+            for message in self.translationmessage_views:
+                order += [
+                    dictionary['html_id_translation'] + '_new'
+                    for dictionary in message.translation_dictionaries]
         return order
 
     @property

@@ -31,13 +31,9 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Navigation,
     )
@@ -53,6 +49,12 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     )
 from canonical.widgets import DateWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

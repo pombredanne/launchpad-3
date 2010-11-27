@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -11,7 +11,6 @@ import codecs
 import os
 import re
 import sys
-import unittest
 import xmlrpclib
 from StringIO import StringIO
 
@@ -41,13 +40,17 @@ from bzrlib.urlutils import (
     escape,
     local_path_to_url,
     )
+
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
+
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
-    TwistedLayer,
     ZopelessDatabaseLayer,
     )
 from lp.code.enums import BranchType
@@ -195,7 +198,7 @@ class TestTransportDispatch(TestCase):
         self.assertEqual([(1, True)], log)
 
 
-class TestBranchIDToPath(unittest.TestCase):
+class TestBranchIDToPath(TestCase):
     """Tests for branch_id_to_path."""
 
     def test_branch_id_to_path(self):
@@ -212,8 +215,6 @@ class TestBranchIDToPath(unittest.TestCase):
 
 class MixinBaseLaunchpadServerTests:
     """Common tests for _BaseLaunchpadServer subclasses."""
-
-    layer = TwistedLayer
 
     def setUp(self):
         frontend = InMemoryFrontend()
@@ -244,11 +245,9 @@ class MixinBaseLaunchpadServerTests:
             self.server.get_url() in _get_protocol_handlers().keys())
 
 
-class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
-                          BzrTestCase):
+class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -311,7 +310,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         # for, say, a product that doesn't exist.
         branch_url = '/~%s/no-such-product/new-branch' % (self.requester.name)
         deferred = self.server.createBranch(branch_url)
-        deferred = self.assertFailure(deferred, errors.PermissionDenied)
+        deferred = assert_fails_with(deferred, errors.PermissionDenied)
 
         def check_exception(exception):
             self.assertEqual(branch_url, exception.path)
@@ -376,12 +375,11 @@ class LaunchpadInternalServerTests:
 
 
 class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
-                                  TrialTestCase, BzrTestCase,
+                                  BzrTestCase,
                                   LaunchpadInternalServerTests):
     """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -393,14 +391,13 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
             'lp-test:///', XMLRPCWrapper(codehosting_api), MemoryTransport())
 
 
-class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
+class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory,
                                         LaunchpadInternalServerTests):
     """Tests for `DirectDatabaseLaunchpadServer`."""
 
     layer = ZopelessDatabaseLayer
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         super(TestDirectDatabaseLaunchpadServer, self).setUp()
@@ -409,13 +406,10 @@ class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
             'lp-test://', MemoryTransport())
 
 
-class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):
+class TestAsyncVirtualTransport(TestCaseInTempDir):
     """Tests for `AsyncVirtualTransport`."""
 
-    layer = TwistedLayer
-
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     class VirtualServer(Server):
         """Very simple server that provides a AsyncVirtualTransport."""
@@ -511,9 +505,6 @@ class LaunchpadTransportTests:
     `_ensureDeferred`. See these methods for more information.
     """
 
-    # See comment on TestLaunchpadServer.
-    layer = TwistedLayer
-
     def setUp(self):
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
@@ -534,7 +525,7 @@ class LaunchpadTransportTests:
 
         :return: A `Deferred`. You must return this from your test.
         """
-        return self.assertFailure(
+        return assert_fails_with(
             self._ensureDeferred(function, *args, **kwargs), exception)
 
     def assertFiresFailureWithSubstring(self, exc_type, msg, function,
@@ -813,10 +804,9 @@ class LaunchpadTransportTests:
             transport.rmdir, '~testuser/firefox/baz')
 
 
-class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
+class TestLaunchpadTransportSync(LaunchpadTransportTests, TestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _ensureDeferred(self, function, *args, **kwargs):
 
@@ -829,21 +819,20 @@ class TestLaunchpadTransportSync(LaunchpadTransportTests, TrialTestCase):
         return defer.maybeDeferred(call_function_and_check_not_deferred)
 
     def setUp(self):
-        TrialTestCase.setUp(self)
+        TestCase.setUp(self)
         LaunchpadTransportTests.setUp(self)
 
     def getTransport(self):
         return get_transport(self.server.get_url())
 
     def test_ensureDeferredFailsWhenDeferredReturned(self):
-        return self.assertFailure(
+        return assert_fails_with(
             self._ensureDeferred(defer.succeed, None), AssertionError)
 
 
-class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
+class TestLaunchpadTransportAsync(LaunchpadTransportTests, TestCase):
 
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def _ensureDeferred(self, function, *args, **kwargs):
         deferred = function(*args, **kwargs)
@@ -851,7 +840,7 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
         return deferred
 
     def setUp(self):
-        TrialTestCase.setUp(self)
+        TestCase.setUp(self)
         LaunchpadTransportTests.setUp(self)
 
     def getTransport(self):
@@ -1125,14 +1114,10 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         self.assertContainsString(error_report.tb_text, oopsids[0])
 
 
-class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):
+class TestLaunchpadTransportReadOnly(BzrTestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
-    # See comment on TestLaunchpadServer.
-    layer = TwistedLayer
-
-    # This works around a clash between the TrialTestCase and the BzrTestCase.
-    skip = None
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         BzrTestCase.setUp(self)
@@ -1197,7 +1182,3 @@ class TestGetLPServer(TestCase):
         lp_server = get_lp_server(1, 'http://xmlrpc.example.invalid', '')
         transport = lp_server._transport_dispatch._rw_dispatch.base_transport
         self.assertIsInstance(transport, ChrootTransport)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
