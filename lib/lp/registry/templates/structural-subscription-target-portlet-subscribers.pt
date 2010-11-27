@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-structural-subscribers">
 
-  <h2>Bug subscriptions</h2>
+  <h2>Subscribers</h2>
 
   <div class="portletBody portletContent"
        tal:define="subscriptions context/bug_subscriptions;

@@ -2312,7 +2312,9 @@
         name="+portlet-structural-subscribers"
         facet="bugs"
         permission="zope.Public"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
         template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+
     <browser:url
         for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
         path_expression="string:+subscription/${subscriber/name}"

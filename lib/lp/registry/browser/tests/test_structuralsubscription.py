@@ -310,3 +310,40 @@ class TestStructuralSubscriptionView(TestCaseWithFactory):
             self.assertEqual(
                 canonical_url(target), view.next_url,
                 "Next URL does not match target's canonical_url.")
+
+
+class TestStructuralSubscribersPortletViewBase(TestCaseWithFactory):
+    """General tests for the StructuralSubscribersPortletView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestStructuralSubscribersPortletViewBase, self).setUp()
+        self.setUpTarget()
+        self.view = create_initialized_view(
+            self.target, name='+portlet-structural-subscribers')
+
+    def setUpTarget(self):
+        project = self.factory.makeProject()
+        self.target = self.factory.makeProduct(project=project)
+
+    def test_target_label(self):
+        # Target names are sane and readable.
+        self.assertEqual(
+            "To all %s bugs" % self.target.title, self.view.target_label)
+
+    def test_parent_target_label(self):
+        # Target names are sane and readable.
+        self.assertEqual(
+            "To all %s bugs" % self.target.parent_subscription_target.title,
+            self.view.parent_target_label)
+
+
+class TestSourcePackageStructuralSubscribersPortletView(
+    TestStructuralSubscribersPortletViewBase):
+
+    def setUpTarget(self):
+        distribution = self.factory.makeDistribution(title="Spam and Eggs")
+        sourcepackage = self.factory.makeSourcePackageName("foobar")
+        self.target = distribution.getSourcePackage("foobar")
+
