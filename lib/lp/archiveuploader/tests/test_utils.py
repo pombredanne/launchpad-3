@@ -9,9 +9,9 @@ import os
 
 from lp.archiveuploader.tests import datadir
 from lp.archiveuploader.utils import (
-    DpkgSourceError,
     determine_binary_file_type,
     determine_source_file_type,
+    DpkgSourceError,
     extract_dpkg_source,
     re_isadeb,
     re_issource,
