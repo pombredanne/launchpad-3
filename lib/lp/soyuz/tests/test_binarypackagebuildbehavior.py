@@ -124,7 +124,11 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build_log = [
             ('build', build_id, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        return upload_logs + build_log
+        if builder.virtualized:
+            result = [('echo', 'ping')] + upload_logs + build_log
+        else:
+            result = upload_logs + build_log
+        return result
 
     def startBuild(self, builder, candidate):
         builder = removeSecurityProxy(builder)

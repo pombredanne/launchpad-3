@@ -1442,6 +1442,14 @@
         factory=".model.structuralsubscription.ProductSeriesTargetHelper"
         permission="zope.Public"/>
 
+    <!-- This is class TimelineProductSeries -->
+
+    <class
+        class="lp.registry.model.productseries.TimelineProductSeries">
+        <allow
+            interface="lp.registry.interfaces.productseries.ITimelineProductSeries"/>
+    </class>
+
     <!-- ProductSeriesSet -->
 
     <class
