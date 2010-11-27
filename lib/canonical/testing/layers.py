@@ -263,8 +263,8 @@ class BaseLayer:
 
     # ConfigFixtures for the configs generated for this layer. Set to None
     # if the layer is not setUp, or if persistent tests services are in use.
-    config = None
-    appserver_config = None
+    config_fixture = None
+    appserver_config_fixture = None
 
     # The config names that are generated for this layer. Set to None when
     # the layer is not setUp.
@@ -307,7 +307,9 @@ class BaseLayer:
             cls.make_config(config_name, 'testrunner', 'config')
             app_config_name = 'testrunner-appserver_%s' % test_instance
             cls.make_config(
-                app_config_name, 'testrunner-appserver', 'appserver_config')
+                app_config_name, 'testrunner-appserver',
+                'appserver_config_fixture')
+            cls.appserver_config_name = app_config_name
         else:
             config_name = 'testrunner'
             app_config_name = 'testrunner-appserver'
