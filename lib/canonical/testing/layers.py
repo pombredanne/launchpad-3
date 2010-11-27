@@ -666,10 +666,11 @@ class DatabaseLayer(BaseLayer):
         cls._db_fixture.setUp()
         # And take it 'down' again to be in the right state for testSetUp
         # - note that this conflicts in principle with layers whose setUp
-        # needs the be working, but this is a conceptually cleaner starting
+        # needs the db working, but this is a conceptually cleaner starting
         # point for addressing that mismatch.
         cls._db_fixture.tearDown()
-
+        # Bring up the db, so that it is available for other layers.
+        cls._ensure_db()
 
     @classmethod
     @profiled
@@ -687,6 +688,13 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
+        # The DB is already available - setUp and testTearDown both make it
+        # available.
+        if cls.use_mockdb is True:
+            cls.installMockDb()
+
+    @classmethod
+    def _ensure_db(cls):
         if cls._reset_between_tests:
             cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
@@ -702,9 +710,6 @@ class DatabaseLayer(BaseLayer):
                 time.sleep(0.5)
             else:
                 break
-
-        if cls.use_mockdb is True:
-            cls.installMockDb()
 
     @classmethod
     @profiled
@@ -724,6 +729,10 @@ class DatabaseLayer(BaseLayer):
             BaseLayer.flagTestIsolationFailure(
                 "Database policy %s still installed"
                 % repr(StoreSelector.pop()))
+        # Reset/bring up the db - makes it available for either the next test,
+        # or a subordinate layer which builds on the db. This wastes one setup
+        # per db layer teardown per run, but thats tolerable.
+        cls._ensure_db()
 
     use_mockdb = False
     mockdb_mode = None
