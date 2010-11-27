@@ -16,23 +16,18 @@ from itertools import groupby
 from operator import itemgetter
 
 import transaction
-from zope.component import getUtility
 
-from canonical.config import config
 from canonical.launchpad.helpers import (
     emailPeople,
     get_email_template,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
     get_bugmail_from_address,
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.mailwrapper import MailWrapper
 
 
@@ -138,7 +133,7 @@ def construct_email_notifications(bug_notifications):
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
 
-            status_base = "Status in %s: %s"
+            status_base = "Status in %s:\n  %s"
             status_strings = []
             for bug_task in bug.bugtasks:
                 status_strings.append(status_base % (bug_task.target.title,
