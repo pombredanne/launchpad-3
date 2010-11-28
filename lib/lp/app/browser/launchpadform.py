@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'action',
     'custom_widget',
+    'has_structured_doc',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
     'ReturnToReferrerMixin',
@@ -32,9 +33,12 @@ from zope.formlib import form
 from zope.formlib.form import action
 from zope.interface import (
     classImplements,
+    implements,
     providedBy,
     )
 from zope.interface.advice import addClassAdvisor
+from zope.traversing.interfaces import ITraversable, TraversalError
+
 
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
@@ -511,3 +515,31 @@ class ReturnToReferrerMixin:
 
     next_url = _return_url
     cancel_url = _return_url
+
+
+def has_structured_doc(field):
+    """Set an annotation to mark that the field's doc should be structured."""
+    field.setTaggedValue('has_structured_doc', True)
+    return field
+
+
+class WidgetHasStructuredDoc:
+    """Check if widget has structured doc.
+
+    Example usage::
+        tal:condition="widget/query:has-structured-doc"
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, widget):
+        self.widget = widget
+
+    def traverse(self, name, furtherPath):
+        if name != 'has-structured-doc':
+            raise TraversalError("Unknown query %r" % name)
+        if len(furtherPath) > 0:
+            raise TraversalError(
+                "There should be no further path segments after "
+                "query:has-structured-doc")
+        return self.widget.context.queryTaggedValue('has_structured_doc')
