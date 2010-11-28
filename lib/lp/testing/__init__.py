@@ -46,7 +46,6 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-import codecs
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -835,7 +834,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -853,7 +852,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -865,7 +864,7 @@ class ZopeTestInSubProcess:
             result = super(ZopeTestResult, result)
             # Accept the result from the child process.
             protocol = subunit.TestProtocolServer(result)
-            protocol.readFrom(codecs.getreader("utf8")(fdread))
+            protocol.readFrom(fdread)
             fdread.close()
             os.waitpid(pid, 0)
 

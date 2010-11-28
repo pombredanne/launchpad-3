@@ -480,10 +480,13 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def test_job_failing_more_than_builder_fails_job(self):
         self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.gotFailure()
 
         assessFailureCounts(self.builder, "failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
+        self.assertEqual(0, self.builder.failure_count)
 
     def test_builder_failing_more_than_job_but_under_fail_threshold(self):
         self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
