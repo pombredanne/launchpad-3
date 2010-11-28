@@ -89,6 +89,7 @@ def assessFailureCounts(builder, fail_notes):
         # and remove the buildqueue request.  The failure should
         # have already caused any relevant slave data to be stored
         # on the build record so don't worry about that here.
+        builder.resetFailureCount()
         build_job = current_job.specific_job.build
         build_job.status = BuildStatus.FAILEDTOBUILD
         builder.currentjob.destroySelf()
