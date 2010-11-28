@@ -217,21 +217,21 @@ class TestMembershipManagement(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_deactivateAllMembers_cleans_up_team_participation(self):
-        self.superteam = self.factory.makeTeam(name='super')
-        self.sharedteam = self.factory.makeTeam(name='shared')
-        self.anotherteam = self.factory.makeTeam(name='another')
-        self.targetteam = self.factory.makeTeam(name='target')
-        self.person = self.factory.makePerson()
+        superteam = self.factory.makeTeam(name='super')
+        sharedteam = self.factory.makeTeam(name='shared')
+        anotherteam = self.factory.makeTeam(name='another')
+        targetteam = self.factory.makeTeam(name='target')
+        person = self.factory.makePerson()
         login_celebrity('admin')
-        self.person.join(self.targetteam)
-        self.person.join(self.sharedteam)
-        self.person.join(self.anotherteam)
-        self.targetteam.join(self.superteam, self.targetteam.teamowner)
-        self.targetteam.join(self.sharedteam, self.targetteam.teamowner)
-        self.assertTrue(self.superteam in self.person.teams_participated_in)
-        self.targetteam.deactivateAllMembers(
+        person.join(targetteam)
+        person.join(sharedteam)
+        person.join(anotherteam)
+        targetteam.join(superteam, targetteam.teamowner)
+        targetteam.join(sharedteam, targetteam.teamowner)
+        self.assertTrue(superteam in person.teams_participated_in)
+        targetteam.deactivateAllMembers(
             comment='test',
-            reviewer=self.targetteam.teamowner)
+            reviewer=targetteam.teamowner)
         self.assertEqual(
-            sorted([self.sharedteam, self.anotherteam]),
-            sorted([team for team in self.person.teams_participated_in]))
+            sorted([sharedteam, anotherteam]),
+            sorted([team for team in person.teams_participated_in]))
