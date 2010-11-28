@@ -57,7 +57,10 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -785,7 +788,8 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
-    def updateStatistics(self):
+    def old_updateStatistics(self):
+        raise AssertionError("This is dead code.")
         """See `IPOFile`."""
         # make sure all the data is in the db
         flush_database_updates()
@@ -841,13 +845,133 @@ class POFile(SQLBase, POFileMixIn):
         self.unreviewed_count = unreviewed
         return self.getStatistics()
 
+    def _countTranslations(self):
+        """Count `currentcount`, `updatescount`, and `rosettacount`."""
+        side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate)
+        coalesce_other_msgstrs = "COALESCE(%s)" % ", ".join([
+            "Other.msgstr%d" % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+        params = {
+            'potemplate': quote(self.potemplate),
+            'language': quote(self.language),
+            'flag': side_traits.flag_name,
+            'other_flag': side_traits.other_side_traits.flag_name,
+            'coalesce_other_msgstrs': coalesce_other_msgstrs,
+        }
+# XXX: Deal with incomplete translations.
+        query = """
+            SELECT other_msgstrs, same_on_both_sides, count(*)
+            FROM (
+                SELECT
+                    DISTINCT ON (TTI.potmsgset)
+                    %(coalesce_other_msgstrs)s AS other_msgstrs,
+                    (Other.id = Current.id) AS same_on_both_sides
+                FROM TranslationTemplateItem AS TTI
+                JOIN TranslationMessage AS Current ON
+                    Current.potmsgset = TTI.potmsgset AND
+                    Current.language = %(language)s AND
+                    COALESCE(Current.potemplate, %(potemplate)s) =
+                        %(potemplate)s AND
+                    Current.%(flag)s IS TRUE
+                LEFT OUTER JOIN TranslationMessage AS Other ON
+                    Other.potmsgset = TTI.potmsgset AND
+                    Other.language = %(language)s AND
+                    Other.%(other_flag)s IS TRUE AND
+                    Other.potemplate IS NULL AND
+                    Other.potemplate IS NULL
+                WHERE
+                    TTI.potemplate = %(potemplate)s AND
+                    TTI.sequence > 0
+                ORDER BY
+                    TTI.potmsgset,
+                    Current.potemplate NULLS LAST
+            ) AS translated_messages
+            GROUP BY other_msgstrs, same_on_both_sides
+            """ % params
+
+        this_side_only = 0
+        translated_differently = 0
+        translated_same = 0
+        for row in IStore(self).execute(query):
+            (other_msgstrs, same_on_both_sides, count) = row
+            if other_msgstrs is None:
+                this_side_only += count
+            elif same_on_both_sides:
+                translated_same += count
+            else:
+                translated_differently += count
+
+        return (
+            translated_same,
+            translated_differently,
+            translated_differently + this_side_only,
+            )
+
+    def _countNewSuggestions(self):
+        """Count messages with new suggestions."""
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
+        suggestion_nonempty = "COALESCE(%s) IS NOT NULL" % ', '.join([
+            'Suggestion.msgstr%d' % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+        params = {
+            'language': quote(self.language),
+            'potemplate': quote(self.potemplate),
+            'flag': flag_name,
+            'suggestion_nonempty': suggestion_nonempty,
+        }
+        query = """
+            SELECT count(*)
+            FROM (
+                SELECT DISTINCT ON (TTI.potmsgset) *
+                FROM TranslationTemplateItem TTI
+                LEFT OUTER JOIN TranslationMessage AS Current ON
+                    Current.potmsgset = TTI.potmsgset AND
+                    Current.language = %(language)s AND
+                    COALESCE(Current.potemplate, %(potemplate)s) =
+                        %(potemplate)s AND
+                    Current.%(flag)s IS TRUE
+                WHERE
+                    TTI.potemplate = %(potemplate)s AND
+                    TTI.sequence <> 0 AND
+                    EXISTS (
+                        SELECT *
+                        FROM TranslationMessage Suggestion
+                        WHERE
+                            Suggestion.potmsgset = TTI.potmsgset AND
+                            Suggestion.language = %(language)s AND
+                            Suggestion.%(flag)s IS FALSE AND
+                            %(suggestion_nonempty)s AND
+                            Suggestion.date_created > COALESCE(
+                                Current.date_reviewed,
+                                Current.date_created,
+                                TIMESTAMP 'epoch')
+                    )
+                ORDER BY TTI.potmsgset, Current.potemplate NULLS LAST
+            ) AS messages_with_suggestions
+        """ % params
+        for count, in IStore(self).execute(query):
+            return count
+
+    def updateStatistics(self):
+        """See `IPOFile`."""
+        if self.potemplate.messageCount() == 0:
+            self.potemplate.updateMessageCount()
+
+        (
+            self.currentcount,
+            self.updatescount,
+            self.rosettacount,
+        ) = self._countTranslations()
+        self.unreviewed_count = self._countNewSuggestions()
+        return self.getStatistics()
+
     def updateHeader(self, new_header):
         """See `IPOFile`."""
         if new_header is None:
             return
 
-        # XXX sabdfl 2005-05-27 should we also differentiate between
-        # washeaderfuzzy and isheaderfuzzy?
         self.topcomment = new_header.comment
         self.header = new_header.getRawContent()
         self.fuzzyheader = new_header.is_fuzzy
