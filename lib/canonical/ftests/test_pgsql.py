@@ -9,10 +9,13 @@ from fixtures import (
     )
 import testtools
 
+from canonical.config import config, dbconfig
+from canonical.config.fixture import ConfigUseFixture
 from canonical.ftests.pgsql import (
     ConnectionWrapper,
     PgTestSetup,
     )
+from canonical.testing.layers import BaseLayer
 
 
 class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
@@ -30,9 +33,10 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
 
     def test_db_naming_LP_TEST_INSTANCE_set(self):
         # when LP_TEST_INSTANCE is set, it is used for dynamic db naming.
-        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE', 'xx'))
+        BaseLayer.setUp()
+        self.addCleanup(BaseLayer.tearDown)
         fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
-        expected_name = "%s_xx" % (PgTestSetup.dbname,)
+        expected_name = "%s_%d" % (PgTestSetup.dbname, os.getpid())
         self.assertDBName(expected_name, fixture)
 
     def test_db_naming_without_LP_TEST_INSTANCE_is_static(self):
@@ -40,6 +44,25 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
         fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
         expected_name = PgTestSetup.dbname
         self.assertDBName(expected_name, fixture)
+
+    def test_db_naming_stored_in_BaseLayer_configs(self):
+        BaseLayer.setUp()
+        self.addCleanup(BaseLayer.tearDown)
+        fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
+        fixture.setUp()
+        self.addCleanup(fixture.dropDb)
+        self.addCleanup(fixture.tearDown)
+        expected_value = 'dbname=%s' % fixture.dbname
+        self.assertEqual(expected_value, dbconfig.rw_main_master)
+        self.assertEqual(expected_value, dbconfig.rw_main_slave)
+        with ConfigUseFixture(BaseLayer.appserver_config_name):
+            self.assertEqual(expected_value, dbconfig.rw_main_master)
+            self.assertEqual(expected_value, dbconfig.rw_main_slave)
+
+
+class TestPgTestSetupTuning(testtools.TestCase, TestWithFixtures):
+
+    layer = BaseLayer
 
     def testOptimization(self):
         # Test to ensure that the database is destroyed only when necessary
