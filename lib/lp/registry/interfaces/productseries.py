@@ -13,6 +13,7 @@ __all__ = [
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'NoSuchProductSeries',
+    'ITimelineProductSeries',
     ]
 
 from lazr.restful.declarations import (
@@ -37,6 +38,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Field,
     Int,
     TextLine,
     )
@@ -320,6 +322,32 @@ class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
+
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=677671
+    # lazr.restful can't batch a DecoratedResultSet returning basic
+    # python types such as dicts, so this interface is necessary.
+    export_as_webservice_entry('timeline_project_series')
+
+    name = IProductSeries['name']
+
+    status = IProductSeries['status']
+
+    product = IProductSeries['product']
+
+    is_development_focus = exported(
+        Bool(title=_("Is series the development focus of the project"),
+             required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+    landmarks = exported(
+        Field(title=_("List of milestones and releases")))
 
 
 class IProductSeriesSet(Interface):

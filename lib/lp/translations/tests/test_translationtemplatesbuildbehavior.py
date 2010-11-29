@@ -6,7 +6,9 @@
 import logging
 import os
 
-from twisted.trial.unittest import TestCase as TrialTestCase
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -20,7 +22,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
-    TwistedLaunchpadZopelessLayer,
     )
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
@@ -31,12 +32,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
@@ -103,19 +100,15 @@ class MakeBehaviorMixin(object):
 
 
 class TestTranslationTemplatesBuildBehavior(
-        TrialTestCase, MakeBehaviorMixin):
+    TestCaseWithFactory, MakeBehaviorMixin):
     """Test `TranslationTemplatesBuildBehavior`."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        super(TestTranslationTemplatesBuildBehavior, self)
-        self.slave_helper = SlaveTestHelpers()
-        self.slave_helper.setUp()
-        self.addCleanup(self.slave_helper.cleanUp)
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
+        super(TestTranslationTemplatesBuildBehavior, self).setUp()
+        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def _becomeBuilddMaster(self):
         """Log into the database as the buildd master."""

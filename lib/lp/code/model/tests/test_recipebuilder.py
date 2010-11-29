@@ -7,17 +7,20 @@
 
 __metaclass__ = type
 
+from testtools import run_test_with
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
 import unittest
 
 import transaction
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.scripts.logger import BufferLogger
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
-    TwistedLaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -38,16 +41,14 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    ANONYMOUS,
-    login_as,
-    logout,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 
 
-class RecipeBuilderTestsMixin:
+class TestRecipeBuilder(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
@@ -79,11 +80,6 @@ class RecipeBuilderTestsMixin:
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
         job = IBuildFarmJobBehavior(job)
         return job
-
-
-class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
-
-    layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         # RecipeBuildBehavior provides IBuildFarmJobBehavior.
@@ -164,8 +160,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries))
@@ -231,8 +228,9 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
            'author_name': u'Joe User',
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
-           'recipe_text': '# bzr-builder format 0.2 deb-version 0+{revno}\n'
-                          'lp://dev/~joe/someapp/pkg\n',
+           'recipe_text':
+               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
             }, job._extraBuildArgs(distroarchseries, logger))
@@ -256,18 +254,7 @@ class TestRecipeBuilder(TestCaseWithFactory, RecipeBuilderTestsMixin):
         self.assertEquals(
             job.build, SourcePackageRecipeBuild.getById(job.build.id))
 
-
-class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
-
-    layer = TwistedLaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestDispatchBuildToSlave, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        login_as(ANONYMOUS)
-        self.addCleanup(logout)
-        self.layer.switchDbUser('testadmin')
-
+    @run_test_with(AsynchronousDeferredRunTest)
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave
         job = self.makeJob()
@@ -302,6 +289,7 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
                 build_args[4], job._extraBuildArgs(distroarchseries))
         return d.addCallback(check_dispatch)
 
+    @run_test_with(AsynchronousDeferredRunTest)
     def test_dispatchBuildToSlave_nochroot(self):
         # dispatchBuildToSlave will fail when there is not chroot tarball
         # available for the distroseries to build for.
@@ -312,7 +300,7 @@ class TestDispatchBuildToSlave(TrialTestCase, RecipeBuilderTestsMixin):
         job.setBuilder(builder)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
-        return self.assertFailure(d, CannotBuild)
+        return assert_fails_with(d, CannotBuild)
 
 
 def test_suite():

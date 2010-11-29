@@ -117,14 +117,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     UnsafeFormGetSubmissionError,
     )
-from canonical.launchpad.webapp.launchpadform import (
-    action,
-    custom_widget,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
-    ReturnToReferrerMixin,
-    safe_action,
-    )
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
@@ -143,6 +135,14 @@ from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    ReturnToReferrerMixin,
+    safe_action,
     )
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage

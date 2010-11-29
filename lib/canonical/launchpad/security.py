@@ -140,7 +140,10 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFile,
     )
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
@@ -422,6 +425,11 @@ class EditProductReleaseFile(AuthorizationBase):
     def checkAuthenticated(self, user):
         return EditProductRelease(self.obj.productrelease).checkAuthenticated(
             user)
+
+
+class ViewTimelineProductSeries(AnonymousAuthorization):
+    """Anyone can view an ITimelineProductSeries."""
+    usedfor = ITimelineProductSeries
 
 
 class ViewProductReleaseFile(AnonymousAuthorization):
@@ -998,9 +1006,7 @@ class SeriesDrivers(AuthorizationBase):
     usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
-        return (user.isOneOfDrivers(self.obj) or
-                user.isOwner(self.obj) or
-                user.in_admin)
+        return self.obj.personHasDriverRights(user)
 
 
 class ViewProductSeries(AnonymousAuthorization):

@@ -41,13 +41,9 @@ from zope.schema import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -57,7 +53,15 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.widgets.suggestion import RecipeOwnerWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    has_structured_doc,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
@@ -284,9 +288,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=(
             u'If built daily, these are the distribution versions that '
             u'the recipe will be built for.'))
-    recipe_text = Text(
-        title=u'Recipe text', required=True,
-        description=u'The text of the recipe.')
+    recipe_text = has_structured_doc(
+        Text(
+            title=u'Recipe text', required=True,
+            description=u"""The text of the recipe.
+                <a href="/+help/recipe-syntax.html" target="help"
+                  >Syntax help&nbsp;
+                  <span class="sprite maybe">
+                    <span class="invisible-link">Help</span>
+                  </span></a>
+               """))
 
 
 class RecipeTextValidatorMixin:
@@ -302,10 +313,7 @@ class RecipeTextValidatorMixin:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
         except RecipeParseError, error:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.  '
-                '%(error)s' % {'error': error.problem})
+            self.setFieldError('recipe_text', str(error))
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
@@ -315,6 +323,7 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     schema = ISourcePackageAddEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('owner', RecipeOwnerWidget)
 
     def initialize(self):
         # XXX: rockstar: This should be removed when source package recipes
@@ -406,7 +415,6 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
-
 
     @property
     def initial_values(self):

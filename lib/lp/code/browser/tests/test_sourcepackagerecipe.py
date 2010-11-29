@@ -135,13 +135,13 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Build schedule: Built daily
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/veggies
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -168,7 +168,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getLink('Create packaging recipe').click()
 
         # The options for the owner include the Good Chefs team.
-        options = browser.getControl('Owner').displayOptions
+        options = browser.getControl(name='field.owner.owner').displayOptions
         self.assertEquals(
             ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
             sorted([str(option) for option in options]))
@@ -185,13 +185,42 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
         browser.getControl('Automatically build each day').click()
-        browser.getControl('Owner').displayValue = ['Good Chefs']
+        browser.getControl('Other').click()
+        browser.getControl(name='field.owner.owner').displayValue = [
+            'Good Chefs']
         browser.getControl('Create Recipe').click()
 
         login(ANONYMOUS)
         recipe = team.getRecipe(u'daily')
         self.assertEqual(team, recipe.owner)
         self.assertEqual('daily', recipe.name)
+
+    def test_create_new_recipe_suggests_user(self):
+        """The current user is suggested as a recipe owner, once."""
+        branch = self.factory.makeBranch(owner=self.chef)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\) Other:', text)
+
+    def test_create_new_recipe_suggests_user_team(self):
+        """If current user is a member of branch owner, it is suggested."""
+        team = self.factory.makeTeam(
+            name='branch-team', displayname='Branch Team',
+            members=[self.chef])
+        branch = self.factory.makeBranch(owner=team)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\)'
+            r' Branch Team \(branch-team\) Other:', text)
+
+    def test_create_new_recipe_ignores_non_user_team(self):
+        """If current user isn't a member of branch owner, it is ignored."""
+        team = self.factory.makeTeam(
+            name='branch-team', displayname='Branch Team')
+        branch = self.factory.makeBranch(owner=team)
+        text = self.getMainText(branch, '+new-recipe')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            r'Owner: Master Chef \(chef\) Other:', text)
 
     def test_create_recipe_forbidden_instruction(self):
         # We don't allow the "run" instruction in our recipes.  Make sure this
@@ -262,17 +291,39 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version 0+{revno}
+                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
                     'branch': branch.bzr_identity,
-                    'package_branch': package_branch.bzr_identity,}),
+                    'package_branch': package_branch.bzr_identity,
+                }),
             branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
-            "The recipe text is not a valid bzr-builder recipe. "
-            "End of line while looking for '#'")
+            "Error parsing recipe:1:1:"
+            " End of line while looking for '#'.")
+
+    def test_create_recipe_usage(self):
+        # The error for a recipe with invalid instruction parameters should
+        # include instruction usage.
+        branch = self.factory.makeBranch(name='veggies')
+        package_branch = self.factory.makeBranch(name='packaging')
+
+        browser = self.createRecipe(
+            dedent('''\
+                # bzr-builder format 0.2 deb-version 0+{revno}
+                %(branch)s
+                merge
+                ''' % {
+                    'branch': branch.bzr_identity,
+                }),
+            branch=branch)
+        self.assertEqual(
+            'Error parsing recipe:3:6: '
+            'End of line while looking for the branch id.\n'
+            'Usage: merge NAME BRANCH [REVISION]',
+            get_message_text(browser, 2))
 
     def test_create_recipe_no_distroseries(self):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
@@ -315,7 +366,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         with recipe_parser_newest_version(145.115):
             recipe = dedent(u'''\
-                # bzr-builder format 145.115 deb-version 0+{revno}
+                # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
                 %s
                 ''') % branch.bzr_identity
             browser = self.createRecipe(recipe, branch)
@@ -409,14 +460,14 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive:
             PPA 2
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -469,14 +520,14 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive:
             Secret PPA
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -521,7 +572,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             distroseries=self.squirrel, branches=[veggie_branch])
 
         new_recipe_text = dedent(u'''\
-            # bzr-builder format 145.115 deb-version 0+{revno}
+            # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
             %s
             ''') % recipe.base_branch.bzr_identity
 
@@ -609,14 +660,14 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive:
             Secret PPA
             Distribution series: Mumbly Midget
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -660,7 +711,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Build schedule: Built on request
             Owner: Master Chef
             Base branch: lp://dev/~chef/chocolate/cake
-            Debian version: 0\+\{revno\}
+            Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA
             Distribution series: Secret Squirrel
 
@@ -670,7 +721,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version 0\+\{revno\}
+            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
     def test_index_no_builds(self):

@@ -34,6 +34,7 @@ from storm.locals import (
     Desc,
     Int,
     Join,
+    Not,
     Select,
     SQL,
     Store,
@@ -47,6 +48,9 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -70,7 +74,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.webapp.sorting import sorted_version_numbers
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -137,7 +141,6 @@ from lp.registry.interfaces.product import (
     License,
     LicenseStatus,
     )
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.distribution import Distribution
@@ -153,11 +156,11 @@ from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.services.database.prejoin import prejoin
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -284,7 +287,7 @@ class UnDeactivateable(Exception):
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
-              HasSpecificationsMixin, HasSprintsMixin,
+              HasDriversMixin, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
@@ -980,7 +983,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             translatable_product_series,
             key=operator.attrgetter('datecreated'))
 
-    def getVersionSortedSeries(self, filter_obsolete=False):
+    def getVersionSortedSeries(self, statuses=None, filter_statuses=None):
         """See `IProduct`."""
         store = Store.of(self)
         dev_focus = store.find(
@@ -990,9 +993,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductSeries.product == self,
             ProductSeries.id != self.development_focus.id,
             ]
-        if filter_obsolete is True:
+        if statuses is not None:
             other_series_conditions.append(
-                ProductSeries.status != SeriesStatus.OBSOLETE)
+                ProductSeries.status.is_in(statuses))
+        if filter_statuses is not None:
+            other_series_conditions.append(
+                Not(ProductSeries.status.is_in(filter_statuses)))
         other_series = store.find(ProductSeries, other_series_conditions)
         # The query will be much slower if the version_sort_key is not
         # the first thing that is sorted, since it won't be able to use
@@ -1260,17 +1266,15 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        series_list = sorted_version_numbers(self.series,
-                                             key=operator.attrgetter('name'))
-        if self.development_focus in series_list:
-            series_list.remove(self.development_focus)
-        series_list.insert(0, self.development_focus)
-        series_list.reverse()
-        return [
-            series.getTimeline(include_inactive=include_inactive)
-            for series in series_list
-            if include_inactive or series.active or
-               series == self.development_focus]
+
+        def decorate(series):
+            return series.getTimeline(include_inactive=include_inactive)
+        if include_inactive is True:
+            statuses = None
+        else:
+            statuses = ACTIVE_STATUSES
+        return DecoratedResultSet(
+            self.getVersionSortedSeries(statuses=statuses), decorate)
 
     def getRecipes(self):
         """See `IHasRecipes`."""
@@ -1576,7 +1580,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return prejoin(results)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

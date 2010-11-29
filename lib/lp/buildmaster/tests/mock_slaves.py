@@ -13,6 +13,7 @@ __all__ = [
     'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
+    'make_publisher',
     'MockBuilder',
     'OkSlave',
     'SlaveTestHelpers',
@@ -47,7 +48,16 @@ from lp.buildmaster.model.builder import (
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
+from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
+
+fix_bug_2518()
+
+def make_publisher():
+    """Make a Soyuz test publisher."""
+    # Avoid circular imports.
+    from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    return SoyuzTestPublisher()
 
 
 class MockBuilder:
@@ -299,17 +309,12 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         :return: A `BuilddSlaveTestSetup` object.
         """
-        tachandler = BuilddSlaveTestSetup()
-        tachandler.setUp()
-        # Basically impossible to do this w/ TrialTestCase. But it would be
-        # really nice to keep it.
-        #
-        # def addLogFile(exc_info):
-        #     self.addDetail(
-        #         'xmlrpc-log-file',
-        #         Content(UTF8_TEXT, lambda: open(tachandler.logfile, 'r').read()))
-        # self.addOnException(addLogFile)
-        self.addCleanup(tachandler.tearDown)
+        tachandler = self.useFixture(BuilddSlaveTestSetup())
+        self.addDetail(
+            'xmlrpc-log-file',
+            Content(
+                UTF8_TEXT,
+                lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
     def getClientSlave(self, reactor=None, proxy=None):
@@ -317,20 +322,6 @@ class SlaveTestHelpers(fixtures.Fixture):
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
-        # Twisted has a bug!  We need to monkey patch
-        # QueryProtocol.handleResponse() so that it terminates the
-        # connection properly, otherwise the Trial test can leave the
-        # reactor dirty which fails the test.
-        # See http://twistedmatrix.com/trac/ticket/2518
-        saved_handleResponse = xmlrpc.QueryProtocol.handleResponse
-        def _handleResponse(self, contents):
-            self.factory.parseResponse(contents)
-            self.transport.loseConnection()
-        xmlrpc.QueryProtocol.handleResponse = _handleResponse
-        def restore_handleResponse():
-            xmlrpc.QueryProtocol.handleResponse = saved_handleResponse
-        self.addCleanup(restore_handleResponse)
-
         return BuilderSlave.makeBuilderSlave(
             self.BASE_URL, 'vmhost', reactor, proxy)
 

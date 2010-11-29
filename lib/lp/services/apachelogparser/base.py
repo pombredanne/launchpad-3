@@ -64,13 +64,14 @@ def get_fd_and_file_size(file_path):
     file_path points to a gzipped file.
     """
     if file_path.endswith('.gz'):
+        # The last 4 bytes of the file contains the uncompressed file's
+        # size, modulo 2**32.  This code is somewhat stolen from the gzip
+        # module in Python 2.6.
         fd = gzip.open(file_path)
-        # There doesn't seem to be a better way of figuring out the
-        # uncompressed size of a file, so we'll read the whole file here.
-        file_size = len(fd.read())
-        # Seek back to the beginning of the file as if we had just opened
-        # it.
-        fd.seek(0)
+        fd.fileobj.seek(-4, os.SEEK_END)
+        isize = gzip.read32(fd.fileobj)   # may exceed 2GB
+        file_size = isize & 0xffffffffL
+        fd.fileobj.seek(0)
     else:
         fd = open(file_path)
         file_size = os.path.getsize(file_path)

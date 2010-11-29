@@ -882,6 +882,7 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        prejoins = kwargs.pop('prejoins', [])
         if search_params is None and len(args) == 0:
             # this method is called via webapi directly
             # calling this method on a Person object directly via the
@@ -896,15 +897,18 @@ class Person(
                 # method, see docstring of
                 # `lazr.restful.declarations.webservice_error()`
                 raise e
-            return getUtility(IBugTaskSet).search(*search_params)
+            return getUtility(IBugTaskSet).search(
+                *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
-            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+            return HasBugsBase.searchTasks(
+                self, search_params, prejoins=prejoins, **kwargs)
         else:
             # Otherwise pass all positional arguments to the
             # implementation in BugTaskSet.
-            return getUtility(IBugTaskSet).search(search_params, *args)
+            return getUtility(IBugTaskSet).search(
+                search_params, *args, prejoins=prejoins)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
@@ -2091,13 +2095,12 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('persontransferjob', 'minor_person'),
+            ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
             ('sshkey', 'person'),
             ('structuralsubscription', 'subscriber'),
-            # Private-membership teams can have members, but they
-            # cannot be members of other teams.
             ('teammembership', 'team'),
-            # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
             # Skip mailing lists because if the mailing list is purged, it's
@@ -2105,9 +2108,8 @@ class Person(
             ('mailinglist', 'team'),
             ])
 
-        # Private teams may participate in more areas of Launchpad than
-        # Private Membership teams.  The following relationships are allowable
-        # for Private teams and thus should be skipped.
+        # The following relationships are allowable for Private teams and
+        # thus should be skipped.
         if new_value == PersonVisibility.PRIVATE:
             skip.update([('bugsubscription', 'person'),
                          ('bugtask', 'assignee'),
