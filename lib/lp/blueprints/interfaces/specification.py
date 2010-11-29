@@ -23,7 +23,11 @@ from lazr.restful.declarations import (
     exported,
     export_as_webservice_entry,
     )
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
 
 from zope.component import getUtility
 from zope.interface import (

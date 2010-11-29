@@ -11,7 +11,9 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
 from lp.testing import (
-    launchpadlib_for, TestCaseWithFactory)
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 
 
 class SpecificationWebserviceTestCase(TestCaseWithFactory):
