@@ -46,10 +46,9 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = sorted(
-            [u'self_link', u'http_etag', u'resource_type_link'])
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
         self.assertEqual(response.status, 200)
-        self.assertEqual(sorted(response.jsonBody().keys()), expected_keys)
+        self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
     def test_representation_contains_name(self):
         spec = self.factory.makeSpecification()
@@ -212,7 +211,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
 
     def assertNamesOfSpecificationsAre(self, expected_names, specifications):
         names = [s.name for s in specifications]
-        self.assertEqual(sorted(expected_names), sorted(names))
+        self.assertContentEqual(expected_names, names)
 
     def test_product_all_specifications(self):
         product = self.factory.makeProduct()
