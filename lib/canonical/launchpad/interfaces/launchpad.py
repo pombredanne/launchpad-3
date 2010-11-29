@@ -414,6 +414,13 @@ class IHasDrivers(Interface):
     """
     drivers = Attribute("A list of drivers")
 
+    def personHasDriverRights(person):
+        """Does the given person have launchpad.Driver rights on this object?
+
+        True if the person is one of this object's drivers, its owner or a
+        Launchpad admin.
+        """
+
 
 class IHasAppointedDriver(Interface):
     """An object that has an appointed driver."""
