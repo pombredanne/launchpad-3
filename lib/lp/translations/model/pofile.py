@@ -785,68 +785,11 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
-    def old_updateStatistics(self):
-        raise AssertionError("This is dead code.")
-        """See `IPOFile`."""
-        # make sure all the data is in the db
-        flush_database_updates()
-
-        # Get number of imported messages that are still synced in Launchpad.
-        current_clauses = self._getClausesForPOFileMessages()
-
-        current_clauses.extend([
-            'TranslationTemplateItem.sequence > 0',
-            'TranslationMessage.is_current_upstream IS TRUE',
-            'TranslationMessage.is_current_ubuntu IS TRUE',
-            'TranslationMessage.potmsgset = POTMsgSet.id',
-            """(TranslationMessage.potemplate = %(template)s OR (
-                TranslationMessage.potemplate IS NULL AND NOT EXISTS (
-                  SELECT * FROM TranslationMessage AS current
-                    WHERE
-                      current.potemplate = %(template)s AND
-                      current.id <> TranslationMessage.id AND
-                      current.language=%(language)s AND
-                      TranslationMessage.potmsgset=current.potmsgset AND
-                      current.msgstr0 IS NOT NULL AND
-                      current.is_current_ubuntu IS TRUE )))""" % dict(
-            template=quote(self.potemplate),
-            language=quote(self.language)),
-            ])
-        self._appendCompletePluralFormsConditions(current_clauses)
-        current = TranslationMessage.select(
-            ' AND '.join(current_clauses),
-            clauseTables=['TranslationTemplateItem', 'POTMsgSet']).count()
-
-        # Get the number of translations that we have updated from what we got
-        # from imports.
-        updates = self.getPOTMsgSetChangedInUbuntu().count()
-
-        # Get total number of messages in a POTemplate.
-        if self.potemplate.messageCount() > 0:
-            total = self.potemplate.messageCount()
-        else:
-            total = self.potemplate.getPOTMsgSets().count()
-            self.potemplate.messagecount = total
-
-        # Get number of translations done only in Ubuntu.
-        untranslated = self.getPOTMsgSetUntranslated().count()
-        translated = total - untranslated
-        rosetta = translated - current
-
-        # Get number of unreviewed translations in Ubuntu.
-        unreviewed = self.getPOTMsgSetWithNewSuggestions().count()
-
-        self.currentcount = current
-        self.updatescount = updates
-        self.rosettacount = rosetta
-        self.unreviewed_count = unreviewed
-        return self.getStatistics()
-
     def _countTranslations(self):
         """Count `currentcount`, `updatescount`, and `rosettacount`."""
         side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate)
-        coalesce_other_msgstrs = "COALESCE(%s)" % ", ".join([
+        has_other_msgstrs = "COALESCE(%s) IS NOT NULL" % ", ".join([
             "Other.msgstr%d" % form
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         params = {
@@ -854,14 +797,16 @@ class POFile(SQLBase, POFileMixIn):
             'language': quote(self.language),
             'flag': side_traits.flag_name,
             'other_flag': side_traits.other_side_traits.flag_name,
-            'coalesce_other_msgstrs': coalesce_other_msgstrs,
+            'has_other_msgstrs': has_other_msgstrs,
         }
+        # The "distinct on" combined with the "order by potemplate nulls
+        # last" makes diverged messages mask their shared equivalents.
         query = """
-            SELECT other_msgstrs, same_on_both_sides, count(*)
+            SELECT has_other_msgstrs, same_on_both_sides, count(*)
             FROM (
                 SELECT
                     DISTINCT ON (TTI.potmsgset)
-                    %(coalesce_other_msgstrs)s AS other_msgstrs,
+                    %(has_other_msgstrs)s AS has_other_msgstrs,
                     (Other.id = Current.id) AS same_on_both_sides
                 FROM TranslationTemplateItem AS TTI
                 JOIN TranslationMessage AS Current ON
@@ -883,15 +828,15 @@ class POFile(SQLBase, POFileMixIn):
                     TTI.potmsgset,
                     Current.potemplate NULLS LAST
             ) AS translated_messages
-            GROUP BY other_msgstrs, same_on_both_sides
+            GROUP BY has_other_msgstrs, same_on_both_sides
             """ % params
 
         this_side_only = 0
         translated_differently = 0
         translated_same = 0
         for row in IStore(self).execute(query):
-            (other_msgstrs, same_on_both_sides, count) = row
-            if other_msgstrs is None:
+            (has_other_msgstrs, same_on_both_sides, count) = row
+            if not has_other_msgstrs:
                 this_side_only += count
             elif same_on_both_sides:
                 translated_same += count
@@ -917,6 +862,8 @@ class POFile(SQLBase, POFileMixIn):
             'flag': flag_name,
             'suggestion_nonempty': suggestion_nonempty,
         }
+        # The "distinct on" combined with the "order by potemplate nulls
+        # last" makes diverged messages mask their shared equivalents.
         query = """
             SELECT count(*)
             FROM (
@@ -930,7 +877,7 @@ class POFile(SQLBase, POFileMixIn):
                     Current.%(flag)s IS TRUE
                 WHERE
                     TTI.potemplate = %(potemplate)s AND
-                    TTI.sequence <> 0 AND
+                    TTI.sequence > 0 AND
                     EXISTS (
                         SELECT *
                         FROM TranslationMessage Suggestion

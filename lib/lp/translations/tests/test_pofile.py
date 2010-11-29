@@ -815,9 +815,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
     def test_messageCount(self):
         # POFile.messageCount just forwards to POTmeplate.messageCount.
-        pofile = removeSecurityProxy(self.factory.makePOFile())
-        pofile.potemplate.messageCount = FakeMethod(result=99)
-        self.assertEqual(99, pofile.messageCount())
+        naked_pofile = removeSecurityProxy(self.factory.makePOFile())
+        naked_pofile.potemplate.messageCount = FakeMethod(result=99)
+        self.assertEqual(99, naked_pofile.messageCount())
 
     def test_initial_statistics_consistency(self):
         # A `POFile` starts out with consistent statistics.
@@ -2448,7 +2448,7 @@ class StatisticsTestScenario:
         self.assertEqual(0, pofile.translatedCount())
 
     def test_translatedCount(self):
-        # Making a translation message current increases the POFile's
+        # A current translation message counts towards the POFile's
         # translatedCount.
         pofile = self.makePOFile()
         suggestion = self.factory.makeCurrentTranslationMessage(pofile=pofile)

@@ -2,9 +2,10 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-Clean out old statistics calculation methods.
+***Clean out old statistics calculation methods.
 Clean out old tests.
 Test that all counts ignore diverged messages for other templates (this side).
 Test that all counts ignore diverged messages for other templates (other side).
+Test for empty messages.
 Test statistics for treatment of incomplete messages.
 Fix up code to treat incomplete messages as untranslated.
