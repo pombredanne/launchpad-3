@@ -140,7 +140,10 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFile,
     )
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
@@ -422,6 +425,11 @@ class EditProductReleaseFile(AuthorizationBase):
     def checkAuthenticated(self, user):
         return EditProductRelease(self.obj.productrelease).checkAuthenticated(
             user)
+
+
+class ViewTimelineProductSeries(AnonymousAuthorization):
+    """Anyone can view an ITimelineProductSeries."""
+    usedfor = ITimelineProductSeries
 
 
 class ViewProductReleaseFile(AnonymousAuthorization):
@@ -1265,16 +1273,13 @@ class ViewPOFile(AnonymousAuthorization):
     usedfor = IPOFile
 
 
-class EditPOFileDetails(EditByOwnersOrAdmins):
+class EditPOFile(AuthorizationBase):
+    permission = 'launchpad.Edit'
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """Allow anyone that can edit translations, owner, experts and admis.
-        """
-
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
-                self.obj.canEditTranslations(user.person) or
-                user.in_rosetta_experts)
+        """The `POFile` itself keeps track of this permission."""
+        return self.obj.canEditTranslations(user.person)
 
 
 class AdminTranslator(OnlyRosettaExpertsAndAdmins):
@@ -2282,7 +2287,8 @@ class ViewSourcePackageRecipeBuild(DerivedAuthorization):
     usedfor = ISourcePackageRecipeBuild
 
     def iter_objects(self):
-        yield self.obj.recipe
+        if self.obj.recipe is not None:
+            yield self.obj.recipe
         yield self.obj.archive
 
 

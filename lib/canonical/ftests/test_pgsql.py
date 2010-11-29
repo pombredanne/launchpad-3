@@ -33,9 +33,10 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
 
     def test_db_naming_LP_TEST_INSTANCE_set(self):
         # when LP_TEST_INSTANCE is set, it is used for dynamic db naming.
-        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE', 'xx'))
+        BaseLayer.setUp()
+        self.addCleanup(BaseLayer.tearDown)
         fixture = PgTestSetup(dbname=PgTestSetup.dynamic)
-        expected_name = "%s_xx" % (PgTestSetup.dbname,)
+        expected_name = "%s_%d" % (PgTestSetup.dbname, os.getpid())
         self.assertDBName(expected_name, fixture)
 
     def test_db_naming_without_LP_TEST_INSTANCE_is_static(self):

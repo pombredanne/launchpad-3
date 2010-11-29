@@ -12,8 +12,8 @@ from canonical.launchpad.interfaces.emailaddress import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login_celebrity,
     login_person,

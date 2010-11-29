@@ -17,6 +17,7 @@ from canonical.config import config
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -59,7 +60,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # Set up a translations_branch for the series.
         db_branch, tree = self.create_branch_and_tree(product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         series.translations_branch = db_branch
 
         # Set up a template & Dutch translation for the series.
@@ -71,7 +72,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             template, singular='Hello World', sequence=1)
         pofile = self.factory.makePOFile(
             'nl', potemplate=template, owner=product.owner)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translator=product.owner, reviewer=product.owner,
             translations=['Hallo Wereld'])

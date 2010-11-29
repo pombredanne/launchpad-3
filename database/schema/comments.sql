@@ -2,7 +2,7 @@
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
 
-     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
@@ -527,6 +527,7 @@ COMMENT ON COLUMN DistributionSourcePackage.bug_count IS 'Number of bugs matchin
 COMMENT ON COLUMN DistributionSourcePackage.po_message_count IS 'Number of translations matching the package distribution and sourcepackagename. NULL means it has not yet been calculated.';
 COMMENT ON COLUMN DistributionSourcePackage.is_upstream_link_allowed IS 'Whether an upstream link may be added if it does not already exist.';
 COMMENT ON COLUMN DistributionSourcePackage.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
+COMMENT ON COLUMN DistributionSourcePackage.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- DistributionSourcePackageCache
 
@@ -711,7 +712,7 @@ COMMENT ON COLUMN Product.remote_product IS 'The ID of this product on its remot
 COMMENT ON COLUMN Product.max_bug_heat IS 'The highest heat value across bugs for this product.';
 COMMENT ON COLUMN Product.date_next_suggest_packaging IS 'The date when Launchpad can resume suggesting Ubuntu packages that the project provides.';
 COMMENT ON COLUMN Product.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-
+COMMENT ON COLUMN Product.enable_bugfiling_duplicate_search IS 'Enable/disable a search for posiible duplicates when a bug is filed.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -971,10 +972,10 @@ COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
 validated this translation. Being 0 the value that says this row has not been
 validated yet, 1 the value that says it is correct and 2 the value noting that
 there was an unknown error with the validation.';
-COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
-is being used in Launchpad.';
-COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
-is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.is_current_ubuntu IS 'Whether this translation
+is being used in Ubuntu.';
+COMMENT ON COLUMN TranslationMessage.is_current_upstream IS 'Whether this translation
+is being used upstream.';
 COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
 this translation was obsolete in last imported file.';
 
@@ -1439,7 +1440,8 @@ COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment fro
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest/nest-part instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.source_directory IS 'The location in the branch to nest, if this is a nest-part instruction.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
 COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
 
@@ -2036,7 +2038,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.by_maintainer IS 'Notes whether this upload was done by the maintiner of the package or project.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';

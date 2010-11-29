@@ -223,23 +223,23 @@ accepted.
     <div lang="en-AU"...id="msgset_1_en_AU_suggestion_702_0"...>fnord</div>
 
 
-Messages changed in Launchpad
-.............................
+Messages changed in Ubuntu
+..........................
 
-No Privileges Person can see entries which have changed in Launchpad.
+No Privileges Person can see entries which have changed in Ubuntu.
 There is only one message in the batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
     >>> user_browser.getControl(name='show', index=1).displayValue = [
-    ...     'changed in Launchpad']
+    ...     'changed in Ubuntu']
     >>> user_browser.getControl('Change').click()
     >>> print extract_url_parameter(user_browser.url, 'batch')
     batch=10
 
     >>> print extract_url_parameter(user_browser.url, 'show')
-    show=changed_in_launchpad
+    show=changed_in_ubuntu
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -257,7 +257,7 @@ the browser is redirected to the first batch.
     batch=10
 
     >>> print extract_url_parameter(user_browser.url, 'show')
-    show=changed_in_launchpad
+    show=changed_in_ubuntu
 
     >>> print_shown_messages(user_browser)
     134: '<samp> </samp>caratas'
