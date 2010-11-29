@@ -2,6 +2,10 @@
 Launchpad: The Vision
 =====================
 
+
+Introduction
+============
+
 This document tries to address *why* we are making Launchpad.  What problems
 are we trying to solve?  What benefits do we hope to gain from solving these
 problems?  How do we go about deciding whether something is in scope or not?
@@ -14,8 +18,8 @@ course, as we learn more about Launchpad and its place in the world, we should
 amend this document.
 
 
-Introduction
-============
+Strategy -- Why are we doing this?
+==================================
 
 Open source software is bigger than you think.  It is much more than simply
 writing the code.  Code has to be packaged and delivered to users who then can
@@ -37,15 +41,6 @@ around Ubuntu.  Many of these services are either proprietary or open source
 software, and Canonical must be able to make this software more quickly and at
 less cost than any rival.
 
-We aim to do this by::
- * Lowering the barriers to contributing to Ubuntu and open source software
- * Reducing the amount of time developers spend battling with their tools
- * Smoothing the process of coordinating changes across multiple code-bases
-
- * What properties must a solution have
- * Where is world at now
-
-
 
 [[XXX - this doesn't mention quality at all, which I think is unfortunate -
 jml]]
@@ -55,7 +50,6 @@ jml]]
 [[XXX - mention something about the particular challenges of open source?
 heterogenous technology, volunteer vs paid contributions, distributed
 contributors, relatively small numbers, consensus based decisions - jml]]
-
 
 
 What is Launchpad?
@@ -132,41 +126,6 @@ communities have different interests and different motivations, but all work
 in the same project space so that they can easily benefit from each others'
 efforts.
 
-
-Launchpad Agents
-================
-
- * People
- * Projects
- * Distribution
- * Hardware
-
-
-Launchpad Stock-in-trade
-========================
-
-Stuff people make
------------------
-
- * Translations
- * Code
- * Packages
- * These are published, reviewed, accepted
-
-Stuff people want
------------------
-
- * Bugs
- * Blueprints
- * Milestones
- * These are plans made, commented on
-
-Shop front
-----------
-
- * Project home
- * Answers
- * Announcement
 
 
 New World
