@@ -1417,6 +1417,9 @@ class POFileSet:
 
     def getPOFilesWithTranslationCredits(self, untranslated=False):
         """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         clauses = [
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
@@ -1431,8 +1434,15 @@ class POFileSet:
                     TranslationMessage.potmsgsetID == POTMsgSet.id,
                     TranslationMessage.potemplate == None,
                     POFile.languageID == TranslationMessage.languageID,
-                    TranslationMessage.is_current_ubuntu == True),
+                    Or(
+                        And(
+                            POTemplate.productseries == None,
+                            TranslationMessage.is_current_ubuntu == True),
+                        And(
+                            POTemplate.productseries != None,
+                            TranslationMessage.is_current_upstream == True))),
                 (TranslationMessage))
+            clauses.append(POTemplate.id == POFile.potemplateID)
             clauses.append(Not(Exists(message_select)))
         result = store.find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
