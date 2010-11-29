@@ -597,11 +597,7 @@ class ProjectGroupSet:
     def forReview(self):
         return ProjectGroup.select("reviewed IS FALSE")
 
-    def search(self, text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               search_products=False,
-               show_inactive=False):
+    def search(self, text=None, search_products=False, show_inactive=False):
         """Search through the Registry database for project groups that match
         the query terms. text is a piece of text in the title / summary /
         description fields of project group (and possibly product). soyuz,
