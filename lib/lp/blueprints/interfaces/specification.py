@@ -23,7 +23,7 @@ from lazr.restful.declarations import (
     exported,
     export_as_webservice_entry,
     )
-from lazr.restful.fields import ReferenceChoice
+from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 
 from zope.component import getUtility
 from zope.interface import (
@@ -382,7 +382,12 @@ class ISpecificationPublic(
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    dependencies = Attribute('Specs on which this spec depends.')
+    dependencies = exported(
+        CollectionField(
+            title=_('Specs on which this one depends.'),
+            value_type=Reference(schema=Interface),  # ISpecification, really.
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
         "All the dependencies, including dependencies of dependencies.")

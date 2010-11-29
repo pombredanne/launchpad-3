@@ -141,6 +141,14 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual("1.0", spec.milestone.name)
 
+    def test_representation_contains_dependencies(self):
+        spec = self.factory.makeSpecification()
+        spec2 = self.factory.makeSpecification()
+        spec.createDependency(spec2)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.dependencies.total_size)
+        self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
