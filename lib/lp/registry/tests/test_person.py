@@ -607,7 +607,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
-        # merges without errors
+        # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
 
