@@ -47,6 +47,11 @@
       </dd>
     </dl>
 
+    <dl id="launchpad-id">
+        <dt>Launchpad id:</dt>
+        <dd tal:content="context/name"/>
+    </dl>
+
     <dl tal:condition="view/should_show_jabberids_section" id="jabber-ids">
       <dt>Jabber:
         <a tal:replace="structure overview_menu/editjabberids/fmt:icon" />
