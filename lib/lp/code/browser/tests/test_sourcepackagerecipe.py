@@ -141,7 +141,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -291,7 +291,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+                # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
@@ -301,8 +301,29 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             branch=branch)
         self.assertEqual(
             get_message_text(browser, 2),
-            "The recipe text is not a valid bzr-builder recipe. "
-            "End of line while looking for '#'")
+            "Error parsing recipe:1:1:"
+            " End of line while looking for '#'.")
+
+    def test_create_recipe_usage(self):
+        # The error for a recipe with invalid instruction parameters should
+        # include instruction usage.
+        branch = self.factory.makeBranch(name='veggies')
+        package_branch = self.factory.makeBranch(name='packaging')
+
+        browser = self.createRecipe(
+            dedent('''\
+                # bzr-builder format 0.2 deb-version 0+{revno}
+                %(branch)s
+                merge
+                ''' % {
+                    'branch': branch.bzr_identity,
+                }),
+            branch=branch)
+        self.assertEqual(
+            'Error parsing recipe:3:6: '
+            'End of line while looking for the branch id.\n'
+            'Usage: merge NAME BRANCH [REVISION]',
+            get_message_text(browser, 2))
 
     def test_create_recipe_no_distroseries(self):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
@@ -446,7 +467,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -506,7 +527,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -646,7 +667,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -700,7 +721,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
     def test_index_no_builds(self):

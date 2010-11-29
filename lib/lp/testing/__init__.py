@@ -107,7 +107,9 @@ from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
     )
-from canonical.launchpad.webapp.adapter import set_permit_timeout_from_features
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.servers import (
@@ -120,11 +122,14 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.services.osutils import override_environ
 from lp.services import features
 from lp.services.features.flags import FeatureController
-from lp.services.features.model import getFeatureStore, FeatureFlag
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
 from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -439,6 +444,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
                                                     text):
+
         def normalise_whitespace(text):
             return ' '.join(text.split())
         pattern = re.compile(
@@ -500,14 +506,27 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
+    def attachLibrarianLog(self, fixture):
+        """Include the logChunks from fixture in the test details."""
+        # Evaluate the log when called, not later, to permit the librarian to
+        # be shutdown before the detail is rendered.
+        chunks = fixture.logChunks()
+        content = Content(UTF8_TEXT, lambda:chunks)
+        self.addDetail('librarian-log', content)
+
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
         from lp.testing.factory import ObjectFactory
+        from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        if LibrarianLayer.librarian_fixture is not None:
+            self.addCleanup(
+                self.attachLibrarianLog,
+                LibrarianLayer.librarian_fixture)
         set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
@@ -553,7 +572,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
@@ -724,7 +743,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
@@ -828,7 +847,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -846,7 +865,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -873,6 +892,7 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
+
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
@@ -1110,6 +1130,29 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def monkey_patch(context, **kwargs):
+    """In the ContextManager scope, monkey-patch values.
+
+    The context may be anything that supports setattr.  Packages,
+    modules, objects, etc.  The kwargs are the name/value pairs for the
+    values to set.
+    """
+    old_values = {}
+    not_set = object()
+    for name, value in kwargs.iteritems():
+        old_values[name] = getattr(context, name, not_set)
+        setattr(context, name, value)
+    try:
+        yield
+    finally:
+        for name, value in old_values.iteritems():
+            if value is not_set:
+                delattr(context, name)
+            else:
+                setattr(context, name, value)
 
 
 def unlink_source_packages(product):
