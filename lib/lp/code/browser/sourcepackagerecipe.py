@@ -63,10 +63,12 @@ from lp.app.browser.launchpadform import (
     )
 from lp.code.errors import (
     BuildAlreadyPending,
+    NoLinkedBranch,
     NoSuchBranch,
     PrivateBranchRecipe,
     TooNewRecipeFormat,
     )
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
@@ -76,6 +78,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import cachedproperty
 
 
 RECIPE_BETA_MESSAGE = structured(
@@ -308,7 +311,48 @@ class RecipeTextValidatorMixin:
             self.setFieldError('recipe_text', str(error))
 
 
-class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
+class RecipeRelatedBranchesMixin:
+    @cachedproperty
+    def related_series_branches(self):
+        result = []
+        product = self.getBranch().product
+
+        # We include the development focus branch.
+        dev_focus_branch = ICanHasLinkedBranch(product).branch
+        if dev_focus_branch is not None:
+            result.append(dev_focus_branch)
+
+        # Now any branches for the product's series
+        for series in product.series:
+            try:
+                branch = ICanHasLinkedBranch(series).branch
+                if branch is not None:
+                    result.append(branch)
+            except NoLinkedBranch:
+                # If there's no branch for a particular series, we don't care.
+                pass
+        return sorted(result)
+
+    @cachedproperty
+    def related_package_branches(self):
+        result = []
+        product = self.getBranch().product
+
+        # Find any branches for the product's source packages.
+        for sourcepackage in product.sourcepackages:
+            try:
+                branch = ICanHasLinkedBranch(sourcepackage).branch
+                if branch is not None:
+                    result.append(branch)
+            except NoLinkedBranch:
+                # If there's no branch for a particular source package,
+                # we don't care.
+                pass
+        return sorted(result)
+
+
+class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
+                                 RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
@@ -322,6 +366,9 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
         # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeAddView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+
+    def getBranch(self):
+        return self.context
 
     @property
     def initial_values(self):
@@ -377,9 +424,13 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                         owner.displayname)
 
 
-class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
+class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
+                                  RecipeTextValidatorMixin,
                                   LaunchpadEditFormView):
     """View for editing Source Package Recipes."""
+
+    def getBranch(self):
+        return self.context.base_branch
 
     @property
     def title(self):

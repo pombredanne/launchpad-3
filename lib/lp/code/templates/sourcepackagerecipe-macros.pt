@@ -1,0 +1,101 @@
+<metal:block define-macro="recipe-form">
+  <div metal:use-macro="context/@@launchpad_form/form">
+  <metal:formbody fill-slot="widgets">
+    <table class="form">
+
+      <tal:widget define="widget nocall:view/widgets/name">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/description">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/owner">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/build_daily">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/daily_build_archive">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/distros">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <tal:widget define="widget nocall:view/widgets/recipe_text">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
+
+      <td colspan="2"
+          tal:define="seriesBranches view/related_series_branches; packageBranches view/related_package_branches"
+          tal:condition="python: seriesBranches or packageBranches or True">
+        <fieldset id="related-branches"
+                  class="collapsible collapsed">
+          <legend>Related Branches</legend>
+          <table class="extra-options">
+
+            <table class="listing" id="related-package-branches-listing"
+                tal:condition="view/related_package_branches">
+              <thead>
+                <tr>
+                  <th>Source Package Branches</th>
+                  <th>Source Package</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="branch view/related_package_branches">
+                  <td width="60%">
+                    <a href="#"
+                       tal:content="branch/displayname"
+                       tal:attributes="href branch/fmt:url">
+                      source package branch
+                    </a>
+                  </td>
+                  <td>
+                    <a tal:replace="structure branch/distribution/fmt:link">distribution</a>
+                    <a tal:attributes="href branch/sourcepackage/fmt:url"
+                      tal:content="branch/sourcepackagename/name">source package</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table class="listing" id="related-series-branches-listing"
+                tal:condition="view/related_series_branches">
+              <thead>
+                <tr>
+                  <th>Product Series Branches</th>
+                  <th>Distro Series</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tal:repeat="branch view/related_series_branches">
+                  <td width="60%">
+                    <a href="#"
+                       tal:content="branch/displayname"
+                       tal:attributes="href branch/fmt:url">
+                      product series branch
+                    </a>
+                  </td>
+                  <td>
+                    <a tal:replace="structure branch/distribution/fmt:link">distribution</a>
+                    <a tal:attributes="href branch/distroseries/fmt:url"
+                      tal:content="branch/distroseries/displayname">distro series</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+          </table>
+        </fieldset>
+      </td>
+
+    </table>
+  </metal:formbody>
+</div>
+</metal:block>
