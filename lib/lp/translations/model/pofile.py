@@ -947,8 +947,7 @@ class POFile(SQLBase, POFileMixIn):
                 ORDER BY TTI.potmsgset, Current.potemplate NULLS LAST
             ) AS messages_with_suggestions
         """ % params
-        for count, in IStore(self).execute(query):
-            return count
+        return IStore(self).execute(query).get_one()[0]
 
     def updateStatistics(self):
         """See `IPOFile`."""
