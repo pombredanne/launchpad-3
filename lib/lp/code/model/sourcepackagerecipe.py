@@ -28,8 +28,8 @@ from zope.interface import (
     implements,
     )
 
-from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -63,7 +63,9 @@ from lp.soyuz.interfaces.component import IComponentSet
 
 def get_buildable_distroseries_set(user):
     ppas = getUtility(IArchiveSet).getPPAsForUser(user)
-    supported_distros = [ppa.distribution for ppa in ppas]
+    supported_distros = set([ppa.distribution for ppa in ppas])
+    # Now add in Ubuntu.
+    supported_distros.add(getUtility(ILaunchpadCelebrities).ubuntu)
     distros = getUtility(IDistroSeriesSet).search()
 
     buildables = []
