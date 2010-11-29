@@ -1657,6 +1657,11 @@ class TestPOFileSet(TestCaseWithFactory):
 
         credits_translation = credits_potmsgset.getCurrentTranslation(
             potemplate, pofile.language, potemplate.translation_side)
+        # Clearing is_current_upstream will make this an "untranslated"
+        # credits message.
+        # XXX JeroenVermeulen 2010-11-29: Also clearing
+        # is_current_ubuntu to make this pass until
+        # getPOFilesWithTranslationCredits is updated.
         credits_translation.is_current_ubuntu = False
         credits_translation.is_current_upstream = False
 
