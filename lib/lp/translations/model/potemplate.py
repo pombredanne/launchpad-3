@@ -533,6 +533,10 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IRosettaStats`."""
         return self.messagecount
 
+    def updateMessageCount(self):
+        """Update `self.messagecount`."""
+        self.messagecount = self.getPOTMsgSetsCount()
+
     def currentCount(self, language=None):
         """See `IRosettaStats`."""
         if language is None:
@@ -944,7 +948,7 @@ class POTemplate(SQLBase, RosettaStats):
             flush_database_updates()
 
             # Update cached number of msgsets.
-            self.messagecount = self.getPOTMsgSetsCount()
+            self.updateMessageCount()
 
             # The upload affects the statistics for all translations of this
             # template.  Recalculate those as well.  This takes time and
