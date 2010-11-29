@@ -43,6 +43,15 @@ Where it is not possible to stay out of the way, Launchpad should be fun to
 use.  We make next actions obvious and draw attention to users' achievements.
 
 
+Example
+-------
+
+When a branch is merged into the trunk of a project, that's generally the end
+of its story.  Launchpad quietly and silently detects that it has been merged
+and marks the branch and any merge proposals as such.  The branch then no
+longer appears on default listings.
+
+
 Reveal opportunities
 ====================
 
@@ -53,18 +62,13 @@ Launchpad makes those contributions possible by removing as many barriers as
 possible to contribution, and highlights areas where contributions would be
 especially welcome.
 
+Example
+-------
 
-Collaboration occurs between people
-===================================
-
-It is sometimes easy to forget that all of the code, bugs, translations,
-packages and whatever else that's in Launchpad are made by actual human
-beings.
-
-These human beings are deeply interested in themselves and in other human
-beings.
-
-[[XXX - this is wishy washy, what am I actually trying to say? - jml]]
+When you click the Translations tab of a project that's translatable, you see
+a list of all of the languages you speak, together with a progress bar telling
+you how much translation work is available.  You can click a language and
+start translating right away.
 
 
 Not our data
@@ -74,6 +78,11 @@ The data in Launchpad does not really belong to us, we are merely its
 stewards.  We make sure that users can get their data easily and that they can
 change it as they see fit.
 
+Example
+-------
+
+You can access almost all of the data in Launchpad through the RESTful APIs.
+
 
 Cross-project consistency
 =========================
@@ -81,6 +90,12 @@ Cross-project consistency
 If you know how to contribute to one project on Launchpad, you ought to be
 able to quickly and painlessly contribute to any other project on Launchpad.
 Or, if you can't, it won't be Launchpad's fault.
+
+Example
+-------
+
+You can get the trunk branch for any project with 'bzr branch lp:project', or
+the source for any Ubuntu package using 'bzr branch lp:ubuntu/project'.
 
 
 All of open source
@@ -93,12 +108,25 @@ workflow into Launchpad.
 However, when we can, we encourage people toward best practices.  After all,
 we want to make open source software better.
 
+Example
+-------
+
+Launchpad separates whether or not a reviewer approves of code from whether or
+not a branch is approved to land.
+
 
 Full circle
 ===========
 
 Something magical happens when a feature or a workflow reaches all the way
-back to where it began.
+back to where it began.  Another way of thinking about this is that the value
+is in the output, and Launchpad is always concerned with the output of all of
+its features.
+
+Example
+-------
+
+These are examples of where we aren't there yet.
 
 Being able to attach patches to bugs is great, but it's not good enough until
 developers can easily *find* those patches.  Finding the patches is only good

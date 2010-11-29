@@ -13,6 +13,7 @@ Contents:
 
    README <readme>
    Launchpad: The Vision <vision>
+   Launchpad Values <values>
 
 
 Indices and tables
