@@ -2786,9 +2786,6 @@ class StatisticsTestScenario:
         pofile.updateStatistics()
         self.assertEqual(1, pofile.unreviewedCount())
 
-# XXX: TODO: Test with incomplete translations.
-# XXX: TODO: All counts ignore diverged other-side translations.
-# XXX: TODO: All counts ignore diverged translations in other templates.
 
 class TestUpstreamStatistics(StatisticsTestScenario, TestCaseWithFactory):
     """Test statistics on upstream `POFile`s."""

@@ -57,10 +57,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -859,7 +856,6 @@ class POFile(SQLBase, POFileMixIn):
             'other_flag': side_traits.other_side_traits.flag_name,
             'coalesce_other_msgstrs': coalesce_other_msgstrs,
         }
-# XXX: Deal with incomplete translations.
         query = """
             SELECT other_msgstrs, same_on_both_sides, count(*)
             FROM (
