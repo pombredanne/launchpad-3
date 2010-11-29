@@ -217,15 +217,15 @@ You do not need to be logged in to do this.
 
 If you get:
 
-    AttributeError: 'zope.thread.local' object has no attribute 'interaction'
+    AttributeError: 'thread._local' object has no attribute 'interaction'
 
 This means you are trying to getUtility() and aren't logged in.
 Use something like this:
 
-If you get:
-
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
+
+If you get:
 
     AssertionError: newInteraction called while another interaction is
     active.
@@ -233,4 +233,3 @@ If you get:
 This means you forgot to log out:
 
    >>> logout()
-
