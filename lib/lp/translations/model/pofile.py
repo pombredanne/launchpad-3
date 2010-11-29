@@ -846,8 +846,6 @@ class POFile(SQLBase, POFileMixIn):
         if new_header is None:
             return
 
-        # XXX sabdfl 2005-05-27 should we also differentiate between
-        # washeaderfuzzy and isheaderfuzzy?
         self.topcomment = new_header.comment
         self.header = new_header.getRawContent()
         self.fuzzyheader = new_header.is_fuzzy
@@ -1424,7 +1422,8 @@ class POFileSet:
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids),
+            ]
         if untranslated:
             message_select = Select(
                 True,
