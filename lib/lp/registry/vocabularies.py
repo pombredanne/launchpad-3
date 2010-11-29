@@ -143,6 +143,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     PersonVisibility,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pillar import IPillarName
 from lp.registry.interfaces.product import (
@@ -708,6 +709,20 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
         return result
+
+
+class ValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid, public teams in Launchpad."""
+
+    displayname = 'Select a restricted or moderated Team or person'
+
+    # Because the base class does almost everything we need, we just need to
+    # restrict the search results to those Persons who have a non-NULL
+    # teamowner, i.e. a valid team.
+    extra_clause = Not(
+        Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
+    # Search with empty string returns all teams.
+    allow_null_search = False
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
