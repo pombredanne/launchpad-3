@@ -376,7 +376,10 @@ class StructuralSubscribersPortletView(LaunchpadView):
     @property
     def target_label(self):
         """Return the target label for the portlet."""
-        return "To all %s bugs" % self.context.title
+        if IDistributionSourcePackage.providedBy(self.context):
+            return "To all bugs in %s" % self.context.displayname
+        else:
+            return "To all %s bugs" % self.context.title
 
     @property
     def parent_target_label(self):

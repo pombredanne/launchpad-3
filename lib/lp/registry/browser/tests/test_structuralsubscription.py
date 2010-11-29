@@ -347,3 +347,9 @@ class TestSourcePackageStructuralSubscribersPortletView(
         sourcepackage = self.factory.makeSourcePackageName()
         self.target = distribution.getSourcePackage(sourcepackage.name)
 
+    def test_target_label(self):
+        # For DistributionSourcePackages the target_label attribute uses
+        # the target's displayname rather than its title.
+        self.assertEqual(
+            "To all bugs in %s" % self.target.displayname,
+            self.view.target_label)
