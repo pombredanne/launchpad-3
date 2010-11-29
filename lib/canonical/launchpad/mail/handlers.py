@@ -15,24 +15,16 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import (
-    BugAttachmentType,
-    CreatedBugWithNoBugTasksError,
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
-    IBugAttachmentSet,
     IBugEditEmailCommand,
     IBugEmailCommand,
-    IBugMessageSet,
     IBugTaskEditEmailCommand,
     IBugTaskEmailCommand,
-    ILaunchBag,
     IMailHandler,
-    IMessageSet,
-    IQuestionSet,
-    ISpecificationSet,
-    QuestionStatus,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail.commands import (
     BugEmailCommands,
     get_error_message,
@@ -52,6 +44,16 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
 from canonical.launchpad.webapp import urlparse
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.code.mail.codehandler import CodeHandler
 from lp.services.mail.sendmail import (
     sendmail,
@@ -61,7 +63,7 @@ from lp.services.mail.sendmail import (
 
 def extract_signature_timestamp(signed_msg):
     # break import cycle
-    from canonical.launchpad.mail.incoming import (
+    from lp.services.mail.incoming import (
         canonicalise_line_endings)
     signature = getUtility(IGPGHandler).getVerifiedSignature(
         canonicalise_line_endings(signed_msg.signedContent),

@@ -3,9 +3,9 @@ Demonstrate that SQLObject works with security proxies
 
 Do some imports.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.database import BugTask
     >>> from zope.component import getUtility
+    >>> from lp.bugs.model.bug import BugTask
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 Login as Mark.
 

@@ -5,12 +5,20 @@ to create a new mirror you should use the Distribution.newMirror method.
 
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICountrySet, IDistributionSet, IDistributionMirrorSet,
-    ...     IDistroArchSeriesSet, IDistroSeriesSet, ILibraryFileAliasSet,
-    ...     IPersonSet, MirrorContent, MirrorSpeed, MirrorStatus)
-    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distributionmirror import (
+    ...     IDistributionMirrorSet,
+    ...     MirrorContent,
+    ...     MirrorSpeed,
+    ...     MirrorStatus,
+    ...     )
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -139,7 +147,7 @@ We also have a property which returns all unofficial mirrors.
 It's possible to retrieve a mirror by its name:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IDistributionMirror
+    >>> from lp.registry.interfaces.distributionmirror import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
     True
@@ -565,7 +573,7 @@ case is that one of the uploads made on 2005-06-20 contains an .udeb
 package instead of a .deb, and we don't check .udeb files on the mirror,
 so we need to skip that upload.
 
-    >>> from canonical.launchpad.database import BinaryPackageFile
+    >>> from lp.soyuz.model.files import BinaryPackageFile
 
     >>> warty_i386_mirror = foo_mirror.ensureMirrorDistroArchSeries(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
@@ -807,7 +815,7 @@ Verify that the view is a DistributionMirrorsView:
 We want to make sure that the view._sum_throughput method knows about all
 the possible mirror speeds.
 
-  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> from lp.registry.interfaces.distributionmirror import MirrorSpeed
   >>> class MockMirror:
   ...     speed = None
   >>> mirrors = []

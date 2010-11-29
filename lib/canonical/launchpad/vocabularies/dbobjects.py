@@ -64,11 +64,10 @@ from canonical.database.sqlbase import (
     quote,
     sqlvalues,
     )
-from canonical.launchpad.database import (
-    Archive,
-    BugWatch,
+from canonical.launchpad.helpers import (
+    ensure_unicode,
+    shortlist,
     )
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.vocabulary import (
@@ -83,6 +82,7 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -95,6 +95,7 @@ from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.country import Country
 from lp.services.worlddata.model.language import Language
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.processor import (
@@ -120,6 +121,7 @@ class ComponentVocabulary(SQLObjectVocabularyBase):
 
 # Country.name may have non-ASCII characters, so we can't use
 # NamedSQLObjectVocabulary here.
+
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
@@ -161,7 +163,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Search for web bug trackers."""
-        query = query.lower()
+        query = ensure_unicode(query).lower()
         results = IStore(self._table).find(
             self._table, And(
             self._filter,
@@ -349,6 +351,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             yield self.toTerm(watch)
 
     def toTerm(self, watch):
+
         def escape(string):
             return cgi.escape(string, quote=True)
 

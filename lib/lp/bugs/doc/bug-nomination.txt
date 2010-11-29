@@ -1,16 +1,31 @@
 = Bug Nomination =
 
-Any logged-in user can nominate a bug to be fixed in a specific
+A bug supervisor can nominate a bug to be fixed in a specific
 distribution or product series. Nominations are created by
 calling IBug.addNomination.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyClass
-    >>> from canonical.launchpad.database import BugNomination
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugNomination, IBugSet, IDistributionSet, IPersonSet)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.ftests import login_person
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugnomination import IBugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing.sampledata import (ADMIN_EMAIL)
+    >>> login(ADMIN_EMAIL)
+    >>> nominator = factory.makePerson(name='nominator')
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu = removeSecurityProxy(ubuntu)
+    >>> ubuntu.bug_supervisor = nominator
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox = removeSecurityProxy(firefox)
+    >>> firefox.bug_supervisor = nominator
+    >>> logout()
 
-    >>> login("no-priv@canonical.com")
+    >>> login_person(nominator)
 
 The BugNomination class implements IBugNomination.
 
@@ -20,38 +35,37 @@ The BugNomination class implements IBugNomination.
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_grumpy = ubuntu.getSeries("grumpy")
     >>> personset = getUtility(IPersonSet)
-    >>> no_privs = personset.getByName("no-priv")
+    >>> nominator = personset.getByName("nominator")
 
     >>> grumpy_nomination = bug_one.addNomination(
-    ...     target=ubuntu_grumpy, owner=no_privs)
+    ...     target=ubuntu_grumpy, owner=nominator)
 
 The nomination records the distro series or series for which the bug
-was nominated and the user that submitted the nomination (the "owner".)
+was nominated and the user that submitted the nomination (the "owner").
 
     >>> print grumpy_nomination.owner.name
-    no-priv
+    nominator
 
     >>> print grumpy_nomination.distroseries.fullseriesname
     Ubuntu Grumpy
 
 Let's create another nomination, this time on a product series.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
 
     >>> firefox_trunk = firefox.getSeries("trunk")
 
-    >>> no_privs = personset.getByName("no-priv")
+    >>> nominator = personset.getByName("nominator")
 
     >>> firefox_ms_nomination = bug_one.addNomination(
-    ...     target=firefox_trunk, owner=no_privs)
+    ...     target=firefox_trunk, owner=nominator)
 
     >>> print firefox_ms_nomination.owner.name
-    no-priv
+    nominator
 
     >>> print firefox_ms_nomination.productseries.title
     Mozilla Firefox trunk series
@@ -147,7 +161,7 @@ Internally this state is called PROPOSED, but in the UI we display it
 as "Nominated".
 
     >>> ubuntu_breezy_autotest_nomination = bug_one.addNomination(
-    ...     target=ubuntu_breezy_autotest, owner=no_privs)
+    ...     target=ubuntu_breezy_autotest, owner=nominator)
 
     >>> print ubuntu_breezy_autotest_nomination.status.title
     Nominated
@@ -161,7 +175,7 @@ as "Nominated".
 Nomination status changes have an associated workflow. For this reason,
 setting status directly is not possible.
 
-    >>> from canonical.launchpad.interfaces import BugNominationStatus
+    >>> from lp.bugs.interfaces.bugnomination import BugNominationStatus
 
     >>> nomination.status = BugNominationStatus.APPROVED
     Traceback (most recent call last):
@@ -173,21 +187,21 @@ decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> current_user == no_privs
+    >>> current_user == nominator
     True
     >>> check_permission("launchpad.Driver", firefox_ms_nomination)
     False
 
-    >>> firefox_ms_nomination.approve(no_privs)
+    >>> firefox_ms_nomination.approve(nominator)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
 
-    >>> firefox_ms_nomination.decline(no_privs)
+    >>> firefox_ms_nomination.decline(nominator)
     Traceback (most recent call last):
       ..
     Unauthorized: ...
@@ -196,6 +210,7 @@ nomination can approve or decline it.
 
     >>> login("foo.bar@canonical.com")
 
+    >>> no_privs = personset.getByName("no-priv")
     >>> firefox_ms_nomination.target.driver = no_privs
 
     >>> login("no-priv@canonical.com")
@@ -209,7 +224,7 @@ the target of the nomination and the status is set to APPROVED.
 For example, there are currently no bugtasks on the firefox_trunk
 productseries.
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
     >>> params = BugTaskSearchParams(user=no_privs, bug=bug_one)
     >>> found_tasks = firefox_trunk.searchTasks(params)
@@ -240,7 +255,7 @@ When a distribution bug nomination is approved, a task is created for
 each package the bug affects in that distro. For example, let's ensure
 bug #1 affects more than one Ubuntu package.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
 
@@ -346,7 +361,7 @@ component, or all packages in a packageset.
 
     >>> from lp.soyuz.interfaces.archivepermission import (
     ...     IArchivePermissionSet)
-    >>> from canonical.launchpad.database import Component
+    >>> from lp.soyuz.model.component import Component
     >>> permission_set = getUtility(IArchivePermissionSet)
     >>> main = Component.byName('main')
     >>> main_uploader = factory.makePerson()
@@ -606,7 +621,7 @@ The same is done if the distribution task's source package is changed.
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
 
-    >>> from canonical.launchpad.interfaces import IBugNominationSet
+    >>> from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
     >>> getUtility(IBugNominationSet).get(1)
     <BugNomination at ...>
@@ -640,7 +655,7 @@ Nominating a bug for an obsolete distroseries raises a
 NominationSeriesObsoleteError. Let's make a new obsolete distroseries
 to demonstrate.
 
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu_edgy = factory.makeDistroRelease(

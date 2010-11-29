@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -22,22 +22,18 @@ import sys
 import transaction
 
 from zope.component import getUtility
-from zope.configuration import xmlconfig
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
-#
-# We don't really depend on everything from canonical.launchpad.database and
-# canonical.launchpad.interfaces, but it's good to have this available in the
-# namespace.
-#
-# pylint: disable-msg=W0614,W0401
-from canonical.launchpad.database import *
-from canonical.launchpad.interfaces import *
+from lp.answers.model.question import Question
+from lp.blueprints.model.specification import Specification
+from lp.bugs.model.bug import Bug
+from lp.registry.model.distribution import Distribution
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.person import Person
+from lp.registry.model.product import Product
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.mail import create_mail_for_directoryMailBox
-from canonical.launchpad.testing.systemdocs import (
-    create_initialized_view, create_view)
 
 from zope.interface.verify import verifyObject
 

@@ -31,12 +31,14 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     GetitemNavigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
     LaunchpadFormView,
     )
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -47,13 +49,13 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.hastranslationimports import (
     HasTranslationImportsView,
     )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationimportqueue import (
     IEditTranslationImportQueueEntry,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
     TranslationFileType,
     )
@@ -223,12 +225,12 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if len(translatable_series) == 0:
             return "Project has no translatable series."
         else:
+            max_series_to_display = self.max_series_to_display
             links = [
                 self._composeProductSeriesLink(series)
-                for series in translatable_series[:self.max_series_to_display]
-                ]
+                for series in translatable_series[:max_series_to_display]]
             links_text = ', '.join(links)
-            if len(translatable_series) > self.max_series_to_display:
+            if len(translatable_series) > max_series_to_display:
                 tail = ", ..."
             else:
                 tail = "."
@@ -456,8 +458,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename
-            ):
+            self.context.sourcepackagename != potemplate.sourcepackagename):
             # We got the template from a different package than the one
             # selected by the user where the import should done, so we
             # note it here.
@@ -551,8 +552,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 "'%s': '%s'" % (
                     escape_js_string(template.name),
                     escape_js_string(template.translation_domain))
-                for template in target.getCurrentTranslationTemplates()
-                ])
+                for template in target.getCurrentTranslationTemplates()])
         return "var template_domains = {%s};" % contents
 
 

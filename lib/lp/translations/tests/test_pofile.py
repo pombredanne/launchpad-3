@@ -19,8 +19,9 @@ from zope.component import (
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -33,9 +34,22 @@ from lp.translations.interfaces.translatablemessage import (
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData,
     )
+from lp.translations.interfaces.translationgroup import TranslationPermission
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+
+
+def set_relicensing(person, choice):
+    """Set `person`'s choice for the translations relicensing agreement.
+
+    :param person: A `Person`.
+    :param choice: The person's tri-state boolean choice on the
+        relicensing agreement.  None means undecided, which is the
+        default initial choice for any person.
+    """
+    ITranslationsPerson(person).translations_relicensing_agreement = choice
 
 
 class TestTranslationSharedPOFile(TestCaseWithFactory):
@@ -1772,66 +1786,66 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         # A shared message is included in this POFile's messages.
         message = self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
-        
+
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
-        
+
     def test_getTranslationMessages_current_diverged(self):
         # A diverged message is included in this POFile's messages.
         message = self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
-        
+
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
-        
+
     def test_getTranslationMessages_suggestion(self):
         # A suggestion is included in this POFile's messages.
         message = self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile)
-        
+
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
-        
+
     def test_getTranslationMessages_obsolete(self):
         # A message on an obsolete POTMsgSEt is included in this
         # POFile's messages.
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
         message = self.factory.makeTranslationMessage(
             potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
-        
+
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
-        
+
     def test_getTranslationMessages_other_pofile(self):
         # A message from another POFiles is not included.
         other_pofile = self.factory.makePOFile('de')
         self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile)
-        
+
         self.assertEqual([], list(self.pofile.getTranslationMessages()))
-        
+
     def test_getTranslationMessages_condition_matches(self):
         # A message matching the given condition is included.
         # Diverged messages are linked to a specific POTemplate.
         message = self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
-        
+
         self.assertContentEqual(
             [message],
             self.pofile.getTranslationMessages(
                 "TranslationMessage.potemplate IS NOT NULL"))
-       
+
     def test_getTranslationMessages_condition_matches_not(self):
         # A message not matching the given condition is excluded.
         # Shared messages are not linked to a POTemplate.
         self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
-        
+
         self.assertContentEqual(
             [],
             self.pofile.getTranslationMessages(
                 "TranslationMessage.potemplate IS NOT NULL"))
-       
+
     def test_getTranslationMessages_condition_matches_in_other_pofile(self):
         # A message matching given condition but located in another POFile
         # is not included.
@@ -1839,12 +1853,12 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile,
             force_diverged=True)
-        
+
         self.assertContentEqual(
             [],
             self.pofile.getTranslationMessages(
                 "TranslationMessage.potemplate IS NOT NULL"))
-       
+
     def test_getTranslationMessages_diverged_elsewhere(self):
         # Diverged messages from sharing POTemplates are not included.
         # Create a sharing potemplate in another product series and share
@@ -1859,9 +1873,9 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile,
             force_diverged=True)
-        
+
         self.assertEqual([], list(self.pofile.getTranslationMessages()))
-       
+
 
 class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
     """Test POFile being adapted to IPOFileToTranslationFileData."""
@@ -1973,3 +1987,177 @@ class TestPOFileToTranslationFileDataAdapter(TestCaseWithFactory):
         self.assertEqual(1, translation_file_data.header.number_plural_forms)
         self.assertEqual(
             u"0", translation_file_data.header.plural_form_expression)
+
+
+class TestPOFilePermissions(TestCaseWithFactory):
+    """Test `POFile` access privileges.
+
+        :ivar pofile: A `POFile` for a `ProductSeries`.
+    """
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOFilePermissions, self).setUp()
+        self.pofile = self.factory.makePOFile()
+
+    def makeDistroPOFile(self):
+        """Replace `self.pofile` with one for a `Distribution`."""
+        template = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        self.pofile = self.factory.makePOFile(potemplate=template)
+
+    def getTranslationPillar(self):
+        """Return `self.pofile`'s `Product` or `Distribution`."""
+        template = self.pofile.potemplate
+        if template.productseries is not None:
+            return template.productseries.product
+        else:
+            return template.distroseries.distribution
+
+    def closeTranslations(self):
+        """Set translation permissions for `self.pofile` to CLOSED.
+
+        This is useful for showing that a particular person has rights
+        to work on a translation despite it being generally closed to
+        the public.
+        """
+        self.getTranslationPillar().translationpermission = (
+            TranslationPermission.CLOSED)
+
+    def test_makeDistroPOFile(self):
+        # Test the makeDistroPOFile helper.
+        self.assertEqual(
+            self.pofile.potemplate.productseries.product,
+            self.getTranslationPillar())
+        self.makeDistroPOFile()
+        self.assertEqual(
+            self.pofile.potemplate.distroseries.distribution,
+            self.getTranslationPillar())
+
+    def test_closeTranslations_product(self):
+        # Test the closeTranslations helper for Products.
+        self.assertNotEqual(
+            TranslationPermission.CLOSED,
+            self.getTranslationPillar().translationpermission)
+        self.closeTranslations()
+        self.assertEqual(
+            TranslationPermission.CLOSED,
+            self.getTranslationPillar().translationpermission)
+
+    def test_closeTranslations_distro(self):
+        # Test the closeTranslations helper for Distributions.
+        self.makeDistroPOFile()
+        self.assertNotEqual(
+            TranslationPermission.CLOSED,
+            self.getTranslationPillar().translationpermission)
+        self.closeTranslations()
+        self.assertEqual(
+            TranslationPermission.CLOSED,
+            self.getTranslationPillar().translationpermission)
+
+    def test_anonymous_cannot_submit(self):
+        # Anonymous users cannot edit translations or enter suggestions.
+        self.assertFalse(self.pofile.canEditTranslations(None))
+        self.assertFalse(self.pofile.canAddSuggestions(None))
+
+    def test_licensing_agreement_decliners_cannot_submit(self):
+        # Users who decline the translations relicensing agreement can't
+        # edit translations or enter suggestions.
+        decliner = self.factory.makePerson()
+        set_relicensing(decliner, False)
+        self.assertFalse(self.pofile.canEditTranslations(decliner))
+        self.assertFalse(self.pofile.canAddSuggestions(decliner))
+
+    def test_licensing_agreement_accepters_can_submit(self):
+        # Users who accept the translations relicensing agreement can
+        # edit translations and enter suggestions as circumstances
+        # allow.
+        accepter = self.factory.makePerson()
+        set_relicensing(accepter, True)
+        self.assertTrue(self.pofile.canEditTranslations(accepter))
+        self.assertTrue(self.pofile.canAddSuggestions(accepter))
+
+    def test_admin_can_edit(self):
+        # Administrators can edit all translations and make suggestions
+        # anywhere.
+        self.closeTranslations()
+        admin = self.factory.makePerson()
+        getUtility(ILaunchpadCelebrities).admin.addMember(admin, admin)
+        self.assertTrue(self.pofile.canEditTranslations(admin))
+        self.assertTrue(self.pofile.canAddSuggestions(admin))
+
+    def test_translations_admin_can_edit(self):
+        # Translations admins can edit all translations and make
+        # suggestions anywhere.
+        self.closeTranslations()
+        translations_admin = self.factory.makePerson()
+        getUtility(ILaunchpadCelebrities).rosetta_experts.addMember(
+            translations_admin, translations_admin)
+        self.assertTrue(self.pofile.canEditTranslations(translations_admin))
+        self.assertTrue(self.pofile.canAddSuggestions(translations_admin))
+
+    def test_product_owner_can_edit(self):
+        # A Product owner can edit the Product's translations and enter
+        # suggestions even when a regular user isn't allowed to.
+        self.closeTranslations()
+        product = self.getTranslationPillar()
+        self.assertTrue(self.pofile.canEditTranslations(product.owner))
+        self.assertTrue(self.pofile.canAddSuggestions(product.owner))
+
+    def test_product_owner_can_edit_after_declining_agreement(self):
+        # A Product owner can edit the Product's translations even after
+        # declining the translations licensing agreement.
+        product = self.getTranslationPillar()
+        set_relicensing(product.owner, False)
+        self.assertTrue(self.pofile.canEditTranslations(product.owner))
+
+    def test_distro_owner_gets_no_privileges(self):
+        # A Distribution owner gets no special privileges.
+        self.makeDistroPOFile()
+        self.closeTranslations()
+        distro = self.getTranslationPillar()
+        self.assertFalse(self.pofile.canEditTranslations(distro.owner))
+        self.assertFalse(self.pofile.canAddSuggestions(distro.owner))
+
+    def test_productseries_owner_gets_no_privileges(self):
+        # A ProductSeries owner gets no special privileges.
+        self.closeTranslations()
+        productseries = self.pofile.potemplate.productseries
+        productseries.owner = self.factory.makePerson()
+        self.assertFalse(self.pofile.canEditTranslations(productseries.owner))
+        self.assertFalse(self.pofile.canAddSuggestions(productseries.owner))
+
+    def test_potemplate_owner_gets_no_privileges(self):
+        # A POTemplate owner gets no special privileges.
+        self.closeTranslations()
+        template = self.pofile.potemplate
+        template.owner = self.factory.makePerson()
+        self.assertFalse(self.pofile.canEditTranslations(template.owner))
+        self.assertFalse(self.pofile.canAddSuggestions(template.owner))
+
+    def test_pofile_owner_can_edit(self):
+        # A POFile owner currently has special edit privileges.
+        self.closeTranslations()
+        self.pofile.owner = self.factory.makePerson()
+        self.assertTrue(self.pofile.canEditTranslations(self.pofile.owner))
+        self.assertTrue(self.pofile.canAddSuggestions(self.pofile.owner))
+
+    def test_product_translation_group_owner_gets_no_privileges(self):
+        # A translation group owner manages the translation group
+        # itself.  There are no special privileges.
+        self.closeTranslations()
+        group = self.factory.makeTranslationGroup()
+        self.getTranslationPillar().translationgroup = group
+        self.assertFalse(self.pofile.canEditTranslations(group.owner))
+        self.assertFalse(self.pofile.canAddSuggestions(group.owner))
+
+    def test_distro_translation_group_owner_gets_no_privileges(self):
+        # Owners of Distribution translation groups get no special edit
+        # privileges.
+        self.makeDistroPOFile()
+        self.closeTranslations()
+        group = self.factory.makeTranslationGroup()
+        self.getTranslationPillar().translationgroup = group
+        self.assertFalse(self.pofile.canEditTranslations(group.owner))
+        self.assertFalse(self.pofile.canAddSuggestions(group.owner))

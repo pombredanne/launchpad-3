@@ -8,14 +8,14 @@ from urllib2 import URLError, HTTPError
 
 import transaction
 
-from canonical.testing import DatabaseLayer, LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.librarian import client as client_module
 from canonical.librarian.client import (
     LibrarianClient, LibrarianServerError, RestrictedLibrarianClient)
 from canonical.librarian.interfaces import UploadFailed
-from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.database.librarian import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):

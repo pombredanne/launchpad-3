@@ -3,12 +3,10 @@
 
 """Tests for Job-running facilities."""
 
-from __future__ import with_statement
-
 from unittest import TestLoader
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

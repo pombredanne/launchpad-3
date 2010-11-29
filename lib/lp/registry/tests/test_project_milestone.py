@@ -17,17 +17,17 @@ from canonical.launchpad.ftests import (
     syncUpdate,
     )
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
     )
 from lazr.restfulclient.errors import ClientError
 
-from lp.blueprints.interfaces.specification import (
-    ISpecificationSet,
+from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationPriority,
     )
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

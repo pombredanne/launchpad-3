@@ -335,6 +335,10 @@ class IBasicLaunchpadRequest(Interface):
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
 
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
+
     def getRootURL(rootsite):
         """Return this request's root URL.
 
@@ -527,14 +531,13 @@ class OAuthPermission(DBEnumeratedType):
         for reading and changing anything, including private data.
         """)
 
-    GRANT_PERMISSIONS = DBItem(60, """
-        Grant Permissions
+    DESKTOP_INTEGRATION = DBItem(60, """
+        Integrate an entire system
 
-        The application will be able to grant access to your Launchpad
-        account to any other application. This is a very powerful
-        level of access. You should not grant this level of access to
-        any application except the official Launchpad credential
-        manager.
+        Every application running on your desktop will have read-write
+        access to your Launchpad account, including to your private
+        data. You should not allow this unless you trust the computer
+        you're using right now.
         """)
 
 class AccessLevel(DBEnumeratedType):

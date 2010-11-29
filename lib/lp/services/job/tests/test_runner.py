@@ -4,8 +4,6 @@
 """Tests for job-running facilities."""
 
 
-from __future__ import with_statement
-
 import sys
 from time import sleep
 from unittest import TestLoader
@@ -21,7 +19,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,

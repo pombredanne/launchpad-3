@@ -3,8 +3,6 @@
 
 """Tests for BranchJobs."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import datetime
@@ -38,7 +36,7 @@ from canonical.launchpad.testing.librarianhelpers import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -82,9 +80,9 @@ from lp.services.job.model.job import Job
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,

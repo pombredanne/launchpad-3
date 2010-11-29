@@ -1,20 +1,27 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for things found directly in `lp.services.twistedsupport`."""
 
 __metaclass__ = type
 
-import unittest
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
 
 from twisted.internet import defer
+from twisted.internet.task import Clock
 
-from lp.services.twistedsupport import extract_result
+from lp.services.twistedsupport import (
+    cancel_on_timeout,
+    extract_result,
+    )
 from lp.testing import TestCase
 
 
 class TestExtractResult(TestCase):
-    """Tests for `canonical.twisted_support.extract_result`."""
+    """Tests for `lp.services.twistedsupport.extract_result`."""
 
     def test_success(self):
         # extract_result on a Deferred that has a result returns the result.
@@ -37,6 +44,22 @@ class TestExtractResult(TestCase):
         self.assertRaises(AssertionError, extract_result, deferred)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestCancelOnTimeout(TestCase):
+    """Tests for lp.services.twistedsupport.cancel_on_timeout."""
 
+    run_tests_with = AsynchronousDeferredRunTest
+
+    def test_deferred_is_cancelled(self):
+        clock = Clock()
+        d = cancel_on_timeout(defer.Deferred(), 1, clock)
+        clock.advance(2)
+        return assert_fails_with(d, defer.CancelledError)
+
+    def test_deferred_is_not_cancelled(self):
+        clock = Clock()
+        d = cancel_on_timeout(defer.succeed("frobnicle"), 1, clock)
+        clock.advance(2)
+        def result(value):
+            self.assertEqual(value, "frobnicle")
+            self.assertEqual([], clock.getDelayedCalls())
+        return d.addCallback(result)

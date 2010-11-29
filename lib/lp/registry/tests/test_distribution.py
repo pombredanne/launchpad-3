@@ -12,13 +12,13 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
     )
-from lp.services.propertycache import IPropertyCache
+from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
@@ -84,7 +84,7 @@ class TestDistributionCurrentSourceReleases(
         distribution = removeSecurityProxy(
             self.factory.makeDistribution('foo'))
 
-        cache = IPropertyCache(distribution)
+        cache = get_property_cache(distribution)
 
         # Not yet cached.
         self.assertNotIn("series", cache)

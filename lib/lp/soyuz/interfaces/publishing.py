@@ -507,6 +507,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """Return a resultset of `IBuild` objects in this context that are
         not published.
 
+        Note that this is convenience glue for
+        PublishingSet.getUnpublishedBuildsForSources - and that method should
+        be considered authoritative.
+
         :param build_states: list of build states to which the result should
             be limited. Defaults to BuildStatus.FULLYBUILT if none are
             specified.
@@ -594,6 +598,17 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """URLs for this source publication's binary files.
 
         :return: A collection of URLs for this source.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        to_version=TextLine(title=_("To Version"), required=True))
+    def packageDiffUrl(to_version):
+        """URL of the debdiff file between this and the supplied version.
+
+        :param to_version: The version of the source package for which you
+            want to get the diff to.
+        :return: A URL to the librarian file containing the diff.
         """
 
 

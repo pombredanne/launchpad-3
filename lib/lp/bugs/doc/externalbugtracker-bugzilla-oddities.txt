@@ -12,11 +12,11 @@ modified (ancient) versions of Bugzilla; their XML elements have
 slightly different names, and they lack the severity field. We pretend
 Mozilla's Bugzilla is an Issuezilla instance here:
 
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
-    >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.bugs.tests.externalbugtracker import TestIssuezilla
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)

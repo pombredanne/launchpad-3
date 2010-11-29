@@ -28,11 +28,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing import LaunchpadZopelessLayer
-
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.uploadpolicy import (
     AbstractUploadPolicy,
@@ -61,21 +60,15 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.archivepermission import (
-    IArchivePermissionSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import (
-    QueueInconsistentStateError,
-    )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -173,6 +166,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn):
+
         def getPolicy(distro, build):
             self.options.distro = distro.name
             policy = findPolicyByName(self.options.context)
@@ -182,6 +176,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 policy.archive = build.archive
             policy.setOptions(self.options)
             return policy
+
         return UploadProcessor(
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails, self.options.builds,
@@ -273,7 +268,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             queue_entry=None):
         """Queue one of our test uploads.
 
-        upload_name is the name of the test upload directory. If there 
+        upload_name is the name of the test upload directory. If there
         is no explicit queue entry name specified, it is also
         the name of the queue entry directory we create.
         relative_path is the path to create inside the upload, eg
@@ -1210,7 +1205,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         error_report.write(fp)
         error_text = fp.getvalue()
         self.assertTrue(
-            "Unable to find mandatory field 'Files' in the changes file" in error_text)
+            "Unable to find mandatory field 'Files' "
+            "in the changes file" in error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1279,6 +1275,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         contents = [
             "Invalid upload path (1/ubuntu) for this policy (insecure)"]
         self.assertEmail(contents=contents, recipients=[])
+
 
     # Uploads that are new should have the component overridden
     # such that:
@@ -1919,7 +1916,6 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         self.uploadprocessor.processBuildUpload(
             self.incoming_folder, leaf_name)
         self.assertEquals(1, len(self.oopses))
-        self.layer.txn.commit()
         self.assertEquals(
             BuildStatus.FAILEDTOUPLOAD, build.status)
         self.assertEquals(builder, build.builder)
@@ -1928,7 +1924,7 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         log_contents = build.upload_log.read()
         self.assertTrue('ERROR: Exception while processing upload '
             in log_contents)
-        self.assertTrue('DEBUG: Moving upload directory '
+        self.assertFalse('DEBUG: Moving upload directory '
             in log_contents)
 
     def testBinaryPackageBuilds(self):
@@ -1978,7 +1974,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
-            distroseries=self.breezy, archive=archive, requester=archive.owner)
+            distroseries=self.breezy, archive=archive,
+            requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
         bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
@@ -2046,4 +2043,5 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_invalid_jobid(self):
         self.assertRaises(
-            ValueError, parse_build_upload_leaf_name, "aaba-a42-PACKAGEBUILD-abc")
+            ValueError, parse_build_upload_leaf_name,
+            "aaba-a42-PACKAGEBUILD-abc")

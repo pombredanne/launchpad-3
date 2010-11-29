@@ -274,7 +274,9 @@ class FormattersAPI:
                 return FormattersAPI._linkify_bug_number(
                     lp_url, path, trailers)
             url = '/+branch/%s' % path
-            return '<a href="%s">%s</a>%s' % (
+            # Mark the links with a 'branch-short-link' class so they can be
+            # harvested and validated when the page is rendered.
+            return '<a href="%s" class="branch-short-link">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 cgi.escape(lp_url),
                 cgi.escape(trailers))
@@ -686,7 +688,7 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 # Circular dependancies now. Should be resolved by moving the
                 # object image display api.
-                from canonical.launchpad.webapp.tales import (
+                from lp.app.browser.tales import (
                     ObjectImageDisplayAPI)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(

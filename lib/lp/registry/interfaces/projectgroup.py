@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugtarget import (
@@ -67,7 +68,6 @@ from lp.code.interfaces.hasbranches import (
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.karma import IKarmaContext
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
     IHasMilestones,
@@ -109,9 +109,9 @@ class IProjectGroupModerate(IPillar):
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IRootContext, IHasOfficialBugTags):
+    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -314,10 +314,21 @@ class IProjectGroupPublic(
     def getProduct(name):
         """Get a product with name `name`."""
 
+    def getConfigurableProducts():
+        """Get all products that can be edited by user."""
+
     def translatables():
         """Return an iterator over products that have resources translatables.
 
         It also should have IProduct.official_rosetta flag set.
+        """
+
+    def has_translatable():
+        """Return a boolean showing the existance of translatables products.
+        """
+
+    def has_branches():
+        """Return a boolean showing the existance of products with branches.
         """
 
     def hasProducts():

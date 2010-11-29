@@ -1,17 +1,13 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
-
-import unittest
 
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import (
+from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -21,13 +17,13 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
-    RosettaImportStatus,
     )
 
 
-class TestCanSetStatusBase(TestCaseWithFactory):
+class TestCanSetStatusBase:
     """Base for tests that check that canSetStatus works ."""
 
     layer = LaunchpadZopelessLayer
@@ -168,7 +164,7 @@ class TestCanSetStatusBase(TestCaseWithFactory):
             [False, False, False, False, False, False, False])
 
 
-class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
+class TestCanSetStatusPOTemplate(TestCanSetStatusBase, TestCaseWithFactory):
     """Test canStatus applied to an entry with a POTemplate."""
 
     def setUp(self):
@@ -182,7 +178,7 @@ class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
             productseries=self.productseries, potemplate=self.potemplate)
 
 
-class TestCanSetStatusPOFile(TestCanSetStatusBase):
+class TestCanSetStatusPOFile(TestCanSetStatusBase, TestCaseWithFactory):
     """Test canStatus applied to an entry with a POFile."""
 
     def setUp(self):
@@ -334,16 +330,3 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
                 productseries=self.product.series[0])
             self.product.owner = self.new_owner
         self.assertEqual(self.old_owner, old_entry.importer)
-
-
-def test_suite():
-    """Add only specific test cases and leave out the base case."""
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOTemplate))
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFile))
-    suite.addTest(
-        unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
-    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
-    suite.addTest(unittest.makeSuite(TestGetGuessedPOFile))
-    suite.addTest(unittest.makeSuite(TestProductOwnerEntryImporter))
-    return suite

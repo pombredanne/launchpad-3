@@ -10,9 +10,10 @@ All Milestone creation and retrieval is done through IMilestoneSet.
 IMilestoneSet can be accessed as a utility.
 
     >>> from zope.component import getUtility
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     ISpecificationSet, SpecificationDefinitionStatus,
+    >>> from lp.blueprints.enums import (
+    ...     SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus, SpecificationPriority)
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> specset = getUtility(ISpecificationSet)
 
 To create a new Specification, use ISpecificationSet.new:
@@ -117,9 +118,9 @@ When we modify a specification, we can get a delta of the changes using
 ISpecification.getDelta(). If there are no changes, None will be
 returned:
 
-    >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from zope.interface import providedBy
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> unmodified_spec = Snapshot(ubuspec, providing=providedBy(ubuspec))
     >>> ubuspec.getDelta(unmodified_spec, jdub) is None
     True
@@ -434,10 +435,11 @@ We can change our mind, and decline the goal now.
     'Declined'
 
 And finally, if we propose a new goal, then the decision status is
-invalidated.
+invalidated. (Notice that we propose the goal as jdub as goals proposed by one
+of their drivers [e.g. mark] would be automatically accepted)
 
     >>> trunk = upstream_firefox.getSeries('trunk')
-    >>> e4x.proposeGoal(trunk, mark)
+    >>> e4x.proposeGoal(trunk, jdub)
     >>> e4x.goalstatus.title
     'Proposed'
 

@@ -27,8 +27,12 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, IMasterStore
-from lp.code.enums import BranchLifecycleStatus, BranchType
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
@@ -371,5 +375,6 @@ class DistroBrancher:
             old_db_branch.control_format,
             old_db_branch.branch_format,
             old_db_branch.repository_format)
+        old_db_branch.stacked_on = new_db_branch
         transaction.commit()
         return new_db_branch

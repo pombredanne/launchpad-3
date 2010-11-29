@@ -3,8 +3,6 @@
 
 """Test questiontarget views."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import os
@@ -14,7 +12,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
 from lp.testing import login_person, person_logged_in, TestCaseWithFactory

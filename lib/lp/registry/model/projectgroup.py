@@ -20,7 +20,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    In,
     SQL,
     )
 from storm.locals import Int
@@ -42,6 +41,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
@@ -52,13 +52,12 @@ from lp.answers.model.faq import (
     FAQSearch,
     )
 from lp.answers.model.question import QuestionTargetSearch
+from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.blueprints.interfaces.specification import (
+from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
     SpecificationSort,
-    )
-from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus,
     )
 from lp.blueprints.model.specification import (
@@ -74,6 +73,7 @@ from lp.bugs.model.bug import (
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
+    OfficialBugTag,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
@@ -91,7 +91,6 @@ from lp.registry.interfaces.projectgroup import (
     )
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.karma import KarmaContextMixin
-from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
@@ -100,11 +99,12 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
 from lp.services.worlddata.model.language import Language
-from lp.translations.interfaces.translationgroup import TranslationPermission
+from lp.translations.enums import TranslationPermission
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -112,7 +112,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin):
+                   HasMilestonesMixin, HasDriversMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -172,6 +172,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
 
+    def getConfigurableProducts(self):
+        return [product for product in self.products
+                if check_permission('launchpad.Edit', product)]
+
     @property
     def drivers(self):
         """See `IHasDrivers`."""
@@ -179,34 +183,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return [self.driver]
         return []
 
-    @property
-    def mentoring_offers(self):
-        """See `IProjectGroup`."""
-        via_specs = MentoringOffer.select("""
-            Product.project = %s AND
-            Specification.product = Product.id AND
-            Specification.id = MentoringOffer.specification
-            """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause +")",
-            clauseTables=['Product', 'Specification'],
-            distinct=True)
-        via_bugs = MentoringOffer.select("""
-            Product.project = %s AND
-            BugTask.product = Product.id AND
-            BugTask.bug = MentoringOffer.bug AND
-            BugTask.bug = Bug.id AND
-            Bug.private IS FALSE
-            """ % sqlvalues(self.id) + """ AND NOT (
-            """ + BugTask.completeness_clause + ")",
-            clauseTables=['Product', 'BugTask', 'Bug'],
-            distinct=True)
-        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
-
     def translatables(self):
         """See `IProjectGroup`."""
-        # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
+        # XXX j.c.sackett 2010-08-30 bug=627631: Once data migration has
         # happened for the usage enums, this sql needs to be updated to
-        # check for the translations_usage, not official_rosetta.
+        # check for the translations_usage, not official_rosetta.  At that
+        # time it should also be converted to a Storm query and the issue with
+        # has_translatables resolved.
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -215,6 +198,18 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
+
+    def has_translatable(self):
+        """See `IProjectGroup`."""
+        # XXX: BradCrittenden 2010-10-12 bug=659078: The test should be
+        # converted to use is_empty but the implementation in storm's
+        # sqlobject wrapper is broken.
+        # return not self.translatables().is_empty()
+        return self.translatables().count() != 0
+
+    def has_branches(self):
+        """ See `IProjectGroup`."""
+        return not self.getBranches().is_empty()
 
     def _getBaseQueryAndClauseTablesForQueryingSprints(self):
         query = """
@@ -336,9 +331,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         if not self.products:
             return []
-        product_ids = sqlvalues(*self.products)
+        product_ids = [product.id for product in self.products]
         return get_bug_tags_open_count(
-            In(BugTask.productID, product_ids), user)
+            BugTask.productID.is_in(product_ids), user)
 
     def _getBugTaskContextClause(self):
         """See `HasBugsBase`."""
@@ -486,6 +481,56 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return None
 
         return ProjectGroupSeries(self, series_name)
+
+    def _get_usage(self, attr):
+        """Determine ProjectGroup usage based on individual projects.
+
+        By default, return ServiceUsage.UNKNOWN.
+        If any project uses Launchpad, return ServiceUsage.LAUNCHPAD.
+        Otherwise, return the ServiceUsage of the last project that was
+        not ServiceUsage.UNKNOWN.
+        """
+        result = ServiceUsage.UNKNOWN
+        for product in self.products:
+            product_usage = getattr(product, attr)
+            if product_usage != ServiceUsage.UNKNOWN:
+                result = product_usage
+                if product_usage == ServiceUsage.LAUNCHPAD:
+                    break
+        return result
+
+    @property
+    def answers_usage(self):
+        return self._get_usage('answers_usage')
+
+    @property
+    def blueprints_usage(self):
+        return self._get_usage('blueprints_usage')
+
+    @property
+    def translations_usage(self):
+        if self.has_translatable():
+            return ServiceUsage.LAUNCHPAD
+        return ServiceUsage.UNKNOWN
+
+    @property
+    def codehosting_usage(self):
+        # Project groups do not support submitting code.
+        return ServiceUsage.NOT_APPLICABLE
+
+    @property
+    def bug_tracking_usage(self):
+        return self._get_usage('bug_tracking_usage')
+
+    @property
+    def uses_launchpad(self):
+        if (self.answers_usage == ServiceUsage.LAUNCHPAD
+            or self.blueprints_usage == ServiceUsage.LAUNCHPAD
+            or self.translations_usage == ServiceUsage.LAUNCHPAD
+            or self.codehosting_usage == ServiceUsage.LAUNCHPAD
+            or self.bug_tracking_usage == ServiceUsage.LAUNCHPAD):
+            return True
+        return False
 
 
 class ProjectGroupSet:

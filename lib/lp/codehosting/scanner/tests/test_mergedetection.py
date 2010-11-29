@@ -3,8 +3,6 @@
 
 """Tests for the scanner's merge detection."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import logging
@@ -16,8 +14,8 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IStore
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
@@ -118,7 +116,8 @@ class TestAutoMergeDetectionForMergeProposals(BzrSyncTestCase):
             BranchMergeProposalStatus.REJECTED,
             proposal.queue_status)
 
-    def test_auto_merge_proposals_rejected_proposal_target_scanned_first(self):
+    def test_auto_merge_proposals_rejected_proposal_target_scanned_first(
+                                                                        self):
         # If there is a merge proposal where the tip of the source is in the
         # ancestry of the target but the proposal is in a final state the
         # proposal is not marked as merged.
@@ -197,11 +196,11 @@ class TestMergeDetection(TestCaseWithFactory):
         mergedetection.merge_detected = self._original_merge_detected
         TestCaseWithFactory.tearDown(self)
 
-    def autoMergeBranches(self, db_branch, bzr_ancestry):
+    def autoMergeBranches(self, db_branch, new_ancestry):
         mergedetection.auto_merge_branches(
             events.ScanCompleted(
                 db_branch=db_branch, bzr_branch=None,
-                bzr_ancestry=bzr_ancestry, logger=None))
+                logger=None, new_ancestry=new_ancestry))
 
     def mergeDetected(self, logger, source, target):
         # Record the merged branches
@@ -360,7 +359,7 @@ class TestBranchMergeDetectionHandler(TestCaseWithFactory):
         target = self.factory.makeBranchTargetBranch(source.target)
         target.product.development_focus.branch = target
         logger = logging.getLogger('test')
-        notify(events.ScanCompleted(target, None, ['23foo'], logger))
+        notify(events.ScanCompleted(target, None, logger, ['23foo']))
         self.assertEqual(
             BranchLifecycleStatus.MERGED, source.lifecycle_status)
 

@@ -26,7 +26,10 @@ from lp.code.interfaces.branchlookup import (
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import (
@@ -34,7 +37,6 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import NoSuchSourcePackageName
 from lp.testing import (
     run_with_login,
     TestCaseWithFactory,
@@ -308,7 +310,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """test_getByURL works with production values."""
         branch_set = getUtility(IBranchLookup)
         branch = self.makeProductBranch()
-        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        self.pushConfig('codehosting', lp_url_hosts='production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
         self.assertIs(None, branch2)
         branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
@@ -316,8 +318,6 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp:~aa/b/c')
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrls(self):

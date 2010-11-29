@@ -10,10 +10,8 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageName',
     'ISourcePackageNameSet',
-    'NoSuchSourcePackageName',
     ]
 
-from lazr.restful.declarations import webservice_error
 from zope.interface import (
     Attribute,
     Interface,
@@ -25,7 +23,6 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from lp.app.errors import NameLookupFailed
 
 
 class ISourcePackageName(Interface):
@@ -54,7 +51,8 @@ class ISourcePackageNameSet(Interface):
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
-        If the sourcepackagename can't be found a NotFoundError will be raised.
+        If the sourcepackagename can't be found a NotFoundError will be
+        raised.
         """
 
     def getAll():
@@ -74,9 +72,3 @@ class ISourcePackageNameSet(Interface):
 
     def getOrCreateByName(name):
         """Get a source package name by name, creating it if necessary."""
-
-
-class NoSuchSourcePackageName(NameLookupFailed):
-    """Raised when we can't find a particular sourcepackagename."""
-    webservice_error(400)
-    _message_prefix = "No such source package"

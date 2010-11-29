@@ -45,11 +45,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag,
-    IMaloneApplication,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import smartquote
+from lp.bugs.interfaces.malone import IMaloneApplication
 
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -145,8 +143,6 @@ bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 bugbranch_delete = 'Delete bug branch link'
 
 buglinktarget_unlinkbugs = 'Remove links to bug reports'
-
-buglisting_default = ContextTitle("Bugs in %s")
 
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""

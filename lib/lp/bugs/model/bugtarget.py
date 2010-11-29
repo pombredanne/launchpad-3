@@ -72,6 +72,7 @@ class HasBugsBase:
     All `IHasBugs` implementations should inherit from this class
     or from `BugTargetBase`.
     """
+
     def searchTasks(self, search_params, user=None,
                     order_by=None, search_text=None,
                     status=None,
@@ -93,7 +94,7 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None):
+                    modified_since=None, created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -109,9 +110,10 @@ class HasBugsBase:
             del kwargs['self']
             del kwargs['user']
             del kwargs['search_params']
+            del kwargs['prejoins']
             search_params = BugTaskSearchParams.fromSearchForm(user, **kwargs)
         self._customizeSearchParams(search_params)
-        return BugTaskSet().search(search_params)
+        return BugTaskSet().search(search_params, prejoins=prejoins)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
@@ -328,11 +330,10 @@ class HasBugHeatMixin:
             self.project.recalculateBugHeatCache()
 
 
-
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
+    This class is intended to be used as a mixin for the classes
     Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
@@ -441,4 +442,3 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
-

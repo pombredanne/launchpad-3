@@ -54,8 +54,6 @@ COMMENT ON COLUMN Branch.next_mirror_time IS 'The time when we will next mirror 
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
-COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
-COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be removed soon.';
 COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
@@ -64,6 +62,20 @@ COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
 COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
+COMMENT ON COLUMN Branch.merge_queue IS 'A reference to the BranchMergeQueue record that manages merges.';
+COMMENT ON COLUMN Branch.merge_queue_config IS 'A JSON string of configuration values that can be read by a merge queue script.';
+
+
+-- BranchMergeQueue
+COMMENT ON TABLE BranchMergeQueue IS 'Queue for managing the merge workflow for branches.';
+COMMENT ON COLUMN BranchMergeQueue.id IS 'The id of the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.registrant IS 'A reference to the person who created the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.owner IS 'A reference to the person who owns the merge queue.';
+COMMENT ON COLUMN BranchMergeQueue.name IS 'The name of the queue.';
+COMMENT ON COLUMN BranchMergeQueue.description IS 'A description of the queue.';
+COMMENT ON COLUMN BranchMergeQueue.configuration IS 'A JSON string of configuration data to be read by the merging script.';
+COMMENT ON COLUMN BranchMergeQueue.date_created IS 'The date the queue was created.';
+
 
 -- BranchJob
 
@@ -114,15 +126,6 @@ COMMENT ON COLUMN BranchMergeProposalJob.branch_merge_proposal IS 'The branch me
 COMMENT ON COLUMN BranchMergeProposalJob.job_type IS 'The type of job, like new proposal, review comment, or new review requested.';
 COMMENT ON COLUMN BranchMergeProposalJob.json_data IS 'Data that is specific to the type of job, normally references to code review messages and or votes.';
 
--- BranchMergeRobot
-
-COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
-COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
-COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
-COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
-COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
-COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
-
 -- SeriesSourcePackageBranch
 
 COMMENT ON TABLE SeriesSourcePackageBranch IS 'Link between branches and distribution suite.';
@@ -149,13 +152,6 @@ COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don''t
 COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
-
--- BranchWithSortKeys
-
-COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
-COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
-COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
-COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
@@ -346,6 +342,22 @@ COMMENT ON COLUMN BugTrackerPerson.bugtracker IS 'The external bug tracker in wh
 COMMENT ON COLUMN BugTrackerPerson.name IS 'The (within the bug tracker) unique username in the external bug tracker.';
 COMMENT ON COLUMN BugTrackerPerson.person IS 'The Person record in Launchpad this user corresponds to.';
 
+-- BugTrackerComponent
+
+COMMENT ON TABLE BugTrackerComponent IS 'A software component in a remote bug tracker, which can be linked to the corresponding source package in a distribution using this table.';
+COMMENT ON COLUMN BugTrackerComponent.name IS 'The name of the component as registered in the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.is_visible IS 'Whether to display or hide the item in the Launchpad user interface.';
+COMMENT ON COLUMN BugTrackerComponent.is_custom IS 'Whether the item was added by a user in Launchpad or is kept in sync with the remote bug tracker.';
+COMMENT ON COLUMN BugTrackerComponent.component_group IS 'The product or other higher level category used by the remote bug tracker to group projects, if any.';
+COMMENT ON COLUMN BugTrackerComponent.distribution IS 'Link to the distribution for the associated source package.  This can be NULL if no ling has been established.';
+COMMENT ON COLUMN BugTrackerComponent.source_package_name IS 'The text name of the source package in a distribution that corresponds to this component.  This can be NULL if no link has been established yet.';
+
+-- BugTrackerComponentGroup
+
+COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as modeled in a remote bug tracker, often referred to as a product.  Some bug trackers do not categorize software components this way, so they will have a single default component group that all components belong to.';
+COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
+COMMENT ON COLUMN BugTrackerComponentGroup.bug_tracker IS 'The external bug tracker this component group belongs to.';
+
 -- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
@@ -532,9 +544,13 @@ COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where t
 COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
 COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
-COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for this difference.';
+COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for the base version to derived version.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_package_diff IS 'The most recent package diff that was created for the base version to the parent version.';
 COMMENT ON COLUMN DistroSeriesDifference.status IS 'A distroseries difference can be needing attention, ignored or resolved.';
 COMMENT ON COLUMN DistroSeriesDifference.difference_type IS 'The type of difference that this record represents - a package unique to the derived series, or missing, or in both.';
+COMMENT ON COLUMN DistroSeriesDifference.source_version IS 'The version of the package in the derived series.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_source_version IS 'The version of the package in the parent series.';
+COMMENT ON COLUMN DistroSeriesDifference.base_version IS 'The common base version of the package for the derived and parent series.';
 
 -- DistroSeriesDifferenceMessage
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
@@ -839,6 +855,11 @@ COMMENT ON COLUMN TranslationRelicensingAgreement.person IS 'A translator which 
 COMMENT ON COLUMN TranslationRelicensingAgreement.allow_relicensing IS 'Does this person want their translations relicensed under BSD.';
 COMMENT ON COLUMN TranslationRelicensingAgreement.date_decided IS 'Date when the last change of opinion was registered.';
 
+-- TranslationTemplatesBuild
+COMMENT ON TABLE TranslationTemplatesBuild IS 'Build-farm record of a translation templates build.';
+COMMENT ON COLUMN TranslationTemplatesBuild.build_farm_job IS 'Associated BuildFarmJob.';
+COMMENT ON COLUMN TranslationTemplatesBuild.branch IS 'Branch to build templates out of.';
+
 -- RevisionAuthor
 COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
 COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
@@ -918,8 +939,6 @@ COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
 COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
 translation for a POTMsgSet message. It knows who, when and where did it,
 and whether it was reviewed by someone and when was it reviewed.';
-COMMENT ON COLUMN TranslationMessage.pofile IS 'The translation file which
-this translation message is part of.';
 COMMENT ON COLUMN TranslationMessage.potmsgset IS 'The template message which
 this translation message is a translation of.';
 COMMENT ON COLUMN TranslationMessage.date_created IS 'The date we saw this
@@ -1171,6 +1190,7 @@ COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 COMMENT ON COLUMN DistroArchSeries.supports_virtualized IS 'Whether or not
 virtualized build support should be provided by this specific distroarchseries';
+COMMENT ON COLUMN DistroArchSeries.enabled IS 'Whether to allow build creation and publishing for this DistroArchSeries.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -1268,6 +1288,22 @@ COMMENT ON COLUMN PersonNotification.body IS 'The textual body of the notificati
 COMMENT ON COLUMN PersonNotification.subject IS 'The subject of the mail to be sent.';
 COMMENT ON COLUMN PersonNotification.date_emailed IS 'When this notification was emailed to the relevant people.';
 
+-- PersonTransferJob
+
+COMMENT ON TABLE PersonTransferJob IS 'Contains references to jobs for adding team members or merging person entries.';
+COMMENT ON COLUMN PersonTransferJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN PersonTransferJob.job_type IS 'The type of job, like add-member notification or merge persons.';
+COMMENT ON COLUMN PersonTransferJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN PersonTransferJob.minor_person IS 'The person that is being added is a new member or being merged into another person.';
+COMMENT ON COLUMN PersonTransferJob.major_person IS 'The team receiving a new member or the person that another person is merged into.';
+
+-- QuestionJob
+
+COMMENT ON TABLE QuestionJob IS 'Contains references to jobs regarding questions.';
+COMMENT ON COLUMN QuestionJob.job IS 'A reference to a row in the Job table that has all the common job details.';
+COMMENT ON COLUMN QuestionJob.job_type IS 'The type of job, such as new-answer-notification.';
+COMMENT ON COLUMN QuestionJob.json_data IS 'Data that is specific to the type of job, normally stores text to append to email notifications.';
+COMMENT ON COLUMN QuestionJob.question IS 'The newly added question message.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -1288,11 +1324,14 @@ COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- Messaging subsytem
+-- BugMessages
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON COLUMN BugMessage.visible IS 'If false, the bug comment is hidden and should not be shown in any UI.';
+COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
+
+-- Messaging subsytem
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
@@ -1932,6 +1971,14 @@ COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
 
+-- DistributionJob
+
+COMMENT ON TABLE DistributionJob IS 'Contains references to jobs to be run on distributions.';
+COMMENT ON COLUMN DistributionJob.distribution IS 'The distribution to be acted on.';
+COMMENT ON COLUMN DistributionJob.distroseries IS 'The distroseries to be acted on.';
+COMMENT ON COLUMN DistributionJob.job_type IS 'The type of job';
+COMMENT ON COLUMN DistributionJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- DistributionMirror
 COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
 COMMENT ON COLUMN DistributionMirror.distribution IS 'The distribution to which the mirror refers to.';
@@ -2302,6 +2349,14 @@ COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
 COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
 COMMENT ON COLUMN HWDMIValue.value IS 'The value';
 COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
+
+-- IncrementalDiff
+COMMENT ON TABLE IncrementalDiff IS 'Incremental diffs for merge proposals.';
+COMMENT ON COLUMN IncrementalDiff.diff IS 'The contents of the diff.';
+COMMENT ON COLUMN IncrementalDiff.branch_merge_proposal IS 'The merge proposal the diff is for.';
+COMMENT ON COLUMN IncrementalDiff.old_revision IS 'The revision the diff is from.';
+COMMENT ON COLUMN IncrementalDiff.new_revision IS 'The revision the diff is to.';
+
 
 -- Job
 

@@ -63,7 +63,7 @@ permission:
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IAuthorization"
-        for="canonical.launchpad.interfaces.IProduct"
+        for="lp.registry.interfaces.product.IProduct"
         name="launchpad.Edit"
         factory="canonical.launchpad.security.EditByOwner"
         />

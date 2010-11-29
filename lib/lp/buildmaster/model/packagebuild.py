@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'PackageBuild',
@@ -124,6 +122,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         store.add(package_build)
         return package_build
 
+    def destroySelf(self):
+        build_farm_job = self.build_farm_job
+        store = Store.of(self)
+        store.remove(self)
+        store.remove(build_farm_job)
+
     @property
     def current_component(self):
         """See `IPackageBuild`."""
@@ -165,6 +169,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     def getLogFromSlave(package_build):
         """See `IPackageBuild`."""
         builder = package_build.buildqueue_record.builder
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         return builder.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME,
             package_build.buildqueue_record.getLogFileName(),
@@ -180,6 +186,8 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         # log, builder and date_finished are read-only, so we must
         # currently remove the security proxy to set them.
         naked_build = removeSecurityProxy(build)
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         naked_build.log = build.getLogFromSlave(build)
         naked_build.builder = build.buildqueue_record.builder
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
@@ -276,6 +284,8 @@ class PackageBuildDerived:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
             return
+        # XXX 2010-10-18 bug=662631
+        # Change this to do non-blocking IO.
         method(librarian, slave_status, logger)
 
     def _handleStatus_OK(self, librarian, slave_status, logger):

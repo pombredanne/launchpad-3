@@ -52,9 +52,9 @@ policy to RESTRICTED.
 This is done to so see what the page will look like when they exist.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.translations.enums import TranslationPermission
     >>> login('foo.bar@canonical.com')
     >>> utc_owner = factory.makePerson(displayname='Some Guy')
     >>> utc_team = factory.makeTeam(

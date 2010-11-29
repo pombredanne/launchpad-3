@@ -45,14 +45,10 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -67,6 +63,12 @@ from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,
     QuestionTargetFacetMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
@@ -254,7 +256,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download-icon')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Commercial')
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit', site='mainsite')

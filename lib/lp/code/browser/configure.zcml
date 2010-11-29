@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -130,16 +130,16 @@
         module="lp.code.browser.branchref"
         classes="BranchRefNavigation"/>
     <browser:url
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         path_expression="string:+code"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         rootsite="code"/>
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
     <browser:pages
-        for="canonical.launchpad.interfaces.IBazaarApplication"
+        for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
@@ -691,6 +691,16 @@
             name="+index"
             template="../templates/codereviewcomment-index.pt"/>
         <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
+    </browser:pages>
+    <browser:pages
+        facet="branches"
+        for="lp.code.browser.codereviewcomment.ICodeReviewDisplayComment"
+        layer="lp.code.publisher.CodeLayer"
+        class="lp.code.browser.codereviewcomment.CodeReviewCommentView"
+        permission="zope.Public">
+        <browser:page
             name="+comment-header"
             template="../templates/codereviewcomment-header.pt"/>
         <browser:page
@@ -699,9 +709,6 @@
         <browser:page
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
-        <browser:page
-            name="+fragment"
-            template="../templates/codereviewcomment-fragment.pt"/>
     </browser:pages>
     <browser:pages
         facet="branches"
@@ -741,7 +748,7 @@
         <browser:url
             for="lp.code.interfaces.codeimport.ICodeImportSet"
             path_expression="string:+code-imports"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="code"/>
         <browser:defaultView
             for="lp.code.interfaces.codeimport.ICodeImportSet"
@@ -961,6 +968,12 @@
         permission="zope.Public"
         name="+code-index"
         template="../templates/product-branches.pt"/>
+   <browser:page
+      for="lp.registry.interfaces.product.IProduct"
+      class="lp.code.browser.branchlisting.ProductBranchStatisticsView"
+      permission="zope.Public"
+      name="+portlet-product-codestatistics"
+      template="../templates/product-portlet-codestatistics.pt"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         layer="lp.code.publisher.CodeLayer"
@@ -1053,7 +1066,7 @@
         permission="zope.Public"
         facet="branches"
         name="+branches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1062,7 +1075,7 @@
         permission="zope.Public"
         facet="branches"
         name="+subscribedbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1071,7 +1084,7 @@
         permission="zope.Public"
         facet="branches"
         name="+registeredbranches"
-        template="../templates/personproduct-branches.pt"
+        template="../templates/person-branches.pt"
         />
     <browser:page
         for="lp.registry.interfaces.personproduct.IPersonProduct"
@@ -1249,7 +1262,7 @@
             permission="launchpad.AnyPerson"
             facet="branches"
             name="+new-recipe"
-            template="../../app/templates/generic-edit.pt"/>
+            template="../templates/sourcepackagerecipe-new.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
@@ -1305,6 +1318,56 @@
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
             permission="zope.Public"/>
+
+        <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeuelisting.PersonMergeQueueListingView"
+            permission="zope.Public"
+            facet="branches"
+            name="+merge-queues"
+            template="../templates/branchmergequeue-listing.pt"/>
+
+        <browser:page
+            for="*"
+            layer="lp.code.publisher.CodeLayer"
+            name="+bmq-macros"
+            permission="zope.Public"
+            template="../templates/branchmergequeue-macros.pt"/>
+
+
+    </facet>
+
+    <browser:url
+        for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+        attribute_to_parent="owner"
+        path_expression="string:+merge-queues/${name}"
+        rootsite="code" />
+
+    <browser:menus
+        classes="BranchMergeQueueContextMenu"
+        module="lp.code.browser.branchmergequeue"/>
+
+    <facet facet="branches">
+        <browser:defaultView
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            name="+index"
+            layer="lp.code.publisher.CodeLayer" />
+        <browser:page
+            for="lp.code.interfaces.branchmergequeue.IBranchMergeQueue"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueView"
+            name="+index"
+            template="../templates/branchmergequeue-index.pt"
+            permission="zope.Public" />
+        <browser:page
+            for="lp.code.interfaces.branch.IBranch"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.branchmergequeue.BranchMergeQueueAddView"
+            name="+create-queue"
+            template="../../app/templates/generic-edit.pt"
+            permission="launchpad.Edit" />
+
     </facet>
 
 </configure>

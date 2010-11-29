@@ -1461,12 +1461,18 @@ CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
 SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
+    -- Support obsolete lp_Account.openid_identifier as best we can
+    -- until ISD migrates to using lp_OpenIdIdentifier.
     UPDATE lp_account SET openid_identifier = NEW.identifier
     WHERE id = NEW.account;
     IF NOT found THEN
         INSERT INTO lp_account (id, openid_identifier)
         VALUES (NEW.account, NEW.identifier);
     END IF;
+
+    INSERT INTO lp_OpenIdIdentifier (identifier, account, date_created)
+    VALUES (NEW.identifier, NEW.account, NEW.date_created);
+
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1566,6 +1572,12 @@ BEGIN
         UPDATE lp_Account SET openid_identifier = NEW.identifier
         WHERE openid_identifier = OLD.identifier;
     END IF;
+    UPDATE lp_OpenIdIdentifier
+    SET
+        identifier = NEW.identifier,
+        account = NEW.account,
+        date_created = NEW.date_created
+    WHERE identifier = OLD.identifier;
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
 $$;
@@ -1596,6 +1608,8 @@ BEGIN
     ELSE
         DELETE FROM lp_account WHERE openid_identifier = OLD.identifier;
     END IF;
+
+    DELETE FROM lp_OpenIdIdentifier WHERE identifier = OLD.identifier;
 
     RETURN NULL; -- Ignored for AFTER triggers.
 END;
@@ -1800,3 +1814,26 @@ LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
 'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
+        return '~' + match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';

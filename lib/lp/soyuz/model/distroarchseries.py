@@ -82,6 +82,7 @@ class DistroArchSeries(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     supports_virtualized = BoolCol(notNull=False, default=False)
+    enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -224,7 +225,7 @@ class DistroArchSeries(SQLBase):
         result = result.order_by("rank DESC, BinaryPackageName.name")
 
         # import here to avoid circular import problems
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting
