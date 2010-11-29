@@ -139,6 +139,9 @@ inplace: build
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 build: compile apidoc jsbuild css_combine
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
