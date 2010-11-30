@@ -34,6 +34,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
 
 
 UNEDITABLE_BUILD_STATES = (
@@ -95,7 +96,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
             }.get(self.context.status, self.context.status.title)
 
-    @property
+    @cachedproperty
     def eta(self):
         """The datetime when the build job is estimated to complete.
 
@@ -114,14 +115,14 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         duration = queue_record.estimated_duration
         return start_time + duration
 
-    @property
+    @cachedproperty
     def date(self):
         """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
         return self.context.date_finished
 
-    @property
+    @cachedproperty
     def estimate(self):
         """If true, the date value is an estimate."""
         if self.context.date_finished is not None:
