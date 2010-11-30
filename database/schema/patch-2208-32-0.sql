@@ -5,4 +5,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE ParsedApacheLog
     ALTER COLUMN bytes_read TYPE bigint;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 32, 0);
