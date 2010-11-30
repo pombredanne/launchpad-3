@@ -635,23 +635,26 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
         clauses = self._getClausesForPOFileMessages()
         msgstr_clause = make_plurals_sql_fragment(
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_ubuntu IS NOT TRUE',
-            "(%s)" % msgstr_clause,
+            'TranslationMessage.%s IS NOT TRUE' % flag_name,
+            "(%s)" % msgstr_clause
             ])
 
         diverged_translation_query = (
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
                  WHERE
-                   diverged.is_current_ubuntu IS TRUE AND
+                   diverged.%(flag_name)s IS TRUE AND
                    diverged.potemplate = %(potemplate)s AND
                    diverged.language = %(language)s AND
                    diverged.potmsgset=POTMsgSet.id)''' % dict(
+            flag_name=flag_name,
             potemplate=quote(self.potemplate),
             language=quote(self.language)))
 
@@ -659,10 +662,11 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
                  WHERE
-                   shared.is_current_ubuntu IS TRUE AND
+                   shared.%(flag_name)s IS TRUE AND
                    shared.potemplate IS NULL AND
                    shared.language = %(language)s AND
                    shared.potmsgset=POTMsgSet.id)''' % dict(
+            flag_name=flag_name,
             language=quote(self.language)))
         beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
