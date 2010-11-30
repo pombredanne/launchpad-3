@@ -2457,14 +2457,6 @@ class StatisticsTestScenario:
         traits.other_side_traits.setFlag(message, True)
         return message
 
-    def test_statistics_are_initialized_correctly(self):
-        # When a POFile is created, its statistics are initialized as if
-        # they had been freshly updated.
-        pofile = self.makePOFile()
-        stats = pofile.getStatistics()
-        self.exerciseFunction(pofile)
-        self.assertEqual(stats, pofile.getStatistics())
-
     def test_translatedCount_initial(self):
         pofile = self.makePOFile()
         self.assertEqual(0, self.getTranslatedCount(pofile))
@@ -2844,6 +2836,14 @@ class StatistcsCountsTestScenario(StatisticsTestScenario):
 
     def getUpdatesCount(self, pofile):
         return pofile.updatesCount()
+
+    def test_statistics_are_initialized_correctly(self):
+        # When a POFile is created, its statistics are initialized as if
+        # they had been freshly updated.
+        pofile = self.makePOFile()
+        stats = pofile.getStatistics()
+        self.exerciseFunction(pofile)
+        self.assertEqual(stats, pofile.getStatistics())
 
 
 class TestUpstreamStatistics(StatistcsCountsTestScenario,
