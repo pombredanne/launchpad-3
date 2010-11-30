@@ -712,17 +712,6 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         return result
 
 
-class ValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabulary):
-    """The set of all valid, public teams in Launchpad."""
-
-    # XXX sinzui 2010-11-30: closed team?
-    displayname = 'Select a restricted or moderated Team or person'
-    allow_null_search = False
-    # Users are have a MODERATED subscriptionpolicy in the table.
-    extra_clause = And(
-        Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
-
-
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid persons who are not teams in Launchpad."""
     displayname = 'Select a Person'
@@ -739,7 +728,8 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
     """The set of valid members of a given team.
 
     With the exception of all teams that have this team as a member and the
-    team itself, all valid persons and teams are valid members.
+    team itself, all valid persons and teams are valid members. Restricted
+    and moderated teams cannot have open teams as members.
     """
 
     def __init__(self, context):
@@ -755,18 +745,29 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
     @property
+    def is_closed_team(self):
+        return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
+
+    @property
+    def displayname(self):
+        if self.is_closed_team:
+            return 'Select a Restricted or Moderated Team or Person'
+        else:
+            return ValidPersonOrTeamVocabulary.displayname
+
+    @property
     def extra_clause(self):
-        extra = SQL("""
+        clause = SQL("""
             Person.id NOT IN (
                 SELECT team FROM TeamParticipation
                 WHERE person = %d
                 )
             """ % self.team.id)
-        if self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
-            extra = And(
-                extra,
+        if self.is_closed_team:
+            clause = And(
+                clause,
                 Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
-        return extra
+        return clause
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -29,9 +30,7 @@ class VocabularyTestCase(TestCaseWithFactory):
         Store.of(context).flush()
         vocabulary = self.vocabulary_registry.get(
             context, self.vocabulary_name)
-        matches = [
-            term.value for term in vocabulary.searchForTerms(text)]
-        return matches
+        return removeSecurityProxy(vocabulary)._doSearch(text)
 
 
 class TestValidTeamMemberVocabulary(VocabularyTestCase):
@@ -54,71 +53,51 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
         login_person(team.teamowner)
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
-    def test_contains_no_open_teams(self):
+    def test_open_team_cannot_be_a_member_or_a_closed_team(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         open_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.OPEN)
-        results = self.searchVocabulary(context_team, open_team.name)
-        self.assertNotIn(open_team, results)
-
-    def test_contains_moderated_teams(self):
-        context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         moderated_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        results = self.searchVocabulary(context_team, moderated_team.name)
-        self.assertIn(moderated_team, results)
-
-    def test_contains_restricted_teams(self):
-        context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         restricted_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        results = self.searchVocabulary(context_team, restricted_team.name)
-        self.assertIn(restricted_team, results)
-
-    def test_contains_users(self):
-        context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
         user = self.factory.makePerson()
-        results = self.searchVocabulary(context_team, user.name)
-        self.assertIn(user, results)
+        all_possible_members = self.searchVocabulary(context_team, '')
+        self.assertNotIn(open_team, all_possible_members)
+        self.assertIn(moderated_team, all_possible_members)
+        self.assertIn(restricted_team, all_possible_members)
+        self.assertIn(user, all_possible_members)
 
-
-class TestValidPersonOrClosedTeamVocabulary(TestCaseWithFactory):
-    """Test behaviour of ValidPersonOrClosedTeamVocabulary."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestValidPersonOrClosedTeamVocabulary, self).setUp()
-        vocabulary_registry = getVocabularyRegistry()
-        self.vocabulary = vocabulary_registry.get(
-            None, 'ValidPersonOrClosedTeam')
-
-    def searchVocabulary(self, person):
-        Store.of(person).flush()
-        matches = [
-            term.value
-            for term in self.vocabulary.searchForTerms(person.name)]
-        return person in matches
-
-    def test_contains_no_open_teams(self):
+    def test_open_team_can_be_a_member_or_an_open_team(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
         open_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.OPEN)
-        self.assertFalse(self.searchVocabulary(open_team))
-
-    def test_contains_moderated_teams(self):
         moderated_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        self.assertTrue(self.searchVocabulary(moderated_team))
-
-    def test_contains_restricted_teams(self):
         restricted_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
-        self.assertTrue(self.searchVocabulary(restricted_team))
-
-    def test_contains_users(self):
         user = self.factory.makePerson()
-        self.assertTrue(self.searchVocabulary(user))
+        all_possible_members = self.searchVocabulary(context_team, '')
+        self.assertIn(open_team, all_possible_members)
+        self.assertIn(moderated_team, all_possible_members)
+        self.assertIn(restricted_team, all_possible_members)
+        self.assertIn(user, all_possible_members)
+
+    def test_open_team_vocabulary_displayname(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        vocabulary = self.vocabulary_registry.get(
+            context_team, self.vocabulary_name)
+        self.assertEqual(
+            'Select a Person or Team', vocabulary.displayname)
+
+    def test_closed_team_vocabulary_displayname(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        vocabulary = self.vocabulary_registry.get(
+            context_team, self.vocabulary_name)
+        self.assertEqual(
+            'Select a Restricted or Moderated Team or Person',
+            vocabulary.displayname)
