@@ -299,8 +299,8 @@ of because of bug 683115), we would see an error.
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleResponseError: The reported total (-1) was less than zero.
-                 See bug 683115.
+    GoogleResponseError: The reported total (-1, from '-1') was less than
+                zero. See bug 683115.
 
 A PageMatch requires a title, url, and a summary. If those elements
 ('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch
