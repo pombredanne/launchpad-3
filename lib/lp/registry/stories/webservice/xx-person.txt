@@ -1,4 +1,5 @@
-= People and teams =
+People and teams
+================
 
 Since we use a single class (Person) to represent a person or a team,
 representations of people and teams are supposed to have nearly the
@@ -113,13 +114,15 @@ for teams (as they're defined in the ITeam interface).
     []
 
 
-== Links to related things ==
+Links to related things
+-----------------------
 
 As seen above, many attributes of a person are actually links to other
 things (or collections).
 
 
-=== Email addresses ===
+Email addresses
+...............
 
 Apart from the link to the preferred email, there is a link to the
 collection of other confirmed email addresses of that person/team.
@@ -151,7 +154,15 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
-== SSH keys ===
+Emails are protected over the webservice.
+
+    >>> mark = webservice.get("/~mark").jsonBody()
+    >>> confirmed_email_addresses = mark['confirmed_email_addresses_collection_link']
+    >>> print_self_link_of_entries(anon_webservice.get(confirmed_email_addresses).jsonBody())
+
+
+SSH keys
+........
 
 People have SSH keys which we can manipulate over the API.
 
@@ -192,7 +203,8 @@ And then we can actually retrieve the key:
     resource_type_link: u'http://.../#ssh_key'
     self_link: u'http://.../~ssh-user/+ssh-keys/...'
 
-=== GPG keys ===
+GPG keys
+........
 
 People have GPG keys which we can manipulate over the API.
 
@@ -230,7 +242,8 @@ And then we can actually retrieve the key:
     self_link: u'http://.../~name12/+gpg-keys/...'
 
 
-=== Team memberships ===
+Team memberships
+................
 
 A person is linked to their team memberships.
 
@@ -357,7 +370,8 @@ To change its status, use setStatus(status).
     ...
 
 
-=== Members ===
+Members
+.......
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
@@ -427,7 +441,8 @@ members.
     http://.../~karl
 
 
-=== Sub-teams and super-teams ===
+Sub-teams and super-teams
+.........................
 
 Teams can be members of other teams, and sometimes it's useful to know
 which teams are members of any given team as well as the ones it is a
@@ -442,7 +457,8 @@ member of.
     http://.../~guadamen
 
 
-=== Wiki names ===
+Wiki names
+..........
 
 All wiki names associated to a person/team are also linked to that
 person/team.
@@ -503,7 +519,8 @@ But only if we supply valid data.
     Only URIs with the following schemes may be used: http, https
 
 
-=== Jabber IDs ===
+Jabber IDs
+..........
 
 Jabber IDs of a person are also linked.
 
@@ -534,7 +551,8 @@ to, obviously.
     ...
 
 
-=== IRC nicknames ===
+IRC nicknames
+.............
 
 The same for IRC nicknames
 
@@ -568,7 +586,8 @@ to, obviously.
     ...
 
 
-=== PPAs ===
+PPAs
+....
 
 We can get to the person's default PPA via the 'archive' property:
 
@@ -634,7 +653,8 @@ all the URLs to the private archives that the person can access.
     [u'http://mark:testtoken@private-ppa.launchpad.dev/mark/p3a/ubuntu']
 
 
-== Custom operations ==
+Custom operations
+-----------------
 
 IPerson supports a bunch of operations.
 
@@ -669,7 +689,8 @@ Subscribed packages can be listed with getBugSubscriberPackages:
     ---
 
 
-=== Team membership operations ===
+Team membership operations
+..........................
 
 Joining and leaving teams:
 
@@ -791,7 +812,8 @@ participant, use the 'findPathToTeam' custom operation.
     # http://.../~mailing-list-experts
 
 
-== Restrictions ==
+Restrictions
+------------
 
 A team can't be its own owner.
 
