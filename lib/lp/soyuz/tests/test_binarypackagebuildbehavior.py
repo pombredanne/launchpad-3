@@ -460,7 +460,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             uncompressed_file = gzip.open(fname).read()
 
             # Now make a temp filename that getFile() can write to.
-            tmp_orig_file_name = self.mktemp()
+            fd, tmp_orig_file_name = tempfile.mkstemp()
             self.addCleanup(os.remove, tmp_orig_file_name)
 
             # Check that the original file from the slave matches the

@@ -5,6 +5,7 @@
 
 import os
 import signal
+import tempfile
 import xmlrpclib
 
 from testtools.deferredruntest import (
@@ -1186,7 +1187,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             filename = content + '.txt'
             lf = self.factory.makeLibraryFileAlias(filename, content=content)
             content_map[lf.content.sha1] = content
-            filemap[lf.content.sha1] = self.mktemp()
+            fd, filemap[lf.content.sha1] = tempfile.mkstemp()
             self.addCleanup(os.remove, filemap[lf.content.sha1])
             self.layer.txn.commit()
             d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
