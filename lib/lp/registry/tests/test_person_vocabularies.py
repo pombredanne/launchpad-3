@@ -26,10 +26,12 @@ class VocabularyTestCase(TestCaseWithFactory):
         super(VocabularyTestCase, self).setUp()
         self.vocabulary_registry = getVocabularyRegistry()
 
+    def getVocabulary(self, context):
+        return self.vocabulary_registry.get(context, self.vocabulary_name)
+
     def searchVocabulary(self, context, text):
         Store.of(context).flush()
-        vocabulary = self.vocabulary_registry.get(
-            context, self.vocabulary_name)
+        vocabulary = self.getVocabulary(context)
         return removeSecurityProxy(vocabulary)._doSearch(text)
 
 
@@ -88,16 +90,14 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
     def test_open_team_vocabulary_displayname(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.OPEN)
-        vocabulary = self.vocabulary_registry.get(
-            context_team, self.vocabulary_name)
+        vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Select a Person or Team', vocabulary.displayname)
 
     def test_closed_team_vocabulary_displayname(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        vocabulary = self.vocabulary_registry.get(
-            context_team, self.vocabulary_name)
+        vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
             'Select a Restricted or Moderated Team or Person',
             vocabulary.displayname)
