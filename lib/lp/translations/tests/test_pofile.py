@@ -23,7 +23,9 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.pofile import IPOFileSet
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translatablemessage import (
     ITranslatableMessage,
     )
@@ -811,6 +813,16 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetChangedInUbuntu())
         self.assertEquals(found_translations, [self.potmsgset])
 
+    def test_messageCount(self):
+        # POFile.messageCount just forwards to POTmeplate.messageCount.
+        naked_pofile = removeSecurityProxy(self.factory.makePOFile())
+        naked_pofile.potemplate.messageCount = FakeMethod(result=99)
+        self.assertEqual(99, naked_pofile.messageCount())
+
+    def test_initial_statistics_consistency(self):
+        # A `POFile` starts out with consistent statistics.
+        self.assertTrue(self.factory.makePOFile().testStatistics())
+
     def test_updateStatistics(self):
         # Test that updating statistics keeps working.
 
@@ -834,10 +846,11 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Third POTMsgSet is translated, and with a suggestion.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 3)
-        self.factory.makeTranslationMessage(
+        update_date = datetime.now(pytz.UTC) - timedelta(1)
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
-            translations=[u"Translation"],
-            date_updated=datetime.now(pytz.UTC)-timedelta(1))
+            translations=[u"Translation"], date_created=update_date,
+            date_reviewed=update_date)
         self.factory.makeSuggestion(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Another suggestion"])
@@ -845,26 +858,26 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Fourth POTMsgSet is translated in import.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 4)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
-            translations=[u"Imported translation"], is_current_upstream=True)
+            translations=[u"Imported translation"], current_other=True)
 
         # Fifth POTMsgSet is translated in import, but changed in Ubuntu.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 5)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
-            translations=[u"Imported translation"], is_current_upstream=True)
-        translation = self.factory.makeTranslationMessage(
+            translations=[u"Imported translation"], current_other=True)
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
-            translations=[u"LP translation"], is_current_upstream=False)
+            translations=[u"LP translation"], current_other=False)
 
         # Sixth POTMsgSet is translated in LP only.
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate)
         potmsgset.setSequence(self.devel_potemplate, 6)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
-            translations=[u"New translation"], is_current_upstream=False)
+            translations=[u"New translation"], current_other=False)
 
         removeSecurityProxy(self.devel_potemplate).messagecount = (
             self.devel_potemplate.getPOTMsgSetsCount())
@@ -1108,14 +1121,14 @@ class TestTranslationCredits(TestCaseWithFactory):
         imported_credits_text = u"Imported Contributor <name@project.org>"
 
         # Import a translation credits message to 'translator-credits'.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.credits_potmsgset,
             translations=[imported_credits_text],
-            is_current_upstream=True)
+            current_other=True)
 
         # `person` updates the translation using Launchpad.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translator=person)
@@ -1128,11 +1141,11 @@ class TestTranslationCredits(TestCaseWithFactory):
             credits_text)
 
         # Now, re-import this generated message.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.credits_potmsgset,
             translations=[credits_text],
-            is_current_upstream=True)
+            current_other=True)
 
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
@@ -1790,11 +1803,11 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.assertEquals(self.pofile.currentCount(), 0)
 
         # Adding an imported translation increases currentCount().
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Imported current"],
-            is_current_upstream=True)
+            current_other=True)
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.currentCount(), 1)
 
@@ -1816,7 +1829,7 @@ class TestPOFileStatistics(TestCaseWithFactory):
 
         # Adding a current translation for an untranslated
         # message increases the count of new translations in LP.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Current"])
@@ -1827,16 +1840,16 @@ class TestPOFileStatistics(TestCaseWithFactory):
         # If we get an 'imported' translation for what
         # we already have as 'new', it's not considered 'new'
         # anymore since it has been synced.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Current"])
-        # Reimport it but with is_current_upstream=True.
-        self.factory.makeTranslationMessage(
+        # Reimport it but with is_current_ubuntu=True.
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Current"],
-            is_current_upstream=True)
+            current_other=True)
 
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.newCount(), 0)
@@ -1845,12 +1858,12 @@ class TestPOFileStatistics(TestCaseWithFactory):
         # If we change an 'imported' translation through
         # Launchpad, it's still not considered 'new',
         # but an 'update' instead.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Imported"],
-            is_current_upstream=True)
-        self.factory.makeTranslationMessage(
+            current_other=True)
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translations=["Changed"])
@@ -2394,3 +2407,401 @@ class TestPOFilePermissions(TestCaseWithFactory):
         self.getTranslationPillar().translationgroup = group
         self.assertFalse(self.pofile.canEditTranslations(group.owner))
         self.assertFalse(self.pofile.canAddSuggestions(group.owner))
+
+
+class StatisticsTestScenario:
+    """Test case mixin: `POFile` statistics."""
+    layer = ZopelessDatabaseLayer
+
+    def makePOFile(self):
+        """Create a `POFile` to run statistics tests against."""
+        raise NotImplementedError("makePOFile")
+
+    def _getSideTraits(self, potemplate):
+        """Return `TranslationSideTraits` for `potemplate`."""
+        return getUtility(ITranslationSideTraitsSet).getForTemplate(
+            potemplate)
+
+    def _makeOtherSideTranslation(self, pofile, potmsgset=None,
+                                  translations=None):
+        """Create a current `TranslationMessage` for the other side."""
+        message = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset, translations=translations)
+        traits = self._getSideTraits(pofile.potemplate)
+        traits.other_side_traits.setFlag(message, True)
+        return message
+
+    def test_statistics_are_initialized_correctly(self):
+        # When a POFile is created, its statistics are initialized as if
+        # they had been freshly updated.
+        pofile = self.makePOFile()
+        stats = pofile.getStatistics()
+        pofile.updateStatistics()
+        self.assertEqual(stats, pofile.getStatistics())
+
+    def test_translatedCount_initial(self):
+        pofile = self.makePOFile()
+        self.assertEqual(0, pofile.translatedCount())
+
+    def test_translatedCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.translatedCount())
+
+    def test_translatedCount(self):
+        # A current translation message counts towards the POFile's
+        # translatedCount.
+        pofile = self.makePOFile()
+        suggestion = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.translatedCount())
+
+    def test_translatedCount_ignores_obsolete(self):
+        # Translations of obsolete POTMsgSets do not count as
+        # translated.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.translatedCount())
+
+    def test_translatedCount_other_side(self):
+        # Translations on the other side do not count as translated.
+        pofile = self.makePOFile()
+        self._makeOtherSideTranslation(pofile)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.translatedCount())
+
+    def test_translatedCount_diverged(self):
+        # Diverged translations are also counted.
+        pofile = self.makePOFile()
+        diverged = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.translatedCount())
+
+    def test_translatedCount_ignores_masked_shared_translations(self):
+        # A shared current translation that is masked by a diverged one
+        # is not counted.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.translatedCount())
+
+    def test_untranslatedCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.untranslatedCount())
+
+    def test_untranslatedCount_initial(self):
+        self.assertEqual(0, self.makePOFile().untranslatedCount())
+
+    def test_untranslatedCount(self):
+        # Translating a message removes it from the untranslatedCount.
+        pofile = self.makePOFile()
+        self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.untranslatedCount())
+
+    def test_untranslatedCount_ignores_obsolete(self):
+        # Translations of obsolete POTMsgSets do not count as
+        # untranslated.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.untranslatedCount())
+
+    def test_untranslatedCount_other_side(self):
+        # Messages that are translated on the other side can still be in
+        # the untranslatedCount.
+        pofile = self.makePOFile()
+        self._makeOtherSideTranslation(pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.untranslatedCount())
+
+    def test_untranslatedCount_diverged(self):
+        # Diverged translations are also counted.
+        pofile = self.makePOFile()
+        diverged = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.untranslatedCount())
+
+    def test_untranslatedCount_ignores_masked_shared_translations(self):
+        # A shared current translation that is masked by a diverged one
+        # is only subtracted from the untranslatedCount once.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.untranslatedCount())
+
+    def test_currentCount_initial(self):
+        self.assertEqual(0, self.makePOFile().currentCount())
+
+    def test_currentCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.currentCount())
+
+    def test_currentCount(self):
+        # A translation that is shared between Ubuntu and upstream is
+        # counted in currentCount.
+        pofile = self.makePOFile()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, current_other=True)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.currentCount())
+
+    def test_currentCount_ignores_obsolete(self):
+        # The currentCount does not include obsolete messages.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, current_other=True)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.currentCount())
+
+    def test_currentCount_ignores_onesided_translation(self):
+        # A translation that is only current on one side is not included
+        # in currentCount.
+        pofile = self.makePOFile()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, current_other=False)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.currentCount())
+
+    def test_currentCount_different(self):
+        # A message that is translated differently in Ubuntu than
+        # upstream is not included in currentCount.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
+        this_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.currentCount())
+
+    def test_currentCount_diverged(self):
+        # Diverging from a translation that's shared between Ubuntu and
+        # upstream decrements the currentCount.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, current_other=True)
+        self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.currentCount())
+
+    def test_rosettaCount_initial(self):
+        self.assertEqual(0, self.makePOFile().rosettaCount())
+
+    def test_rosettaCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.rosettaCount())
+
+    def test_rosettaCount(self):
+        # rosettaCount counts messages that are translated on this side
+        # but not the other side.
+        pofile = self.makePOFile()
+        self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.rosettaCount())
+
+    def test_rosettaCount_ignores_obsolete(self):
+        # The rosettaCount ignores obsolete messages.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.rosettaCount())
+
+    def test_rosettaCount_diverged(self):
+        # Diverged messages are also counted towards the rosettaCount.
+        pofile = self.makePOFile()
+        self.factory.makeDivergedTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.rosettaCount())
+
+    def test_rosettaCount_ignores_shared_messages(self):
+        # Messages that are shared with the other side are not part of
+        # the rosettaCount.
+        pofile = self.makePOFile()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, current_other=True)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.rosettaCount())
+
+    def test_rosettaCount_ignores_messages_translated_on_other_side(self):
+        # Messages that are translated on the other side but not on this
+        # one do not count towards the rosettaCount.
+        pofile = self.makePOFile()
+        self._makeOtherSideTranslation(pofile)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.rosettaCount())
+
+    def test_rosettaCount_includes_different_translations(self):
+        # The rosettaCount does include messages that are translated
+        # differently on the two sides.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.rosettaCount())
+
+    def test_updatesCount_initial(self):
+        self.assertEqual(0, self.makePOFile().updatesCount())
+
+    def test_updatesCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.updatesCount())
+
+    def test_updatesCount(self):
+        # The updatesCount counts messages that are translated on the
+        # other side, but differently.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.updatesCount())
+
+    def test_updatesCount_ignores_obsolete(self):
+        # The updatesCount ignores obsolete messages.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.updatesCount())
+
+    def test_updatesCount_diverged(self):
+        # Diverged messages can be part of the updatesCount.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, current_other=True)
+        self.factory.makeDivergedTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.updatesCount())
+
+    def test_updatesCount_diverged_ignores_untranslated_other(self):
+        # Diverged messages are not part of the updatesCount if there is
+        # no translation on the other side; they fall under rosettaCount.
+        pofile = self.makePOFile()
+        self.factory.makeDivergedTranslationMessage(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.updatesCount())
+
+    def test_unreviewedCount_initial(self):
+        self.assertEqual(0, self.makePOFile().unreviewedCount())
+
+    def test_unreviewedCount_potmsgset_initial(self):
+        pofile = self.makePOFile()
+        self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.unreviewedCount())
+
+    def test_unreviewedCount(self):
+        # A completely untranslated message with a suggestion counts as
+        # unreviewed.
+        pofile = self.makePOFile()
+        self.factory.makeSuggestion(pofile=pofile)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.unreviewedCount())
+
+    def test_unreviewedCount_ignores_obsolete(self):
+        # The unreviewedCount ignores obsolete messages.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.unreviewedCount())
+
+    def test_unreviewedCount_counts_msgids_not_suggestions(self):
+        # The unreviewedCount counts messages with unreviewed
+        # suggestions, not the suggestions themselves.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
+        self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.unreviewedCount())
+
+    def test_unreviewedCount_ignores_reviewed_suggestions(self):
+        # In order to affect the unreviewedCount, a suggestion has to be
+        # newer than the review date on the current translation.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset)
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(0, pofile.unreviewedCount())
+
+    def test_unreviewedCount_includes_new_suggestions(self):
+        # Suggestions that are newer than the review date om the current
+        # translation are included in the unreviewedCount.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        translation.date_reviewed -= timedelta(1)
+        suggestion = self.factory.makeSuggestion(
+            pofile=pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.unreviewedCount())
+
+    def test_unreviewedCount_includes_other_side_translation(self):
+        # A translation on the other side that's newer than the review
+        # date on the current translation on this side also counts as an
+        # unreviewed suggestion on this side.
+        pofile = self.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
+        this_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset)
+        this_translation.date_reviewed -= timedelta(1)
+        other_translation = self._makeOtherSideTranslation(
+            pofile, potmsgset=potmsgset)
+        pofile.updateStatistics()
+        self.assertEqual(1, pofile.unreviewedCount())
+
+
+class TestUpstreamStatistics(StatisticsTestScenario, TestCaseWithFactory):
+    """Test statistics on upstream `POFile`s."""
+
+    def makePOFile(self):
+        return self.factory.makePOFile()
+
+
+class TestUbuntuStatistics(StatisticsTestScenario, TestCaseWithFactory):
+    """Test statistics on Ubuntu `POFile`s."""
+
+    def makePOFile(self):
+        package = self.factory.makeSourcePackage()
+        return self.factory.makePOFile(
+            potemplate=self.factory.makePOTemplate(
+                distroseries=package.distroseries,
+                sourcepackagename=package.sourcepackagename))
