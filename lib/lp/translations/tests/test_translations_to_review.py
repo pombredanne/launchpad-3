@@ -79,10 +79,10 @@ class ReviewTestMixin:
             potemplate=self.potemplate, language_code='nl'))
         self.potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, singular='hi', sequence=1)
-        self.translation = self.factory.makeTranslationMessage(
+        self.translation = self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile,
             translator=self.person, translations=['bi'],
-            date_updated=self.base_time)
+            date_created=self.base_time, date_reviewed=self.base_time)
 
         later_time = self.base_time + timedelta(0, 3600)
         self.suggestion = removeSecurityProxy(
@@ -91,7 +91,6 @@ class ReviewTestMixin:
                 translator=self.factory.makePerson(), translations=['wi'],
                 date_created=later_time))
 
-        self.assertTrue(self.translation.is_current_ubuntu)
         self.pofile.updateStatistics()
         self.assertEqual(self.pofile.unreviewed_count, 1)
 
