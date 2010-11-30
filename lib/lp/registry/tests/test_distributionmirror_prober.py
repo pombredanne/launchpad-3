@@ -14,7 +14,6 @@ from StringIO import StringIO
 
 from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
-import transaction
 from twisted.internet import (
     defer,
     reactor,
@@ -31,8 +30,8 @@ from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
     TwistedLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
@@ -611,7 +610,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
 class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def makeMirrorProberCallbacks(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -704,7 +703,7 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
 
 
 class TestArchiveMirrorProberCallbacks(TestCase):
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestArchiveMirrorProberCallbacks, self).setUp()
@@ -783,7 +782,7 @@ class TestProbeFunctionSemaphores(TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestProbeFunctionSemaphores, self).setUp()
