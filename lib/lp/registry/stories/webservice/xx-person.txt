@@ -154,11 +154,13 @@ traversed to, obviously.
     HTTP/1.1 404 Not Found
     ...
 
-Emails are protected over the webservice.
+Emails are protected over the webservice--an anonymous connection cannot get
+email entries.
 
-    >>> mark = webservice.get("/~mark").jsonBody()
-    >>> confirmed_email_addresses = mark['confirmed_email_addresses_collection_link']
-    >>> print_self_link_of_entries(anon_webservice.get(confirmed_email_addresses).jsonBody())
+    >>> person = webservice.get("/~salgado").jsonBody()
+    >>> confirmed_email_addresses = person['confirmed_email_addresses_collection_link']
+    >>> print anon_webservice.get(confirmed_email_addresses).jsonBody()['total_size']
+    0 
 
 
 SSH keys
