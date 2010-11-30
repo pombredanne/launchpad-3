@@ -2888,7 +2888,7 @@ class StatistcsFiltersTestScenario(StatisticsTestScenario):
         return pofile.getPOTMsgSetUntranslated().count()
 
     def getUpdatesCount(self, pofile):
-        return pofile.updatesCount()
+        return pofile.getPOTMsgSetDifferentTranslations().count()
 
 
 class TestUpstreamFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
