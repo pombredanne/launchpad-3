@@ -694,19 +694,20 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
         self.failUnless(logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(TestCase):
+class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        super(TestArchiveMirrorProberCallbacks, self).setUp()
-        mirror = DistributionMirror.get(1)
-        warty = DistroSeries.get(1)
-        pocket = PackagePublishingPocket.RELEASE
-        component = warty.components[0]
-        log_file = StringIO()
-        url = 'foo'
-        self.callbacks = ArchiveMirrorProberCallbacks(
-            mirror, warty, pocket, component, url, log_file)
+    def makeMirrorProberCallbacks(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = removeSecurityProxy(
+            self.factory.makeDistroSeries(distribution=ubuntu))
+        mirror = removeSecurityProxy(
+            self.factory.makeMirror(distroseries.distribution))
+        component = self.factory.makeComponent()
+        callbacks = ArchiveMirrorProberCallbacks(
+            mirror, distroseries, PackagePublishingPocket.RELEASE,
+            component, 'foo', StringIO())
+        return callbacks
 
     def tearDown(self):
         # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
@@ -719,19 +720,20 @@ class TestArchiveMirrorProberCallbacks(TestCase):
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
         # ProberTimeout, BadResponseCode or ConnectionSkipped failures.
+        callbacks = self.makeMirrorProberCallbacks()
         try:
-            self.callbacks.deleteMirrorSeries(
+            callbacks.deleteMirrorSeries(
                 Failure(ProberTimeout('http://localhost/', 5)))
         except Exception, e:
             self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorSeries(
+            callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
             self.fail(
                 "A bad response code shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
+            callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
         except Exception, e:
             self.fail("A ConnectionSkipped exception shouldn't be "
                       "propagated. Got %s" % e)
@@ -739,7 +741,7 @@ class TestArchiveMirrorProberCallbacks(TestCase):
         # Make sure that deleteMirrorSeries() propagate any failure that is
         # not a ProberTimeout, a BadResponseCode or a ConnectionSkipped.
         d = defer.Deferred()
-        d.addErrback(self.callbacks.deleteMirrorSeries)
+        d.addErrback(callbacks.deleteMirrorSeries)
         def got_result(result):
             self.fail(
                 "Any failure that's not a timeout/bad-response/skipped "
@@ -752,15 +754,16 @@ class TestArchiveMirrorProberCallbacks(TestCase):
         self.assertEqual([1], ok)
 
     def test_mirrorseries_creation_and_deletion(self):
-        mirror_distro_series_source = self.callbacks.ensureMirrorSeries(
+        callbacks = self.makeMirrorProberCallbacks()
+        mirror_distro_series_source = callbacks.ensureMirrorSeries(
              str(httplib.OK))
-        self.failUnless(
-            mirror_distro_series_source is not None,
+        self.assertIsNot(
+            mirror_distro_series_source, None,
             "If the prober gets a 200 Okay status, a new "
             "MirrorDistroSeriesSource/MirrorDistroArchSeries should be "
             "created.")
 
-        self.callbacks.deleteMirrorSeries(
+        callbacks.deleteMirrorSeries(
             Failure(BadResponseCode(str(httplib.NOT_FOUND))))
         # If the prober gets a 404 status, we need to make sure there's no
         # MirrorDistroSeriesSource/MirrorDistroArchSeries referent to
