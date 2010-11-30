@@ -715,6 +715,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 class ValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
 
+    # XXX sinzui 2010-11-30: closed team?
     displayname = 'Select a restricted or moderated Team or person'
     allow_null_search = False
     # Users are have a MODERATED subscriptionpolicy in the table.
@@ -741,6 +742,7 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
     team itself, all valid persons and teams are valid members.
     """
 
+    # XXX sinzui 2010-11-30: closed team?
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamMemberVocabulary needs a context.')
@@ -767,6 +769,7 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
     all valid persons and teams are valid owners for the team.
     """
 
+    # XXX sinzui 2010-11-30: closed team?
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamOwnerVocabulary needs a context.')

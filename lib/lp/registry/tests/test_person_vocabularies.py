@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.schema.vocabulary import getVocabularyRegistry
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -18,34 +17,41 @@ from lp.registry.interfaces.person import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestValidTeamMemberVocabulary(TestCaseWithFactory):
+class VocabularyTestCase(TestCaseWithFactory):
+
+    vocabulary_name = None
+
+    def setUp(self):
+        super(VocabularyTestCase, self).setUp()
+        self.vocabulary_registry = getVocabularyRegistry()
+
+    def searchVocabulary(self, context, text):
+        Store.of(context).flush()
+        vocabulary = self.vocabulary_registry.get(
+            context, self.vocabulary_name)
+        matches = [
+            term.value for term in vocabulary.searchForTerms(text)]
+        return matches
+
+
+class TestValidTeamMemberVocabulary(VocabularyTestCase):
     """Test that the ValidTeamMemberVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
-
-    def searchVocabulary(self, team, text):
-        vocabulary_registry = getVocabularyRegistry()
-        naked_vocabulary = removeSecurityProxy(
-            vocabulary_registry.get(team, 'ValidTeamMember'))
-        return naked_vocabulary._doSearch(text)
+    vocabulary_name = 'ValidTeamMember'
 
     def test_public_team_cannot_be_a_member_of_itself(self):
         # A public team should be filtered by the vocab.extra_clause
         # when provided a search term.
-        team_owner = self.factory.makePerson()
-        login_person(team_owner)
-        team = self.factory.makeTeam(owner=team_owner)
-        Store.of(team).flush()
+        team = self.factory.makeTeam()
         self.assertFalse(team in self.searchVocabulary(team, team.name))
 
     def test_private_team_cannot_be_a_member_of_itself(self):
         # A private team should be filtered by the vocab.extra_clause
         # when provided a search term.
-        team_owner = self.factory.makePerson()
-        login_person(team_owner)
         team = self.factory.makeTeam(
-            owner=team_owner, visibility=PersonVisibility.PRIVATE)
-        Store.of(team).flush()
+            visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
         self.assertFalse(team in self.searchVocabulary(team, team.name))
 
 
