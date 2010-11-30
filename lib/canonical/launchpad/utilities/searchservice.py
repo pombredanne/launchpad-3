@@ -293,6 +293,10 @@ class GoogleSearchService:
             # The datatype is not what PageMatches requires.
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
+        if total < 0:
+            raise GoogleResponseError(
+                ("The reported total (%d) was less than zero. "
+                 "See bug 683115.") % total)
         for result in results.findall('R'):
             url_tag = result.find('U')
             title_tag = result.find('T')
