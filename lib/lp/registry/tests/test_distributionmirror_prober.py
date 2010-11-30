@@ -630,14 +630,6 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
         logger.error = error
         return logger
 
-    def tearDown(self):
-        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
-        # calls around.  They need to be updated to use Twisted correctly.
-        # For the meantime, just blat the reactor.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
-        super(TestMirrorCDImageProberCallbacks, self).tearDown()
-
     def test_mirrorcdimageseries_creation_and_deletion_all_success(self):
         callbacks = self.makeMirrorProberCallbacks()
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
