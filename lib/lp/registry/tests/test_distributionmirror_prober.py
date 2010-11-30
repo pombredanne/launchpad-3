@@ -14,6 +14,7 @@ from StringIO import StringIO
 
 from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
+import transaction
 from twisted.internet import (
     defer,
     reactor,
@@ -22,9 +23,13 @@ from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     TwistedLayer,
@@ -61,7 +66,10 @@ from lp.registry.scripts.distributionmirror_prober import (
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -601,23 +609,27 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(TestCase):
+class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
+
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestMirrorCDImageProberCallbacks, self).setUp()
-        self.layer.switchDbUser(config.distributionmirrorprober.dbuser)
-        self.logger = logging.getLogger('distributionmirror-prober')
-        self.logger.errorCalled = False
+    def makeMirrorProberCallbacks(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        distroseries = removeSecurityProxy(
+            self.factory.makeDistroSeries(distribution=ubuntu))
+        mirror = removeSecurityProxy(
+            self.factory.makeMirror(distroseries.distribution))
+        callbacks = MirrorCDImageProberCallbacks(
+            mirror, distroseries, 'ubuntu', StringIO())
+        return callbacks
+
+    def getLogger(self):
+        logger = logging.getLogger('distributionmirror-prober')
+        logger.errorCalled = False
         def error(msg):
-            self.logger.errorCalled = True
-        self.logger.error = error
-        mirror = DistributionMirror.get(1)
-        warty = DistroSeries.get(1)
-        flavour = 'ubuntu'
-        log_file = StringIO()
-        self.callbacks = MirrorCDImageProberCallbacks(
-            mirror, warty, flavour, log_file)
+            logger.errorCalled = True
+        logger.error = error
+        return logger
 
     def tearDown(self):
         # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
@@ -628,7 +640,7 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         super(TestMirrorCDImageProberCallbacks, self).tearDown()
 
     def test_mirrorcdimageseries_creation_and_deletion(self):
-        callbacks = self.callbacks
+        callbacks = self.makeMirrorProberCallbacks()
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
         mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
              all_success)
@@ -652,34 +664,38 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         # ignored by ensureOrDeleteMirrorCDImageSeries() because they've been
         # logged by logMissingURL() already and they're expected to happen
         # some times.
+        logger = self.getLogger()
+        callbacks = self.makeMirrorProberCallbacks()
         self.failUnlessEqual(
-            set(self.callbacks.expected_failures),
+            set(callbacks.expected_failures),
             set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
                       ConnectionSkipped()]
         for exception in exceptions:
-            failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
+            failure = callbacks.ensureOrDeleteMirrorCDImageSeries(
                 [(defer.FAILURE, Failure(exception))])
             # Twisted callbacks may raise or return a failure; that's why we
             # check the return value.
             self.failIf(isinstance(failure, Failure))
             # Also, these failures are not logged to stdout/stderr since
             # they're expected to happen.
-            self.failIf(self.logger.errorCalled)
+            self.failIf(logger.errorCalled)
 
     def test_unexpected_failures_are_logged_but_not_raised(self):
         # Errors which are not expected as logged using the
         # prober's logger to make sure people see it while still alowing other
         # mirrors to be probed.
-        failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
+        logger = self.getLogger()
+        callbacks = self.makeMirrorProberCallbacks()
+        failure = callbacks.ensureOrDeleteMirrorCDImageSeries(
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
         # Twisted callbacks may raise or return a failure; that's why we
         # check the return value.
         self.failIf(isinstance(failure, Failure))
         # Unlike the expected failures, these ones must be logged as errors to
         # stdout/stderr.
-        self.failUnless(self.logger.errorCalled)
+        self.failUnless(logger.errorCalled)
 
 
 class TestArchiveMirrorProberCallbacks(TestCase):
