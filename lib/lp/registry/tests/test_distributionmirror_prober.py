@@ -11,7 +11,6 @@ import httplib
 import logging
 import os
 from StringIO import StringIO
-import unittest
 
 from lazr.uri import URI
 from sqlobject import SQLObjectNotFound
@@ -62,6 +61,7 @@ from lp.registry.scripts.distributionmirror_prober import (
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer,
     )
+from lp.testing import TestCase
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -275,7 +275,7 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
-class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -287,6 +287,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     host = 'foo.bar'
 
     def setUp(self):
+        super(TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).setUp()
         self.orig_host_requests = dict(
             distributionmirror_prober.host_requests)
         self.orig_host_timeouts = dict(
@@ -296,6 +297,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
         # Restore the globals that our tests fiddle with.
         distributionmirror_prober.host_requests = self.orig_host_requests
         distributionmirror_prober.host_timeouts = self.orig_host_timeouts
+        super(TestProberFactoryRequestTimeoutRatioWithoutTwisted, self).tearDown()
 
     def _createProberStubConnectAndProbe(self, requests, timeouts):
         """Create a ProberFactory object with a URL inside self.host and call
@@ -430,9 +432,10 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
         return self.assertFailure(d, ConnectionSkipped)
 
 
-class TestMultiLock(unittest.TestCase):
+class TestMultiLock(TestCase):
 
     def setUp(self):
+        super(TestMultiLock, self).setUp()
         self.lock_one = defer.DeferredLock()
         self.lock_two = defer.DeferredLock()
         self.multi_lock = MultiLock(self.lock_one, self.lock_two)
@@ -509,7 +512,7 @@ class TestMultiLock(unittest.TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
 
-class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
+class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -598,10 +601,11 @@ class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(unittest.TestCase):
+class TestMirrorCDImageProberCallbacks(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestMirrorCDImageProberCallbacks, self).setUp()
         self.layer.switchDbUser(config.distributionmirrorprober.dbuser)
         self.logger = logging.getLogger('distributionmirror-prober')
         self.logger.errorCalled = False
@@ -621,6 +625,7 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         # For the meantime, just blat the reactor.
         for delayed_call in reactor.getDelayedCalls():
             delayed_call.cancel()
+        super(TestMirrorCDImageProberCallbacks, self).tearDown()
 
     def test_mirrorcdimageseries_creation_and_deletion(self):
         callbacks = self.callbacks
@@ -677,10 +682,11 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         self.failUnless(self.logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(unittest.TestCase):
+class TestArchiveMirrorProberCallbacks(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestArchiveMirrorProberCallbacks, self).setUp()
         mirror = DistributionMirror.get(1)
         warty = DistroSeries.get(1)
         pocket = PackagePublishingPocket.RELEASE
@@ -696,6 +702,7 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         # For the meantime, just blat the reactor.
         for delayed_call in reactor.getDelayedCalls():
             delayed_call.cancel()
+        super(TestArchiveMirrorProberCallbacks, self).tearDown()
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
@@ -751,13 +758,14 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
             mirror_distro_series_source.id)
 
 
-class TestProbeFunctionSemaphores(unittest.TestCase):
+class TestProbeFunctionSemaphores(TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestProbeFunctionSemaphores, self).setUp()
         self.logger = None
         # RequestManager uses a mutable class attribute (host_locks) to ensure
         # all of its instances share the same locks. We don't want our tests
@@ -771,6 +779,7 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
         # For the meantime, just blat the reactor.
         for delayed_call in reactor.getDelayedCalls():
             delayed_call.cancel()
+        super(TestProbeFunctionSemaphores, self).tearDown()
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
@@ -847,7 +856,7 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
         restore_http_proxy(orig_proxy)
 
 
-class TestCDImageFileListFetching(unittest.TestCase):
+class TestCDImageFileListFetching(TestCase):
 
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
@@ -856,7 +865,7 @@ class TestCDImageFileListFetching(unittest.TestCase):
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
 
 
-class TestLoggingMixin(unittest.TestCase):
+class TestLoggingMixin(TestCase):
 
     def _fake_gettime(self):
         # Fake the current time.
@@ -881,7 +890,3 @@ class TestLoggingMixin(unittest.TestCase):
         logger.log_file.seek(0)
         message = logger.log_file.read()
         self.assertNotEqual(None, message)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
