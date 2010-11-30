@@ -1260,11 +1260,11 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     def test_getPOTMsgSetTranslated_ordering(self):
         # Translate both POTMsgSets in devel_pofile, so
         # they are returned with getPOTMsgSetTranslated() call.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
             translations=["Shared translation"])
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
             translations=["Another shared translation"])
