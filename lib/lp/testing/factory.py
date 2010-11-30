@@ -102,7 +102,11 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationGoalStatus,
+    SpecificationPriority,
+    )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
@@ -1677,7 +1681,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW,
-                          implementation_status=None):
+                          implementation_status=None, goal=None, specurl=None,
+                          assignee=None, drafter=None, approver=None,
+                          priority=None, whiteboard=None, milestone=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1693,17 +1699,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
+        if priority is None:
+            priority = SpecificationPriority.UNDEFINED
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
+            whiteboard=whiteboard,
             owner=owner,
+            assignee=assignee,
+            drafter=drafter,
+            approver=approver,
             product=product,
-            distribution=distribution)
+            distribution=distribution,
+            priority=priority)
+        naked_spec = removeSecurityProxy(spec)
+        if status == SpecificationDefinitionStatus.OBSOLETE:
+            # This is to satisfy a DB constraint of obsolete specs.
+            naked_spec.completer = owner
+            naked_spec.date_completed = datetime.now(pytz.UTC)
+        naked_spec.specurl = specurl
+        naked_spec.milestone = milestone
+        if goal is not None:
+            naked_spec.proposeGoal(goal, spec.target.owner)
         if implementation_status is not None:
-            naked_spec = removeSecurityProxy(spec)
             naked_spec.implementation_status = implementation_status
             naked_spec.updateLifecycleStatus(owner)
         return spec
