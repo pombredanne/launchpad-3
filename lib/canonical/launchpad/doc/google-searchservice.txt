@@ -374,7 +374,7 @@ vhosts. The edge vhost has no summary, so it is skipped.
     ...
     <R N="1">
     <U>https://blueprints.edge.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
-    <UE>https://blueprints.edge.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <UE>https://blueprints.edge.launchpad.net.../%2Bspec/gobuntu-hardy</UE>
     <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
     <RK>0</RK>
     <S></S>
