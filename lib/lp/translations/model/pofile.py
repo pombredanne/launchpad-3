@@ -558,9 +558,11 @@ class POFile(SQLBase, POFileMixIn):
         Return a tuple of SQL (clauses, clause_tables) to be used with
         POTMsgSet.select().
         """
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
         clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
         clauses = self._getClausesForPOFileMessages()
-        clauses.append('TranslationMessage.is_current_ubuntu IS TRUE')
+        clauses.append('TranslationMessage.%s IS TRUE' % flag_name)
         self._appendCompletePluralFormsConditions(clauses)
 
         # A message is current in this pofile if:
@@ -579,11 +581,15 @@ class POFile(SQLBase, POFileMixIn):
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.potemplate=%(potemplate)s AND
-                     diverged.is_current_ubuntu IS TRUE AND
+                     diverged.%(flag_name)s IS TRUE AND
                      diverged.language = %(language)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-            dict(language=quote(self.language),
-                 potemplate=quote(self.potemplate))),
+                dict(
+                     flag_name=flag_name,
+                     language=quote(self.language),
+                     potemplate=quote(self.potemplate),
+                     )
+                ),
         ]
         shared_translation_query = ' AND '.join(shared_translation_clauses)
 
