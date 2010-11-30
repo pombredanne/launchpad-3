@@ -35,7 +35,6 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
     _build_request_for_cdimage_file_list,
@@ -708,14 +707,6 @@ class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
             mirror, distroseries, PackagePublishingPocket.RELEASE,
             component, 'foo', StringIO())
         return callbacks
-
-    def tearDown(self):
-        # XXX: JonathanLange 2010-11-22: These tests leave stacks of delayed
-        # calls around.  They need to be updated to use Twisted correctly.
-        # For the meantime, just blat the reactor.
-        for delayed_call in reactor.getDelayedCalls():
-            delayed_call.cancel()
-        super(TestArchiveMirrorProberCallbacks, self).tearDown()
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorSeries() does not propagate
