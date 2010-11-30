@@ -689,7 +689,7 @@ class POFile(SQLBase, POFileMixIn):
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], query)
 
-    def getPOTMsgSetChangedInUbuntu(self):
+    def getPOTMsgSetDifferentTranslations(self):
         """See `IPOFile`."""
         # POT set has been changed in Launchpad if it contains active
         # translations which didn't come from an upstream package
@@ -1312,7 +1312,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return EmptyResultSet()
 
-    def getPOTMsgSetChangedInUbuntu(self):
+    def getPOTMsgSetDifferentTranslations(self):
         """See `IPOFile`."""
         return EmptyResultSet()
 

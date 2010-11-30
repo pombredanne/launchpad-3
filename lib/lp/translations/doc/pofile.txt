@@ -46,7 +46,7 @@ except for untranslated messages.
     >>> dummy_pofile.getPOTMsgSetTranslated().count()
     0
 
-    >>> dummy_pofile.getPOTMsgSetChangedInUbuntu().count()
+    >>> dummy_pofile.getPOTMsgSetDifferentTranslations().count()
     0
 
     >>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
@@ -590,7 +590,7 @@ We created it without translations.
     [None, None, None]
 
 
-getPOTMsgSetChangedInUbuntu
+getPOTMsgSetDifferentTranslations
 ---------------------------
 
 This method returns only those POTMsgSet's which contain translation
@@ -613,7 +613,7 @@ Lets get Evolution Spanish translation in distribution Hoary.
 This translation file already contains one message which has been changed in
 Ubuntu.
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetDifferentTranslations())
     >>> len(potmsgsets)
     1
 
@@ -667,7 +667,7 @@ Now, lets provide a translation for it.
 
 And make sure that the count of changed in Ubuntu hasn't changed.
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetDifferentTranslations())
     >>> len(potmsgsets)
     1
 
@@ -699,7 +699,7 @@ Lets re-translate that:
 
 And make sure that the count of messages changed in Ubuntu _has_ changed:
 
-    >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInUbuntu())
+    >>> potmsgsets = list(pofile_changed.getPOTMsgSetDifferentTranslations())
     >>> len(potmsgsets)
     2
 

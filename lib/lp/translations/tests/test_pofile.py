@@ -681,12 +681,12 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals([], found_translations)
 
-    def test_getPOTMsgSetChangedInUbuntu(self):
+    def test_getPOTMsgSetDifferentTranslations(self):
         # Test listing of POTMsgSets which contain changes from imports.
 
         # If there are no translations in Ubuntu, nothing is listed.
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
         # Adding a non-imported current translation doesn't change anything.
@@ -695,7 +695,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translations=[u"Non-imported translation"])
         self.assertEquals(translation.is_current_upstream, False)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
         # Adding an imported translation which is also current indicates
@@ -706,7 +706,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, True)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
         # However, changing current translation to a non-imported one
@@ -717,7 +717,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, False)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
         # Adding a diverged, non-imported translation, still lists
@@ -728,7 +728,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, False)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
         # But adding a diverged current and imported translation means
@@ -740,7 +740,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, True)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
         # Changing from a diverged, imported translation is correctly
@@ -751,10 +751,10 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, False)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
-    def test_getPOTMsgSetChangedInUbuntu_diverged_imported(self):
+    def test_getPOTMsgSetDifferentTranslations_diverged_imported(self):
         # If there is a diverged imported (but non-current) message
         # and a shared current message, it should not be listed as changed.
         # Even though that is generally incorrect, this is a situation
@@ -785,10 +785,10 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         # Such POTMsgSet is not considered changed in this PO file.
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
-    def test_getPOTMsgSetChangedInUbuntu_SharedDiverged(self):
+    def test_getPOTMsgSetDifferentTranslations_SharedDiverged(self):
         # Test listing of changed in Ubuntu for shared/diverged messages.
 
         # Adding an imported translation which is also current indicates
@@ -799,7 +799,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, True)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
         # Adding a diverged, non-imported translation makes it appear
@@ -810,7 +810,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(translation.is_current_upstream, False)
         self.assertEquals(translation.is_current_ubuntu, True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_messageCount(self):
@@ -1315,7 +1315,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], untranslated_potmsgsets)
 
-    def test_getPOTMsgSetChangedInUbuntu_ordering(self):
+    def test_getPOTMsgSetDifferentTranslations_ordering(self):
         # Suggest a translation on both POTMsgSets in devel_pofile,
         # so they are returned with getPOTMsgSetWithNewSuggestions() call.
         self.factory.makeSharedTranslationMessage(
@@ -1340,7 +1340,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
             is_current_upstream=False)
 
         potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
@@ -1351,13 +1351,13 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         # And they are returned in the new order as desired.
         potmsgsets = list(
-            self.stable_pofile.getPOTMsgSetChangedInUbuntu())
+            self.stable_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset2, self.potmsgset1], potmsgsets)
 
         # Order is unchanged for the previous template.
         potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
