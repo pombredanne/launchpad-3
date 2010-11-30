@@ -25,6 +25,7 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
+    get_radio_button_text_for_field,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
@@ -402,6 +403,11 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEqual('text', tag['type'])
         ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
         self.assertIs(None, ppa_chooser)
+        # There is a hidden option to say create a new ppa.
+        ppa_options = content.find(attrs={'name': 'field.use_ppa'})
+        self.assertEqual('input', ppa_options.name)
+        self.assertEqual('hidden', ppa_options['type'])
+        self.assertEqual('create-new', ppa_options['value'])
 
     def test_ppa_selector_shown_if_user_has_ppas(self):
         # If the user creating a recipe has existing PPAs, the selector is
@@ -415,6 +421,12 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertEqual('text', tag['type'])
         ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
         self.assertEqual('select', ppa_chooser.name)
+        ppa_options = list(
+            get_radio_button_text_for_field(content, 'use_ppa'))
+        self.assertEqual(
+            ['(*) Use an existing PPA',
+             '( ) Create a new PPA for this recipe'''],
+            ppa_options)
 
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
