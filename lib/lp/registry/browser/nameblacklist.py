@@ -162,14 +162,3 @@ class NameBlacklistSetBreadcrumb(Breadcrumb):
     implements(IBreadcrumb)
 
     text = "Name Blacklist"
-
-
-@adapter(INameBlacklist)
-class NameBlacklistBreadcrumb(Breadcrumb):
-    """Return a breadcrumb for an `INameBlackList`."""
-
-    implements(IBreadcrumb)
-
-    @property
-    def text(self):
-        return self.context.regexp
