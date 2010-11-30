@@ -47,6 +47,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
+    'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
@@ -715,14 +716,10 @@ class ValidPersonOrClosedTeamVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid, public teams in Launchpad."""
 
     displayname = 'Select a restricted or moderated Team or person'
-
-    # Because the base class does almost everything we need, we just need to
-    # restrict the search results to those Persons who have a non-NULL
-    # teamowner, i.e. a valid team.
-    extra_clause = Not(
-        Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
-    # Search with empty string returns all teams.
     allow_null_search = False
+    # Users are have a MODERATED subscriptionpolicy in the table.
+    extra_clause = And(
+        Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
 
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):

@@ -11,7 +11,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -44,3 +47,41 @@ class TestValidTeamMemberVocabulary(TestCaseWithFactory):
             owner=team_owner, visibility=PersonVisibility.PRIVATE)
         Store.of(team).flush()
         self.assertFalse(team in self.searchVocabulary(team, team.name))
+
+
+class TestValidPersonOrClosedTeamVocabulary(TestCaseWithFactory):
+    """Test behaviour of ValidPersonOrClosedTeamVocabulary."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestValidPersonOrClosedTeamVocabulary, self).setUp()
+        vocabulary_registry = getVocabularyRegistry()
+        self.vocabulary = vocabulary_registry.get(
+            None, 'ValidPersonOrClosedTeam')
+
+    def searchVocabulary(self, person):
+        Store.of(person).flush()
+        matches = [
+            term.value
+            for term in self.vocabulary.searchForTerms(person.name)]
+        return person in matches
+
+    def test_contains_no_open_teams(self):
+        open_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        self.assertFalse(self.searchVocabulary(open_team))
+
+    def test_contains_moderated_teams(self):
+        moderated_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        self.assertTrue(self.searchVocabulary(moderated_team))
+
+    def test_contains_restricted_teams(self):
+        restricted_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        self.assertTrue(self.searchVocabulary(restricted_team))
+
+    def test_contains_users(self):
+        user = self.factory.makePerson()
+        self.assertTrue(self.searchVocabulary(user))
