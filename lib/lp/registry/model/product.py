@@ -453,6 +453,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
+    enable_bugfiling_duplicate_search = BoolCol(notNull=True, default=True)
     _cached_licenses = None
 
     def _validate_active(self, attr, value):
