@@ -44,7 +44,7 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
         # A public team should be filtered by the vocab.extra_clause
         # when provided a search term.
         team = self.factory.makeTeam()
-        self.assertFalse(team in self.searchVocabulary(team, team.name))
+        self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
     def test_private_team_cannot_be_a_member_of_itself(self):
         # A private team should be filtered by the vocab.extra_clause
@@ -52,7 +52,38 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
         team = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
         login_person(team.teamowner)
-        self.assertFalse(team in self.searchVocabulary(team, team.name))
+        self.assertNotIn(team, self.searchVocabulary(team, team.name))
+
+    def test_contains_no_open_teams(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        open_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        results = self.searchVocabulary(context_team, open_team.name)
+        self.assertNotIn(open_team, results)
+
+    def test_contains_moderated_teams(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        moderated_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        results = self.searchVocabulary(context_team, moderated_team.name)
+        self.assertIn(moderated_team, results)
+
+    def test_contains_restricted_teams(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        restricted_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
+        results = self.searchVocabulary(context_team, restricted_team.name)
+        self.assertIn(restricted_team, results)
+
+    def test_contains_users(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        user = self.factory.makePerson()
+        results = self.searchVocabulary(context_team, user.name)
+        self.assertIn(user, results)
 
 
 class TestValidPersonOrClosedTeamVocabulary(TestCaseWithFactory):

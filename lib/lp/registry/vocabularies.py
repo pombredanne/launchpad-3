@@ -742,7 +742,6 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
     team itself, all valid persons and teams are valid members.
     """
 
-    # XXX sinzui 2010-11-30: closed team?
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamMemberVocabulary needs a context.')
@@ -754,12 +753,20 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
                 "Got %s" % str(context))
 
         ValidPersonOrTeamVocabulary.__init__(self, context)
-        self.extra_clause = """
+
+    @property
+    def extra_clause(self):
+        extra = SQL("""
             Person.id NOT IN (
                 SELECT team FROM TeamParticipation
                 WHERE person = %d
                 )
-            """ % self.team.id
+            """ % self.team.id)
+        if self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
+            extra = And(
+                extra,
+                Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
+        return extra
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
