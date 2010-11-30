@@ -599,7 +599,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team):
+    def _doMerge(self, test_team, target_team):
         test_team.deactivateAllMembers(
             comment='',
             reviewer=test_team.teamowner)
@@ -612,7 +612,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         target_team = self.factory.makeTeam()
 
         login_person(test_team.teamowner)
-        self._doMerge(test_team)
+        self._doMerge(test_team, target_team)
 
     def test_team_with_super_teams_raises_error(self):
         # A team with no members but with superteams
@@ -626,7 +626,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertRaises(
             AssertionError,
             self._doMerge,
-            test_team)
+            test_team,
+            target_team)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
