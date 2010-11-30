@@ -639,19 +639,24 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
             delayed_call.cancel()
         super(TestMirrorCDImageProberCallbacks, self).tearDown()
 
-    def test_mirrorcdimageseries_creation_and_deletion(self):
+    def test_mirrorcdimageseries_creation_and_deletion_all_success(self):
         callbacks = self.makeMirrorProberCallbacks()
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
         mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
              all_success)
-        self.failUnless(
-            mirror_cdimage_series is not None,
+        self.assertIsNot(
+            mirror_cdimage_series, None,
             "If the prober gets a list of 200 Okay statuses, a new "
             "MirrorCDImageSeries should be created.")
 
+    def test_mirrorcdimageseries_creation_and_deletion_some_404s(self):
         not_all_success = [
             (defer.FAILURE, Failure(BadResponseCode(str(httplib.NOT_FOUND)))),
             (defer.SUCCESS, '200')]
+        callbacks = self.makeMirrorProberCallbacks()
+        all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
+        mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
+             all_success)
         callbacks.ensureOrDeleteMirrorCDImageSeries(not_all_success)
         # If the prober gets at least one 404 status, we need to make sure
         # there's no MirrorCDImageSeries for that series and flavour.
@@ -666,7 +671,7 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
         # some times.
         logger = self.getLogger()
         callbacks = self.makeMirrorProberCallbacks()
-        self.failUnlessEqual(
+        self.assertEqual(
             set(callbacks.expected_failures),
             set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
