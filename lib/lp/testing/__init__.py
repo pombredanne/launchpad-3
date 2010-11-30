@@ -694,12 +694,16 @@ class BrowserTestCase(TestCaseWithFactory):
         else:
             return self.getUserBrowser(url, self.user)
 
+    def getMainContent(self, context, view_name=None):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
+        browser = self.getViewBrowser(context, view_name)
+        return find_main_content(browser.contents)
+
     def getMainText(self, context, view_name=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
-        return extract_text(find_main_content(browser.contents))
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(self.getMainContent(context, view_name))
 
 
 class WindmillTestCase(TestCaseWithFactory):

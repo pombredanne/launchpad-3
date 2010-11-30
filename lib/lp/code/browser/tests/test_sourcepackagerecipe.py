@@ -390,6 +390,32 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             get_message_text(browser, 2),
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
+    def test_ppa_selector_not_shown_if_user_has_no_ppas(self):
+        # If the user creating a recipe has no existing PPAs, the selector
+        # isn't shown, but the field to enter a new PPA name is.
+        self.user = self.factory.makePerson(password='test')
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        tag = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', tag.name)
+        self.assertEqual('text', tag['type'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertIs(None, ppa_chooser)
+
+    def test_ppa_selector_shown_if_user_has_ppas(self):
+        # If the user creating a recipe has existing PPAs, the selector is
+        # shown, along with radio buttons to decide whether to use an existing
+        # ppa or to create a new one.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.user):
+            content = self.getMainContent(branch, '+new-recipe')
+        tag = content.find(attrs={'id': 'field.ppa_name'})
+        self.assertEqual('input', tag.name)
+        self.assertEqual('text', tag['type'])
+        ppa_chooser = content.find(attrs={'id': 'field.daily_build_archive'})
+        self.assertEqual('select', ppa_chooser.name)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
