@@ -70,7 +70,6 @@ class PageMatch:
         """
         return config.vhost.mainsite.hostname
 
-
     def __init__(self, title, url, summary):
         """initialize a PageMatch.
 
@@ -155,14 +154,14 @@ class GoogleSearchService:
     implements(ISearchService)
 
     _default_values = {
-        'client' : 'google-csbe',
-        'cx' : None,
-        'ie' : 'utf8',
-        'num' : 20,
-        'oe' : 'utf8',
-        'output' : 'xml_no_dtd',
+        'client': 'google-csbe',
+        'cx': None,
+        'ie': 'utf8',
+        'num': 20,
+        'oe': 'utf8',
+        'output': 'xml_no_dtd',
         'start': 0,
-        'q' : None,
+        'q': None,
         }
 
     @property
