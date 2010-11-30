@@ -2410,12 +2410,38 @@ class TestPOFilePermissions(TestCaseWithFactory):
 
 
 class StatisticsTestScenario:
-    """Test case mixin: `POFile` statistics."""
+    """Test case mixin: `POFile` statistics.
+
+    It is used to test the actual statistics functions but also to test that
+    the related filter functions return the same counts.
+    """
     layer = ZopelessDatabaseLayer
 
     def makePOFile(self):
         """Create a `POFile` to run statistics tests against."""
         raise NotImplementedError("makePOFile")
+
+    def exerciseFunction(self, pofile):
+        """Run the function under test."""
+        raise NotImplementedError("exerciseFunction")
+
+    def getCurrentCount(self, pofile):
+        raise NotImplementedError("getCurrentCount")
+
+    def getRosettaCount(self, pofile):
+        raise NotImplementedError("getRosettaCount")
+
+    def getTranslatedCount(self, pofile):
+        raise NotImplementedError("getTranslatedCount")
+
+    def getUnreviewedCount(self, pofile):
+        raise NotImplementedError("getUnreviewedCount")
+
+    def getUntranslatedCount(self, pofile):
+        raise NotImplementedError("getUntranslatedCount")
+
+    def getUpdatesCount(self, pofile):
+        raise NotImplementedError("getUpdatesCount")
 
     def _getSideTraits(self, potemplate):
         """Return `TranslationSideTraits` for `potemplate`."""
@@ -2436,26 +2462,26 @@ class StatisticsTestScenario:
         # they had been freshly updated.
         pofile = self.makePOFile()
         stats = pofile.getStatistics()
-        pofile.updateStatistics()
+        self.exerciseFunction(pofile)
         self.assertEqual(stats, pofile.getStatistics())
 
     def test_translatedCount_initial(self):
         pofile = self.makePOFile()
-        self.assertEqual(0, pofile.translatedCount())
+        self.assertEqual(0, self.getTranslatedCount(pofile))
 
     def test_translatedCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getTranslatedCount(pofile))
 
     def test_translatedCount(self):
         # A current translation message counts towards the POFile's
         # translatedCount.
         pofile = self.makePOFile()
         suggestion = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getTranslatedCount(pofile))
 
     def test_translatedCount_ignores_obsolete(self):
         # Translations of obsolete POTMsgSets do not count as
@@ -2464,22 +2490,22 @@ class StatisticsTestScenario:
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getTranslatedCount(pofile))
 
     def test_translatedCount_other_side(self):
         # Translations on the other side do not count as translated.
         pofile = self.makePOFile()
         self._makeOtherSideTranslation(pofile)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getTranslatedCount(pofile))
 
     def test_translatedCount_diverged(self):
         # Diverged translations are also counted.
         pofile = self.makePOFile()
         diverged = self.factory.makeDivergedTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getTranslatedCount(pofile))
 
     def test_translatedCount_ignores_masked_shared_translations(self):
         # A shared current translation that is masked by a diverged one
@@ -2491,47 +2517,48 @@ class StatisticsTestScenario:
         self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
 
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.translatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getTranslatedCount(pofile))
 
     def test_untranslatedCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUntranslatedCount(pofile))
 
     def test_untranslatedCount_initial(self):
-        self.assertEqual(0, self.makePOFile().untranslatedCount())
+        pofile = self.makePOFile()
+        self.assertEqual(0, pofile.untranslatedCount())
 
     def test_untranslatedCount(self):
         # Translating a message removes it from the untranslatedCount.
         pofile = self.makePOFile()
         self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUntranslatedCount(pofile))
 
     def test_untranslatedCount_ignores_obsolete(self):
         # Translations of obsolete POTMsgSets do not count as
         # untranslated.
         pofile = self.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUntranslatedCount(pofile))
 
     def test_untranslatedCount_other_side(self):
         # Messages that are translated on the other side can still be in
         # the untranslatedCount.
         pofile = self.makePOFile()
         self._makeOtherSideTranslation(pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUntranslatedCount(pofile))
 
     def test_untranslatedCount_diverged(self):
         # Diverged translations are also counted.
         pofile = self.makePOFile()
         diverged = self.factory.makeDivergedTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUntranslatedCount(pofile))
 
     def test_untranslatedCount_ignores_masked_shared_translations(self):
         # A shared current translation that is masked by a diverged one
@@ -2542,17 +2569,18 @@ class StatisticsTestScenario:
             pofile=pofile, potmsgset=potmsgset)
         self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.untranslatedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUntranslatedCount(pofile))
 
     def test_currentCount_initial(self):
-        self.assertEqual(0, self.makePOFile().currentCount())
+        pofile = self.makePOFile()
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_currentCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_currentCount(self):
         # A translation that is shared between Ubuntu and upstream is
@@ -2560,8 +2588,8 @@ class StatisticsTestScenario:
         pofile = self.makePOFile()
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, current_other=True)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getCurrentCount(pofile))
 
     def test_currentCount_ignores_obsolete(self):
         # The currentCount does not include obsolete messages.
@@ -2569,8 +2597,8 @@ class StatisticsTestScenario:
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, current_other=True)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_currentCount_ignores_onesided_translation(self):
         # A translation that is only current on one side is not included
@@ -2578,8 +2606,8 @@ class StatisticsTestScenario:
         pofile = self.makePOFile()
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, current_other=False)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_currentCount_different(self):
         # A message that is translated differently in Ubuntu than
@@ -2589,8 +2617,8 @@ class StatisticsTestScenario:
         self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
         this_translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_currentCount_diverged(self):
         # Diverging from a translation that's shared between Ubuntu and
@@ -2601,25 +2629,26 @@ class StatisticsTestScenario:
             pofile=pofile, potmsgset=potmsgset, current_other=True)
         self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.currentCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getCurrentCount(pofile))
 
     def test_rosettaCount_initial(self):
-        self.assertEqual(0, self.makePOFile().rosettaCount())
+        pofile = self.makePOFile()
+        self.assertEqual(0, pofile.rosettaCount())
 
     def test_rosettaCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getRosettaCount(pofile))
 
     def test_rosettaCount(self):
         # rosettaCount counts messages that are translated on this side
         # but not the other side.
         pofile = self.makePOFile()
         self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getRosettaCount(pofile))
 
     def test_rosettaCount_ignores_obsolete(self):
         # The rosettaCount ignores obsolete messages.
@@ -2627,15 +2656,15 @@ class StatisticsTestScenario:
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getRosettaCount(pofile))
 
     def test_rosettaCount_diverged(self):
         # Diverged messages are also counted towards the rosettaCount.
         pofile = self.makePOFile()
         self.factory.makeDivergedTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getRosettaCount(pofile))
 
     def test_rosettaCount_ignores_shared_messages(self):
         # Messages that are shared with the other side are not part of
@@ -2643,16 +2672,16 @@ class StatisticsTestScenario:
         pofile = self.makePOFile()
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, current_other=True)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getRosettaCount(pofile))
 
     def test_rosettaCount_ignores_messages_translated_on_other_side(self):
         # Messages that are translated on the other side but not on this
         # one do not count towards the rosettaCount.
         pofile = self.makePOFile()
         self._makeOtherSideTranslation(pofile)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getRosettaCount(pofile))
 
     def test_rosettaCount_includes_different_translations(self):
         # The rosettaCount does include messages that are translated
@@ -2662,17 +2691,18 @@ class StatisticsTestScenario:
         self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.rosettaCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getRosettaCount(pofile))
 
     def test_updatesCount_initial(self):
-        self.assertEqual(0, self.makePOFile().updatesCount())
+        pofile = self.makePOFile()
+        self.assertEqual(0, self.getUpdatesCount(pofile))
 
     def test_updatesCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.updatesCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUpdatesCount(pofile))
 
     def test_updatesCount(self):
         # The updatesCount counts messages that are translated on the
@@ -2682,8 +2712,8 @@ class StatisticsTestScenario:
         self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.updatesCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUpdatesCount(pofile))
 
     def test_updatesCount_ignores_obsolete(self):
         # The updatesCount ignores obsolete messages.
@@ -2692,8 +2722,8 @@ class StatisticsTestScenario:
         self._makeOtherSideTranslation(pofile, potmsgset=potmsgset)
         self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.updatesCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUpdatesCount(pofile))
 
     def test_updatesCount_diverged(self):
         # Diverged messages can be part of the updatesCount.
@@ -2703,41 +2733,42 @@ class StatisticsTestScenario:
             pofile=pofile, potmsgset=potmsgset, current_other=True)
         self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.updatesCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUpdatesCount(pofile))
 
     def test_updatesCount_diverged_ignores_untranslated_other(self):
         # Diverged messages are not part of the updatesCount if there is
         # no translation on the other side; they fall under rosettaCount.
         pofile = self.makePOFile()
         self.factory.makeDivergedTranslationMessage(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.updatesCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUpdatesCount(pofile))
 
     def test_unreviewedCount_initial(self):
-        self.assertEqual(0, self.makePOFile().unreviewedCount())
+        pofile = self.makePOFile()
+        self.assertEqual(0, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_potmsgset_initial(self):
         pofile = self.makePOFile()
         self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount(self):
         # A completely untranslated message with a suggestion counts as
         # unreviewed.
         pofile = self.makePOFile()
         self.factory.makeSuggestion(pofile=pofile)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_ignores_obsolete(self):
         # The unreviewedCount ignores obsolete messages.
         pofile = self.makePOFile()
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=0)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_counts_msgids_not_suggestions(self):
         # The unreviewedCount counts messages with unreviewed
@@ -2746,8 +2777,8 @@ class StatisticsTestScenario:
         potmsgset = self.factory.makePOTMsgSet(pofile.potemplate, sequence=1)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
         self.factory.makeSuggestion(pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_ignores_reviewed_suggestions(self):
         # In order to affect the unreviewedCount, a suggestion has to be
@@ -2758,8 +2789,8 @@ class StatisticsTestScenario:
             pofile=pofile, potmsgset=potmsgset)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(0, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(0, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_includes_new_suggestions(self):
         # Suggestions that are newer than the review date om the current
@@ -2771,8 +2802,8 @@ class StatisticsTestScenario:
         translation.date_reviewed -= timedelta(1)
         suggestion = self.factory.makeSuggestion(
             pofile=pofile, potmsgset=potmsgset)
-        pofile.updateStatistics()
-        self.assertEqual(1, pofile.unreviewedCount())
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUnreviewedCount(pofile))
 
     def test_unreviewedCount_includes_other_side_translation(self):
         # A translation on the other side that's newer than the review
@@ -2785,18 +2816,45 @@ class StatisticsTestScenario:
         this_translation.date_reviewed -= timedelta(1)
         other_translation = self._makeOtherSideTranslation(
             pofile, potmsgset=potmsgset)
+        self.exerciseFunction(pofile)
+        self.assertEqual(1, self.getUnreviewedCount(pofile))
+
+
+class StatistcsCountsTestScenario(StatisticsTestScenario):
+    """Test statistics on upstream `POFile`s."""
+
+    def exerciseFunction(self, pofile):
+        """Run the function under test."""
         pofile.updateStatistics()
-        self.assertEqual(1, pofile.unreviewedCount())
+
+    def getCurrentCount(self, pofile):
+        return pofile.currentCount()
+
+    def getRosettaCount(self, pofile):
+        return pofile.rosettaCount()
+
+    def getTranslatedCount(self, pofile):
+        return pofile.translatedCount()
+
+    def getUnreviewedCount(self, pofile):
+        return pofile.unreviewedCount()
+
+    def getUntranslatedCount(self, pofile):
+        return pofile.untranslatedCount()
+
+    def getUpdatesCount(self, pofile):
+        return pofile.updatesCount()
 
 
-class TestUpstreamStatistics(StatisticsTestScenario, TestCaseWithFactory):
+class TestUpstreamStatistics(StatistcsCountsTestScenario,
+                             TestCaseWithFactory):
     """Test statistics on upstream `POFile`s."""
 
     def makePOFile(self):
         return self.factory.makePOFile()
 
 
-class TestUbuntuStatistics(StatisticsTestScenario, TestCaseWithFactory):
+class TestUbuntuStatistics(StatistcsCountsTestScenario, TestCaseWithFactory):
     """Test statistics on Ubuntu `POFile`s."""
 
     def makePOFile(self):

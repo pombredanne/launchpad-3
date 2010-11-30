@@ -81,10 +81,14 @@ class TranslationMessageImportedFlagUpdater:
         previous_imported = self.store.find(
             TranslationMessage,
             TranslationMessage.id.is_in(previous_imported_select))
+        self.logger.debug("Found %d previously imported messages." % (
+            previous_imported.count()))
         previous_imported.set(is_current_upstream=False)
         translations = self.store.find(
             TranslationMessage,
             TranslationMessage.id.is_in(tm_ids))
+        self.logger.debug("Found %d translations to update." % (
+            translations.count()))
         translations.set(is_current_upstream=True)
 
     def __call__(self, chunk_size):
@@ -98,7 +102,9 @@ class TranslationMessageImportedFlagUpdater:
         if len(tm_ids) == 0:
             self.start_at = None
         else:
+            self.logger.debug("Starting update of current batch.")
             self._updateTranslationMessages(tm_ids)
+            self.logger.debug("Finished update of current batch.")
             self.transaction.commit()
             self.transaction.begin()
 
