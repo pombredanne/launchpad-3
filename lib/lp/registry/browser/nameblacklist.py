@@ -13,10 +13,7 @@ __all__ = [
 import re
 
 from zope.app.form.browser import TextWidget
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import action
