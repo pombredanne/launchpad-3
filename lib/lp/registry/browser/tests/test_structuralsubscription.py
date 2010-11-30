@@ -3,8 +3,6 @@
 
 """Tests for structural subscription traversal."""
 
-import unittest
-
 from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
@@ -262,6 +260,7 @@ class TestStructuralSubscriptionAdvancedFeaturesBase(TestCaseWithFactory):
             self.assertIs(
                 None, form_fields.get('bug_notification_level'))
 
+
 class TestProductSeriesAdvancedSubscriptionFeatures(
     TestStructuralSubscriptionAdvancedFeaturesBase):
     """Test advanced subscription features for ProductSeries."""
@@ -328,12 +327,16 @@ class TestStructuralSubscribersPortletViewBase(TestCaseWithFactory):
         self.target = self.factory.makeProduct(project=project)
 
     def test_target_label(self):
-        # Target names are sane and readable.
+        # The target_label attribute of StructuralSubscribersPortletView
+        # returns the correct label for the current
+        # StructuralSubscriptionTarget.
         self.assertEqual(
             "To all %s bugs" % self.target.title, self.view.target_label)
 
     def test_parent_target_label(self):
-        # Target names are sane and readable.
+        # The parent_target_label attribute of
+        # StructuralSubscribersPortletView returns the correct label for
+        # the current parent StructuralSubscriptionTarget.
         self.assertEqual(
             "To all %s bugs" % self.target.parent_subscription_target.title,
             self.view.parent_target_label)
