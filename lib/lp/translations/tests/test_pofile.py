@@ -2863,3 +2863,48 @@ class TestUbuntuStatistics(StatistcsCountsTestScenario, TestCaseWithFactory):
             potemplate=self.factory.makePOTemplate(
                 distroseries=package.distroseries,
                 sourcepackagename=package.sourcepackagename))
+
+
+class StatistcsFiltersTestScenario(StatisticsTestScenario):
+    """Test the filter functions in `POFile`s compared to statistics."""
+
+    def exerciseFunction(self, pofile):
+        """Run the function under test."""
+        pofile.updateStatistics()
+
+    def getCurrentCount(self, pofile):
+        return pofile.currentCount()
+
+    def getRosettaCount(self, pofile):
+        return pofile.rosettaCount()
+
+    def getTranslatedCount(self, pofile):
+        return pofile.translatedCount()
+
+    def getUnreviewedCount(self, pofile):
+        return pofile.getPOTMsgSetWithNewSuggestions().count()
+
+    def getUntranslatedCount(self, pofile):
+        return pofile.untranslatedCount()
+
+    def getUpdatesCount(self, pofile):
+        return pofile.updatesCount()
+
+
+class TestUpstreamFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
+    """Test filters on upstream `POFile`s."""
+
+    def makePOFile(self):
+        return self.factory.makePOFile()
+
+
+class TestUbuntuFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
+    """Test filters on Ubuntu `POFile`s."""
+
+    def makePOFile(self):
+        package = self.factory.makeSourcePackage()
+        return self.factory.makePOFile(
+            potemplate=self.factory.makePOTemplate(
+                distroseries=package.distroseries,
+                sourcepackagename=package.sourcepackagename))
+
