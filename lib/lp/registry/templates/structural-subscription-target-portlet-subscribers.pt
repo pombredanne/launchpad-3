@@ -10,7 +10,7 @@
        tal:define="subscriptions context/bug_subscriptions;
                    parent_target context/parent_subscription_target;
                    target_type context/target_type_display">
-    <b tal:content="view/target_label">To all Foobar bugs</b>
+    <b tal:content="view/target_label">To all Foobar bugs</b>:
     <br />
     <div tal:condition="subscriptions">
       <ul>
@@ -28,7 +28,7 @@
       <br /><br />
     </div>
     <tal:parent-subscriptions condition="parent_target">
-      <b tal:content="view/parent_target_label">For Ubuntu:</b>
+      <b tal:content="view/parent_target_label">For Ubuntu</b>:
       <br />
       <div tal:condition="parent_target/bug_subscriptions">
         <ul>
