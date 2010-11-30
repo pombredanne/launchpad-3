@@ -709,28 +709,33 @@ class POFile(SQLBase, POFileMixIn):
         # exists imported (is_current_upstream AND not empty AND (
         # diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
+        other_side_flag_name = getUtility(
+            ITranslationSideTraitsSet).getForTemplate(
+                self.potemplate).other_side_traits.flag_name
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_upstream IS FALSE',
+            'TranslationMessage.%s IS FALSE' % other_side_flag_name,
             ])
 
         imported_no_diverged = (
             '''NOT EXISTS (
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
-                     diverged.is_current_upstream IS TRUE AND
+                     diverged.%(flag_name)s IS TRUE AND
                      diverged.id <> imported.id AND
                      diverged.potemplate = %(potemplate)s AND
                      diverged.language = %(language)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-            dict(potemplate=quote(self.potemplate),
-                 language=quote(self.language))))
-
+                dict(
+                    flag_name=other_side_flag_name,
+                    potemplate=quote(self.potemplate),
+                    language=quote(self.language))
+                    ))
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
             'imported.language = %s' % sqlvalues(self.language),
-            'imported.is_current_upstream IS TRUE',
+            'imported.%s IS TRUE' % other_side_flag_name,
             '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
             + '  ))',
