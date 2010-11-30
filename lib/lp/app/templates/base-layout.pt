@@ -75,6 +75,7 @@
           var _gaq = _gaq || [];
           _gaq.push(['_setAccount', 'UA-12833497-1']);
           _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
           _gaq.push(['_trackPageview']);
 
           (function() {
