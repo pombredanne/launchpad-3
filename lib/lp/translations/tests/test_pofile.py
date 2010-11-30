@@ -2879,13 +2879,13 @@ class StatistcsFiltersTestScenario(StatisticsTestScenario):
         return pofile.rosettaCount()
 
     def getTranslatedCount(self, pofile):
-        return pofile.translatedCount()
+        return pofile.getPOTMsgSetTranslated().count()
 
     def getUnreviewedCount(self, pofile):
         return pofile.getPOTMsgSetWithNewSuggestions().count()
 
     def getUntranslatedCount(self, pofile):
-        return pofile.untranslatedCount()
+        return pofile.getPOTMsgSetUntranslated().count()
 
     def getUpdatesCount(self, pofile):
         return pofile.updatesCount()
