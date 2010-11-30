@@ -82,7 +82,8 @@ search_tasks_params_for_api_1_0 = {
     "omit_duplicates": copy_field(IBugTaskSearch['omit_dupes']),
     "omit_targeted": copy_field(IBugTaskSearch['omit_targeted']),
     "status_upstream": copy_field(IBugTaskSearch['status_upstream']),
-    "milestone_assignment": copy_field(IBugTaskSearch['milestone_assignment']),
+    "milestone_assignment": copy_field(
+        IBugTaskSearch['milestone_assignment']),
     "milestone": copy_field(IBugTaskSearch['milestone']),
     "component": copy_field(IBugTaskSearch['component']),
     "nominated_for": Reference(schema=Interface),
@@ -296,6 +297,10 @@ class IBugTarget(IHasBugs):
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False)
+
     def createBug(bug_params):
         """Create a new bug on this target.
 
@@ -337,8 +342,10 @@ class BugDistroSeriesTargetDetails:
     :istargeted: Is there a fix targeted to this series?
     :sourcepackage: The sourcepackage to which the fix would be targeted.
     :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if series is not targeted.
+    :status: A BugTaskStatus dbschema item, or None, if series is not
+        targeted.
     """
+
     def __init__(self, series, istargeted=False, sourcepackage=None,
                  assignee=None, status=None):
         self.series = series
