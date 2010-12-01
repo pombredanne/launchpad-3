@@ -210,7 +210,6 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         release.
         """
 
-
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone
 patch_plain_parameter_type(
