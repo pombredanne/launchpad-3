@@ -1607,10 +1607,6 @@
     <adapter
         factory="lp.registry.browser.nameblacklist.NameBlacklistSetBreadcrumb"
         />
-    <adapter
-        factory="lp.registry.browser.nameblacklist.NameBlacklistBreadcrumb"
-        />
-
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
