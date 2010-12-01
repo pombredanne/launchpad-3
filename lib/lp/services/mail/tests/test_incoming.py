@@ -15,11 +15,11 @@ from canonical.launchpad.mail.ftests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.mail import (
-    authenticateEmail,
     helpers,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.incoming import (
+    authenticateEmail,
     handleMail,
     MailErrorUtility,
     )
