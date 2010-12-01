@@ -62,6 +62,7 @@ from canonical.widgets import (
     HiddenUserWidget,
     LaunchpadRadioWidget,
     )
+from canonical.widgets.popup import PersonPickerWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -1029,6 +1030,7 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+    custom_widget('newmember', PersonPickerWidget, step_title='Search')
 
     @property
     def page_title(self):
@@ -1037,6 +1039,13 @@ class TeamMemberAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        super(TeamMemberAddView, self).setUpWidgets()
+        if self.context.subscriptionpolicy != TeamSubscriptionPolicy.OPEN:
+            self.widgets['newmember'].step_title = (
+                'Search for a restricted or moderated team or person')
 
     def validate(self, data):
         """Verify new member.
