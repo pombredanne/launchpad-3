@@ -11,5 +11,6 @@ CREATE TABLE SubunitStream (
 
 CREATE INDEX SubunitStream__uploader_created__idx ON SubunitStream(uploader, date_created);
 CREATE INDEX SubunitStream__branch_created__idx ON SubunitStream(branch, date_created);
+CREATE INDEX SubunitStream__stream__idx ON SubunitStream(stream);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 33, 0);
