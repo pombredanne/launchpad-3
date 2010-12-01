@@ -66,20 +66,12 @@ class VocabularyTestBase:
         self.assertIn(restricted_team, all_possible_members)
         self.assertIn(user, all_possible_members)
 
-    def test_open_team_vocabulary_displayname(self):
+    def test_vocabulary_displayname(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.OPEN)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
-            'Select a Person or Team', vocabulary.displayname)
-
-    def test_closed_team_vocabulary_displayname(self):
-        context_team = self.factory.makeTeam(
-            subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        vocabulary = self.getVocabulary(context_team)
-        self.assertEqual(
-            'Select a Restricted or Moderated Team or Person',
-            vocabulary.displayname)
+            'Select a Team or Person', vocabulary.displayname)
 
 
 class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):

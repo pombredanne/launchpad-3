@@ -727,16 +727,11 @@ class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
 class TeamVocabularyMixin:
     """Common methods for team vocabularies."""
 
+    displayname = 'Select a Team or Person'
+
     @property
     def is_closed_team(self):
         return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
-
-    @property
-    def displayname(self):
-        if self.is_closed_team:
-            return 'Select a Restricted or Moderated Team or Person'
-        else:
-            return ValidPersonOrTeamVocabulary.displayname
 
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
