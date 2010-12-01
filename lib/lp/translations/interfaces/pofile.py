@@ -165,9 +165,6 @@ class IPOFile(IRosettaStats):
         for.
         """
 
-    def hasPluralFormInformation():
-        """Do we know the plural-forms information for this `POFile`?"""
-
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 
@@ -184,13 +181,15 @@ class IPOFile(IRosettaStats):
         """Get pot message sets with suggestions submitted after last review.
         """
 
-    def getPOTMsgSetChangedInUbuntu():
+    def getPOTMsgSetChangedInLaunchpad():
         """Get pot message sets changed through Launchpad in this PO file.
 
-        'Changed in Ubuntu' are only those which were translated when
-        initially imported, but then got overridden in Ubuntu translations
-        through Launchpad.
+        'Changed in Launchpad' are only those which were translated when
+        initially imported, but then got overridden in Launchpad.
         """
+
+    def getPOTMsgSetWithErrors():
+        """Get message sets that have translations imported with errors."""
 
     def getTranslationsFilteredBy(person):
         """Get TranslationMessages in this `IPOFile` contributed by `person`.
@@ -230,6 +229,9 @@ class IPOFile(IRosettaStats):
 
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
+
+    def setOwnerIfPrivileged(person):
+        """Set `owner` to `person`, provided `person` has edit rights."""
 
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
@@ -292,17 +294,9 @@ class IPOFile(IRosettaStats):
         """
 
     def getChangedRows():
-        """Return exportable rows that differ from upstream translations.
+        """Return exportable rows that differ from published translations.
 
         :return: a list of `VPOExport` objects.
-        """
-
-    def markChanged(translator=None, timestamp=None):
-        """Note a change to this `POFile` or its contents.
-
-        :param translator: The person making this change.  If given,
-            `lasttranslator` will be updated to refer to this person.
-        :param timestamp: Time of the change.  Defaults to "now."
         """
 
 

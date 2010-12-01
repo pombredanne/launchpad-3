@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
-
-
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages

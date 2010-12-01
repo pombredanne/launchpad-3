@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -175,13 +175,10 @@ class ITranslationImportQueueEntry(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    by_maintainer = Bool(
-        title=_(
-            "This upload was done by the maintainer "
-            "of the project or package."),
+    is_published = Bool(
+        title=_("This import comes from a published file"),
         description=_(
-            "If checked, the translations in this import will be marked "
-            "as is_current_upstream."),
+            "If checked, this import will be handled as already published."),
         required=True,
         default=False)
 
@@ -311,15 +308,15 @@ class ITranslationImportQueue(Interface):
     def countEntries():
         """Return the number of `TranslationImportQueueEntry` records."""
 
-    def addOrUpdateEntry(path, content, by_maintainer, importer,
+    def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
-        :arg path: is the path, with the filename, of the uploaded file.
+        :arg path: is the path, with the filename, of the file imported.
         :arg content: is the file content.
-        :arg by_maintainer: indicates if the file was uploaded by the
-            maintainer of the project or package.
+        :arg is_published: indicates if the imported file is already published
+            by upstream.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
@@ -334,14 +331,14 @@ class ITranslationImportQueue(Interface):
         only one of them can be specified.
         """
 
-    def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
+    def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
-        :arg by_maintainer: indicates if the file was uploaded by the
-            maintainer of the project or package.
+        :arg is_published: indicates if the imported file is already published
+            by upstream.
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.

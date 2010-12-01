@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,16 +10,14 @@ from datetime import (
     timedelta,
     )
 
+import gettextpo
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.helpers import validate_translation
 from lp.services.scripts.base import LaunchpadScript
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessageSet,
-    )
-from lp.translations.utilities.validate import (
-    GettextValidationError,
-    validate_translation,
     )
 
 
@@ -37,7 +35,8 @@ class GettextCheckMessages(LaunchpadScript):
 
     This script takes a given set of messages (specified as an SQL
     "WHERE" clause) and checks each of them.  Messages that are found
-    faulty are deactivated.
+    faulty are deactivated, and where appropriate, imported messages
+    they were overriding are activated instead.
     """
 
     _check_count = 0
@@ -78,10 +77,10 @@ class GettextCheckMessages(LaunchpadScript):
     def _log_bad_message(self, bad_message, error):
         """Report gettext validation error for active message."""
         currency_markers = []
-        if bad_message.is_current_ubuntu:
-            currency_markers.append('ubuntu')
-        if bad_message.is_current_upstream:
-            currency_markers.append('upstream')
+        if bad_message.is_current:
+            currency_markers.append('current')
+        if bad_message.is_imported:
+            currency_markers.append('imported')
         if currency_markers == []:
             currency_markers.append('unused')
         currency = ', '.join(currency_markers)
@@ -93,14 +92,12 @@ class GettextCheckMessages(LaunchpadScript):
         :return: Error message string if there is an error, or None otherwise.
         """
         potmsgset = translationmessage.potmsgset
-        # validate_translation takes a dict but translations are a list.
-        msgstrs = dict(enumerate(translationmessage.translations))
+        msgids = potmsgset._list_of_msgids()
+        msgstrs = translationmessage.translations
 
         try:
-            validate_translation(
-                potmsgset.singular_text, potmsgset.plural_text,
-                msgstrs, potmsgset.flags)
-        except GettextValidationError, error:
+            validate_translation(msgids, msgstrs, potmsgset.flags)
+        except gettextpo.error, error:
             self._error_count += 1
             return unicode(error)
 
@@ -116,12 +113,8 @@ class GettextCheckMessages(LaunchpadScript):
         # instead of the bad one.
 
         self._log_bad_message(translationmessage, error)
-        is_current_anywhere = (
-            translationmessage.is_current_ubuntu or
-            translationmessage.is_current_upstream)
-        if is_current_anywhere:
-            translationmessage.is_current_ubuntu = False
-            translationmessage.is_current_upstream = False
+        if translationmessage.is_current:
+            translationmessage.is_current = False
             self._disable_count += 1
 
     def _do_commit(self):

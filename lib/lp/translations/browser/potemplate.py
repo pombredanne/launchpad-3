@@ -120,7 +120,9 @@ class POTemplateNavigation(Navigation):
             # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
             # check the kind of POST we got.  A logout will also be a
             # POST and we should not create a POFile in that case.
-            return self.context.newPOFile(name, owner=user)
+            pofile = self.context.newPOFile(name)
+            pofile.setOwnerIfPrivileged(user)
+            return pofile
 
 
 class POTemplateFacets(StandardLaunchpadFacets):

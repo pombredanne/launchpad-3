@@ -351,6 +351,15 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
         return statement
 
     @property
+    def has_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
+        if self.context.potemplate.hasPluralMessage():
+            return self.context.language.pluralforms is not None
+        # If there are no plural forms, we assume that we have the
+        # plural form information for this language.
+        return True
+
+    @property
     def number_of_plural_forms(self):
         """The number of plural forms for the language or 1 if not known."""
         if self.context.language.pluralforms is not None:
@@ -378,7 +387,7 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_ubuntu': self.context.updatesCount,
+            'changed_in_launchpad': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -427,8 +436,8 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_ubuntu':
-                self.context.getPOTMsgSetChangedInUbuntu,
+            'changed_in_launchpad':
+                self.context.getPOTMsgSetChangedInLaunchpad,
             }
 
         if self.show not in get_functions:
@@ -503,19 +512,24 @@ class POFileView(LaunchpadView):
         Duplicates are eliminated; every translation group will occur
         at most once.
         """
+        language = self.context.language
         managers = []
-        policy = self.context.potemplate.getTranslationPolicy()
-        translators = policy.getTranslators(self.context.language)
-        for group, translator, team in reversed(translators):
-            if translator is None:
-                style_guide_url = None
-            else:
-                style_guide_url = translator.style_guide_url
-            managers.append({
-                'group': group,
-                'team': team,
-                'style_guide_url': style_guide_url,
-            })
+        groups = set()
+        for group in self.context.potemplate.translationgroups:
+            if group not in groups:
+                translator = group.query_translator(language)
+                if translator is None:
+                    team = None
+                    style_guide_url = None
+                else:
+                    team = translator.translator
+                    style_guide_url = translator.style_guide_url
+                managers.append({
+                    'group': group,
+                    'team': team,
+                    'style_guide_url': style_guide_url,
+                    })
+            groups.add(group)
         return managers
 
 
@@ -543,7 +557,7 @@ class TranslationMessageContainer:
         # Assign a CSS class to the translation
         # depending on whether it's used, suggested,
         # or an obsolete suggestion.
-        if translation.is_current_ubuntu:
+        if translation.is_current:
             self.usage_class = 'usedtranslation'
         else:
             if translation.isHidden(pofile):
@@ -700,8 +714,12 @@ class POFileUploadView(POFileView):
                 " recognised as a file that can be imported.")
             return
 
-        # Uploads on this form are never done by the maintainer.
-        by_maintainer = False
+        # We only set the 'published' flag if the upload is marked as an
+        # upstream upload.
+        if self.form.get('upload_type') == 'upstream':
+            published = True
+        else:
+            published = False
 
         if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
@@ -710,7 +728,7 @@ class POFileUploadView(POFileView):
             path = self.context.path
         # Add it to the queue.
         translation_import_queue.addOrUpdateEntry(
-            path, content, by_maintainer, self.user,
+            path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
@@ -835,7 +853,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            error = self._receiveTranslations(potmsgset)
+            error = self._storeTranslations(potmsgset)
             if error and potmsgset.getSequence(self.context.potemplate) != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
@@ -913,7 +931,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
             'translated': self.context.translatedCount,
             'untranslated': self.context.untranslatedCount,
             'new_suggestions': self.context.unreviewedCount,
-            'changed_in_ubuntu': self.context.updatesCount,
+            'changed_in_launchpad': self.context.updatesCount,
             }
 
         if self.show not in count_functions:
@@ -946,8 +964,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
             'translated': self.context.getPOTMsgSetTranslated,
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
-            'changed_in_ubuntu':
-                self.context.getPOTMsgSetChangedInUbuntu,
+            'changed_in_launchpad':
+                self.context.getPOTMsgSetChangedInLaunchpad,
             }
 
         if self.show not in get_functions:

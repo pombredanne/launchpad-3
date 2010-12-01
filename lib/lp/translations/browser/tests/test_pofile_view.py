@@ -54,13 +54,14 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.factory.makeTranslationMessage(
             self.pofile, self.new_suggestion,
             date_updated=self.now())
-        self.factory.makeSuggestion(
-            self.pofile, self.new_suggestion, date_created=self.now())
-        # An upstream that was changed in Ubuntu.
+        self.factory.makeTranslationMessage(
+            self.pofile, self.new_suggestion, suggestion=True,
+            date_updated=self.now())
+        # An imported that was changed in Launchpad.
         self.changed = self.factory.makePOTMsgSet(
             self.potemplate, sequence=4)
         self.factory.makeTranslationMessage(
-            self.pofile, self.changed, is_current_upstream=True,
+            self.pofile, self.changed, is_imported=True,
             date_updated=self.now())
         self.factory.makeTranslationMessage(
             self.pofile, self.changed,
@@ -107,8 +108,8 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.new_suggestion], view.messages)
 
-    def test_show_changed_in_ubuntu(self):
-        form = {'show': 'changed_in_ubuntu'}
+    def test_show_changed_in_launchpad(self):
+        form = {'show': 'changed_in_launchpad'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
         self.assertEqual(1, view.shown_count)
@@ -431,4 +432,3 @@ class TestPOFileTranslateViewDocumentation(TestCaseWithFactory,
                                            DocumentationScenarioMixin):
     layer = ZopelessDatabaseLayer
     view_class = POFileTranslateView
-

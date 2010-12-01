@@ -424,10 +424,10 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         pofile = self.factory.makePOFile(
             potemplate=template, language_code='nl')
 
-        self.factory.makeCurrentTranslationMessage(
+        self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=obsolete_message,
             translations=['%d splut', '%d splutjes'])
-        self.factory.makeCurrentTranslationMessage(
+        self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=current_message,
             translations=['%d gargl', '%d garglii'])
 
@@ -445,7 +445,7 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             """).strip()
 
         body = exported_file.split('\n\n', 1)[1].strip()
-        self.assertEqual(expected_output, body)
+        self.assertEqual(body, expected_output)
 
     def test_strip_last_newline(self):
         # `strip_last_newline` strips only the last newline.
