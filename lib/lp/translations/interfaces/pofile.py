@@ -386,14 +386,11 @@ class IPOFileSet(Interface):
         if the end of the table has been reached.
         """
 
-    def getPOFilesWithTranslationCredits(untranslated=False):
-        """Get POFiles with potential translation credits messages.
+    def getPOFilesWithTranslationCredits():
+        """Get all POFiles with potential translation credits messages.
 
         Returns a ResultSet of (POFile, POTMsgSet) tuples, ordered by
         POFile.id.
-
-        :param untranslated: Look only for `POFile`s with a credits
-            message that is not translated.
         """
 
     def getPOFilesTouchedSince(date):
