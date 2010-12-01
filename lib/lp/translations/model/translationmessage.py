@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,9 +45,6 @@ from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
 from lp.translations.interfaces.translations import TranslationConstants
-
-
-UTC = pytz.timezone('UTC')
 
 
 def make_plurals_fragment(fragment, separator):
@@ -97,11 +94,6 @@ class TranslationMessageMixIn:
                 forms = 2
             return forms
 
-    @property
-    def is_diverged(self):
-        """See `ITranslationMessage`."""
-        return self.potemplate is not None
-
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
         elements = [self.language.code]
@@ -112,14 +104,6 @@ class TranslationMessageMixIn:
     def setPOFile(self, pofile):
         """See `ITranslationMessage`."""
         self.browser_pofile = pofile
-
-    def markReviewed(self, reviewer, timestamp=None):
-        """See `ITranslationMessage`."""
-        if timestamp is None:
-            timestamp = UTC_NOW
-
-        self.reviewer = reviewer
-        self.date_reviewed = timestamp
 
 
 class DummyTranslationMessage(TranslationMessageMixIn):
@@ -137,6 +121,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.potemplate = pofile.potemplate
         self.language = pofile.language
         self.potmsgset = potmsgset
+        UTC = pytz.timezone('UTC')
         self.date_created = datetime.now(UTC)
         self.submitter = None
         self.date_reviewed = None
@@ -148,9 +133,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
-        self.is_current_ubuntu = False
+        self.is_current = True
         self.is_complete = False
-        self.is_current_upstream = False
+        self.is_imported = False
         self.is_empty = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
@@ -162,14 +147,6 @@ class DummyTranslationMessage(TranslationMessageMixIn):
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
         return True
-
-    def approve(self, *args, **kwargs):
-        """See `ITranslationMessage`."""
-        raise NotImplementedError()
-
-    def approveAsDiverged(self, *args, **kwargs):
-        """See `ITranslationMessage`."""
-        raise NotImplementedError()
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
@@ -189,20 +166,61 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         # This object is already non persistent, so nothing needs to be done.
         return
 
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_ubuntu = new_value
 
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        self.is_current_upstream = new_value
+def validate_is_current(self, attr, value):
+    """Unset current message before setting this as current.
 
-    def getSharedEquivalent(self):
-        """See `ITranslationMessage`."""
-        raise NotImplementedError()
+    :param value: Whether we want this translation message as the new
+        current one.
 
-    def shareIfPossible(self):
-        """See `ITranslationMessage`."""
+    If there is already another current message, we unset it first.
+    """
+    assert value is not None, 'is_current field cannot be None.'
+
+    if value and not self.is_current:
+        # We are setting this message as the current one.
+        current_translation_message = (
+            self.potmsgset.getCurrentTranslationMessage(
+                self.potemplate,
+                self.language))
+        if (current_translation_message is not None and
+            current_translation_message != self and
+            current_translation_message.potemplate == self.potemplate):
+            # Clear flag on the previous current message.
+            current_translation_message.is_current = False
+            # Flush changes in the right order so we don't get two
+            # current messages in the same place.
+            Store.of(self).add_flush_order(current_translation_message, self)
+
+    return value
+
+
+def validate_is_imported(self, attr, value):
+    """Unset current imported message before setting this as imported.
+
+    :param value: Whether we want this translation message as the new
+        imported one.
+
+    If there is already another imported message, we unset it first.
+    """
+    assert value is not None, 'is_imported field cannot be None.'
+
+    if value and not self.is_imported:
+        # We are setting this message as the imported one.
+        imported_translation_message = (
+            self.potmsgset.getImportedTranslationMessage(
+                self.potemplate,
+                self.language))
+        if (imported_translation_message is not None and
+            imported_translation_message != self and
+            imported_translation_message.potemplate == self.potemplate):
+            # Clear flag on the previous imported message.
+            imported_translation_message.is_imported = False
+            # Flush changes in the right order so we don't get two
+            # current messages in the same place.
+            Store.of(self).add_flush_order(imported_translation_message, self)
+
+    return value
 
 
 class TranslationMessage(SQLBase, TranslationMessageMixIn):
@@ -252,10 +270,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     validation_status = EnumCol(
         dbName='validation_status', notNull=True,
         schema=TranslationValidationStatus)
-    is_current_ubuntu = BoolCol(
-        dbName='is_current_ubuntu', notNull=True, default=False)
-    is_current_upstream = BoolCol(
-        dbName='is_current_upstream', notNull=True, default=False)
+    is_current = BoolCol(dbName='is_current', notNull=True, default=False,
+                         storm_validator=validate_is_current)
+    is_imported = BoolCol(dbName='is_imported', notNull=True, default=False,
+                          storm_validator=validate_is_imported)
     was_obsolete_in_last_import = BoolCol(
         dbName='was_obsolete_in_last_import', notNull=True, default=False)
 
@@ -265,10 +283,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def _get_was_obsolete_in_last_import(self):
         """Override getter for was_obsolete_in_last_import.
 
-        When the message is not upstream makes no sense to use this flag.
+        When the message is not imported makes no sense to use this flag.
         """
-        assert self.is_current_upstream, (
-            'The message is not current upstream.')
+        assert self.is_imported, 'The message is not imported.'
 
         return self._SO_get_was_obsolete_in_last_import()
 
@@ -315,8 +332,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
     def isHidden(self, pofile):
         """See `ITranslationMessage`."""
-        # If this message is currently used, it's not hidden.
-        if self.is_current_ubuntu or self.is_current_upstream:
+        # If this message is currently used or has been imported,
+        # it's not hidden.
+        if self.is_current or self.is_imported:
             return False
 
         # Otherwise, if this suggestions has been reviewed and
@@ -331,23 +349,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         if current is None:
             return False
         date_reviewed = current.date_reviewed
-        # For an upstream current translation, no date_reviewed is set.
+        # For an imported current translation, no date_reviewed is set.
         if date_reviewed is None:
             date_reviewed = current.date_created
         return date_reviewed > self.date_created
-
-    def approve(self, pofile, reviewer, share_with_other_side=False,
-                lock_timestamp=None):
-        """See `ITranslationMessage`."""
-        self.potmsgset.approveSuggestion(
-            pofile, self, reviewer,
-            share_with_other_side=share_with_other_side,
-            lock_timestamp=lock_timestamp)
-
-    def approveAsDiverged(self, pofile, reviewer, lock_timestamp=None):
-        """See `ITranslationMessage`."""
-        return self.potmsgset.approveAsDiverged(
-            pofile, self, reviewer, lock_timestamp=lock_timestamp)
 
     def getOnePOFile(self):
         """See `ITranslationMessage`."""
@@ -376,8 +381,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             self.browser_pofile = self.getOnePOFile()
         return self.browser_pofile
 
-    def getSharedEquivalent(self):
-        """See `ITranslationMessage`."""
+    def _getSharedEquivalent(self):
+        """Get shared message that otherwise exactly matches this one.
+        """
         clauses = [
             'potemplate IS NULL',
             'potmsgset = %s' % sqlvalues(self.potmsgset),
@@ -397,48 +403,51 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return Store.of(self).find(TranslationMessage, where_clause).one()
 
     def shareIfPossible(self):
-        """See `ITranslationMessage`."""
+        """Make this message shared, if possible.
+
+        If there is already a similar message that is shared, this
+        message's information is merged into that of the existing one,
+        and self is deleted.
+        """
         if self.potemplate is None:
             # Already converged.
             return
 
         # Existing shared direct equivalent to this message, if any.
-        shared = self.getSharedEquivalent()
+        shared = self._getSharedEquivalent()
 
         # Existing shared current translation for this POTMsgSet, if
         # any.
         current = self.potmsgset.getCurrentTranslationMessage(
             potemplate=None, language=self.language)
 
-        # Existing shared upstream translation for this POTMsgSet, if
+        # Existing shared imported translation for this POTMsgSet, if
         # any.
-        upstream = self.potmsgset.getImportedTranslationMessage(
+        imported = self.potmsgset.getImportedTranslationMessage(
             potemplate=None, language=self.language)
 
         if shared is None:
             clash_with_shared_current = (
-                current is not None and self.is_current_ubuntu)
-            clash_with_shared_upstream = (
-                upstream is not None and self.is_current_upstream)
-            if clash_with_shared_current or clash_with_shared_upstream:
+                current is not None and self.is_current)
+            clash_with_shared_imported = (
+                imported is not None and self.is_imported)
+            if clash_with_shared_current or clash_with_shared_imported:
                 # Keep this message diverged, so it won't usurp the
-                # ubuntu or upstream message that the templates share.
+                # current or imported message that the templates share.
                 pass
             else:
                 # No clashes; simply mark this message as shared.
                 self.potemplate = None
-        elif self.is_current_ubuntu or self.is_current_upstream:
-            # Bequeathe ubuntu/upstream flags to shared equivalent.
-            if self.is_current_ubuntu and current is None:
-                shared.is_current_ubuntu = True
-            if self.is_current_upstream and upstream is None:
-                shared.is_current_upstream = True
+        elif self.is_current or self.is_imported:
+            # Bequeathe current/imported flags to shared equivalent.
+            if self.is_current and current is None:
+                shared.is_current = True
+            if self.is_imported and imported is None:
+                shared.is_imported = True
 
-            current_diverged = (
-                self.is_current_ubuntu and not shared.is_current_ubuntu)
-            upstream_diverged = (
-                self.is_current_upstream and not shared.is_current_upstream)
-            if not (current_diverged or upstream_diverged):
+            current_diverged = (self.is_current and not shared.is_current)
+            imported_diverged = (self.is_imported and not shared.is_imported)
+            if not (current_diverged or imported_diverged):
                 # This message is now totally redundant.
                 self.destroySelf()
         else:
@@ -467,36 +476,6 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             forms_match))
 
         return twins.order_by(TranslationMessage.id).first()
-
-    def makeCurrentUbuntu(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_ubuntu:
-            incumbent = self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_ubuntu = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_ubuntu = new_value
-
-    def makeCurrentUpstream(self, new_value=True):
-        """See `ITranslationMessage`."""
-        if new_value and not self.is_current_upstream:
-            incumbent = self.potmsgset.getImportedTranslationMessage(
-                self.potemplate, self.language)
-            if incumbent == self:
-                return
-            if (incumbent is not None and
-                incumbent.potemplate == self.potemplate):
-                # The incumbent is in the way.  Clear its flag.
-                incumbent.is_current_upstream = False
-                Store.of(self).add_flush_order(incumbent, self)
-
-        self.is_current_upstream = new_value
 
 
 class TranslationMessageSet:

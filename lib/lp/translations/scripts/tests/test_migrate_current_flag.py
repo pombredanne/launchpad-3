@@ -65,8 +65,8 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             potemplate=potemplate,
             sequence=1)
         pofile = self.factory.makePOFile(potemplate=potemplate)
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=potmsgset)
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, suggestion=True)
         results = list(
             self.migrate_process.getCurrentNonimportedTranslations(
                 potemplate.productseries.product))
@@ -80,9 +80,8 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             potemplate=potemplate,
             sequence=1)
         pofile = self.factory.makePOFile(potemplate=potemplate)
-        translation = self.factory.makeCurrentTranslationMessage(
-            pofile=pofile, potmsgset=potmsgset)
-        translation.is_current_ubuntu = True
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, is_imported=True)
         results = list(
             self.migrate_process.getCurrentNonimportedTranslations(
                 potemplate.productseries.product))
@@ -96,9 +95,8 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
             potemplate=potemplate,
             sequence=1)
         pofile = self.factory.makePOFile(potemplate=potemplate)
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=potmsgset)
-        translation.is_current_ubuntu = True
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, is_imported=False)
         results = list(
             self.migrate_process.getCurrentNonimportedTranslations(
                 potemplate.productseries.product))
@@ -122,67 +120,64 @@ class TestUpdaterLoop(TestCaseWithFactory):
     def test_updateTranslationMessages_base(self):
         # Passing in a TranslationMessage.id sets is_imported flag
         # on that message even if it was not set before.
-        translation = self.factory.makeSuggestion()
-        translation.is_current_ubuntu = True
-        self.assertFalse(translation.is_current_upstream)
+        translation = self.factory.makeTranslationMessage()
+        self.assertFalse(translation.is_imported)
 
         self.migrate_loop._updateTranslationMessages([translation.id])
-        self.assertTrue(translation.is_current_upstream)
+        self.assertTrue(translation.is_imported)
 
     def test_updateTranslationMessages_unsetting_imported(self):
         # If there was a previous imported message, it is unset
         # first.
         pofile = self.factory.makePOFile()
-        imported = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=imported.potmsgset)
-        translation.is_current_ubuntu = True
-        self.assertTrue(imported.is_current_upstream)
-        self.assertFalse(imported.is_current_ubuntu)
-        self.assertFalse(translation.is_current_upstream)
-        self.assertTrue(translation.is_current_ubuntu)
+        imported = self.factory.makeTranslationMessage(
+            pofile=pofile, is_imported=True)
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=imported.potmsgset, is_imported=False)
+        self.assertTrue(imported.is_imported)
+        self.assertFalse(imported.is_current)
+        self.assertFalse(translation.is_imported)
+        self.assertTrue(translation.is_current)
 
         self.migrate_loop._updateTranslationMessages([translation.id])
-        self.assertFalse(imported.is_current_upstream)
-        self.assertTrue(translation.is_current_upstream)
-        self.assertTrue(translation.is_current_ubuntu)
+        self.assertFalse(imported.is_imported)
+        self.assertTrue(translation.is_imported)
+        self.assertTrue(translation.is_current)
 
     def test_updateTranslationMessages_other_language(self):
         # If there was a previous imported message in another language
         # it is not unset.
         pofile = self.factory.makePOFile()
         pofile_other = self.factory.makePOFile(potemplate=pofile.potemplate)
-        imported = self.factory.makeCurrentTranslationMessage(
-            pofile=pofile_other)
-        imported.is_current_ubuntu = True
-        translation = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=imported.potmsgset)
-        translation.is_current_ubuntu = True
-        self.assertTrue(imported.is_current_upstream)
-        self.assertTrue(imported.is_current_ubuntu)
-        self.assertFalse(translation.is_current_upstream)
-        self.assertTrue(translation.is_current_ubuntu)
+        imported = self.factory.makeTranslationMessage(
+            pofile=pofile_other, is_imported=True)
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=imported.potmsgset, is_imported=False)
+        self.assertTrue(imported.is_imported)
+        self.assertTrue(imported.is_current)
+        self.assertFalse(translation.is_imported)
+        self.assertTrue(translation.is_current)
 
         self.migrate_loop._updateTranslationMessages([translation.id])
-        self.assertTrue(imported.is_current_upstream)
-        self.assertTrue(imported.is_current_ubuntu)
-        self.assertTrue(translation.is_current_upstream)
-        self.assertTrue(translation.is_current_ubuntu)
+        self.assertTrue(imported.is_imported)
+        self.assertTrue(imported.is_current)
+        self.assertTrue(translation.is_imported)
+        self.assertTrue(translation.is_current)
 
     def test_updateTranslationMessages_diverged(self):
         # If there was a previous diverged message, it is not
         # touched.
         pofile = self.factory.makePOFile()
-        translation = self.factory.makeSuggestion(pofile=pofile)
-        translation.is_current_ubuntu = True
-        diverged_imported = self.factory.makeCurrentTranslationMessage(
-            pofile=pofile, diverged=True, potmsgset=translation.potmsgset)
-        diverged_imported.is_current_ubuntu = True
+        translation = self.factory.makeTranslationMessage(
+            pofile=pofile, is_imported=False)
+        diverged_imported = self.factory.makeTranslationMessage(
+            pofile=pofile, force_diverged=True, is_imported=True,
+            potmsgset=translation.potmsgset)
         self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
-        self.assertTrue(diverged_imported.is_current_upstream)
-        self.assertTrue(diverged_imported.is_current_ubuntu)
+        self.assertTrue(diverged_imported.is_imported)
+        self.assertTrue(diverged_imported.is_current)
 
         self.migrate_loop._updateTranslationMessages([translation.id])
         self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
-        self.assertTrue(diverged_imported.is_current_upstream)
-        self.assertTrue(diverged_imported.is_current_ubuntu)
+        self.assertTrue(diverged_imported.is_imported)
+        self.assertTrue(diverged_imported.is_current)

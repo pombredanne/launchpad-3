@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for XPI file format"""
@@ -77,7 +77,7 @@ class XpiTestCase(unittest.TestCase):
             file_contents=es_xpi.read(),
             person=self.importer,
             pofile=self.spanish_firefox,
-            by_maintainer=True)
+            is_imported=True)
 
     def _assertXpiMessageInvariant(self, message):
         """Check whether invariant part of all messages are correct."""
@@ -254,7 +254,8 @@ class XpiTestCase(unittest.TestCase):
         # It's a normal message that lacks any comment.
         self.assertEquals(potmsgset.singular_text, u'FooZilla!')
 
-        # With this first import, upstream and Ubuntu translations must match.
+        # With this first import, published and active texts must
+        # match.
         self.assertEquals(
             translation.translations,
             potmsgset.getImportedTranslationMessage(

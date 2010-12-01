@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
-
 import transaction
 
 from canonical.launchpad.windmill.testing import (

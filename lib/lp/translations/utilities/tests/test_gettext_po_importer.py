@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gettext PO importer tests."""
@@ -57,20 +57,20 @@ class GettextPOImporterTestCase(unittest.TestCase):
         # Add a new entry for testing purposes. It's a template one.
         self.translation_import_queue = getUtility(ITranslationImportQueue)
         template_path = 'po/testing.pot'
-        by_maintainer = True
+        is_published = True
         personset = getUtility(IPersonSet)
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
         productseries = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
-            template_path, test_template, by_maintainer, importer,
+            template_path, test_template, is_published, importer,
             productseries=productseries)
 
         # Add another one, a translation file.
         pofile_path = 'po/es.po'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
-            pofile_path, test_translation_file, by_maintainer, importer,
+            pofile_path, test_translation_file, is_published, importer,
             productseries=productseries)
 
         transaction.commit()

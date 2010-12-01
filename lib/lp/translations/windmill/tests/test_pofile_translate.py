@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.windmill.testing import (
     constants,
@@ -156,11 +155,12 @@ class POFileTranslationActions(WindmillTestCase):
         potmsgset.setSequence(potemplate, 1)
         potmsgset_id = potmsgset.id
 
-        current_translation = self.factory.makeCurrentTranslationMessage(
+        current_translation = self.factory.makeTranslationMessage(
             pofile=pofile, potmsgset=potmsgset, translations=['current'])
         transaction.commit()
-        suggestion = self.factory.makeSuggestion(
-            pofile=pofile, potmsgset=potmsgset, translations=['suggestion'])
+        suggestion = self.factory.makeTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset,
+            translations=['suggestion'], suggestion=True)
         transaction.commit()
         logout()
 
@@ -491,3 +491,4 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             reviewer and current_is_reviewer or
             translator and not current_is_reviewer)
         assert switch_done is True, "Could not switch working mode."
+

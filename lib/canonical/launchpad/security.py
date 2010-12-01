@@ -1273,13 +1273,16 @@ class ViewPOFile(AnonymousAuthorization):
     usedfor = IPOFile
 
 
-class EditPOFile(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditPOFileDetails(EditByOwnersOrAdmins):
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """The `POFile` itself keeps track of this permission."""
-        return self.obj.canEditTranslations(user.person)
+        """Allow anyone that can edit translations, owner, experts and admis.
+        """
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                self.obj.canEditTranslations(user.person) or
+                user.in_rosetta_experts)
 
 
 class AdminTranslator(OnlyRosettaExpertsAndAdmins):

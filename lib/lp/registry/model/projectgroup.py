@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -107,7 +107,6 @@ from lp.registry.model.structuralsubscription import (
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
-from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -115,8 +114,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin, HasDriversMixin,
-                   TranslationPolicyMixin):
+                   HasMilestonesMixin, HasDriversMixin):
     """A ProjectGroup"""
 
     implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
@@ -195,7 +193,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Join(ProductSeries, Product.id == ProductSeries.productID),
             Join(POTemplate, ProductSeries.id == POTemplate.productseriesID),
             ]
-        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
         # this query is using _translations_usage, but there's no cleaner
         # way to deal with it. Once the bug above is resolved, this should
         # should be fixed to use translations_usage.
@@ -208,16 +206,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def has_translatable(self):
         """See `IProjectGroup`."""
         return not self.translatables().is_empty()
-
-    def sharesTranslationsWithOtherSide(self, person, language,
-                                        sourcepackage=None,
-                                        purportedly_upstream=False):
-        """See `ITranslationPolicy`."""
-        assert sourcepackage is None, (
-            "Got a SourcePackage for a ProjectGroup!")
-        # ProjectGroup translations are considered upstream.  They are
-        # automatically shared.
-        return True
 
     def has_branches(self):
         """ See `IProjectGroup`."""

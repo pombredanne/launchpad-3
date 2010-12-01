@@ -72,9 +72,9 @@ syntax error.
     ... msgid "foo"
     ... msgstr blah"
     ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> by_maintainer = False
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, by_maintainer, person,
+    ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -137,9 +137,9 @@ explanatory text.
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> by_maintainer = False
+    >>> published = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, by_maintainer, person,
+    ...     pofile.path, pofile_contents, published, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
