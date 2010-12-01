@@ -521,6 +521,9 @@ patch_collection_return_type(
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
 
+# ISpecification
+patch_collection_property(ISpecification, 'dependencies', ISpecification)
+
 # ISpecificationTarget
 patch_entry_return_type(
     ISpecificationTarget, 'getSpecification', ISpecification)
