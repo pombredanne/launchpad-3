@@ -1975,7 +1975,7 @@ class BugSubscriptionInfo:
         self.level = level
 
     @staticmethod
-    def load_people(people):
+    def load_people(*where):
         """Get subscribers from subscriptions.
 
         Also preloads `ValidPersonCache` records.
@@ -1988,7 +1988,7 @@ class BugSubscriptionInfo:
             IStore(Person).find(
                 (Person, ValidPersonCache),
                 Person.id == ValidPersonCache.id,
-                Person.id.is_in(people)),
+                *where),
             operator.itemgetter(0))
 
     @property
@@ -2006,8 +2006,9 @@ class BugSubscriptionInfo:
     def direct_subscribers(self):
         """The bug's direct subscribers."""
         return self.load_people(
-            subscription.person_id
-            for subscription in self.direct_subscriptions)
+            Person.id.is_in(
+                subscription.person_id
+                for subscription in self.direct_subscriptions))
 
     @property
     @freeze
@@ -2028,8 +2029,9 @@ class BugSubscriptionInfo:
     def duplicate_subscribers(self):
         """Subscribers to duplicates of the bug."""
         return self.load_people(
-            subscription.person_id
-            for subscription in self.duplicate_subscriptions)
+            Person.id.is_in(
+                subscription.person_id
+                for subscription in self.duplicate_subscriptions))
 
     @property
     @freeze
@@ -2063,17 +2065,17 @@ class BugSubscriptionInfo:
     def structural_subscribers(self):
         """Structural subscribers to the bug's targets."""
         return self.load_people(
-            removeSecurityProxy(subscription).subscriberID
-            for subscription in self.structural_subscriptions)
+            Person.id.is_in(
+                removeSecurityProxy(subscription).subscriberID
+                for subscription in self.structural_subscriptions))
 
     @property
     @freeze
     def all_assignees(self):
         """Assignees of the bug's tasks."""
-        for bugtask in self.bug.bugtasks:
-            assignee = bugtask.assignee
-            if assignee is not None:
-                yield assignee
+        return self.load_people(
+            BugTask.assigneeID == Person.id,
+            BugTask.bug == self.bug)
 
     @property
     @freeze
