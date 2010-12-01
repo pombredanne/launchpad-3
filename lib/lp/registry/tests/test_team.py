@@ -216,6 +216,19 @@ class TestMembershipManagement(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_simple_deactivateAllMembers_cleans_up_team_participation(self):
+        superteam = self.factory.makeTeam(name='super')
+        targetteam = self.factory.makeTeam(name='target')
+        login_celebrity('admin')
+        targetteam.join(superteam, targetteam.teamowner)
+        self.assertTrue(superteam in targetteam.super_teams)
+        targetteam.deactivateAllMembers(
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            [],
+            [team for team in targetteam.super_teams])
+
     def test_deactivateAllMembers_cleans_up_team_participation(self):
         superteam = self.factory.makeTeam(name='super')
         sharedteam = self.factory.makeTeam(name='shared')
