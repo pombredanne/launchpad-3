@@ -75,6 +75,7 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
 
@@ -249,23 +250,10 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @cachedproperty
     def _bugtasks(self):
         """The list of non-conjoined bugtasks targeted to this milestone."""
+        if IProjectGroupMilestone.providedBy(self.context):
+            return []
         user = getUtility(ILaunchBag).user
-        params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['status', '-importance', 'id'],
-                    omit_dupes=True)
-        tasks = getUtility(IBugTaskSet).search(params)
-        # We could replace all the code below with a simple
-        # >>> [task for task in tasks if task.conjoined_master is None]
-        # But that'd cause one extra hit to the DB for every bugtask returned
-        # by the search above, so we do a single query to get all of a task's
-        # siblings here and use that to find whether or not a given bugtask
-        # has a conjoined master.
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
-            [task.bug.id for task in tasks])
-        non_conjoined_slaves = []
-        for task in tasks:
-            if task.getConjoinedMaster(bugs_and_tasks[task.bug]) is None:
-                non_conjoined_slaves.append(task)
+        non_conjoined_slaves = self.context.getNonConjoinedBugTasks(user)
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
         precache_permission_for_objects(

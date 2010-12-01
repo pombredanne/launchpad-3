@@ -962,7 +962,8 @@
                 displayname
                 title
                 specifications
-                product_release"/>
+                product_release
+                getNonConjoinedBugTasks"/>
         <require
             permission="launchpad.Edit"
             attributes="
