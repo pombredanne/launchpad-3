@@ -274,13 +274,17 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                     ConjoinedMaster.productseries == dev_focus_id)),
             ]
         store = Store.of(self)
-        non_conjoined_slaves = store.using(*origin).find(
-            (BugTask, Bug),
+        conditions = [
             BugTask.milestone == self,
             ConjoinedMaster.id == None,
             Bug.duplicateof == None,
-            SQL(privacy_clause),
-            ).order_by(BugTask.status, Desc(BugTask.importance), BugTask.id)
+            ]
+        if privacy_clause != '':
+            conditions.append(SQL(privacy_clause))
+        non_conjoined_slaves = store.using(*origin).find(
+            (BugTask, Bug), *conditions)
+        non_conjoined_slaves = non_conjoined_slaves.order_by(
+            BugTask.status, Desc(BugTask.importance), BugTask.id)
 
         def decorator(row):
             bug_task, bug = row
