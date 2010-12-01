@@ -13,12 +13,17 @@ from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Choice
 
-from lazr.enum import EnumeratedType, Item
-
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
-from lp.app.browser.launchpadform import custom_widget, LaunchpadFormView
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 
 
@@ -58,7 +63,7 @@ class CompletedDailyBuildsView(LaunchpadFormView):
             title=_('Recipe Build Filter'), vocabulary=RecipeBuildFilter,
             default=RecipeBuildFilter.ALL,
             description=_(
-            "Filter for selecting when recipe builds have completed."))
+                "Filter for selecting when recipe builds have completed."))
     field_names = ['when_completed_filter']
     custom_widget('when_completed_filter', LaunchpadDropdownWidget)
 

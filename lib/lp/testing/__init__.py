@@ -701,8 +701,8 @@ class BrowserTestCase(TestCaseWithFactory):
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
 
-    def getViewBrowser(
-            self, context, view_name=None, no_login=False, rootsite=None):
+    def getViewBrowser(self, context, view_name=None, no_login=False,
+                       rootsite=None):
         login(ANONYMOUS)
         url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
         logout()
