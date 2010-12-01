@@ -219,6 +219,9 @@
             tal:attributes="src string:${lp_js}/code/productseries-setbranch.js">
     </script>
     <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/sourcepackagerecipe.new.js">
+    </script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/app/errors.js"></script>

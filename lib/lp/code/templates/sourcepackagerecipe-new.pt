@@ -78,7 +78,11 @@
                 </td>
               </tr>
 
-
+              <script type="text/javascript">
+                LPS.use('lp.code.sourcepackagerecipe.new', function(Y) {
+                  Y.on('domready', Y.lp.code.sourcepackagerecipe.new.setup);
+                });
+              </script>
             </tal:show-ppa-choice>
 
             <tal:create-ppa condition="not: view/show_ppa_chooser">
