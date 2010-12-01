@@ -221,6 +221,7 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
 class ProductVocabulary(SQLObjectVocabularyBase):
     """All `IProduct` objects vocabulary."""
     implements(IHugeVocabulary)
+    step_title = 'Search'
 
     _table = Product
     _orderBy = 'displayname'
@@ -273,6 +274,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     _table = ProjectGroup
     _orderBy = 'displayname'
     displayname = 'Select a project group'
+    step_title = 'Search'
 
     def __contains__(self, obj):
         where = "active='t' and id=%d"
@@ -363,6 +365,7 @@ class NonMergedPeopleAndTeamsVocabulary(
 
     _orderBy = ['displayname']
     displayname = 'Select a Person or Team'
+    step_title = 'Search'
 
     def __contains__(self, obj):
         return obj in self._select()
@@ -393,6 +396,7 @@ class PersonAccountToMergeVocabulary(
 
     _orderBy = ['displayname']
     displayname = 'Select a Person to Merge'
+    step_title = 'Search'
     must_have_email = True
 
     def __contains__(self, obj):
@@ -441,7 +445,7 @@ class ValidPersonOrTeamVocabulary(
     implements(IHugeVocabulary)
 
     displayname = 'Select a Person or Team'
-
+    step_title = 'Search'
     # This is what subclasses must change if they want any extra filtering of
     # results.
     extra_clause = True
@@ -733,6 +737,14 @@ class TeamVocabularyMixin:
     def is_closed_team(self):
         return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
 
+    @property
+    def step_title(self):
+        """See `IHugeVocabulary`."""
+        if self.is_closed_team:
+            return 'Search for a restricted or moderated team or person'
+        else:
+            return 'Search'
+
 
 class ValidTeamMemberVocabulary(TeamVocabularyMixin,
                                 ValidPersonOrTeamVocabulary):
@@ -877,6 +889,7 @@ class ActiveMailingListVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select an active mailing list.'
+    step_title = 'Search'
 
     def __init__(self, context):
         assert context is None, (
@@ -998,6 +1011,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     displayname = 'Select a Product Release'
+    step_title = 'Search'
     _table = ProductRelease
     # XXX carlos Perello Marin 2005-05-16 bugs=687:
     # Sorting by version won't give the expected results, because it's just a
@@ -1065,6 +1079,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
     displayname = 'Select a Release Series'
+    step_title = 'Search'
     _table = ProductSeries
     _order_by = [Product.name, ProductSeries.name]
     _clauseTables = ['Product']
@@ -1298,6 +1313,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     _table = Product
     _orderBy = 'displayname'
+    step_title = 'Search'
 
     @property
     def displayname(self):

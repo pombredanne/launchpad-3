@@ -24,6 +24,7 @@ class FAQVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
+    step_title = 'Search'
 
     def __init__(self, context):
         """Create a new vocabulary for the context.

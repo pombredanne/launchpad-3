@@ -73,6 +73,20 @@ class VocabularyTestBase:
         self.assertEqual(
             'Select a Team or Person', vocabulary.displayname)
 
+    def test_open_team_vocabulary_step_title(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.OPEN)
+        vocabulary = self.getVocabulary(context_team)
+        self.assertEqual('Search', vocabulary.step_title)
+
+    def test_closed_team_vocabulary_step_title(self):
+        context_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        vocabulary = self.getVocabulary(context_team)
+        self.assertEqual(
+            'Search for a restricted or moderated team or person',
+            vocabulary.step_title)
+
 
 class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
     """Test that the ValidTeamMemberVocabulary behaves as expected."""
