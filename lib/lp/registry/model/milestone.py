@@ -25,12 +25,8 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import LeftJoin
 from storm.locals import (
     And,
-    ClassAlias,
-    Desc,
-    SQL,
     Store,
     )
 from storm.zope import IResultSet
@@ -41,9 +37,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
@@ -53,19 +46,13 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import HasBugsBase
-from lp.bugs.model.bugtask import (
-    BugTask,
-    get_bug_privacy_filter_with_decorator,
-    )
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -258,48 +245,6 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             "You cannot delete a milestone which has a product release "
             "associated with it.")
         SQLBase.destroySelf(self)
-
-    def getNonConjoinedBugTasks(self, user):
-        """See `IMilestone`."""
-        privacy_clause, privacy_decorator = (
-            get_bug_privacy_filter_with_decorator(user))
-        ConjoinedMaster = ClassAlias(BugTask)
-        dev_focus_id = self.product.development_focusID
-        origin = [
-            BugTask,
-            LeftJoin(Bug, BugTask.bug == Bug.id),
-            LeftJoin(
-                ConjoinedMaster,
-                And(ConjoinedMaster.bug == BugTask.bugID,
-                    ConjoinedMaster.productseries == dev_focus_id)),
-            ]
-        store = Store.of(self)
-        conditions = [
-            BugTask.milestone == self,
-            ConjoinedMaster.id == None,
-            Bug.duplicateof == None,
-            ]
-        if privacy_clause != '':
-            conditions.append(SQL(privacy_clause))
-        non_conjoined_slaves = store.using(*origin).find(
-            (BugTask, Bug), *conditions)
-        non_conjoined_slaves = non_conjoined_slaves.order_by(
-            BugTask.status, Desc(BugTask.importance), BugTask.id)
-
-        def decorator(row):
-            bug_task, bug = row
-            privacy_decorator(bug_task)
-            return bug_task
-
-        def cache_people(rows):
-            assignee_ids = set([
-                bug_task.assigneeID for bug_task, bug in rows])
-            assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                assignee_ids, need_validity=True)
-            # Execute query to load storm cache.
-            list(assignees)
-        return DecoratedResultSet(
-            non_conjoined_slaves, decorator, pre_iter_hook=cache_people)
 
 
 class MilestoneSet:

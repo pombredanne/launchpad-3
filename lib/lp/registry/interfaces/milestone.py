@@ -210,8 +210,6 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
         release.
         """
 
-    def getNonConjoinedBugTasks(user):
-        """List of non-conjoined bugtasks targeted to this milestone."""
 
 # Avoid circular imports
 IBugTask['milestone'].schema = IMilestone

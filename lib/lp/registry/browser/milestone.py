@@ -75,7 +75,6 @@ from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
 
@@ -250,10 +249,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @cachedproperty
     def _bugtasks(self):
         """The list of non-conjoined bugtasks targeted to this milestone."""
-        if IProjectGroupMilestone.providedBy(self.context):
-            return []
-        user = getUtility(ILaunchBag).user
-        non_conjoined_slaves = self.context.getNonConjoinedBugTasks(user)
+        non_conjoined_slaves = (
+            getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
+                getUtility(ILaunchBag).user, self.context))
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
         precache_permission_for_objects(

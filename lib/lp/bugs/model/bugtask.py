@@ -32,6 +32,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.expr import (
     Alias,
     And,
@@ -142,6 +143,7 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
+    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -1665,6 +1667,48 @@ class BugTaskSet:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
+            if params.exclude_conjoined_tasks:
+                # Perform a LEFT JOIN to the conjoined master bugtask.
+                # If the conjoined master is not null, it gets filtered
+                # out.
+                ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
+                extra_clauses.append("ConjoinedMaster.id IS NULL")
+                if params.milestone.distribution is not None:
+                    current_series = (
+                        params.milestone.distribution.currentseries)
+                    join = LeftJoin(
+                        ConjoinedMaster,
+                        And(ConjoinedMaster.bug == BugTask.bugID,
+                            ConjoinedMaster.distroseries == current_series.id,
+                            ))
+                    join_tables.append((ConjoinedMaster, join))
+                else:
+                    # Prevent import loop.
+                    from lp.registry.model.product import Product
+                    if IProjectGroupMilestone.providedBy(params.milestone):
+                        dev_focus_ids = list(
+                            IStore(Product).find(
+                                Product.development_focusID,
+                                Product.project == params.milestone.target))
+                    elif params.milestone.product is not None:
+                        dev_focus_ids = [
+                            params.milestone.product.development_focusID]
+                    else:
+                        raise AssertionError(
+                            "A milestone must always have either a project, "
+                            "project group, or distribution")
+                    join = LeftJoin(
+                        ConjoinedMaster,
+                        And(ConjoinedMaster.bug == BugTask.bugID,
+                            ConjoinedMaster.productseriesID.is_in(
+                                dev_focus_ids)))
+                    join_tables.append((ConjoinedMaster, join))
+        elif params.exclude_conjoined_tasks:
+            raise ValueError(
+                "BugTaskSearchParam.exclude_conjoined cannot be True if "
+                "BugTaskSearchParam.milestone is not set")
+
+
         if params.project:
             # Prevent circular import problems.
             from lp.registry.model.product import Product
@@ -2308,6 +2352,25 @@ class BugTaskSet:
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], params).result_set
+
+    def getPrecachedNonConjoinedBugTasks(self, user, milestone):
+        """See `IBugTaskSet`."""
+        params = BugTaskSearchParams(
+            user, milestone=milestone,
+            orderby=['status', '-importance', 'id'],
+            omit_dupes=True, exclude_conjoined_tasks=True)
+        non_conjoined_slaves = self.search(params)
+
+        def cache_people(rows):
+            assignee_ids = set(
+                bug_task.assigneeID for bug_task in rows)
+            assignees = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                assignee_ids, need_validity=True)
+            # Execute query to load storm cache.
+            list(assignees)
+
+        return DecoratedResultSet(
+            non_conjoined_slaves, pre_iter_hook=cache_people)
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
