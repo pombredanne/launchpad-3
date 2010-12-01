@@ -597,11 +597,7 @@ class ProjectGroupSet:
     def forReview(self):
         return ProjectGroup.select("reviewed IS FALSE")
 
-    def search(self, text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               search_products=False,
-               show_inactive=False):
+    def search(self, text=None, search_products=False, show_inactive=False):
         """Search through the Registry database for project groups that match
         the query terms. text is a piece of text in the title / summary /
         description fields of project group (and possibly product). soyuz,
@@ -614,19 +610,6 @@ class ProjectGroupSet:
         clauseTables = set()
         clauseTables.add('Project')
         queries = []
-        if rosetta:
-            clauseTables.add('Product')
-            clauseTables.add('POTemplate')
-            queries.append('POTemplate.product=Product.id')
-        if malone:
-            clauseTables.add('Product')
-            clauseTables.add('BugTask')
-            queries.append('BugTask.product=Product.id')
-        if bazaar:
-            clauseTables.add('Product')
-            clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.branch IS NOT NULL)')
-            queries.append('ProductSeries.product=Product.id')
 
         if text:
             if search_products:

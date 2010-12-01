@@ -18,6 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -1112,6 +1113,31 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
+
+    def test_conflicting_deleted_orig_file(self):
+        # Uploading a conflicting orig file should be disallowed even if
+        # the existing one was deleted from disk.
+        upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.DONE)
+
+        # Delete the published file.
+        [bar_src] = self.name16.archive.getPublishedSources(name="bar")
+        bar_src.requestDeletion(self.name16)
+        bar_src.dateremoved = UTC_NOW
+        self.layer.txn.commit()
+
+        # bar_1.0-3 contains an orig file of the same version with
+        # different contents than the one we previously uploaded.
+        upload_dir = self.queueUpload("bar_1.0-3", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        self.assertTrue(
+            self.uploadprocessor.last_processed_upload.is_rejected)
+        self.assertIn(
+            'File bar_1.0.orig.tar.gz already exists in ',
+            self.uploadprocessor.last_processed_upload.rejection_message)
 
     def test30QuiltMultipleReusedOrigs(self):
         """Official orig*.tar.* can be reused for PPA uploads.
