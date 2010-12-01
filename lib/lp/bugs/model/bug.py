@@ -1958,6 +1958,23 @@ BugMessage""" % sqlvalues(self.id))
             operator.itemgetter(0))
 
 
+def load_people(*where):
+    """Get subscribers from subscriptions.
+
+    Also preloads `ValidPersonCache` records.
+
+    :param people: An iterable sequence of `Person` IDs.
+    :return: A `DecoratedResultSet` of `Person` objects. The corresponding
+        `ValidPersonCache` records are loaded simultaneously.
+    """
+    return DecoratedResultSet(
+        IStore(Person).find(
+            (Person, ValidPersonCache),
+            Person.id == ValidPersonCache.id,
+            *where),
+        operator.itemgetter(0))
+
+
 def freeze(func):
     """Decorator that wraps the return value with `frozenset`."""
 
@@ -1974,23 +1991,6 @@ class BugSubscriptionInfo:
         self.bug = bug
         self.level = level
 
-    @staticmethod
-    def load_people(*where):
-        """Get subscribers from subscriptions.
-
-        Also preloads `ValidPersonCache` records.
-
-        :param people: An iterable sequence of `Person` IDs.
-        :return: A `DecoratedResultSet` of `Person` objects. The corresponding
-            `ValidPersonCache` records are loaded simultaneously.
-        """
-        return DecoratedResultSet(
-            IStore(Person).find(
-                (Person, ValidPersonCache),
-                Person.id == ValidPersonCache.id,
-                *where),
-            operator.itemgetter(0))
-
     @property
     @freeze
     def direct_subscriptions(self):
@@ -2005,7 +2005,7 @@ class BugSubscriptionInfo:
     @freeze
     def direct_subscribers(self):
         """The bug's direct subscribers."""
-        return self.load_people(
+        return load_people(
             Person.id.is_in(
                 subscription.person_id
                 for subscription in self.direct_subscriptions))
@@ -2028,7 +2028,7 @@ class BugSubscriptionInfo:
     @freeze
     def duplicate_subscribers(self):
         """Subscribers to duplicates of the bug."""
-        return self.load_people(
+        return load_people(
             Person.id.is_in(
                 subscription.person_id
                 for subscription in self.duplicate_subscriptions))
@@ -2064,7 +2064,7 @@ class BugSubscriptionInfo:
     @freeze
     def structural_subscribers(self):
         """Structural subscribers to the bug's targets."""
-        return self.load_people(
+        return load_people(
             Person.id.is_in(
                 removeSecurityProxy(subscription).subscriberID
                 for subscription in self.structural_subscriptions))
@@ -2073,7 +2073,7 @@ class BugSubscriptionInfo:
     @freeze
     def all_assignees(self):
         """Assignees of the bug's tasks."""
-        return self.load_people(
+        return load_people(
             BugTask.assigneeID == Person.id,
             BugTask.bug == self.bug)
 
