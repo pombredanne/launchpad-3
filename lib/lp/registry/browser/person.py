@@ -3567,6 +3567,12 @@ class TeamIndexView(PersonIndexView):
             return 'portlet'
         return 'portlet private'
 
+    @property
+    def add_member_step_title(self):
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title
+
 
 class PersonCodeOfConductEditView(LaunchpadView):
     """View for the ~person/+codesofconduct pages."""
