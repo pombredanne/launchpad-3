@@ -846,8 +846,6 @@ class POFile(SQLBase, POFileMixIn):
         if new_header is None:
             return
 
-        # XXX sabdfl 2005-05-27 should we also differentiate between
-        # washeaderfuzzy and isheaderfuzzy?
         self.topcomment = new_header.comment
         self.header = new_header.getRawContent()
         self.fuzzyheader = new_header.is_fuzzy
@@ -1419,12 +1417,16 @@ class POFileSet:
 
     def getPOFilesWithTranslationCredits(self, untranslated=False):
         """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         clauses = [
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids),
+            ]
         if untranslated:
             message_select = Select(
                 True,
@@ -1432,8 +1434,15 @@ class POFileSet:
                     TranslationMessage.potmsgsetID == POTMsgSet.id,
                     TranslationMessage.potemplate == None,
                     POFile.languageID == TranslationMessage.languageID,
-                    TranslationMessage.is_current_ubuntu == True),
+                    Or(
+                        And(
+                            POTemplate.productseries == None,
+                            TranslationMessage.is_current_ubuntu == True),
+                        And(
+                            POTemplate.productseries != None,
+                            TranslationMessage.is_current_upstream == True))),
                 (TranslationMessage))
+            clauses.append(POTemplate.id == POFile.potemplateID)
             clauses.append(Not(Exists(message_select)))
         result = store.find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
