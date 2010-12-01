@@ -14,6 +14,7 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+from operator import attrgetter
 
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
@@ -320,43 +321,51 @@ class RecipeTextValidatorMixin:
 
 
 class RecipeRelatedBranchesMixin:
+    """A class to find the related branches for a recipe's base branch."""
+
     @cachedproperty
     def related_series_branches(self):
-        result = []
-        product = self.getBranch().product
+        result = set()
+        branch_to_check = self.getBranch()
+        product = branch_to_check.product
 
         # We include the development focus branch.
         dev_focus_branch = ICanHasLinkedBranch(product).branch
         if dev_focus_branch is not None:
-            result.append(dev_focus_branch)
+            result.add(dev_focus_branch)
 
         # Now any branches for the product's series
         for series in product.series:
             try:
                 branch = ICanHasLinkedBranch(series).branch
                 if branch is not None:
-                    result.append(branch)
+                    result.add(branch)
             except NoLinkedBranch:
                 # If there's no branch for a particular series, we don't care.
                 pass
-        return sorted(result)
+        # We don't want to include the source branch.
+        result.discard(branch_to_check)
+        return sorted(result, key=attrgetter('unique_name'))
 
     @cachedproperty
     def related_package_branches(self):
-        result = []
-        product = self.getBranch().product
+        result = set()
+        branch_to_check = self.getBranch()
+        product = branch_to_check.product
 
-        # Find any branches for the product's source packages.
-        for sourcepackage in product.sourcepackages:
+        # Find any branches for the product's distro source packages.
+        for sourcepackage in product.distrosourcepackages:
             try:
                 branch = ICanHasLinkedBranch(sourcepackage).branch
                 if branch is not None:
-                    result.append(branch)
+                    result.add(branch)
             except NoLinkedBranch:
                 # If there's no branch for a particular source package,
                 # we don't care.
                 pass
-        return sorted(result)
+        # We don't want to include the source branch.
+        result.discard(branch_to_check)
+        return sorted(result, key=attrgetter('unique_name'))
 
 
 class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
