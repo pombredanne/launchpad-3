@@ -423,9 +423,11 @@ active members of the team so that we can perform the merge.
 
     >>> comment = "We're merging this team into another one."
     >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
+    >>> for team in test_team.super_teams:
+    ...     test_team.retractTeamMembership(team, test_team.teamowner)
     >>> personset.merge(test_team, landscape)
 
-    # The resulting Landscape-developers has now a super team, but has
+    # The resulting Landscape-developers no new super teams, has
     # no polls and its members are still the same two from before the
     # merge.
     >>> landscape.teamowner.name
@@ -433,6 +435,6 @@ active members of the team so that we can perform the merge.
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
     >>> [team.name for team in landscape.super_teams]
-    [u'launchpad']
+    []
     >>> list(IPollSubset(landscape).getAll())
     []
