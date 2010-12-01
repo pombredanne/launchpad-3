@@ -18,12 +18,12 @@ from lp.registry.interfaces.person import (
 from lp.testing import TestCaseWithFactory
 
 
-class VocabularyTestCase(TestCaseWithFactory):
+class VocabularyTestBase:
 
     vocabulary_name = None
 
     def setUp(self):
-        super(VocabularyTestCase, self).setUp()
+        super(VocabularyTestBase, self).setUp()
         self.vocabulary_registry = getVocabularyRegistry()
 
     def getVocabulary(self, context):
@@ -33,27 +33,6 @@ class VocabularyTestCase(TestCaseWithFactory):
         Store.of(context).flush()
         vocabulary = self.getVocabulary(context)
         return removeSecurityProxy(vocabulary)._doSearch(text)
-
-
-class TestValidTeamMemberVocabulary(VocabularyTestCase):
-    """Test that the ValidTeamMemberVocabulary behaves as expected."""
-
-    layer = DatabaseFunctionalLayer
-    vocabulary_name = 'ValidTeamMember'
-
-    def test_public_team_cannot_be_a_member_of_itself(self):
-        # A public team should be filtered by the vocab.extra_clause
-        # when provided a search term.
-        team = self.factory.makeTeam()
-        self.assertNotIn(team, self.searchVocabulary(team, team.name))
-
-    def test_private_team_cannot_be_a_member_of_itself(self):
-        # A private team should be filtered by the vocab.extra_clause
-        # when provided a search term.
-        team = self.factory.makeTeam(
-            visibility=PersonVisibility.PRIVATE)
-        login_person(team.teamowner)
-        self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
     def test_open_team_cannot_be_a_member_or_a_closed_team(self):
         context_team = self.factory.makeTeam(
@@ -103,7 +82,28 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
             vocabulary.displayname)
 
 
-class TestValidTeamOwnerVocabulary(VocabularyTestCase):
+class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
+    """Test that the ValidTeamMemberVocabulary behaves as expected."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'ValidTeamMember'
+
+    def test_public_team_cannot_be_a_member_of_itself(self):
+        # A public team should be filtered by the vocab.extra_clause
+        # when provided a search term.
+        team = self.factory.makeTeam()
+        self.assertNotIn(team, self.searchVocabulary(team, team.name))
+
+    def test_private_team_cannot_be_a_member_of_itself(self):
+        # A private team should be filtered by the vocab.extra_clause
+        # when provided a search term.
+        team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        login_person(team.teamowner)
+        self.assertNotIn(team, self.searchVocabulary(team, team.name))
+
+
+class TestValidTeamOwnerVocabulary(VocabularyTestBase, TestCaseWithFactory):
     """Test that the ValidTeamOwnerVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer

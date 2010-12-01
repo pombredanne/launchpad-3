@@ -724,7 +724,23 @@ class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
     cache_table_name = 'ValidPersonCache'
 
 
-class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
+class TeamVocabularyMixin:
+    """Common methods for team vocabularies."""
+
+    @property
+    def is_closed_team(self):
+        return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
+
+    @property
+    def displayname(self):
+        if self.is_closed_team:
+            return 'Select a Restricted or Moderated Team or Person'
+        else:
+            return ValidPersonOrTeamVocabulary.displayname
+
+
+class ValidTeamMemberVocabulary(TeamVocabularyMixin,
+                                ValidPersonOrTeamVocabulary):
     """The set of valid members of a given team.
 
     With the exception of all teams that have this team as a member and the
@@ -745,17 +761,6 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
     @property
-    def is_closed_team(self):
-        return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
-
-    @property
-    def displayname(self):
-        if self.is_closed_team:
-            return 'Select a Restricted or Moderated Team or Person'
-        else:
-            return ValidPersonOrTeamVocabulary.displayname
-
-    @property
     def extra_clause(self):
         clause = SQL("""
             Person.id NOT IN (
@@ -770,22 +775,21 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
         return clause
 
 
-class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
+class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
+                               ValidPersonOrTeamVocabulary):
     """The set of Persons/Teams that can be owner of a team.
 
     With the exception of the team itself and all teams owned by that team,
-    all valid persons and teams are valid owners for the team.
+    all valid persons and teams are valid owners for the team. Restricted
+    and moderated teams cannot have open teams as members.
     """
 
-    # XXX sinzui 2010-11-30: closed team?
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
 
         if IPerson.providedBy(context):
-            self.extra_clause = """
-                (person.teamowner != %d OR person.teamowner IS NULL) AND
-                person.id != %d""" % (context.id, context.id)
+            self.team = context
         elif IPersonSet.providedBy(context):
             # The context is an IPersonSet, which means we're creating a new
             # team and thus we don't need any extra_clause --any valid person
@@ -796,6 +800,17 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
                 "ValidTeamOwnerVocabulary's context must provide IPerson "
                 "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
+
+    @property
+    def extra_clause(self):
+        clause = SQL("""
+            (person.teamowner != %d OR person.teamowner IS NULL) AND
+            person.id != %d""" % (self.team.id, self.team.id))
+        if self.is_closed_team:
+            clause = And(
+                clause,
+                Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
+        return clause
 
 
 class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
