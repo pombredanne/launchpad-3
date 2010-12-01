@@ -25,6 +25,7 @@ from datetime import (
     timedelta,
     )
 from email.Utils import make_msgid
+from functools import wraps
 import operator
 import re
 
@@ -175,6 +176,9 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.model.person import (
     Person,
     ValidPersonCache,
@@ -1952,6 +1956,153 @@ BugMessage""" % sqlvalues(self.id))
         return DecoratedResultSet(
             self._attachments_query(),
             operator.itemgetter(0))
+
+
+def freeze(func):
+    """Decorator that wraps the return value with `frozenset`."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return frozenset(func(*args, **kwargs))
+    return wrapper
+
+
+class BugSubscriptionInfo:
+    """Represents bug subscription sets."""
+
+    def __init__(self, bug, level):
+        self.bug = bug
+        self.level = level
+
+    @staticmethod
+    def load_people(people):
+        """Get subscribers from subscriptions.
+
+        Also preloads `ValidPersonCache` records.
+
+        :param people: An iterable sequence of `Person` IDs.
+        :return: A `DecoratedResultSet` of `Person` objects. The corresponding
+            `ValidPersonCache` records are loaded simultaneously.
+        """
+        return DecoratedResultSet(
+            IStore(Person).find(
+                (Person, ValidPersonCache),
+                Person.id == ValidPersonCache.id,
+                Person.id.is_in(people)),
+            operator.itemgetter(0))
+
+    @property
+    @freeze
+    def direct_subscriptions(self):
+        """The bug's direct subscriptions."""
+        return IStore(BugSubscription).find(
+            BugSubscription,
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug == self.bug)
+
+    @property
+    @freeze
+    def direct_subscribers(self):
+        """The bug's direct subscribers."""
+        return self.load_people(
+            subscription.person_id
+            for subscription in self.direct_subscriptions)
+
+    @property
+    @freeze
+    def duplicate_subscriptions(self):
+        """Subscriptions to duplicates of the bug."""
+        if self.bug.private:
+            return ()
+        else:
+            return IStore(BugSubscription).find(
+                BugSubscription,
+                Bug.duplicateof == self.bug,
+                BugSubscription.bug_id == Bug.id,
+                BugSubscription.bug_notification_level >= self.level,
+                BugSubscription.person_id == Person.id)
+
+    @property
+    @freeze
+    def duplicate_subscribers(self):
+        """Subscribers to duplicates of the bug."""
+        return self.load_people(
+            subscription.person_id
+            for subscription in self.duplicate_subscriptions)
+
+    @property
+    @freeze
+    def structural_subscriptions(self):
+        """Structural subscriptions to the bug's targets."""
+        query_arguments = []
+        for bugtask in self.bug.bugtasks:
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                query_arguments.append((bugtask.target, bugtask))
+                if bugtask.target.parent_subscription_target is not None:
+                    query_arguments.append(
+                        (bugtask.target.parent_subscription_target, bugtask))
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the source
+                # package set as their target, so we add the distroseries
+                # explicitly to the set of subscription targets.
+                query_arguments.append((bugtask.distroseries, bugtask))
+            if bugtask.milestone is not None:
+                query_arguments.append((bugtask.milestone, bugtask))
+        # Build the query.
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
+        queries = (
+            target.getSubscriptionsForBugTask(bugtask, self.level)
+            for target, bugtask in query_arguments)
+        return reduce(union, queries)
+
+    @property
+    @freeze
+    def structural_subscribers(self):
+        """Structural subscribers to the bug's targets."""
+        return self.load_people(
+            removeSecurityProxy(subscription).subscriberID
+            for subscription in self.structural_subscriptions)
+
+    @property
+    @freeze
+    def all_assignees(self):
+        """Assignees of the bug's tasks."""
+        for bugtask in self.bug.bugtasks:
+            assignee = bugtask.assignee
+            if assignee is not None:
+                yield assignee
+
+    @property
+    @freeze
+    def all_bug_supervisors(self):
+        """Bug supervisors for the bug's targets."""
+        for bugtask in self.bug.bugtasks:
+            supervisor = bugtask.pillar.bug_supervisor
+            if supervisor is not None:
+                yield supervisor
+
+    @property
+    def also_notified_subscribers(self):
+        """All subscribers except direct and dupe subscribers."""
+        if self.bug.private:
+            return frozenset()
+        else:
+            also_notified = reduce(
+                frozenset.union, (
+                    self.all_assignees,
+                    self.all_bug_supervisors,
+                    self.structural_subscribers))
+            return also_notified.difference(
+                self.direct_subscribers)
+
+    @property
+    def indirect_subscribers(self):
+        """All subscribers except direct subscribers."""
+        return self.also_notified_subscribers.union(
+            self.duplicate_subscribers)
 
 
 class BugSet:
