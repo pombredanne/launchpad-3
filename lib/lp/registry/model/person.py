@@ -1473,12 +1473,13 @@ class Person(
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+        
 
         # Remove all indirect TeamParticipation entries resulting from this
         # team. If this were just a select, it would be a complicated but
         # feasible set of joins. Since it's a delete, we have to use
         # some sub selects.
-        cur.execute('''
+       cur.execute('''
             DELETE FROM TeamParticipation
                 WHERE
                     -- The person needs to be a member of the team in question
