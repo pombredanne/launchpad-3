@@ -14,6 +14,13 @@ __all__ = [
     'IUnlinkBugsForm',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -52,9 +59,10 @@ class IBugLinkTarget(Interface):
 
     Examples include an IQuestion, and an ICve.
     """
+    export_as_webservice_entry()
 
-    bugs = List(title=_("Bugs related to this object."),
-                value_type=Object(schema=IBug), readonly=True)
+    bugs = exported(CollectionField(title=_("Bugs related to this object."),
+                value_type=Object(schema=IBug), readonly=True))
     bug_links = List(title=_("The links between bugs and this object."),
                      value_type=Object(schema=IBugLink), readonly=True)
 

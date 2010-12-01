@@ -12,6 +12,7 @@ from lp.blueprints.interfaces.specification import (
     )
 from lp.testing import (
     launchpadlib_for,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -149,6 +150,16 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(1, spec_webservice.dependencies.total_size)
         self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+
+    def test_representation_contains_bug_links(self):
+        spec = self.factory.makeSpecification()
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            spec.linkBug(bug)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.bugs.total_size)
+        self.assertEqual(bug.id, spec_webservice.bugs[0].id)
 
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):

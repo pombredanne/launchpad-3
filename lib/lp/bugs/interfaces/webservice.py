@@ -17,6 +17,7 @@ __all__ = [
     'IBugActivity',
     'IBugAttachment',
     'IBugBranch',
+    'IBugLinkTarget',
     'IBugNomination',
     'IBugSubscription',
     'IBugTarget',
@@ -48,6 +49,7 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatusError,
