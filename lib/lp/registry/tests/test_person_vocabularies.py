@@ -101,3 +101,21 @@ class TestValidTeamMemberVocabulary(VocabularyTestCase):
         self.assertEqual(
             'Select a Restricted or Moderated Team or Person',
             vocabulary.displayname)
+
+
+class TestValidTeamOwnerVocabulary(VocabularyTestCase):
+    """Test that the ValidTeamOwnerVocabulary behaves as expected."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'ValidTeamOwner'
+
+    def test_team_cannot_own_itself(self):
+        context_team = self.factory.makeTeam()
+        results = self.searchVocabulary(context_team, context_team.name)
+        self.assertNotIn(context_team, results)
+
+    def test_team_cannot_own_its_owner(self):
+        context_team = self.factory.makeTeam()
+        owned_team = self.factory.makeTeam(owner=context_team)
+        results = self.searchVocabulary(context_team, owned_team.name)
+        self.assertNotIn(owned_team, results)
