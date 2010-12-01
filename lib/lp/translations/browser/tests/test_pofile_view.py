@@ -56,15 +56,15 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.new_suggestion,
             date_created=now, date_reviewed=now)
+        now = self.now()
         self.factory.makeSuggestion(
             pofile=self.pofile, potmsgset=self.new_suggestion,
-            date_created=self.now())
+            date_created=now)
         # An upstream that was changed in Ubuntu.
         self.changed = self.factory.makePOTMsgSet(self.potemplate, sequence=4)
         now = self.now()
         ubuntu_translation = self.factory.makeSuggestion(
-            pofile=self.pofile, potmsgset=self.changed,
-            date_created=self.now())
+            pofile=self.pofile, potmsgset=self.changed, date_created=now)
         ubuntu_translation.is_current_ubuntu = True
         now = self.now()
         self.factory.makeCurrentTranslationMessage(
