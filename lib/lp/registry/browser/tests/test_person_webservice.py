@@ -5,12 +5,43 @@ __metaclass__ = type
 
 import unittest
 
+from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
+
+from launchpadlib.launchpad import Launchpad
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    launchpadlib_for,
+    launchpadlib_for_anonymous,
+    TestCaseWithFactory,
+    )
+
+
+class TestPersonEmailSecurity(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+   
+    def test_logged_in_can_access(self):
+        # A logged in launchpadlib connection can see confirmed email
+        # addresses. 
+        lp = launchpadlib_for("test", "mark")
+        person = lp.people['name12']
+        emails = list(person.confirmed_email_addresses)
+        self.assertNotEqual(0, len(emails))
+
+    def test_anonymous_cannot_access(self):
+        # An anonymous launchpadlib connection cannot see email addresses.
+
+        # Need to endInteraction() because launchpadlib_for_anonymous() will
+        # setup a new one.
+        endInteraction()
+        lp = launchpadlib_for_anonymous('test', version='devel')
+        person = lp.people['name12']
+        emails = list(person.confirmed_email_addresses)
+        self.assertEqual(0, len(emails))
 
 
 class TestPersonRepresentation(TestCaseWithFactory):
