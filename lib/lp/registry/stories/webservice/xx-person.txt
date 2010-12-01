@@ -136,6 +136,11 @@ collection of other confirmed email addresses of that person/team.
     >>> print_self_link_of_entries(webservice.get(emails).jsonBody())
     http://.../~name12/+email/testing@canonical.com
 
+Email addresses are not accessible for anonymous connections.
+
+    >>> print_self_link_of_entries(anon_webservice.get(emails).jsonBody())
+    <BLANKLINE>    
+
 Email addresses are first-class objects with their own URLs and
 representations too.
 
@@ -153,15 +158,6 @@ traversed to, obviously.
     >>> print webservice.get("/~salgado/+email/test@canonical.com")
     HTTP/1.1 404 Not Found
     ...
-
-Emails are protected over the webservice--an anonymous connection cannot get
-email entries.
-
-    >>> person = webservice.get("/~salgado").jsonBody()
-    >>> confirmed_email_addresses = person['confirmed_email_addresses_collection_link']
-    >>> print anon_webservice.get(confirmed_email_addresses).jsonBody()['total_size']
-    0 
-
 
 SSH keys
 ........
