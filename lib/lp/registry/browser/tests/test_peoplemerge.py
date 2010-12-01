@@ -131,7 +131,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         super_team = self.factory.makeTeam()
         login_celebrity('admin')
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_celebrity('registry_experts')
+        login_person(self.dupe_team.teamowner)
         form = {
             'field.dupe_person': self.dupe_team.name,
             'field.target_person': self.target_team.name,
@@ -148,7 +148,7 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         super_team = self.factory.makeTeam()
         login_celebrity('admin')
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_celebrity('registry_experts')
+        login_person(self.dupe_team.teamowner)
         view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
