@@ -6,7 +6,6 @@ __metaclass__ = type
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -136,17 +135,3 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertEqual(
             "You can't add a team that doesn't have any active members.",
             view.errors[0])
-
-    def test_open_team_person_picker(self):
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        view = create_initialized_view(self.team, "+addmember")
-        widget = view.widgets['newmember']
-        self.assertEqual('Search', widget.step_title)
-
-    def test_closed_team_person_picker(self):
-        self.team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
-        view = create_initialized_view(self.team, "+addmember")
-        widget = view.widgets['newmember']
-        self.assertEqual(
-            'Search for a restricted or moderated team or person',
-            widget.step_title)
