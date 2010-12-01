@@ -2268,8 +2268,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         store.add(bq)
         return bq
 
-    def makeRecipeBuildRecords(
-        self, num_records=1, num_records_outside_epoch=0, epoch_days=30):
+    def makeRecipeBuildRecords(self, num_records=1,
+                               num_records_outside_epoch=0, epoch_days=30):
         """Create some recipe build records.
 
         A RecipeBuildRecord is a named tuple. Some records will be created
