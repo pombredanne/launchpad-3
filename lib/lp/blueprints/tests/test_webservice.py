@@ -13,9 +13,11 @@ from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus,
     )
 from lp.testing import (
-    launchpadlib_for, TestCaseWithFactory)
+    launchpadlib_for,
     launchpadlib_for_anonymous,
+    TestCaseWithFactory,
     ws_object,
+    )
 
 
 class SpecificationWebserviceTestCase(TestCaseWithFactory):
@@ -50,10 +52,9 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = sorted(
-            [u'self_link', u'http_etag', u'resource_type_link'])
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
         self.assertEqual(response.status, 200)
-        self.assertEqual(sorted(response.jsonBody().keys()), expected_keys)
+        self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
     def test_representation_contains_name(self):
         spec = self.factory.makeSpecification()
@@ -145,6 +146,14 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec = self.getSpecOnWebservice(spec_object)
         self.assertEqual("1.0", spec.milestone.name)
 
+    def test_representation_contains_dependencies(self):
+        spec = self.factory.makeSpecification()
+        spec2 = self.factory.makeSpecification()
+        spec.createDependency(spec2)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.dependencies.total_size)
+        self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
@@ -208,7 +217,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
 
     def assertNamesOfSpecificationsAre(self, expected_names, specifications):
         names = [s.name for s in specifications]
-        self.assertEqual(sorted(expected_names), sorted(names))
+        self.assertContentEqual(expected_names, names)
 
     def test_anonymous_access_to_collection(self):
         product = self.factory.makeProduct()
