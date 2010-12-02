@@ -20,6 +20,7 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import (
     CollectionField,
+    Reference,
     )
 from zope.interface import (
     implements,
@@ -55,14 +56,15 @@ class IBugLink(IHasBug):
 
 
 class IBugLinkTarget(Interface):
-    """An entity which can be linked to a bug.
+    """An entity which can be linked to bugs.
 
-    Examples include an IQuestion, and an ICve.
+    Examples include an ISpecification.
     """
     export_as_webservice_entry()
 
     bugs = exported(CollectionField(title=_("Bugs related to this object."),
-                value_type=Object(schema=IBug), readonly=True))
+                value_type=Reference(schema=IBug), readonly=True),
+                ('devel', dict(exported=True)), exported=False)
     bug_links = List(title=_("The links between bugs and this object."),
                      value_type=Object(schema=IBugLink), readonly=True)
 
