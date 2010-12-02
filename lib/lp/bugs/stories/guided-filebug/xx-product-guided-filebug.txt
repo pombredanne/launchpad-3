@@ -1,4 +1,5 @@
-= Filing bugs on Products =
+Filing bugs on Products
+=======================
 
 Launchpad does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
@@ -84,7 +85,8 @@ With both values set, the bug is created.
     http://bugs.launchpad.dev/firefox/+bug/...
 
 
-== Subscribing to a similar bug ==
+Subscribing to a similar bug
+----------------------------
 
 If our bug is described by one of the suggested similar bugs, we can
 subscribe to it instead of filing a new bug. This also loosely implies
@@ -137,7 +139,8 @@ set to ensure that we get subscribed to the bug.
     You have been subscribed to this bug.
 
 
-== Filing a bug when there are none similar ==
+Filing a bug when there are none similar
+----------------------------------------
 
 When no similar bugs are found the form works the same but appears
 different in the user agent.
@@ -170,7 +173,8 @@ the user to the bug page.
     "Bug #... in Mozilla Firefox: ...Frankenzombulon reanimated..."
 
 
-== Filing bugs without duplicate search ==
+Filing bugs without duplicate search
+------------------------------------
 
 Searching for duplicates can be switched off for a project.
 
