@@ -180,7 +180,7 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
             storm_cache_size: 1000
             '''))
         self.addCleanup(config.pop, 'storm-cache')
-        owner = self.factory.makePerson(name='owner-foo')
+        owner = self.factory.makePerson(name='product-owner')
         self.product = self.factory.makeProduct(owner=owner)
         login_person(self.product.owner)
         self.milestone = self.factory.makeMilestone(
@@ -196,24 +196,34 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
                 product=self.product, private=True, owner=self.product.owner)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.product.owner)
+            # This is necessary to test precaching of assignees.
             bug.bugtasks[0].transitionToAssignee(
                 self.factory.makePerson())
         logout()
 
     def test_bugtasks_queries(self):
-        bug_task_count = 10
-        self.add_bug(bug_task_count)
+        # The view.bugtasks attribute will make four queries:
+        #  1. Load bugtasks and bugs.
+        #  2. Load assignees (Person, Account, and EmailAddress).
+        #  3. Load links to specifications.
+        #  4. Load links to branches.
+        bugtask_count = 10
+        self.add_bug(bugtask_count)
         login_person(self.product.owner)
         view = create_initialized_view(self.milestone, '+index')
         # Eliminate permission check for the admin team from the
-        # recorded queries by loading it now.
+        # recorded queries by loading it now. If the test ever breaks,
+        # the person fixing it won't waste time trying to track this
+        # query down.
         getUtility(ILaunchpadCelebrities).admin
         with StormStatementRecorder() as recorder:
             bugtasks = list(view.bugtasks)
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(bug_task_count, len(bugtasks))
+        self.assertEqual(bugtask_count, len(bugtasks))
 
     def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees.
         milestone_url = canonical_url(self.milestone)
         query_limit = 34
         browser = self.getUserBrowser(user=self.product.owner)
@@ -236,6 +246,7 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
+        page_query_limit = 34
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -260,8 +271,6 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        # This page is rather high in queries : 46 as a baseline. 20100817
-        page_query_limit = 46
         browser.open(milestone_url)
         # Check that the test found the bug
         self.assertTrue(bug1_url in browser.contents)
