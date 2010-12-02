@@ -7,7 +7,7 @@
   <table class="extra-options">
 
     <table class="listing" id="related-package-branches-listing"
-        tal:condition="view/related_package_branches">
+        tal:condition="packageBranches">
       <thead>
         <tr>
           <th>Source Package Branches</th>
@@ -32,7 +32,7 @@
     </table>
 
     <table class="listing" id="related-series-branches-listing"
-        tal:condition="view/related_series_branches">
+        tal:condition="seriesBranches">
       <thead>
         <tr>
           <th>Product Series Branches</th>
