@@ -136,6 +136,14 @@ COMMENT ON COLUMN SeriesSourcePackageBranch.branch IS 'The branch being linked t
 COMMENT ON COLUMN SeriesSourcePackageBranch.registrant IS 'The person who registered this link.';
 COMMENT ON COLUMN SeriesSourcePackageBranch.date_created IS 'The date this link was created.';
 
+-- SubunitStream
+
+COMMENT ON TABLE SubunitStream IS 'Raw gz compressed subunit streams.';
+COMMENT ON COLUMN SubunitStream.uploader IS 'The account used to upload the stream.';
+COMMENT ON COLUMN SubunitStream.date_created IS 'The date of the upload.';
+COMMENT ON COLUMN SubunitStream.branch IS 'The branch which the stream was created on/for/with.';
+COMMENT ON COLUMN SubunitStream.stream IS 'The library file alias which contains the stream content.';
+
 -- BranchSubscription
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
