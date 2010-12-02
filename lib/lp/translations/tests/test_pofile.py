@@ -20,10 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.pofile import IPOFileSet
@@ -1405,7 +1402,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         # Create a POFileSet to work with.
@@ -1643,47 +1640,35 @@ class TestPOFileSet(TestCaseWithFactory):
                 self.pofileset.getPOFilesWithTranslationCredits()))
 
     def test_getPOFilesWithTranslationCredits_untranslated(self):
-        # We need absolute DB access to be able to remove a translation
-        # message.
-        LaunchpadZopelessLayer.switchDbUser('postgres')
+        # With "untranslated=True," getPOFilesWithTranslationCredits
+        # looks for POFiles whose translation credits messages are
+        # untranslated.
 
-        # Initially, we only get data from the sampledata, all of which
-        # are untranslated.
-        sampledata_pofiles = list(
+        # The sample data may contain some matching POFiles, but we'll
+        # ignore those.
+        initial_matches = set(
             self.pofileset.getPOFilesWithTranslationCredits(
                 untranslated=True))
-        total = len(sampledata_pofiles)
-        self.assertEquals(3, total)
 
-        # All POFiles with translation credits messages are
-        # returned along with relevant POTMsgSets.
-        potemplate1 = self.factory.makePOTemplate()
+        potemplate = self.factory.makePOTemplate()
         credits_potmsgset = self.factory.makePOTMsgSet(
-            potemplate1, singular=u'translator-credits', sequence=1)
+            potemplate, singular=u'translator-credits', sequence=1)
+        pofile = self.factory.makePOFile(potemplate=potemplate)
 
-        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
-        pofiles_with_credits = (
-            self.pofileset.getPOFilesWithTranslationCredits(
-                untranslated=True))
-        self.assertNotIn((sr_pofile, credits_potmsgset),
-                         list(pofiles_with_credits))
-        self.assertEquals(
-            total,
-            pofiles_with_credits.count())
+        credits_translation = credits_potmsgset.getCurrentTranslation(
+            potemplate, pofile.language, potemplate.translation_side)
+        # Clearing is_current_upstream will make this an "untranslated"
+        # credits message.
+        # XXX JeroenVermeulen 2010-11-29: Also clearing
+        # is_current_ubuntu to make this pass until
+        # getPOFilesWithTranslationCredits is updated.
+        credits_translation.is_current_ubuntu = False
+        credits_translation.is_current_upstream = False
 
-        # Removing a translation for this message, removes it
-        # from a result set when untranslated=True is passed in.
-        message = credits_potmsgset.getSharedTranslationMessage(
-            sr_pofile.language)
-        message.destroySelf()
-        pofiles_with_credits = (
-            self.pofileset.getPOFilesWithTranslationCredits(
-                untranslated=True))
-        self.assertIn((sr_pofile, credits_potmsgset),
-                      list(pofiles_with_credits))
-        self.assertEquals(
-            total + 1,
-            pofiles_with_credits.count())
+        self.assertEqual(
+            initial_matches.union([(pofile, credits_potmsgset)]),
+            set(self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True)))
 
     def test_getPOFilesByPathAndOrigin_path_mismatch(self):
         # getPOFilesByPathAndOrigin matches on POFile path.
