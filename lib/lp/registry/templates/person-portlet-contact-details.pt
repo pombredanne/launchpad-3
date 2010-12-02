@@ -10,6 +10,10 @@
   <h2>User information</h2>
 
   <div class="first yui-u">
+    <dl id="launchpad-id">
+        <dt>Launchpad Id:</dt>
+        <dd tal:content="context/name"/>
+    </dl>
     <dl id="email-addresses">
       <dt>Email:
         <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
@@ -46,6 +50,7 @@
         </tal:emails>
       </dd>
     </dl>
+
 
     <dl tal:condition="view/should_show_jabberids_section" id="jabber-ids">
       <dt>Jabber:

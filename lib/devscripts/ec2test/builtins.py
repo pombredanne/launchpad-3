@@ -568,8 +568,8 @@ class cmd_update_image(EC2Command):
         # fresh Ubuntu images and cause havoc if the locales they refer to are
         # not available. We kill them here to ease bootstrapping, then we
         # later modify the image to prevent sshd from accepting them.
-        os.environ.pop("LANG")
-        os.environ.pop("LC_ALL")
+        os.environ.pop("LANG", None)
+        os.environ.pop("LC_ALL", None)
 
         credentials = EC2Credentials.load_from_file()
 

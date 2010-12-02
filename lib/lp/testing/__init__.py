@@ -46,7 +46,6 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-import codecs
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -155,6 +154,7 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
+    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
@@ -762,16 +762,17 @@ class YUIUnitTestCase(WindmillTestCase):
         client = self.client
         client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string
@@ -835,7 +836,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -853,7 +854,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -865,7 +866,7 @@ class ZopeTestInSubProcess:
             result = super(ZopeTestResult, result)
             # Accept the result from the child process.
             protocol = subunit.TestProtocolServer(result)
-            protocol.readFrom(codecs.getreader("utf8")(fdread))
+            protocol.readFrom(fdread)
             fdread.close()
             os.waitpid(pid, 0)
 

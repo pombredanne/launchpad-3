@@ -139,6 +139,9 @@ inplace: build
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
 build: compile apidoc jsbuild css_combine
+	mkdir -p $(CODEHOSTING_ROOT)/mirrors
+	touch $(CODEHOSTING_ROOT)/rewrite.log
+	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
@@ -168,7 +171,6 @@ jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
-	${SHHH} bin/jssize
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in

@@ -195,7 +195,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
             structured("""
                 There is no project in Launchpad named "%s". Please
                 <a href="/projects"
-                onclick="YUI().use('event').Event.simulate(
+                onclick="LPS.use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
                          return false;"
                 >search for it</a> as it may be

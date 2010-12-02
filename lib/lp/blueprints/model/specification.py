@@ -74,8 +74,6 @@ from lp.blueprints.model.specificationfeedback import SpecificationFeedback
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
-from lp.blueprints.model.sprint import Sprint
-from lp.blueprints.model.sprintspecification import SprintSpecification
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
@@ -563,6 +561,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # sprint linking
     def linkSprint(self, sprint, user):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -575,6 +575,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
+        from lp.blueprints.model.sprintspecification import (
+            SprintSpecification)
         for sprint_link in self.sprint_links:
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
@@ -889,6 +891,7 @@ class SpecificationSet(HasSpecificationsMixin):
     @property
     def coming_sprints(self):
         """See ISpecificationSet."""
+        from lp.blueprints.model.sprint import Sprint
         return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 
