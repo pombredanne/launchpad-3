@@ -22,10 +22,11 @@ class TranslationSideTraits:
     """See `ITranslationSideTraits`."""
     implements(ITranslationSideTraits)
 
-    def __init__(self, side, flag_name):
+    def __init__(self, side, flag_name, displayname):
         self.side = side
         self.other_side_traits = None
         self.flag_name = flag_name
+        self.displayname = displayname
 
     def getFlag(self, translationmessage):
         """See `ITranslationSideTraits`."""
@@ -50,9 +51,9 @@ class TranslationSideTraitsSet:
 
     def __init__(self):
         upstream = TranslationSideTraits(
-            TranslationSide.UPSTREAM, 'is_current_upstream')
+            TranslationSide.UPSTREAM, 'is_current_upstream', "upstream")
         ubuntu = TranslationSideTraits(
-            TranslationSide.UBUNTU, 'is_current_ubuntu')
+            TranslationSide.UBUNTU, 'is_current_ubuntu', "Ubuntu")
         ubuntu.other_side_traits = upstream
         upstream.other_side_traits = ubuntu
         self.traits = dict(
