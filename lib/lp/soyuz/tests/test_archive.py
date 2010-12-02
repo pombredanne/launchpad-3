@@ -1482,3 +1482,11 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         self.assertEquals(
             [partner_comp],
             list(archive.getComponentsForSeries(self.series)))
+
+    def test_component_for_ppas(self):
+        # PPAs only use 'main'.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        main_comp = getUtility(IComponentSet)['main']
+        self.assertEquals(
+            [main_comp], list(archive.getComponentsForSeries(self.series)))
