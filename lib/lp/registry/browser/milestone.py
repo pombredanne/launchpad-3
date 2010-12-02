@@ -249,9 +249,11 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     @cachedproperty
     def _bugtasks(self):
         """The list of non-conjoined bugtasks targeted to this milestone."""
-        non_conjoined_slaves = (
+        # Put the results in a list so that iterating over it multiple
+        # times in this method does not make multiple queries.
+        non_conjoined_slaves = list(
             getUtility(IBugTaskSet).getPrecachedNonConjoinedBugTasks(
-                getUtility(ILaunchBag).user, self.context))
+                self.user, self.context))
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
         precache_permission_for_objects(

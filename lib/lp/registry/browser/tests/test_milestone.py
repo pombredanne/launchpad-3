@@ -6,8 +6,11 @@
 __metaclass__ = type
 
 from testtools.matchers import LessThan
+from textwrap import dedent
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import IBugTaskSet
@@ -17,6 +20,7 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
@@ -163,9 +167,66 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.assertEqual(0, product.development_focus.all_bugtasks.count())
 
 
-class TestMilestoneIndex(TestCaseWithFactory):
+class TestMilestoneIndexQueryCount(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        owner = self.factory.makePerson(name='owner-foo')
+        self.product = self.factory.makeProduct(owner=owner)
+        login_person(self.product.owner)
+        self.milestone = self.factory.makeMilestone(
+            productseries=self.product.development_focus)
+        self.collector = QueryCollector()
+        self.collector.register()
+        self.addCleanup(self.collector.unregister)
+
+    def add_bug(self, count):
+        login_person(self.product.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(
+                product=self.product, private=True, owner=self.product.owner)
+            bug.bugtasks[0].transitionToMilestone(
+                self.milestone, self.product.owner)
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        bug_task_count = 10
+        self.add_bug(bug_task_count)
+        login_person(self.product.owner)
+        view = create_initialized_view(self.milestone, '+index')
+        # Eliminate permission check for the admin team from the
+        # recorded queries by loading it now.
+        getUtility(ILaunchpadCelebrities).admin
+        with StormStatementRecorder() as recorder:
+            bugtasks = list(view.bugtasks)
+        self.assertThat(recorder, HasQueryCount(LessThan(5)))
+        self.assertEqual(bug_task_count, len(bugtasks))
+
+    def test_milestone_eager_loading(self):
+        milestone_url = canonical_url(self.milestone)
+        query_limit = 34
+        browser = self.getUserBrowser(user=self.product.owner)
+
+        browser.open(milestone_url)
+        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
+        self.add_bug(3)
+        browser.open(milestone_url)
+        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
+
+        self.add_bug(10)
+        browser.open(milestone_url)
+        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
 
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone

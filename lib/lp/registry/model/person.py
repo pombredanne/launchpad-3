@@ -4009,7 +4009,8 @@ class PersonSet:
         need_preferred_email=False, need_validity=False):
         """See `IPersonSet`."""
         origin = [Person]
-        conditions = True
+        conditions = [
+            Person.id.is_in(person_ids)]
         return self._getPrecachedPersons(
             origin, conditions,
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
