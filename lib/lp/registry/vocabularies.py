@@ -741,7 +741,8 @@ class TeamVocabularyMixin:
     def step_title(self):
         """See `IHugeVocabulary`."""
         if self.is_closed_team:
-            return 'Search for a restricted or moderated team or person'
+            return (
+                'Search for a restricted team, a moderated team, or a person')
         else:
             return 'Search'
 

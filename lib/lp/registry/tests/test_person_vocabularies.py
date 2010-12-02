@@ -34,7 +34,7 @@ class VocabularyTestBase:
         vocabulary = self.getVocabulary(context)
         return removeSecurityProxy(vocabulary)._doSearch(text)
 
-    def test_open_team_cannot_be_a_member_or_a_closed_team(self):
+    def test_open_team_cannot_be_a_member_of_a_closed_team(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         open_team = self.factory.makeTeam(
@@ -50,7 +50,7 @@ class VocabularyTestBase:
         self.assertIn(restricted_team, all_possible_members)
         self.assertIn(user, all_possible_members)
 
-    def test_open_team_can_be_a_member_or_an_open_team(self):
+    def test_open_team_can_be_a_member_of_an_open_team(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.OPEN)
         open_team = self.factory.makeTeam(
@@ -84,7 +84,7 @@ class VocabularyTestBase:
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
         vocabulary = self.getVocabulary(context_team)
         self.assertEqual(
-            'Search for a restricted or moderated team or person',
+            'Search for a restricted team, a moderated team, or a person',
             vocabulary.step_title)
 
 

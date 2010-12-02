@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
@@ -149,3 +152,10 @@ class TestTeamIndexView(TestCaseWithFactory):
     def test_add_member_step_title(self):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
+
+    def test_add_member_step_title_escapes_quotes(self):
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.team, 'ValidTeamMember')
+        removeSecurityProxy(vocabulary).__class__.step_title = """('")"""
+        view = create_initialized_view(self.team, '+index')
+        self.assertEqual('''(\\'\\")''', view.add_member_step_title)
