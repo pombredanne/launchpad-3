@@ -2836,6 +2836,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
                                            sourcepackagerelease=None,
+                                           ancestor=None,
                                            ):
         """Make a `SourcePackagePublishingHistory`."""
         if distroseries is None:
@@ -2879,7 +2880,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         spph = getUtility(IPublishingSet).newSourcePublication(
             archive, sourcepackagerelease, distroseries,
             sourcepackagerelease.component, sourcepackagerelease.section,
-            pocket)
+            pocket, ancestor)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
