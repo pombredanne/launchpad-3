@@ -417,7 +417,7 @@ class RecipeRelatedBranchesMixin(LaunchpadFormView):
 
 
 class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
-                                 RecipeTextValidatorMixin):
+                                 RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
@@ -472,9 +472,6 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
             return
         except PrivateBranchRecipe, e:
-            self.setFieldError('recipe_text', str(e))
-            return
-        except RecipeParseError, e:
             self.setFieldError('recipe_text', str(e))
             return
 
