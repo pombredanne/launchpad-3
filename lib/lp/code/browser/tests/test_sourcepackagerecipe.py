@@ -46,6 +46,7 @@ from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing.views import create_initialized_view
 from lp.testing import (
@@ -903,7 +904,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
 class TestSourcePackageRecipeView(TestCaseForRecipe):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_index(self):
         recipe = self.makeRecipe()
@@ -928,7 +929,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Distribution series: Secret Squirrel
 
             Latest builds
-            Status Time Distribution series Archive
+            Status When complete Distribution series Archive
             Successful build on 2010-03-16 Secret Squirrel Secret PPA
             Request build\(s\)
 
@@ -936,12 +937,86 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
+    def test_index_success_with_buildlog(self):
+        # The buildlog is shown if it is there.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+            Request build\(s\)""", self.getMainText(recipe))
+
+    def test_index_success_with_binary_builds(self):
+        # Binary builds are shown after the recipe builds if there are any.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+        package_name = self.factory.getOrMakeSourcePackageName('chocolate')
+        source_package_release = self.factory.makeSourcePackageRelease(
+            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
+            source_package_recipe_build=build, version='0+r42')
+        builder = self.factory.makeBuilder()
+        binary_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release,
+            distroarchseries=self.squirrel.nominatedarchindep,
+            processor=builder.processor)
+        binary_build.queueBuild()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+              chocolate - 0\+r42 in .* \(estimated\) i386
+            Request build\(s\)""", self.getMainText(recipe))
+
+    def test_index_success_with_completed_binary_build(self):
+        # Binary builds show their buildlog too.
+        recipe = self.makeRecipe()
+        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        build.status = BuildStatus.FULLYBUILT
+        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.log = self.factory.makeLibraryFileAlias()
+        package_name = self.factory.getOrMakeSourcePackageName('chocolate')
+        source_package_release = self.factory.makeSourcePackageRelease(
+            archive=self.ppa, sourcepackagename=package_name, distroseries=self.squirrel,
+            source_package_recipe_build=build, version='0+r42')
+        builder = self.factory.makeBuilder()
+        binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
+            source_package_release=source_package_release,
+            distroarchseries=self.squirrel.nominatedarchindep,
+            processor=builder.processor))
+        binary_build.queueBuild()
+        binary_build.status = BuildStatus.FULLYBUILT
+        binary_build.date_started = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.log = self.factory.makeLibraryFileAlias()
+
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status .* Archive
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Request build\(s\)""", self.getMainText(recipe))
+
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
         recipe = self.makeRecipe()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             This recipe has not been built yet.""", self.getMainText(recipe))
 
     def test_index_no_suitable_builders(self):
@@ -950,7 +1025,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             No suitable builders Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
@@ -968,7 +1043,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.factory.makeBuilder()
         pattern = """\
             Latest builds
-            Status Time Distribution series Archive
+            Status .* Archive
             Pending build in .* \(estimated\) Secret Squirrel Secret PPA
             Request build\(s\)
 
@@ -1158,8 +1233,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         view = self.makeBuildView()
         self.assertTrue(view.estimate)
         view.context.buildqueue_record.job.start()
+        clear_property_cache(view)
         self.assertTrue(view.estimate)
         removeSecurityProxy(view.context).date_finished = datetime.now(utc)
+        clear_property_cache(view)
         self.assertFalse(view.estimate)
 
     def test_eta(self):
@@ -1178,11 +1255,13 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             recipe_build=build)
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, utc)
         self.factory.makeBuilder()
+        clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
         queue_entry.job.start()
+        clear_property_cache(view)
         self.assertEqual(
             queue_entry.job.date_started + queue_entry.estimated_duration,
             view.eta)

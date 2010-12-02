@@ -33,7 +33,7 @@ class OnPageWidget:
         """Constructor.
 
         :param client: A WindmillTestClient instance for interacting with pages.
-        :param widget_name: The class name of the YUI widget, like 'yui-picker'.
+        :param widget_name: The class name of the YUI widget, like 'yui3-picker'.
         """
         self.client = client
         self.widget_name = widget_name
@@ -76,22 +76,22 @@ class OnPageWidget:
 
 
 class SearchPickerWidget(OnPageWidget):
-    """A proxy for the yui-picker widget from lazr-js."""
+    """A proxy for the yui3-picker widget from lazr-js."""
 
     def __init__(self, client):
         """Constructor.
 
         :param client: A WindmillTestClient instance.
         """
-        super(SearchPickerWidget, self).__init__(client, 'yui-picker')
+        super(SearchPickerWidget, self).__init__(client, 'yui3-picker')
         self.search_input_xpath = (
-            self.xpath + "//input[@class='yui-picker-search']")
+            self.xpath + "//input[@class='yui3-picker-search']")
         self.search_button_xpath = (
-            self.xpath + "//div[@class='yui-picker-search-box']/button")
+            self.xpath + "//div[@class='yui3-picker-search-box']/button")
 
     def _get_result_xpath_by_number(self, item_number):
         """Return the XPath for the given search result number."""
-        item_xpath = "//ul[@class='yui-picker-results']/li[%d]/span" % item_number
+        item_xpath = "//ul[@class='yui3-picker-results']/li[%d]/span" % item_number
         return self.xpath + item_xpath
 
     def do_search(self, text):
@@ -234,7 +234,7 @@ class InlinePickerWidgetSearchTest:
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
-             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             "/button[not(contains(@class, 'yui3-activator-hidden'))]"
              % self.activator_id)
         client.waits.forElement(
             xpath=button_xpath,
@@ -303,15 +303,15 @@ class InlinePickerWidgetButtonTest:
         # Click on edit button.
         button_xpath = (
             u"//span[@id='%s']"
-             "/button[not(contains(@class, 'yui-activator-hidden'))]"
+             "/button[not(contains(@class, 'yui3-activator-hidden'))]"
              % self.activator_id)
         client.waits.forElement(xpath=button_xpath, timeout=u'25000')
         client.click(xpath=button_xpath)
 
         # Click on remove button.
         remove_button_xpath = (
-            u"//div[contains(@class, 'yui-picker ') "
-             "and not(contains(@class, 'yui-picker-hidden'))]"
+            u"//div[contains(@class, 'yui3-picker ') "
+             "and not(contains(@class, 'yui3-picker-hidden'))]"
              "//*[contains(@class, '%s')]" % self.button_class)
         client.waits.forElement(xpath=remove_button_xpath, timeout=u'25000')
         client.click(xpath=remove_button_xpath)
@@ -319,7 +319,7 @@ class InlinePickerWidgetButtonTest:
 
         # Verify removal.
         client.asserts.assertText(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             validator=self.new_value)
 
@@ -329,11 +329,11 @@ class InlinePickerWidgetButtonTest:
 
         # Verify removal, again.
         client.waits.forElement(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             timeout=u'25000')
         client.asserts.assertText(
-            xpath=u"//span[@id='%s']/span[@class='yui-activator-data-box']"
+            xpath=u"//span[@id='%s']/span[@class='yui3-activator-data-box']"
                   % self.activator_id,
             validator=self.new_value)
 
