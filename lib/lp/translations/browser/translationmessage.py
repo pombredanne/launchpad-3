@@ -1331,14 +1331,12 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.pofile.potemplate, self.sec_lang,
                 self.pofile.potemplate.translation_side)
             if alt_current is not None:
-                alt_current.setPOFile(alt_pofile)
-            if alt_current is not None:
                 alt_submissions.append(alt_current)
             alt_external = list(
                 potmsgset.getExternallyUsedTranslationMessages(self.sec_lang))
-            for suggestion in alt_external:
-                suggestion.setPOFile(alt_pofile)
             alt_submissions.extend(alt_external)
+            for suggestion in alt_submissions:
+                suggestion.setPOFile(alt_pofile)
             alt_title = self.sec_lang.englishname
 
         # To maintain compatibility with the old DB model as much as possible,
