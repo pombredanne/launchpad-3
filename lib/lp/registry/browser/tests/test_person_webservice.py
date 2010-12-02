@@ -8,16 +8,12 @@ import unittest
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from launchpadlib.launchpad import Launchpad
-
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,
     launchpadlib_for_anonymous,
-    login_person,
-    logout,
     TestCaseWithFactory,
     )
 
@@ -25,7 +21,7 @@ from lp.testing import (
 class TestPersonEmailSecurity(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-   
+
     def setUp(self):
         super(TestPersonEmailSecurity, self).setUp()
         self.target = self.factory.makePerson(name='target')
@@ -36,7 +32,7 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
 
     def test_logged_in_can_access(self):
         # A logged in launchpadlib connection can see confirmed email
-        # addresses. 
+        # addresses.
         accessor = self.factory.makePerson()
         lp = launchpadlib_for("test", accessor.name)
         person = lp.people['target']
