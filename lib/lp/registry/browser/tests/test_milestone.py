@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 
-from testtools.matchers import LessThan
 from textwrap import dedent
+
+from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from canonical.config import config
@@ -23,10 +24,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
-from lp.testing._webservice import QueryCollector
 
 
 class TestMilestoneViews(TestCaseWithFactory):

@@ -41,7 +41,6 @@ from canonical.launchpad.webapp.authorization import (
     precache_permission_for_objects,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu,
     ContextMenu,
@@ -57,7 +56,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     IBugTaskSet,
     )
 from lp.registry.browser import (

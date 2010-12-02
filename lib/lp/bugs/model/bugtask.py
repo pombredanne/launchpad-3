@@ -32,7 +32,6 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
-from storm.info import ClassAlias
 from storm.expr import (
     Alias,
     And,
@@ -44,13 +43,10 @@ from storm.expr import (
     Select,
     SQL,
     )
+from storm.info import ClassAlias
 from storm.store import (
     EmptyResultSet,
     Store,
-    )
-from storm.zope.interfaces import (
-    IResultSet,
-    ISQLObjectResultSet,
     )
 from zope.component import getUtility
 from zope.interface import (
