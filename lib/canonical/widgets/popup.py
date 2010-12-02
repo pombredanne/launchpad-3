@@ -79,19 +79,20 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken' : cgi.escape(self.formToken, quote=True),
+            'formToken': cgi.escape(self.formToken, quote=True),
             'name': self.name,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
             'onKeyPress': self.onKeyPress,
             'style': self.style,
-            'cssClass': self.cssClass
-        }
+            'cssClass': self.cssClass,
+            }
         return """<input type="text" value="%(formToken)s" id="%(name)s"
                          name="%(name)s" size="%(displayWidth)s"
                          maxlength="%(displayMaxWidth)s"
                          onKeyPress="%(onKeyPress)s" style="%(style)s"
                          class="%(cssClass)s" />""" % d
+
     @property
     def suffix(self):
         return self.name.replace('.', '-')
@@ -162,8 +163,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             css = ''
         return ('<span class="%s">(<a id="%s" href="/people/">'
                 'Find&hellip;</a>)</span>'
-                '\n<script>\n%s\n</script>'
-               ) % (css, self.show_widget_id, js)
+                '\n<script>\n%s\n</script>') % (css, self.show_widget_id, js)
 
     @property
     def nonajax_uri(self):

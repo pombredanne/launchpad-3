@@ -73,5 +73,3 @@ class FAQVocabulary:
         """See `IHugeVocabulary`."""
         results = self.context.findSimilarFAQs(query)
         return CountableIterator(results.count(), results, self.toTerm)
-
-
