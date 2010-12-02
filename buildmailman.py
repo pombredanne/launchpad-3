@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
@@ -36,6 +36,11 @@ def build_mailman():
     sys.path.append(mailman_path)
     try:
         import Mailman
+        # Also check for Launchpad-specific bits stuck into the source tree by
+        # monkey_patch(), in case this is half-installed.  See
+        # <https://bugs.launchpad.net/launchpad-registry/+bug/683486>.
+        from Mailman.Queue import XMLRPCRunner
+        from Mailman.Handlers import LPModerate
     except ImportError:
         pass
     else:
