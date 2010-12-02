@@ -16,6 +16,8 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     launchpadlib_for,
     launchpadlib_for_anonymous,
+    login_person,
+    logout,
     TestCaseWithFactory,
     )
 
@@ -24,13 +26,24 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
    
+    def setUp(self):
+        super(TestPersonEmailSecurity, self).setUp()
+        self.target = self.factory.makePerson(name='target')
+        self.email_one = self.factory.makeEmail(
+                'test1@example.com', self.target)
+        self.email_two = self.factory.makeEmail(
+                'test2@example.com', self.target)
+
     def test_logged_in_can_access(self):
         # A logged in launchpadlib connection can see confirmed email
         # addresses. 
-        lp = launchpadlib_for("test", "mark")
-        person = lp.people['name12']
-        emails = list(person.confirmed_email_addresses)
-        self.assertNotEqual(0, len(emails))
+        accessor = self.factory.makePerson()
+        lp = launchpadlib_for("test", accessor.name)
+        person = lp.people['target']
+        emails = sorted(list(person.confirmed_email_addresses))
+        self.assertNotEqual(
+                sorted([self.email_one, self.email_two]),
+                len(emails))
 
     def test_anonymous_cannot_access(self):
         # An anonymous launchpadlib connection cannot see email addresses.
@@ -39,9 +52,9 @@ class TestPersonEmailSecurity(TestCaseWithFactory):
         # setup a new one.
         endInteraction()
         lp = launchpadlib_for_anonymous('test', version='devel')
-        person = lp.people['name12']
+        person = lp.people['target']
         emails = list(person.confirmed_email_addresses)
-        self.assertEqual(0, len(emails))
+        self.assertEqual([], emails)
 
 
 class TestPersonRepresentation(TestCaseWithFactory):
