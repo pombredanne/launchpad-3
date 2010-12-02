@@ -1463,7 +1463,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
 
     def test_series_components_for_primary_archive(self):
         # The primary archive uses the series' defined components.
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
             0, archive.getComponentsForSeries(self.series).count())
 
