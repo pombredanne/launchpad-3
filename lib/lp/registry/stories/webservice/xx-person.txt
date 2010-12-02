@@ -136,11 +136,6 @@ collection of other confirmed email addresses of that person/team.
     >>> print_self_link_of_entries(webservice.get(emails).jsonBody())
     http://.../~name12/+email/testing@canonical.com
 
-Email addresses are not accessible for anonymous connections.
-
-    >>> print_self_link_of_entries(anon_webservice.get(emails).jsonBody())
-    <BLANKLINE>    
-
 Email addresses are first-class objects with their own URLs and
 representations too.
 
