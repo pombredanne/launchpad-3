@@ -219,7 +219,7 @@ private, the 'private' class is added to the body's class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless private yui-skin-sam
+    tab-overview locationless private yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 
@@ -228,7 +228,7 @@ When the context is public, the 'public' class is in the class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless public yui-skin-sam
+    tab-overview locationless public yui3-skin-sam
 
 
 Notifications
