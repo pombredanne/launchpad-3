@@ -14,6 +14,7 @@ __all__ = [
     'INewSpecificationTarget',
     'INewSpecificationProjectTarget',
     'ISpecification',
+    'ISpecificationPublic',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]

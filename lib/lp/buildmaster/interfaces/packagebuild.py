@@ -94,7 +94,11 @@ class IPackageBuild(IBuildFarmJob):
         """
 
     def getLogFromSlave(build):
-        """Get last buildlog from slave. """
+        """Get last buildlog from slave. 
+        
+        :return: A Deferred that fires with the librarian ID of the log
+            when the log is finished downloading.
+        """
 
     def estimateDuration():
         """Estimate the build duration."""
@@ -130,6 +134,7 @@ class IPackageBuild(IBuildFarmJob):
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
         :param slave_status: A dict as returned by IBuilder.slaveStatus
+        :return: A Deferred that fires when finished dealing with the build.
         """
 
     def queueBuild(suspended=False):

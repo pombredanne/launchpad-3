@@ -6,6 +6,7 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import email
 import time
+import transaction
 import unittest
 
 from canonical.database.sqlbase import commit
@@ -41,6 +42,66 @@ class TestMaloneHandler(TestCaseWithFactory):
         self.assertTrue(isinstance(commands[0], BugEmailCommand))
         self.assertEqual('bug', commands[0].name)
         self.assertEqual(['foo'], commands[0].string_args)
+
+    def test_NonGPGAuthenticatedNewBug(self):
+        """Mail authenticated other than by gpg can create bugs.
+
+        The incoming mail layer is responsible for authenticating the mail,
+        and setting the current principal to the sender of the mail, either
+        weakly or non-weakly authenticated.  At the layer of the handler,
+        which this class is testing, we shouldn't care by what mechanism we
+        decided to act on behalf of the mail sender, only that we did.
+
+        In bug 643219, Launchpad had a problem where the MaloneHandler code
+        was puncturing that abstraction and directly looking at the GPG
+        signature; this test checks it's fixed.
+        """
+        # NB SignedMessage by default isn't actually signed, it just has the
+        # capability of knowing about signing.
+        message = self.factory.makeSignedMessage(body='  affects malone\nhi!')
+        self.assertEquals(message.signature, None)
+
+        # Pretend that the mail auth has given us a logged-in user.
+        handler = MaloneHandler()
+        with person_logged_in(self.factory.makePerson()):
+            mail_handled, add_comment_to_bug, commands = \
+                handler.extractAndAuthenticateCommands(message,
+                    'new@bugs.launchpad.net')
+        self.assertEquals(mail_handled, None)
+        self.assertEquals(map(str, commands), [
+            'bug new',
+            'affects malone',
+            ])
+
+    def test_mailToHelpFromUnknownUser(self):
+        """Mail from people of no account to help@ is simply dropped.
+        """
+        message = self.factory.makeSignedMessage()
+        handler = MaloneHandler()
+        mail_handled, add_comment_to_bug, commands = \
+            handler.extractAndAuthenticateCommands(message,
+                'help@bugs.launchpad.net')
+        self.assertEquals(mail_handled, True)
+        self.assertEquals(self.getSentMail(), [])
+
+    def test_mailToHelp(self):
+        """Mail to help@ generates a help command."""
+        message = self.factory.makeSignedMessage()
+        handler = MaloneHandler()
+        with person_logged_in(self.factory.makePerson()):
+            mail_handled, add_comment_to_bug, commands = \
+                handler.extractAndAuthenticateCommands(message,
+                    'help@bugs.launchpad.net')
+        self.assertEquals(mail_handled, True)
+        self.assertEquals(len(self.getSentMail()), 1)
+        # TODO: Check the right mail was sent. -- mbp 20100923
+
+    def getSentMail(self):
+        # Sending mail is (unfortunately) a side effect of parsing the
+        # commands, and unfortunately you must commit the transaction to get
+        # them sent.
+        transaction.commit()
+        return stub.test_emails[:]
 
 
 class FakeSignature:
