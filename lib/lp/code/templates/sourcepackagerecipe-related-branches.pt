@@ -24,8 +24,11 @@
             </a>
           </td>
           <td>
-            <a tal:attributes="href branch/sourcepackage/fmt:url"
-              tal:content="branch/sourcepackagename/name">source package</a>
+            <a href="#"
+               tal:attributes="href branch/sourcepackage/fmt:url"
+               tal:content="branch/sourcepackagename/name">
+              source package
+            </a>
           </td>
         </tr>
       </tbody>
