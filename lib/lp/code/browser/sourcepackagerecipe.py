@@ -25,6 +25,9 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
 from storm.locals import Store
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.widget import Widget
+from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -34,6 +37,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import (
+    Field,
     Choice,
     List,
     Text,
@@ -320,11 +324,55 @@ class RecipeTextValidatorMixin:
             self.setFieldError('recipe_text', str(error))
 
 
-class RecipeRelatedBranchesMixin:
-    """A class to find the related branches for a recipe's base branch."""
+class RelatedBranchesWidget(Widget):
+    """A widget to render the related branches for a rrecipe."""
+    implements(IView)
+
+    __call__ = ViewPageTemplateFile(
+        '../templates/sourcepackagerecipe-related-branches.pt')
+
+    related_package_branches = []
+    related_series_branches = []
+
+    def hasInput(self):
+        return True
+
+    def setRenderedValue(self, value):
+        self.related_package_branches = value['related_package_branches']
+        self.related_series_branches = value['related_series_branches']
+
+
+class RecipeRelatedBranchesMixin(LaunchpadFormView):
+    """A class to find related branches for a recipe's base branch."""
+
+    custom_widget('related-branches', RelatedBranchesWidget)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        Adds a related branches field to the form.
+        """
+        super(RecipeRelatedBranchesMixin, self).setUpFields()
+        self.form_fields += form.Fields(Field(__name__='related-branches'))
+        self.form_fields['related-branches'].custom_widget = (
+            self.custom_widgets['related-branches'])
+        self.widget_errors['related-branches'] = ''
+
+    def setUpWidgets(self, context=None):
+        # Adds a new related branches widget.
+        super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
+        self.widgets['related-branches'].display_label = False
+
+    def render(self):
+        # Sets the related branches widget's value.
+        self.widgets['related-branches'].setRenderedValue(dict(
+                related_package_branches=self.related_package_branches,
+                related_series_branches=self.related_series_branches))
+        return super(RecipeRelatedBranchesMixin, self).render()
 
     @cachedproperty
     def related_series_branches(self):
+        """Find development branches related to the base branch's product."""
         result = set()
         branch_to_check = self.getBranch()
         product = branch_to_check.product
@@ -334,7 +382,7 @@ class RecipeRelatedBranchesMixin:
         if dev_focus_branch is not None:
             result.add(dev_focus_branch)
 
-        # Now any branches for the product's series
+        # Now any branches for the product's series.
         for series in product.series:
             try:
                 branch = ICanHasLinkedBranch(series).branch
@@ -349,11 +397,11 @@ class RecipeRelatedBranchesMixin:
 
     @cachedproperty
     def related_package_branches(self):
+        """Find branches for the base branch's product's distro src pkgs."""
         result = set()
         branch_to_check = self.getBranch()
         product = branch_to_check.product
 
-        # Find any branches for the product's distro source packages.
         for sourcepackage in product.distrosourcepackages:
             try:
                 branch = ICanHasLinkedBranch(sourcepackage).branch
@@ -369,7 +417,7 @@ class RecipeRelatedBranchesMixin:
 
 
 class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
-                                 RecipeTextValidatorMixin, LaunchpadFormView):
+                                 RecipeTextValidatorMixin):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
@@ -385,6 +433,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
 
     def getBranch(self):
+        """The branch on which the recipe is built."""
         return self.context
 
     @property
@@ -447,6 +496,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     """View for editing Source Package Recipes."""
 
     def getBranch(self):
+        """The branch on which the recipe is built."""
         return self.context.base_branch
 
     @property

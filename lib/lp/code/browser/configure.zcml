@@ -1254,12 +1254,6 @@
                 SourcePackageRecipeNavigationMenu
                 SourcePackageRecipeContextMenu"
             module="lp.code.browser.sourcepackagerecipe"/>
-        <browser:page
-            for="*"
-            layer="lp.code.publisher.CodeLayer"
-            name="+sourcepackagerecipe-macros"
-            permission="zope.Public"
-            template="../templates/sourcepackagerecipe-macros.pt"/>
 
         <browser:page
             for="lp.code.interfaces.branch.IBranch"
@@ -1276,7 +1270,7 @@
             permission="launchpad.Edit"
             facet="branches"
             name="+edit"
-            template="../templates/sourcepackagerecipe-edit.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"

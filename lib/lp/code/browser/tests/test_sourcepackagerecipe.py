@@ -90,8 +90,8 @@ class TestCaseForRecipe(BrowserTestCase):
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa)
 
-    def createRelatedBranches(
-        self, base_branch=None, nr_series_branches=5, nr_package_branches=5):
+    def createRelatedBranches(self, base_branch=None, nr_series_branches=5,
+                              nr_package_branches=5):
         """Create a recipe base branch and some others associated with it.
         The other branches are:
           - series branches: a set of branches associated with product
@@ -125,7 +125,7 @@ class TestCaseForRecipe(BrowserTestCase):
                 related_series_branches.add(branch)
 
         if nr_package_branches > 0:
-            distro = self.factory.makeDistribution(owner=self.chef)
+            distro = self.factory.makeDistribution()
             distroseries = self.factory.makeDistroSeries(
                 distribution=distro)
 
@@ -161,11 +161,9 @@ class TestCaseForRecipe(BrowserTestCase):
             sorted(related_series_branches, key=attrgetter('unique_name')),
             sorted(related_package_branches, key=attrgetter('unique_name')))
 
-    def checkRelatedBranches(
-            self, related_series_branches, related_package_branches,
-            browser_contents):
+    def checkRelatedBranches(self, related_series_branches,
+                             related_package_branches, browser_contents):
         """Check that the browser contents contain the correct branch info."""
-
         login(ANONYMOUS)
         soup = BeautifulSoup(browser_contents)
 
@@ -226,12 +224,13 @@ class TestCaseForRecipe(BrowserTestCase):
             expected_branch_info.append(naked_branch.owner.displayname)
         self.assertEqual(series_branches_info, expected_branch_info)
 
-    # XXX: wallyworld 2010-11-26 bug=675377: storm's Count() implementation is
-    # broken for distinct with > 1 column
+    # XXX: wallyworld 2010-12-01 bug=675377: self.assertEqual(list1, list2)
+    # fails unless the branches in the list are naked.
     def assertBranchesEqual(self, lhs, rhs):
-        naked_lhs = [removeSecurityProxy(b) for b in lhs]
-        naked_rhs = [removeSecurityProxy(b) for b in rhs]
-        self.assertEqual(sorted(naked_lhs), sorted(naked_rhs))
+#        naked_lhs = [removeSecurityProxy(b) for b in lhs]
+#        naked_rhs = [removeSecurityProxy(b) for b in rhs]
+#        self.assertEqual(sorted(naked_lhs), sorted(naked_rhs))
+        self.assertEqual(sorted(lhs), sorted(rhs))
 
 
 def get_message_text(browser, index):
@@ -562,6 +561,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
     def test_new_recipe_with_no_related_branches(self):
+        # The Related Branches section should not appear if there are no
+        # related branches.
         branch = self.makeBranch()
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -572,16 +573,19 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         self.assertIs(related_branches, None)
 
     def test_new_recipe_view_related_branches(self):
+        # The view class should provide the expected related branches for
+        # rendering.
         (branch, related_series_branches,
             related_package_branches) = self.createRelatedBranches()
         with person_logged_in(self.chef):
             view = create_initialized_view(branch, "+new-recipe")
-        self.assertBranchesEqual(
-            related_series_branches, view.related_series_branches)
-        self.assertBranchesEqual(
-            related_package_branches, view.related_package_branches)
+            self.assertBranchesEqual(
+                related_series_branches, view.related_series_branches)
+            self.assertBranchesEqual(
+                related_package_branches, view.related_package_branches)
 
     def test_new_recipe_with_related_branches(self):
+        # The related branches should be rendered correctly on the page.
         (branch, related_series_branches,
             related_package_branches) = self.createRelatedBranches()
         browser = self.getUserBrowser(
@@ -868,6 +872,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             'Recipe may not refer to private branch: %s' % bzr_identity)
 
     def test_edit_recipe_with_no_related_branches(self):
+        # The Related Branches section should not appear if there are no
+        # related branches.
         recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
         browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
         browser.getLink('Edit recipe').click()
@@ -878,18 +884,21 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertIs(related_branches, None)
 
     def test_edit_recipe_view_related_branches(self):
+        # The view class should provide the expected related branches for
+        # rendering.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
             (branch, related_series_branches,
                 related_package_branches) = self.createRelatedBranches(
                     base_branch=recipe.base_branch)
             view = create_initialized_view(recipe, "+edit")
-        self.assertBranchesEqual(
-            related_series_branches, view.related_series_branches)
-        self.assertBranchesEqual(
-            related_package_branches, view.related_package_branches)
+            self.assertBranchesEqual(
+                related_series_branches, view.related_series_branches)
+            self.assertBranchesEqual(
+                related_package_branches, view.related_package_branches)
 
     def test_edit_recipe_with_related_branches(self):
+        # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
             recipe = self.factory.makeSourcePackageRecipe(owner=self.chef)
             (branch, related_series_branches,
