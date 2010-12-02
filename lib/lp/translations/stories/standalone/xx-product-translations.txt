@@ -48,11 +48,12 @@ translation, or link the product to a translatable package.
     ...     find_tag_by_id(
     ...         registrant.contents, 'not-translated-in-launchpad'))
     Launchpad does not know where gnomebaker translates its messages.
-    
+
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         registrant.contents, 'translations-explanation'))
-    Launchpad allows communities to translate projects using imports or a branch. 
+    Launchpad allows communities to translate projects using imports or a
+    branch.
     Getting started with translating your project in Launchpad
     Configure translations
 
