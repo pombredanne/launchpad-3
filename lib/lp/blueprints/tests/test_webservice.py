@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.management import endInteraction
+
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import webservice_for_person
 from lp.blueprints.interfaces.specification import (
@@ -12,7 +14,9 @@ from lp.blueprints.interfaces.specification import (
     )
 from lp.testing import (
     launchpadlib_for,
+    launchpadlib_for_anonymous,
     TestCaseWithFactory,
+    ws_object,
     )
 
 
@@ -214,6 +218,18 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
     def assertNamesOfSpecificationsAre(self, expected_names, specifications):
         names = [s.name for s in specifications]
         self.assertContentEqual(expected_names, names)
+
+    def test_anonymous_access_to_collection(self):
+        product = self.factory.makeProduct()
+        self.factory.makeSpecification(product=product, name="spec1")
+        self.factory.makeSpecification(product=product, name="spec2")
+        # Need to endInteraction() because launchpadlib_for_anonymous() will
+        # setup a new one.
+        endInteraction()
+        lplib = launchpadlib_for_anonymous('lplib-test', version='devel')
+        ws_product = ws_object(lplib, product)
+        self.assertNamesOfSpecificationsAre(
+            ["spec1", "spec2"], ws_product.all_specifications)
 
     def test_product_all_specifications(self):
         product = self.factory.makeProduct()
