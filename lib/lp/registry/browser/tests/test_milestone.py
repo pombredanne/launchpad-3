@@ -19,6 +19,7 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
+    login_team,
     logout,
     person_logged_in,
     StormStatementRecorder,
@@ -168,12 +169,12 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.assertEqual(0, product.development_focus.all_bugtasks.count())
 
 
-class TestMilestoneIndexQueryCount(TestCaseWithFactory):
+class TestProjectMilestoneIndexQueryCount(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestMilestoneIndexQueryCount, self).setUp()
+        super(TestProjectMilestoneIndexQueryCount, self).setUp()
         # Increase cache size so that the query counts aren't affected
         # by objects being removed from the cache early.
         config.push('storm-cache', dedent('''
@@ -186,15 +187,11 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
         login_person(self.product.owner)
         self.milestone = self.factory.makeMilestone(
             productseries=self.product.development_focus)
-        self.collector = QueryCollector()
-        self.collector.register()
-        self.addCleanup(self.collector.unregister)
 
     def add_bug(self, count):
         login_person(self.product.owner)
         for i in range(count):
-            bug = self.factory.makeBug(
-                product=self.product, private=True, owner=self.product.owner)
+            bug = self.factory.makeBug(product=self.product)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.product.owner)
             # This is necessary to test precaching of assignees.
@@ -225,19 +222,20 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
         milestone_url = canonical_url(self.milestone)
         query_limit = 34
         browser = self.getUserBrowser(user=self.product.owner)
 
-        browser.open(milestone_url)
-        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
         self.add_bug(3)
         browser.open(milestone_url)
-        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
 
         self.add_bug(10)
         browser.open(milestone_url)
-        self.assertThat(self.collector, HasQueryCount(LessThan(query_limit)))
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
 
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone
@@ -299,3 +297,168 @@ class TestMilestoneIndexQueryCount(TestCaseWithFactory):
         self.assertEqual(with_1_private_bug, with_3_private_bugs,
             "different query count: \n%s\n******************\n%s\n" % (
             '\n'.join(with_1_queries), '\n'.join(with_3_queries)))
+
+
+class TestProjectGroupMilestoneIndexQueryCount(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        self.owner = self.factory.makePerson(name='product-owner')
+        self.project_group = self.factory.makeProject(owner=self.owner)
+        login_person(self.owner)
+        self.milestone_name = 'foo'
+        # A ProjectGroup milestone doesn't exist unless one of its
+        # Projects has a milestone of that name.
+        product = self.factory.makeProduct(
+            owner=self.owner, project=self.project_group)
+        self.factory.makeMilestone(
+            productseries=product.development_focus,
+            name=self.milestone_name)
+        self.milestone = self.project_group.getMilestone(
+            self.milestone_name)
+
+    def add_bug(self, count, milestone):
+        login_person(self.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(product=milestone.product)
+            bug.bugtasks[0].transitionToMilestone(
+                milestone, self.owner)
+            # This is necessary to test precaching of assignees.
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        # The view.bugtasks attribute will make four queries:
+        #  1. Load bugtasks and bugs.
+        #  2. Load assignees (Person, Account, and EmailAddress).
+        #  3. Load links to specifications.
+        #  4. Load links to branches.
+        bugtask_count = 10
+        product = self.factory.makeProduct(
+            owner=self.owner, project=self.project_group)
+        milestone = self.factory.makeMilestone(
+            productseries=product.development_focus,
+            name=self.milestone_name)
+        self.add_bug(bugtask_count, milestone)
+        login_person(self.owner)
+        view = create_initialized_view(self.milestone, '+index')
+        # Eliminate permission check for the admin team from the
+        # recorded queries by loading it now. If the test ever breaks,
+        # the person fixing it won't waste time trying to track this
+        # query down.
+        getUtility(ILaunchpadCelebrities).admin
+        with StormStatementRecorder() as recorder:
+            bugtasks = list(view.bugtasks)
+        self.assertThat(recorder, HasQueryCount(LessThan(8)))
+        self.assertEqual(bugtask_count, len(bugtasks))
+
+    def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees as long as the number of
+        # projects doesn't increase.
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        milestone_url = canonical_url(self.milestone)
+        query_limit = 37
+        browser = self.getUserBrowser(user=self.owner)
+
+        login_person(self.owner)
+        product = self.factory.makeProduct(
+            owner=self.owner, project=self.project_group)
+        milestone = self.factory.makeMilestone(
+            productseries=product.development_focus,
+            name=self.milestone_name)
+        self.add_bug(1, milestone)
+        browser.open(milestone_url)
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
+
+        self.add_bug(10, milestone)
+        browser.open(milestone_url)
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
+
+
+class TestDistributionMilestoneIndexQueryCount(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.owner = self.factory.makePerson(name='test-owner')
+        login_team(self.ubuntu.owner)
+        self.ubuntu.owner = self.owner
+        self.sourcepackagename = self.factory.makeSourcePackageName(
+            'foo-package')
+        login_person(self.owner)
+        self.milestone = self.factory.makeMilestone(
+            distribution=self.ubuntu)
+
+    def add_bug(self, count):
+        login_person(self.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(distribution=self.ubuntu)
+            distrosourcepackage = self.factory.makeDistributionSourcePackage(
+                distribution=self.ubuntu)
+            bug.bugtasks[0].transitionToTarget(distrosourcepackage)
+            bug.bugtasks[0].transitionToMilestone(
+                self.milestone, self.owner)
+            # This is necessary to test precaching of assignees.
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        # The view.bugtasks attribute will make four queries:
+        #  1. Load bugtasks and bugs.
+        #  2. Load assignees (Person, Account, and EmailAddress).
+        #  3. Load links to specifications.
+        #  4. Load links to branches.
+        bugtask_count = 10
+        self.add_bug(bugtask_count)
+        login_person(self.owner)
+        view = create_initialized_view(self.milestone, '+index')
+        # Eliminate permission check for the admin team from the
+        # recorded queries by loading it now. If the test ever breaks,
+        # the person fixing it won't waste time trying to track this
+        # query down.
+        getUtility(ILaunchpadCelebrities).admin
+        with StormStatementRecorder() as recorder:
+            bugtasks = list(view.bugtasks)
+        self.assertThat(recorder, HasQueryCount(LessThan(8)))
+        self.assertEqual(bugtask_count, len(bugtasks))
+
+    def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees.
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        milestone_url = canonical_url(self.milestone)
+        query_limit = 32
+        browser = self.getUserBrowser(user=self.owner)
+
+        self.add_bug(3)
+        browser.open(milestone_url)
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
+
+        self.add_bug(10)
+        browser.open(milestone_url)
+        self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
