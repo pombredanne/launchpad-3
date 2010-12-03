@@ -311,6 +311,10 @@ class IProjectGroupPublic(
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False, readonly=True)
+
     def getProduct(name):
         """Get a product with name `name`."""
 
