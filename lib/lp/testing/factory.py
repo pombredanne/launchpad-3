@@ -37,7 +37,6 @@ from operator import (
     )
 import os
 from random import randint
-import simplejson
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
@@ -47,6 +46,7 @@ import warnings
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
+import simplejson
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -102,7 +102,11 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationGoalStatus,
+    SpecificationPriority,
+    )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
@@ -1116,7 +1120,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return namespace.createBranch(branch_type, name, creator)
 
     def makeBranchMergeQueue(self, registrant=None, owner=None, name=None,
-                             description=None, configuration=None):
+                             description=None, configuration=None,
+                             branches=None):
         """Create a BranchMergeQueue."""
         if name is None:
             name = unicode(self.getUniqueString('queue'))
@@ -1131,7 +1136,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.getUniqueString('key'): self.getUniqueString('value')}))
 
         queue = getUtility(IBranchMergeQueueSource).new(
-            name, owner, registrant, description, configuration)
+            name, owner, registrant, description, configuration, branches)
         return queue
 
     def enableDefaultStackingForProduct(self, product, branch=None):
@@ -1670,7 +1675,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW,
-                          implementation_status=None):
+                          implementation_status=None, goal=None, specurl=None,
+                          assignee=None, drafter=None, approver=None,
+                          priority=None, whiteboard=None, milestone=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1686,17 +1693,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
+        if priority is None:
+            priority = SpecificationPriority.UNDEFINED
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
+            whiteboard=whiteboard,
             owner=owner,
+            assignee=assignee,
+            drafter=drafter,
+            approver=approver,
             product=product,
-            distribution=distribution)
+            distribution=distribution,
+            priority=priority)
+        naked_spec = removeSecurityProxy(spec)
+        if status == SpecificationDefinitionStatus.OBSOLETE:
+            # This is to satisfy a DB constraint of obsolete specs.
+            naked_spec.completer = owner
+            naked_spec.date_completed = datetime.now(pytz.UTC)
+        naked_spec.specurl = specurl
+        naked_spec.milestone = milestone
+        if goal is not None:
+            naked_spec.proposeGoal(goal, spec.target.owner)
         if implementation_status is not None:
-            naked_spec = removeSecurityProxy(spec)
             naked_spec.implementation_status = implementation_status
             naked_spec.updateLifecycleStatus(owner)
         return spec
@@ -2361,7 +2383,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None, variant=None):
+                   create_sharing=False, language=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2371,11 +2393,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        pofile = potemplate.newPOFile(language_code,
-                                      create_sharing=create_sharing)
-        if variant is not None:
-            removeSecurityProxy(pofile).variant = variant
-        return pofile
+        return potemplate.newPOFile(language_code,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):
@@ -2749,7 +2768,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None):
+            status=None, pocket=None, date_created=None, processor=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2773,7 +2792,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
                 archive=archive, sourcepackagerelease=source_package_release)
-        processor = self.makeProcessor()
+        if processor is None:
+            processor = self.makeProcessor()
         if distroarchseries is None:
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=source_package_release.upload_distroseries,
@@ -2782,6 +2802,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status = BuildStatus.NEEDSBUILD
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
+        if date_created is None:
+            date_created = self.getUniqueDate()
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
@@ -2789,7 +2811,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status=status,
             archive=archive,
             pocket=pocket,
-            date_created=self.getUniqueDate())
+            date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         return binary_package_build
@@ -2814,6 +2836,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            dsc_format='1.0',
                                            dsc_binaries='foo-bin',
                                            sourcepackagerelease=None,
+                                           ancestor=None,
                                            ):
         """Make a `SourcePackagePublishingHistory`."""
         if distroseries is None:
@@ -2857,7 +2880,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         spph = getUtility(IPublishingSet).newSourcePublication(
             archive, sourcepackagerelease, distroseries,
             sourcepackagerelease.component, sourcepackagerelease.section,
-            pocket)
+            pocket, ancestor)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status

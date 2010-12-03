@@ -41,13 +41,9 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     ContextMenu,
-    custom_widget,
     GetitemNavigation,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -70,6 +66,12 @@ from canonical.widgets import (
     )
 from canonical.widgets.bugtask import (
     UbuntuSourcePackageNameWidget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,

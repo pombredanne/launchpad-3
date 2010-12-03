@@ -29,13 +29,9 @@ from zope.lifecycleevent import ObjectCreatedEvent
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -43,6 +39,12 @@ from canonical.launchpad.webapp import (
     stepthrough,
     )
 from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.poll import (
     IPoll,
     IPollOption,

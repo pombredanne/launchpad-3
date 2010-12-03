@@ -1607,10 +1607,6 @@
     <adapter
         factory="lp.registry.browser.nameblacklist.NameBlacklistSetBreadcrumb"
         />
-    <adapter
-        factory="lp.registry.browser.nameblacklist.NameBlacklistBreadcrumb"
-        />
-
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.product.IProduct"
@@ -1682,6 +1678,17 @@
             ProductSeriesNavigation"/>
     <browser:url
         for="lp.registry.interfaces.productseries.IProductSeries"
+        path_expression="name"
+        attribute_to_parent="product"/>
+    <!-- lazr.restful requires that canonical_url() provide a url for
+         ITimelinProductSeries. It has been configured to return the
+         same url as IProductSeries. This won't cause a problem when
+         navigating to the url, since ProductNavigation.traverse() just
+         returns an IProductSeries object, and browser:url only affects
+         canonical_url().
+    -->
+    <browser:url
+        for="lp.registry.interfaces.productseries.ITimelineProductSeries"
         path_expression="name"
         attribute_to_parent="product"/>
     <adapter

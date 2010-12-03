@@ -405,6 +405,7 @@ The current references to the branch table are shown here.
     sourcepackagerecipedata.base_branch
     sourcepackagerecipedatainstruction.branch
     specificationbranch.branch
+    subunitstream.branch
     translationtemplatesbuild.branch
 
 (Unfortunately, references can form a cycle-- note that

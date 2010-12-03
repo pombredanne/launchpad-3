@@ -604,7 +604,6 @@ reg ./scripts/keyringtrustanalyser.py
 reg ./scripts/listteammembers.py
     ./scripts/logger.py
     ./scripts/loghandlers.py
-    ./scripts/migrate_kde_potemplates.py
     ./scripts/mlistimport.py
     ./scripts/oops.py
     ./scripts/packagecopier.py
@@ -623,7 +622,6 @@ reg ./scripts/productreleasefinder/walker.py
     ./scripts/publishdistro.py
     ./scripts/questionexpiration.py
     ./scripts/queue.py
-    ./scripts/remove_obsolete_translations.py
     ./scripts/remove_translations.py
     ./scripts/revisionkarma.py
     ./scripts/runlaunchpad.py
@@ -1049,7 +1047,7 @@ reg ./zcml/distribution.zcml
     ./mail/errortemplates/num-arguments-mismatch.txt
     ./mail/errortemplates/no-such-bug.txt
     ./mail/errortemplates/security-parameter-mismatch.txt
-    ./mail/errortemplates/not-gpg-signed.txt
+    ./mail/errortemplates/unauthenticated-bug-creation.txt
     ./mail/errortemplates/key-not-registered.txt
     ./mail/errortemplates/oops.txt
     ./mail/errortemplates/branchmergeproposal-exists.txt
