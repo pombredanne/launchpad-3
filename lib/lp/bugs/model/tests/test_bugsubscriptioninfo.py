@@ -9,7 +9,12 @@ from storm.store import Store
 from testtools.matchers import Equals
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.model.bug import BugSubscriptionInfo
+from lp.bugs.model.bug import (
+    BugSubscriptionInfo,
+    BugSubscriptionSet,
+    StructuralSubscriptionSet,
+    SubscriberSet,
+    )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
     person_logged_in,
@@ -17,6 +22,71 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+
+
+class TestSets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    name_pairs = ("A", "xa"), ("C", "xd"), ("B", "xb"), ("C", "xc")
+    name_pairs_sorted = ("A", "xa"), ("B", "xb"), ("C", "xc"), ("C", "xd")
+
+    def setUp(self):
+        super(TestSets, self).setUp()
+        make_person = lambda (displayname, name): (
+            self.factory.makePerson(displayname=displayname, name=name))
+        subscribers = dict(
+            (name_pair, make_person(name_pair))
+            for name_pair in self.name_pairs)
+        self.subscribers_set = frozenset(subscribers.itervalues())
+        self.subscribers_sorted = tuple(
+            subscribers[name_pair] for name_pair in self.name_pairs_sorted)
+
+    def test_SubscriberSet(self):
+        subscriber_set = SubscriberSet(self.subscribers_set)
+        self.assertIsInstance(subscriber_set, frozenset)
+        self.assertEqual(self.subscribers_set, subscriber_set)
+        self.assertEqual(self.subscribers_sorted, subscriber_set.sorted)
+
+    def test_BugSubscriptionSet(self):
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            subscriptions = frozenset(
+                bug.subscribe(subscriber, subscriber)
+                for subscriber in self.subscribers_set)
+        subscription_set = BugSubscriptionSet(subscriptions)
+        self.assertIsInstance(subscription_set, frozenset)
+        self.assertEqual(subscriptions, subscription_set)
+        # BugSubscriptionSet.sorted returns a tuple of subscriptions ordered
+        # by subscribers.
+        self.assertEqual(
+            self.subscribers_sorted, tuple(
+                subscription.person
+                for subscription in subscription_set.sorted))
+        # BugSubscriptionSet.subscribers returns a SubscriberSet of the
+        # subscription's subscribers.
+        self.assertIsInstance(subscription_set.subscribers, SubscriberSet)
+        self.assertEqual(self.subscribers_set, subscription_set.subscribers)
+
+    def test_StructuralSubscriptionSet(self):
+        product = self.factory.makeProduct()
+        with person_logged_in(product.owner):
+            subscriptions = frozenset(
+                product.addSubscription(subscriber, subscriber)
+                for subscriber in self.subscribers_set)
+        subscription_set = StructuralSubscriptionSet(subscriptions)
+        self.assertIsInstance(subscription_set, frozenset)
+        self.assertEqual(subscriptions, subscription_set)
+        # StructuralSubscriptionSet.sorted returns a tuple of subscriptions
+        # ordered by subscribers.
+        self.assertEqual(
+            self.subscribers_sorted, tuple(
+                subscription.subscriber
+                for subscription in subscription_set.sorted))
+        # StructuralSubscriptionSet.subscribers returns a SubscriberSet of the
+        # subscription's subscribers.
+        self.assertIsInstance(subscription_set.subscribers, SubscriberSet)
+        self.assertEqual(self.subscribers_set, subscription_set.subscribers)
 
 
 class TestBugSubscriptionInfo(TestCaseWithFactory):

@@ -1974,7 +1974,8 @@ class BugSubscriptionSet(frozenset):
     @cachedproperty
     def subscribers(self):
         condition = Person.id.is_in(
-            subscription.person_id for subscription in self)
+            removeSecurityProxy(subscription).person_id
+            for subscription in self)
         return SubscriberSet(load_people(condition))
 
 
