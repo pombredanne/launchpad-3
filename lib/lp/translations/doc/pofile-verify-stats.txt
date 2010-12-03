@@ -20,13 +20,16 @@ The statistics verifier is invoked by the cron job, but we can also call
 it directly.
 
     >>> import transaction
+    >>> from lp.services.mail.stub import test_emails
     >>> from lp.translations.scripts.verify_pofile_stats import (
     ...     VerifyPOFileStatsProcess)
     >>> from canonical.launchpad.scripts.logger import FakeLogger
     >>> logger = FakeLogger()
     >>> VerifyPOFileStatsProcess(transaction, logger).run()
     INFO Starting verification of POFile stats at id 0
+    ...
     INFO Done.
+    >>> old_email = test_emails.pop()
 
 All POFile statistics in our database are now correct, and we can test in
 more detail.
@@ -92,7 +95,6 @@ are once again what they were.
 
 The Translations administrators also receive an email about the error.
 
-    >>> from lp.services.mail.stub import test_emails
     >>> from_addr, to_addrs, body = test_emails.pop()
     >>> len(test_emails)
     0
