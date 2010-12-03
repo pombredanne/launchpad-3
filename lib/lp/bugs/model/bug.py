@@ -26,6 +26,10 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
+from itertools import (
+    chain,
+    imap,
+    )
 import operator
 import re
 
@@ -48,7 +52,6 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
-    Func,
     LeftJoin,
     Max,
     Not,
@@ -181,6 +184,7 @@ from lp.registry.interfaces.structuralsubscription import (
     )
 from lp.registry.model.person import (
     Person,
+    person_sort_key,
     ValidPersonCache,
     )
 from lp.registry.model.pillar import pillar_sort_key
@@ -800,24 +804,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        # Cache valid persons so that <person>.is_valid_person can
-        # return from the cache. This operation was previously done at
-        # the same time as retrieving the bug subscriptions (as a left
-        # join). However, this ran slowly (far from optimal query
-        # plan), so we're doing it as two queries now.
-        valid_persons = Store.of(self).find(
-            (Person, ValidPersonCache),
-            Person.id == ValidPersonCache.id,
-            ValidPersonCache.id == BugSubscription.person_id,
-            BugSubscription.bug == self)
-        # Suck in all the records so that they're actually cached.
-        list(valid_persons)
-        # Do the main query.
-        return Store.of(self).find(
-            BugSubscription,
-            BugSubscription.person_id == Person.id,
-            BugSubscription.bug == self).order_by(
-            Func('person_sort_key', Person.displayname, Person.name))
+        return BugSubscriptionInfo(
+            self, BugNotificationLevel.NOTHING).direct_subscriptions
 
     def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -829,18 +817,11 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.NOTHING
-
-        subscribers = list(
-            Person.select("""
-                Person.id = BugSubscription.person
-                AND BugSubscription.bug = %s
-                AND BugSubscription.bug_notification_level >= %s""" %
-                sqlvalues(self.id, level),
-                orderBy="displayname", clauseTables=["BugSubscription"]))
+        subscriptions = BugSubscriptionInfo(self, level).direct_subscriptions
         if recipients is not None:
-            for subscriber in subscribers:
+            for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
-        return subscribers
+        return subscriptions.subscribers.sorted
 
     def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1967,21 +1948,64 @@ def load_people(*where):
     :return: A `DecoratedResultSet` of `Person` objects. The corresponding
         `ValidPersonCache` records are loaded simultaneously.
     """
-    return DecoratedResultSet(
-        IStore(Person).find(
+    # Don't order the results; they will be used in set operations.
+    return imap(
+        operator.itemgetter(0), IStore(Person).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
-            *where),
-        operator.itemgetter(0))
+            *where).order_by())
 
 
-def freeze(func):
-    """Decorator that wraps the return value with `frozenset`."""
+class SubscriberSet(frozenset):
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        return frozenset(func(*args, **kwargs))
-    return wrapper
+    @cachedproperty
+    def sorted(self):
+        return tuple(sorted(self, key=person_sort_key))
+
+
+class BugSubscriptionSet(frozenset):
+
+    @cachedproperty
+    def sorted(self):
+        self.subscribers  # Pre-load subscribers.
+        sort_key = lambda sub: person_sort_key(sub.person)
+        return tuple(sorted(self, key=sort_key))
+
+    @cachedproperty
+    def subscribers(self):
+        condition = Person.id.is_in(
+            subscription.person_id for subscription in self)
+        return SubscriberSet(load_people(condition))
+
+
+class StructuralSubscriptionSet(frozenset):
+
+    @cachedproperty
+    def sorted(self):
+        self.subscribers  # Pre-load subscribers.
+        sort_key = lambda sub: person_sort_key(sub.subscriber)
+        return tuple(sorted(self, key=sort_key))
+
+    @cachedproperty
+    def subscribers(self):
+        condition = Person.id.is_in(
+            removeSecurityProxy(subscription).subscriberID
+            for subscription in self)
+        return SubscriberSet(load_people(condition))
+
+
+def freeze(factory):
+    """Return a decorator that wraps returned values with `factory`."""
+
+    def decorate(func):
+        """Decorator that wraps returned values."""
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return factory(func(*args, **kwargs))
+        return wrapper
+
+    return decorate
 
 
 class BugSubscriptionInfo:
@@ -1992,7 +2016,7 @@ class BugSubscriptionInfo:
         self.level = level
 
     @property
-    @freeze
+    @freeze(BugSubscriptionSet)
     def direct_subscriptions(self):
         """The bug's direct subscriptions."""
         return IStore(BugSubscription).find(
@@ -2002,16 +2026,7 @@ class BugSubscriptionInfo:
             BugSubscription.bug == self.bug)
 
     @property
-    @freeze
-    def direct_subscribers(self):
-        """The bug's direct subscribers."""
-        return load_people(
-            Person.id.is_in(
-                subscription.person_id
-                for subscription in self.direct_subscriptions))
-
-    @property
-    @freeze
+    @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
         """Subscriptions to duplicates of the bug."""
         if self.bug.private:
@@ -2025,16 +2040,7 @@ class BugSubscriptionInfo:
                 BugSubscription.person_id == Person.id)
 
     @property
-    @freeze
-    def duplicate_subscribers(self):
-        """Subscribers to duplicates of the bug."""
-        return load_people(
-            Person.id.is_in(
-                subscription.person_id
-                for subscription in self.duplicate_subscriptions))
-
-    @property
-    @freeze
+    @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
         query_arguments = []
@@ -2061,16 +2067,7 @@ class BugSubscriptionInfo:
         return reduce(union, queries)
 
     @property
-    @freeze
-    def structural_subscribers(self):
-        """Structural subscribers to the bug's targets."""
-        return load_people(
-            Person.id.is_in(
-                removeSecurityProxy(subscription).subscriberID
-                for subscription in self.structural_subscriptions))
-
-    @property
-    @freeze
+    @freeze(SubscriberSet)
     def all_assignees(self):
         """Assignees of the bug's tasks."""
         return load_people(
@@ -2078,7 +2075,7 @@ class BugSubscriptionInfo:
             BugTask.bug == self.bug)
 
     @property
-    @freeze
+    @freeze(SubscriberSet)
     def all_bug_supervisors(self):
         """Bug supervisors for the bug's targets."""
         for bugtask in self.bug.bugtasks:
@@ -2090,21 +2087,18 @@ class BugSubscriptionInfo:
     def also_notified_subscribers(self):
         """All subscribers except direct and dupe subscribers."""
         if self.bug.private:
-            return frozenset()
+            return SubscriberSet()
         else:
-            also_notified = reduce(
-                frozenset.union, (
-                    self.all_assignees,
-                    self.all_bug_supervisors,
-                    self.structural_subscribers))
-            return also_notified.difference(
-                self.direct_subscribers)
+            return SubscriberSet(
+                chain(self.all_assignees, self.all_bug_supervisors,
+                      self.structural_subscriptions.subscribers)).difference(
+                self.direct_subscriptions.subscribers)
 
     @property
     def indirect_subscribers(self):
         """All subscribers except direct subscribers."""
         return self.also_notified_subscribers.union(
-            self.duplicate_subscribers)
+            self.duplicate_subscriptions.subscribers)
 
 
 class BugSet:

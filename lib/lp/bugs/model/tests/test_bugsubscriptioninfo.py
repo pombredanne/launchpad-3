@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from storm.store import Store
+from testtools.matchers import Equals
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.enum import BugNotificationLevel
@@ -14,8 +17,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
-from testtools.matchers import Equals
-from storm.store import Store
 
 
 class TestBugSubscriptionInfo(TestCaseWithFactory):
@@ -34,29 +35,45 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
 
     def test_direct(self):
         # The set of direct subscribers.
-        subscribers = set(
-            [self.factory.makePerson(), self.factory.makePerson()])
+        subscribers = (
+            self.factory.makePerson(),
+            self.factory.makePerson())
         with person_logged_in(self.bug.owner):
-            subscriptions = set(
+            subscriptions = tuple(
                 self.bug.subscribe(subscriber, subscriber)
                 for subscriber in subscribers)
-        self.assertEqual(subscribers, self.info.direct_subscribers)
-        self.assertEqual(subscriptions, self.info.direct_subscriptions)
+        found_subscriptions = self.info.direct_subscriptions
+        self.assertEqual(set(subscriptions), found_subscriptions)
+        self.assertEqual(subscriptions, found_subscriptions.sorted)
+        self.assertEqual(set(subscribers), found_subscriptions.subscribers)
+        self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
 
     def test_duplicate(self):
         # The set of subscribers from duplicate bugs.
-        self.assertEqual(set(), self.info.duplicate_subscribers)
-        self.assertEqual(set(), self.info.duplicate_subscriptions)
+        found_subscriptions = self.info.duplicate_subscriptions
+        self.assertEqual(set(), found_subscriptions)
+        self.assertEqual((), found_subscriptions.sorted)
+        self.assertEqual(set(), found_subscriptions.subscribers)
+        self.assertEqual((), found_subscriptions.subscribers.sorted)
         duplicate_bug = self.factory.makeBug(product=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
+            duplicate_bug_subscription = (
+                duplicate_bug.getSubscriptionForPerson(
+                    duplicate_bug.owner))
+        found_subscriptions = self.info.duplicate_subscriptions
+        self.assertEqual(
+            set([duplicate_bug_subscription]),
+            found_subscriptions)
+        self.assertEqual(
+            (duplicate_bug_subscription,),
+            found_subscriptions.sorted)
         self.assertEqual(
             set([duplicate_bug.owner]),
-            self.info.duplicate_subscribers)
+            found_subscriptions.subscribers)
         self.assertEqual(
-            set([duplicate_bug.getSubscriptionForPerson(
-                        duplicate_bug.owner)]),
-            self.info.duplicate_subscriptions)
+            (duplicate_bug.owner,),
+            found_subscriptions.subscribers.sorted)
 
     def test_duplicate_for_private_bug(self):
         # The set of subscribers from duplicate bugs is always empty when the
@@ -66,32 +83,45 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             duplicate_bug.markAsDuplicate(self.bug)
         with person_logged_in(self.bug.owner):
             self.bug.setPrivate(True, self.bug.owner)
-        self.assertEqual(set(), self.info.duplicate_subscribers)
-        self.assertEqual(set(), self.info.duplicate_subscriptions)
+        found_subscriptions = self.info.duplicate_subscriptions
+        self.assertEqual(set(), found_subscriptions)
+        self.assertEqual((), found_subscriptions.sorted)
+        self.assertEqual(set(), found_subscriptions.subscribers)
+        self.assertEqual((), found_subscriptions.subscribers.sorted)
 
     def test_structural(self):
         # The set of structural subscribers.
-        subscribers = set(
-            [self.factory.makePerson(), self.factory.makePerson()])
+        subscribers = (
+            self.factory.makePerson(),
+            self.factory.makePerson())
         with person_logged_in(self.bug.owner):
-            subscriptions = set(
+            subscriptions = tuple(
                 self.target.addBugSubscription(subscriber, subscriber)
                 for subscriber in subscribers)
-        self.assertEqual(subscribers, self.info.structural_subscribers)
-        self.assertEqual(subscriptions, self.info.structural_subscriptions)
+        found_subscriptions = self.info.structural_subscriptions
+        self.assertEqual(set(subscriptions), found_subscriptions)
+        self.assertEqual(subscriptions, found_subscriptions.sorted)
+        self.assertEqual(set(subscribers), found_subscriptions.subscribers)
+        self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
 
     def test_all_assignees(self):
         # The set of bugtask assignees for bugtasks that have been assigned.
         self.assertEqual(set(), self.info.all_assignees)
         with person_logged_in(self.bug.owner):
             self.bug.default_bugtask.transitionToAssignee(self.bug.owner)
-        self.assertEqual(set([self.bug.owner]), self.info.all_assignees)
+        found_assignees = self.info.all_assignees
+        self.assertEqual(set([self.bug.owner]), found_assignees)
+        self.assertEqual((self.bug.owner,), found_assignees.sorted)
         bugtask = self.factory.makeBugTask(bug=self.bug)
         with person_logged_in(bugtask.owner):
             bugtask.transitionToAssignee(bugtask.owner)
+        found_assignees = self.info.all_assignees
         self.assertEqual(
             set([self.bug.owner, bugtask.owner]),
-            self.info.all_assignees)
+            found_assignees)
+        self.assertEqual(
+            (self.bug.owner, bugtask.owner),
+            found_assignees.sorted)
 
     def test_all_bug_supervisors(self):
         # The set of bug supervisors for the bug's task's target, where
@@ -163,7 +193,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             self.info.indirect_subscribers)
 
 
-class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
+class TestBugSubscriptionInfoQueries:#(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
