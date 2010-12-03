@@ -1499,12 +1499,13 @@ class Person(
                         (SELECT tm1.person from TeamMembership tm1
                             WHERE
                                 tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team);
+                                tm1.team = TeamParticipation.team and
+                                tm1.status IN (2,3));
             ''', dict(team=self.id))
-
-        # Since we've updated the database behind Storm's back yet again,
-        # we need to flush its caches, again.
-        store.invalidate()
+#
+#        # Since we've updated the database behind Storm's back yet again,
+#        # we need to flush its caches, again.
+#        store.invalidate()
 
         # Remove all members from the TeamParticipation table
         # except for the team, itself.
