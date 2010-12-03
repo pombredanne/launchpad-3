@@ -45,6 +45,8 @@ class ITranslationSideTraits(Interface):
     flag_name = TextLine(
         title=u"The TranslationMessage flag for this side",
         required=True, readonly=True)
+    displayname = TextLine(
+        title=u"Display name for this side", required=True, readonly=True)
 
     def getCurrentMessage(potemplate, potmsgset, language):
         """Find the current message on this side, if any."""

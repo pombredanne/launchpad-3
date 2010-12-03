@@ -60,10 +60,7 @@ from lp.translations.browser.browser_helpers import (
     )
 from lp.translations.browser.potemplate import POTemplateFacets
 from lp.translations.interfaces.pofile import IPOFileAlternativeLanguage
-from lp.translations.interfaces.side import (
-    ITranslationSideTraitsSet,
-    TranslationSide,
-    )
+from lp.translations.interfaces.side import ITranslationSideTraitsSet
 from lp.translations.interfaces.translationmessage import (
     ITranslationMessage,
     ITranslationMessageSet,
@@ -418,7 +415,6 @@ class BaseTranslationView(LaunchpadView):
         policy = template.getTranslationPolicy()
         return policy.sharesTranslationsWithOtherSide(
             self.user, language, sourcepackage=template.sourcepackage)
-
 
     #
     # API Hooks
@@ -1041,10 +1037,8 @@ class CurrentTranslationMessageView(LaunchpadView):
             else:
                 self.shared_translationmessage = shared_translationmessage
 
-        if side_traits.side == TranslationSide.UPSTREAM:
-            self.other_title = u"In Ubuntu:"
-        else:
-            self.other_title = u"In Upstream:"
+        self.other_title = "In %s:" % (
+            side_traits.other_side_traits.displayname)
         self.can_confirm_and_dismiss = False
         self.can_dismiss_on_empty = False
         self.can_dismiss_on_plural = False
