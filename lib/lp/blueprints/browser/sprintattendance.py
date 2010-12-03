@@ -15,13 +15,15 @@ import pytz
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    custom_widget,
-    LaunchpadFormView,
     )
 from canonical.widgets.date import DateTimeWidget
 from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 
 

@@ -16,8 +16,8 @@ import os.path
 from bzrlib.errors import NotBranchError
 import pytz
 from storm.expr import (
+    And,
     Join,
-    SQL,
     )
 from zope.component import getUtility
 
@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
+from lp.app.enums import ServiceUsage
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
@@ -316,8 +317,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)
         productseries = self.store.using(product_join).find(
-            ProductSeries, SQL(
-                "official_rosetta AND translations_branch IS NOT NULL"))
+            ProductSeries,
+            And(
+                Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                ProductSeries.translations_branch != None))
 
         # Anything deterministic will do, and even that is only for
         # testing.

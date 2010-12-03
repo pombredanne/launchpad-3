@@ -24,17 +24,19 @@ from zope.lifecycleevent import ObjectCreatedEvent
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     Link,
     NavigationMenu,
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import IDistributionMirrorMenuMarker
