@@ -164,7 +164,7 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertThat(collector, HasQueryCount(LessThan(expected_count)))
 
     def test_binary_query_counts(self):
-        query_baseline = 26
+        query_baseline = 40
         # Assess the baseline.
         collector = QueryCollector()
         collector.register()
@@ -176,7 +176,8 @@ class TestPPAPackages(TestCaseWithFactory):
             # The baseline has one package, because otherwise the short-circuit
             # prevents the packages iteration happening at all and we're not
             # actually measuring scaling appropriately.
-            self.factory.makeBinaryPackagePublishingHistory(archive=ppa)
+            pkg = self.factory.makeBinaryPackagePublishingHistory(
+                archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
         self.assertThat(collector, HasQueryCount(
@@ -189,11 +190,9 @@ class TestPPAPackages(TestCaseWithFactory):
         viewer = self.factory.makePerson(password="test")
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
-            for i in range(2):
+            for i in range(3):
                 pkg = self.factory.makeBinaryPackagePublishingHistory(
-                    archive=ppa)
-                self.factory.makeBinaryPackagePublishingHistory(archive=ppa,
-                    distroarchseries=pkg.distroarchseries)
+                    archive=ppa, distroarchseries=pkg.distroarchseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
         self.assertThat(collector, HasQueryCount(
