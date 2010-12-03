@@ -1734,6 +1734,13 @@ class Archive(SQLBase):
         else:
             return "You already have a PPA named '%s'." % proposed_name
 
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        return PackagePublishingPocket.items
+
 
 class ArchiveSet:
     implements(IArchiveSet)

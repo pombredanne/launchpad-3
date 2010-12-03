@@ -1502,6 +1502,6 @@ class TestGetPockets(TestCaseWithFactory):
             PackagePublishingPocket.items, archive.getPockets())
 
     def test_getPockets_for_PPAs(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertEqual(
-            ["Release"], archive.getPockets())
+            [PackagePublishingPocket.RELEASE], archive.getPockets())
