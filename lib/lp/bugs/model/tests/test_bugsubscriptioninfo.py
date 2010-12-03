@@ -24,7 +24,8 @@ from lp.testing import (
 from lp.testing.matchers import HasQueryCount
 
 
-class TestSets(TestCaseWithFactory):
+class TestSubscriptionRelatedSets(TestCaseWithFactory):
+    """Tests for *Set classes related to subscriptions."""
 
     layer = DatabaseFunctionalLayer
 
@@ -32,7 +33,7 @@ class TestSets(TestCaseWithFactory):
     name_pairs_sorted = ("A", "xa"), ("B", "xb"), ("C", "xc"), ("C", "xd")
 
     def setUp(self):
-        super(TestSets, self).setUp()
+        super(TestSubscriptionRelatedSets, self).setUp()
         make_person = lambda (displayname, name): (
             self.factory.makePerson(displayname=displayname, name=name))
         subscribers = dict(
