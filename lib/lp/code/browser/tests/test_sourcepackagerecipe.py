@@ -192,13 +192,12 @@ class TestCaseForRecipe(BrowserTestCase):
             package_branches_info.append(branch_links[1].renderContents())
         expected_branch_info = []
         for branch in related_package_branches:
-            naked_branch = removeSecurityProxy(branch)
             expected_branch_info.append(
-                canonical_url(naked_branch, rootsite='code'))
-            expected_branch_info.append(naked_branch.displayname)
+                canonical_url(branch, rootsite='code'))
+            expected_branch_info.append(branch.displayname)
             expected_branch_info.append(
-                canonical_url(naked_branch.sourcepackage, rootsite='code'))
-            expected_branch_info.append(naked_branch.sourcepackage.name)
+                canonical_url(branch.sourcepackage, rootsite='code'))
+            expected_branch_info.append(branch.sourcepackage.name)
         self.assertEqual(package_branches_info, expected_branch_info)
 
         # Check the related series branches.
@@ -217,12 +216,11 @@ class TestCaseForRecipe(BrowserTestCase):
             series_branches_info.append(branch_links[1].renderContents())
         expected_branch_info = []
         for branch in related_series_branches:
-            naked_branch = removeSecurityProxy(branch)
             expected_branch_info.append(
-                canonical_url(naked_branch, rootsite='code'))
-            expected_branch_info.append(naked_branch.displayname)
-            expected_branch_info.append(canonical_url(naked_branch.owner))
-            expected_branch_info.append(naked_branch.owner.displayname)
+                canonical_url(branch, rootsite='code'))
+            expected_branch_info.append(branch.displayname)
+            expected_branch_info.append(canonical_url(branch.owner))
+            expected_branch_info.append(branch.owner.displayname)
         self.assertEqual(series_branches_info, expected_branch_info)
 
 
