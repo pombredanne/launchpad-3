@@ -1973,10 +1973,13 @@ class BugSubscriptionSet(frozenset):
 
     @cachedproperty
     def subscribers(self):
-        condition = Person.id.is_in(
-            removeSecurityProxy(subscription).person_id
-            for subscription in self)
-        return SubscriberSet(load_people(condition))
+        if len(self) == 0:
+            return SubscriberSet()
+        else:
+            condition = Person.id.is_in(
+                removeSecurityProxy(subscription).person_id
+                for subscription in self)
+            return SubscriberSet(load_people(condition))
 
 
 class StructuralSubscriptionSet(frozenset):
@@ -1989,10 +1992,13 @@ class StructuralSubscriptionSet(frozenset):
 
     @cachedproperty
     def subscribers(self):
-        condition = Person.id.is_in(
-            removeSecurityProxy(subscription).subscriberID
-            for subscription in self)
-        return SubscriberSet(load_people(condition))
+        if len(self) == 0:
+            return SubscriberSet()
+        else:
+            condition = Person.id.is_in(
+                removeSecurityProxy(subscription).subscriberID
+                for subscription in self)
+            return SubscriberSet(load_people(condition))
 
 
 def freeze(factory):

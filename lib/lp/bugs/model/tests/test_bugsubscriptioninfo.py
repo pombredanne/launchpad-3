@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
+
 from storm.store import Store
 from testtools.matchers import Equals
 
@@ -286,7 +288,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
             found_subscribers.sorted)
 
 
-class TestBugSubscriptionInfoQueries:#(TestCaseWithFactory):
+class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -297,79 +299,96 @@ class TestBugSubscriptionInfoQueries:#(TestCaseWithFactory):
         self.info = BugSubscriptionInfo(
             self.bug, BugNotificationLevel.NOTHING)
         # Get the Storm cache into a known state.
-        Store.of(self.bug).invalidate()
-        Store.of(self.bug).reload(self.bug)
+        self.store = Store.of(self.bug)
+        self.store.invalidate()
+        self.store.reload(self.bug)
         self.bug.bugtasks
         self.bug.tags
 
-    def test_direct_subscribers(self):
-        # Looking up subscribers takes two queries: one to obtain
-        # subscriptions and another to load the Person records.
+    @contextmanager
+    def exactly_x_queries(self, count):
+        # Assert that there are exactly `count` queries sent to the database
+        # in this context. Flush first to ensure we don't count things that
+        # happened before entering this context.
+        self.store.flush()
+        condition = HasQueryCount(Equals(count))
         with StormStatementRecorder() as recorder:
-            self.info.direct_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+            yield recorder
+        self.assertThat(recorder, condition)
+
+    def exercise_subscription_set(self, set_name):
+        # Looking up subscriptions takes a single query.
+        with self.exactly_x_queries(1):
+            getattr(self.info, set_name)
+        # Getting the subscribers results in one additional query.
+        with self.exactly_x_queries(1):
+            getattr(self.info, set_name).subscribers
+        # Everything is now cached so no more queries are needed.
+        with self.exactly_x_queries(0):
+            getattr(self.info, set_name).subscribers
+            getattr(self.info, set_name).subscribers.sorted
+
+    def exercise_subscription_set_sorted_first(self, set_name):
+        # Looking up subscriptions takes a single query.
+        with self.exactly_x_queries(1):
+            getattr(self.info, set_name)
+        # Getting the sorted subscriptions takes one additional query.
+        with self.exactly_x_queries(1):
+            getattr(self.info, set_name).sorted
+        # Everything is now cached so no more queries are needed.
+        with self.exactly_x_queries(0):
+            getattr(self.info, set_name).subscribers
+            getattr(self.info, set_name).subscribers.sorted
 
     def test_direct_subscriptions(self):
-        # Looking up subscriptions takes a single query.
-        with StormStatementRecorder() as recorder:
-            self.info.direct_subscriptions
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.exercise_subscription_set(
+            "direct_subscriptions")
 
-    def test_duplicate_subscribers(self):
-        # Looking up duplicate subscribers takes two queries: one to obtain
-        # subscriptions and another to load the Person records.
-        with StormStatementRecorder() as recorder:
-            self.info.duplicate_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+    def test_direct_subscriptions_sorted_first(self):
+        self.exercise_subscription_set_sorted_first(
+            "direct_subscriptions")
+
+    def make_duplicate_bug(self):
+        duplicate_bug = self.factory.makeBug(product=self.target)
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(self.bug)
 
     def test_duplicate_subscriptions(self):
-        # Looking up duplicate subscriptions takes a single query.
-        with StormStatementRecorder() as recorder:
-            self.info.duplicate_subscriptions
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.make_duplicate_bug()
+        self.exercise_subscription_set(
+            "duplicate_subscriptions")
 
-    def test_duplicate_subscribers_for_private_bug(self):
-        # Looking up duplicate subscribers for a private bug takes a single
-        # query; obtaining subscriptions is short-circuited.
-        duplicate_bug = self.factory.makeBug(product=self.target)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(self.bug)
-        with person_logged_in(self.bug.owner):
-            self.bug.setPrivate(True, self.bug.owner)
-        with StormStatementRecorder() as recorder:
-            self.info.duplicate_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+    def test_duplicate_subscriptions_sorted_first(self):
+        self.make_duplicate_bug()
+        self.exercise_subscription_set_sorted_first(
+            "duplicate_subscriptions")
 
     def test_duplicate_subscriptions_for_private_bug(self):
-        # Looking up duplicate subscriptions for a private bug is
-        # short-circuited.
-        duplicate_bug = self.factory.makeBug(product=self.target)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(self.bug)
+        self.make_duplicate_bug()
         with person_logged_in(self.bug.owner):
             self.bug.setPrivate(True, self.bug.owner)
-        with StormStatementRecorder() as recorder:
+        with self.exactly_x_queries(0):
             self.info.duplicate_subscriptions
-        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        with self.exactly_x_queries(0):
+            self.info.duplicate_subscriptions.subscribers
 
-    def test_structural_subscribers(self):
-        # Looking up structural subscribers takes three queries: one to obtain
-        # subscriptions and another to load the Person records.
-        with StormStatementRecorder() as recorder:
-            self.info.structural_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+    def add_structural_subscriber(self):
+        with person_logged_in(self.bug.owner):
+            self.target.addSubscription(self.bug.owner, self.bug.owner)
 
     def test_structural_subscriptions(self):
-        # Looking up structural subscriptions takes a single query.
-        with StormStatementRecorder() as recorder:
-            self.info.structural_subscriptions
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.add_structural_subscriber()
+        self.exercise_subscription_set(
+            "structural_subscriptions")
+
+    def test_structural_subscriptions_sorted_first(self):
+        self.add_structural_subscriber()
+        self.exercise_subscription_set_sorted_first(
+            "structural_subscriptions")
 
     def test_all_assignees(self):
-        # Getting all assignees takes a single query.
-        with StormStatementRecorder() as recorder:
+        with self.exactly_x_queries(1):
             self.info.all_assignees
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_all_bug_supervisors(self):
         # Getting all bug supervisors can take several queries; bugtask
@@ -379,18 +398,13 @@ class TestBugSubscriptionInfoQueries:#(TestCaseWithFactory):
         # is tested here: no queries are needed when there's a single bugtask
         # and its target does not have a bug supervisor (presumably because
         # the pillar is already cached).
-        with StormStatementRecorder() as recorder:
+        with self.exactly_x_queries(0):
             self.info.all_bug_supervisors
-        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_also_notified_subscribers(self):
-        # Looking up also notified subscribers requires 5 queries.
-        with StormStatementRecorder() as recorder:
+        with self.exactly_x_queries(4):
             self.info.also_notified_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
     def test_indirect_subscribers(self):
-        # Looking up indirect subscribers requires 7 queries.
-        with StormStatementRecorder() as recorder:
+        with self.exactly_x_queries(5):
             self.info.indirect_subscribers
-        self.assertThat(recorder, HasQueryCount(Equals(7)))
