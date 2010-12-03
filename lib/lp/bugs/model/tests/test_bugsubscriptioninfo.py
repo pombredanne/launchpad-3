@@ -405,6 +405,24 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         with self.exactly_x_queries(4):
             self.info.also_notified_subscribers
 
+    def test_also_notified_subscribers_later(self):
+        # When also_notified_subscribers is referenced after some other sets
+        # in BugSubscriptionInfo are referenced, everything comes from cache.
+        self.info.all_assignees
+        self.info.all_bug_supervisors
+        self.info.direct_subscriptions.subscribers
+        self.info.structural_subscriptions.subscribers
+        with self.exactly_x_queries(0):
+            self.info.also_notified_subscribers
+
     def test_indirect_subscribers(self):
         with self.exactly_x_queries(5):
+            self.info.indirect_subscribers
+
+    def test_indirect_subscribers_later(self):
+        # When indirect_subscribers is referenced after some other sets in
+        # BugSubscriptionInfo are referenced, everything comes from cache.
+        self.info.also_notified_subscribers
+        self.info.duplicate_subscriptions.subscribers
+        with self.exactly_x_queries(0):
             self.info.indirect_subscribers
