@@ -1739,7 +1739,9 @@ class Archive(SQLBase):
         if self.is_ppa:
             return [PackagePublishingPocket.RELEASE]
         
-        return PackagePublishingPocket.items
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
 
 
 class ArchiveSet:

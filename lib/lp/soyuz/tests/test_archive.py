@@ -1499,7 +1499,7 @@ class TestGetPockets(TestCaseWithFactory):
     def test_getPockets_for_other_archives(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEqual(
-            PackagePublishingPocket.items, archive.getPockets())
+            list(PackagePublishingPocket.items), archive.getPockets())
 
     def test_getPockets_for_PPAs(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
