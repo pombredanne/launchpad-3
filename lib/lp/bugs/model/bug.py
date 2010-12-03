@@ -2015,7 +2015,7 @@ class BugSubscriptionInfo:
         self.bug = bug
         self.level = level
 
-    @property
+    @cachedproperty
     @freeze(BugSubscriptionSet)
     def direct_subscriptions(self):
         """The bug's direct subscriptions."""
@@ -2025,7 +2025,7 @@ class BugSubscriptionInfo:
             BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug == self.bug)
 
-    @property
+    @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_subscriptions(self):
         """Subscriptions to duplicates of the bug."""
@@ -2039,7 +2039,7 @@ class BugSubscriptionInfo:
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.person_id == Person.id)
 
-    @property
+    @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
@@ -2066,7 +2066,7 @@ class BugSubscriptionInfo:
             for target, bugtask in query_arguments)
         return reduce(union, queries)
 
-    @property
+    @cachedproperty
     @freeze(SubscriberSet)
     def all_assignees(self):
         """Assignees of the bug's tasks."""
@@ -2074,7 +2074,7 @@ class BugSubscriptionInfo:
             BugTask.assigneeID == Person.id,
             BugTask.bug == self.bug)
 
-    @property
+    @cachedproperty
     @freeze(SubscriberSet)
     def all_bug_supervisors(self):
         """Bug supervisors for the bug's targets."""
@@ -2083,7 +2083,7 @@ class BugSubscriptionInfo:
             if supervisor is not None:
                 yield supervisor
 
-    @property
+    @cachedproperty
     def also_notified_subscribers(self):
         """All subscribers except direct and dupe subscribers."""
         if self.bug.private:
@@ -2094,7 +2094,7 @@ class BugSubscriptionInfo:
                       self.structural_subscriptions.subscribers)).difference(
                 self.direct_subscriptions.subscribers)
 
-    @property
+    @cachedproperty
     def indirect_subscribers(self):
         """All subscribers except direct subscribers."""
         return self.also_notified_subscribers.union(
