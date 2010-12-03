@@ -896,7 +896,8 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None,
+                              need_build_farm_job=False):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -917,13 +918,17 @@ class IPublishingSet(Interface):
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :param archive: An optional archive with which to filter the source
-                        ids.
+            ids.
         :type archive: `IArchive`
         :param build_states: optional list of build states to which the
             result will be limited. Defaults to all states if ommitted.
         :type build_states: ``list`` or None
+        :param need_build_farm_job: whether to include the `PackageBuild`
+            and `BuildFarmJob` in the result.
+        :type need_build_farm_job: bool
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`,
+             [`PackageBuild`, `BuildFarmJob` if need_build_farm_job])
         :rtype: `storm.store.ResultSet`.
         """
 
