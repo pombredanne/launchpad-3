@@ -104,7 +104,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
-    SpecificationGoalStatus,
     SpecificationPriority,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet

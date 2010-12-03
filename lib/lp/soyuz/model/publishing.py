@@ -1732,20 +1732,21 @@ class PublishingSet:
         source_build_statuses = {}
         need_unpublished = set()
         for source_pub in source_pubs:
-            source_builds = [build for build in build_info 
-                if build[0].id == source_pub.id]
-            builds = SourcePackagePublishingHistory._convertBuilds(source_builds)
+            source_builds = [
+                build for build in build_info if build[0].id == source_pub.id]
+            builds = SourcePackagePublishingHistory._convertBuilds(
+                source_builds)
             summary = binarypackages.getStatusSummaryForBuilds(builds)
             source_build_statuses[source_pub.id] = summary
 
             # If:
             #   1. the SPPH is in an active publishing state, and
             #   2. all the builds are fully-built, and
-            #   3. the SPPH is not being published in a rebuild/copy archive (in
-            #      which case the binaries are not published)
+            #   3. the SPPH is not being published in a rebuild/copy
+            #      archive (in which case the binaries are not published)
             #   4. There are unpublished builds
-            # Then we augment the result with FULLYBUILT_PENDING and attach the
-            # unpublished builds.
+            # Then we augment the result with FULLYBUILT_PENDING and
+            # attach the unpublished builds.
             if (source_pub.status in active_publishing_status and
                     summary['status'] == BuildSetStatus.FULLYBUILT and
                     not source_pub.archive.is_copy):
@@ -1760,7 +1761,7 @@ class PublishingSet:
             for source_pub, builds in unpublished_per_source.items():
                 summary = {
                     'status': BuildSetStatus.FULLYBUILT_PENDING,
-                    'builds': builds
+                    'builds': builds,
                 }
                 source_build_statuses[source_pub.id] = summary
 

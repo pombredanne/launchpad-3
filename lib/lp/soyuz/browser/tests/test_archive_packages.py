@@ -133,9 +133,10 @@ class TestPPAPackages(TestCaseWithFactory):
         viewer = self.factory.makePerson(password="test")
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
-            # The baseline has one package, because otherwise the short-circuit
-            # prevents the packages iteration happening at all and we're not
-            # actually measuring scaling appropriately.
+            # The baseline has one package, because otherwise the
+            # short-circuit prevents the packages iteration happening at
+            # all and we're not actually measuring scaling
+            # appropriately.
             self.factory.makeSourcePackagePublishingHistory(archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
@@ -144,11 +145,11 @@ class TestPPAPackages(TestCaseWithFactory):
         # We scale with 1 query per distro series because of
         # getCurrentSourceReleases.
         expected_count += 1
-        # We need a fuzz of one because if the test is the first to run a 
+        # We need a fuzz of one because if the test is the first to run a
         # credentials lookup is done as well (and accrued to the collector).
         expected_count += 1
-        # Use all new objects - avoids caching issues invalidating the gathered
-        # metrics.
+        # Use all new objects - avoids caching issues invalidating the
+        # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
         viewer = self.factory.makePerson(password="test")
@@ -173,9 +174,10 @@ class TestPPAPackages(TestCaseWithFactory):
         viewer = self.factory.makePerson(password="test")
         browser = self.getUserBrowser(user=viewer)
         with person_logged_in(viewer):
-            # The baseline has one package, because otherwise the short-circuit
-            # prevents the packages iteration happening at all and we're not
-            # actually measuring scaling appropriately.
+            # The baseline has one package, because otherwise the
+            # short-circuit prevents the packages iteration happening at
+            # all and we're not actually measuring scaling
+            # appropriately.
             pkg = self.factory.makeBinaryPackagePublishingHistory(
                 archive=ppa)
             url = canonical_url(ppa) + "/+packages"
@@ -183,8 +185,8 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertThat(collector, HasQueryCount(
             MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
         expected_count = collector.count
-        # Use all new objects - avoids caching issues invalidating the gathered
-        # metrics.
+        # Use all new objects - avoids caching issues invalidating the
+        # gathered metrics.
         login(ADMIN_EMAIL)
         ppa = self.factory.makeArchive()
         viewer = self.factory.makePerson(password="test")

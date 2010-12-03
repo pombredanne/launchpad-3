@@ -561,7 +561,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -788,7 +789,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
