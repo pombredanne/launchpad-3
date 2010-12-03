@@ -1956,7 +1956,7 @@ def load_people(*where):
             *where).order_by())
 
 
-class SubscriberSet(frozenset):
+class BugSubscriberSet(frozenset):
 
     @cachedproperty
     def sorted(self):
@@ -1974,12 +1974,12 @@ class BugSubscriptionSet(frozenset):
     @cachedproperty
     def subscribers(self):
         if len(self) == 0:
-            return SubscriberSet()
+            return BugSubscriberSet()
         else:
             condition = Person.id.is_in(
                 removeSecurityProxy(subscription).person_id
                 for subscription in self)
-            return SubscriberSet(load_people(condition))
+            return BugSubscriberSet(load_people(condition))
 
 
 class StructuralSubscriptionSet(frozenset):
@@ -1993,12 +1993,12 @@ class StructuralSubscriptionSet(frozenset):
     @cachedproperty
     def subscribers(self):
         if len(self) == 0:
-            return SubscriberSet()
+            return BugSubscriberSet()
         else:
             condition = Person.id.is_in(
                 removeSecurityProxy(subscription).subscriberID
                 for subscription in self)
-            return SubscriberSet(load_people(condition))
+            return BugSubscriberSet(load_people(condition))
 
 
 def freeze(factory):
@@ -2074,7 +2074,7 @@ class BugSubscriptionInfo:
         return reduce(union, queries)
 
     @cachedproperty
-    @freeze(SubscriberSet)
+    @freeze(BugSubscriberSet)
     def all_assignees(self):
         """Assignees of the bug's tasks."""
         return load_people(
@@ -2082,7 +2082,7 @@ class BugSubscriptionInfo:
             BugTask.bug == self.bug)
 
     @cachedproperty
-    @freeze(SubscriberSet)
+    @freeze(BugSubscriberSet)
     def all_bug_supervisors(self):
         """Bug supervisors for the bug's targets."""
         for bugtask in self.bug.bugtasks:
@@ -2094,9 +2094,9 @@ class BugSubscriptionInfo:
     def also_notified_subscribers(self):
         """All subscribers except direct and dupe subscribers."""
         if self.bug.private:
-            return SubscriberSet()
+            return BugSubscriberSet()
         else:
-            return SubscriberSet(
+            return BugSubscriberSet(
                 chain(self.all_assignees, self.all_bug_supervisors,
                       self.structural_subscriptions.subscribers)).difference(
                 self.direct_subscriptions.subscribers)

@@ -12,10 +12,10 @@ from testtools.matchers import Equals
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import (
+    BugSubscriberSet,
     BugSubscriptionInfo,
     BugSubscriptionSet,
     StructuralSubscriptionSet,
-    SubscriberSet,
     )
 from lp.registry.enum import BugNotificationLevel
 from lp.testing import (
@@ -45,8 +45,8 @@ class TestSubscriptionRelatedSets(TestCaseWithFactory):
         self.subscribers_sorted = tuple(
             subscribers[name_pair] for name_pair in self.name_pairs_sorted)
 
-    def test_SubscriberSet(self):
-        subscriber_set = SubscriberSet(self.subscribers_set)
+    def test_BugSubscriberSet(self):
+        subscriber_set = BugSubscriberSet(self.subscribers_set)
         self.assertIsInstance(subscriber_set, frozenset)
         self.assertEqual(self.subscribers_set, subscriber_set)
         self.assertEqual(self.subscribers_sorted, subscriber_set.sorted)
@@ -66,9 +66,9 @@ class TestSubscriptionRelatedSets(TestCaseWithFactory):
             self.subscribers_sorted, tuple(
                 subscription.person
                 for subscription in subscription_set.sorted))
-        # BugSubscriptionSet.subscribers returns a SubscriberSet of the
+        # BugSubscriptionSet.subscribers returns a BugSubscriberSet of the
         # subscription's subscribers.
-        self.assertIsInstance(subscription_set.subscribers, SubscriberSet)
+        self.assertIsInstance(subscription_set.subscribers, BugSubscriberSet)
         self.assertEqual(self.subscribers_set, subscription_set.subscribers)
 
     def test_StructuralSubscriptionSet(self):
@@ -86,9 +86,9 @@ class TestSubscriptionRelatedSets(TestCaseWithFactory):
             self.subscribers_sorted, tuple(
                 subscription.subscriber
                 for subscription in subscription_set.sorted))
-        # StructuralSubscriptionSet.subscribers returns a SubscriberSet of the
-        # subscription's subscribers.
-        self.assertIsInstance(subscription_set.subscribers, SubscriberSet)
+        # StructuralSubscriptionSet.subscribers returns a BugSubscriberSet of
+        # the subscription's subscribers.
+        self.assertIsInstance(subscription_set.subscribers, BugSubscriberSet)
         self.assertEqual(self.subscribers_set, subscription_set.subscribers)
 
 
