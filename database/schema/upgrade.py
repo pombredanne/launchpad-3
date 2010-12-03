@@ -119,22 +119,6 @@ def apply_patches_replicated():
         run_sql(assert_script.name)
         temporary_files.append(assert_script)
 
-    # Apply comments.sql. Default slonik refuses to run it as one
-    # 'execute script' because it contains too many statements, so chunk
-    # it (we don't want to rebuild slony with a higher limit).
-    comments_path = os.path.join(os.path.dirname(__file__), 'comments.sql')
-    comments = re.findall(
-            "(?ms).*?'\s*;\s*$", open(comments_path, 'r').read())
-    while comments:
-        comment_file = NamedTemporaryFile(prefix="comments", suffix=".sql")
-        print >> comment_file, '\n'.join(comments[:1000])
-        del comments[:1000]
-        comment_file.flush()
-        run_sql(comment_file.name)
-        # Store a reference so it doesn't get garbage collected before our
-        # slonik script is run.
-        temporary_files.append(comment_file)
-
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
         }
