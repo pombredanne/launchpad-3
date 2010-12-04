@@ -82,6 +82,22 @@ one.
     >>> libraryfile == orig_tar_gz
     True
 
+If the file has been expired from the librarian, it is no longer returned.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(libraryfile).content = None
+    >>> cprov.archive.getFileByName('test-pkg_1.0.orig.tar.gz')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'test-pkg_1.0.orig.tar.gz'
+
+If we add a new file with that name, the new file is returned.
+
+    >>> new = test_publisher.addMockFile('test-pkg_1.0.orig.tar.gz')
+    >>> unused = test_source.sourcepackagerelease.addFile(new)
+    >>> cprov.archive.getFileByName('test-pkg_1.0.orig.tar.gz') == new
+    True
+
 Adding and retrieving a source diff.
 
     >>> diff_gz = test_publisher.addMockFile('test-pkg_1.0.diff.gz')
