@@ -182,8 +182,8 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
                 arch.replace("%s-" % kernel, "") for arch in hint_archs]
         package_tags = set(hint_archs).intersection(legal_arch_tags)
 
-        # 'all' is only used as a last resort, to create an i386 build where
-        # no builds would otherwise exist.
+        # 'all' is only used as a last resort, to create an arch-indep
+        # build where no builds would otherwise exist.
         if len(package_tags) == 0 and 'all' in hint_archs:
             nominated_arch = distroseries.nominatedarchindep
             assert nominated_arch in legal_archseries, (
