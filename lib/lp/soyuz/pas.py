@@ -167,21 +167,21 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     legal_arch_tags = set(
         arch.architecturetag for arch in legal_archseries if arch.enabled)
 
-    hint_archs = hint_string.split()
+    hint_archs = set(hint_string.split())
 
     # If a *-any architecture wildcard is present, build for everything
     # we can. We only support Linux-based architectures at the moment,
     # and any-any isn't a valid wildcard. See bug #605002.
-    if 'any' in hint_archs or 'linux-any' in hint_archs:
+    if hint_archs.intersection(('any', 'linux-any')):
         package_tags = legal_arch_tags
     else:
         # We need to support arch tags like any-foo and linux-foo, so remove
         # supported kernel prefixes. See bug #73761.
         stripped_archs = hint_archs
         for kernel in ('linux', 'any'):
-            stripped_archs = [
-                arch.replace("%s-" % kernel, "") for arch in stripped_archs]
-        package_tags = set(stripped_archs).intersection(legal_arch_tags)
+            stripped_archs = set(
+                arch.replace("%s-" % kernel, "") for arch in stripped_archs)
+        package_tags = stripped_archs.intersection(legal_arch_tags)
 
         # 'all' is only used as a last resort, to create an arch-indep
         # build where no builds would otherwise exist.
