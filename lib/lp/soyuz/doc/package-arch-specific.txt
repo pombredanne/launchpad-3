@@ -26,11 +26,6 @@ Publication will be added as 'launchpad' DB user.
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> test_publisher.addFakeChroots()
 
-Create an architecture-independent source.
-
-    >>> pub_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd', version='667')
-
 Create an architecture-specific source.
 
     >>> pub_any = test_publisher.getPubSource(
@@ -49,7 +44,22 @@ Create a source with one single specific architecture to be built.
     ...     sourcename='test-buildd-4', version='670',
     ...     architecturehintlist="hppa")
 
+The architecture-independent value 'all' may appear alongside other
+architectures, but it has no effect unless it is the sole matching term.
+
+    >>> pub_all = test_publisher.getPubSource(
+    ...     sourcename='test-buildd', version='667')
+
+    >>> pub_one_and_all = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-4', version='671',
+    ...     architecturehintlist="hppa all")
+
+    >>> pub_fictional_and_all = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-4', version='672',
+    ...     architecturehintlist="fictional all")
+
 Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
+Again, 'all' may occur alongside any of these, but it has no effect.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672',
@@ -62,6 +72,10 @@ Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
     >>> pub_linux_any = test_publisher.getPubSource(
     ...     sourcename='test-buildd-7', version='674',
     ...     architecturehintlist="linux-any")
+
+    >>> pub_all_linux_any = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-7', version='675',
+    ...     architecturehintlist="all linux-any")
 
 Create a PPA source publication.
 
@@ -107,9 +121,6 @@ each of these options:
     ...         pub, legal_archs, hoary, pas_verify)
     ...     print_architectures(allowed_architectures)
 
-    >>> print_build_architectures(pub_all)
-    i386
-
     >>> print_build_architectures(pub_any)
     hppa
     i386
@@ -120,6 +131,15 @@ each of these options:
 
     >>> print_build_architectures(pub_one)
     hppa
+
+    >>> print_build_architectures(pub_all)
+    i386
+
+    >>> print_build_architectures(pub_one_and_all)
+    hppa
+
+    >>> print_build_architectures(pub_fictional_and_all)
+    i386
 
 If an architecture is disabled for some reason, then the results from
 determineArchitecturesToBuild() will not include it.
@@ -155,6 +175,9 @@ corresponding architecture, since only linux is supported in Ubuntu.
     hppa
     i386
 
+    >>> print_build_architectures(pub_all_linux_any)
+    hppa
+    i386
 
 == PPA architectures ==
 
