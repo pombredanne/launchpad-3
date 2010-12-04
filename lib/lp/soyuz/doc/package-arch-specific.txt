@@ -77,6 +77,10 @@ Again, 'all' may occur alongside any of these, but it has no effect.
     ...     sourcename='test-buildd-7', version='675',
     ...     architecturehintlist="all linux-any")
 
+    >>> pub_linux_all = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-7', version='676',
+    ...     architecturehintlist="linux-all")
+
 Create a PPA source publication.
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -178,6 +182,8 @@ corresponding architecture, since only linux is supported in Ubuntu.
     >>> print_build_architectures(pub_all_linux_any)
     hppa
     i386
+
+    >>> print_build_architectures(pub_linux_all)
 
 == PPA architectures ==
 

@@ -177,10 +177,11 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
     else:
         # We need to support arch tags like any-foo and linux-foo, so remove
         # supported kernel prefixes. See bug #73761.
+        stripped_archs = hint_archs
         for kernel in ('linux', 'any'):
-            hint_archs = [
-                arch.replace("%s-" % kernel, "") for arch in hint_archs]
-        package_tags = set(hint_archs).intersection(legal_arch_tags)
+            stripped_archs = [
+                arch.replace("%s-" % kernel, "") for arch in stripped_archs]
+        package_tags = set(stripped_archs).intersection(legal_arch_tags)
 
         # 'all' is only used as a last resort, to create an arch-indep
         # build where no builds would otherwise exist.
