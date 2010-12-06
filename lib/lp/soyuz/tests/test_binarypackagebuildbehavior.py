@@ -15,6 +15,8 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
 
+from storm.store import Store
+
 from twisted.internet import defer
 
 from zope.component import getUtility
@@ -494,13 +496,13 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # the restricted librarian.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
-        # Un-publish the source so we don't trip the 'private' field
-        # validator.
-        from storm.store import Store
-        for source in self.build.archive.getPublishedSources():
-            Store.of(source).remove(source)
-        self.build.archive.private = True
-        self.build.archive.buildd_secret = "foo"
+        # Go behind Storm's back since the field validator on
+        # Archive.private prevents us from setting it to True with
+        # existing published sources.
+        Store.of(self.build).execute("""
+            UPDATE archive SET private=True,buildd_secret='foo'
+            WHERE archive.id = %s""" % self.build.archive.id)
+        Store.of(self.build).invalidate()
 
         def got_update(ignored):
             # Librarian needs a commit.  :(
