@@ -26,6 +26,7 @@ from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.testing.layers import (
     AppServerLayer,
+    BaseLayer,
     DatabaseFunctionalLayer,
     LayerProcessController,
     )
@@ -399,7 +400,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         args.append(self.team.name)
         return Popen(args, stdout=PIPE, stderr=STDOUT,
                      cwd=LayerProcessController.appserver_config.root,
-                     env=dict(LPCONFIG='testrunner-appserver',
+                     env=dict(LPCONFIG=BaseLayer.appserver_config_name,
                               PATH=os.environ['PATH']))
 
     def test_import(self):

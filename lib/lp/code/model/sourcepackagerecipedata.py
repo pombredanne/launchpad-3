@@ -17,6 +17,7 @@ from bzrlib.plugins.builder.recipe import (
     BaseRecipeBranch,
     MergeInstruction,
     NestInstruction,
+    NestPartInstruction,
     RecipeBranch,
     RecipeParser,
     SAFE_INSTRUCTIONS,
@@ -62,6 +63,11 @@ class InstructionType(DBEnumeratedType):
 
         A nest instruction.""")
 
+    NEST_PART = DBItem(3, """
+        Nest-part instruction
+
+        A nest-part instruction.""")
+
 
 class _SourcePackageRecipeDataInstruction(Storm):
     """A single line from a recipe."""
@@ -69,7 +75,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
-                 directory, recipe_data, parent_instruction):
+                 directory, recipe_data, parent_instruction,
+                 source_directory):
         super(_SourcePackageRecipeDataInstruction, self).__init__()
         self.name = unicode(name)
         self.type = type
@@ -82,6 +89,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
         if directory is not None:
             directory = unicode(directory)
         self.directory = directory
+        self.source_directory = source_directory
         self.recipe_data = recipe_data
         self.parent_instruction = parent_instruction
 
@@ -97,6 +105,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     revspec = Unicode(allow_none=True)
     directory = Unicode(allow_none=True)
+    source_directory = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=False)
     recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
@@ -113,9 +122,15 @@ class _SourcePackageRecipeDataInstruction(Storm):
             recipe_branch.merge_branch(branch)
         elif self.type == InstructionType.NEST:
             recipe_branch.nest_branch(self.directory, branch)
+        elif self.type == InstructionType.NEST_PART:
+            recipe_branch.nest_part_branch(
+                branch, self.source_directory, self.directory)
         else:
             raise AssertionError("Unknown type %r" % self.type)
         return branch
+
+
+MAX_RECIPE_FORMAT = 0.3
 
 
 class SourcePackageRecipeData(Storm):
@@ -233,10 +248,16 @@ class SourcePackageRecipeData(Storm):
         """Build _SourcePackageRecipeDataInstructions for the recipe_branch.
         """
         for instruction in recipe_branch.child_branches:
+            nest_path = instruction.nest_path
+            source_directory = None
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
+            elif isinstance(instruction, NestPartInstruction):
+                type = InstructionType.NEST_PART
+                nest_path = instruction.target_subdir
+                source_directory = instruction.subpath
             else:
                 # Unsupported instructions should have been filtered out by
                 # _scanInstructions; if we get surprised here, that's a bug.
@@ -248,15 +269,15 @@ class SourcePackageRecipeData(Storm):
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment,
                 line_number, db_branch, instruction.recipe_branch.revspec,
-                instruction.nest_path, self, parent_insn)
+                nest_path, self, parent_insn, source_directory)
             line_number = self._recordInstructions(
                 instruction.recipe_branch, insn, branch_map, line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
-        if builder_recipe.format > 0.2:
-            raise TooNewRecipeFormat(builder_recipe.format, 0.2)
+        if builder_recipe.format > MAX_RECIPE_FORMAT:
+            raise TooNewRecipeFormat(builder_recipe.format, MAX_RECIPE_FORMAT)
         branch_map = self._scanInstructions(builder_recipe)
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.
