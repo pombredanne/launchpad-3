@@ -3567,6 +3567,13 @@ class TeamIndexView(PersonIndexView):
             return 'portlet'
         return 'portlet private'
 
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
+
 
 class PersonCodeOfConductEditView(LaunchpadView):
     """View for the ~person/+codesofconduct pages."""

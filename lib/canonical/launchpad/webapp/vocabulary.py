@@ -70,7 +70,10 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """
 
     displayname = Attribute(
-        'A name for this vocabulary, to be displayed in the popup window.')
+        'A name for this vocabulary, to be displayed in the picker window.')
+
+    step_title = Attribute(
+        'The search step title in the picker window.')
 
     def searchForTerms(query=None):
         """Return a `CountableIterator` of `SimpleTerm`s that match the query.
@@ -365,6 +368,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
+    step_title = 'Search'
     # The iterator class will be used to wrap the results; its iteration
     # methods should return SimpleTerms, as the reference implementation
     # CountableIterator does.
