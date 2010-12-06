@@ -360,6 +360,9 @@ class PackageBuildDerived:
             if not os.path.exists(target_dir):
                 os.mkdir(target_dir)
 
+            # Release the builder for another job.
+            d = self.buildqueue_record.builder.cleanSlave()
+
             # Commit so there are no race conditions with archiveuploader about
             # self.status.
             Store.of(self).commit()
@@ -368,9 +371,6 @@ class PackageBuildDerived:
             # the incoming directory so the upload processor never
             # sees half-finished uploads.
             os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
-
-            # Release the builder for another job.
-            d = self.buildqueue_record.builder.cleanSlave()
 
             # Remove BuildQueue record.
             return d.addCallback(
