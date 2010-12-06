@@ -142,7 +142,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/veggies"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -292,7 +292,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser = self.createRecipe(
             dedent('''
-                # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+                # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
                 %(branch)s
                 merge %(package_branch)s
                 ''' % {
@@ -468,7 +468,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -528,7 +528,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -668,7 +668,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             .*
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/ratatouille/meat"""
         main_text = extract_text(find_main_content(browser.contents))
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -722,7 +722,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Request build\(s\)
 
             Recipe contents
-            # bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
             lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
 
     def test_index_success_with_buildlog(self):
