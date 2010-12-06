@@ -115,7 +115,8 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugSubscriptionInfo, self).setUp()
-        self.target = self.factory.makeProduct()
+        self.target = self.factory.makeProduct(
+            bug_supervisor=self.factory.makePerson())
         self.bug = self.factory.makeBug(product=self.target)
         # Unsubscribe the bug filer to make the tests more readable.
         with person_logged_in(self.bug.owner):
@@ -201,48 +202,49 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         found_assignees = self.getInfo().all_assignees
         self.assertEqual(set(), found_assignees)
         self.assertEqual((), found_assignees.sorted)
-        with person_logged_in(self.bug.owner):
-            self.bug.default_bugtask.transitionToAssignee(self.bug.owner)
+        bugtask = self.bug.default_bugtask
+        with person_logged_in(bugtask.pillar.bug_supervisor):
+            bugtask.transitionToAssignee(self.bug.owner)
         found_assignees = self.getInfo().all_assignees
         self.assertEqual(set([self.bug.owner]), found_assignees)
         self.assertEqual((self.bug.owner,), found_assignees.sorted)
-        bugtask = self.factory.makeBugTask(bug=self.bug)
-        with person_logged_in(bugtask.owner):
-            bugtask.transitionToAssignee(bugtask.owner)
+        bugtask2 = self.factory.makeBugTask(bug=self.bug)
+        with person_logged_in(bugtask2.pillar.owner):
+            bugtask2.transitionToAssignee(bugtask2.owner)
         found_assignees = self.getInfo().all_assignees
         self.assertEqual(
-            set([self.bug.owner, bugtask.owner]),
+            set([self.bug.owner, bugtask2.owner]),
             found_assignees)
         self.assertEqual(
-            (self.bug.owner, bugtask.owner),
+            (self.bug.owner, bugtask2.owner),
             found_assignees.sorted)
 
-    def test_all_bug_supervisors(self):
-        # The set of bug supervisors for the bug's task's target, where
-        # supervisors have been configured.
-        found_supervisors = self.getInfo().all_bug_supervisors
-        self.assertEqual(set(), found_supervisors)
-        self.assertEqual((), found_supervisors.sorted)
-        # Set the supervisor for the first bugtask's target.
+    def test_all_pillar_owners_without_bug_supervisors(self):
+        # The set of owners of pillars for which no bug supervisor is
+        # configured.
         [bugtask] = self.bug.bugtasks
+        found_owners = (
+            self.getInfo().all_pillar_owners_without_bug_supervisors)
+        self.assertEqual(set(), found_owners)
+        self.assertEqual((), found_owners.sorted)
+        # Clear the supervisor for the first bugtask's target.
         with person_logged_in(bugtask.target.owner):
-            bugtask.target.setBugSupervisor(
-                bugtask.owner, bugtask.owner)
-        found_supervisors = self.getInfo().all_bug_supervisors
-        self.assertEqual(set([bugtask.owner]), found_supervisors)
-        self.assertEqual((bugtask.owner,), found_supervisors.sorted)
-        # Add another bugtask and set its target's supervisor too.
-        bugtask2 = self.factory.makeBugTask(bug=self.bug)
-        with person_logged_in(bugtask2.target.owner):
-            bugtask2.target.setBugSupervisor(
-                bugtask2.owner, bugtask2.owner)
-        found_supervisors = self.getInfo().all_bug_supervisors
+            bugtask.target.setBugSupervisor(None, bugtask.owner)
+        found_owners = (
+            self.getInfo().all_pillar_owners_without_bug_supervisors)
+        self.assertEqual(set([bugtask.pillar.owner]), found_owners)
+        self.assertEqual((bugtask.pillar.owner,), found_owners.sorted)
+        # Add another bugtask with a bug supervisor.
+        target2 = self.factory.makeProduct(bug_supervisor=None)
+        bugtask2 = self.factory.makeBugTask(bug=self.bug, target=target2)
+        found_owners = (
+            self.getInfo().all_pillar_owners_without_bug_supervisors)
         self.assertEqual(
-            set([bugtask.owner, bugtask2.owner]),
-            found_supervisors)
+            set([bugtask.pillar.owner, bugtask2.pillar.owner]),
+            found_owners)
         self.assertEqual(
-            (bugtask.owner, bugtask2.owner),
-            found_supervisors.sorted)
+            (bugtask.pillar.owner, bugtask2.pillar.owner),
+            found_owners.sorted)
 
     def test_also_notified_subscribers(self):
         # The set of also notified subscribers.
@@ -252,7 +254,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # Add an assignee, a bug supervisor and a structural subscriber.
         bugtask = self.bug.default_bugtask
         assignee = self.factory.makePerson()
-        with person_logged_in(self.bug.owner):
+        with person_logged_in(bugtask.pillar.bug_supervisor):
             bugtask.transitionToAssignee(assignee)
         supervisor = self.factory.makePerson()
         with person_logged_in(bugtask.target.owner):
@@ -279,8 +281,9 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # The set of also notified subscribers is always empty when the master
         # bug is private.
         assignee = self.factory.makePerson()
-        with person_logged_in(self.bug.owner):
-            self.bug.default_bugtask.transitionToAssignee(assignee)
+        bugtask = self.bug.default_bugtask
+        with person_logged_in(bugtask.pillar.bug_supervisor):
+            bugtask.transitionToAssignee(assignee)
         with person_logged_in(self.bug.owner):
             self.bug.setPrivate(True, self.bug.owner)
         found_subscribers = self.getInfo().also_notified_subscribers
@@ -291,8 +294,9 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # The set of indirect subscribers is the union of also notified
         # subscribers and subscribers to duplicates.
         assignee = self.factory.makePerson()
-        with person_logged_in(self.bug.owner):
-            self.bug.default_bugtask.transitionToAssignee(assignee)
+        bugtask = self.bug.default_bugtask
+        with person_logged_in(bugtask.pillar.bug_supervisor):
+            bugtask.transitionToAssignee(assignee)
         duplicate_bug = self.factory.makeBug(product=self.target)
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(self.bug)
@@ -407,33 +411,30 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         with self.exactly_x_queries(1):
             self.info.all_assignees
 
-    def test_all_bug_supervisors(self):
-        # Getting all bug supervisors can take several queries; bugtask
-        # pillars need to be loaded, then supervisors need to be
-        # loaded. However, there are typically few tasks so the trade for
+    def test_all_pillar_owners_without_bug_supervisors(self):
+        # Getting all bug supervisors and pillar owners can take several
+        # queries. However, there are typically few tasks so the trade for
         # simplicity of implementation is acceptable. Only the simplest case
-        # is tested here: no queries are needed when there's a single bugtask
-        # and its target does not have a bug supervisor (presumably because
-        # the pillar is already cached).
-        with self.exactly_x_queries(0):
-            self.info.all_bug_supervisors
+        # is tested here.
+        with self.exactly_x_queries(2):
+            self.info.all_pillar_owners_without_bug_supervisors
 
     def test_also_notified_subscribers(self):
-        with self.exactly_x_queries(4):
+        with self.exactly_x_queries(6):
             self.info.also_notified_subscribers
 
     def test_also_notified_subscribers_later(self):
         # When also_notified_subscribers is referenced after some other sets
         # in BugSubscriptionInfo are referenced, everything comes from cache.
         self.info.all_assignees
-        self.info.all_bug_supervisors
+        self.info.all_pillar_owners_without_bug_supervisors
         self.info.direct_subscriptions.subscribers
         self.info.structural_subscriptions.subscribers
         with self.exactly_x_queries(0):
             self.info.also_notified_subscribers
 
     def test_indirect_subscribers(self):
-        with self.exactly_x_queries(5):
+        with self.exactly_x_queries(7):
             self.info.indirect_subscribers
 
     def test_indirect_subscribers_later(self):

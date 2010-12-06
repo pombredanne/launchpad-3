@@ -2082,12 +2082,12 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     @freeze(BugSubscriberSet)
-    def all_bug_supervisors(self):
-        """Bug supervisors for the bug's targets."""
+    def all_pillar_owners_without_bug_supervisors(self):
+        """Owners of pillars for which no Bug supervisor is configured."""
         for bugtask in self.bug.bugtasks:
-            supervisor = bugtask.pillar.bug_supervisor
-            if supervisor is not None:
-                yield supervisor
+            pillar = bugtask.pillar
+            if pillar.bug_supervisor is None:
+                yield pillar.owner
 
     @cachedproperty
     def also_notified_subscribers(self):
@@ -2096,7 +2096,8 @@ class BugSubscriptionInfo:
             return BugSubscriberSet()
         else:
             return BugSubscriberSet(
-                chain(self.all_assignees, self.all_bug_supervisors,
+                chain(self.all_assignees,
+                      self.all_pillar_owners_without_bug_supervisors,
                       self.structural_subscriptions.subscribers)).difference(
                 self.direct_subscriptions.subscribers)
 
