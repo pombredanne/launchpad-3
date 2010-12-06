@@ -28,12 +28,14 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
-    LaunchpadFormView,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     PURGE_STATES,
@@ -240,9 +242,13 @@ class AdminTeamMergeView(AdminMergeBaseView):
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
         # merge.
-        if self.target_person is self.registry_experts:
+        if self.target_person == self.registry_experts:
             for team in self.dupe_person.teams_participated_in:
                 self.dupe_person.retractTeamMembership(team, self.user)
+        # We have sent another series of calls to the db, potentially a long
+        # sequence depending on the merge. We want everything synced up
+        # before proceeding.
+        flush_database_updates()
         super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):

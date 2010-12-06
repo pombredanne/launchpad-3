@@ -69,18 +69,18 @@ the message "There are currently no bugs filed..."
     >>> bug = factory.makeBug(product=uses_malone)
     >>> logout()
     >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
-    >>> print extract_text(
-    ...     find_tags_by_class(anon_browser.contents, 'search-box')[0])
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'simple-bug-search'))
     by importance
     by status
     ...
     Advanced search
 
 
-    >>> print find_tag_by_id(anon_browser.contents, 'no-bugs-filed')
+    >>> print find_tag_by_id(content, 'no-bugs-filed')
     None
 
-    >>> hot_bugs = find_tag_by_id(anon_browser.contents, 'hot-bugs')
+    >>> hot_bugs = find_tag_by_id(content, 'hot-bugs')
     >>> print extract_text(hot_bugs)
     Summary   Status  Importance   Last changed
     #16  ...  New     Undecided    ...
@@ -95,18 +95,17 @@ and we see a message "no hot bugs" instead of the bug listing.
     >>> logout()
 
     >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
-    >>> print find_tag_by_id(anon_browser.contents, 'hot-bugs')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print find_tag_by_id(content, 'hot-bugs')
     None
 
-    >>> bug_list = find_tag_by_id(
-    ...     anon_browser.contents, 'no-bugs-filed')
+    >>> bug_list = find_tag_by_id(content, 'no-bugs-filed')
     >>> print extract_text(bug_list)
     There are currently no open bugs filed against Uses-malone.
 
 But since the project has a bug, the search box is still visible.
 
-    >>> print extract_text(
-    ...     find_tags_by_class(anon_browser.contents, 'search-box')[0])
+    >>> print extract_text(find_tag_by_id(content, 'simple-bug-search'))
     by importance
     by status
     ...

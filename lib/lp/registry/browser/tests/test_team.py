@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
 from lp.testing import (
@@ -12,7 +13,10 @@ from lp.testing import (
     )
 from lp.testing.matchers import IsConfiguredBatchNavigator
 from lp.testing.menu import check_menu_links
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class TestTeamMenu(TestCaseWithFactory):
@@ -54,6 +58,18 @@ class TestModeration(TestCaseWithFactory):
         self.assertThat(
             view.held_messages,
             IsConfiguredBatchNavigator('message', 'messages'))
+
+    def test_no_mailing_list_redirect(self):
+        team = self.factory.makeTeam()
+        login_person(team.teamowner)
+        view = create_view(team, name='+mailinglist-moderate')
+        response = view.request.response
+        self.assertEqual(302, response.getStatus())
+        self.assertEqual(canonical_url(team), response.getHeader('location'))
+        self.assertEqual(1, len(response.notifications))
+        self.assertEqual(
+            '%s does not have a mailing list.' % (team.displayname),
+            response.notifications[0].message)
 
 
 class TestTeamMemberAddView(TestCaseWithFactory):
@@ -119,3 +135,17 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         self.assertEqual(
             "You can't add a team that doesn't have any active members.",
             view.errors[0])
+
+
+class TestTeamIndexView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamIndexView, self).setUp()
+        self.team = self.factory.makeTeam(name='test-team')
+        login_person(self.team.teamowner)
+
+    def test_add_member_step_title(self):
+        view = create_initialized_view(self.team, '+index')
+        self.assertEqual('Search', view.add_member_step_title)

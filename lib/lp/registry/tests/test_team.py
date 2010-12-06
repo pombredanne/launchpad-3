@@ -13,11 +13,14 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     ITeamPublic,
+    PersonVisibility,
     TeamMembershipRenewalPolicy,
     )
+from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -186,3 +189,49 @@ class TestDefaultMembershipPeriod(TestCaseWithFactory):
 
     def test_default_membership_period_maximum(self):
         ITeamPublic['defaultmembershipperiod'].validate(3650)
+
+
+class TestVisibilityConsistencyWarning(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestVisibilityConsistencyWarning, self).setUp()
+        self.team = self.factory.makeTeam()
+        login_celebrity('admin')
+
+    def test_no_warning_for_PersonTransferJob(self):
+        # An entry in the PersonTransferJob table does not cause a warning.
+        member = self.factory.makePerson()
+        metadata = ('some', 'arbitrary', 'metadata')
+        person_transfer_job = PersonTransferJob(
+            member, self.team,
+            PersonTransferJobType.MEMBERSHIP_NOTIFICATION, metadata)
+        self.assertEqual(
+            None,
+            self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
+
+
+class TestMembershipManagement(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deactivateAllMembers_cleans_up_team_participation(self):
+        superteam = self.factory.makeTeam(name='super')
+        sharedteam = self.factory.makeTeam(name='shared')
+        anotherteam = self.factory.makeTeam(name='another')
+        targetteam = self.factory.makeTeam(name='target')
+        person = self.factory.makePerson()
+        login_celebrity('admin')
+        person.join(targetteam)
+        person.join(sharedteam)
+        person.join(anotherteam)
+        targetteam.join(superteam, targetteam.teamowner)
+        targetteam.join(sharedteam, targetteam.teamowner)
+        self.assertTrue(superteam in person.teams_participated_in)
+        targetteam.deactivateAllMembers(
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            sorted([sharedteam, anotherteam]),
+            sorted([team for team in person.teams_participated_in]))

@@ -45,14 +45,10 @@ from zope.schema import Choice
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     LaunchpadView,
     Link,
     Navigation,
@@ -67,6 +63,12 @@ from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
     QuestionCollectionAnswersMenu,
     QuestionTargetFacetMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
@@ -512,17 +514,9 @@ class ProjectSetView(LaunchpadView):
     def __init__(self, context, request):
         super(ProjectSetView, self).__init__(context, request)
         self.form = self.request.form_ng
-        self.soyuz = self.form.getOne('soyuz', None)
-        self.rosetta = self.form.getOne('rosetta', None)
-        self.malone = self.form.getOne('malone', None)
-        self.bazaar = self.form.getOne('bazaar', None)
         self.search_string = self.form.getOne('text', None)
         self.search_requested = False
-        if (self.search_string is not None or
-            self.bazaar is not None or
-            self.malone is not None or
-            self.rosetta is not None or
-            self.soyuz is not None):
+        if (self.search_string is not None):
             self.search_requested = True
         self.results = None
 
@@ -534,10 +528,6 @@ class ProjectSetView(LaunchpadView):
         """
         self.results = self.context.search(
             text=self.search_string,
-            bazaar=self.bazaar,
-            malone=self.malone,
-            rosetta=self.rosetta,
-            soyuz=self.soyuz,
             search_products=True)
         return self.results
 

@@ -19,6 +19,16 @@ __all__ = [
     'ProtocolVersionMismatch',
     ]
 
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    )
+
 from zope.interface import (
     Attribute,
     Interface,
@@ -38,6 +48,7 @@ from canonical.launchpad.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     Description,
+    PersonChoice,
     Title,
     )
 
@@ -92,71 +103,74 @@ class IBuilder(IHasOwner):
     machine status representation, including the field/properties:
     virtualized, builderok, status, failnotes and currentjob.
     """
+    export_as_webservice_entry()
+
     id = Attribute("Builder identifier")
+
     processor = Choice(
         title=_('Processor'), required=True, vocabulary='Processor',
         description=_('Build Slave Processor, used to identify '
                       'which jobs can be built by this device.'))
 
-    owner = Choice(
+    owner = exported(PersonChoice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_('Builder owner, a Launchpad member which '
-                      'will be responsible for this device.'))
+                      'will be responsible for this device.')))
 
-    url = TextLine(
+    url = exported(TextLine(
         title=_('URL'), required=True, constraint=builder_url_validator,
         description=_('The URL to the build machine, used as a unique '
                       'identifier. Includes protocol, host and port only, '
-                      'e.g.: http://farm.com:8221/'))
+                      'e.g.: http://farm.com:8221/')))
 
-    name = TextLine(
+    name = exported(TextLine(
         title=_('Name'), required=True, constraint=name_validator,
-        description=_('Builder Slave Name used for reference proposes'))
+        description=_('Builder Slave Name used for reference proposes')))
 
-    title = Title(
+    title = exported(Title(
         title=_('Title'), required=True,
-        description=_('The builder slave title. Should be just a few words.'))
+        description=_('The builder slave title. Should be just a few words.')))
 
-    description = Description(
+    description = exported(Description(
         title=_('Description'), required=False,
         description=_('The builder slave description, may be several '
                       'paragraphs of text, giving the highlights and '
-                      'details.'))
+                      'details.')))
 
-    virtualized = Bool(
+    virtualized = exported(Bool(
         title=_('Virtualized'), required=True, default=False,
         description=_('Whether or not the builder is a virtual Xen '
-                      'instance.'))
+                      'instance.')))
 
-    manual = Bool(
+    manual = exported(Bool(
         title=_('Manual Mode'), required=False, default=False,
         description=_('The auto-build system does not dispatch '
-                      'jobs automatically for slaves in manual mode.'))
+                      'jobs automatically for slaves in manual mode.')))
 
-    builderok = Bool(
+    builderok = exported(Bool(
         title=_('Builder State OK'), required=True, default=True,
-        description=_('Whether or not the builder is ok'))
+        description=_('Whether or not the builder is ok')))
 
-    failnotes = Text(
+    failnotes = exported(Text(
         title=_('Failure Notes'), required=False,
-        description=_('The reason for a builder not being ok'))
+        description=_('The reason for a builder not being ok')))
 
-    vm_host = TextLine(
+    vm_host = exported(TextLine(
         title=_('Virtual Machine Host'), required=False,
         description=_('The machine hostname hosting the virtual '
-                      'buildd-slave, e.g.: foobar-host.ppa'))
+                      'buildd-slave, e.g.: foobar-host.ppa')))
 
-    active = Bool(
+    active = exported(Bool(
         title=_('Publicly Visible'), required=True, default=True,
-        description=_('Whether or not to present the builder publicly.'))
+        description=_('Whether or not to present the builder publicly.')))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    failure_count = Int(
+    failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,
-        description=_("Number of consecutive failures for this builder."))
+       description=_("Number of consecutive failures for this builder.")))
 
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
@@ -189,7 +203,7 @@ class IBuilder(IHasOwner):
         :param filename: The name of the file to be given to the librarian file
             alias.
         :param private: True if the build is for a private archive.
-        :return: A librarian file alias.
+        :return: A Deferred that calls back with a librarian file alias.
         """
 
     def getBuildQueue():
@@ -333,6 +347,7 @@ class IBuilderSet(Interface):
     Methods on this interface should deal with the set of Builders:
     methods that affect a single Builder should be on IBuilder.
     """
+    export_as_webservice_collection(IBuilder)
 
     title = Attribute('Title')
 
@@ -340,6 +355,13 @@ class IBuilderSet(Interface):
         """Iterate over builders."""
 
     def __getitem__(name):
+        """Retrieve a builder by name"""
+
+    @operation_parameters(
+        name=TextLine(title=_("Builder name"), required=True))
+    @operation_returns_entry(IBuilder)
+    @export_read_operation()
+    def getByName(name):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
@@ -360,6 +382,7 @@ class IBuilderSet(Interface):
     def get(builder_id):
         """Return the IBuilder with the given builderid."""
 
+    @collection_default_content()
     def getBuilders():
         """Return all active configured builders."""
 

@@ -34,6 +34,10 @@ from canonical.launchpad.interfaces.message import (
     )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.specificationtarget import (
+    IHasSpecifications,
+    ISpecificationTarget,
+    )
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -169,6 +173,8 @@ patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'target_branch', IBranch)
 patch_plain_parameter_type(
     IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+patch_collection_return_type(
+    IBranch, 'getMergeProposals', IBranchMergeProposal)
 
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
@@ -514,3 +520,16 @@ patch_collection_return_type(
 
 # IProductSeries
 patch_reference_property(IProductSeries, 'product', IProduct)
+
+# ISpecification
+patch_collection_property(ISpecification, 'dependencies', ISpecification)
+
+# ISpecificationTarget
+patch_entry_return_type(
+    ISpecificationTarget, 'getSpecification', ISpecification)
+
+# IHasSpecifications
+patch_collection_property(
+    IHasSpecifications, 'all_specifications', ISpecification)
+patch_collection_property(
+    IHasSpecifications, 'valid_specifications', ISpecification)

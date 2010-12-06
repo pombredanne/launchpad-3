@@ -17,8 +17,8 @@ from lp.testing import WindmillTestCase
 
 
 VISIBLE_PICKER_OVERLAY = (
-    u'//div[contains(@class, "yui-picker ") and '
-     'not(contains(@class, "yui-picker-hidden"))]')
+    u'//div[contains(@class, "yui3-picker ") and '
+     'not(contains(@class, "yui3-picker-hidden"))]')
 
 
 class TesPersonPickerWidget(WindmillTestCase):
@@ -43,13 +43,13 @@ class TesPersonPickerWidget(WindmillTestCase):
                                 timeout=constants.FOR_ELEMENT)
 
         client.asserts.assertProperty(
-            xpath=u'//div[@class="yui-picker-search-box"]/input',
+            xpath=u'//div[@class="yui3-picker-search-box"]/input',
             validator=u'value|guilherme')
 
-        client.click(xpath=u'//div[@class="yui-picker-search-box"]/button')
+        client.click(xpath=u'//div[@class="yui3-picker-search-box"]/button')
         client.waits.sleep(milliseconds=constants.SLEEP)
 
-        client.click(xpath=u'//ul[@class="yui-picker-results"]/li[1]')
+        client.click(xpath=u'//ul[@class="yui3-picker-results"]/li[1]')
         client.asserts.assertProperty(
             xpath=u'//input[@name="field.dupe_person"]',
             validator='value|salgado')

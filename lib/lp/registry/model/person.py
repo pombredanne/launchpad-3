@@ -882,6 +882,7 @@ class Person(
 
     def searchTasks(self, search_params, *args, **kwargs):
         """See `IHasBugs`."""
+        prejoins = kwargs.pop('prejoins', [])
         if search_params is None and len(args) == 0:
             # this method is called via webapi directly
             # calling this method on a Person object directly via the
@@ -896,15 +897,18 @@ class Person(
                 # method, see docstring of
                 # `lazr.restful.declarations.webservice_error()`
                 raise e
-            return getUtility(IBugTaskSet).search(*search_params)
+            return getUtility(IBugTaskSet).search(
+                *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
             # if keyword arguments are supplied, use the deault
             # implementation in HasBugsBase.
-            return HasBugsBase.searchTasks(self, search_params, **kwargs)
+            return HasBugsBase.searchTasks(
+                self, search_params, prejoins=prejoins, **kwargs)
         else:
             # Otherwise pass all positional arguments to the
             # implementation in BugTaskSet.
-            return getUtility(IBugTaskSet).search(search_params, *args)
+            return getUtility(IBugTaskSet).search(
+                search_params, *args, prejoins=prejoins)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See `IPerson`."""
@@ -1468,6 +1472,38 @@ class Person(
 
         # Since we've updated the database behind Storm's back,
         # flush its caches.
+        store.invalidate()
+        
+
+        # Remove all indirect TeamParticipation entries resulting from this
+        # team. If this were just a select, it would be a complicated but
+        # feasible set of joins. Since it's a delete, we have to use
+        # some sub selects.
+        cur.execute('''
+            DELETE FROM TeamParticipation
+                WHERE
+                    -- The person needs to be a member of the team in question
+                    person IN
+                        (SELECT person from TeamParticipation WHERE
+                            team = %(team)s) AND
+
+                    -- The teams being deleted should be teams that this team
+                    -- is a member of.
+                    team IN
+                        (SELECT team from TeamMembership WHERE
+                            person = %(team)s) AND
+
+                    -- The person needs to not have direct membership in the
+                    -- team.
+                    NOT EXISTS
+                        (SELECT tm1.person from TeamMembership tm1
+                            WHERE
+                                tm1.person = TeamParticipation.person and
+                                tm1.team = TeamParticipation.team);
+            ''', dict(team=self.id))
+
+        # Since we've updated the database behind Storm's back yet again,
+        # we need to flush its caches, again.
         store.invalidate()
 
         # Remove all members from the TeamParticipation table
@@ -2091,13 +2127,12 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('persontransferjob', 'minor_person'),
+            ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
             ('sshkey', 'person'),
             ('structuralsubscription', 'subscriber'),
-            # Private-membership teams can have members, but they
-            # cannot be members of other teams.
             ('teammembership', 'team'),
-            # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
             # Skip mailing lists because if the mailing list is purged, it's
@@ -2105,9 +2140,8 @@ class Person(
             ('mailinglist', 'team'),
             ])
 
-        # Private teams may participate in more areas of Launchpad than
-        # Private Membership teams.  The following relationships are allowable
-        # for Private teams and thus should be skipped.
+        # The following relationships are allowable for Private teams and
+        # thus should be skipped.
         if new_value == PersonVisibility.PRIVATE:
             skip.update([('bugsubscription', 'person'),
                          ('bugtask', 'assignee'),
@@ -3814,6 +3848,9 @@ class PersonSet:
             raise AssertionError(
                 "Only teams without active members can be merged")
 
+        if from_person.is_team and from_person.super_teams.count() > 0:
+            raise AssertionError(
+                "Only teams without super teams can be merged.")
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)
