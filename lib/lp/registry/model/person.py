@@ -1678,7 +1678,7 @@ class Person(
             # But not the team itself.
             TeamParticipation.person != self.id)
         return PersonSet()._getPrecachedPersons(
-            origin, conditions,
+            origin, conditions, store=Store.of(self),
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
             need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
@@ -4053,12 +4053,13 @@ class PersonSet:
             need_validity=need_validity)
 
     def _getPrecachedPersons(
-        self, origin, conditions,
+        self, origin, conditions, store=None,
         need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
 
+        :param store: Provide ability to specify the store.
         :param origin: List of storm tables and joins. This list will be
             appended to. The Person table is required.
         :param conditions: Storm conditions for tables in origin.
@@ -4071,7 +4072,8 @@ class PersonSet:
             cached.
         :param need_validity: The is_valid attribute will be cached.
         """
-        store = IStore(Person)
+        if store is None:
+            store = IStore(Person)
         columns = [Person]
         decorators = []
         if need_karma:
