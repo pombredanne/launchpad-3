@@ -29,12 +29,12 @@ class BaseIFAQTargetTests:
         self.target.addAnswerContact(answer_contact)
 
     def assertCanAppend(self, user, target):
-        can_edit = check_permission('launchpad.Append', IFAQTarget(target))
-        self.assertTrue(can_edit, 'User cannot add FAQs for %s' % target)
+        can_append = check_permission('launchpad.Append', IFAQTarget(target))
+        self.assertTrue(can_append, 'User cannot append to %s' % target)
 
     def assertCannotAppend(self, user, target):
-        can_edit = check_permission('launchpad.Append', IFAQTarget(target))
-        self.assertFalse(can_edit, 'User can edit add for %s' % target)
+        can_append = check_permission('launchpad.Append', IFAQTarget(target))
+        self.assertFalse(can_append, 'User can append append to %s' % target)
 
     def test_owner_can_append(self):
         login_person(self.owner)
