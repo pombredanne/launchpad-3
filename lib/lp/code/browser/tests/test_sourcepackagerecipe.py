@@ -428,6 +428,27 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
              '( ) Create a new PPA for this recipe'''],
             ppa_options)
 
+    def test_create_new_ppa(self):
+        # If the user doesn't have any PPAs, a new once can be created.
+        self.user = self.factory.makePerson(name='eric', password='test')
+        branch = self.factory.makeAnyBranch()
+
+        # A new recipe can be created from the branch page.
+        browser = self.getUserBrowser(canonical_url(branch), user=self.user)
+        browser.getLink('Create packaging recipe').click()
+
+        browser.getControl(name='field.name').value = 'name'
+        browser.getControl('Description').value = 'Make some food!'
+        browser.getControl('Secret Squirrel').click()
+        browser.getControl('Create Recipe').click()
+
+        # A new recipe is created in a new PPA.
+        self.assertTrue(browser.url.endswith('/~eric/+recipe/name'))
+        # Since no PPA name was entered, the default name (ppa) was used.
+        login(ANONYMOUS)
+        new_ppa = self.user.getPPAByName('ppa')
+        self.assertIsNot(None, new_ppa)
+
 
 class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     """Test the editing behaviour of a source package recipe."""
