@@ -23,8 +23,8 @@ COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    import sha
-    return sha.new(args[0]).hexdigest()
+    import hashlib
+    return hashlib.sha1(args[0]).hexdigest()
 $$;
 
 COMMENT ON FUNCTION sha1(text) IS
