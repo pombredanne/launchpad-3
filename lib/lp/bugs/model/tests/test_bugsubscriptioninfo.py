@@ -15,15 +15,32 @@ from lp.bugs.model.bug import (
     BugSubscriberSet,
     BugSubscriptionInfo,
     BugSubscriptionSet,
+    load_people,
     StructuralSubscriptionSet,
     )
 from lp.registry.enum import BugNotificationLevel
+from lp.registry.model.person import Person
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
+
+
+class TestLoadPeople(TestCaseWithFactory):
+    """Tests for `load_people`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test(self):
+        expected = [
+            self.factory.makePerson(),
+            self.factory.makeTeam(),
+            ]
+        observed = load_people(
+            Person.id.is_in(person.id for person in expected))
+        self.assertEqual(set(expected), set(observed))
 
 
 class TestSubscriptionRelatedSets(TestCaseWithFactory):

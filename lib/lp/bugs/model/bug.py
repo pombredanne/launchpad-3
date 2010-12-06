@@ -1942,18 +1942,18 @@ BugMessage""" % sqlvalues(self.id))
 def load_people(*where):
     """Get subscribers from subscriptions.
 
-    Also preloads `ValidPersonCache` records.
+    Also preloads `ValidPersonCache` records if they exist.
 
     :param people: An iterable sequence of `Person` IDs.
     :return: A `DecoratedResultSet` of `Person` objects. The corresponding
         `ValidPersonCache` records are loaded simultaneously.
     """
     # Don't order the results; they will be used in set operations.
+    join = LeftJoin(
+        Person, ValidPersonCache, Person.id == ValidPersonCache.id)
     return imap(
-        operator.itemgetter(0), IStore(Person).find(
-            (Person, ValidPersonCache),
-            Person.id == ValidPersonCache.id,
-            *where).order_by())
+        operator.itemgetter(0), IStore(Person).using(join).find(
+            (Person, ValidPersonCache), *where).order_by())
 
 
 class BugSubscriberSet(frozenset):
@@ -2077,9 +2077,8 @@ class BugSubscriptionInfo:
     @freeze(BugSubscriberSet)
     def all_assignees(self):
         """Assignees of the bug's tasks."""
-        return load_people(
-            BugTask.assigneeID == Person.id,
-            BugTask.bug == self.bug)
+        assignees = Select(BugTask.assigneeID, BugTask.bug == self.bug)
+        return load_people(Person.id.is_in(assignees))
 
     @cachedproperty
     @freeze(BugSubscriberSet)
