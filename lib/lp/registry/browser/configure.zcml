@@ -1127,7 +1127,7 @@
             template="../templates/team-portlet-map.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            class="lp.registry.browser.person.PersonIndexView"
+            class="lp.registry.browser.person.TeamIndexView"
             permission="zope.Public"
             name="+portlet-membership"
             template="../templates/team-portlet-membership.pt"/>

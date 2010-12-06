@@ -109,7 +109,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     is_virtualized = True
 
-    recipe_id = Int(name='recipe', allow_none=False)
+    recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
     manifest = Reference(

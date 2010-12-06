@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -88,6 +88,7 @@ from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionsubscription import QuestionSubscription
+from lp.app.enums import ServiceUsage
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
@@ -680,8 +681,8 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.official_answers is True
-                    OR Distribution.official_answers is TRUE)
+                    (Product.answers_usage = %s
+                    OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
                 LIMIT 5000
@@ -689,7 +690,8 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            """ % sqlvalues(limit))
+            """ % sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.LAUNCHPAD, limit))
 
         projects = []
         product_set = getUtility(IProductSet)
@@ -703,6 +705,7 @@ class QuestionSet:
                 raise AssertionError(
                     'product_id and distribution_id are NULL')
         return projects
+        
 
     @staticmethod
     def new(title=None, description=None, owner=None,
