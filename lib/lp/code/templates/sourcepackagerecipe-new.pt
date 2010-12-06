@@ -9,8 +9,14 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
+    .root-choice input[type="radio"] {
+      margin-left: 0;
+    }
+    .root-choice label {
+      font-weight: bold !important;
+    }
     .subordinate {
-      margin: 0.5em 0 0.5em 4em;
+      margin: 0.5em 0 0.5em 2em;
     }
   </style>
 </metal:block>
@@ -53,7 +59,7 @@
 
             <tal:show-ppa-choice condition="view/show_ppa_chooser">
               <tr>
-                <td>
+                <td class='root-choice'>
                   <label tal:replace="structure view/use_ppa_existing">
                     Use existing PPA
                   </label>
@@ -66,7 +72,7 @@
               </tr>
 
               <tr>
-                <td>
+                <td class='root-choice'>
                   <label tal:replace="structure view/use_ppa_new">
                     Create new PPA
                   </label>
