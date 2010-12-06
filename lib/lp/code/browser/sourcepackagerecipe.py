@@ -335,8 +335,8 @@ class ISourcePackageAddSchema(ISourcePackageEditSchema):
     ppa_name = TextLine(
             title=_("New PPA name"), required=False,
             constraint=name_validator,
-            description=_("A new PPA will be created for the owner of "
-                          "the recipe with this name."))
+            description=_("A new PPA with this name will be created for "
+                          "the owner of the recipe ."))
 
 
 class RecipeTextValidatorMixin:
