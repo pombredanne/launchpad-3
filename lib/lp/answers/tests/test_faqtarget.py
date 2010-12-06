@@ -9,6 +9,7 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     login_person,
@@ -28,11 +29,11 @@ class BaseIFAQTargetTests:
         self.target.addAnswerContact(answer_contact)
 
     def assertCanAppend(self, user, target):
-        can_edit = check_permission('launchpad.Append', target)
+        can_edit = check_permission('launchpad.Append', IFAQTarget(target))
         self.assertTrue(can_edit, 'User cannot add FAQs for %s' % target)
 
     def assertCannotAppend(self, user, target):
-        can_edit = check_permission('launchpad.Append', target)
+        can_edit = check_permission('launchpad.Append', IFAQTarget(target))
         self.assertFalse(can_edit, 'User can edit add for %s' % target)
 
     def test_owner_can_append(self):
@@ -75,3 +76,13 @@ class TestProductPermissions(BaseIFAQTargetTests, TestCaseWithFactory):
         super(TestProductPermissions, self).setUp()
         self.target = self.factory.makeProduct()
         self.owner = self.target.owner
+
+
+class TestDSPPermissions(BaseIFAQTargetTests, TestCaseWithFactory):
+
+    def setUp(self):
+        super(TestDSPPermissions, self).setUp()
+        distribution = self.factory.makeDistribution()
+        self.owner = distribution.owner
+        self.target = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='fnord', distribution=distribution)
