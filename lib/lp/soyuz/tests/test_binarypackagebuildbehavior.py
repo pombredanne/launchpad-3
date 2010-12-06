@@ -401,6 +401,19 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
+    def test_collection_for_deleted_source(self):
+        self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+        spr = removeSecurityProxy(self.build.source_package_release)
+        pub = self.build.current_source_publication
+        pub.requestDeletion(spr.creator)
+
+        def got_update(ignored):
+            self.assertEqual(
+                BuildStatus.SUPERSEDED, self.build.status)
+
+        d = self.builder.updateBuild(self.candidate)
+        return d.addCallback(got_update)
+
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))

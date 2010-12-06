@@ -61,6 +61,7 @@ from lp.registry.interfaces.pocket import (
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
 
 
@@ -288,6 +289,13 @@ class PackageBuildDerived:
         d = method(librarian, slave_status, logger)
         return d
 
+    def _release_builder_and_remove_queue_item(self):
+            # Release the builder for another job.
+            d = self.buildqueue_record.builder.cleanSlave()
+            # Remove BuildQueue record.
+            return d.addCallback(
+                lambda x:self.buildqueue_record.destroySelf())
+
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
@@ -300,6 +308,13 @@ class PackageBuildDerived:
         logger.info("Processing successful build %s from builder %s" % (
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
+
+        # Discard this build if its source is no longer published.
+        build = self.buildqueue_record.specific_job.build
+        if not build.current_source_publication:
+            build.status = BuildStatus.SUPERSEDED
+            return self._release_builder_and_remove_queue_item()
+
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
@@ -369,12 +384,7 @@ class PackageBuildDerived:
             # sees half-finished uploads.
             os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-            # Release the builder for another job.
-            d = self.buildqueue_record.builder.cleanSlave()
-
-            # Remove BuildQueue record.
-            return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+            return self._release_builder_and_remove_queue_item()
 
         d = slave.getFiles(filenames_to_download)
         # Store build information, build record was already updated during
