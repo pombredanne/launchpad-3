@@ -2717,7 +2717,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if dsc_maintainer_rfc822 is None:
             dsc_maintainer_rfc822 = '%s <%s>' % (
                 maintainer.displayname,
-                maintainer.preferredemail.email)
+                removeSecurityProxy(maintainer).preferredemail.email)
 
         if creator is None:
             creator = self.makePerson()
