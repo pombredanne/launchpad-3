@@ -1654,8 +1654,13 @@ class AppendQuestion(AdminQuestion):
         """Allow user who can administer the question and answer contacts."""
         if AdminQuestion.checkAuthenticated(self, user):
             return True
-        for answer_contact in self.obj.target.answer_contacts:
-            if user.inTeam(answer_contact):
+        question_target = self.obj.target
+        questions_person = IQuestionsPerson(user.person)
+        for target in questions_person.getDirectAnswerQuestionTargets():
+            if target == question_target:
+                return True
+        for target in questions_person.getTeamAnswerQuestionTargets():
+            if target == question_target:
                 return True
         return False
 
