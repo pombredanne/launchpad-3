@@ -27,25 +27,25 @@ class BaseIFAQTargetTests:
         answer_contact.addLanguage(language_set['en'])
         self.target.addAnswerContact(answer_contact)
 
-    def assertCanEdit(self, user, target):
+    def assertCanAppend(self, user, target):
         can_edit = check_permission('launchpad.Append', target)
-        self.assertTrue(can_edit, 'User cannot edit FAQs for %s' % target)
+        self.assertTrue(can_edit, 'User cannot add FAQs for %s' % target)
 
-    def assertCannotEdit(self, user, target):
+    def assertCannotAppend(self, user, target):
         can_edit = check_permission('launchpad.Append', target)
-        self.assertFalse(can_edit, 'User can edit FAQs for %s' % target)
+        self.assertFalse(can_edit, 'User can edit add for %s' % target)
 
-    def test_owner_can_edit(self):
+    def test_owner_can_append(self):
         login_person(self.owner)
-        self.assertCanEdit(self.owner, self.target)
+        self.assertCanAppend(self.owner, self.target)
 
-    def test_direct_answer_contact_can_edit(self):
+    def test_direct_answer_contact_can_append(self):
         direct_answer_contact = self.factory.makePerson()
         login_person(direct_answer_contact)
         self.addAnswerContact(direct_answer_contact)
-        self.assertCanEdit(direct_answer_contact, self.target)
+        self.assertCanAppend(direct_answer_contact, self.target)
 
-    def test_indirect_answer_contact_can_edit(self):
+    def test_indirect_answer_contact_can_append(self):
         indirect_answer_contact = self.factory.makePerson()
         direct_answer_contact = self.factory.makeTeam()
         with person_logged_in(direct_answer_contact.teamowner):
@@ -53,12 +53,12 @@ class BaseIFAQTargetTests:
                 indirect_answer_contact, direct_answer_contact.teamowner)
             self.addAnswerContact(direct_answer_contact)
         login_person(indirect_answer_contact)
-        self.assertCanEdit(indirect_answer_contact, self.target)
+        self.assertCanAppend(indirect_answer_contact, self.target)
 
-    def test_nonparticipating_user_cannot_edit(self):
+    def test_nonparticipating_user_cannot_append(self):
         nonparticipant = self.factory.makePerson()
         login_person(nonparticipant)
-        self.assertCannotEdit(nonparticipant, self.target)
+        self.assertCannotAppend(nonparticipant, self.target)
 
 
 class TestDistributionPermissions(BaseIFAQTargetTests, TestCaseWithFactory):
