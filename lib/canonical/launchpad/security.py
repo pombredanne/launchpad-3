@@ -44,13 +44,17 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationPublic,
+    )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
+from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -61,12 +65,12 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
@@ -114,6 +118,10 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.nameblacklist import (
+    INameBlacklist,
+    INameBlacklistSet,
+    )
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson,
@@ -135,7 +143,10 @@ from lp.registry.interfaces.productrelease import (
     IProductRelease,
     IProductReleaseFile,
     )
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
 from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
@@ -419,6 +430,11 @@ class EditProductReleaseFile(AuthorizationBase):
             user)
 
 
+class ViewTimelineProductSeries(AnonymousAuthorization):
+    """Anyone can view an ITimelineProductSeries."""
+    usedfor = ITimelineProductSeries
+
+
 class ViewProductReleaseFile(AnonymousAuthorization):
     """Anyone can view an IProductReleaseFile."""
     usedfor = IProductReleaseFile
@@ -479,6 +495,17 @@ class ViewSpecificationBranch(EditSpecificationBranch):
         :return: True or False.
         """
         return True
+
+
+class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
+    """Anonymous users have launchpad.View on ISpecificationPublic.
+
+    This is only needed because lazr.restful is hard-coded to check that
+    permission before returning things in a collection.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ISpecificationPublic
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -993,9 +1020,7 @@ class SeriesDrivers(AuthorizationBase):
     usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
-        return (user.isOneOfDrivers(self.obj) or
-                user.isOwner(self.obj) or
-                user.in_admin)
+        return self.obj.personHasDriverRights(user)
 
 
 class ViewProductSeries(AnonymousAuthorization):
@@ -1160,6 +1185,18 @@ class AdminSourcePackageRecipeBuilds(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_bazaar_experts or user.in_buildd_admin
+
+
+class EditBranchMergeQueue(AuthorizationBase):
+    """Control who can edit a BranchMergeQueue.
+
+    Access is granted only to the owner of the queue.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeQueue
+
+    def checkAuthenticated(self, user):
+        return user.isOwner(self.obj)
 
 
 class AdminDistributionTranslations(AuthorizationBase):
@@ -1662,6 +1699,26 @@ def can_edit_team(team, user):
         return True
     else:
         return team in user.person.getAdministratedTeams()
+
+
+class ViewNameBlacklist(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.View'
+    usedfor = INameBlacklist
+
+
+class EditNameBlacklist(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = INameBlacklist
+
+
+class ViewNameBlacklistSet(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.View'
+    usedfor = INameBlacklistSet
+
+
+class EditNameBlacklistSet(EditByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = INameBlacklistSet
 
 
 class ViewLanguageSet(AnonymousAuthorization):
@@ -2247,7 +2304,8 @@ class ViewSourcePackageRecipeBuild(DerivedAuthorization):
     usedfor = ISourcePackageRecipeBuild
 
     def iter_objects(self):
-        yield self.obj.recipe
+        if self.obj.recipe is not None:
+            yield self.obj.recipe
         yield self.obj.archive
 
 

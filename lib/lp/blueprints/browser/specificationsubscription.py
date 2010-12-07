@@ -12,8 +12,10 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action,
     canonical_url,
+    )
+from lp.app.browser.launchpadform import (
+    action,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )

@@ -55,7 +55,10 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.model.karma import KarmaCategory
+from lp.registry.model.karma import (
+    KarmaCategory,
+    KarmaTotalCache,
+    )
 from lp.registry.model.person import Person
 from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
@@ -223,7 +226,7 @@ class TestPersonTeams(TestCaseWithFactory):
     def test_inTeam_person_string_missing_team(self):
         # If a check against a string is done, the team lookup is implicit:
         # treat a missing team as an empty team so that any pages that choose
-        # to do this don't blow up unnecessarily. Similarly feature flags 
+        # to do this don't blow up unnecessarily. Similarly feature flags
         # team: scopes depend on this.
         self.assertFalse(self.user.inTeam('does-not-exist'))
 
@@ -455,7 +458,46 @@ class TestPersonSet(TestCase):
         self.assertEqual(person1, person2)
 
 
-class TestPersonSetMerge(TestCaseWithFactory):
+class KarmaTestMixin:
+    """Helper methods for setting karma."""
+
+    def _makeKarmaCache(self, person, product, category_name_values):
+        """Create a KarmaCache entry with the given arguments.
+
+        In order to create the KarmaCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        total = 0
+        # Insert category total for person and project.
+        for category_name, value in category_name_values:
+            category = KarmaCategory.byName(category_name)
+            self.cache_manager.new(
+                value, person.id, category.id, product_id=product.id)
+            total += value
+        # Insert total cache for person and project.
+        self.cache_manager.new(
+            total, person.id, None, product_id=product.id)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+    def _makeKarmaTotalCache(self, person, total):
+        """Create a KarmaTotalCache entry.
+
+        In order to create the KarmaTotalCache record we must switch to the DB
+        user 'karma'. This invalidates the objects under test so they
+        must be retrieved again.
+        """
+        transaction.commit()
+        reconnect_stores('karmacacheupdater')
+        KarmaTotalCache(person=person.id, karma_total=total)
+        transaction.commit()
+        reconnect_stores('launchpad')
+
+
+class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
     """Test cases for PersonSet merge."""
 
     layer = DatabaseFunctionalLayer
@@ -502,6 +544,90 @@ class TestPersonSetMerge(TestCaseWithFactory):
 
         self.assertIn(duplicate_identifier, merged_identifiers)
         self.assertIn(person_identifier, merged_identifiers)
+
+    def test_karmacache_transferred_to_user_has_no_karma(self):
+        # Verify that the merged user has no KarmaCache entries,
+        # and the karma total was transfered.
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        product = self.factory.makeProduct()
+        duplicate = self.factory.makePerson()
+        self._makeKarmaCache(
+            duplicate, product, [('bugs', 10)])
+        self._makeKarmaTotalCache(duplicate, 15)
+        # The karma changes invalidated duplicate instance.
+        duplicate = self.person_set.get(duplicate.id)
+        person = self.factory.makePerson()
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual([], duplicate.karma_category_caches)
+        self.assertEqual(0, duplicate.karma)
+        self.assertEqual(15, person.karma)
+
+    def test_karmacache_transferred_to_user_has_karma(self):
+        # Verify that the merged user has no KarmaCache entries,
+        # and the karma total was summed.
+        self.cache_manager = getUtility(IKarmaCacheManager)
+        product = self.factory.makeProduct()
+        duplicate = self.factory.makePerson()
+        self._makeKarmaCache(
+            duplicate, product, [('bugs', 10)])
+        self._makeKarmaTotalCache(duplicate, 15)
+        person = self.factory.makePerson()
+        self._makeKarmaCache(
+            person, product, [('bugs', 9)])
+        self._makeKarmaTotalCache(person, 13)
+        # The karma changes invalidated duplicate and person instances.
+        duplicate = self.person_set.get(duplicate.id)
+        person = self.person_set.get(person.id)
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual([], duplicate.karma_category_caches)
+        self.assertEqual(0, duplicate.karma)
+        self.assertEqual(28, person.karma)
+
+    def test_person_date_created_preserved(self):
+        # Verify that the oldest datecreated is merged.
+        person = self.factory.makePerson()
+        duplicate = self.factory.makePerson()
+        oldest_date = datetime(
+            2005, 11, 25, 0, 0, 0, 0, pytz.timezone('UTC'))
+        removeSecurityProxy(duplicate).datecreated = oldest_date
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        self.assertEqual(oldest_date, person.datecreated)
+
+    def _doMerge(self, test_team, target_team):
+        test_team.deactivateAllMembers(
+            comment='',
+            reviewer=test_team.teamowner)
+        self.person_set.merge(test_team, target_team)
+
+    def test_team_without_super_teams_is_fine(self):
+        # A team with no members and no super teams
+        # merges without errors.
+        test_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        self._doMerge(test_team, target_team)
+
+    def test_team_with_super_teams_raises_error(self):
+        # A team with no members but with superteams
+        # raises an assertion error.
+        test_team = self.factory.makeTeam()
+        super_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+
+        login_person(test_team.teamowner)
+        test_team.join(super_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError,
+            self._doMerge,
+            test_team,
+            target_team)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
@@ -868,7 +994,7 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
             assignee=self.user)
 
 
-class TestPersonKarma(TestCaseWithFactory):
+class TestPersonKarma(TestCaseWithFactory, KarmaTestMixin):
 
     layer = DatabaseFunctionalLayer
 
@@ -885,28 +1011,6 @@ class TestPersonKarma(TestCaseWithFactory):
             self.person, b_product, [('answers', 50)])
         self._makeKarmaCache(
             self.person, self.c_product, [('code', 100), (('bugs', 50))])
-
-    def _makeKarmaCache(self, person, product, category_name_values):
-        """Create a KarmaCache entry with the given arguments.
-
-        In order to create the KarmaCache record we must switch to the DB
-        user 'karma'. This requires a commit and invalidates the product
-        instance.
-        """
-        transaction.commit()
-        reconnect_stores('karmacacheupdater')
-        total = 0
-        # Insert category total for person and project.
-        for category_name, value in category_name_values:
-            category = KarmaCategory.byName(category_name)
-            self.cache_manager.new(
-                value, person.id, category.id, product_id=product.id)
-            total += value
-        # Insert total cache for person and project.
-        self.cache_manager.new(
-            total, person.id, None, product_id=product.id)
-        transaction.commit()
-        reconnect_stores('launchpad')
 
     def test__getProjectsWithTheMostKarma_ordering(self):
         # Verify that pillars are ordered by karma.

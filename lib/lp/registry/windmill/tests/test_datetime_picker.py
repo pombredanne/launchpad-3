@@ -23,7 +23,7 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
         """Test the calendar widget's general functionality.
 
         This test ensures that, with Javascript enabled, an input field
-        with the 'yui-calendar' class will get an extra 'choose...' link
+        with the 'yui3-calendar' class will get an extra 'choose...' link
         which opens up a calendar widget. The extra class 'withtime' is
         used to optionally include time fields.
         """
@@ -31,7 +31,8 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
 
         # Open a new sprint page and wait for it to finish loading.
         self.client.open(
-            url=u'http://blueprints.launchpad.dev:8085/sprints/+new')
+            url=u'%s/sprints/+new'
+                % self.layer.appserver_root_url('blueprints'))
         self.client.waits.forPageLoad(timeout=u'20000')
         self.client.waits.forElement(link=u'Choose...', timeout=u'8000')
 

@@ -5,8 +5,12 @@ __metaclass__ = type
 
 import transaction
 
-from lazr.restfulclient.errors import Unauthorized
+from lazr.restfulclient.errors import (
+    BadRequest,
+    Unauthorized,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import AppServerLayer
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -14,6 +18,7 @@ from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.soyuz.enums import PackageDiffStatus
 from lp.testing import (
     TestCaseWithFactory,
     ws_object,
@@ -95,3 +100,51 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertTrue(
             result['resource_type_link'].endswith(
                 '#distro_series_difference_comment'))
+
+    def test_requestDiffs(self):
+        # The generation of package diffs can be requested via the API.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str='foo', versions={
+                'derived': '1.2',
+                'parent': '1.3',
+                'base': '1.0',
+                })
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        result = ws_diff.requestPackageDiffs()
+        transaction.commit()
+
+        # Reload and check that the package diffs are there.
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        ds_diff = utility.getByDistroSeriesAndName(
+            ds_diff.derived_series, ds_diff.source_package_name.name)
+        self.assertIsNot(None, ds_diff.package_diff)
+        self.assertIsNot(None, ds_diff.parent_package_diff)
+
+    def test_requestPackageDiffs_exception(self):
+        # If one of the pubs is missing an exception is raised.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            })
+
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        self.assertRaises(
+            BadRequest, ws_diff.requestPackageDiffs)
+
+    def test_package_diffs(self):
+        # The package diff urls exposed.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        naked_dsdiff = removeSecurityProxy(ds_diff)
+        naked_dsdiff.package_diff = self.factory.makePackageDiff(
+            status=PackageDiffStatus.PENDING)
+        naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
+
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            ds_diff.owner), ds_diff)
+
+        self.assertIs(None, ws_diff.package_diff_url)
+        self.assertIsNot(None, ws_diff.parent_package_diff_url)

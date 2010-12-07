@@ -736,6 +736,18 @@ class IProductPublic(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
 
+    def getVersionSortedSeries(statuses=None, filter_statuses=None):
+        """Return all the series sorted by the name field as a version.
+
+        The development focus field is an exception. It will always
+        be sorted first.
+
+        :param statuses: If statuses is not None, only include series
+                         which are in the given statuses.
+        :param filter_statuses: Filter out any series with statuses listed in
+                                filter_statuses.
+        """
+
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None,
                                   current_datetime=None):
@@ -1084,3 +1096,5 @@ class InvalidProductName(LaunchpadValidationError):
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 IDistributionSourcePackage['upstream_product'].schema = IProduct
+
+ICommercialSubscription['product'].schema = IProduct

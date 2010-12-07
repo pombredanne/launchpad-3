@@ -10,9 +10,13 @@ from datetime import (
 from new import classobj
 import pytz
 import sys
+from testtools.matchers import Equals
 import unittest
 
 from zope.component import getUtility
+
+from storm.expr import Join
+from storm.store import Store
 
 from canonical.launchpad.searchbuilder import (
     all,
@@ -31,6 +35,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -39,10 +44,13 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.person import Person
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class SearchTestBase:
@@ -507,6 +515,23 @@ class ProductAndDistributionTests:
         self.assertSearchFinds(params, self.bugtasks[:1])
 
 
+class ProjectGroupAndDistributionTests:
+    """Tests which are useful for project groups and distributions."""
+
+    def setUpStructuralSubscriptions(self):
+        # Subscribe a user to the search target of this test and to
+        # another target.
+        raise NotImplementedError
+
+    def test_unique_results_for_multiple_structural_subscriptions(self):
+        # Searching for a subscriber who is more than once subscribed to a
+        # bug task returns this bug task only once.
+        subscriber = self.setUpStructuralSubscriptions()
+        params = self.getBugTaskSearchParams(
+            user=None, structural_subscriber=subscriber)
+        self.assertSearchFinds(params, self.bugtasks)
+
+
 class BugTargetTestBase:
     """A base class for the bug target mixin classes."""
 
@@ -628,7 +653,8 @@ class ProductSeriesTarget(BugTargetTestBase):
             bugtask, self.searchtarget.product)
 
 
-class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
+class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
+                         ProjectGroupAndDistributionTests):
     """Use a project group as the bug target."""
 
     def setUp(self):
@@ -698,6 +724,15 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor):
             'No bug task found for a product that is not the target of '
             'the main test bugtask.')
 
+    def setUpStructuralSubscriptions(self):
+        # See `ProjectGroupAndDistributionTests`.
+        subscriber = self.factory.makePerson()
+        self.subscribeToTarget(subscriber)
+        with person_logged_in(subscriber):
+            self.bugtasks[0].target.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
+
 
 class MilestoneTarget(BugTargetTestBase):
     """Use a milestone as the bug target."""
@@ -731,7 +766,8 @@ class MilestoneTarget(BugTargetTestBase):
 
 
 class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
-                         BugTargetWithBugSuperVisor):
+                         BugTargetWithBugSuperVisor,
+                         ProjectGroupAndDistributionTests):
     """Use a distribution as the bug target."""
 
     def setUp(self):
@@ -752,6 +788,18 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
     def makeSeries(self):
         """See `ProductAndDistributionTests`."""
         return self.factory.makeDistroSeries(distribution=self.searchtarget)
+
+    def setUpStructuralSubscriptions(self):
+        # See `ProjectGroupAndDistributionTests`.
+        subscriber = self.factory.makePerson()
+        sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=self.searchtarget)
+        self.bugtasks.append(self.factory.makeBugTask(target=sourcepackage))
+        self.subscribeToTarget(subscriber)
+        with person_logged_in(subscriber):
+            sourcepackage.addSubscription(
+                subscriber, subscribed_by=subscriber)
+        return subscriber
 
 
 class DistroseriesTarget(BugTargetTestBase):
@@ -838,21 +886,71 @@ bug_targets_mixins = (
     )
 
 
-class PreloadBugtaskTargets:
+class MultipleParams:
+    """A mixin class for tests with more than one search parameter object.
+
+    BugTaskSet.search() can be called with more than one
+    BugTaskSearchParams instances, while BugTaskSet.searchBugIds()
+    accepts exactly one instance.
+    """
+
+    def test_two_param_objects(self):
+        # We can pass more than one BugTaskSearchParams instance to
+        # BugTaskSet.search().
+        params1 = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.FIXCOMMITTED)
+        subscriber = self.factory.makePerson()
+        self.subscribeToTarget(subscriber)
+        params2 = self.getBugTaskSearchParams(
+            user=None, status=BugTaskStatus.NEW,
+            structural_subscriber=subscriber)
+        search_result = self.runSearch(params1, params2)
+        expected = self.resultValuesForBugtasks(self.bugtasks[1:])
+        self.assertEqual(expected, search_result)
+
+
+class PreloadBugtaskTargets(MultipleParams):
     """Preload bug targets during a BugTaskSet.search() query."""
 
     def setUp(self):
         super(PreloadBugtaskTargets, self).setUp()
 
-    def runSearch(self, params, *args):
+    def runSearch(self, params, *args, **kw):
         """Run BugTaskSet.search() and preload bugtask target objects."""
-        return list(self.bugtask_set.search(params, *args, _noprejoins=False))
+        return list(self.bugtask_set.search(
+            params, *args, _noprejoins=False, **kw))
 
     def resultValuesForBugtasks(self, expected_bugtasks):
         return expected_bugtasks
 
+    def test_preload_additional_objects(self):
+        # It is possible to join additional tables in the search query
+        # in order to load related Storm objects during the query.
+        store = Store.of(self.bugtasks[0])
+        store.invalidate()
 
-class NoPreloadBugtaskTargets:
+        # If we do not prejoin the owner, two queries a run
+        # in order to retrieve the owner of the bugtask.
+        with StormStatementRecorder() as recorder:
+            params = self.getBugTaskSearchParams(user=None)
+            found_tasks = self.runSearch(params)
+            found_tasks[0].owner
+            self.assertTrue(len(recorder.statements) > 1)
+
+        # If we join the table person on bugtask.owner == person.id
+        # the owner object is loaded in the query that retrieves the
+        # bugtasks.
+        store.invalidate()
+        with StormStatementRecorder() as recorder:
+            params = self.getBugTaskSearchParams(user=None)
+            found_tasks = self.runSearch(
+                params,
+                prejoins=[(Person, Join(Person, BugTask.owner == Person.id))])
+            found_tasks[0].owner
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+
+class NoPreloadBugtaskTargets(MultipleParams):
     """Do not preload bug targets during a BugTaskSet.search() query."""
 
     def setUp(self):

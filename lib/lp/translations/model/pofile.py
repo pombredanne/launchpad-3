@@ -27,7 +27,6 @@ from storm.expr import (
     And,
     Coalesce,
     Exists,
-    In,
     Join,
     LeftJoin,
     Not,
@@ -480,9 +479,6 @@ class POFile(SQLBase, POFileMixIn):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
-    variant = StringCol(dbName='variant',
-                        notNull=False,
-                        default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -1324,7 +1320,6 @@ class DummyPOFile(POFileMixIn):
         self.id = None
         self.potemplate = potemplate
         self.language = language
-        self.variant = None
         self.description = None
         self.topcomment = None
         self.header = None
@@ -1574,7 +1569,7 @@ class POFileSet:
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
             POTMsgSet.msgid_singular == POMsgID.id,
-            In(POMsgID.msgid, POTMsgSet.credits_message_ids)]
+            POMsgID.msgid.is_in(POTMsgSet.credits_message_ids)]
         if untranslated:
             message_select = Select(
                 True,

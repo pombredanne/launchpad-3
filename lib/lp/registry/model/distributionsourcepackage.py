@@ -19,9 +19,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    In,
     Join,
-    Lower,
     Max,
     Sum,
     )
@@ -103,11 +101,12 @@ def is_upstream_link_allowed(spph):
 
 class DistributionSourcePackageProperty:
 
-    def __init__(self, attrname):
+    def __init__(self, attrname, default=None):
         self.attrname = attrname
+        self.default = default
 
     def __get__(self, obj, class_):
-        return getattr(obj._self_in_database, self.attrname, None)
+        return getattr(obj._self_in_database, self.attrname, self.default)
 
     def __set__(self, obj, value):
         if obj._self_in_database is None:
@@ -154,6 +153,8 @@ class DistributionSourcePackage(BugTargetBase,
     po_message_count = DistributionSourcePackageProperty('po_message_count')
     is_upstream_link_allowed = DistributionSourcePackageProperty(
         'is_upstream_link_allowed')
+    enable_bugfiling_duplicate_search = DistributionSourcePackageProperty(
+        'enable_bugfiling_duplicate_search', default=True)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -428,7 +429,7 @@ class DistributionSourcePackage(BugTargetBase,
             (SourcePackageRelease, SourcePackagePublishingHistory),
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
-            In(SourcePackagePublishingHistory.archiveID,
+            SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
             SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id,
@@ -542,7 +543,7 @@ class DistributionSourcePackage(BugTargetBase,
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
             (EmailAddress, Person),
-            In(Lower(EmailAddress.email), email_addresses))
+            EmailAddress.email.lower().is_in(email_addresses))
         return result_set
 
     @classmethod
@@ -609,3 +610,4 @@ class DistributionSourcePackageInDatabase(Storm):
     bug_count = Int()
     po_message_count = Int()
     is_upstream_link_allowed = Bool()
+    enable_bugfiling_duplicate_search = Bool()

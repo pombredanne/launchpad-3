@@ -89,6 +89,7 @@ def assessFailureCounts(builder, fail_notes):
         # and remove the buildqueue request.  The failure should
         # have already caused any relevant slave data to be stored
         # on the build record so don't worry about that here.
+        builder.resetFailureCount()
         build_job = current_job.specific_job.build
         build_job.status = BuildStatus.FAILEDTOBUILD
         builder.currentjob.destroySelf()
@@ -151,10 +152,12 @@ class SlaveScanner:
         if failure.check(
             BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
             CannotResumeHost, BuildDaemonError, CannotFetchFile):
-            self.logger.info("Scanning failed with: %s" % error_message)
+            self.logger.info("Scanning %s failed with: %s" % (
+                self.builder_name, error_message))
         else:
-            self.logger.info("Scanning failed with: %s\n%s" %
-                (failure.getErrorMessage(), failure.getTraceback()))
+            self.logger.info("Scanning %s failed with: %s\n%s" % (
+                self.builder_name, failure.getErrorMessage(),
+                failure.getTraceback()))
 
         # Decide if we need to terminate the job or fail the
         # builder.

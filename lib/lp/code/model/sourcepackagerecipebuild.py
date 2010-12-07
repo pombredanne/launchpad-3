@@ -109,7 +109,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     is_virtualized = True
 
-    recipe_id = Int(name='recipe', allow_none=False)
+    recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
 
     manifest = Reference(
@@ -228,7 +228,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             SourcePackageRelease.source_package_recipe_build == self.id)
         for release in releases:
             release.source_package_recipe_build = None
+        package_build = self.package_build
         store.remove(self)
+        package_build.destroySelf()
 
     @classmethod
     def getById(cls, build_id):
@@ -310,11 +312,13 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """See `IPackageBuild`."""
-        super(SourcePackageRecipeBuild, self)._handleStatus_OK(
+        d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
-        # base implementation doesn't notify on success.
-        if self.status == BuildStatus.FULLYBUILT:
-            self.notify()
+        def uploaded_build(ignored):
+            # Base implementation doesn't notify on success.
+            if self.status == BuildStatus.FULLYBUILT:
+                self.notify()
+        return d.addCallback(uploaded_build)
 
     def getUploader(self, changes):
         """See `IPackageBuild`."""

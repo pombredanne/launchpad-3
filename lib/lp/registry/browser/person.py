@@ -105,6 +105,7 @@ from lazr.uri import (
     URI,
     )
 import pytz
+from storm.expr import Join
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
@@ -177,14 +178,10 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.mailnotification import send_direct_contact_email
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action,
     ApplicationMenu,
     canonical_url,
     ContextMenu,
-    custom_widget,
     enabled_with_permission,
-    LaunchpadEditFormView,
-    LaunchpadFormView,
     Link,
     Navigation,
     NavigationMenu,
@@ -222,6 +219,12 @@ from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
@@ -240,6 +243,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.errors import InvalidNamespace
@@ -301,6 +305,10 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
+    )
+from lp.registry.model.milestone import (
+    Milestone,
+    milestone_sort_key,
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
@@ -543,6 +551,11 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     def traverse_recipe(self, name):
         """Traverse to this person's recipes."""
         return self.context.getRecipe(name)
+
+    @stepthrough('+merge-queues')
+    def traverse_merge_queue(self, name):
+        """Traverse to this person's merge queues."""
+        return self.context.getMergeQueue(name)
 
 
 class TeamNavigation(PersonNavigation):
@@ -2126,8 +2139,12 @@ class RelevantMilestonesMixin:
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""
-        milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
-            self.searchUnbatched())
+        prejoins = [
+            (Milestone, Join(Milestone, BugTask.milestone == Milestone.id))]
+        milestones = [
+            bugtask.milestone
+            for bugtask in self.searchUnbatched(prejoins=prejoins)]
+        milestones = sorted(milestones, key=milestone_sort_key, reverse=True)
         return [
             dict(title=milestone.title, value=milestone.id, checked=False)
             for milestone in milestones]
@@ -2143,7 +2160,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Related bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs related to a person.
 
         :param extra_params: A dict that provides search params added to
@@ -2174,7 +2191,7 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
 
         return context.searchTasks(
             assignee_params, subscriber_params, owner_params,
-            commenter_params)
+            commenter_params, prejoins=prejoins)
 
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
@@ -2203,7 +2220,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Assigned bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs assigned to a person."""
         if context is None:
             context = self.context
@@ -2215,7 +2232,8 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['assignee'] = context
 
         sup = super(PersonAssignedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -2260,7 +2278,7 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Commented bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the open bugs commented on by a person."""
         if context is None:
             context = self.context
@@ -2272,7 +2290,8 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_commenter'] = context
 
         sup = super(PersonCommentedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2305,7 +2324,7 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Reported bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the bugs reported by a person."""
         if context is None:
             context = self.context
@@ -2320,7 +2339,8 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['bug_reporter'] = context
 
         sup = super(PersonReportedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2361,7 +2381,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     page_title = 'Subscribed bugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
+                        extra_params=None, prejoins=[]):
         """Return the bugs subscribed to by a person."""
         if context is None:
             context = self.context
@@ -2373,7 +2393,8 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         extra_params['subscriber'] = context
 
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
+        return sup.searchUnbatched(
+            searchtext, context, extra_params, prejoins)
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -3478,7 +3499,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3545,6 +3566,13 @@ class TeamIndexView(PersonIndexView):
         if self.context.visibility == PersonVisibility.PUBLIC:
             return 'portlet'
         return 'portlet private'
+
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
 
 
 class PersonCodeOfConductEditView(LaunchpadView):

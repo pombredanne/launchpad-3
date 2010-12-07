@@ -14,7 +14,7 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless

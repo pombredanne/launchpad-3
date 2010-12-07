@@ -21,14 +21,21 @@ from canonical.launchpad.testing.pages import (
     get_feedback_messages,
     setupBrowser,
     )
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import (
     IProduct,
     License,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product, UnDeactivateable
+from lp.registry.model.product import (
+    Product,
+    UnDeactivateable,
+    )
 from lp.registry.model.productlicense import ProductLicense
 from lp.testing import TestCaseWithFactory
 
@@ -36,7 +43,7 @@ from lp.testing import TestCaseWithFactory
 class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -76,16 +83,6 @@ class TestProduct(TestCaseWithFactory):
             milestone=milestone_0_1)
         release_2 = self.factory.makeProductRelease(
             product=product,
-            milestone=milestone_0_2)
-        release_file1 = self.factory.makeProductReleaseFile(
-            product=product,
-            release=release_1,
-            productseries=series,
-            milestone=milestone_0_1)
-        release_file2 = self.factory.makeProductReleaseFile(
-            product=product,
-            release=release_2,
-            productseries=series,
             milestone=milestone_0_2)
         expected = [(milestone_0_2, release_2), (milestone_0_1, release_1)]
         self.assertEqual(
@@ -131,10 +128,56 @@ class TestProduct(TestCaseWithFactory):
         [series] = product.getTimeline()
         timeline_milestones = [
             landmark['uri']
-            for landmark in series['landmarks']]
+            for landmark in series.landmarks]
         self.assertEqual(
             expected_milestones,
             timeline_milestones)
+
+    def test_getVersionSortedSeries(self):
+        # The product series should be sorted with the development focus
+        # series first, the series starting with a number in descending
+        # order, and then the series starting with a letter in
+        # descending order.
+        product = self.factory.makeProduct()
+        for name in ('1', '2', '3', '3a', '3b', 'alpha', 'beta'):
+            self.factory.makeProductSeries(product=product, name=name)
+        self.assertEqual(
+            [u'trunk', u'3b', u'3a', u'3', u'2', u'1', u'beta', u'alpha'],
+            [series.name for series in product.getVersionSortedSeries()])
+
+    def test_getVersionSortedSeries_with_specific_statuses(self):
+        # The obsolete series should be included in the results if
+        # statuses=[SeriesStatus.OBSOLETE]. The development focus will
+        # also be included since it does not get filtered.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.factory.makeProductSeries(
+            product=product, name='frozen-series')
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='obsolete-series')
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        active_series = product.getVersionSortedSeries(
+            statuses=[SeriesStatus.OBSOLETE])
+        self.assertEqual(
+            [u'trunk', u'obsolete-series'],
+            [series.name for series in active_series])
+
+    def test_getVersionSortedSeries_without_specific_statuses(self):
+        # The obsolete series should not be included in the results if
+        # filter_statuses=[SeriesStatus.OBSOLETE]. The development focus will
+        # always be included since it does not get filtered.
+        login('admin@canonical.com')
+        product = self.factory.makeProduct()
+        self.factory.makeProductSeries(product=product, name='active-series')
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='obsolete-series')
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        product.development_focus.status = SeriesStatus.OBSOLETE
+        active_series = product.getVersionSortedSeries(
+            filter_statuses=[SeriesStatus.OBSOLETE])
+        self.assertEqual(
+            [u'trunk', u'active-series'],
+            [series.name for series in active_series])
 
 
 class TestProductFiles(unittest.TestCase):
@@ -194,7 +237,7 @@ class TestProductFiles(unittest.TestCase):
 class ProductAttributeCacheTestCase(unittest.TestCase):
     """Cached attributes must be cleared at the end of a transaction."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         self.product = Product.selectOneBy(name='tomcat')
@@ -264,7 +307,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 class ProductSnapshotTestCase(TestCaseWithFactory):
     """A TestCase for product snapshots."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(ProductSnapshotTestCase, self).setUp()
@@ -290,7 +333,7 @@ class ProductSnapshotTestCase(TestCaseWithFactory):
 class BugSupervisorTestCase(TestCaseWithFactory):
     """A TestCase for bug supervisor management."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(BugSupervisorTestCase, self).setUp()

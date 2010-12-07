@@ -102,6 +102,29 @@
             interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
     </class>
 
+    <!-- INameBlacklist -->
+    <securedutility
+        class="lp.registry.model.nameblacklist.NameBlacklistSet"
+        provides="lp.registry.interfaces.nameblacklist.INameBlacklistSet">
+        <allow
+            interface="lp.registry.interfaces.nameblacklist.INameBlacklistSet"/>
+    </securedutility>
+
+    <class class="lp.registry.model.nameblacklist.NameBlacklistSet">
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.nameblacklist.INameBlacklistSet"/>
+    </class>
+
+    <class class="lp.registry.model.nameblacklist.NameBlacklist">
+        <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.nameblacklist.INameBlacklist"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.nameblacklist.INameBlacklist"/>
+    </class>
+
     <!-- Location -->
 
     <class
@@ -426,6 +449,7 @@
                 displayname
                 distribution
                 distro
+                enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
                 getBugCounts
@@ -489,7 +513,9 @@
             permission="launchpad.BugSupervisor"
             set_attributes="
                 bug_reported_acknowledgement
-                bug_reporting_guidelines"/>
+                bug_reporting_guidelines
+                enable_bugfiling_duplicate_search
+                "/>
     </class>
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -557,8 +583,8 @@
             interface="lp.registry.interfaces.pillar.IPillarNameSet"/>
     </securedutility>
     <securedutility
-        class="canonical.launchpad.rest.PillarSetLink"
-        provides="canonical.launchpad.rest.IPillarSetLink">
+        class="canonical.launchpad.rest.pillarset.PillarSetLink"
+        provides="canonical.launchpad.rest.pillarset.IPillarSetLink">
         <allow
             interface="lazr.restful.interfaces.ITopLevelEntryLink"/>
         <allow
@@ -1156,6 +1182,7 @@
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
+                enable_bugfiling_duplicate_search
                 bug_reported_acknowledgement
                 bug_reporting_guidelines
                 bugtracker
@@ -1418,6 +1445,14 @@
     <adapter
         factory=".model.structuralsubscription.ProductSeriesTargetHelper"
         permission="zope.Public"/>
+
+    <!-- This is class TimelineProductSeries -->
+
+    <class
+        class="lp.registry.model.productseries.TimelineProductSeries">
+        <allow
+            interface="lp.registry.interfaces.productseries.ITimelineProductSeries"/>
+    </class>
 
     <!-- ProductSeriesSet -->
 
@@ -1862,11 +1897,8 @@
             interface="lp.registry.interfaces.personproduct.IPersonProduct"/>
     </class>
 
-    <!-- Registers exceptions used in webservice defined in lp.registry.
-      Other data is in module=canonical.launchpad.interfaces as defined in
-      zcml there.-->
-
     <webservice:register module="lp.registry.errors" />
+    <webservice:register module="lp.registry.interfaces.webservice" />
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
