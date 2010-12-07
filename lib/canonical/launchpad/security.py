@@ -1684,7 +1684,7 @@ class AppendFAQTarget(EditByOwnersOrAdmins):
             return True
         if IQuestionTarget.providedBy(self.obj):
             # Adapt QuestionTargets to FAQTargets to ensure the correct
-            # object is being examined; the implementers are no synonymous.
+            # object is being examined; the implementers are not synonymous.
             faq_target = IFAQTarget(self.obj)
             questions_person = IQuestionsPerson(user.person)
             for target in questions_person.getDirectAnswerQuestionTargets():
