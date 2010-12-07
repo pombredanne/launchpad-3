@@ -131,6 +131,8 @@ requester to the join() method.
     ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
     >>> ubuntu_team in t2.activemembers
     False
+    >>> [m.displayname for m in t2.allmembers]
+    [u'No Privileges Person']
     >>> login(ANONYMOUS)
 
 Another API for adding members is ITeam.addMember(), which ensures the given
