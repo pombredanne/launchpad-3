@@ -59,7 +59,7 @@ class TestBugTagsEntry(WindmillTestCase):
             id=u'tag-input', timeout=constants.FOR_ELEMENT)
         client.type(text=u'ee', id=u'tag-input')
         client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertNode(classname=u'yui-autocomplete-list')
+        client.asserts.assertNode(classname=u'yui3-autocomplete-list')
         client.click(id=u'item0')
         client.click(id=u'edit-tags-ok')
         client.waits.sleep(milliseconds=constants.SLEEP)

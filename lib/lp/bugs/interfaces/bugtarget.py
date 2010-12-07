@@ -297,6 +297,10 @@ class IBugTarget(IHasBugs):
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False)
+
     def createBug(bug_params):
         """Create a new bug on this target.
 

@@ -15,7 +15,6 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IBugEditEmailCommand,
@@ -31,7 +30,6 @@ from canonical.launchpad.mail.commands import (
     )
 from canonical.launchpad.mail.helpers import (
     ensure_not_weakly_authenticated,
-    ensure_sane_signature_timestamp,
     get_main_body,
     guess_bugtask,
     IncomingEmailError,
@@ -61,16 +59,6 @@ from lp.services.mail.sendmail import (
     )
 
 
-def extract_signature_timestamp(signed_msg):
-    # break import cycle
-    from lp.services.mail.incoming import (
-        canonicalise_line_endings)
-    signature = getUtility(IGPGHandler).getVerifiedSignature(
-        canonicalise_line_endings(signed_msg.signedContent),
-        signed_msg.signature)
-    return signature.timestamp
-
-
 class MaloneHandler:
     """Handles emails sent to Malone.
 
@@ -90,47 +78,64 @@ class MaloneHandler:
                 name, args in parse_commands(content,
                                              BugEmailCommands.names())]
 
-    def process(self, signed_msg, to_addr, filealias=None, log=None,
-                extract_signature_timestamp=extract_signature_timestamp):
-        """See IMailHandler."""
+    def extractAndAuthenticateCommands(self, signed_msg, to_addr):
+        """Extract commands and handle special destinations.
+
+        NB: The authentication is carried out against the current principal,
+        not directly against the message.  authenticateEmail must previously
+        have been called on this thread.
+
+        :returns: (final_result, add_comment_to_bug, commands)
+            If final_result is non-none, stop processing and return this value
+            to indicate whether the message was dealt with or not.
+            If add_comment_to_bug, add the contents to the first bug
+            selected.
+            commands is a list of bug commands.
+        """
+        CONTEXT = 'bug report'
         commands = self.getCommands(signed_msg)
-        user, host = to_addr.split('@')
+        to_user, to_host = to_addr.split('@')
         add_comment_to_bug = False
-        signature = signed_msg.signature
+        # If there are any commands, we must have strong authentication.
+        # We send a different failure message for attempts to create a new
+        # bug.
+        if to_user.lower() == 'new':
+            ensure_not_weakly_authenticated(signed_msg, CONTEXT,
+                'unauthenticated-bug-creation.txt')
+        elif len(commands) > 0:
+            ensure_not_weakly_authenticated(signed_msg, CONTEXT)
+        if to_user.lower() == 'new':
+            commands.insert(0, BugEmailCommands.get('bug', ['new']))
+        elif to_user.isdigit():
+            # A comment to a bug. We set add_comment_to_bug to True so
+            # that the comment gets added to the bug later. We don't add
+            # the comment now, since we want to let the 'bug' command
+            # handle the possible errors that can occur while getting
+            # the bug.
+            add_comment_to_bug = True
+            commands.insert(0, BugEmailCommands.get('bug', [to_user]))
+        elif to_user.lower() == 'help':
+            from_user = getUtility(ILaunchBag).user
+            if from_user is not None:
+                preferredemail = from_user.preferredemail
+                if preferredemail is not None:
+                    to_address = str(preferredemail.email)
+                    self.sendHelpEmail(to_address)
+            return True, False, None
+        elif to_user.lower() != 'edit':
+            # Indicate that we didn't handle the mail.
+            return False, False, None
+        return None, add_comment_to_bug, commands
+
+    def process(self, signed_msg, to_addr, filealias=None, log=None):
+        """See IMailHandler."""
 
         try:
-            if len(commands) > 0:
-                CONTEXT = 'bug report'
-                ensure_not_weakly_authenticated(signed_msg, CONTEXT)
-                if signature is not None:
-                    ensure_sane_signature_timestamp(
-                        extract_signature_timestamp(signed_msg), CONTEXT)
-
-            if user.lower() == 'new':
-                # A submit request.
-                commands.insert(0, BugEmailCommands.get('bug', ['new']))
-                if signature is None:
-                    raise IncomingEmailError(
-                        get_error_message('not-gpg-signed.txt'))
-            elif user.isdigit():
-                # A comment to a bug. We set add_comment_to_bug to True so
-                # that the comment gets added to the bug later. We don't add
-                # the comment now, since we want to let the 'bug' command
-                # handle the possible errors that can occur while getting
-                # the bug.
-                add_comment_to_bug = True
-                commands.insert(0, BugEmailCommands.get('bug', [user]))
-            elif user.lower() == 'help':
-                from_user = getUtility(ILaunchBag).user
-                if from_user is not None:
-                    preferredemail = from_user.preferredemail
-                    if preferredemail is not None:
-                        to_address = str(preferredemail.email)
-                        self.sendHelpEmail(to_address)
-                return True
-            elif user.lower() != 'edit':
-                # Indicate that we didn't handle the mail.
-                return False
+            (final_result, add_comment_to_bug,
+                commands, ) = self.extractAndAuthenticateCommands(
+                    signed_msg, to_addr)
+            if final_result is not None:
+                return final_result
 
             bug = None
             bug_event = None

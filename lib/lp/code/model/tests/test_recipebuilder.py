@@ -73,8 +73,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
             recipe_registrant, recipe_owner, distroseries, u"recept",
             u"Recipe description", branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
-            sourcepackage=sourcepackage, recipe=recipe, requester=recipe_owner,
-            distroseries=distroseries)
+            sourcepackage=sourcepackage,
+            recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
         BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
@@ -161,7 +161,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text':
-               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
                'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
@@ -172,14 +172,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # registrant is used.
         self._setBuilderConfig()
         recipe_registrant = self.factory.makePerson(
-            name='eric', displayname='Eric the Viking', email='eric@vikings.r.us')
+            name='eric', displayname='Eric the Viking',
+            email='eric@vikings.r.us')
         recipe_owner = self.factory.makeTeam(
             name='vikings', members=[recipe_registrant])
 
         job = self.makeJob(recipe_registrant, recipe_owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_team_owner_with_email(self):
@@ -206,7 +208,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob(owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)
-        self.assertEqual("Launchpad Package Builder", extra_args['author_name'])
+        self.assertEqual(
+            "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
@@ -229,7 +232,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'archive_purpose': 'PPA',
            'ogrecomponent': 'universe',
            'recipe_text':
-               '# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}\n'
+               '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
                'lp://dev/~joe/someapp/pkg\n',
            'archives': expected_archives,
            'distroseries_name': job.build.distroseries.name,
@@ -267,6 +270,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.setBuilder(builder)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
+
         def check_dispatch(ignored):
             logger.buffer.seek(0)
 
