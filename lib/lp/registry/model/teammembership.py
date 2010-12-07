@@ -560,13 +560,6 @@ def _cleanTeamParticipation(child, target_team):
 
     _removeAllIndividualParticipantsFromTeamAndSuperTeams(child,
                                                           target_team)
-    #removeUnwantedFromSuperTeams(target_team, unwanted_ids)
-
-
-## def removeUnwantedFromSuperTeams(child, target_team, unwanted_ids):
-##     super_teams = _getSuperTeamsExcludingDirectMembership(child, target_team)
-##     for team in super_teams:
-##         # Remove unwanted from team.
 
 
 def _removeAllIndividualParticipantsFromTeamAndSuperTeams(team, target_team):
