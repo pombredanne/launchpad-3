@@ -2043,7 +2043,6 @@ class BugSubscriptionInfo:
         """The bug's direct subscriptions."""
         return IStore(BugSubscription).find(
             BugSubscription,
-            BugSubscription.person_id == Person.id,
             BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug == self.bug)
 
@@ -2056,10 +2055,9 @@ class BugSubscriptionInfo:
         else:
             return IStore(BugSubscription).find(
                 BugSubscription,
-                Bug.duplicateof == self.bug,
-                BugSubscription.bug_id == Bug.id,
                 BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.person_id == Person.id)
+                BugSubscription.bug_id == Bug.id,
+                Bug.duplicateof == self.bug)
 
     @cachedproperty
     @freeze(StructuralSubscriptionSet)
