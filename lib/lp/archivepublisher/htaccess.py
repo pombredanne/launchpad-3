@@ -17,6 +17,7 @@ __all__ = [
 
 
 import crypt
+import os
 
 from operator import attrgetter
 from zope.component import getUtility
@@ -53,7 +54,10 @@ def write_htpasswd(filename, users):
     :param filename: The file to create.
     :param users: Iterable over (user, password, salt) tuples.
     """
-    file = open(filename, "w")
+    if os.path.isfile(filename):
+        os.remove(filename)
+
+    file = open(filename, "a")
     try:
         for entry in users:
             user, password, salt = entry

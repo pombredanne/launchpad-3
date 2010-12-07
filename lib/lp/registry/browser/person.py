@@ -3499,7 +3499,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-                YUI().use('node', 'lp.app.mapping', function(Y) {
+                LPS.use('node', 'lp.app.mapping', function(Y) {
                     function renderMap() {
                         Y.lp.app.mapping.renderPersonMapSmall(
                             %(center_lat)s, %(center_lng)s);
@@ -3566,6 +3566,13 @@ class TeamIndexView(PersonIndexView):
         if self.context.visibility == PersonVisibility.PUBLIC:
             return 'portlet'
         return 'portlet private'
+
+    @property
+    def add_member_step_title(self):
+        """A string for setup_add_member_handler with escaped quotes."""
+        vocabulary_registry = getVocabularyRegistry()
+        vocabulary = vocabulary_registry.get(self.context, 'ValidTeamMember')
+        return vocabulary.step_title.replace("'", "\\'").replace('"', '\\"')
 
 
 class PersonCodeOfConductEditView(LaunchpadView):

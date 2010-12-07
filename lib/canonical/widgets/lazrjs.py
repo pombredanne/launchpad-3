@@ -47,7 +47,7 @@ class TextLineEditorWidget:
     #   value: the current field value
     WIDGET_TEMPLATE = dedent(u"""\
         <%(tag)s id="%(id)s"><span
-            class="yui-editable_text-text">%(value)s</span>
+            class="yui3-editable_text-text">%(value)s</span>
             %(trigger)s
         </%(tag)s>
         %(activation_script)s
@@ -55,7 +55,7 @@ class TextLineEditorWidget:
 
     # Template for the trigger button.
     TRIGGER_TEMPLATE = dedent(u"""\
-        <a href="%(edit_url)s" class="yui-editable_text-trigger sprite edit"
+        <a href="%(edit_url)s" class="yui3-editable_text-trigger sprite edit"
         ></a>
         """)
 
@@ -185,7 +185,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             %(edit_controls)s
             <h2>%(title)s</h2>
           </div>
-          <div class="yui-editable_text-text">%(value)s</div>
+          <div class="yui3-editable_text-text">%(value)s</div>
         </div>
         %(activation_script)s
         """)

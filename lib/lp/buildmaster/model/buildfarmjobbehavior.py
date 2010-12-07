@@ -191,9 +191,8 @@ class BuildFarmJobBehaviorBase:
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
 
         build = queueItem.specific_job.build
-        # XXX 2010-10-18 bug=662631
-        # Change this to do non-blocking IO.
-        build.handleStatus(build_status, librarian, slave_status)
+        d = build.handleStatus(build_status, librarian, slave_status)
+        return d
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
