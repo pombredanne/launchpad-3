@@ -21,9 +21,9 @@ FORM_OVERLAY_SUBMIT = (
 
 # JavaScript expressions for testing.
 FORM_NOT_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") != -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") != -1')
 FORM_VISIBLE = (
-    u'element.className.search("yui-lazr-formoverlay-hidden") == -1')
+    u'element.className.search("yui3-lazr-formoverlay-hidden") == -1')
 
 BUG_INFO_HIDDEN = 'style.height|0px'
 BUG_INFO_SHOWN_JS = 'element.style.height != "0px"'

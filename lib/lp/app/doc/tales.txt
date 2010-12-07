@@ -673,8 +673,11 @@ Product series
 Blueprints
 ..........
 
+    >>> from lp.blueprints.interfaces.specification import (
+    ...     SpecificationPriority)
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> test_tales("specification/fmt:link", specification=specification)
     u'<a...class="sprite blueprint-undefined">...</a>'
 
@@ -682,7 +685,8 @@ Blueprints
 Blueprint branches
 ..................
 
-    >>> specification = factory.makeSpecification()
+    >>> specification = factory.makeSpecification(
+    ...     priority=SpecificationPriority.UNDEFINED)
     >>> branch = factory.makeAnyBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",

@@ -8,6 +8,11 @@ import signal
 import time
 import xmlrpclib
 
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
+
 import transaction
 
 from twisted.internet import (
@@ -19,7 +24,6 @@ from twisted.internet.task import (
     deferLater,
     )
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -34,8 +38,7 @@ from canonical.launchpad.scripts.logger import (
     )
 from canonical.testing.layers import (
     LaunchpadScriptLayer,
-    TwistedLaunchpadZopelessLayer,
-    TwistedLayer,
+    LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
 from lp.buildmaster.enums import BuildStatus
@@ -52,46 +55,43 @@ from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
     BuildingSlave,
+    make_publisher,
     OkSlave,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
-class TestSlaveScannerScan(TrialTestCase):
+class TestSlaveScannerScan(TestCase):
     """Tests `SlaveScanner.scan` method.
 
     This method uses the old framework for scanning and dispatching builds.
     """
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def setUp(self):
-        """Setup TwistedLayer, TrialTestCase and BuilddSlaveTest.
+        """Set up BuilddSlaveTest.
 
         Also adjust the sampledata in a way a build can be dispatched to
         'bob' builder.
         """
-        from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-        TwistedLayer.testSetUp()
-        TrialTestCase.setUp(self)
-        self.slave = BuilddSlaveTestSetup()
-        self.slave.setUp()
+        super(TestSlaveScannerScan, self).setUp()
+        self.slave = self.useFixture(BuilddSlaveTestSetup())
 
         # Creating the required chroots needed for dispatching.
-        test_publisher = SoyuzTestPublisher()
+        test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
         test_publisher.addFakeChroots()
-
-    def tearDown(self):
-        self.slave.tearDown()
-        TrialTestCase.tearDown(self)
-        TwistedLayer.testTearDown()
 
     def _resetBuilder(self, builder):
         """Reset the given builder and its job."""
@@ -298,7 +298,7 @@ class TestSlaveScannerScan(TrialTestCase):
         d = scanner.scan()
         # Because the builder is not ok, we can't use _checkNoDispatch.
         d.addCallback(
-            lambda ignored: self.assertIdentical(None, builder.currentjob))
+            lambda ignored: self.assertIs(None, builder.currentjob))
         return d
 
     def test_scan_of_broken_slave(self):
@@ -308,7 +308,7 @@ class TestSlaveScannerScan(TrialTestCase):
         builder.failure_count = 0
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
-        return self.assertFailure(d, xmlrpclib.Fault)
+        return assert_fails_with(d, xmlrpclib.Fault)
 
     def _assertFailureCounting(self, builder_count, job_count,
                                expected_builder_count, expected_job_count):
@@ -423,9 +423,9 @@ class TestSlaveScannerScan(TrialTestCase):
         return d.addCallback(check)
 
 
-class TestBuilddManager(TrialTestCase):
+class TestBuilddManager(TestCase):
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def _stub_out_scheduleNextScanCycle(self):
         # stub out the code that adds a callLater, so that later tests
@@ -480,10 +480,13 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def test_job_failing_more_than_builder_fails_job(self):
         self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.builder.gotFailure()
 
         assessFailureCounts(self.builder, "failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
+        self.assertEqual(0, self.builder.failure_count)
 
     def test_builder_failing_more_than_job_but_under_fail_threshold(self):
         self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
@@ -511,10 +514,10 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual("failnotes", self.builder.failnotes)
 
 
-class TestNewBuilders(TrialTestCase):
+class TestNewBuilders(TestCase):
     """Test detecting of new builders."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def _getScanner(self, manager=None, clock=None):
         return NewBuildersScanner(manager=manager, clock=clock)

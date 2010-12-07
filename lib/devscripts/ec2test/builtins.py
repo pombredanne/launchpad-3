@@ -564,14 +564,21 @@ class cmd_update_image(EC2Command):
         if extra_update_image_command is None:
             extra_update_image_command = []
 
+        # These environment variables are passed through ssh connections to
+        # fresh Ubuntu images and cause havoc if the locales they refer to are
+        # not available. We kill them here to ease bootstrapping, then we
+        # later modify the image to prevent sshd from accepting them.
+        os.environ.pop("LANG", None)
+        os.environ.pop("LC_ALL", None)
+
         credentials = EC2Credentials.load_from_file()
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
-        instance.check_bundling_prerequisites()
-
+        instance.check_bundling_prerequisites(
+            ami_name, credentials)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
             extra_update_image_command, ami_name, credentials, public)
@@ -596,7 +603,14 @@ class cmd_update_image(EC2Command):
         :param public: If true, remove proprietary code from the sourcecode
             directory before bundling.
         """
+        # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform(
+            'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
+        user_connection.perform(
+            'sudo kill -HUP $(< /var/run/sshd.pid)')
+        # Reconnect to ensure that the environment is clean.
+        user_connection.reconnect()
         user_connection.perform(
             'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:

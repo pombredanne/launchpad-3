@@ -116,7 +116,7 @@
     </tal:yui2resources>
 
     <script type="text/javascript">
-        YUI().use('node', 'lp.app.calendar', function(Y) {
+        LPS.use('node', 'lp.app.calendar', function(Y) {
             Y.lp.app.calendar.setup_calendar_widgets();
         });
     </script>

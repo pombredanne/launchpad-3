@@ -843,6 +843,8 @@ class Archive(SQLBase):
     def getComponentsForSeries(self, distroseries):
         if self.is_partner:
             return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
         else:
             return distroseries.components
 
