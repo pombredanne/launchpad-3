@@ -404,6 +404,9 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         return d.addCallback(got_update)
 
     def test_collection_for_deleted_source(self):
+        # If we collected a build for a superseded/deleted source then
+        # the build should get marked superseded as the build results
+        # get discarded.
         self.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
         spr = removeSecurityProxy(self.build.source_package_release)
         pub = self.build.current_source_publication

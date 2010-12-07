@@ -290,11 +290,10 @@ class PackageBuildDerived:
         return d
 
     def _release_builder_and_remove_queue_item(self):
-            # Release the builder for another job.
-            d = self.buildqueue_record.builder.cleanSlave()
-            # Remove BuildQueue record.
-            return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+        # Release the builder for another job.
+        d = self.buildqueue_record.builder.cleanSlave()
+        # Remove BuildQueue record.
+        return d.addCallback(lambda x:self.buildqueue_record.destroySelf())
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
