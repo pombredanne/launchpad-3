@@ -218,17 +218,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamBugSupervisor(self, person, upstream):
-        """Registers an upstream bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % upstream.displayname
-        self._addReason(person, text, reason)
-
     def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
