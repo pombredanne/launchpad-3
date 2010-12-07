@@ -46,7 +46,7 @@ except for untranslated messages.
     >>> dummy_pofile.getPOTMsgSetTranslated().count()
     0
 
-    >>> dummy_pofile.getPOTMsgSetChangedInUbuntu().count()
+    >>> dummy_pofile.getPOTMsgSetDifferentTranslations().count()
     0
 
     >>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()

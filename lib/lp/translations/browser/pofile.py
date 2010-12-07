@@ -428,7 +428,7 @@ class POFileBaseView(LaunchpadView, POFileMetadataViewMixin):
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
             'changed_in_ubuntu':
-                self.context.getPOTMsgSetChangedInUbuntu,
+                self.context.getPOTMsgSetDifferentTranslations,
             }
 
         if self.show not in get_functions:
@@ -947,7 +947,7 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
             'untranslated': self.context.getPOTMsgSetUntranslated,
             'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
             'changed_in_ubuntu':
-                self.context.getPOTMsgSetChangedInUbuntu,
+                self.context.getPOTMsgSetDifferentTranslations,
             }
 
         if self.show not in get_functions:
