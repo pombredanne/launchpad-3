@@ -683,11 +683,28 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals([], found_translations)
 
-    def test_getPOTMsgSetDifferentTranslations(self):
-        # Test listing of POTMsgSets which contain changes from imports.
-        # The factory assumes upstream as "this side".
+    def _getThisSideFlag(self, translation_message):
+        """Return the value of the "is_current_*" flag on this side."""
+        traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.devel_potemplate)
+        return traits.getFlag(translation_message)
 
-        # If there are no translations on this side, nothing is listed.
+    def _getOtherSideFlag(self, translation_message):
+        """Return the value of the "is_current_*" flag on the other side."""
+        traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.devel_potemplate).other_side_traits
+        return traits.getFlag(translation_message)
+
+    def test_getPOTMsgSetDifferentTranslations(self):
+        # Test listing of POTMsgSets which have different translations on
+        # both sides.
+        # This test case is set up with templates and pofiles linked to
+        # product series, therefore they are "upstream" files. As a
+        # consequence "this side" in this test refers to "upstream" and
+        # "other side"  refers to "ubuntu" translations. We keep the generic
+        # terms, though, because the behavior is symmetrical.
+
+        # If there are no translations on either side, nothing is listed.
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
@@ -696,7 +713,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"This side translation"])
-        self.assertEquals(translation.is_current_ubuntu, False)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
@@ -704,9 +722,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # Adding a translation on both sides does not introduce a difference.
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Imported translation"], current_other=True)
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, True)
+            translations=[u"Both sides translation"], current_other=True)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
@@ -715,8 +733,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"Changed translation"])
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, False)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -726,8 +744,8 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"Diverged translation"], diverged=True)
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, False)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
