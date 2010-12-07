@@ -327,8 +327,18 @@ class RedirectAwareProberFactory(ProberFactory):
             # XXX Guilherme Salgado 2007-04-23 bug=109223:
             # We can't assume url to be absolute here.
             self.setURL(url)
+        except (UnknownURLScheme,), e:
+            # If a redirect occured to this unsupported format, all that
+            # can be done is to log it and die. This isn't an OOPS condition
+            # because nothing can be done around it, so it shouldn't raise an
+            # exception.
+            if self.redirection_count > 0:
+                logger.error('Failed after redirect.', exc_info=True)
+            else:
+                self.failed(e)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)
+
         else:
             self.connect()
 
