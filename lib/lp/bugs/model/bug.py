@@ -2001,6 +2001,21 @@ class StructuralSubscriptionSet(frozenset):
             return BugSubscriberSet(load_people(condition))
 
 
+from zope.security import checker
+checker_for_frozen_set = checker.getCheckerForInstancesOf(frozenset)
+checker_for_subscriber_set = checker.NamesChecker(["sorted"])
+checker_for_subscription_set = checker.NamesChecker(["sorted", "subscribers"])
+checker.BasicTypes[BugSubscriberSet] = checker.MultiChecker(
+    (checker_for_frozen_set.get_permissions,
+     checker_for_subscriber_set.get_permissions))
+checker.BasicTypes[BugSubscriptionSet] = checker.MultiChecker(
+    (checker_for_frozen_set.get_permissions,
+     checker_for_subscription_set.get_permissions))
+checker.BasicTypes[StructuralSubscriptionSet] = checker.MultiChecker(
+    (checker_for_frozen_set.get_permissions,
+     checker_for_subscription_set.get_permissions))
+
+
 def freeze(factory):
     """Return a decorator that wraps returned values with `factory`."""
 
