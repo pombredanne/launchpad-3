@@ -23,7 +23,7 @@ table name and its primary key.
     >>> cache_key = cache.key_for(
     ...     person, 'media/type', 'web-service-version')
     >>> print person.id, cache_key
-    29 Person(29,),testrunner,media/type,web-service-version
+    29 Person(29,),testrunner...,media/type,web-service-version
 
     >>> from operator import attrgetter
     >>> languages = sorted(person.languages, key=attrgetter('englishname'))
@@ -31,8 +31,8 @@ table name and its primary key.
     ...     cache_key = cache.key_for(
     ...         language, 'media/type', 'web-service-version')
     ...     print language.id, cache_key
-    119 Language(119,),testrunner,media/type,web-service-version
-    521 Language(521,),testrunner,media/type,web-service-version
+    119 Language(119,),testrunner...,media/type,web-service-version
+    521 Language(521,),testrunner...,media/type,web-service-version
 
 The cache starts out empty.
 
