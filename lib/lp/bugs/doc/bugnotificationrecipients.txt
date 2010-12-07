@@ -87,9 +87,6 @@ Then, subscribers of various types are added:
   >>> no_priv = personset.getByEmail("no-priv@canonical.com")
   >>> recipients.addAssignee(no_priv)
 
-  >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> recipients.addDistroBugSupervisor(daf, debian)
-
   >>> carlos = personset.getByEmail("carlos@canonical.com")
   >>> recipients.addStructuralSubscriber(carlos, pmount)
 
@@ -105,9 +102,6 @@ If we print out the recipients and rationales, here's what we get:
   carlos@canonical.com
       Subscriber (pmount in debian)
       You received this bug notification because you are subscribed to pmount in debian.
-  daf@canonical.com
-      Bug Supervisor (Debian)
-      You received this bug notification because you are the bug supervisor for Debian.
   foo.bar@canonical.com
       Subscriber of Duplicate
       You received this bug notification because you are a direct subscriber of a duplicate bug.
@@ -143,9 +137,6 @@ duplicate of).
   >>> no_priv = personset.getByEmail("no-priv@canonical.com")
   >>> recipients.addAssignee(no_priv)
 
-  >>> daf = personset.getByEmail("daf@canonical.com")
-  >>> recipients.addDistroBugSupervisor(daf, debian)
-
   >>> carlos = personset.getByEmail("carlos@canonical.com")
   >>> recipients.addStructuralSubscriber(carlos, pmount)
 
@@ -164,9 +155,6 @@ themselves why the hell they are getting email for bug 1.
   carlos@canonical.com
       Subscriber (pmount in debian) via Bug 2
       You received this bug notification because you are subscribed to pmount in debian (via bug 2).
-  daf@canonical.com
-      Bug Supervisor (Debian) via Bug 2
-      You received this bug notification because you are the bug supervisor for Debian (via bug 2).
   foo.bar@canonical.com
       Subscriber of Duplicate via Bug 2
       You received this bug notification because you are a direct subscriber of a duplicate bug (via bug 2).
@@ -209,9 +197,6 @@ Here's an example of this situation:
   >>> shipit_admins = personset.getByName("shipit-admins")
   >>> recipients.addDirectSubscriber(shipit_admins)
 
-  >>> launchpad_buildd_admins = personset.getByName("launchpad-buildd-admins")
-  >>> recipients.addDistroBugSupervisor(launchpad_buildd_admins, debian)
-
 You'll notice that the rationales this time state clearly which team
 membership is causing us to send mail.
 
@@ -222,9 +207,6 @@ membership is causing us to send mail.
     carlos@canonical.com
         Subscriber of Duplicate @testing-spanish-team
         You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
-    celso.providelo@canonical.com
-        Bug Supervisor (Debian) @launchpad-buildd-admins
-        You received this bug notification because you are a member of Launchpad Buildd Admins, which is the bug supervisor for Debian.
     david.allouche@canonical.com
         Registrant (gnomebaker) @vcs-imports
         You received this bug notification because you are a member of VCS imports, which is the registrant for gnomebaker.

@@ -207,21 +207,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugSupervisor(self, person, distro):
-        """Registers a distribution bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % distro.displayname
-        # All displaynames in these reasons should be changed to bugtargetname
-        # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively
-        # disruptive.
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, distro.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % distro.displayname
-        self._addReason(person, text, reason)
-
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname
