@@ -729,18 +729,18 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
-        # Changing the translation on one side makes them different.
+        # Adding a different translation on one side to creates a difference
+        # between this side and the other side.
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Changed translation"])
+            translations=[u"Different translation"])
         self.assertEquals(self._getThisSideFlag(translation), True)
         self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
-        # Adding a diverged translation, still lists it as a changed
-        # translation.
+        # A diverged translation is different, too.
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"Diverged translation"], diverged=True)
@@ -1254,25 +1254,25 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
     def test_getPOTMsgSetDifferentTranslations_ordering(self):
         # Suggest a translation on both POTMsgSets in devel_pofile,
-        # so they are returned with getPOTMsgSetWithNewSuggestions() call.
+        # so they are returned with getPOTMsgSetDifferentTranslations() call.
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
-            translations=["Imported"],
+            translations=["Both sides"],
             current_other=True)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
-            translations=["Changed"])
+            translations=["This side"])
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
-            translations=["Another imported"],
+            translations=["Both sides 2"],
             current_other=True)
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
-            translations=["Another changed"])
+            translations=["This side 2"])
 
         potmsgsets = list(
             self.devel_pofile.getPOTMsgSetDifferentTranslations())

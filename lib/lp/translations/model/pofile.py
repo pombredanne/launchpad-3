@@ -697,17 +697,10 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetDifferentTranslations(self):
         """See `IPOFile`."""
-        # POT set has been changed in Launchpad if it contains active
-        # translations which didn't come from an upstream package
-        # (iow, it's different from an upstream translation: this only
-        # lists translations which have actually changed in Ubuntu, not
-        # translations which are 'new' and only exist in Ubuntu).
+        # A `POTMsgSet` has different translations if both sides have a
+        # translation. If one of them is empty, the POTMsgSet is not included
+        # in this list. 
 
-        # TranslationMessage is changed if:
-        # is_current_ubuntu IS TRUE, is_current_upstream IS FALSE,
-        # (diverged AND not empty) OR (shared AND not empty AND no diverged)
-        # exists imported (is_current_upstream AND not empty AND (
-        # diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
         other_side_flag_name = getUtility(
             ITranslationSideTraitsSet).getForTemplate(
