@@ -48,7 +48,7 @@ class TestBranchStatus(WindmillTestCase):
             id=u'branch-details-status-value', timeout=PAGE_LOAD)
         client.click(id=u'branch-details-status-value')
         client.waits.forElement(
-            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+            xpath=u'//div[contains(@class, "yui3-ichoicelist-content")]')
 
         # Change the status to experimental.
         client.click(link=u'Experimental')

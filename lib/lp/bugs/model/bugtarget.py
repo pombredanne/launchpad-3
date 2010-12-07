@@ -244,6 +244,10 @@ class BugTargetBase(HasBugsBase):
     All IBugTargets should inherit from this class.
     """
 
+    # The default implementation of the property, used for
+    # IDistribution, IDistroSeries, IProjectGroup.
+    enable_bugfiling_duplicate_search = True
+
 
 class HasBugHeatMixin:
     """Standard functionality for objects implementing IHasBugHeat."""
