@@ -10,8 +10,8 @@ from contextlib import contextmanager
 
 from canonical.librarian import smoketest
 from canonical.librarian.smoketest import (
+    do_smoketest,
     FILE_DATA,
-    main,
     store_file,
     )
 from canonical.librarian.testing.fake import FakeLibrarian
@@ -79,7 +79,7 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # exit code to signal success).
         with fake_urllib(GoodUrllib()):
             self.assertEquals(
-                main(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian),
                 0)
 
     def test_bad_data(self):
@@ -87,7 +87,7 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # (which will be used as the processes exit code to signal an error).
         with fake_urllib(BadUrllib()):
             self.assertEquals(
-                main(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian),
                 1)
 
     def test_exception(self):
@@ -96,7 +96,7 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # code to signal an error).
         with fake_urllib(ErrorUrllib()):
             self.assertEquals(
-                main(self.fake_librarian, self.fake_librarian),
+                do_smoketest(self.fake_librarian, self.fake_librarian),
                 1)
 
     def test_explosive_errors(self):
@@ -104,5 +104,6 @@ class SmokeTestTestCase(TestCaseWithFactory):
         # is raised when retrieving the data it is re-raised.
         for exception in MemoryError, SystemExit, KeyboardInterrupt:
             with fake_urllib(ExplosiveUrllib(exception)):
-                self.assertRaises(exception,
-                    main, self.fake_librarian, self.fake_librarian)
+                self.assertRaises(
+                    exception,
+                    do_smoketest, self.fake_librarian, self.fake_librarian)

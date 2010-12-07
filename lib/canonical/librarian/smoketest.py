@@ -46,7 +46,7 @@ def read_file(url):
     return data
 
 
-def main(restricted_client, regular_client):
+def do_smoketest(restricted_client, regular_client):
     print 'adding a private file to the librarian...'
     private_url = store_file(restricted_client)
     print 'retrieving private file from', private_url
