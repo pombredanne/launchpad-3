@@ -2093,7 +2093,7 @@ Each bug has a collection of activities that have taken place with it.
   next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
   resource_type_link: u'http://.../#bug_activity-page-resource'
   start: 0
-  total_size: 26
+  total_size: 23
   ...
 
   >>> bug_nine_activity = webservice.get(

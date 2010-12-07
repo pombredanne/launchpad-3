@@ -111,6 +111,7 @@ KEEP_SAME_IMAGE = object()
 
 
 # Field Interfaces
+
 class IStrippedTextLine(ITextLine):
     """A field with leading and trailing whitespaces stripped."""
 
@@ -241,6 +242,7 @@ class NoneableTextLine(StrippedTextLine):
 
 # Title
 # A field to capture a launchpad object title
+
 class Title(StrippedTextLine):
     implements(ITitle)
 
@@ -261,12 +263,14 @@ class StrippableText(Text):
 
 # Summary
 # A field capture a Launchpad object summary
+
 class Summary(StrippableText):
     implements(ISummary)
 
 
 # Description
 # A field capture a Launchpad object description
+
 class Description(StrippableText):
     implements(IDescription)
 
@@ -277,6 +281,7 @@ class NoneableDescription(Description):
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
+
 class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
@@ -310,6 +315,7 @@ class AnnouncementDate(Datetime):
 # TimeInterval
 # A field to capture an interval in time, such as X days, Y hours, Z
 # minutes.
+
 class TimeInterval(TextLine):
     implements(ITimeInterval)
 
