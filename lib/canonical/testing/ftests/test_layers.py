@@ -232,19 +232,18 @@ class MemcachedTestCase(BaseTestCase):
 class LibrarianTestCase(BaseTestCase):
     layer = LibrarianLayer
 
+    want_launchpad_database = True
     want_librarian_running = True
 
-    def testUploadsFail(self):
-        # This layer is not particularly useful by itself, as the Librarian
-        # cannot function correctly as there is no database setup.
+    def testUploadsSucceed(self):
+        # This layer is able to be used on its own as it depends on
+        # DatabaseLayer.
         # We can test this using remoteAddFile (it does not need the CA
         # loaded)
         client = LibrarianClient()
         data = 'This is a test'
-        self.failUnlessRaises(
-                UploadFailed, client.remoteAddFile,
-                'foo.txt', len(data), StringIO(data), 'text/plain'
-                )
+        client.remoteAddFile(
+            'foo.txt', len(data), StringIO(data), 'text/plain')
 
 
 class LibrarianNoResetTestCase(testtools.TestCase):
@@ -328,6 +327,12 @@ class DatabaseTestCase(BaseTestCase):
         num = cur.fetchone()[0]
         return num
 
+    # XXX: Parallel-fail: because layers are not cleanly integrated with
+    # unittest, what should be one test is expressed as three distinct
+    # tests here. We need to either write enough glue to push/pop the
+    # global state of zope.testing.runner or we need to stop using layers,
+    # before these tests will pass in a parallel run. Robert Collins
+    # 2010-11-01
     def testNoReset1(self):
         # Ensure that we can switch off database resets between tests
         # if necessary, such as used by the page tests

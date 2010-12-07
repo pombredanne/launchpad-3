@@ -17,6 +17,7 @@ from canonical.launchpad.windmill.testing.widgets import (
     search_and_select_picker_widget,
     )
 from lp.code.windmill.testing import CodeWindmillLayer
+from canonical.launchpad.windmill.testing import constants
 from lp.testing import (
     login_person,
     WindmillTestCase,
@@ -49,6 +50,7 @@ class TestRequestReview(WindmillTestCase):
         client.waits.forPageLoad(timeout=u'10000')
 
         link = u'//a[@class="menu-link-register_merge sprite add"]'
+        client.waits.forElement(xpath=link, timeout=constants.FOR_ELEMENT)
         client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')
@@ -57,15 +59,26 @@ class TestRequestReview(WindmillTestCase):
         # reviewer field is empty works.
         client.asserts.assertProperty(
             id=u"field.review_type", validator='disabled|true')
+        # User types into reviewer field manually.
         client.type(text=u'mark', id=u'field.reviewer')
         client.asserts.assertProperty(
             id=u"field.review_type", validator='disabled|false')
         client.type(text=u'', id=u'field.reviewer')
         client.asserts.assertProperty(
             id=u"field.review_type", validator='disabled|true')
+        # User selects reviewer using popup selector widget.
+        client.click(id=u'show-widget-field-reviewer')
+        search_and_select_picker_widget(client, u'name12', 1)
+        # Tab out of the field.
+        client.keyPress(
+            options='\\9,true,false,false,false,false',
+            id=u'field.reviewer')
+        # Give javascript event handler time to run
+        client.waits.sleep(milliseconds=unicode(500))
+        client.asserts.assertProperty(
+            id=u"field.review_type", validator='disabled|false')
 
         client.click(id=u'field.actions.register')
-
         client.waits.forPageLoad(timeout=u'10000')
         client.click(id=u'request-review')
 
