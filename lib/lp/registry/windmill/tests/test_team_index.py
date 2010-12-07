@@ -65,6 +65,13 @@ class TestTeamIndex(WindmillTestCase):
             xpath=invited_count_xpath,
             validator="1")
 
+        # Verify that there is now a relative link to
+        # "+members#invited", which is equivalent to
+        # "~testing-spanish-team/+members#invited".
+        self.client.asserts.assertNode(
+            xpath='//*[@id="membership-counts"]'
+                  '//a[@href="+members#invited"]')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
