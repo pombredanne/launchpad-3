@@ -51,7 +51,7 @@ Check if the publication is available through the Soyuz package stack:
 Also check if the Soyuz archive file lookup can reach one of the
 just-published file:
 
-    >>> ubuntu.getFileByName('ed_0.2.orig.tar.gz', source=True, binary=False)
+    >>> ubuntu.main_archive.getFileByName('ed_0.2.orig.tar.gz')
     <LibraryFileAlias...>
 
 We have to commit in order to have new Librarian files available to
@@ -102,6 +102,6 @@ available via the package stack:
 
 Same happens for the archive file lookup:
 
-    >>> ubuntu.getFileByName('ed_0.2-21.dsc', source=True, binary=False)
+    >>> ubuntu.main_archive.getFileByName('ed_0.2-21.dsc')
     <LibraryFileAlias...>
 

@@ -185,9 +185,7 @@ from lp.soyuz.model.distroarchseries import (
     )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
-    BinaryPackageFilePublishing,
     BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -922,29 +920,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Store.of(self).find(DistroSeries,
             DistroSeries.distribution == self,
             DistroSeries.status == status)
-
-    def getFileByName(self, filename, archive=None, source=True, binary=True):
-        """See `IDistribution`."""
-        assert (source or binary), "searching in an explicitly empty " \
-               "space is pointless"
-        if archive is None:
-            archive = self.main_archive
-
-        if source:
-            candidate = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self, libraryfilealiasfilename=filename,
-                archive=archive, orderBy=['id'])
-
-        if binary:
-            candidate = BinaryPackageFilePublishing.selectFirstBy(
-                distribution=self,
-                libraryfilealiasfilename=filename,
-                archive=archive, orderBy=["-id"])
-
-        if candidate is not None:
-            return candidate.libraryfilealias
-
-        raise NotFoundError(filename)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
