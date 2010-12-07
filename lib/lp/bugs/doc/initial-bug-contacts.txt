@@ -98,9 +98,11 @@ subscribers list changes.
 Foo Bar, a package subscriber to ubuntu mozilla-firefox and ubuntu
 pmount is currently not subscribed to bug 1.
 
+    >>> from itertools import chain
     >>> def subscriber_names(bug):
-    ...     subscribers = (
-    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
     ...     return sorted(subscriber.displayname for subscriber in subscribers)
 
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)

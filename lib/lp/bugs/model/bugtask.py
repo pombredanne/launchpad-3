@@ -22,6 +22,7 @@ __all__ = [
 
 
 import datetime
+from itertools import chain
 from operator import attrgetter
 
 from lazr.enum import DBItem
@@ -46,10 +47,6 @@ from storm.expr import (
 from storm.store import (
     EmptyResultSet,
     Store,
-    )
-from storm.zope.interfaces import (
-    IResultSet,
-    ISQLObjectResultSet,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -291,8 +288,9 @@ class BugTaskMixin:
     @property
     def bug_subscribers(self):
         """See `IBugTask`."""
-        indirect_subscribers = self.bug.getIndirectSubscribers()
-        return self.bug.getDirectSubscribers() + indirect_subscribers
+        return tuple(
+            chain(self.bug.getDirectSubscribers(),
+                  self.bug.getIndirectSubscribers()))
 
     @property
     def bugtargetdisplayname(self):
