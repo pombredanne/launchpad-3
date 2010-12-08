@@ -164,8 +164,8 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
         self.bug = self.factory.makeBug()
         self.dupe_bug = self.factory.makeBug()
         self.dupe_bug.markAsDuplicate(self.bug)
-        self.dupe_subscribers = set(
-            self.dupe_bug.getDirectSubscribers() +
+        self.dupe_subscribers = set().union(
+            self.dupe_bug.getDirectSubscribers(),
             self.dupe_bug.getIndirectSubscribers())
 
     def test_comment_notifications(self):
