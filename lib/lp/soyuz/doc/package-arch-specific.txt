@@ -74,40 +74,6 @@ each of these options:
     ...         pub, legal_archs, hoary, pas_verify)
     ...     print_architectures(allowed_architectures)
 
-== PPA architectures ==
-
-For virtualized archives only architectures with established support for
-PPA will be considered when creating PPA builds. See distroarchseries.txt
-for further information.
-
-    >>> ppa_architectures = [
-    ...     arch for arch in hoary.architectures if arch.supports_virtualized]
-    >>> print_architectures(ppa_architectures)
-    i386
-
-    >>> print_build_architectures(pub_ppa)
-    i386
-
-Conversely, for non-virtual archives, build records are created for all
-architectures supported for the distroseries.
-
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-    >>> pub_ppa.archive.require_virtualized = False
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-    >>> print_build_architectures(pub_ppa)
-    hppa
-    i386
-
-Revert the PPA changes.
-
-    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
-    >>> pub_ppa.archive.require_virtualized = True
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-
 === Source PAS ===
 
 Source PAS lines are the ones starting with '%' followed by the source
