@@ -19,7 +19,6 @@ import os
 import socket
 import tempfile
 import transaction
-import urllib2
 import xmlrpclib
 
 from sqlobject import (
