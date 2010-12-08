@@ -91,6 +91,7 @@ from canonical.launchpad.database.message import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
     ILaunchpadCelebrities,
     IPersonRoles,
     )
@@ -798,6 +799,10 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
+
+    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+        """See `IBug`."""
+        return BugSubscriptionInfo(self, level)
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
@@ -2034,6 +2039,8 @@ def freeze(factory):
 
 class BugSubscriptionInfo:
     """Represents bug subscription sets."""
+
+    implements(IHasBug)
 
     def __init__(self, bug, level):
         self.bug = bug

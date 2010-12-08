@@ -9,7 +9,10 @@ from contextlib import contextmanager
 
 from storm.store import Store
 from testtools.matchers import Equals
+from zope.component import queryAdapter
+from zope.security.checker import getChecker
 
+from canonical.launchpad.webapp.interfaces import IAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import (
     BugSubscriberSet,
@@ -17,6 +20,9 @@ from lp.bugs.model.bug import (
     BugSubscriptionSet,
     load_people,
     StructuralSubscriptionSet,
+    )
+from lp.bugs.security import (
+    PublicToAllOrPrivateToExplicitSubscribersForBugTask,
     )
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.model.person import Person
@@ -307,6 +313,30 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(
             (assignee, duplicate_bug.owner),
             found_subscribers.sorted)
+
+
+class TestBugSubscriptionInfoPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test(self):
+        bug = self.factory.makeBug()
+        info = bug.getSubscriptionInfo()
+        checker = getChecker(info)
+
+        # BugSubscriptionInfo objects are immutable.
+        self.assertEqual({}, checker.set_permissions)
+
+        # All attributes require launchpad.View.
+        permissions = set(checker.get_permissions.itervalues())
+        self.assertEqual(set(["launchpad.View"]), permissions)
+
+        # The security adapter for launchpad.View lets anyone reference the
+        # attributes unless the bug is private, in which case only explicit
+        # subscribers are permitted.
+        adapter = queryAdapter(info, IAuthorization, "launchpad.View")
+        self.assertIsInstance(
+            adapter, PublicToAllOrPrivateToExplicitSubscribersForBugTask)
 
 
 class TestBugSubscriptionInfoQueries(TestCaseWithFactory):

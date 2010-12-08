@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.model.structuralsubscription import StructuralSubscription
@@ -240,3 +241,16 @@ class TestBug(TestCaseWithFactory):
         self.assertTrue(
             subscriber not in duplicate_subscribers,
             "Subscriber should not be in duplicate_subscribers.")
+
+    def test_getSubscriptionInfo(self):
+        # getSubscriptionInfo() returns a BugSubscriptionInfo object.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo()
+        self.assertIsInstance(info, BugSubscriptionInfo)
+        self.assertEqual(bug, info.bug)
+        self.assertEqual(BugNotificationLevel.NOTHING, info.level)
+        # A level can also be specified.
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
+        self.assertEqual(BugNotificationLevel.METADATA, info.level)
