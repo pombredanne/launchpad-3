@@ -7,6 +7,7 @@ __all__ = []
 
 from Mailman import Errors
 from Mailman.Handlers import LPModerate
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.mailman.testing import MailmanTestCase
@@ -31,7 +32,7 @@ class TestLPModerateTestCase(MailmanTestCase):
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
         self.lp_user = self.factory.makePerson()
-        self.lp_user_email = self.lp_user.preferredemail.email
+        self.lp_user_email = removeSecurityProxy(self.lp_user).preferredemail.email
 
     def tearDown(self):
         super(TestLPModerateTestCase, self).tearDown()

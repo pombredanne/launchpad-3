@@ -339,7 +339,7 @@ class BugSupervisorTestCase(TestCaseWithFactory):
         super(BugSupervisorTestCase, self).setUp()
         self.person = self.factory.makePerson()
         self.product = self.factory.makeProduct(owner=self.person)
-        login(self.person.preferredemail.email)
+        login_person(self.person)
 
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.

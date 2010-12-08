@@ -15,6 +15,7 @@ from datetime import (
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
@@ -44,7 +45,7 @@ class PersonNotificationManager:
                 continue
             self.logger.info(
                 "Sending notification to %s <%s>."
-                % (person.name, person.preferredemail.email))
+                % (person.name, removeSecurityProxy(person).preferredemail.email))
             notification.send()
             notifications_sent = True
             # Commit after each email sent, so that we won't re-mail the

@@ -48,7 +48,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     def makeStatusEmail(self, build):
         mailer = SourcePackageRecipeBuildMailer.forStatus(build)
-        email = build.requester.preferredemail.email
+        email = removeSecurityProxy(build.requester).preferredemail.email
         return mailer.generateEmail(email, build.requester)
 
     def test_generateEmail(self):
