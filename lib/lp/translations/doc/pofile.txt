@@ -641,7 +641,7 @@ The rosetta_experts team is special: it never shows up in contributors
 lists.
 
     >>> experts_pofile = factory.makePOFile('nl')
-    >>> experts_message = factory.makeTranslationMessage(
+    >>> experts_message = factory.makeCurrentTranslationMessage(
     ...     pofile=experts_pofile, translator=rosetta_experts,
     ...     reviewer=rosetta_experts, translations=['hi'])
 
@@ -661,17 +661,17 @@ translated for a given POFile.
     ...     for potmsgset in potmsgsets:
     ...         translationmessage = potmsgset.getCurrentTranslationMessage(
     ...             pofile.potemplate, pofile.language)
+    ...         msgid = potmsgset.msgid_singular.msgid
+    ...         if len(msgid) > 10:
+    ...             msgid = msgid[:7] + '...'
     ...         for index in range(len(translationmessage.translations)):
-    ...             msgid = potmsgset.msgid_singular.msgid
-    ...             if len(msgid) > 10:
-    ...                 msgid = msgid[:7] + '...'
     ...             if translationmessage.translations[index] is None:
     ...                 translation = 'None'
     ...             else:
     ...                 translation = translationmessage.translations[index]
     ...                 if len(translation) > 10:
     ...                     translation = translation[:7] + '...'
-    ...             print "%-10s %-5s %-10s %-11s" % (
+    ...             print "%-10s %-5s %-10s %s" % (
     ...                 msgid, index, translation,
     ...                 potmsgset.msgid_plural is not None)
 
