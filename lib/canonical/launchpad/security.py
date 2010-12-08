@@ -44,7 +44,10 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationPublic,
+    )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -492,6 +495,17 @@ class ViewSpecificationBranch(EditSpecificationBranch):
         :return: True or False.
         """
         return True
+
+
+class AnonymousAccessToISpecificationPublic(AnonymousAuthorization):
+    """Anonymous users have launchpad.View on ISpecificationPublic.
+
+    This is only needed because lazr.restful is hard-coded to check that
+    permission before returning things in a collection.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ISpecificationPublic
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -2290,7 +2304,8 @@ class ViewSourcePackageRecipeBuild(DerivedAuthorization):
     usedfor = ISourcePackageRecipeBuild
 
     def iter_objects(self):
-        yield self.obj.recipe
+        if self.obj.recipe is not None:
+            yield self.obj.recipe
         yield self.obj.archive
 
 

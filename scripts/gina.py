@@ -79,7 +79,7 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = lp.dbname
+    LPDB = lp.get_dbname()
     LPDB_HOST = lp.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname

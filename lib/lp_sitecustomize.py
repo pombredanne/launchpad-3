@@ -9,7 +9,10 @@ import os
 import warnings
 import logging
 
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    )
 
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
@@ -105,6 +108,7 @@ def main(instance_name):
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
     checker.BasicTypes.update({Deferred: checker.NoProxy})
+    checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker
     # The itertools._grouper type is not exposed by name, so we must get it
     # through actually using itertools.groupby.
