@@ -26,10 +26,7 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
-from itertools import (
-    chain,
-    imap,
-    )
+from itertools import imap
 import operator
 import re
 
@@ -2108,10 +2105,10 @@ class BugSubscriptionInfo:
         if self.bug.private:
             return BugSubscriberSet()
         else:
-            return BugSubscriberSet(
-                chain(self.all_assignees,
-                      self.all_pillar_owners_without_bug_supervisors,
-                      self.structural_subscriptions.subscribers)).difference(
+            return BugSubscriberSet().union(
+                self.structural_subscriptions.subscribers,
+                self.all_pillar_owners_without_bug_supervisors,
+                self.all_assignees).difference(
                 self.direct_subscriptions.subscribers)
 
     @cachedproperty
