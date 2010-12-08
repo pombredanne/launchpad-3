@@ -27,72 +27,72 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         self.assertEqual(
             expected_arch_tags, [a.architecturetag for a in architectures])
 
-    def testSingleArchitecture(self):
+    def test_single_architecture(self):
         # A hint string with a single arch resolves to just that arch.
         self.assertArchsForHint('hppa', ['hppa'])
 
-    def testThreeArchitectures(self):
+    def test_three_architectures(self):
         # A hint string with multiple archs resolves to just those
         # archs.
         self.assertArchsForHint('amd64 i386 hppa', ['hppa', 'i386'])
 
-    def testIndependent(self):
+    def test_independent(self):
         # 'all' is special, meaning just a single build. The
         # nominatedarchindep architecture is used -- in this case i386.
         self.assertArchsForHint('all', ['i386'])
 
-    def testOneAndIndependent(self):
+    def test_one_and_independent(self):
         # 'all' is redundant if we have another build anyway.
         self.assertArchsForHint('hppa all', ['hppa'])
 
-    def testFictionalAndIndependent(self):
+    def test_fictional_and_independent(self):
         # But 'all' is useful if present with an arch that wouldn't
         # generate a build.
         self.assertArchsForHint('foo all', ['i386'])
 
-    def testWildcard(self):
+    def test_wildcard(self):
         # 'any' is a wildcard that matches all available archs.
         self.assertArchsForHint('any', ['hppa', 'i386'])
 
-    def testKernelSpecificArchitecture(self):
+    def test_kernel_specific_architecture(self):
         # Since we only support Linux-based architectures, 'linux-foo'
         # is treated the same as 'foo'.
         self.assertArchsForHint('linux-hppa', ['hppa'])
 
-    def testUnknownKernelSpecificArchitecture(self):
+    def test_unknown_kernel_specific_architecture(self):
         # Non-Linux architectures aren't supported.
         self.assertArchsForHint('kfreebsd-hppa', [])
 
-    def testKernelWildcardArchitecture(self):
+    def test_kernel_wildcard_architecture(self):
         # Wildcards work for kernels: 'any-foo' is treated like 'foo'.
         self.assertArchsForHint('any-hppa', ['hppa'])
 
-    def testKernelSpecificArchitectureWildcard(self):
+    def test_kernel_specific_architecture_wildcard(self):
         # Wildcards work for archs too: 'linux-any' is treated like 'any'.
         self.assertArchsForHint('linux-any', ['hppa', 'i386'])
 
-    def testUnknownKernelSpecificArchitectureWildcard(self):
+    def test_unknown_kernel_specific_architecture_wildcard(self):
         # But unknown kernels continue to result in nothing.
         self.assertArchsForHint('kfreebsd-any', [])
 
-    def testWildcardAndIndependent(self):
+    def test_wildcard_and_independent(self):
         # 'all' continues to be ignored alongside a valid wildcard.
         self.assertArchsForHint('all linux-any', ['hppa', 'i386'])
 
-    def testKernelIndependentIsInvalid(self):
+    def test_kernel_independent_is_invalid(self):
         # 'linux-all' isn't supported.
         self.assertArchsForHint('linux-all', [])
 
-    def testDoubleWildcardIsInvalid(self):
+    def test_double_wildcard_is_invalid(self):
         # 'any-any' is invalid; you want 'any'.
         self.assertArchsForHint('any-any', [])
 
-    def testDisabledArchitecturesOmitted(self):
+    def test_disabled_architectures_omitted(self):
         # Disabled architectures are not buildable, so are excluded.
         self.publisher.breezy_autotest['hppa'].enabled = False
         self.assertArchsForHint('any', ['i386'])
 
-    def testVirtualizedArchivesHaveOnlyVirtualizedArchs(self):
+    def test_virtualized_archives_have_only_virtualized_archs(self):
         # For archives which must build on virtual builders, only
         # virtual archs are returned.
         self.publisher.breezy_autotest.main_archive.require_virtualized = True
