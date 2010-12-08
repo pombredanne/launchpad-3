@@ -2757,7 +2757,6 @@ class Person(
             Archive.purpose == ArchivePurpose.PPA,
             Archive.status.is_in(
                 [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
-        import pdb; pdb.set_trace()
         return not result.is_empty()
 
     def getPPAByName(self, name):

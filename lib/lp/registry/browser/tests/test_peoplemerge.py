@@ -94,8 +94,8 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def setUp(self):
         super(TestAdminTeamMergeView, self).setUp()
         self.person_set = getUtility(IPersonSet)
-        self.dupe_team = self.factory.makeTeam()
-        self.target_team = self.factory.makeTeam()
+        self.dupe_team = self.factory.makeTeam(name='dupe-team')
+        self.target_team = self.factory.makeTeam(name='target-team')
         login_celebrity('registry_experts')
 
     def getView(self, form=None):
@@ -159,17 +159,15 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
     def test_cannot_merge_team_with_ppa_containing_published_packages(self):
         # The PPA must be removed before the team can be merged.
         login_celebrity('admin')
-        my_dupe_team = self.factory.makeTeam(name='my-dupe-team')
-        my_dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
-        archive = my_dupe_team.createPPA()
+        self.dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        archive = self.dupe_team.createPPA()
         self.factory.makeSourcePackagePublishingHistory(archive=archive)
         login_celebrity('registry_experts')
         view = self.getView()
         self.assertEqual(
-            [u"my-dupe-team has a PPA with published packages; "
+            [u"dupe-team has a PPA with published packages; "
               "we can't merge it."],
             view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
 
 
 class TestAdminPeopleMergeView(TestCaseWithFactory):
@@ -181,7 +179,7 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
         super(TestAdminPeopleMergeView, self).setUp()
         self.person_set = getUtility(IPersonSet)
         self.dupe_person = self.factory.makePerson(name='dupe-person')
-        self.target_person = self.factory.makePerson(name='target-person')
+        self.target_person = self.factory.makePerson()
         login_celebrity('registry_experts')
 
     def getView(self, form=None):
@@ -205,4 +203,3 @@ class TestAdminPeopleMergeView(TestCaseWithFactory):
             [u"dupe-person has a PPA with published packages; "
               "we can't merge it."],
             view.errors)
-        self.assertEqual(self.target_person, self.dupe_person.merged)
