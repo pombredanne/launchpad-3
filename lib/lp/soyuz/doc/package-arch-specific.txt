@@ -26,60 +26,9 @@ Publication will be added as 'launchpad' DB user.
     >>> ignore = test_publisher.setUpDefaultDistroSeries(hoary)
     >>> test_publisher.addFakeChroots()
 
-Create an architecture-specific source.
-
-    >>> pub_any = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-2', version='668',
-    ...     architecturehintlist="any")
-
-Create a source with a specific list of architectures to be built.
-
     >>> pub_three = test_publisher.getPubSource(
     ...     sourcename='test-buildd-3', version='669',
     ...     architecturehintlist="i386 hppa amd64")
-
-Create a source with one single specific architecture to be built.
-
-    >>> pub_one = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-4', version='670',
-    ...     architecturehintlist="hppa")
-
-The architecture-independent value 'all' may appear alongside other
-architectures, but it has no effect unless it is the sole matching term.
-
-    >>> pub_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd', version='667')
-
-    >>> pub_one_and_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-4', version='671',
-    ...     architecturehintlist="hppa all")
-
-    >>> pub_fictional_and_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-4', version='672',
-    ...     architecturehintlist="fictional all")
-
-Create sources with 'any-$(ARCH)', 'linux-$(ARCH)' and 'linux-any' notation.
-Again, 'all' may occur alongside any of these, but it has no effect.
-
-    >>> pub_any_foo = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-6', version='672',
-    ...     architecturehintlist="any-hppa")
-
-    >>> pub_linux_foo = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-7', version='673',
-    ...     architecturehintlist="linux-i386")
-
-    >>> pub_linux_any = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-7', version='674',
-    ...     architecturehintlist="linux-any")
-
-    >>> pub_all_linux_any = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-7', version='675',
-    ...     architecturehintlist="all linux-any")
-
-    >>> pub_linux_all = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-7', version='676',
-    ...     architecturehintlist="linux-all")
 
 Create a PPA source publication.
 
@@ -124,66 +73,6 @@ each of these options:
     ...     allowed_architectures = determineArchitecturesToBuild(
     ...         pub, legal_archs, hoary, pas_verify)
     ...     print_architectures(allowed_architectures)
-
-    >>> print_build_architectures(pub_any)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_three)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_one)
-    hppa
-
-    >>> print_build_architectures(pub_all)
-    i386
-
-    >>> print_build_architectures(pub_one_and_all)
-    hppa
-
-    >>> print_build_architectures(pub_fictional_and_all)
-    i386
-
-If an architecture is disabled for some reason, then the results from
-determineArchitecturesToBuild() will not include it.
-
-    >>> hoary['hppa'].enabled = False
-
-    >>> print_build_architectures(pub_three)
-    i386
-
-Re-enable it before continuing:
-    >>> hoary['hppa'].enabled = True
-
-
-== Check support for kernel notation in architecture hint list ==
-
-dpkg supports the use of the '<kernel-><arch>' notation in the
-'Architecture' field, where 'kernel-' is one of the kernel platform
-available in debian systems: ['linux-', 'kfreebsd', 'hurd-', 'any-']
-
-See bug 73761 and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=268709
-for further information about this dpkg feature.
-
-Soyuz will consider only 'any-' and 'linux-' elements as the
-corresponding architecture, since only linux is supported in Ubuntu.
-
-    >>> print_build_architectures(pub_any_foo)
-    hppa
-
-    >>> print_build_architectures(pub_linux_foo)
-    i386
-
-    >>> print_build_architectures(pub_linux_any)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_all_linux_any)
-    hppa
-    i386
-
-    >>> print_build_architectures(pub_linux_all)
 
 == PPA architectures ==
 
