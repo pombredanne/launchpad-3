@@ -26,7 +26,10 @@ from datetime import (
     )
 from email.Utils import make_msgid
 from functools import wraps
-from itertools import imap
+from itertools import (
+    chain,
+    imap,
+    )
 import operator
 import re
 
@@ -832,8 +835,8 @@ BugMessage""" % sqlvalues(self.id))
         """
         # "Also notified" and duplicate subscribers are mutually
         # exclusive, so return both lists.
-        indirect_subscribers = (
-            self.getAlsoNotifiedSubscribers(recipients, level) +
+        indirect_subscribers = chain(
+            self.getAlsoNotifiedSubscribers(recipients, level),
             self.getSubscribersFromDuplicates(recipients, level))
 
         # Remove security proxy for the sort key, but return
@@ -868,37 +871,16 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            return []
-
-        if level is None:
-            notification_level = BugNotificationLevel.NOTHING
-        else:
-            notification_level = level
-
-        dupe_details = dict(
-            Store.of(self).find(
-                (Person, Bug),
-                BugSubscription.person == Person.id,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.bug_notification_level >= notification_level,
-                Bug.duplicateof == self.id))
-
-        dupe_subscribers = set(dupe_details)
-
-        # Direct and "also notified" subscribers take precedence over
-        # subscribers from dupes. Note that we don't supply recipients
-        # here because we are doing this to /remove/ subscribers.
-        dupe_subscribers -= set(self.getDirectSubscribers())
-        dupe_subscribers -= set(self.getAlsoNotifiedSubscribers())
+        info = self.getSubscriptionInfo()
 
         if recipients is not None:
-            for subscriber in dupe_subscribers:
+            # Pre-load duplicate bugs.
+            list(self.duplicates)
+            for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
-                    subscriber, dupe_details[subscriber])
+                    subscription.person, subscription.bug)
 
-        return sorted(
-            dupe_subscribers, key=operator.attrgetter("displayname"))
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
