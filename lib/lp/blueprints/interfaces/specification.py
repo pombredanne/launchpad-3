@@ -58,6 +58,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
@@ -529,7 +530,8 @@ class ISpecificationPublic(
         """Return the SpecificationBranch link for the branch, or None."""
 
 
-class ISpecification(ISpecificationPublic, ISpecificationEditRestricted):
+class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
+                     IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry()
