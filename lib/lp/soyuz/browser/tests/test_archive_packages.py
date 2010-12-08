@@ -11,6 +11,8 @@ __all__ = [
     'TestPPAPackages',
     ]
 
+from zope.component import getUtility
+
 from testtools.matchers import (
     Equals,
     LessThan,
@@ -20,6 +22,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,
@@ -66,6 +69,17 @@ class TestP3APackages(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
+
+    def test_packages_authorized_for_commercial_admin_with_subscription(self):
+        # A commercial admin should always be able to see +packages even
+        # if they have a subscription.
+        login('admin@canonical.com')
+        admins = getUtility(ILaunchpadCelebrities).commercial_admin
+        admins.addMember(self.joe, admins)
+        login_person(self.joe)
+        view = create_initialized_view(self.private_ppa, "+packages")
+        menu = ArchiveNavigationMenu(view)
+        self.assertTrue(menu.packages().enabled)
 
     def test_packages_authorized(self):
         """A person with launchpad.{Append,Edit} will be able to do so"""
