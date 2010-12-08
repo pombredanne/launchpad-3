@@ -806,8 +806,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def getDirectSubscriptions(self):
         """See `IBug`."""
-        return BugSubscriptionInfo(
-            self, BugNotificationLevel.NOTHING).direct_subscriptions
+        return self.getSubscriptionInfo().direct_subscriptions
 
     def getDirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -819,7 +818,7 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.NOTHING
-        subscriptions = BugSubscriptionInfo(self, level).direct_subscriptions
+        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
