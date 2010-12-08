@@ -265,11 +265,15 @@ from lp.services.salesforce.interfaces import (
     VOUCHER_STATUSES,
     )
 from lp.services.worlddata.model.language import Language
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
@@ -2744,6 +2748,18 @@ class Person(
         return Archive.selectBy(
             owner=self, purpose=ArchivePurpose.PPA, orderBy='name')
 
+    @property
+    def has_ppa_with_published_packages(self):
+        result = Store.of(self).find(
+            Archive,
+            SourcePackagePublishingHistory.archive == Archive.id,
+            Archive.owner == self.id,
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.status.is_in(
+                [ArchiveStatus.ACTIVE, ArchiveStatus.DELETING]))
+        import pdb; pdb.set_trace()
+        return not result.is_empty()
+
     def getPPAByName(self, name):
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
@@ -3843,6 +3859,10 @@ class PersonSet:
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
+
+        if from_person.has_ppa_with_published_packages:
+            raise AssertionError(
+                'from_person still has ppas with published packages.')
 
         if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(

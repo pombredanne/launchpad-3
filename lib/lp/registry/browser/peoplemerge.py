@@ -132,6 +132,13 @@ class AdminMergeBaseView(LaunchpadFormView):
         if dupe_person == target_person and dupe_person is not None:
             self.addError(_("You can't merge ${name} into itself.",
                   mapping=dict(name=dupe_person.name)))
+        # We cannot merge the teams if there is a PPA with published
+        # packages on the duplicate person, unless that PPA is removed.
+        if dupe_person.has_ppa_with_published_packages:
+            self.addError(_(
+                "${name} has a PPA with published packages; we "
+                "can't merge it.", mapping=dict(name=dupe_person.name)))
+
 
     def render(self):
         # Subclasses may define other actions that they will render manually

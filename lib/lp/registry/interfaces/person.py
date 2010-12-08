@@ -784,6 +784,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
 
+    has_ppa_with_published_packages = Bool(
+        title=_("Does this person have a ppa with published packages?"),
+        readonly=True, required=False)
+
     entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(

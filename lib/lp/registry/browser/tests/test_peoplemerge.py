@@ -12,8 +12,11 @@ from canonical.launchpad.interfaces.emailaddress import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -152,3 +155,54 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)
+
+    def test_cannot_merge_team_with_ppa_containing_published_packages(self):
+        # The PPA must be removed before the team can be merged.
+        login_celebrity('admin')
+        my_dupe_team = self.factory.makeTeam(name='my-dupe-team')
+        my_dupe_team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        archive = my_dupe_team.createPPA()
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        login_celebrity('registry_experts')
+        view = self.getView()
+        self.assertEqual(
+            [u"my-dupe-team has a PPA with published packages; "
+              "we can't merge it."],
+            view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
+
+
+class TestAdminPeopleMergeView(TestCaseWithFactory):
+    """Test the AdminPeopleMergeView rules."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestAdminPeopleMergeView, self).setUp()
+        self.person_set = getUtility(IPersonSet)
+        self.dupe_person = self.factory.makePerson(name='dupe-person')
+        self.target_person = self.factory.makePerson(name='target-person')
+        login_celebrity('registry_experts')
+
+    def getView(self, form=None):
+        if form is None:
+            form = {
+                'field.dupe_person': self.dupe_person.name,
+                'field.target_person': self.target_person.name,
+                'field.actions.reassign_emails_and_merge':
+                    'Reassign E-mails and Merge',
+                }
+        return create_initialized_view(
+            self.person_set, '+adminpeoplemerge', form=form)
+
+    def test_cannot_merge_person_with_ppa_containing_published_packages(self):
+        # The PPA must be removed before the person can be merged.
+        login_celebrity('admin')
+        archive = self.dupe_person.createPPA()
+        self.factory.makeSourcePackagePublishingHistory(archive=archive)
+        view = self.getView()
+        self.assertEqual(
+            [u"dupe-person has a PPA with published packages; "
+              "we can't merge it."],
+            view.errors)
+        self.assertEqual(self.target_person, self.dupe_person.merged)
