@@ -46,11 +46,17 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
     def testKernelSpecificArchitecture(self):
         self.assertArchsForHint('linux-hppa', ['hppa'])
 
+    def testUnknownKernelSpecificArchitecture(self):
+        self.assertArchsForHint('kfreebsd-hppa', [])
+
     def testKernelWildcardArchitecture(self):
         self.assertArchsForHint('any-hppa', ['hppa'])
 
     def testKernelSpecificArchitectureWildcard(self):
         self.assertArchsForHint('linux-any', ['hppa', 'i386'])
+
+    def testUnknownKernelSpecificArchitectureWildcard(self):
+        self.assertArchsForHint('kfreebsd-any', [])
 
     def testWildcardAndIndependent(self):
         self.assertArchsForHint('all linux-any', ['hppa', 'i386'])
