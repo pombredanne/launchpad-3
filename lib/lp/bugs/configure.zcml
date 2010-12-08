@@ -635,6 +635,7 @@
               all_pillar_owners_without_bug_supervisors
               also_notified_subscribers
               direct_subscriptions
+              duplicate_only_subscriptions
               duplicate_subscriptions
               indirect_subscribers
               structural_subscriptions

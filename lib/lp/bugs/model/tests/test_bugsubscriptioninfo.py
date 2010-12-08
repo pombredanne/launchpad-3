@@ -188,6 +188,28 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(set(), found_subscriptions.subscribers)
         self.assertEqual((), found_subscriptions.subscribers.sorted)
 
+    def test_duplicate_only(self):
+        # The set of duplicate subscriptions where the subscriber has no other
+        # subscriptions.
+        duplicate_bug = self.factory.makeBug(product=self.target)
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(self.bug)
+            duplicate_bug_subscription = (
+                duplicate_bug.getSubscriptionForPerson(
+                    duplicate_bug.owner))
+        found_subscriptions = self.getInfo().duplicate_only_subscriptions
+        self.assertEqual(
+            set([duplicate_bug_subscription]),
+            found_subscriptions)
+        # If a user is subscribed to a duplicate bug and is a bugtask
+        # assignee, for example, their duplicate subscription will not be
+        # included.
+        with person_logged_in(self.target.owner):
+            self.bug.default_bugtask.transitionToAssignee(
+                duplicate_bug_subscription.person)
+        found_subscriptions = self.getInfo().duplicate_only_subscriptions
+        self.assertEqual(set(), found_subscriptions)
+
     def test_structural(self):
         # The set of structural subscribers.
         subscribers = (

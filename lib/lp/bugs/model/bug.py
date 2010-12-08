@@ -2068,6 +2068,22 @@ class BugSubscriptionInfo:
                 Bug.duplicateof == self.bug)
 
     @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def duplicate_only_subscriptions(self):
+        """Subscripitions to duplicates of the bug.
+
+        Excludes subscriptions for people who have a direct subscription or
+        are also notified for another reason.
+        """
+        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        higher_precedence = (
+            self.direct_subscriptions.subscribers.union(
+                self.also_notified_subscribers))
+        return (
+            subscription for subscription in self.duplicate_subscriptions
+            if subscription.person not in higher_precedence)
+
+    @cachedproperty
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
