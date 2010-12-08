@@ -618,6 +618,7 @@
     </class>
 
     <!-- BugSubscriptionInfo -->
+
     <class class=".model.bug.BugSubscriptionInfo">
       <!-- Instance variables -->
       <require
