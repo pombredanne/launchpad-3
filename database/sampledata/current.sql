@@ -9640,11 +9640,11 @@ ALTER TABLE pofiletranslator DISABLE TRIGGER ALL;
 
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (1, 1, 1, 696, '2005-06-06 20:08:02.521892');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (2, 12, 32, 689, '2007-01-19 13:00:41.049464');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (3, 13, 1, 685, '2010-12-09 09:55:25.939659');
+INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (3, 13, 1, 685, '2006-12-22 09:55:25.939659');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (4, 13, 12, 694, '2005-05-06 21:12:13.908028');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (5, 13, 29, 687, '2005-10-11 23:08:01.899322');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (6, 13, 32, 699, '2007-01-24 19:15:47.546879');
-INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (7, 13, 33, 690, '2010-12-09 09:55:25.91009');
+INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (7, 13, 33, 690, '2007-04-07 09:55:25.91009');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (8, 13, 34, 693, '2007-07-12 03:42:48.848044');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (9, 16, 12, 686, '2005-06-06 19:42:48.236409');
 INSERT INTO pofiletranslator (id, person, pofile, latest_message, date_last_touched) VALUES (10, 30, 17, 669, '2005-05-06 21:12:40.937835');
