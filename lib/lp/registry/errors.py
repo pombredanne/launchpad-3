@@ -18,6 +18,7 @@ __all__ = [
     'PPACreationError',
     'PrivatePersonLinkageError',
     'TeamMembershipTransitionError',
+    'TeamSubscriptionPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
     ]
@@ -25,6 +26,7 @@ __all__ = [
 import httplib
 
 from lazr.restful.declarations import webservice_error
+from zope.schema.interfaces import ConstraintNotSatisfied
 from zope.security.interfaces import Unauthorized
 
 from lp.app.errors import NameLookupFailed
@@ -128,6 +130,16 @@ class TeamMembershipTransitionError(ValueError):
 
     Generally, this indicates a bad transition (e.g. approved to proposed)
     or an invalid transition (e.g. unicorn).
+    """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamSubscriptionPolicy.
+
+    The error can be raised because a super team or member team prevents
+    the subject team from setting a specific policy. The error can also be
+    raised if the team has artefacts that require a specific policy.
     """
     webservice_error(httplib.BAD_REQUEST)
 

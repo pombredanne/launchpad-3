@@ -8,19 +8,23 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 from zope.interface.exceptions import Invalid
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.enum import PersonTransferJobType
+from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     ITeamPublic,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy,
     )
 from lp.registry.model.persontransferjob import PersonTransferJob
+from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -189,6 +193,86 @@ class TestDefaultMembershipPeriod(TestCaseWithFactory):
 
     def test_default_membership_period_maximum(self):
         ITeamPublic['defaultmembershipperiod'].validate(3650)
+
+
+class TestTeamSubscriptionPolicy(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUpTeams(self, policy, other_policy=None):
+        if other_policy is None:
+            other_policy = policy
+        self.team = self.factory.makeTeam(subscription_policy=policy)
+        self.other_team = self.factory.makeTeam(
+            subscription_policy=other_policy, owner=self.team.teamowner)
+        self.field = ITeamPublic['subscriptionpolicy'].bind(self.team)
+        login_person(self.team.teamowner)
+
+    def test_closed_team_with_closed_super_team_cannot_become_open(self):
+        # The team cannot compromise the membership of the super team
+        # by becoming open. The user must remove his team from the super team
+        # first.
+        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.other_team.addMember(self.team, self.team.teamowner)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.OPEN)
+
+    def test_closed_team_with_open_super_team_can_become_open(self):
+        # The team can become open if its super teams are open.
+        self.setUpTeams(
+            TeamSubscriptionPolicy.MODERATED, TeamSubscriptionPolicy.OPEN)
+        self.other_team.addMember(self.team, self.team.teamowner)
+        self.assertTrue(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertEqual(
+            None, self.field.validate(TeamSubscriptionPolicy.OPEN))
+
+    def test_open_team_with_open_sub_team_cannot_become_closed(self):
+        # The team cannot become closed if its membership will be
+        # compromised by an open subteam. The user must remove the subteam
+        # first
+        self.setUpTeams(TeamSubscriptionPolicy.OPEN)
+        self.team.addMember(self.other_team, self.team.teamowner)
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.MODERATED)
+
+    def test_open_team_with_closed_sub_team_can_become_closed(self):
+        # The team can become closed.
+        self.setUpTeams(
+            TeamSubscriptionPolicy.OPEN, TeamSubscriptionPolicy.MODERATED)
+        self.team.addMember(self.other_team, self.team.teamowner)
+        self.assertTrue(
+            self.field.constraint(TeamSubscriptionPolicy.MODERATED))
+        self.assertEqual(
+            None, self.field.validate(TeamSubscriptionPolicy.MODERATED))
+
+    def test_closed_team_with_active_ppas_cannot_become_open(self):
+        # The team cannot become open if it has PPA because it compromises the
+        # the control of who can upload.
+        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.team.createPPA()
+        self.assertFalse(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertRaises(
+            TeamSubscriptionPolicyError, self.field.validate,
+            TeamSubscriptionPolicy.OPEN)
+
+    def test_closed_team_without_active_ppas_can_become_open(self):
+        # The team can become if it has deleted PPAs.
+        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        ppa = self.team.createPPA()
+        ppa.delete(self.team.teamowner)
+        removeSecurityProxy(ppa).status = ArchiveStatus.DELETED
+        self.assertTrue(
+            self.field.constraint(TeamSubscriptionPolicy.OPEN))
+        self.assertEqual(
+            None, self.field.validate(TeamSubscriptionPolicy.OPEN))
 
 
 class TestVisibilityConsistencyWarning(TestCaseWithFactory):
