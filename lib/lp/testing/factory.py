@@ -104,7 +104,6 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
-    SpecificationGoalStatus,
     SpecificationPriority,
     )
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -2383,7 +2382,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None, variant=None):
+                   create_sharing=False, language=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2393,11 +2392,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        pofile = potemplate.newPOFile(language_code,
-                                      create_sharing=create_sharing)
-        if variant is not None:
-            removeSecurityProxy(pofile).variant = variant
-        return pofile
+        return potemplate.newPOFile(language_code,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):
@@ -2788,23 +2784,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive = self.makeArchive()
             else:
                 archive = source_package_release.upload_archive
-        if source_package_release is None:
-            multiverse = self.makeComponent(name='multiverse')
-            source_package_release = self.makeSourcePackageRelease(
-                archive, component=multiverse)
-            self.makeSourcePackagePublishingHistory(
-                distroseries=source_package_release.upload_distroseries,
-                archive=archive, sourcepackagerelease=source_package_release)
         if processor is None:
             processor = self.makeProcessor()
         if distroarchseries is None:
+            if source_package_release is not None:
+                distroseries = source_package_release.upload_distroseries
+            else:
+                distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
-                distroseries=source_package_release.upload_distroseries,
+                distroseries=distroseries,
                 processorfamily=processor.family)
-        if status is None:
-            status = BuildStatus.NEEDSBUILD
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
+        if source_package_release is None:
+            multiverse = self.makeComponent(name='multiverse')
+            source_package_release = self.makeSourcePackageRelease(
+                archive, component=multiverse,
+                distroseries=distroarchseries.distroseries)
+            self.makeSourcePackagePublishingHistory(
+                distroseries=source_package_release.upload_distroseries,
+                archive=archive, sourcepackagerelease=source_package_release,
+                pocket=pocket)
+        if status is None:
+            status = BuildStatus.NEEDSBUILD
         if date_created is None:
             date_created = self.getUniqueDate()
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
@@ -2925,7 +2927,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority = PackagePublishingPriority.OPTIONAL
 
         if binarypackagerelease is None:
+            # Create a new BinaryPackageBuild and BinaryPackageRelease
+            # in the same archive and suite.
+            binarypackagebuild = self.makeBinaryPackageBuild(
+                archive=archive, distroarchseries=distroarchseries,
+                pocket=pocket)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
                 priority=priority)
