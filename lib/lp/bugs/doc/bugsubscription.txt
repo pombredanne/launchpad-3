@@ -402,7 +402,7 @@ indirect subscriptions.
     ...     personset.getByName("martin-pitt"))
 
     >>> linux_source_bug.getIndirectSubscribers()
-    []
+    ()
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []

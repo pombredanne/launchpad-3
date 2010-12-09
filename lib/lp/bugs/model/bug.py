@@ -2084,13 +2084,14 @@ class BugSubscriptionInfo:
             if bugtask.milestone is not None:
                 query_arguments.append((bugtask.milestone, bugtask))
         # Build the query.
+        empty = EmptyResultSet()
         union = lambda left, right: (
             removeSecurityProxy(left).union(
                 removeSecurityProxy(right)))
         queries = (
             target.getSubscriptionsForBugTask(bugtask, self.level)
             for target, bugtask in query_arguments)
-        return reduce(union, queries)
+        return reduce(union, queries, empty)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
