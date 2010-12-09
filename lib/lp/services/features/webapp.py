@@ -50,9 +50,9 @@ class ScopesFromRequest(object):
         parts = scope_name.split('.')
         if len(parts) == 2:
             if parts[0] == 'server':
-                lp_config = canonical.config.config['launchpad']
                 try:
-                    return lp_config['is_' + parts[1]]
+                    return canonical.config.config['launchpad'][
+                        'is_' + parts[1]]
                 except KeyError:
                     return False
 
