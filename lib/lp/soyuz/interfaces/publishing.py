@@ -30,6 +30,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -235,16 +236,28 @@ class IPublishingView(Interface):
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
 
-    @call_with(removed_by=REQUEST_USER)
-    @operation_parameters(
-        removal_comment=TextLine(title=_("Removal comment"), required=False))
-    @export_write_operation()
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
         """
+
+    @call_with(removed_by=REQUEST_USER)
+    @operation_parameters(
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_operation_as("requestDeletion")
+    @export_write_operation()
+    def api_requestDeletion(removed_by, removal_comment=None):
+        """Delete this source and its binaries.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+        """
+        # This is a special API method that allows a different code path
+        # to the regular requestDeletion().  In the case of sources
+        # getting deleted, it ensures source and binaries are both
+        # deleted in tandem.
 
 
 class IFilePublishing(Interface):
