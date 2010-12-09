@@ -42,8 +42,10 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.librarian.utils import copy_and_close
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildStatus,
+    BuildFarmJobType,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
@@ -61,7 +63,6 @@ from lp.registry.interfaces.pocket import (
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
 
 
@@ -308,11 +309,13 @@ class PackageBuildDerived:
             self.buildqueue_record.specific_job.build.title,
             self.buildqueue_record.builder.name))
 
-        # Discard this build if its source is no longer published.
-        build = self.buildqueue_record.specific_job.build
-        if not build.current_source_publication:
-            build.status = BuildStatus.SUPERSEDED
-            return self._release_builder_and_remove_queue_item()
+        # If this is a binary package build, discard it if its source is
+        # no longer published.
+        if self.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
+            build = self.buildqueue_record.specific_job.build
+            if not build.current_source_publication:
+                build.status = BuildStatus.SUPERSEDED
+                return self._release_builder_and_remove_queue_item()
 
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
