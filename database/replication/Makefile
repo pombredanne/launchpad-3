@@ -13,6 +13,7 @@
 #
 # To test the staging rebuild script:
 #
+#  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
 #  $ pg_dump --format=c launchpad_dev | bzip2 -c > launchpad.dump.bz2
 #  $ make stagingsetup \

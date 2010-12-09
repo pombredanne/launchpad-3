@@ -1463,7 +1463,7 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
 
     def test_series_components_for_primary_archive(self):
         # The primary archive uses the series' defined components.
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
             0, archive.getComponentsForSeries(self.series).count())
 
@@ -1482,3 +1482,26 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         self.assertEquals(
             [partner_comp],
             list(archive.getComponentsForSeries(self.series)))
+
+    def test_component_for_ppas(self):
+        # PPAs only use 'main'.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        main_comp = getUtility(IComponentSet)['main']
+        self.assertEquals(
+            [main_comp], list(archive.getComponentsForSeries(self.series)))
+
+
+class TestGetPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPockets_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            list(PackagePublishingPocket.items), archive.getPockets())
+
+    def test_getPockets_for_PPAs(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            [PackagePublishingPocket.RELEASE], archive.getPockets())

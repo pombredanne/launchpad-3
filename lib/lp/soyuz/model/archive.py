@@ -843,6 +843,8 @@ class Archive(SQLBase):
     def getComponentsForSeries(self, distroseries):
         if self.is_partner:
             return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
         else:
             return distroseries.components
 
@@ -1731,6 +1733,15 @@ class Archive(SQLBase):
             return None
         else:
             return "You already have a PPA named '%s'." % proposed_name
+
+    def getPockets(self):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return [PackagePublishingPocket.RELEASE]
+        
+        # Cast to a list so we don't trip up with the security proxy not
+        # understandiung EnumItems.
+        return list(PackagePublishingPocket.items)
 
 
 class ArchiveSet:

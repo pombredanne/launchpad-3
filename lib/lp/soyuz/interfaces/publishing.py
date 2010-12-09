@@ -458,6 +458,12 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "package that has been published in the main distribution series, "
         "if one exists, or None.")
 
+    ancestor = Reference(
+        Interface, # Really ISourcePackagePublishingHistory
+        title=_('Ancestor'),
+        description=_('The previous release of this source package.'),
+        required=False, readonly=True)
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -561,7 +567,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -788,7 +795,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         It is changed only if the argument is not None.
 
         Return the overridden publishing record, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        `ISourcePackagePublishingHistory` or
+        `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
@@ -874,7 +882,7 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket):
+                             component, section, pocket, ancestor):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -883,6 +891,8 @@ class IPublishingSet(Interface):
         :param component: An `IComponent`
         :param section: An `ISection`
         :param pocket: A `PackagePublishingPocket`
+        :param ancestor: A `ISourcePackagePublishingHistory` for the previous
+            version of this publishing record
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
@@ -896,7 +906,8 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None,
+                              need_build_farm_job=False):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -917,13 +928,17 @@ class IPublishingSet(Interface):
             `SourcePackagePublishingHistory` object.
         :type source_ids: ``list`` or `SourcePackagePublishingHistory`
         :param archive: An optional archive with which to filter the source
-                        ids.
+            ids.
         :type archive: `IArchive`
         :param build_states: optional list of build states to which the
             result will be limited. Defaults to all states if ommitted.
         :type build_states: ``list`` or None
+        :param need_build_farm_job: whether to include the `PackageBuild`
+            and `BuildFarmJob` in the result.
+        :type need_build_farm_job: bool
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`,
+             [`PackageBuild`, `BuildFarmJob` if need_build_farm_job])
         :rtype: `storm.store.ResultSet`.
         """
 
