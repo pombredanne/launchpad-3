@@ -1503,7 +1503,7 @@ class Person(
                                 tm1.person = TeamParticipation.person and
                                 tm1.team = TeamParticipation.team and
                                 tm1.status IN %(active_states)s);
-            ''', dict(team=self.id,active_states=ACTIVE_STATES))
+            ''', dict(team=self.id, active_states=ACTIVE_STATES))
 
         # Since we've updated the database behind Storm's back yet again,
         # we need to flush its caches, again.
