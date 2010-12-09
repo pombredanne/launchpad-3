@@ -354,7 +354,7 @@ class ProjectEditView(LaunchpadEditFormView):
     label = "Change project group details"
     schema = IProjectGroup
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description',
+        'displayname', 'title', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
@@ -388,8 +388,10 @@ class ProjectReviewView(ProjectEditView):
         self.field_names = self.default_field_names[:]
         admin = check_permission('launchpad.Admin', self.context)
         if not admin:
-            self.field_names.remove('name')
             self.field_names.remove('owner')
+        moderator = check_permission('launchpad.Moderate', self.context)
+        if not moderator:
+            self.field_names.remove('name')
         super(ProjectReviewView, self).setUpFields()
         self.form_fields = self._createAliasesField() + self.form_fields
         if admin:

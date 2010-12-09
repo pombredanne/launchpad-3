@@ -104,6 +104,15 @@ class IProjectGroupModerate(IPillar):
             title=_('Reviewed'), required=False,
             description=_("Whether or not this project group has been "
                           "reviewed.")))
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                "A unique name, used in URLs, identifying the project "
+                "group.  All lowercase, no special characters. "
+                "Examples: apache, mozilla, gimp."),
+            constraint=name_validator))
 
 
 class IProjectGroupPublic(
@@ -132,16 +141,6 @@ class IProjectGroupPublic(
             vocabulary='ValidPersonOrTeam',
             description=_("Project group registrant. Must be a valid "
                           "Launchpad Person.")))
-
-    name = exported(
-        ProjectNameField(
-            title=_('Name'),
-            required=True,
-            description=_(
-                "A unique name, used in URLs, identifying the project "
-                "group.  All lowercase, no special characters. "
-                "Examples: apache, mozilla, gimp."),
-            constraint=name_validator))
 
     displayname = exported(
         TextLine(
