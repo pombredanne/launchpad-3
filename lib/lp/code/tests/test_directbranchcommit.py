@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,

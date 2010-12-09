@@ -305,4 +305,5 @@ class BranchMailer(BaseMailer):
 
     @staticmethod
     def _format_user_address(user):
-        return format_address(user.displayname, user.preferredemail.email)
+        naked_email = removeSecurityProxy(user).preferredemail.email
+        return format_address(user.displayname, naked_email)

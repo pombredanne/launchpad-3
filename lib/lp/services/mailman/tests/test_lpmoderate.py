@@ -48,7 +48,8 @@ class TestLPModerateTestCase(MailmanTestCase):
 
     def test_process_message_from_subscriber(self):
         # Messages from subscribers silently complete the process.
-        subscriber_email = self.team.teamowner.preferredemail.email
+        subscriber_email = removeSecurityProxy(
+            self.team.teamowner).preferredemail.email
         message = self.makeMailmanMessage(
             self.mm_list, subscriber_email, 'subject', 'any content.')
         msg_data = {}

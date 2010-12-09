@@ -30,8 +30,8 @@ class LaunchpadLoginSourceTest(unittest.TestCase):
         """
         principal = self.login_source.getPrincipal(self.mark.account.id)
         self.assertEqual(principal.access_level, AccessLevel.WRITE_PRIVATE)
-        principal = self.login_source.getPrincipalByLogin(
-            self.mark.preferredemail.email)
+        marks_email = removeSecurityProxy(self.mark).preferredemail.email
+        principal = self.login_source.getPrincipalByLogin(marks_email)
         self.assertEqual(principal.access_level, AccessLevel.WRITE_PRIVATE)
 
     def test_given_access_level_is_used(self):
