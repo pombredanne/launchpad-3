@@ -185,9 +185,10 @@ class TestTranslationSharedPOFileSourcePackage(TestCaseWithFactory):
         # When a diverged translation is added after the shared suggestion,
         # there are no unreviewed suggestions.
         diverged_date = suggestion_date + timedelta(1)
-        diverged_translation_2 = self.factory.makeTranslationMessage(
+        diverged_translation_2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"], date_updated=diverged_date)
+            translations=[u"Translation"], date_created=diverged_date,
+            date_reviewed=diverged_date, diverged=True)
         diverged_translation.is_current_ubuntu = False
         diverged_translation_2.potemplate = self.devel_potemplate
         diverged_translation_2.is_current_ubuntu = True
@@ -296,7 +297,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
 
         # Search translations as well.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"One translation message"])
         found_potmsgsets = list(
@@ -304,7 +305,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_potmsgsets, [potmsgset])
 
         # Search matches all plural forms.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=plural_potmsgset,
             translations=[u"One translation message",
                           u"Plural translation message",
@@ -345,7 +346,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [])
 
         # If 'submitter' provides a translation, it's returned in a list.
-        translation = self.factory.makeTranslationMessage(
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Translation message"],
             translator=submitter)
@@ -356,7 +357,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # If somebody else provides a translation, it's not added to the
         # list of submitter's translations.
         someone_else = self.factory.makePerson()
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Another translation"],
             translator=someone_else)
@@ -372,7 +373,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
 
         self.devel_sr_latin_pofile = self.factory.makePOFile(
             'sr@latin', potemplate=self.devel_potemplate)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
             translations=[u"Yet another translation"],
             translator=submitter)
@@ -400,17 +401,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [])
 
         # When a diverged translation is added, the potmsgset is returned.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [self.potmsgset])
 
         # If diverged translation is empty, POTMsgSet is not listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [])
@@ -420,7 +421,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # translation for the POTMsgSet as well.
 
         # We create a shared translation first.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"Shared translation"])
 
@@ -430,17 +431,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [self.potmsgset])
 
         # When an empty diverged translation is added, nothing is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [])
 
         # If diverged translation is non-empty, POTMsgSet is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -450,7 +451,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # empty shared translation for the POTMsgSet as well.
 
         # We create an empty shared translation first.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u""])
 
@@ -461,17 +462,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [])
 
         # When an empty diverged translation is added, nothing is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [])
 
         # If diverged translation is non-empty, POTMsgSet is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetTranslated())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -481,16 +482,16 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # translated message.
 
         # Add a diverged translation on the included POTMsgSet...
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged translation"])
+            translations=[u"Diverged translation"], diverged=True)
 
         # and a shared translation on newly added POTMsgSet...
         potmsgset = self.factory.makePOTMsgSet(self.devel_potemplate,
                                                u"Translated text")
         potmsgset.setSequence(self.devel_potemplate, 2)
 
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Shared translation"])
 
@@ -509,17 +510,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [self.potmsgset])
 
         # When a diverged translation is added, the potmsgset is returned.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [])
 
         # If diverged translation is empty, POTMsgSet is not listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [self.potmsgset])
@@ -529,7 +530,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # translation for the POTMsgSet as well.
 
         # We create a shared translation first.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u"Shared translation"])
 
@@ -539,17 +540,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [])
 
         # When an empty diverged translation is added, nothing is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [self.potmsgset])
 
         # If diverged translation is non-empty, POTMsgSet is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [])
@@ -559,7 +560,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # empty shared translation for the POTMsgSet as well.
 
         # We create an empty shared translation first.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u""])
 
@@ -570,17 +571,17 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         self.assertEquals(found_translations, [self.potmsgset])
 
         # When an empty diverged translation is added, nothing is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u""])
+            translations=[u""], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [self.potmsgset])
 
         # If diverged translation is non-empty, POTMsgSet is listed.
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"])
+            translations=[u"Translation"], diverged=True)
         found_translations = list(
             self.devel_pofile.getPOTMsgSetUntranslated())
         self.assertEquals(found_translations, [])
@@ -590,7 +591,7 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # untranslated message.
 
         # Add an empty translation to the included POTMsgSet...
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
             translations=[u""])
 
@@ -635,9 +636,10 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
                                                u"Translated text")
         potmsgset.setSequence(self.devel_potemplate, 2)
         date_created = datetime.now(pytz.UTC) - timedelta(5)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Translation"], date_updated=date_created)
+            translations=[u"Translation"],
+            date_created=date_created, date_reviewed=date_created)
         suggestion_date = date_created + timedelta(1)
         self.factory.makeSuggestion(
             pofile=self.devel_pofile, potmsgset=potmsgset,
@@ -681,136 +683,71 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getPOTMsgSetWithNewSuggestions())
         self.assertEquals([], found_translations)
 
-    def test_getPOTMsgSetChangedInUbuntu(self):
-        # Test listing of POTMsgSets which contain changes from imports.
+    def _getThisSideFlag(self, translation_message):
+        """Return the value of the "is_current_*" flag on this side."""
+        traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.devel_potemplate)
+        return traits.getFlag(translation_message)
 
-        # If there are no translations in Ubuntu, nothing is listed.
+    def _getOtherSideFlag(self, translation_message):
+        """Return the value of the "is_current_*" flag on the other side."""
+        traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.devel_potemplate).other_side_traits
+        return traits.getFlag(translation_message)
+
+    def test_getPOTMsgSetDifferentTranslations(self):
+        # Test listing of POTMsgSets which have different translations on
+        # both sides.
+        # This test case is set up with templates and pofiles linked to
+        # product series, therefore they are "upstream" files. As a
+        # consequence "this side" in this test refers to "upstream" and
+        # "other side"  refers to "ubuntu" translations. We keep the generic
+        # terms, though, because the behavior is symmetrical.
+
+        # If there are no translations on either side, nothing is listed.
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
-        # Adding a non-imported current translation doesn't change anything.
-        translation = self.factory.makeSharedTranslationMessage(
+        # Adding a current translation on one side doesn't change anything.
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Non-imported translation"])
-        self.assertEquals(translation.is_current_upstream, False)
+            translations=[u"This side translation"])
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
-        # Adding an imported translation which is also current indicates
-        # that there are no changes.
-        translation = self.factory.makeSharedTranslationMessage(
+        # Adding a translation on both sides does not introduce a difference.
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Imported translation"], is_current_upstream=True)
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, True)
+            translations=[u"Both sides translation"], current_other=True)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), True)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [])
 
-        # However, changing current translation to a non-imported one
-        # makes this a changed in Ubuntu translation.
-        translation = self.factory.makeSharedTranslationMessage(
+        # Adding a different translation on one side to creates a difference
+        # between this side and the other side.
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Changed translation"], is_current_upstream=False)
-        self.assertEquals(translation.is_current_upstream, False)
-        self.assertEquals(translation.is_current_ubuntu, True)
+            translations=[u"Different translation"])
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
-        # Adding a diverged, non-imported translation, still lists
-        # it as a changed translation.
-        translation = self.factory.makeTranslationMessage(
+        # A diverged translation is different, too.
+        translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged translation"], is_current_upstream=False)
-        self.assertEquals(translation.is_current_upstream, False)
-        self.assertEquals(translation.is_current_ubuntu, True)
+            translations=[u"Diverged translation"], diverged=True)
+        self.assertEquals(self._getThisSideFlag(translation), True)
+        self.assertEquals(self._getOtherSideFlag(translation), False)
         found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-        # But adding a diverged current and imported translation means
-        # that it's not changed anymore.
-        translation = self.factory.makeTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged imported"], is_current_upstream=True,
-            force_diverged=True)
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, True)
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(found_translations, [])
-
-        # Changing from a diverged, imported translation is correctly
-        # detected.
-        translation = self.factory.makeTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged changed"], is_current_upstream=False)
-        self.assertEquals(translation.is_current_upstream, False)
-        self.assertEquals(translation.is_current_ubuntu, True)
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(found_translations, [self.potmsgset])
-
-    def test_getPOTMsgSetChangedInUbuntu_diverged_imported(self):
-        # If there is a diverged imported (but non-current) message
-        # and a shared current message, it should not be listed as changed.
-        # Even though that is generally incorrect, this is a situation
-        # we can't come to with new code and is a residue of old data
-        # (see bug #455680 for details).
-
-        # To hit the bug, we need:
-        # 1) Shared imported and current translation.
-        # 2) Diverged, imported, non-current message.
-        shared = self.factory.makeSharedTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Shared imported current"],
-            is_current_upstream=True)
-        diverged = self.factory.makeTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Diverged imported non-current"],
-            is_current_upstream=True, force_diverged=True)
-        # As we can't come to this situation using existing code,
-        # we modify the is_current_ubuntu flag directly.
-        diverged.is_current_ubuntu = False
-
-        self.assertEquals(shared.is_current_upstream, True)
-        self.assertEquals(shared.is_current_ubuntu, True)
-        self.assertIs(shared.potemplate, None)
-        self.assertEquals(diverged.is_current_upstream, True)
-        self.assertEquals(diverged.is_current_ubuntu, False)
-        self.assertEquals(diverged.potemplate, self.devel_potemplate)
-
-        # Such POTMsgSet is not considered changed in this PO file.
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(found_translations, [])
-
-    def test_getPOTMsgSetChangedInUbuntu_SharedDiverged(self):
-        # Test listing of changed in Ubuntu for shared/diverged messages.
-
-        # Adding an imported translation which is also current indicates
-        # that there are no changes.
-        translation = self.factory.makeSharedTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Imported translation"], is_current_upstream=True)
-        self.assertEquals(translation.is_current_upstream, True)
-        self.assertEquals(translation.is_current_ubuntu, True)
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
-        self.assertEquals(found_translations, [])
-
-        # Adding a diverged, non-imported translation makes it appear
-        # as changed.
-        translation = self.factory.makeTranslationMessage(
-            pofile=self.devel_pofile, potmsgset=self.potmsgset,
-            translations=[u"Changed translation"], is_current_upstream=False)
-        self.assertEquals(translation.is_current_upstream, False)
-        self.assertEquals(translation.is_current_ubuntu, True)
-        found_translations = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(found_translations, [self.potmsgset])
 
     def test_messageCount(self):
@@ -1260,11 +1197,11 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
     def test_getPOTMsgSetTranslated_ordering(self):
         # Translate both POTMsgSets in devel_pofile, so
         # they are returned with getPOTMsgSetTranslated() call.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
             translations=["Shared translation"])
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
             translations=["Another shared translation"])
@@ -1315,32 +1252,30 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], untranslated_potmsgsets)
 
-    def test_getPOTMsgSetChangedInUbuntu_ordering(self):
+    def test_getPOTMsgSetDifferentTranslations_ordering(self):
         # Suggest a translation on both POTMsgSets in devel_pofile,
-        # so they are returned with getPOTMsgSetWithNewSuggestions() call.
-        self.factory.makeSharedTranslationMessage(
+        # so they are returned with getPOTMsgSetDifferentTranslations() call.
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
-            translations=["Imported"],
-            is_current_upstream=True)
-        self.factory.makeSharedTranslationMessage(
+            translations=["Both sides"],
+            current_other=True)
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
-            translations=["Changed"],
-            is_current_upstream=False)
-        self.factory.makeSharedTranslationMessage(
+            translations=["This side"])
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
-            translations=["Another imported"],
-            is_current_upstream=True)
-        self.factory.makeSharedTranslationMessage(
+            translations=["Both sides 2"],
+            current_other=True)
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
-            translations=["Another changed"],
-            is_current_upstream=False)
+            translations=["This side 2"])
 
         potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
@@ -1351,13 +1286,13 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 
         # And they are returned in the new order as desired.
         potmsgsets = list(
-            self.stable_pofile.getPOTMsgSetChangedInUbuntu())
+            self.stable_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset2, self.potmsgset1], potmsgsets)
 
         # Order is unchanged for the previous template.
         potmsgsets = list(
-            self.devel_pofile.getPOTMsgSetChangedInUbuntu())
+            self.devel_pofile.getPOTMsgSetDifferentTranslations())
         self.assertEquals(
             [self.potmsgset1, self.potmsgset2], potmsgsets)
 
@@ -1391,11 +1326,11 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
         # This test will go away when potmsgset.sequence goes away.
 
         # Give the method something to search for.
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset1,
             translations=["Shared translation"])
-        self.factory.makeSharedTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile,
             potmsgset=self.potmsgset2,
             translations=["Another shared translation"])
@@ -2030,23 +1965,23 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
 
     def test_getTranslationMessages_current_shared(self):
         # A shared message is included in this POFile's messages.
-        message = self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile)
 
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
 
     def test_getTranslationMessages_current_diverged(self):
         # A diverged message is included in this POFile's messages.
-        message = self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, diverged=True)
 
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
 
     def test_getTranslationMessages_suggestion(self):
         # A suggestion is included in this POFile's messages.
-        message = self.factory.makeTranslationMessage(
+        message = self.factory.makeSuggestion(
             potmsgset=self.potmsgset, pofile=self.pofile)
 
         self.assertEqual(
@@ -2056,8 +1991,8 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         # A message on an obsolete POTMsgSEt is included in this
         # POFile's messages.
         potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=0)
-        message = self.factory.makeTranslationMessage(
-            potmsgset=potmsgset, pofile=self.pofile, force_shared=True)
+        message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=potmsgset, pofile=self.pofile)
 
         self.assertEqual(
             [message], list(self.pofile.getTranslationMessages()))
@@ -2065,7 +2000,7 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
     def test_getTranslationMessages_other_pofile(self):
         # A message from another POFiles is not included.
         other_pofile = self.factory.makePOFile('de')
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile)
 
         self.assertEqual([], list(self.pofile.getTranslationMessages()))
@@ -2073,8 +2008,8 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
     def test_getTranslationMessages_condition_matches(self):
         # A message matching the given condition is included.
         # Diverged messages are linked to a specific POTemplate.
-        message = self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile, force_diverged=True)
+        message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile, diverged=True)
 
         self.assertContentEqual(
             [message],
@@ -2084,8 +2019,8 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
     def test_getTranslationMessages_condition_matches_not(self):
         # A message not matching the given condition is excluded.
         # Shared messages are not linked to a POTemplate.
-        self.factory.makeTranslationMessage(
-            potmsgset=self.potmsgset, pofile=self.pofile, force_shared=True)
+        self.factory.makeCurrentTranslationMessage(
+            potmsgset=self.potmsgset, pofile=self.pofile)
 
         self.assertContentEqual(
             [],
@@ -2096,9 +2031,9 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         # A message matching given condition but located in another POFile
         # is not included.
         other_pofile = self.factory.makePOFile('de')
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile,
-            force_diverged=True)
+            diverged=True)
 
         self.assertContentEqual(
             [],
@@ -2116,9 +2051,9 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         other_pofile = other_template.getPOFileByLang(
             self.pofile.language.code)
         self.potmsgset.setSequence(other_template, 1)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile,
-            force_diverged=True)
+            diverged=True)
 
         self.assertEqual([], list(self.pofile.getTranslationMessages()))
 
@@ -2863,3 +2798,48 @@ class TestUbuntuStatistics(StatistcsCountsTestScenario, TestCaseWithFactory):
             potemplate=self.factory.makePOTemplate(
                 distroseries=package.distroseries,
                 sourcepackagename=package.sourcepackagename))
+
+
+class StatistcsFiltersTestScenario(StatisticsTestScenario):
+    """Test the filter functions in `POFile`s compared to statistics."""
+
+    def exerciseFunction(self, pofile):
+        """Run the function under test."""
+        pofile.updateStatistics()
+
+    def getCurrentCount(self, pofile):
+        return pofile.currentCount()
+
+    def getRosettaCount(self, pofile):
+        return pofile.rosettaCount()
+
+    def getTranslatedCount(self, pofile):
+        return pofile.getPOTMsgSetTranslated().count()
+
+    def getUnreviewedCount(self, pofile):
+        return pofile.getPOTMsgSetWithNewSuggestions().count()
+
+    def getUntranslatedCount(self, pofile):
+        return pofile.getPOTMsgSetUntranslated().count()
+
+    def getUpdatesCount(self, pofile):
+        return pofile.getPOTMsgSetDifferentTranslations().count()
+
+
+class TestUpstreamFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
+    """Test filters on upstream `POFile`s."""
+
+    def makePOFile(self):
+        return self.factory.makePOFile()
+
+
+class TestUbuntuFilters(StatistcsFiltersTestScenario, TestCaseWithFactory):
+    """Test filters on Ubuntu `POFile`s."""
+
+    def makePOFile(self):
+        package = self.factory.makeSourcePackage()
+        return self.factory.makePOFile(
+            potemplate=self.factory.makePOTemplate(
+                distroseries=package.distroseries,
+                sourcepackagename=package.sourcepackagename))
+

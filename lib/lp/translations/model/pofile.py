@@ -558,9 +558,11 @@ class POFile(SQLBase, POFileMixIn):
         Return a tuple of SQL (clauses, clause_tables) to be used with
         POTMsgSet.select().
         """
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
         clause_tables = ['TranslationTemplateItem', 'TranslationMessage']
         clauses = self._getClausesForPOFileMessages()
-        clauses.append('TranslationMessage.is_current_ubuntu IS TRUE')
+        clauses.append('TranslationMessage.%s IS TRUE' % flag_name)
         self._appendCompletePluralFormsConditions(clauses)
 
         # A message is current in this pofile if:
@@ -579,11 +581,15 @@ class POFile(SQLBase, POFileMixIn):
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
                      diverged.potemplate=%(potemplate)s AND
-                     diverged.is_current_ubuntu IS TRUE AND
+                     diverged.%(flag_name)s IS TRUE AND
                      diverged.language = %(language)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-            dict(language=quote(self.language),
-                 potemplate=quote(self.potemplate))),
+                dict(
+                     flag_name=flag_name,
+                     language=quote(self.language),
+                     potemplate=quote(self.potemplate),
+                     )
+                ),
         ]
         shared_translation_query = ' AND '.join(shared_translation_clauses)
 
@@ -635,23 +641,26 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetWithNewSuggestions(self):
         """See `IPOFile`."""
+        flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
+            self.potemplate).flag_name
         clauses = self._getClausesForPOFileMessages()
         msgstr_clause = make_plurals_sql_fragment(
             "TranslationMessage.msgstr%(form)d IS NOT NULL", "OR")
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_ubuntu IS NOT TRUE',
-            "(%s)" % msgstr_clause,
+            'TranslationMessage.%s IS NOT TRUE' % flag_name,
+            "(%s)" % msgstr_clause
             ])
 
         diverged_translation_query = (
             '''(SELECT COALESCE(diverged.date_reviewed, diverged.date_created)
                  FROM TranslationMessage AS diverged
                  WHERE
-                   diverged.is_current_ubuntu IS TRUE AND
+                   diverged.%(flag_name)s IS TRUE AND
                    diverged.potemplate = %(potemplate)s AND
                    diverged.language = %(language)s AND
                    diverged.potmsgset=POTMsgSet.id)''' % dict(
+            flag_name=flag_name,
             potemplate=quote(self.potemplate),
             language=quote(self.language)))
 
@@ -659,10 +668,11 @@ class POFile(SQLBase, POFileMixIn):
             '''(SELECT COALESCE(shared.date_reviewed, shared.date_created)
                  FROM TranslationMessage AS shared
                  WHERE
-                   shared.is_current_ubuntu IS TRUE AND
+                   shared.%(flag_name)s IS TRUE AND
                    shared.potemplate IS NULL AND
                    shared.language = %(language)s AND
                    shared.potmsgset=POTMsgSet.id)''' % dict(
+            flag_name=flag_name,
             language=quote(self.language)))
         beginning_of_time = "TIMESTAMP '1970-01-01 00:00:00'"
         newer_than_query = (
@@ -685,42 +695,40 @@ class POFile(SQLBase, POFileMixIn):
         return self._getOrderedPOTMsgSets(
             [POTMsgSet, TranslationTemplateItem], query)
 
-    def getPOTMsgSetChangedInUbuntu(self):
+    def getPOTMsgSetDifferentTranslations(self):
         """See `IPOFile`."""
-        # POT set has been changed in Launchpad if it contains active
-        # translations which didn't come from an upstream package
-        # (iow, it's different from an upstream translation: this only
-        # lists translations which have actually changed in Ubuntu, not
-        # translations which are 'new' and only exist in Ubuntu).
+        # A `POTMsgSet` has different translations if both sides have a
+        # translation. If one of them is empty, the POTMsgSet is not included
+        # in this list. 
 
-        # TranslationMessage is changed if:
-        # is_current_ubuntu IS TRUE, is_current_upstream IS FALSE,
-        # (diverged AND not empty) OR (shared AND not empty AND no diverged)
-        # exists imported (is_current_upstream AND not empty AND (
-        # diverged OR shared))
         clauses, clause_tables = self._getTranslatedMessagesQuery()
+        other_side_flag_name = getUtility(
+            ITranslationSideTraitsSet).getForTemplate(
+                self.potemplate).other_side_traits.flag_name
         clauses.extend([
             'TranslationTemplateItem.potmsgset = POTMsgSet.id',
-            'TranslationMessage.is_current_upstream IS FALSE',
+            'TranslationMessage.%s IS FALSE' % other_side_flag_name,
             ])
 
         imported_no_diverged = (
             '''NOT EXISTS (
                  SELECT * FROM TranslationMessage AS diverged
                    WHERE
-                     diverged.is_current_upstream IS TRUE AND
+                     diverged.%(flag_name)s IS TRUE AND
                      diverged.id <> imported.id AND
                      diverged.potemplate = %(potemplate)s AND
                      diverged.language = %(language)s AND
                      diverged.potmsgset=TranslationMessage.potmsgset)''' % (
-            dict(potemplate=quote(self.potemplate),
-                 language=quote(self.language))))
-
+                dict(
+                    flag_name=other_side_flag_name,
+                    potemplate=quote(self.potemplate),
+                    language=quote(self.language))
+                    ))
         imported_clauses = [
             'imported.id <> TranslationMessage.id',
             'imported.potmsgset = POTMsgSet.id',
             'imported.language = %s' % sqlvalues(self.language),
-            'imported.is_current_upstream IS TRUE',
+            'imported.%s IS TRUE' % other_side_flag_name,
             '(imported.potemplate=%s OR ' % sqlvalues(self.potemplate) +
             '   (imported.potemplate IS NULL AND ' + imported_no_diverged
             + '  ))',
@@ -1308,7 +1316,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return EmptyResultSet()
 
-    def getPOTMsgSetChangedInUbuntu(self):
+    def getPOTMsgSetDifferentTranslations(self):
         """See `IPOFile`."""
         return EmptyResultSet()
 
