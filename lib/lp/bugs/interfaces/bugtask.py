@@ -1145,7 +1145,8 @@ class BugTaskSearchParams:
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None):
+                 modified_since=None, created_since=None,
+                 exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1191,6 +1192,7 @@ class BugTaskSearchParams:
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
+        self.exclude_conjoined_tasks = exclude_conjoined_tasks
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1528,6 +1530,12 @@ class IBugTaskSet(Interface):
         """Return `IPerson`s subscribed to the given bug tasks.
 
         This takes into account bug subscription filters.
+        """
+
+    def getPrecachedNonConjoinedBugTasks(user, milestone):
+        """List of non-conjoined bugtasks targeted to the milestone.
+
+        The assignee and the assignee's validity are precached.
         """
 
 
