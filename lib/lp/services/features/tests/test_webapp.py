@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import layers
 from lp.services.features import webapp
 from lp.testing import (
@@ -13,6 +12,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 class TestScopesFromRequest(TestCase):

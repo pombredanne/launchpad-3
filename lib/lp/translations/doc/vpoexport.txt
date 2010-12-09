@@ -60,19 +60,10 @@ current POFiles in a given distro series.
 The getTranslationRows method lists all translations found in the
 pofile.
 
-    >>> package = factory.makeSourcePackage()
-    >>> potemplate = factory.makePOTemplate(
-    ...     distroseries=package.distroseries,
-    ...     sourcepackagename=package.sourcepackagename)
+    >>> potemplate = factory.makePOTemplate()
     >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
-    >>> tm = factory.makeCurrentTranslationMessage(
-    ...     pofile=pofile, current_other=True, translations=["esperanto1"],
-    ...     potmsgset=factory.makePOTMsgSet(
-    ...         potemplate=potemplate, sequence=1, singular="english1"))
-    >>> tm = factory.makeCurrentTranslationMessage(
-    ...     pofile=pofile, current_other=False, translations=["esperanto2"],
-    ...     potmsgset=factory.makePOTMsgSet(
-    ...         potemplate=potemplate, sequence=2, singular="english2"))
+    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
+    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
 
     >>> def describe_poexport_row(row):
     ...     return "%s %s %s" % (
@@ -127,12 +118,12 @@ diverged for stable.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> trunk_pofile = factory.makePOFile('nl', potemplate=trunk_template)
     >>> stable_pofile = factory.makePOFile('nl', potemplate=stable_template)
-    >>> message1 = factory.makeDivergedTranslationMessage(
+    >>> message1 = factory.makeTranslationMessage(
     ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset1,
-    ...     translations=['een'])
-    >>> message2 = factory.makeDivergedTranslationMessage(
+    ...     translations=['een'], force_diverged=True)
+    >>> message2 = factory.makeTranslationMessage(
     ...     pofile=removeSecurityProxy(stable_pofile), potmsgset=potmsgset2,
-    ...     translations=['twee'])
+    ...     translations=['twee'], force_diverged=True)
 
 When we export trunk, only the trunk message shows up.
 

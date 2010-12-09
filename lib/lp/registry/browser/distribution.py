@@ -741,9 +741,9 @@ class DistributionAddView(LaunchpadFormView):
         "domainname",
         "members",
         "official_malone",
-        "official_blueprints",
+        "blueprints_usage",
         "official_rosetta",
-        "official_answers",
+        "answers_usage",
         ]
 
     @property
@@ -787,9 +787,9 @@ class DistributionEditView(RegistryEditFormView):
         'mugshot',
         'official_malone',
         'enable_bug_expiration',
-        'official_blueprints',
+        'blueprints_usage',
         'official_rosetta',
-        'official_answers',
+        'answers_usage',
         'translation_focus',
         ]
 

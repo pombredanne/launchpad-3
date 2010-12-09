@@ -44,6 +44,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
     _table = Branch
     _orderBy = ['name', 'id']
     displayname = 'Select a branch'
+    step_title = 'Search'
 
     def toTerm(self, branch):
         """The display should include the URL if there is one."""

@@ -12,8 +12,8 @@ from canonical.launchpad.interfaces.emailaddress import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -95,12 +95,13 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         self.target_team = self.factory.makeTeam()
         login_celebrity('registry_experts')
 
-    def getView(self):
-        form = {
-            'field.dupe_person': self.dupe_team.name,
-            'field.target_person': self.target_team.name,
-            'field.actions.deactivate_members_and_merge': 'Merge',
-            }
+    def getView(self, form=None):
+        if form is None:
+            form = {
+                'field.dupe_person': self.dupe_team.name,
+                'field.target_person': self.target_team.name,
+                'field.actions.deactivate_members_and_merge': 'Merge',
+                }
         return create_initialized_view(
             self.person_set, '+adminteammerge', form=form)
 
@@ -130,7 +131,24 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         super_team = self.factory.makeTeam()
         login_celebrity('admin')
         self.dupe_team.join(super_team, self.dupe_team.teamowner)
-        login_celebrity('registry_experts')
+        login_person(self.dupe_team.teamowner)
+        form = {
+            'field.dupe_person': self.dupe_team.name,
+            'field.target_person': self.target_team.name,
+            'field.actions.merge': 'Merge',
+            }
+        view = self.getView()
+        self.assertEqual([], view.errors)
+        self.assertEqual(self.target_team, self.dupe_team.merged)
+
+    def test_merge_team_as_delete_with_super_teams_into_registry_experts(
+            self):
+        # Super team memberships are removed.
+        self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
+        super_team = self.factory.makeTeam()
+        login_celebrity('admin')
+        self.dupe_team.join(super_team, self.dupe_team.teamowner)
+        login_person(self.dupe_team.teamowner)
         view = self.getView()
         self.assertEqual([], view.errors)
         self.assertEqual(self.target_team, self.dupe_team.merged)

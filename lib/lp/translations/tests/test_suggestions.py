@@ -24,7 +24,6 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translationmessage import (
     TranslationValidationStatus,
     )
-from lp.translations.utilities.validate import GettextValidationError
 
 
 class TestTranslationSuggestions(unittest.TestCase):
@@ -79,7 +78,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
-            ["foutmelding 936"], is_current_upstream=False,
+            ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
 
         transaction.commit()
@@ -103,7 +102,7 @@ class TestTranslationSuggestions(unittest.TestCase):
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
         barmsg.setSequence(self.bar_template, 1)
         translation = barmsg.updateTranslation(self.bar_nl, self.bar_nl.owner,
-            ["foutmelding 936"], is_current_upstream=False,
+            ["foutmelding 936"], is_imported=False,
             lock_timestamp=None)
 
         transaction.commit()
@@ -134,8 +133,8 @@ class TestTranslationSuggestions(unittest.TestCase):
         barmsg.setSequence(self.bar_template, 1)
         suggestion = barmsg.updateTranslation(self.bar_nl,
             self.foo_template.owner, ["Noueh hallo dus."],
-            is_current_upstream=False, lock_timestamp=None)
-        suggestion.is_current_ubuntu = False
+            is_imported=False, lock_timestamp=None)
+        suggestion.is_current = False
 
         transaction.commit()
 
@@ -160,10 +159,10 @@ class TestTranslationSuggestions(unittest.TestCase):
         barmsg.setSequence(self.bar_template, 1)
         suggestion1 = barmsg.updateTranslation(self.bar_nl,
             self.foo_template.owner, [suggested_dutch],
-            is_current_upstream=False, lock_timestamp=now)
+            is_imported=False, lock_timestamp=now)
         suggestion2 = barmsg.updateTranslation(self.bar_nl,
             self.bar_template.owner, [suggested_dutch],
-            is_current_upstream=False, lock_timestamp=now)
+            is_imported=False, lock_timestamp=now)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
 
@@ -191,10 +190,10 @@ class TestTranslationSuggestions(unittest.TestCase):
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
         suggestion1 = potmsgset.updateTranslation(self.foo_nl,
             self.foo_template.owner, [translated_in_launchpad],
-            is_current_upstream=False, lock_timestamp=None)
+            is_imported=False, lock_timestamp=None)
         suggestion2 = potmsgset.updateTranslation(self.foo_nl,
             self.foo_template.owner, [translated_upstream],
-            is_current_upstream=True, lock_timestamp=None)
+            is_imported=True, lock_timestamp=None)
         current_translation = potmsgset.getCurrentTranslationMessage(
             self.foo_template, self.foo_nl.language)
         imported_translation = potmsgset.getImportedTranslationMessage(
@@ -219,16 +218,16 @@ class TestTranslationSuggestions(unittest.TestCase):
 
         # An exception is raised if one tries to set the broken translation.
         self.assertRaises(
-            GettextValidationError,
+            gettextpo.error,
             potmsgset.updateTranslation,
             self.foo_nl, self.foo_template.owner, [translation_with_error],
-            is_current_upstream=True, lock_timestamp=None)
+            is_imported=True, lock_timestamp=None)
 
         # However, if ignore_errors=True is passed, then it's saved
         # and marked as a message with errors.
         translation = potmsgset.updateTranslation(
             self.foo_nl, self.foo_template.owner, [translation_with_error],
-            is_current_upstream=True, lock_timestamp=None, ignore_errors=True)
+            is_imported=True, lock_timestamp=None, ignore_errors=True)
         self.assertEquals(translation.validation_status,
                           TranslationValidationStatus.UNKNOWNERROR,
                           "TranslationMessage with errors is not correctly"

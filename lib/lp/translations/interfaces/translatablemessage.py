@@ -28,41 +28,41 @@ class ITranslatableMessage(Interface):
     potmsgset = Attribute("The POTMsgset")
 
     sequence = Int(
-        title=_("Sequence number within the POTemplate."),
+        title=_("The sequence number within the POTemplate."),
         required=True)
 
     is_obsolete = Bool(
-        title=_("This TranslatableMessage is obsolete"),
+        title=_("Flag indicating that this TranslatableMessage is obsolete"),
         required=True)
 
     is_untranslated = Bool(
-        title=_("The current translation is empty"),
+        title=_("Flag indicating that the current translation is empty"),
         required=True)
 
     is_current_diverged = Bool(
-        title=_("The current translation is diverged"),
+        title=_("Flag indicating that the current translation is diverged"),
         required=True)
 
     is_current_imported = Bool(
-        title=_("The current translation is used upstream"),
+        title=_("Flag indicating that the current translation is imported"),
         required=True)
 
     has_plural_forms = Bool(
-        title=_("There is an English plural string"),
+        title=_("Flag indicating that there is an English plural string"),
         required=True)
 
     number_of_plural_forms = Int(
-        title=_("Number of plural forms in the target language"),
+        title=_("The number of plural forms in the target language"),
         required=True)
 
     def getCurrentTranslation():
         """Get the TranslationMessage that holds the current translation."""
 
     def getImportedTranslation():
-        """Get the TranslationMessage that is marked as current-upstream.
+        """Get the TranslationMessage that is marked as imported.
 
-        This can be None if there is no such message, or it can be
-        identical to the current Ubuntu translation.
+        This can be None if there is no such message or it can be identical
+        to the current translation if the current translation is imported.
         """
 
     def getSharedTranslation():

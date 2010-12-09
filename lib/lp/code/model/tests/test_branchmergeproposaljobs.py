@@ -53,10 +53,7 @@ from lp.code.model.branchmergeproposaljob import (
     ReviewRequestedEmailJob,
     UpdatePreviewDiffJob,
     )
-from lp.code.model.tests.test_diff import (
-    create_example_merge,
-    DiffTestCase,
-    )
+from lp.code.model.tests.test_diff import DiffTestCase, create_example_merge
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner

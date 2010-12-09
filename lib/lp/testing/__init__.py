@@ -154,10 +154,10 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
+    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
-from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
 
 
@@ -350,17 +350,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def makeTemporaryDirectory(self):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
-
-    def installKarmaRecorder(self, *args, **kwargs):
-        """Set up and return a `KarmaRecorder`.
-
-        Registers the karma recorder immediately, and ensures that it is
-        unregistered after the test.
-        """
-        recorder = KarmaRecorder(*args, **kwargs)
-        recorder.register_listener()
-        self.addCleanup(recorder.unregister_listener)
-        return recorder
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
@@ -774,16 +763,17 @@ class YUIUnitTestCase(WindmillTestCase):
         client = self.client
         client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """People Merge related wiew classes."""
@@ -242,9 +242,13 @@ class AdminTeamMergeView(AdminMergeBaseView):
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
         # merge.
-        if self.target_person is self.registry_experts:
+        if self.target_person == self.registry_experts:
             for team in self.dupe_person.teams_participated_in:
                 self.dupe_person.retractTeamMembership(team, self.user)
+        # We have sent another series of calls to the db, potentially a long
+        # sequence depending on the merge. We want everything synced up
+        # before proceeding.
+        flush_database_updates()
         super(AdminTeamMergeView, self).doMerge(data)
 
     def validate(self, data):
