@@ -1493,6 +1493,21 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
             [main_comp], list(archive.getComponentsForSeries(self.series)))
 
 
+class TestGetPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPockets_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            list(PackagePublishingPocket.items), archive.getPockets())
+
+    def test_getPockets_for_PPAs(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            [PackagePublishingPocket.RELEASE], archive.getPockets())
+
+
 class TestGetFileByName(TestCaseWithFactory):
     """Tests for Archive.getFileByName."""
 

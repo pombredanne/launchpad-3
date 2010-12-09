@@ -478,10 +478,13 @@ class ArchiveMenuMixin:
     def packages(self):
         text = 'View package details'
         link = Link('+packages', text, icon='info')
-        # Disable the link for P3As if they don't have upload rights.
+        # Disable the link for P3As if they don't have upload rights,
+        # except if the user is a commercial admin.
         if self.context.private:
             if not check_permission('launchpad.Append', self.context):
-                link.enabled = False
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    link.enabled = False
         return link
 
     @enabled_with_permission('launchpad.Edit')
@@ -1023,8 +1026,12 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     def initialize(self):
         super(ArchivePackagesView, self).initialize()
         if self.context.private:
+            # To see the +packages page, you must be an uploader, or a
+            # commercial admin.
             if not check_permission('launchpad.Append', self.context):
-                raise Unauthorized
+                admins = getUtility(ILaunchpadCelebrities).commercial_admin
+                if not self.user.inTeam(admins):
+                    raise Unauthorized
 
     @property
     def page_title(self):
