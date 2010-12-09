@@ -222,7 +222,7 @@ class TestMembershipManagement(TestCaseWithFactory):
         targetteam = self.factory.makeTeam(name='target')
         login_celebrity('admin')
         targetteam.join(superteam, targetteam.teamowner)
-        
+
         # Now we create a deactivated link for the target team's teamowner.
         targetteam.teamowner.join(superteam, targetteam.teamowner)
         targetteam.teamowner.leave(superteam)
@@ -246,13 +246,15 @@ class TestMembershipManagement(TestCaseWithFactory):
         targetteam.join(superteam, targetteam.teamowner)
         self.assertEqual(
                 sorted([superteam, targetteam]),
-                sorted([team for team in targetteam.teamowner.teams_participated_in]))
+                sorted([team for team
+                            in targetteam.teamowner.teams_participated_in]))
         targetteam.deactivateAllMembers(
             comment='test',
             reviewer=targetteam.teamowner)
         self.assertEqual(
             [],
-            sorted([team for team in targetteam.teamowner.teams_participated_in]))
+            sorted([team for team
+                in targetteam.teamowner.teams_participated_in]))
 
     def test_deactivateAllMembers_cleans_up_team_participation(self):
         superteam = self.factory.makeTeam(name='super')

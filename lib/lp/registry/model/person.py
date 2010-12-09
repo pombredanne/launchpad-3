@@ -1473,7 +1473,6 @@ class Person(
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
-        
 
         # Remove all indirect TeamParticipation entries resulting from this
         # team. If this were just a select, it would be a complicated but
