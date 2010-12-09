@@ -377,16 +377,19 @@ class PackageBuildDerived:
             if not os.path.exists(target_dir):
                 os.mkdir(target_dir)
 
-            # Flush so there are no race conditions with archiveuploader about
+            # Release the builder for another job.
+            d = self._release_builder_and_remove_queue_item()
+
+            # Commit so there are no race conditions with archiveuploader about
             # self.status.
-            Store.of(self).flush()
+            Store.of(self).commit()
 
             # Move the directory used to grab the binaries into
             # the incoming directory so the upload processor never
             # sees half-finished uploads.
             os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-            return self._release_builder_and_remove_queue_item()
+            return d
 
         d = slave.getFiles(filenames_to_download)
         # Store build information, build record was already updated during
