@@ -1433,8 +1433,9 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
 
         credits = self.factory.makePOTMsgSet(
             self.potemplate, u'translator-credits', sequence=1)
-        translation = self.factory.makeCurrentTranslationMessage(eo_pofile, credits,
-             translations=[imported_credits], current_other=True)
+        self.factory.makeCurrentTranslationMessage(
+            eo_pofile, credits, translations=[imported_credits],
+            current_other=True)
 
         eo_translation = credits.getCurrentTranslationMessage(
             self.potemplate, eo_pofile.language)

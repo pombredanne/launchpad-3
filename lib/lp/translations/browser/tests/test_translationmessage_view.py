@@ -117,7 +117,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         allows for the "In Ubuntu" or "In Upstream" line to be grayed out
         upon dismissal. This flag is only used in the view to select the
         right css class to achieve that.
-        
+
         :param can_confirm_and_dismiss: The expected stage of that flag.
         :param can_dismiss_on_empty: The expected stage of that flag.
         :param can_dismiss_on_plural: The expected stage of that flag.
