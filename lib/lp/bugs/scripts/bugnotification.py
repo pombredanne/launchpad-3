@@ -119,10 +119,9 @@ def construct_email_notifications(bug_notifications):
         else:
             unsubscribe_notice = ''
 
-        data_wrapper = MailWrapper(width=72, indent='  ')
         body_data = {
             'content': mail_wrapper.format(content),
-            'bug_title': data_wrapper.format(bug.title),
+            'bug_title': bug.title,
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason)}
@@ -132,8 +131,7 @@ def construct_email_notifications(bug_notifications):
         # footer.
         if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
-            body_data['bug_description'] = data_wrapper.format(
-                bug.description)
+            body_data['bug_description'] = bug.description
 
             status_base = "Status in %s:\n  %s"
             status_strings = []
