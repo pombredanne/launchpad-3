@@ -328,10 +328,8 @@ class RedirectAwareProberFactory(ProberFactory):
             # We can't assume url to be absolute here.
             self.setURL(url)
         except (UnknownURLScheme,), e:
-            # If a redirect occured to this unsupported format, all that
-            # can be done is to log it and die. This isn't an OOPS condition
-            # because nothing can be done around it, so it shouldn't raise an
-            # exception.
+            # Since we've got the UnknownURLScheme after a redirect, we need
+            # to raise it in a form that can be ignored in the layer above.
             self.failed(UnknownURLSchemeAfterRedirect(url))
         except (InfiniteLoopDetected,), e:
             self.failed(e)
@@ -411,6 +409,7 @@ class UnknownURLSchemeAfterRedirect(UnknownURLScheme):
     def __str__(self):
         return ("The mirror prober was redirected to: %s. It doesn't know how"
                 "to check this kind of URL." % self.url)
+
 
 class ArchiveMirrorProberCallbacks(LoggingMixin):
 
@@ -753,4 +752,3 @@ def _parse(url, defaultPort=80):
         assert port.isdigit()
         port = int(port)
     return scheme, host, port, path
-
