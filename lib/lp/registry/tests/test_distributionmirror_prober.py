@@ -59,7 +59,6 @@ from lp.registry.scripts.distributionmirror_prober import (
     RequestManager,
     restore_http_proxy,
     should_skip_host,
-    UnknownURLScheme,
     UnknownURLSchemeAfterRedirect,
     )
 from lp.registry.tests.distributionmirror_http_server import (
@@ -80,8 +79,7 @@ class HTTPServerTestSetup(TacTestSetup):
     def tacfile(self):
         return os.path.abspath(os.path.join(
             os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/distributionmirror_http_server.tac'
-            ))
+            'daemons/distributionmirror_http_server.tac'))
 
     @property
     def pidfile(self):
@@ -652,7 +650,12 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         # some times.
         self.failUnlessEqual(
             set(self.callbacks.expected_failures),
-            set([BadResponseCode, ProberTimeout, ConnectionSkipped, UnknownURLSchemeAfterRedirect]))
+            set([
+                BadResponseCode,
+                ProberTimeout,
+                ConnectionSkipped,
+                UnknownURLSchemeAfterRedirect,
+                ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
                       ConnectionSkipped(),
