@@ -241,10 +241,19 @@ class AdminTeamMergeView(AdminMergeBaseView):
         # Team email addresses are not transferable.
         self.dupe_person.setContactAddress(None)
         # The registry experts does not want to acquire super teams from a
-        # merge.
+        # merge. This operation requires unrestricted access to ensure
+        # the user who has permission to delete a team can remove the
+        # team from other teams.
         if self.target_person == self.registry_experts:
-            for team in self.dupe_person.teams_participated_in:
-                self.dupe_person.retractTeamMembership(team, self.user)
+            all_super_teams = set(self.dupe_person.teams_participated_in)
+            indirect_super_teams = set(
+                self.dupe_person.teams_indirectly_participated_in)
+            super_teams = all_super_teams - indirect_super_teams
+            from zope.security.proxy import removeSecurityProxy
+            naked_dupe_person = removeSecurityProxy(self.dupe_person)
+            for team in super_teams:
+                naked_dupe_person.retractTeamMembership(team, self.user)
+            del naked_dupe_person
         # We have sent another series of calls to the db, potentially a long
         # sequence depending on the merge. We want everything synced up
         # before proceeding.
