@@ -118,21 +118,6 @@ The Launchpad product itself.
     True
 
 
-== mailing_list_experts ==
-
-There is a 'Mailing List Experts' team that has administrative power
-over mailing lists.
-
-    >>> mailing_list_experts = personset.getByName('mailing-list-experts')
-    >>> celebs.mailing_list_experts == mailing_list_experts
-    True
-
-The Launchpad Administrators team is a member of that team.
-
-    >>> celebs.admin.inTeam(mailing_list_experts)
-    True
-
-
 == obsolete_junk ==
 
 The 'Obsolete Junk' project is used to hold undeletable objects like

@@ -146,7 +146,6 @@ class LaunchpadCelebrities:
         'launchpad-beta-testers')
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
     lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    mailing_list_experts = PersonCelebrityDescriptor('mailing-list-experts')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
     registry_experts = PersonCelebrityDescriptor('registry')

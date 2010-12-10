@@ -114,7 +114,6 @@ from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IProjectGroupMilestone,
@@ -2382,14 +2381,6 @@ class ViewSourcePackageRelease(AuthorizationBase):
             if not archive.private:
                 return True
         return False
-
-
-class MailingListApprovalByExperts(AuthorizationBase):
-    permission = 'launchpad.Admin'
-    usedfor = IMailingListSet
-
-    def checkAuthenticated(self, user):
-        return user.in_mailing_list_experts
 
 
 class ViewEmailAddress(AuthorizationBase):

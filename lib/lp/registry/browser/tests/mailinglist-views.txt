@@ -81,7 +81,7 @@ no communication between the two systems.
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> an_expert = list(celebrities.mailing_list_experts.allmembers)[0]
+    >>> an_expert = list(celebrities.registry_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]
 
     >>> def create_view(principal, form=None):
