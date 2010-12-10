@@ -332,11 +332,7 @@ class RedirectAwareProberFactory(ProberFactory):
             # can be done is to log it and die. This isn't an OOPS condition
             # because nothing can be done around it, so it shouldn't raise an
             # exception.
-            if self.redirection_count > 0:
-                self._cancelTimeout(None)
-                logger.error('Failed after redirect.', exc_info=True)
-            else:
-                self.failed(e)
+            self.failed(UnknownURLSchemeAfterRedirect(url))
         except (InfiniteLoopDetected,), e:
             self.failed(e)
 
@@ -409,6 +405,12 @@ class UnknownURLScheme(ProberError):
         return ("The mirror prober doesn't know how to check this kind of "
                 "URLs: %s" % self.url)
 
+
+class UnknownURLSchemeAfterRedirect(UnknownURLScheme):
+
+    def __str__(self):
+        return ("The mirror prober was redirected to: %s. It doesn't know how"
+                "to check this kind of URL." % self.url)
 
 class ArchiveMirrorProberCallbacks(LoggingMixin):
 
@@ -551,7 +553,12 @@ class ArchiveMirrorProberCallbacks(LoggingMixin):
 
 class MirrorCDImageProberCallbacks(LoggingMixin):
 
-    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
+    expected_failures = (
+        BadResponseCode,
+        ProberTimeout,
+        ConnectionSkipped,
+        UnknownURLSchemeAfterRedirect,
+        )
 
     def __init__(self, mirror, distroseries, flavour, log_file):
         self.mirror = mirror
