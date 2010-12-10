@@ -163,9 +163,9 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase,
         self.external_pofile = self.factory.makePOFile(
             potemplate=self.external_potemplate, language_code='eo')
 
-        self.external_suggestion = self.factory.makeTranslationMessage(
+        self.external_suggestion = self.factory.makeCurrentTranslationMessage(
             pofile=self.external_pofile, potmsgset=self.external_potmsgset)
-        self.external_current = self.factory.makeTranslationMessage(
+        self.external_current = self.factory.makeCurrentTranslationMessage(
             pofile=self.external_pofile, potmsgset=self.external_potmsgset)
 
         self.message = TranslatableMessage(self.potmsgset, self.pofile)
