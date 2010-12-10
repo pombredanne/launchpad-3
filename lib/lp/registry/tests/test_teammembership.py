@@ -274,6 +274,10 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.team3.addMember(self.team4, self.foo_bar, force_team_add=True)
         self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
 
+    def tearDown(self):
+        super(TestTeamParticipationTree, self).tearDown()
+        self.layer.force_dirty_database()
+
     def testTeamParticipationSetUp(self):
         """Make sure that the TeamParticipation are sane after setUp."""
         self.assertParticipantsEquals(
@@ -341,7 +345,7 @@ class TestParticipationCleanup(TeamParticipationTestCase):
         The number of db queries should be constant not O(depth).
         """
         self.assertStatementCount(
-            24,
+            18,
             self.team5.setMembershipData, self.no_priv,
             TeamMembershipStatus.DEACTIVATED,  self.team5.teamowner)
 
@@ -373,6 +377,10 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.team4.addMember(self.team5, self.foo_bar, force_team_add=True)
         self.team6.addMember(self.team2, self.foo_bar, force_team_add=True)
         self.team6.addMember(self.team4, self.foo_bar, force_team_add=True)
+
+    def tearDown(self):
+        super(TestTeamParticipationMesh, self).tearDown()
+        self.layer.force_dirty_database()
 
     def testTeamParticipationSetUp(self):
         """Make sure that the TeamParticipation are sane after setUp."""

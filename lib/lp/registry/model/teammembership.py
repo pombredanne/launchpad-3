@@ -506,23 +506,27 @@ class TeamParticipation(SQLBase):
     personID = Int(name='person', allow_none=True)
     person = Reference(personID, 'Person.id')
 
+_find_descendants_cache = {}
+
 
 def find_descendants(team):
     # Avoid circular import.
     from lp.registry.model.person import Person
     store = Store.of(team)
-    return store.find(Person,
-                      TeamParticipation.person == Person.id,
-                      TeamParticipation.team == team,
-                      TeamParticipation.person != team)
+    return _find_descendants_cache.setdefault(
+        team,
+        list(store.find(Person,
+                        TeamParticipation.person == Person.id,
+                        TeamParticipation.team == team,
+                        TeamParticipation.person != team)))
 
 
-def get_direct_members(removee, target_team):
-    """Return the direct members excluding the removee."""
-    store = Store.of(target_team)
+def get_direct_members_except(team, exclude):
+    """Return the direct members of team, excluding those from exclude."""
+    store = Store.of(team)
     direct_members = store.find(TeamMembership,
-                                TeamMembership.team == target_team,
-                                TeamMembership.person != removee,
+                                TeamMembership.team == team,
+                                TeamMembership.person != exclude,
                                 TeamMembership.status.is_in(ACTIVE_STATES))
     return direct_members
 
@@ -544,31 +548,30 @@ def _cleanTeamParticipation(child, target_team):
     A subteam S of child is removed from target_team's TeamParticipation
     table if the only path from S to team is via child.
     """
-    import pdb; pdb.set_trace(); # DO NOT COMMIT
     store = Store.of(target_team)
     # Find the descendants of child, teams and people.
     child_descendants = set(find_descendants(child))
     child_descendants.add(child)
 
-    # Find all descendants of the target, except for the child team.
-    direct_members = get_direct_members(child, target_team)
+    # Find all descendants of the target, except for those from the child
+    # team.
+    direct_members = get_direct_members_except(target_team, child)
 
     keepers = set()
     for tm in direct_members:
         keepers.add(tm.person)
         if tm.person.is_team:
-            keepers.update(list(find_descendants(tm.person)))
+            keepers.update(find_descendants(tm.person))
 
     unwanted = child_descendants - keepers
 
     # Remove all unwanted from team.
-    # unwanted_ids = [person.id for person in unwanted]
-    to_be_removed = {}
-    to_be_removed[target_team] = set(unwanted)
-
-    ## store.find(TeamParticipation,
-    ##            TeamParticipation.team == target_team,
-    ##            TeamParticipation.personID.is_in(unwanted_ids)).remove()
+    unwanted_ids = [person.id for person in unwanted]
+    store.find(TeamParticipation,
+               TeamParticipation.team == target_team,
+               TeamParticipation.personID.is_in(unwanted_ids)).remove()
+    import pdb; pdb.set_trace(); # DO NOT COMMIT
+    flush_database_updates()
 
     # Unwanted teams and individuals have been deleted from the target team.
     # To finish up, remove the unwanted from super teams of the target team.
@@ -578,30 +581,50 @@ def _cleanTeamParticipation(child, target_team):
     queue = [target_team]
     processed = set()
     inherited_keepers = {}
+    to_be_removed = {}
     while len(queue) > 0:
         team = queue.pop()
         processed.add(team)
         ancestors = set(get_direct_ancestors(team)) - processed
         queue[0:0] = list(ancestors)
-        for ancestor in ancestors:
-            if ancestor not in inherited_keepers:
-                inherited_keepers[ancestor] = set()
-            # Find all direct members.
-            direct_members = get_direct_members(team, ancestor)
-            keepers = inherited_keepers.get(team, set())
-            for tm in direct_members:
-                keepers.add(tm.person)
-                if tm.person.is_team:
-                    # At this point, find_descendants is unreliable
-                    keepers.update(list(find_descendants(tm.person)))
-            inherited_keepers[ancestor].update(keepers)
-            removable = unwanted - keepers
+        keepers = set()
 
-            if len(removable) > 0:
-                ids = [person.id for person in removable]
-                store.find(TeamParticipation,
-                           TeamParticipation.team == ancestor,
-                           TeamParticipation.personID.is_in(ids)).remove()
+        # Look at all ancestors of team and determine which descendants need
+        # to be removed.
+        for ancestor in ancestors:
+            if ancestor not in to_be_removed:
+                inherited_keepers.setdefault(ancestor, set())
+                # Find all direct members.
+                direct_members = get_direct_members_except(ancestor, team)
+                keepers = inherited_keepers.get(team, set())
+                for tm in direct_members:
+                    if ancestor in get_direct_ancestors(tm.person):
+                        continue
+                    keepers.add(tm.person)
+                    if tm.person.is_team:
+                        keepers.update(find_descendants(tm.person))
+                inherited_keepers[ancestor].update(keepers)
+                removable = unwanted - keepers
+            else:
+                # This team has been processed previously.  The removable
+                # items are those previously discovered
+                # (to_be_removed[ancestor]) minus any teams that are inherited
+                # keepers.
+                removable = (to_be_removed[ancestor] -
+                             inherited_keepers[ancestor])
+            to_be_removed[ancestor] = removable
+
+    # Remove all at once.
+    from pprint import pprint
+    print
+    pprint(to_be_removed)
+    import pdb; pdb.set_trace(); # DO NOT COMMIT
+    for team, removable in to_be_removed.items():
+        if len(removable) > 0:
+            ids = [person.id for person in removable]
+            store.find(TeamParticipation,
+                       TeamParticipation.team == team,
+                       TeamParticipation.personID.is_in(ids)).remove()
     flush_database_updates()
 
 
