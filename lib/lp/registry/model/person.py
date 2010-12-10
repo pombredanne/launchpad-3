@@ -232,7 +232,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ACTIVE_STATES,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -274,9 +277,6 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
-
-
-ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
 
 
 class JoinTeamEvent:
