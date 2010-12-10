@@ -279,6 +279,19 @@ class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
             TeamSubscriptionPolicyError, self.field.validate,
             TeamSubscriptionPolicy.MODERATED)
 
+    def test_closed_team_can_change_to_another_closed_policy(self):
+        # A closed team can change between the two closed polcies.
+        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.team.addMember(self.other_team, self.team.teamowner)
+        super_team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED,
+            owner=self.team.teamowner)
+        super_team.addMember(self.team, self.team.teamowner)
+        self.assertTrue(
+            self.field.constraint(TeamSubscriptionPolicy.RESTRICTED))
+        self.assertEqual(
+            None, self.field.validate(TeamSubscriptionPolicy.RESTRICTED))
+
     def test_open_team_with_closed_sub_team_can_become_closed(self):
         # The team can become closed.
         self.setUpTeams(

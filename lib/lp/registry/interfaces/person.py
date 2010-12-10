@@ -516,7 +516,7 @@ def team_subscription_policy_can_transition(team, policy):
                 raise TeamSubscriptionPolicyError(
                     "The team subscription policy cannot be %s because it "
                     "has one or more active PPAs." % policy)
-    elif policy != TeamSubscriptionPolicy.OPEN:
+    elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
         # The team can become MODERATED or RESTRICTED if its member teams
         # are not OPEN.
         for member in team.activemembers:

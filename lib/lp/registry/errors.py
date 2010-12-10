@@ -138,7 +138,7 @@ class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
     """The team cannot have the specified TeamSubscriptionPolicy.
 
     The error can be raised because a super team or member team prevents
-    the this team from setting a specific policy. The error can also be
+    this team from setting a specific policy. The error can also be
     raised if the team has an active PPA.
     """
     webservice_error(httplib.BAD_REQUEST)
