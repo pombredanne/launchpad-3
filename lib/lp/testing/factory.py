@@ -3271,7 +3271,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePackageDiff(self, from_source=None, to_source=None,
                         requester=None, status=None, date_fulfilled=None,
-                        diff_content=None):
+                        diff_content=None, diff_filename=None):
         """Create a new `PackageDiff`."""
         if from_source is None:
             from_source = self.makeSourcePackageRelease()
@@ -3285,7 +3285,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_fulfilled = UTC_NOW
         if diff_content is None:
             diff_content = self.getUniqueString("packagediff")
-        lfa = self.makeLibraryFileAlias(content=diff_content)
+        lfa = self.makeLibraryFileAlias(
+            filename=diff_filename, content=diff_content)
         return ProxyFactory(
             PackageDiff(
                 requester=requester, from_source=from_source,
