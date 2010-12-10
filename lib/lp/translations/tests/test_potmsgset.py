@@ -221,7 +221,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
     # XXX henninge 2010-12-10 bug=688519: getCurrentTranslationMessage is not
     # side-aware yet.
-    def disabled_test_getCurrentTranslationMessage(self):
+    def test_getCurrentTranslationMessage(self):
         """Test how shared and diverged current translation messages
         interact."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
@@ -239,8 +239,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # Adding a diverged translation in one template makes that one
         # current in it.
-        diverged_translation = self.factory.makeCurrentTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
+        diverged_translation = self.factory.makeTranslationMessage(
+            pofile=sr_pofile, potmsgset=self.potmsgset, force_diverged=True)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
@@ -249,7 +249,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
     # XXX henninge 2010-12-10 bug=688519: The meaning of  imported is gone
     # and so this test and the method it is testing need to be updated.
-    def disabled_test_getImportedTranslationMessage(self):
+    def test_getImportedTranslationMessage(self):
         """Test how shared and diverged current translation messages
         interact."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
@@ -268,9 +268,9 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # Adding a diverged translation in one template makes that one
         # an imported translation there.
-        diverged_translation = self.factory.makeCurrentTranslationMessage(
+        diverged_translation = self.factory.makeTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
-            current_other=True, diverged=True)
+            is_current_upstream=True, force_diverged=True)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
             self.devel_potemplate, serbian), diverged_translation)
         self.assertEquals(self.potmsgset.getImportedTranslationMessage(
