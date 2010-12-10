@@ -305,7 +305,7 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def _makeView(self):
-        message = self.factory.makeTranslationMessage()
+        message = self.factory.makeCurrentTranslationMessage()
         request = LaunchpadTestRequest()
         view = CurrentTranslationMessagePageView(message, request)
         view.lock_timestamp = datetime.now(pytz.utc)
@@ -415,7 +415,7 @@ class TestHelpers(TestCaseWithFactory):
         # message, if any.
         new_translations = {0: self.getUniqueString()}
         original_translations = {0: self.getUniqueString()}
-        current_message = self.factory.makeTranslationMessage(
+        current_message = self.factory.makeCurrentTranslationMessage(
             translations=original_translations)
         self.assertEqual(
             original_translations,
@@ -435,7 +435,7 @@ class TestHelpers(TestCaseWithFactory):
         # empty string.
         new_translations = {1: self.getUniqueString()}
         original_translations = {0: self.getUniqueString()}
-        current_message = self.factory.makeTranslationMessage(
+        current_message = self.factory.makeCurrentTranslationMessage(
             translations=original_translations)
         self.assertEqual(
             {1: u''},
