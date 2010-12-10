@@ -151,6 +151,7 @@ class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
         self.message = message
 
     def doc(self):
+        """See `Invalid`."""
         return self.message
 
     def __str__(self):
