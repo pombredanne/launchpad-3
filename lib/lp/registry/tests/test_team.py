@@ -13,11 +13,15 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.errors import TeamSubscriptionPolicyError
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
+    IPersonSet,
     ITeamPublic,
     PersonVisibility,
     TeamMembershipRenewalPolicy,
@@ -195,7 +199,29 @@ class TestDefaultMembershipPeriod(TestCaseWithFactory):
         ITeamPublic['defaultmembershipperiod'].validate(3650)
 
 
-class TestTeamSubscriptionPolicy(TestCaseWithFactory):
+class TestTeamSubscriptionPolicyError(TestCaseWithFactory):
+    """Test `TeamSubscriptionPolicyError` messages."""
+
+    layer = FunctionalLayer
+
+    def test_default_message(self):
+        error = TeamSubscriptionPolicyError()
+        self.assertEqual('Team Subscription Policy Error', error.message)
+
+    def test_str(self):
+        # The string is the error message.
+        error = TeamSubscriptionPolicyError('a message')
+        self.assertEqual('a message', str(error))
+
+    def test_doc(self):
+        # The doc() method returns the message.  It is called when rendering
+        # an error in the UI. eg structure error.
+        error = TeamSubscriptionPolicyError('a message')
+        self.assertEqual('a message', error.doc())
+
+
+class TestTeamSubscriptionPolicyChoice(TestCaseWithFactory):
+    """Test `TeamSubsciptionPolicyChoice` constraints."""
 
     layer = DatabaseFunctionalLayer
 
@@ -207,6 +233,17 @@ class TestTeamSubscriptionPolicy(TestCaseWithFactory):
             subscription_policy=other_policy, owner=self.team.teamowner)
         self.field = ITeamPublic['subscriptionpolicy'].bind(self.team)
         login_person(self.team.teamowner)
+
+    def test___getTeam_with_team(self):
+        # _getTeam returns the context team for team updates.
+        self.setUpTeams(TeamSubscriptionPolicy.MODERATED)
+        self.assertEqual(self.team, self.field._getTeam())
+
+    def test___getTeam_with_person_set(self):
+        # _getTeam returns the context person set for team creation.
+        person_set = getUtility(IPersonSet)
+        field = ITeamPublic['subscriptionpolicy'].bind(person_set)
+        self.assertEqual(None, field._getTeam())
 
     def test_closed_team_with_closed_super_team_cannot_become_open(self):
         # The team cannot compromise the membership of the super team

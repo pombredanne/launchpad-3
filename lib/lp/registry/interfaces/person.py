@@ -531,9 +531,18 @@ def team_subscription_policy_can_transition(team, policy):
 
 
 class TeamSubsciptionPolicyChoice(Choice):
+    """A valid team subscription policy."""
+
+    def _getTeam(self):
+        """Return the context if it is a team or None."""
+        if IPerson.providedBy(self.context):
+            return self.context
+        else:
+            return None
 
     def constraint(self, value):
-        team = self.context
+        """See `IField`."""
+        team = self._getTeam()
         policy = value
         try:
             return team_subscription_policy_can_transition(team, policy)
@@ -546,9 +555,10 @@ class TeamSubsciptionPolicyChoice(Choice):
         Returns True if the team can change its subscription policy to the
         `TeamSubscriptionPolicy`, otherwise raise TeamSubscriptionPolicyError.
         """
-        team = self.context
+        team = self._getTeam()
         policy = value
-        return team_subscription_policy_can_transition(team, policy)
+        team_subscription_policy_can_transition(team, policy)
+        super(TeamSubsciptionPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):

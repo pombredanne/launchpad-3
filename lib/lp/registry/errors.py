@@ -138,10 +138,23 @@ class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
     """The team cannot have the specified TeamSubscriptionPolicy.
 
     The error can be raised because a super team or member team prevents
-    the subject team from setting a specific policy. The error can also be
-    raised if the team has artefacts that require a specific policy.
+    the this team from setting a specific policy. The error can also be
+    raised if the team has an active PPA.
     """
     webservice_error(httplib.BAD_REQUEST)
+
+    _default_message = "Team Subscription Policy Error"
+
+    def __init__(self, message=None):
+        if message is None:
+            message = self._default_message
+        self.message = message
+
+    def doc(self):
+        return self.message
+
+    def __str__(self):
+        return self.message
 
 
 class JoinNotAllowed(Exception):
