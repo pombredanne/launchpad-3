@@ -7,18 +7,18 @@ __metaclass__ = type
 __all__ = ['main']
 
 import bz2
-import cPickle
 from cgi import escape as html_quote
-import copy
 from ConfigParser import RawConfigParser
+import copy
+import cPickle
 import csv
 from datetime import datetime
 import gzip
 import math
 import os.path
 import re
-from textwrap import dedent
 import textwrap
+from textwrap import dedent
 import time
 
 import simplejson as json

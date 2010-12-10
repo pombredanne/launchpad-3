@@ -177,6 +177,7 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 def get_license_status(license_approved, license_reviewed, licenses):
@@ -293,7 +294,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
               HasCustomLanguageCodesMixin, HasMergeProposalsMixin,
-              HasBugHeatMixin, HasCodeImportsMixin):
+              HasBugHeatMixin, HasCodeImportsMixin, TranslationPolicyMixin):
     """A Product."""
 
     implements(
@@ -1052,26 +1053,27 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def translationgroups(self):
-        tg = []
-        if self.translationgroup:
-            tg.append(self.translationgroup)
-        if self.project:
-            if self.project.translationgroup:
-                if self.project.translationgroup not in tg:
-                    tg.append(self.project.translationgroup)
+        return reversed(self.getTranslationGroups())
 
-    @property
-    def aggregatetranslationpermission(self):
-        perms = [self.translationpermission]
-        if self.project:
-            perms.append(self.project.translationpermission)
-        # XXX Carlos Perello Marin 2005-06-02:
-        # Reviewer please describe a better way to explicitly order
-        # the enums. The spec describes the order, and the values make
-        # it work, and there is space left for new values so we can
-        # ensure a consistent sort order in future, but there should be
-        # a better way.
-        return max(perms)
+    def isTranslationsOwner(self, person):
+        """See `ITranslationPolicy`."""
+        # A Product owner gets special translation privileges.
+        return person.inTeam(self.owner)
+
+    def getInheritedTranslationPolicy(self):
+        """See `ITranslationPolicy`."""
+        # A Product inherits parts of it its effective translation
+        # policy from its ProjectGroup, if any.
+        return self.project
+
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, "Got a SourcePackage for a Product!"
+        # Product translations are considered upstream.  They are
+        # automatically shared.
+        return True
 
     @property
     def has_any_specifications(self):

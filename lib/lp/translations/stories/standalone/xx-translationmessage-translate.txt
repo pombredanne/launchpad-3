@@ -430,9 +430,9 @@ We submit it
       <td>
       </td><td>
         <div>
-          Somebody else changed this translation since you started. To avoid
+          This translation has changed since you last saw it.  To avoid
           accidentally reverting work done by others, we added your
-           translations as suggestions, so please review current values.
+          translations as suggestions.  Please review the current values.
         </div>
       </td>
     </tr>
@@ -525,9 +525,9 @@ Initially, a message has a non-empty packaged translation.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...              '+source/evolution/+pots/evolution-2.2/es/5/+translate')
-    >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_packaged')
+    >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_other')
     >>> print extract_text(packaged)
-    Packaged: tarjetas
+    In upstream: tarjetas
 
 First, we look for an existing imported translation in evolution PO file
 in Ubuntu Hoary.  We can't modify "imported" messages through web UI, so
@@ -562,7 +562,7 @@ We replace it with an empty, imported translation:
     >>> import datetime, pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_message = potmsgset.updateTranslation(
-    ...     evolution_pofile, carlos, {0: u''}, is_imported=True,
+    ...     evolution_pofile, carlos, {0: u''}, is_current_upstream=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     >>> print translation_message
     None
@@ -574,7 +574,7 @@ packaged translation anymore.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...              '+source/evolution/+pots/evolution-2.2/es/5/+translate')
-    >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_packaged')
+    >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_other')
     >>> print packaged
     None
 
@@ -588,8 +588,9 @@ from.
     >>> login('foo.bar@canonical.com')
     >>> pofile = factory.makePOFile('sr')
     >>> potmsgset = factory.makePOTMsgSet(pofile.potemplate, sequence=1)
-    >>> translationmessage = factory.makeTranslationMessage(
-    ...     potmsgset=potmsgset, translations = [u"shared translation"])
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
+    ...     potmsgset=potmsgset, pofile=pofile,
+    ...     translations=[u"shared translation"])
     >>> translationmessage.setPOFile(pofile)
     >>> message_url = '/'.join(
     ...     [canonical_url(translationmessage, rootsite='translations'),
@@ -638,10 +639,9 @@ translation.
 
     >>> shared_html_id = 'msgset_%d_%s_suggestion_%d_0' % (
     ...     potmsgset.id, pofile.language.code, translationmessage.id)
-    >>> extract_text(find_tag_by_id(browser.contents, shared_html_id))
-    u'shared translation'
+    >>> shared_message_tag = find_tag_by_id(browser.contents, shared_html_id)
+    >>> print extract_text(shared_message_tag)
+    shared translation
 
     >>> extract_text(find_tag_by_id(browser.contents, html_id))
     u'diverged'
-
-
