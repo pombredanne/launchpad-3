@@ -1681,7 +1681,7 @@ class BugTaskSet:
                         params.milestone.distribution.currentseries)
                     join = LeftJoin(
                         ConjoinedMaster,
-                        And(ConjoinedMaster.bug == BugTask.bugID,
+                        And(ConjoinedMaster.bugID == BugTask.bugID,
                             ConjoinedMaster.distroseries == current_series.id,
                             ))
                     join_tables.append((ConjoinedMaster, join))
@@ -1702,7 +1702,7 @@ class BugTaskSet:
                             "project group, or distribution")
                     join = LeftJoin(
                         ConjoinedMaster,
-                        And(ConjoinedMaster.bug == BugTask.bugID,
+                        And(ConjoinedMaster.bugID == BugTask.bugID,
                             ConjoinedMaster.productseriesID.is_in(
                                 dev_focus_ids)))
                     join_tables.append((ConjoinedMaster, join))
