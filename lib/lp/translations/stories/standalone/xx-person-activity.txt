@@ -58,7 +58,9 @@ For instance, here's a user called a+b.
 
     >>> login('carlos@canonical.com')
     >>> ab = factory.makePerson(name='a+b')
-    >>> message = factory.makeTranslationMessage(translator=ab)
+    >>> sr_pofile = factory.makePOFile('sr')
+    >>> message = factory.makeCurrentTranslationMessage(
+    ...     pofile=sr_pofile, translator=ab)
     >>> person_url = canonical_url(ab, rootsite='translations')
     >>> logout()
 

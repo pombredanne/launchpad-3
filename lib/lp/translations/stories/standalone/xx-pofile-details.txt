@@ -152,9 +152,9 @@ We'll create two new accounts to demonstrate this.
     >>> language_code = 'es'
     >>> pofile = factory.makePOFile(language_code, potemplate=template)
     >>> potmsgset = factory.makePOTMsgSet(template)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=merged_translator, potmsgset=potmsgset)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=translator, potmsgset=potmsgset)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(merged_translator).merged = translator
