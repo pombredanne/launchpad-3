@@ -42,7 +42,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
@@ -361,6 +360,9 @@ class PackageBuildDerived:
                 os.mkdir(target_dir)
 
             # Release the builder for another job.
+            # This is done before the commit() since the commit will reload
+            # builder.slave from the database, and override any current
+            # slave set manually by the testsuite.
             d = self.buildqueue_record.builder.cleanSlave()
 
             # Commit so there are no race conditions with archiveuploader about
