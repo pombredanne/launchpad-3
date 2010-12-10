@@ -335,7 +335,7 @@ Distribution source packages side-bar
 -------------------------------------
 
 The page has a side-bar with a global actions menu, a "Get Involved"
-menu, and a "Bug subscriptions" portlet.
+menu, and a "Subscribers" portlet.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'global-actions'))
@@ -352,7 +352,7 @@ menu, and a "Bug subscriptions" portlet.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents,
     ...                    'portlet-structural-subscribers'))
-    Bug subscriptions
+    Subscribers
     ...
 
 (see bugs/stories/structural-subscriptions/xx-bug-subscriptions.txt for more
