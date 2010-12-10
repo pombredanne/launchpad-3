@@ -49,7 +49,7 @@ And lets define a nice printout function for PO files.
     ...         msgid = potmsgset.singular_text
     ...         current = potmsgset.getCurrentTranslationMessage(
     ...             pofile.potemplate, pofile.language)
-    ...         imported = potmsgset.getImportedTranslationMessage(
+    ...         imported = potmsgset.getOtherTranslationMessage(
     ...             pofile.potemplate, pofile.language)
     ...         imported_translation = translation = None
     ...         if imported is not None:

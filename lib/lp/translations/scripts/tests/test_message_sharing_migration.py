@@ -213,7 +213,7 @@ class TranslatedProductMixin(TranslatableProductMixin):
         if not message:
             # No diverged message here, so check for a shared one.
             message = potmsgset.getSharedTranslationMessage(
-                language=self.dutch)
+                potemplate=template, language=self.dutch)
         return message
 
     def _getMessages(self):

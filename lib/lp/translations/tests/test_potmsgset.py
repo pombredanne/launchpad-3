@@ -249,32 +249,35 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
     # XXX henninge 2010-12-10 bug=688519: The meaning of  imported is gone
     # and so this test and the method it is testing need to be updated.
-    def test_getImportedTranslationMessage(self):
+    def test_getOtherTranslationMessage(self):
         """Test how shared and diverged current translation messages
         interact."""
-        # Share a POTMsgSet in two templates, and get a Serbian POFile.
-        self.potmsgset.setSequence(self.stable_potemplate, 1)
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        serbian = sr_pofile.language
+        # Share POTMsgSet in a template on the other side.
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        ubuntu_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        self.potmsgset.setSequence(ubuntu_potemplate, 1)
+        # Get POFiles on both sides.
+        pofile = self.factory.makePOFile(potemplate=self.devel_potemplate)
+        ubuntu_pofile = self.factory.makePOFile(
+            potemplate=ubuntu_potemplate, language=pofile.language)
 
-        # A shared translation is imported in both templates.
-        shared_translation = self.factory.makeSharedTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_current_upstream=True)
-        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
-            self.devel_potemplate, serbian), shared_translation)
-        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
-            self.stable_potemplate, serbian), shared_translation)
+        # A shared translation is current on both sides.
+        shared_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=self.potmsgset, current_other=True)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            ubuntu_potemplate, ubuntu_pofile.language), shared_translation)
+        self.assertEquals(self.potmsgset.getOtherTranslationMessage(
+            self.devel_potemplate, pofile.language), shared_translation)
 
-        # Adding a diverged translation in one template makes that one
-        # an imported translation there.
-        diverged_translation = self.factory.makeTranslationMessage(
-            pofile=sr_pofile, potmsgset=self.potmsgset,
-            is_current_upstream=True, force_diverged=True)
-        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
-            self.devel_potemplate, serbian), diverged_translation)
-        self.assertEquals(self.potmsgset.getImportedTranslationMessage(
-            self.stable_potemplate, serbian), shared_translation)
+        # A diverted translation on the other side is not returned.
+        diverged_translation = self.factory.makeCurrentTranslationMessage(
+            pofile=ubuntu_pofile, potmsgset=self.potmsgset, diverged=True)
+        self.assertEquals(self.potmsgset.getCurrentTranslationMessage(
+            ubuntu_potemplate, ubuntu_pofile.language), diverged_translation)
+        self.assertEquals(self.potmsgset.getOtherTranslationMessage(
+            self.devel_potemplate, pofile.language), shared_translation)
 
     def test_getSharedTranslationMessage(self):
         """Test how shared and diverged current translation messages
@@ -287,14 +290,16 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         shared_translation = self.factory.makeSharedTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertEquals(
-            self.potmsgset.getSharedTranslationMessage(serbian),
+            self.potmsgset.getSharedTranslationMessage(
+                self.stable_potemplate, serbian),
             shared_translation)
 
         # Adding a diverged translation doesn't break getSharedTM.
         diverged_translation = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
         self.assertEquals(
-            self.potmsgset.getSharedTranslationMessage(serbian),
+            self.potmsgset.getSharedTranslationMessage(
+                self.stable_potemplate, serbian),
             shared_translation)
 
     def test_getLocalTranslationMessages(self):
@@ -1721,7 +1726,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message, potmsgset.getImportedTranslationMessage(
+        self.assertEqual(message, potmsgset.getOtherTranslationMessage(
             pofile.potemplate, pofile.language))
         self.assertEqual(origin, message.origin)
 
@@ -1752,7 +1757,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         message = potmsgset.setCurrentTranslation(
             pofile, pofile.potemplate.owner, translations, origin)
 
-        self.assertEqual(message, potmsgset.getImportedTranslationMessage(
+        self.assertEqual(message, potmsgset.getOtherTranslationMessage(
             pofile.potemplate, pofile.language))
 
     def test_detects_conflict(self):

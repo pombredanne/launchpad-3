@@ -257,7 +257,7 @@ class XpiTestCase(unittest.TestCase):
         # With this first import, upstream and Ubuntu translations must match.
         self.assertEquals(
             translation.translations,
-            potmsgset.getImportedTranslationMessage(
+            potmsgset.getOtherTranslationMessage(
                 self.firefox_template,
                 self.spanish_firefox.language).translations)
 
@@ -274,7 +274,7 @@ class XpiTestCase(unittest.TestCase):
             unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
+            potmsgset.getOtherTranslationMessage(
                 self.firefox_template,
                 self.spanish_firefox.language).translations,
             [u'M'])
@@ -292,7 +292,7 @@ class XpiTestCase(unittest.TestCase):
             unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            potmsgset.getImportedTranslationMessage(
+            potmsgset.getOtherTranslationMessage(
                 self.firefox_template,
                 self.spanish_firefox.language).translations,
             [u'm'])

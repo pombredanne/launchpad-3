@@ -197,7 +197,7 @@ class TestTranslationSuggestions(unittest.TestCase):
             is_current_upstream=True, lock_timestamp=None)
         current_translation = potmsgset.getCurrentTranslationMessage(
             self.foo_template, self.foo_nl.language)
-        imported_translation = potmsgset.getImportedTranslationMessage(
+        imported_translation = potmsgset.getOtherTranslationMessage(
             self.foo_template, self.foo_nl.language)
 
         self.assertEquals(

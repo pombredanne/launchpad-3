@@ -318,7 +318,7 @@ set in the PO template.
 
 And should be accepted by our validator.
 
-    >>> upstream_message = message.potmsgset.getImportedTranslationMessage(
+    >>> upstream_message = message.potmsgset.getOtherTranslationMessage(
     ...     pofile.potemplate, pofile.language)
     >>> upstream_message.validation_status == TranslationValidationStatus.OK
     True
@@ -337,7 +337,7 @@ Check that the plural form was imported correctly.
 
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'Singular %d', u'Plural %d')
-    >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
+    >>> imported_translationmessage = potmsgset.getOtherTranslationMessage(
     ...     pofile.potemplate, pofile.language)
     >>> print imported_translationmessage.validation_status.name
     OK

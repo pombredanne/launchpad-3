@@ -287,7 +287,8 @@ class POTMsgSet(SQLBase):
             current.setPOFile(pofile)
             return current
 
-    def _getUsedTranslationMessage(self, potemplate, language, current=True):
+    def _getUsedTranslationMessage(self, potemplate, language,
+                                   other_side=False):
         """Get a translation message which is either used in
         Launchpad (current=True) or in an import (current=False).
 
@@ -297,6 +298,7 @@ class POTMsgSet(SQLBase):
         # carefully: they need to match condition specified in indexes,
         # or Postgres may not pick them up (in complicated queries,
         # Postgres query optimizer sometimes does text-matching of indexes).
+        
         if current:
             used_clause = 'is_current_ubuntu IS TRUE'
         else:
@@ -322,18 +324,20 @@ class POTMsgSet(SQLBase):
 
     def getCurrentTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, current=True)
+        return self.getCurrentTranslation(
+            potemplate, language, potemplate.side)
 
-    def getImportedTranslationMessage(self, potemplate, language):
+    def getOtherTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            potemplate, language, current=False)
+        traits = getUtility(
+            ITranslationSideTraitsSet).getForTemplate(potemplate)
+        return self.getCurrentTranslation(
+            None, language, traits.other_side_traits.side)
 
-    def getSharedTranslationMessage(self, language):
+    def getSharedTranslationMessage(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        return self._getUsedTranslationMessage(
-            None, language, current=True)
+        return self.getCurrentTranslation(
+            None, language, potemplate.side)
 
     def getCurrentTranslation(self, potemplate, language, side):
         """See `IPOTMsgSet`."""
@@ -487,7 +491,7 @@ class POTMsgSet(SQLBase):
 
     def hasTranslationChangedInLaunchpad(self, potemplate, language):
         """See `IPOTMsgSet`."""
-        imported_translation = self.getImportedTranslationMessage(
+        imported_translation = self.getOtherTranslationMessage(
             potemplate, language)
         current_translation = self.getCurrentTranslationMessage(
             potemplate, language)
@@ -884,7 +888,7 @@ class POTMsgSet(SQLBase):
             matching_message is not None and
             matching_message.is_current_upstream)
         if is_current_upstream or match_is_upstream:
-            upstream_message = self.getImportedTranslationMessage(
+            upstream_message = self.getOtherTranslationMessage(
                 pofile.potemplate, pofile.language)
         else:
             upstream_message = None
