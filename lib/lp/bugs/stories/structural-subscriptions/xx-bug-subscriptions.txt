@@ -17,12 +17,12 @@ We subscribe the Landscape team to Ubuntu.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+subscribe')
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For Ubuntu Linux:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
-And subscribe some people to the Firefox source package in Ubuntu.
+And subscribe some people to the Firefox source package in ubuntu.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
@@ -43,14 +43,14 @@ Sample Person and the Landscape team are now subscribed.
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(
-    ...     browser.contents, 'Bug subscriptions')).encode(
+    ...     browser.contents, 'Subscribers')).encode(
     ...     'ascii', 'backslashreplace')
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
         Landscape Developers
         Sample Person
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 Sample Person can also unsubscribe himself and the Landscape team.
@@ -63,11 +63,11 @@ Sample Person can also unsubscribe himself and the Landscape team.
     >>> browser.getControl('Save these changes').click()
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 
@@ -110,12 +110,12 @@ No Privileges Person is now subscribed...
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
         No Privileges Person
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 ...has an entry in the "Remove subscriptions" list...
@@ -132,11 +132,11 @@ No Privileges Person is now subscribed...
     public bugs in "mozilla-firefox in ubuntu".
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 The checkbox to unsubscribe No Privileges Person is no longer present on
@@ -158,11 +158,11 @@ An attempt by Sample Person to remove Foo Bar from the subscription list
 and to add Sample Person is now silently ignored, because LaunchpadFormView
 purges the submitted form data from now unexpected values.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
@@ -172,11 +172,11 @@ purges the submitted form data from now unexpected values.
     >>> browser.getControl('Save these changes').click()
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
-    Bug subscriptions
-      For...mozilla-firefox...package in Ubuntu:
+    >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
+    Subscribers
+      To all bugs in mozilla-firefox in ubuntu:
         Foo Bar
-      For Ubuntu Linux:
+      To all Ubuntu Linux bugs:
         Landscape Developers
 
 When Sample Person now visits the bug subscription page, he no longer sees
