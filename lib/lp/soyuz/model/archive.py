@@ -1311,6 +1311,7 @@ class Archive(SQLBase):
 
         base_clauses = (
             LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None,
             )
 
         if re_issource.match(filename):
