@@ -5,9 +5,13 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
+
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import IBugTaskSet
@@ -15,14 +19,16 @@ from lp.testing import (
     ANONYMOUS,
     login,
     login_person,
+    login_team,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
-from lp.testing._webservice import QueryCollector
 
 
 class TestMilestoneViews(TestCaseWithFactory):
@@ -163,9 +169,88 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         self.assertEqual(0, product.development_focus.all_bugtasks.count())
 
 
-class TestMilestoneIndex(TestCaseWithFactory):
+class TestQueryCountBase(TestCaseWithFactory):
+
+    def assert_bugtasks_query_count(self, milestone, bugtask_count,
+                                    query_limit):
+        # Assert that the number of queries run by view.bugtasks is low.
+        self.add_bug(bugtask_count)
+        login_person(self.owner)
+        view = create_initialized_view(milestone, '+index')
+        # Eliminate permission check for the admin team from the
+        # recorded queries by loading it now. If the test ever breaks,
+        # the person fixing it won't waste time trying to track this
+        # query down.
+        getUtility(ILaunchpadCelebrities).admin
+        with StormStatementRecorder() as recorder:
+            bugtasks = list(view.bugtasks)
+        self.assertThat(recorder, HasQueryCount(LessThan(query_limit)))
+        self.assertEqual(bugtask_count, len(bugtasks))
+
+    def assert_milestone_page_query_count(self, milestone, query_limit):
+        collector = QueryCollector()
+        collector.register()
+        try:
+            milestone_url = canonical_url(milestone)
+            browser = self.getUserBrowser(user=self.owner)
+            browser.open(milestone_url)
+            self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
+        finally:
+            # Unregister now in case this method is called multiple
+            # times in a single test.
+            collector.unregister()
+
+
+class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        self.owner = self.factory.makePerson(name='product-owner')
+        self.product = self.factory.makeProduct(owner=self.owner)
+        login_person(self.product.owner)
+        self.milestone = self.factory.makeMilestone(
+            productseries=self.product.development_focus)
+
+    def add_bug(self, count):
+        login_person(self.product.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(product=self.product)
+            bug.bugtasks[0].transitionToMilestone(
+                self.milestone, self.product.owner)
+            # This is necessary to test precaching of assignees.
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        # The view.bugtasks attribute will make four queries:
+        #  1. Load bugtasks and bugs.
+        #  2. Load assignees (Person, Account, and EmailAddress).
+        #  3. Load links to specifications.
+        #  4. Load links to branches.
+        bugtask_count = 10
+        self.assert_bugtasks_query_count(
+            self.milestone, bugtask_count, query_limit=5)
+
+    def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees.
+        query_limit = 34
+        self.add_bug(3)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
+        self.add_bug(10)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
 
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone
@@ -175,6 +260,7 @@ class TestMilestoneIndex(TestCaseWithFactory):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
+        page_query_limit = 34
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -199,8 +285,6 @@ class TestMilestoneIndex(TestCaseWithFactory):
         collector = QueryCollector()
         collector.register()
         self.addCleanup(collector.unregister)
-        # This page is rather high in queries : 46 as a baseline. 20100817
-        page_query_limit = 46
         browser.open(milestone_url)
         # Check that the test found the bug
         self.assertTrue(bug1_url in browser.contents)
@@ -228,3 +312,127 @@ class TestMilestoneIndex(TestCaseWithFactory):
         self.assertEqual(with_1_private_bug, with_3_private_bugs,
             "different query count: \n%s\n******************\n%s\n" % (
             '\n'.join(with_1_queries), '\n'.join(with_3_queries)))
+
+
+class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        self.owner = self.factory.makePerson(name='product-owner')
+        self.project_group = self.factory.makeProject(owner=self.owner)
+        login_person(self.owner)
+        self.milestone_name = 'foo'
+        # A ProjectGroup milestone doesn't exist unless one of its
+        # Projects has a milestone of that name.
+        product = self.factory.makeProduct(
+            owner=self.owner, project=self.project_group)
+        self.product_milestone = self.factory.makeMilestone(
+            productseries=product.development_focus,
+            name=self.milestone_name)
+        self.milestone = self.project_group.getMilestone(
+            self.milestone_name)
+
+    def add_bug(self, count):
+        login_person(self.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(product=self.product_milestone.product)
+            bug.bugtasks[0].transitionToMilestone(
+                self.product_milestone, self.owner)
+            # This is necessary to test precaching of assignees.
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        # The view.bugtasks attribute will make five queries:
+        #  1. For each project in the group load all the dev focus series ids.
+        #  2. Load bugtasks and bugs.
+        #  3. Load assignees (Person, Account, and EmailAddress).
+        #  4. Load links to specifications.
+        #  5. Load links to branches.
+        bugtask_count = 10
+        self.assert_bugtasks_query_count(
+            self.milestone, bugtask_count, query_limit=6)
+
+    def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees as long as the number of
+        # projects doesn't increase.
+        query_limit = 37
+        self.add_bug(1)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
+        self.add_bug(10)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
+
+
+class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionMilestoneIndexQueryCount, self).setUp()
+        # Increase cache size so that the query counts aren't affected
+        # by objects being removed from the cache early.
+        config.push('storm-cache', dedent('''
+            [launchpad]
+            storm_cache_size: 1000
+            '''))
+        self.addCleanup(config.pop, 'storm-cache')
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.owner = self.factory.makePerson(name='test-owner')
+        login_team(self.ubuntu.owner)
+        self.ubuntu.owner = self.owner
+        self.sourcepackagename = self.factory.makeSourcePackageName(
+            'foo-package')
+        login_person(self.owner)
+        self.milestone = self.factory.makeMilestone(
+            distribution=self.ubuntu)
+
+    def add_bug(self, count):
+        login_person(self.owner)
+        for i in range(count):
+            bug = self.factory.makeBug(distribution=self.ubuntu)
+            distrosourcepackage = self.factory.makeDistributionSourcePackage(
+                distribution=self.ubuntu)
+            bug.bugtasks[0].transitionToTarget(distrosourcepackage)
+            bug.bugtasks[0].transitionToMilestone(
+                self.milestone, self.owner)
+            # This is necessary to test precaching of assignees.
+            bug.bugtasks[0].transitionToAssignee(
+                self.factory.makePerson())
+        logout()
+
+    def test_bugtasks_queries(self):
+        # The view.bugtasks attribute will make seven queries:
+        #  1. Load ubuntu.currentseries.
+        #  2. Check if the user is in the admin team.
+        #  3. Check if the user is in the owner of the admin team.
+        #  4. Load bugtasks and bugs.
+        #  5. Load assignees (Person, Account, and EmailAddress).
+        #  6. Load links to specifications.
+        #  7. Load links to branches.
+        bugtask_count = 10
+        self.assert_bugtasks_query_count(
+            self.milestone, bugtask_count, query_limit=8)
+
+    def test_milestone_eager_loading(self):
+        # Verify that the number of queries does not increase with more
+        # bugs with different assignees.
+        query_limit = 32
+        self.add_bug(3)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
+        self.add_bug(10)
+        self.assert_milestone_page_query_count(
+            self.milestone, query_limit=query_limit)
