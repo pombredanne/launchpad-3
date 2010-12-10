@@ -333,10 +333,11 @@ class RedirectAwareProberFactory(ProberFactory):
             # because nothing can be done around it, so it shouldn't raise an
             # exception.
             if self.redirection_count > 0:
+                self._cancelTimeout(None)
                 logger.error('Failed after redirect.', exc_info=True)
             else:
                 self.failed(e)
-        except (InfiniteLoopDetected, UnknownURLScheme), e:
+        except (InfiniteLoopDetected,), e:
             self.failed(e)
 
         else:
