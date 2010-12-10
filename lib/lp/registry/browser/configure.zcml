@@ -1145,7 +1145,7 @@
             template="../templates/team-contactaddress.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
-            permission="launchpad.MailingListManager"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.team.TeamMailingListConfigurationView"
             name="+mailinglist"
             template="../templates/team-mailinglist.pt"/>
