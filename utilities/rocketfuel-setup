@@ -9,6 +9,15 @@
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
+DO_WORKSPACE=1
+for arg in "$@"; do
+  if [ "$arg" == "--no-workspace" ]; then
+    DO_WORKSPACE=0
+  else
+    echo Unrecognized argument: $arg >& 2
+    exit 1;
+  fi
+done
 
 # Establish LP username
 whoami=`whoami`
@@ -192,6 +201,21 @@ sudo a2enmod headers > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable headers module in Apache2"
   exit 1
+fi
+
+if [ $DO_WORKSPACE == 0 ]; then
+  cat <<EOT
+Branches have not been created, as requested.  You will need to do some or all
+of the following steps:
+$ bzr branch lp:launchpad devel
+$ cd devel
+$ bzr branch lp:~launchpad/lp-source-dependencies/trunk/ download-cache
+$ utilities/update-sourcecode
+$ utilities/launchpad-database-setup
+$ make schema
+$ sudo make install
+EOT
+  exit 0
 fi
 
 if [ ! -e "$HOME/.rocketfuel-env.sh" ]; then
