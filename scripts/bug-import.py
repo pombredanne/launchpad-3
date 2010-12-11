@@ -37,6 +37,10 @@ class BugImportScript(LaunchpadScript):
         self.parser.add_option('--dont-verify-users', dest='verify_users',
                                help="Don't verify newly created users",
                                action='store_false', default=True)
+        self.parser.add_option('--allow-empty-comments',
+                               dest='allow_empty_comments',
+                               help="Allow empty bug comments",
+                               action='store_true', default=False)
 
     def main(self):
         if self.options.product is None:
@@ -60,7 +64,8 @@ class BugImportScript(LaunchpadScript):
 
         importer = BugImporter(
             product, bugs_filename, self.options.cache_filename,
-            verify_users=self.options.verify_users, logger=self.logger)
+            verify_users=self.options.verify_users, logger=self.logger,
+            allow_empty_comments=self.options.allow_empty_comments)
         importer.importBugs(self.txn)
         config.pop('send_email_data')
 
