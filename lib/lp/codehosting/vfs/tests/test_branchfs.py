@@ -1034,15 +1034,12 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         self.disable_directory_isolation()
 
         # Trap stderr.
+        self.addCleanup(setattr, sys, 'stderr', sys.stderr)
         self._real_stderr = sys.stderr
         sys.stderr = codecs.getwriter('utf8')(StringIO())
 
         # To record generated oopsids
         self.generated_oopsids = []
-
-    def tearDown(self):
-        sys.stderr = self._real_stderr
-        TestCaseWithTransport.tearDown(self)
 
     def _replacement_branchChanged(self, user_id, branch_id, stacked_on_url,
                                    last_revision, *format_strings):
@@ -1113,8 +1110,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
 
         # Now check the error report - we just check the last one.
         self.assertEqual(len(oopsids), 2)
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
+        error_report = self.oopses[-1]
         # The error report oopsid should match what's print to stderr.
         self.assertEqual(error_report.id, oopsids[1])
         # The error report text should contain the root cause oopsid.

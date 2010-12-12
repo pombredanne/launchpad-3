@@ -145,8 +145,13 @@ class BadUrlScheme(BadUrl):
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation. We support
 # only two numbered backups to avoid indefinite space usage.
-ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr', 'backup.bzr.~1~',
-    'backup.bzr.~2~')
+ALLOWED_DIRECTORIES = (
+    '.bzr',
+    '.bzr.backup',
+    'backup.bzr',
+    'backup.bzr.~1~',
+    'backup.bzr.~2~',
+    )
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
@@ -710,8 +715,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 ('source', virtual_url_fragment),
                 ('error-explanation', failure.getErrorMessage())])
             self.unexpectedError(failure, request)
-            fault = faults.OopsOccurred("updating a Launchpad branch",
-                                        request.oopsid)
+            fault = faults.OopsOccurred(
+                "updating a Launchpad branch", request.oopsid)
             # Twisted's log.err used to write to stderr but it doesn't now so
             # we will write to stderr as well as log.err.
             print >> sys.stderr, repr(fault)
@@ -723,13 +728,13 @@ class LaunchpadServer(_BaseLaunchpadServer):
         # If the sub-process exited abnormally, the stderr it produced is
         # probably a much more interesting traceback than the one attached to
         # the Failure we've been passed.
-        tb = None
+        traceback = None
         if failure.check(error.ProcessTerminated):
-            tb = getattr(failure, 'error', None)
-        if tb is None:
-            tb = failure.getTraceback()
+            traceback = getattr(failure, 'error', None)
+        if traceback is None:
+            traceback = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, tb), request, now)
+            (failure.type, failure.value, traceback), request, now)
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
