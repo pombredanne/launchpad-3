@@ -15,7 +15,7 @@ class TestVersionInfo(unittest.TestCase):
 
     def test_out_of_tree_versioninfo_access(self):
         # Our cronscripts are executed with cwd != LP root.
-        # Getting version info should still work.
+        # Getting version info should still work in them.
         args = [os.path.join(TREE_ROOT, "bin/py"), "-c",
                 "from canonical.launchpad.versioninfo import revno;"
                 "print revno"]
