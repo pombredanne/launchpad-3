@@ -67,7 +67,6 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
-    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -429,12 +428,12 @@ class TestPersonStates(TestCaseWithFactory):
         self.assertEqual('(\\u0170-tester)>', displayname)
 
 
-class TestPersonSet(TestCaseWithFactory):
+class TestPersonSet(TestCase):
     """Test `IPersonSet`."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestPersonSet, self).setUp()
+        TestCase.setUp(self)
         login(ANONYMOUS)
         self.addCleanup(logout)
         self.person_set = getUtility(IPersonSet)
@@ -457,31 +456,6 @@ class TestPersonSet(TestCaseWithFactory):
             person2 is None,
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
-
-    def test_getPrecachedPersonsFromIDs(self):
-        # The getPrecachedPersonsFromIDs() method should only make one
-        # query to load all the extraneous data. Accessing the
-        # attributes should then cause zero queries.
-        person_ids = [
-            self.factory.makePerson().id
-            for i in range(3)]
-
-        with StormStatementRecorder() as recorder:
-            persons = list(self.person_set.getPrecachedPersonsFromIDs(
-                person_ids, need_karma=True, need_ubuntu_coc=True,
-                need_location=True, need_archive=True,
-                need_preferred_email=True, need_validity=True))
-        self.assertThat(recorder, HasQueryCount(LessThan(2)))
-
-        with StormStatementRecorder() as recorder:
-            for person in persons:
-                person.is_valid_person
-                person.karma
-                person.is_ubuntu_coc_signer
-                person.location
-                person.archive
-                person.preferredemail
-        self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
 
 class KarmaTestMixin:

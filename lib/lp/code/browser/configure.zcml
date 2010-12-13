@@ -138,16 +138,23 @@
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         name="+index"/>
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.launchpad.IBazaarApplication"
         layer="lp.code.publisher.CodeLayer"
         permission="zope.Public"
         class="lp.code.browser.bazaar.BazaarApplicationView"
-        facet="branches">
-        <browser:page
-            name="+index"
-            template="../templates/bazaar-index.pt"/>
-    </browser:pages>
+        facet="branches"
+        name="+index"
+        template="../templates/bazaar-index.pt" />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        layer="lp.code.publisher.CodeLayer"
+        permission="zope.Public"
+        class="lp.code.browser.recipebuildslisting.CompletedDailyBuildsView"
+        facet="branches"
+        name="+daily-builds"
+        template="../templates/daily-builds-listing.pt" />
+
     <browser:page
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         layer="lp.code.publisher.CodeLayer"
