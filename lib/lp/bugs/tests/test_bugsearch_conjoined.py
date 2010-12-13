@@ -31,46 +31,8 @@ from lp.testing import (
 from lp.testing.matchers import HasQueryCount
 
 
-def bugtarget_filebug(bugtarget, summary, status=None):
-    """File a bug as the current user on the bug target and return it."""
-    return bugtarget.createBug(CreateBugParams(
-        getUtility(ILaunchBag).user, summary, comment=summary, status=status))
-
-
-def project_filebug(project, summary, status=None):
-    """File a bug on a project.
-
-    Since it's not possible to file a bug on a project directly, the bug
-    will be filed on one of its products.
-    """
-    # It doesn't matter which product the bug is filed on.
-    product = random.choice(list(project.products))
-    bug = bugtarget_filebug(product, summary, status=status)
-    return bug
-
-
-def productseries_filebug(productseries, summary, status=None):
-    """File a bug on a product series.
-
-    Since it's not possible to file a bug on a product series directly,
-    the bug will first be filed on its product, then a series task will
-    be created.
-    """
-    bug = bugtarget_filebug(productseries.product, summary, status=status)
-    getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, productseries=productseries,
-        status=status)
-    return bug
-
-
-class TestExcludeConjoinedMasterSearch(TestCaseWithFactory):
+class TestSearchBase(TestCaseWithFactory):
     """Tests of exclude_conjoined_tasks param."""
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestExcludeConjoinedMasterSearch, self).setUp()
-        self.product = self.factory.makeProduct()
 
     def makeBug(self, milestone):
         bug = self.factory.makeBug(
@@ -83,137 +45,211 @@ class TestExcludeConjoinedMasterSearch(TestCaseWithFactory):
         store.invalidate()
         return bug
 
-    def test_project_milestone(self):
+
+class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
+    """Tests of exclude_conjoined_tasks param for project milestones."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectExcludeConjoinedMasterSearch, self).setUp()
         # Test that the right number of bugtasks are returned when bugs
         # with conjoined masters are excluded.
-        product = self.factory.makeProduct()
-        milestone = self.factory.makeMilestone(
-            product=product, name='foo')
-        bug_count = 3
-        bugs = [
-            self.makeBug(milestone)
-            for i in range(bug_count)]
-        params = BugTaskSearchParams(
-            user=None, milestone=milestone, exclude_conjoined_tasks=True)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(
+            product=self.product, name='foo')
+        self.bug_count = 2
+        self.bugs = [
+            self.makeBug(self.milestone)
+            for i in range(self.bug_count)]
+        self.params = BugTaskSearchParams(
+            user=None, milestone=self.milestone, exclude_conjoined_tasks=True)
 
-        # Test with zero conjoined masters.
+    def test_search_results_count_simple(self):
+        # Verify number of results with no conjoined masters.
+        self.assertEqual(
+            self.bug_count,
+            self.milestone.target.searchTasks(self.params).count())
+
+    def test_search_query_count(self):
+        # Verify query count.
         with StormStatementRecorder() as recorder:
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            list(self.milestone.target.searchTasks(self.params))
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
+    def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
         # productseries that are not the development focus.
-        productseries = self.factory.makeProductSeries(product=product)
-        for bug in bugs:
+        productseries = self.factory.makeProductSeries(product=self.product)
+        for bug in self.bugs:
             self.factory.makeBugTask(bug=bug, target=productseries)
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            self.assertEqual(
+                self.bug_count,
+                self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_conjoined_masters(self):
         # Test with increasing numbers of conjoined masters.
         conjoined_master_count = 0
-        masters = []
-        for bug in bugs:
+        for bug in self.bugs:
             conjoined_master_count += 1
-            masters.append(self.factory.makeBugTask(
-                bug=bug, target=product.development_focus))
-            self.assertEqual(bug_count - conjoined_master_count,
-                             milestone.target.searchTasks(params).count())
+            self.factory.makeBugTask(
+                bug=bug, target=self.product.development_focus)
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_wontfix_conjoined_masters(self):
         # Test that conjoined master bugtasks in the WONTFIX status
         # don't cause the bug to be excluded.
+        masters = [
+            self.factory.makeBugTask(
+                bug=bug, target=self.product.development_focus)
+            for bug in self.bugs]
+        conjoined_master_count = len(masters)
         for bugtask in masters:
             conjoined_master_count -= 1
-            with person_logged_in(product.owner):
+            with person_logged_in(self.product.owner):
                 bugtask.transitionToStatus(
-                    BugTaskStatus.WONTFIX, product.owner)
-            self.assertEqual(bug_count - conjoined_master_count,
-                             milestone.target.searchTasks(params).count())
+                    BugTaskStatus.WONTFIX, self.product.owner)
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
 
-    def test_projectgroup_milestone(self):
-        # Test that the right number of bugtasks are returned when bugs
-        # with conjoined masters are excluded.
-        projectgroup = self.factory.makeProject()
-        bug_count = 3
-        bug_products = {}
-        for i in range(bug_count):
-            product = self.factory.makeProduct(project=projectgroup)
+
+class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
+    """Tests of exclude_conjoined_tasks param for project group milestones."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProjectGroupExcludeConjoinedMasterSearch, self).setUp()
+        self.projectgroup = self.factory.makeProject()
+        self.bug_count = 2
+        self.bug_products = {}
+        for i in range(self.bug_count):
+            product = self.factory.makeProduct(project=self.projectgroup)
             product_milestone = self.factory.makeMilestone(
                 product=product, name='foo')
             bug = self.makeBug(product_milestone)
-            bug_products[bug] = product
-        milestone = projectgroup.getMilestone('foo')
+            self.bug_products[bug] = product
+        self.milestone = self.projectgroup.getMilestone('foo')
+        self.params = BugTaskSearchParams(
+            user=None, milestone=self.milestone, exclude_conjoined_tasks=True)
 
-        params = BugTaskSearchParams(
-            user=None, milestone=milestone, exclude_conjoined_tasks=True)
+    def test_search_results_count_simple(self):
+        # Verify number of results with no conjoined masters.
+        self.assertEqual(
+            self.bug_count,
+            self.milestone.target.searchTasks(self.params).count())
 
-        # Test with zero conjoined masters.
+    def test_search_query_count(self):
         with StormStatementRecorder() as recorder:
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            list(self.milestone.target.searchTasks(self.params))
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
+    def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
         # productseries that are not the development focus.
-        for bug, product in bug_products.items():
+        for bug, product in self.bug_products.items():
             productseries = self.factory.makeProductSeries(product=product)
             self.factory.makeBugTask(bug=bug, target=productseries)
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            self.assertEqual(
+                self.bug_count,
+                self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_conjoined_masters(self):
         # Test with increasing numbers of conjoined masters.
         conjoined_master_count = 0
-        masters = []
-        for bug, product in bug_products.items():
+        for bug, product in self.bug_products.items():
             conjoined_master_count += 1
-            masters.append(self.factory.makeBugTask(
-                bug=bug, target=product.development_focus))
-            self.assertEqual(bug_count - conjoined_master_count,
-                             milestone.target.searchTasks(params).count())
+            self.factory.makeBugTask(
+                bug=bug, target=product.development_focus)
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_wontfix_conjoined_masters(self):
         # Test that conjoined master bugtasks in the WONTFIX status
         # don't cause the bug to be excluded.
+        masters = [
+            self.factory.makeBugTask(
+                bug=bug, target=product.development_focus)
+            for bug, product in self.bug_products.items()]
+        conjoined_master_count = len(masters)
         for bugtask in masters:
             conjoined_master_count -= 1
             with person_logged_in(product.owner):
                 bugtask.transitionToStatus(
                     BugTaskStatus.WONTFIX, bugtask.target.owner)
-            self.assertEqual(bug_count - conjoined_master_count,
-                             milestone.target.searchTasks(params).count())
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
+
+
+class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
+    """Tests of exclude_conjoined_tasks param for distribution milestones."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionExcludeConjoinedMasterSearch, self).setUp()
+        self.distro = getUtility(ILaunchpadCelebrities).ubuntu
+        self.milestone = self.factory.makeMilestone(
+            distribution=self.distro, name='foo')
+        self.bug_count = 2
+        self.bugs = [
+            self.makeBug(self.milestone)
+            for i in range(self.bug_count)]
+        self.params = BugTaskSearchParams(
+            user=None, milestone=self.milestone, exclude_conjoined_tasks=True)
 
     def test_distribution_milestone(self):
-        # Test that the right number of bugtasks are returned when bugs
-        # with conjoined masters are excluded.
-        distro = getUtility(ILaunchpadCelebrities).ubuntu
-        milestone = self.factory.makeMilestone(
-            distribution=distro, name='foo')
-        bug_count = 3
-        bugs = [
-            self.makeBug(milestone)
-            for i in range(bug_count)]
-        params = BugTaskSearchParams(
-            user=None, milestone=milestone, exclude_conjoined_tasks=True)
+        # Verify number of results with no conjoined masters.
+        self.assertEqual(
+            self.bug_count,
+            self.milestone.target.searchTasks(self.params).count())
 
-        # Test with zero conjoined masters.
+    def test_search_query_count(self):
+        # Verify query count.
         with StormStatementRecorder() as recorder:
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            list(self.milestone.target.searchTasks(self.params))
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
+    def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
         # productseries that are not the development focus.
         distroseries = self.factory.makeDistroSeries(
-            distribution=distro, status=SeriesStatus.SUPPORTED)
-        for bug in bugs:
+            distribution=self.distro, status=SeriesStatus.SUPPORTED)
+        for bug in self.bugs:
             self.factory.makeBugTask(bug=bug, target=distroseries)
-            self.assertEqual(bug_count,
-                             milestone.target.searchTasks(params).count())
+            self.assertEqual(
+                self.bug_count,
+                self.milestone.target.searchTasks(self.params).count())
 
+    def test_search_results_count_with_conjoined_masters(self):
         # Test with increasing numbers of conjoined masters.
         conjoined_master_count = 0
-        for bug in bugs:
+        for bug in self.bugs:
             conjoined_master_count += 1
             self.factory.makeBugTask(
-                bug=bug, target=distro.currentseries)
-            self.assertEqual(bug_count - conjoined_master_count,
-                             milestone.target.searchTasks(params).count())
+                bug=bug, target=self.distro.currentseries)
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
+
+    def test_search_results_count_with_wontfix_conjoined_masters(self):
+        # Test that conjoined master bugtasks in the WONTFIX status
+        # don't cause the bug to be excluded.
+        masters = [
+            self.factory.makeBugTask(
+                bug=bug, target=self.distro.currentseries)
+            for bug in self.bugs]
+        conjoined_master_count = len(masters)
+        for bugtask in masters:
+            conjoined_master_count -= 1
+            with person_logged_in(self.distro.owner):
+                bugtask.transitionToStatus(
+                    BugTaskStatus.WONTFIX, self.distro.owner)
+            self.assertEqual(
+                self.bug_count - conjoined_master_count,
+                self.milestone.target.searchTasks(self.params).count())
