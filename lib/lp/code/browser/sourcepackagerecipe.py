@@ -317,10 +317,9 @@ CREATE_NEW = 'create-new'
 
 
 USE_ARCHIVE_VOCABULARY = SimpleVocabulary((
-    SimpleTerm(EXISTING_PPA, EXISTING_PPA,
-               _("Use an existing PPA")),
-    SimpleTerm(CREATE_NEW, CREATE_NEW,
-               _("Create a new PPA for this recipe")),
+    SimpleTerm(EXISTING_PPA, EXISTING_PPA, _("Use an existing PPA")),
+    SimpleTerm(
+        CREATE_NEW, CREATE_NEW, _("Create a new PPA for this recipe")),
     ))
 
 

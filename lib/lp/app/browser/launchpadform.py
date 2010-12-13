@@ -560,8 +560,6 @@ def render_radio_widget_part(widget, term_value, current_value, label=None):
     if label is None:
         label = term.title
     value = term.token
-    return render(index=term.value,
-                  text=label,
-                  value=value,
-                  name=widget.name,
-                  cssClass='')
+    return render(
+        index=term.value, text=label, value=value, name=widget.name,
+        cssClass='')
