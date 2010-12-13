@@ -18,7 +18,7 @@ True
 Try renaming a project to a blacklisted name:
 
 >>> admin_browser.open('http://launchpad.dev/mozilla')
->>> admin_browser.getLink('Change details').click()
+>>> admin_browser.getLink('Administer').click()
 >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
 >>> admin_browser.getControl('Change Details').click()
 >>> "The name 'blacklisted' has been blocked by the Launchpad administrators" \
@@ -51,7 +51,7 @@ the black list is to prevent social engineering attacks by pretending to
 be a Launchpad Celebrity.
 
 We can edit the details of an object with a blacklisted name quite
-happily without generating 
+happily without generating
 
 >>> admin_browser.open('http://launchpad.dev/~admins')
 >>> admin_browser.getLink('Change details').click()
@@ -62,4 +62,3 @@ happily without generating
 []
 >>> "has been blocked" in admin_browser.contents
 False
-

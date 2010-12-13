@@ -9,7 +9,6 @@ from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
