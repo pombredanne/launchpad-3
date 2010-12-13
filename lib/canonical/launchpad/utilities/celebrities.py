@@ -113,6 +113,7 @@ class LanguageCelebrityDescriptor(CelebrityDescriptor):
 
     Unlike most other celebrities, languages are retrieved by code.
     """
+
     def _getCelebrityByName(self, utility):
         """See `CelebrityDescriptor`."""
         return utility.getLanguageByCode(self.name)
