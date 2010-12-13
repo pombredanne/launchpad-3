@@ -1,15 +1,12 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Handler incoming Bugs email."""
+"""Handle incoming Bugs email."""
 
 __metaclass__ = type
 __all__ = [
     "MaloneHandler",
-]
-
-
-__metaclass__ = type
+    ]
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
