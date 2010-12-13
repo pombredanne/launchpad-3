@@ -156,7 +156,7 @@ separator.
 
     >>> body_lines = message.get_payload().splitlines(True)
     >>> for line_number, line in enumerate(body_lines):
-    ...     if line.startswith('_____'):
+    ...     if line.startswith('-- '):
     ...         break
     ... else:
     ...     raise AssertionError('No footer found')
