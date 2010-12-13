@@ -350,8 +350,8 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
     implements(IProjectGroupEditMenu)
-
     label = "Change project group details"
+    page_title = label
     schema = IProjectGroup
     field_names = [
         'displayname', 'title', 'summary', 'description',
