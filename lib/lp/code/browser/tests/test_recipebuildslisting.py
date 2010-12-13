@@ -14,10 +14,7 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import (
-    BaseLayer,
-    DatabaseFunctionalLayer,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -101,7 +98,7 @@ class TestRecipeBuildListing(BrowserTestCase):
 
     def test_recipebuild_url(self):
         # Check the browser URL is as expected.
-        root_url = BaseLayer.appserver_root_url(facet='code')
+        root_url = self.layer.appserver_root_url(facet='code')
         user_browser = self.getUserBrowser("%s/+daily-builds" % root_url)
         self.assertEqual(
             user_browser.url, "%s/+daily-builds" % root_url)
