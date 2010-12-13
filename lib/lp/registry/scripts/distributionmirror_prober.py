@@ -554,8 +554,8 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
 
     expected_failures = (
         BadResponseCode,
-        ProberTimeout,
         ConnectionSkipped,
+        ProberTimeout,
         UnknownURLSchemeAfterRedirect,
         )
 
