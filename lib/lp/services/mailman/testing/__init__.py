@@ -17,6 +17,7 @@ from Mailman import (
     mm_cfg,
     )
 from Mailman.Queue import XMLRPCRunner
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -56,7 +57,7 @@ class MailmanTestCase(TestCaseWithFactory):
         # This utility is based on mailman/tests/TestBase.py.
         mlist = MailList.MailList()
         team = lp_mailing_list.team
-        owner_email = team.teamowner.preferredemail.email
+        owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
         mlist.Create(team.name, owner_email, 'password')
         mlist.host_name = 'lists.launchpad.dev'
         mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
