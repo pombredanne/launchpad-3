@@ -7,9 +7,7 @@ This handler checks Launchpad member's personal standing in order to determine
 whether list non-members are allowed to post to a mailing list.
 """
 
-import xmlrpclib
-
-from Mailman import mm_cfg
+from Mailman.Queue import XMLRPCRunner
 
 
 def process(mlist, msg, msgdata):
@@ -26,7 +24,7 @@ def process(mlist, msg, msgdata):
     sender = msg.get_sender()
     # Ask Launchpad about the standing of this member.
     in_good_standing = False
-    proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+    proxy = XMLRPCRunner.get_mailing_list_api_proxy()
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
