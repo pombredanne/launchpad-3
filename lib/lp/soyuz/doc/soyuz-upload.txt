@@ -738,7 +738,7 @@ Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "archive-cruft-check.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-vvn",
+  >>> process = subprocess.Popen([sys.executable, script, "-vn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",
   ...                             "/var/tmp/archive"],
