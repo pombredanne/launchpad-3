@@ -17,6 +17,7 @@ from canonical.testing.layers import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     launchpadlib_for,
+    login_person,
     TestCaseWithFactory,
     )
 
@@ -36,7 +37,7 @@ class ProjectGroupSearchTestCase(TestCaseWithFactory):
             name="razzle-dazzle", owner=self.person,
             description="Giving 110% at all times.")
         self.projectset = getUtility(IProjectGroupSet)
-        login(self.person.preferredemail.email)
+        login_person(self.person)
 
     def testSearchNoMatch(self):
         # Search for a string that does not exist.
