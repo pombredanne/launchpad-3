@@ -1606,42 +1606,36 @@ class BugTaskSet:
         # Perform a LEFT JOIN to the conjoined master bugtask.  If the
         # conjoined master is not null, it gets filtered out.
         ConjoinedMaster = ClassAlias(BugTask, 'ConjoinedMaster')
+        extra_clauses = ["ConjoinedMaster.id IS NULL"]
         if milestone.distribution is not None:
-            extra_clauses = ["ConjoinedMaster.id IS NULL"]
             current_series = milestone.distribution.currentseries
             join = LeftJoin(
                 ConjoinedMaster,
                 And(ConjoinedMaster.bugID == BugTask.bugID,
                     ConjoinedMaster.distroseriesID == current_series.id,
-                    Not(ConjoinedMaster.statusID.is_in(
-                            self._NON_CONJOINED_STATUSES))))
+                    Not(ConjoinedMaster.status.is_in(
+                            BugTask._NON_CONJOINED_STATUSES))))
             join_tables = [(ConjoinedMaster, join)]
         else:
             # Prevent import loop.
             from lp.registry.model.milestone import Milestone
-            from lp.registry.model.product import Product
-            from lp.registry.model.productseries import ProductSeries
             if IProjectGroupMilestone.providedBy(milestone):
                 # XXX
-                extra_clauses = ["ProductSeries.id IS NULL"]
                 joins = [
                     Join(Milestone, BugTask.milestone == Milestone.id),
-                    Join(Product, Milestone.product == Product.id),
                     LeftJoin(
                         ConjoinedMaster,
                         And(ConjoinedMaster.bugID == BugTask.bugID,
-                            ConjoinedMaster.productseriesID != None,
-                            Not(ConjoinedMaster.statusID.is_in(
-                                    self._NON_CONJOINED_STATUSES)))),
-                    LeftJoin(
-                        ProductSeries,
-                        And(Product.development_focusID == ProductSeries.id,
-                            ConjoinedMaster.productseriesID
-                                == ProductSeries.id)),
+                            ConjoinedMaster.productseriesID.is_in(SQL('''
+                                SELECT development_focus
+                                FROM Product
+                                WHERE Product.id = Milestone.product
+                                ''')),
+                            Not(ConjoinedMaster.status.is_in(
+                                    BugTask._NON_CONJOINED_STATUSES)))),
                     ]
                 join_tables = [(join.right, join) for join in joins]
             elif milestone.product is not None:
-                extra_clauses = ["ConjoinedMaster.id IS NULL"]
                 dev_focus_id = (
                     milestone.product.development_focusID)
                 # XXX
@@ -1649,14 +1643,14 @@ class BugTaskSet:
                     ConjoinedMaster,
                     And(ConjoinedMaster.bugID == BugTask.bugID,
                         ConjoinedMaster.productseriesID == dev_focus_id,
-                        Not(ConjoinedMaster.statusID.is_in(
-                                self._NON_CONJOINED_STATUSES))))
+                        Not(ConjoinedMaster.status.is_in(
+                                BugTask._NON_CONJOINED_STATUSES))))
                 join_tables = [(ConjoinedMaster, join)]
             else:
                 raise AssertionError(
                     "A milestone must always have either a project, "
                     "project group, or distribution")
-            return (join_tables, extra_clauses)
+        return (join_tables, extra_clauses)
 
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
