@@ -192,9 +192,6 @@ class IPersonRoles(Interface):
     in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
         required=True, readonly=True)
-    in_mailing_list_experts = Bool(
-        title=_("True if this person is a mailing list expert."),
-        required=True, readonly=True)
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
         required=True, readonly=True)
