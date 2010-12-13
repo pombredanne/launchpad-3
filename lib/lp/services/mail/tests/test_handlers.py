@@ -7,4 +7,4 @@ from doctest import DocTestSuite
 
 
 def test_suite():
-    return DocTestSuite('canonical.launchpad.mail.handlers')
+    return DocTestSuite('lp.services.mail.handlers')
