@@ -190,8 +190,7 @@
       <li tal:define="file context/log"
           tal:condition="file">
         <a class="sprite download"
-           tal:attributes="href context/log_url"
-           tal:content="string: buildlog">BUILDLOG</a>
+           tal:attributes="href context/log_url">buildlog</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"

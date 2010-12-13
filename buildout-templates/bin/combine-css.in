@@ -23,7 +23,9 @@ names = [
     'style.css',
     'lazr/build/yui/cssreset/reset.css',
     'lazr/build/yui/cssfonts/fonts.css',
-    'lazr/build/yui/cssgrids/grids.css',
+    # Use the old cssgrids instead of the new cssgrids.
+    #'lazr/build/yui/cssgrids/grids.css',
+    'cssgrids/grids.css',
     'lazr/build/lazr/assets/skins/sam/lazr.css',
     'lazr/build/inlineedit/assets/skins/sam/editor.css',
     'lazr/build/autocomplete/assets/skins/sam/autocomplete.css',

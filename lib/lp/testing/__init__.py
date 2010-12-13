@@ -46,7 +46,6 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-import codecs
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -155,6 +154,7 @@ from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     launchpadlib_credentials_for,
     launchpadlib_for,
+    launchpadlib_for_anonymous,
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
@@ -433,6 +433,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     def assertTextMatchesExpressionIgnoreWhitespace(self,
                                                     regular_expression_txt,
                                                     text):
+
         def normalise_whitespace(text):
             return ' '.join(text.split())
         pattern = re.compile(
@@ -765,16 +766,17 @@ class YUIUnitTestCase(WindmillTestCase):
         client = self.client
         client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string
@@ -838,7 +840,7 @@ class ZopeTestInSubProcess:
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -856,7 +858,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -868,7 +870,7 @@ class ZopeTestInSubProcess:
             result = super(ZopeTestResult, result)
             # Accept the result from the child process.
             protocol = subunit.TestProtocolServer(result)
-            protocol.readFrom(codecs.getreader("utf8")(fdread))
+            protocol.readFrom(fdread)
             fdread.close()
             os.waitpid(pid, 0)
 
@@ -883,6 +885,7 @@ def capture_events(callable_obj, *args, **kwargs):
         callable, and events are the events emitted by the callable.
     """
     events = []
+
     def on_notify(event):
         events.append(event)
     old_subscribers = zope.event.subscribers[:]
@@ -1120,6 +1123,29 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def monkey_patch(context, **kwargs):
+    """In the ContextManager scope, monkey-patch values.
+
+    The context may be anything that supports setattr.  Packages,
+    modules, objects, etc.  The kwargs are the name/value pairs for the
+    values to set.
+    """
+    old_values = {}
+    not_set = object()
+    for name, value in kwargs.iteritems():
+        old_values[name] = getattr(context, name, not_set)
+        setattr(context, name, value)
+    try:
+        yield
+    finally:
+        for name, value in old_values.iteritems():
+            if value is not_set:
+                delattr(context, name)
+            else:
+                setattr(context, name, value)
 
 
 def unlink_source_packages(product):

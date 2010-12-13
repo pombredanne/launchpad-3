@@ -297,6 +297,17 @@ class IBugTarget(IHasBugs):
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        description=(
+            u"If enabled, Launchpad searches the project for bugs which "
+            u"could match the summary given by the bug reporter. However, "
+            u"this can lead users to mistake an existing bug as the one "
+            u"they want to report. This can happen for example for hardware "
+            u"related bugs where the one symptom can be caused by "
+            u"completely different hardware and drivers."),
+        required=False)
+
     def createBug(bug_params):
         """Create a new bug on this target.
 

@@ -31,10 +31,10 @@ The distribution's registrant can access the page and change the usage.
     True
     >>> print registrant.getControl(name='field.enable_bug_expiration').value
     True
-    >>> print registrant.getControl(name='field.official_blueprints').value
-    True
-    >>> print registrant.getControl(name='field.official_answers').value
-    True
+    >>> print registrant.getControl(name='field.blueprints_usage').value[0]
+    LAUNCHPAD
+    >>> print registrant.getControl(name='field.answers_usage').value[0]
+    LAUNCHPAD
 
     >>> registrant.getControl(name='field.official_rosetta').value = False
     >>> registrant.getControl('Change', index=3).click()
@@ -52,17 +52,17 @@ Just like Launchpad administrators can.
     >>> print admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value
     True
-    >>> print admin_browser.getControl(name='field.official_blueprints').value
-    True
-    >>> print admin_browser.getControl(name='field.official_answers').value
-    True
+    >>> print admin_browser.getControl(name='field.blueprints_usage').value[0]
+    LAUNCHPAD
+    >>> print admin_browser.getControl(name='field.answers_usage').value[0]
+    LAUNCHPAD
 
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
-    >>> admin_browser.getControl(name='field.official_blueprints').value = (
-    ... False)
-    >>> admin_browser.getControl(name='field.official_answers').value = False
+    >>> admin_browser.getControl(name='field.blueprints_usage').value = (
+    ... ['UNKNOWN'])
+    >>> admin_browser.getControl(name='field.answers_usage').value = ['UNKNOWN']
     >>> admin_browser.getControl('Change', index=3).click()
 
     >>> print admin_browser.url
