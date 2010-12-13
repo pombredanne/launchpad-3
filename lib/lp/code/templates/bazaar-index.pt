@@ -52,6 +52,13 @@
         so you can use Bazaar with those too.
         (<a href="https://help.launchpad.net/Code">Read our guide</a>)
       </p>
+      <p class="application-summary" style="padding-top: 0.25em;">
+        Launchpad can build Ubuntu packages directly from branches using recipes.
+        We currently build over <a href="/+daily-builds">100 different packages</a>
+        into PPAs automatically using this method.
+        (<a href="https://help.launchpad.net/Packaging/SourceBuilds">
+        Learn more about recipes</a>)
+      </p>
 
       <div id="project-cloud-preview" tal:content="cache:public,6 hours">
         <h2>Most active projects in the last month</h2>
@@ -109,17 +116,6 @@
           </ul>
           <p><a href="/+recently-changed-branches">more&#8230;</a></p>
         </div>
-      </div>
-      <div class="clear"></div>
-      <div id="build-recipes">
-        <h2>Source Package Recipe Builds</h2>
-        <p id="recipe-summary">
-          Launchpad can use recipes to automatically build Ubuntu packages
-          from Bazaar branches.<br/>
-          (<a href="https://help.launchpad.net/Packaging/SourceBuilds">
-          Learn more about recipes.</a>)
-        </p>
-        <a href="/+daily-builds">Recent recipe builds&#8230;</a>
       </div>
       <div class="clear"></div>
       <div id="application-footer" tal:content="cache:public,30 minutes">
