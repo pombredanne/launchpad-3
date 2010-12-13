@@ -157,6 +157,8 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
         # Registry admins can delete teams with super team memberships.
         self.target_team = getUtility(ILaunchpadCelebrities).registry_experts
         super_team = self.factory.makeTeam()
+        # Use admin to avoid the team invitation dance. The Registry admin
+        # is logged back in.
         with celebrity_logged_in('admin'):
             self.dupe_team.join(super_team, super_team.teamowner)
         view = self.getView()
