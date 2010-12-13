@@ -4,13 +4,13 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-structural-subscribers">
 
-  <h2>Bug subscriptions</h2>
+  <h2>Subscribers</h2>
 
   <div class="portletBody portletContent"
        tal:define="subscriptions context/bug_subscriptions;
                    parent_target context/parent_subscription_target;
                    target_type context/target_type_display">
-    <b>For <tal:target-title replace="context/title" />:</b>
+    <b tal:content="view/target_label">To all Foobar bugs</b>:
     <br />
     <div tal:condition="subscriptions">
       <ul>
@@ -28,7 +28,7 @@
       <br /><br />
     </div>
     <tal:parent-subscriptions condition="parent_target">
-      <b tal:content="string:For ${parent_target/title}:">For Ubuntu:</b>
+      <b tal:content="view/parent_target_label">For Ubuntu</b>:
       <br />
       <div tal:condition="parent_target/bug_subscriptions">
         <ul>

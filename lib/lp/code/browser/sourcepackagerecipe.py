@@ -58,6 +58,7 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
+    has_structured_doc,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -287,9 +288,16 @@ class ISourcePackageAddEditSchema(Interface):
         description=(
             u'If built daily, these are the distribution versions that '
             u'the recipe will be built for.'))
-    recipe_text = Text(
-        title=u'Recipe text', required=True,
-        description=u'The text of the recipe.')
+    recipe_text = has_structured_doc(
+        Text(
+            title=u'Recipe text', required=True,
+            description=u"""The text of the recipe.
+                <a href="/+help/recipe-syntax.html" target="help"
+                  >Syntax help&nbsp;
+                  <span class="sprite maybe">
+                    <span class="invisible-link">Help</span>
+                  </span></a>
+               """))
 
 
 class RecipeTextValidatorMixin:
@@ -305,10 +313,7 @@ class RecipeTextValidatorMixin:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
         except RecipeParseError, error:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.  '
-                '%(error)s' % {'error': error.problem})
+            self.setFieldError('recipe_text', str(error))
 
 
 class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):

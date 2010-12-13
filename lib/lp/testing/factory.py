@@ -105,7 +105,10 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationPriority,
+    )
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import (
@@ -1675,7 +1678,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
                           status=SpecificationDefinitionStatus.NEW,
-                          implementation_status=None):
+                          implementation_status=None, goal=None, specurl=None,
+                          assignee=None, drafter=None, approver=None,
+                          priority=None, whiteboard=None, milestone=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -1691,17 +1696,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = self.makePerson()
+        if priority is None:
+            priority = SpecificationPriority.UNDEFINED
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
             definition_status=status,
+            whiteboard=whiteboard,
             owner=owner,
+            assignee=assignee,
+            drafter=drafter,
+            approver=approver,
             product=product,
-            distribution=distribution)
+            distribution=distribution,
+            priority=priority)
+        naked_spec = removeSecurityProxy(spec)
+        if status == SpecificationDefinitionStatus.OBSOLETE:
+            # This is to satisfy a DB constraint of obsolete specs.
+            naked_spec.completer = owner
+            naked_spec.date_completed = datetime.now(pytz.UTC)
+        naked_spec.specurl = specurl
+        naked_spec.milestone = milestone
+        if goal is not None:
+            naked_spec.proposeGoal(goal, spec.target.owner)
         if implementation_status is not None:
-            naked_spec = removeSecurityProxy(spec)
             naked_spec.implementation_status = implementation_status
             naked_spec.updateLifecycleStatus(owner)
         return spec
@@ -2443,7 +2463,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return template
 
     def makePOFile(self, language_code=None, potemplate=None, owner=None,
-                   create_sharing=False, language=None, variant=None):
+                   create_sharing=False, language=None):
         """Make a new translation file."""
         assert language_code is None or language is None, (
             "Please specifiy only one of language_code and language.")
@@ -2453,11 +2473,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             language_code = language.code
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
-        pofile = potemplate.newPOFile(language_code,
-                                      create_sharing=create_sharing)
-        if variant is not None:
-            removeSecurityProxy(pofile).variant = variant
-        return pofile
+        return potemplate.newPOFile(language_code,
+                                    create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
                       context=None, sequence=0):
@@ -2831,7 +2848,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None):
+            status=None, pocket=None, date_created=None, processor=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
@@ -2848,22 +2865,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 archive = self.makeArchive()
             else:
                 archive = source_package_release.upload_archive
+        if processor is None:
+            processor = self.makeProcessor()
+        if distroarchseries is None:
+            if source_package_release is not None:
+                distroseries = source_package_release.upload_distroseries
+            else:
+                distroseries = self.makeDistroSeries()
+            distroarchseries = self.makeDistroArchSeries(
+                distroseries=distroseries,
+                processorfamily=processor.family)
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
         if source_package_release is None:
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
-                archive, component=multiverse)
+                archive, component=multiverse,
+                distroseries=distroarchseries.distroseries)
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
-                archive=archive, sourcepackagerelease=source_package_release)
-        processor = self.makeProcessor()
-        if distroarchseries is None:
-            distroarchseries = self.makeDistroArchSeries(
-                distroseries=source_package_release.upload_distroseries,
-                processorfamily=processor.family)
+                archive=archive, sourcepackagerelease=source_package_release,
+                pocket=pocket)
         if status is None:
             status = BuildStatus.NEEDSBUILD
-        if pocket is None:
-            pocket = PackagePublishingPocket.RELEASE
+        if date_created is None:
+            date_created = self.getUniqueDate()
         binary_package_build = getUtility(IBinaryPackageBuildSet).new(
             source_package_release=source_package_release,
             processor=processor,
@@ -2871,7 +2897,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status=status,
             archive=archive,
             pocket=pocket,
-            date_created=self.getUniqueDate())
+            date_created=date_created)
         naked_build = removeSecurityProxy(binary_package_build)
         naked_build.builder = builder
         return binary_package_build
@@ -2982,7 +3008,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             priority = PackagePublishingPriority.OPTIONAL
 
         if binarypackagerelease is None:
+            # Create a new BinaryPackageBuild and BinaryPackageRelease
+            # in the same archive and suite.
+            binarypackagebuild = self.makeBinaryPackageBuild(
+                archive=archive, distroarchseries=distroarchseries,
+                pocket=pocket)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
                 priority=priority)
@@ -3319,7 +3351,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePackageDiff(self, from_source=None, to_source=None,
                         requester=None, status=None, date_fulfilled=None,
-                        diff_content=None):
+                        diff_content=None, diff_filename=None):
         """Create a new `PackageDiff`."""
         if from_source is None:
             from_source = self.makeSourcePackageRelease()
@@ -3333,7 +3365,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_fulfilled = UTC_NOW
         if diff_content is None:
             diff_content = self.getUniqueString("packagediff")
-        lfa = self.makeLibraryFileAlias(content=diff_content)
+        lfa = self.makeLibraryFileAlias(
+            filename=diff_filename, content=diff_content)
         return ProxyFactory(
             PackageDiff(
                 requester=requester, from_source=from_source,
