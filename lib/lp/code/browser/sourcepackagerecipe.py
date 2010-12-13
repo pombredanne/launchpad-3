@@ -326,6 +326,12 @@ USE_ARCHIVE_VOCABULARY = SimpleVocabulary((
 
 class ISourcePackageAddSchema(ISourcePackageEditSchema):
 
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive', required=False,
+        description=(
+            u'If built daily, this is the archive where the package '
+            u'will be uploaded.'))
+
     use_ppa = Choice(
         title=_('Which PPA'),
         vocabulary=USE_ARCHIVE_VOCABULARY,
@@ -366,22 +372,24 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
     custom_widget('use_ppa', LaunchpadRadioWidget)
 
     def initialize(self):
+        super(SourcePackageRecipeAddView, self).initialize()
         # XXX: rockstar: This should be removed when source package recipes
         # are put into production. spec=sourcepackagerecipes
-        super(SourcePackageRecipeAddView, self).initialize()
         self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
-
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
-        super(SourcePackageRecipeAddView, self).setUpWidgets()
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
             widget, EXISTING_PPA, current_value)
         self.use_ppa_new = render_radio_widget_part(
             widget, CREATE_NEW, current_value)
-        self.show_ppa_chooser = len(
-            self.widgets['daily_build_archive'].vocabulary) > 0
+        archive_widget = self.widgets['daily_build_archive']
+        self.show_ppa_chooser = len(archive_widget.vocabulary) > 0
+        if not self.show_ppa_chooser:
+            self.widgets['ppa_name'].setRenderedValue('ppa')
+        # Force there to be no '(no value)' item in the select.  We do this as
+        # the input isn't listed as 'required' otherwise the validator gets
+        # all confused when we want to create a new PPA.
+        archive_widget._displayItemForMissingValue = False
 
     @property
     def initial_values(self):
@@ -445,9 +453,13 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                         owner.displayname)
         if data['use_ppa'] == CREATE_NEW:
             ppa_name = data.get('ppa_name', None)
-            error = Archive.validatePPA(owner, ppa_name)
-            if error is not None:
-                self.setFieldError('ppa_name', error)
+            if ppa_name is None:
+                self.setFieldError(
+                    'ppa_name', 'You need to specify a name for the PPA.')
+            else:
+                error = Archive.validatePPA(owner, ppa_name)
+                if error is not None:
+                    self.setFieldError('ppa_name', error)
 
 
 class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
