@@ -49,7 +49,7 @@ from zope.security.proxy import isinstance as zisinstance
 from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.helpers import is_ascii_only
 from canonical.lp import isZopeless
 from lp.services.mail.stub import TestMailer
