@@ -23,6 +23,7 @@ from canonical.testing.layers import (
     )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
@@ -1445,6 +1446,13 @@ class TestvalidatePPA(TestCaseWithFactory):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual("You already have a PPA named 'ppa'.",
             Archive.validatePPA(ppa.owner, 'ppa'))
+
+    def test_two_ppas_with_team(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        ppa = self.factory.makeArchive(owner=team, name='ppa')
+        self.assertEqual("%s already has a PPA named 'ppa'." % (
+            team.displayname), Archive.validatePPA(team, 'ppa'))
 
     def test_valid_ppa(self):
         ppa_owner = self.factory.makePerson()
