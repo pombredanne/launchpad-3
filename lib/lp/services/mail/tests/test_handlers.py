@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from lp.testing import TestCase
 from lp.services.mail.handlers import MailHandlers
+from lp.testing import TestCase
 
 
 class TestMailHandlers(TestCase):
@@ -13,6 +13,14 @@ class TestMailHandlers(TestCase):
         handlers = MailHandlers()
         self.assertIsNot(None, handlers.get("bugs.launchpad.net"))
         self.assertIs(None, handlers.get("no.such.domain"))
+
+    def test_get_is_case_insensitive(self):
+        handlers = MailHandlers()
+        handler = object()
+        handlers.add("some.domain", handler)
+        self.assertIs(handler, handlers.get("some.domain"))
+        self.assertIs(handler, handlers.get("SOME.DOMAIN"))
+        self.assertIs(handler, handlers.get("Some.Domain"))
 
     def test_add_for_new_domain(self):
         handlers = MailHandlers()
