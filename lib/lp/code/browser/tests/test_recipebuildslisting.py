@@ -113,7 +113,7 @@ class TestRecipeBuildListing(BrowserTestCase):
                 record).replace(' ', '').replace('\n', '')
             records_text.add(record_text)
 
-        root_url = BaseLayer.appserver_root_url(facet='code')
+        root_url = self.layer.appserver_root_url(facet='code')
         browser = self.getUserBrowser("%s/+daily-builds" % root_url)
         status_control = browser.getControl(
             name='field.when_completed_filter')
@@ -139,7 +139,7 @@ class TestRecipeBuildListing(BrowserTestCase):
                 record).replace(' ', '').replace('\n', '')
             records_text.add(record_text)
 
-        root_url = BaseLayer.appserver_root_url(facet='code')
+        root_url = self.layer.appserver_root_url(facet='code')
         browser = self.getUserBrowser("%s/+daily-builds" % root_url)
         status_control = browser.getControl(
             name='field.when_completed_filter')
