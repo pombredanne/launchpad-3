@@ -34,7 +34,6 @@ class TestLPStandingTestCase(MailmanTestCase):
         self.lp_user_email = 'beaver@eg.dom'
         self.lp_user = self.factory.makePerson(email=self.lp_user_email)
 
-
     def tearDown(self):
         super(TestLPStandingTestCase, self).tearDown()
         self.cleanMailmanList(self.mm_list)
