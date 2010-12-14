@@ -37,7 +37,7 @@ handle, and register them for some domains:
     ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler(allow_unknown_users=True)
     >>> mail_handlers.add('foo.com', foo_handler)

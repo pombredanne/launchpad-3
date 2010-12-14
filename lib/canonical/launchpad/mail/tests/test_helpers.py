@@ -223,6 +223,6 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = DocTestSuite('canonical.launchpad.mail.handlers')
+    suite = DocTestSuite('canonical.launchpad.mail.helpers')
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
