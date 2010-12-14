@@ -38,9 +38,6 @@ class TestSearchBase(TestCaseWithFactory):
         with person_logged_in(milestone.target.owner):
             bug.default_bugtask.transitionToMilestone(
                 milestone, milestone.target.owner)
-        store = Store.of(bug)
-        store.flush()
-        store.invalidate()
         return bug
 
 
@@ -71,9 +68,10 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
 
     def test_search_query_count(self):
         # Verify query count.
+        Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.milestone.target.searchTasks(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -141,6 +139,8 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
             self.milestone.target.searchTasks(self.params).count())
 
     def test_search_query_count(self):
+        # Verify query count.
+        Store.of(self.projectgroup).flush()
         with StormStatementRecorder() as recorder:
             list(self.milestone.target.searchTasks(self.params))
         self.assertThat(recorder, HasQueryCount(Equals(1)))
@@ -235,9 +235,13 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
 
     def test_search_query_count(self):
         # Verify query count.
+        # 1. Query all the distroseries to calculate the distro's
+        #    currentseries.
+        # 2. Query the bugtasks.
+        Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.milestone.target.searchTasks(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
