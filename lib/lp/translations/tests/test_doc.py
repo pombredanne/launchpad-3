@@ -25,10 +25,6 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 
 special = {
-    'pofile-views.txt': LayeredDocFileSuite(
-        '../browser/tests/pofile-views.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-        ),
     'poexport-queue.txt': LayeredDocFileSuite(
         '../doc/poexport-queue.txt',
         setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer

@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
@@ -309,7 +311,8 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
         committer = DirectBranchCommit(branch)
         self.addCleanup(committer.unlock)
         self.assertIn(
-            branch.owner.preferredemail.email, committer.getBzrCommitterID())
+            removeSecurityProxy(branch.owner).preferredemail.email,
+            committer.getBzrCommitterID())
 
     def test_falls_back_to_noreply(self):
         # If all else fails, getBzrCommitterID uses the noreply

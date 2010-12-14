@@ -37,7 +37,7 @@ handle, and register them for some domains:
     ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler(allow_unknown_users=True)
     >>> mail_handlers.add('foo.com', foo_handler)
@@ -50,17 +50,19 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.mail import sendmail as original_sendmail
 
-For these examples, we don't want the Precedence header added.
+For these examples, we don't want the Precedence header added. Domains
+are treated without regard to case: for incoming mail, foo.com and
+FOO.COM are treated equivalently.
 
     >>> def sendmail(msg, to_addrs=None):
     ...     return original_sendmail(msg, to_addrs=to_addrs, bulk=False)
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
-    >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
+    >>> for domain in ('foo.com', 'bar.com', 'FOO.COM', 'baz.com'):
     ...     msg = read_test_message('signed_detached.txt')
     ...     msg.replace_header('To', '123@%s' % domain)
-    ...     msgids[domain].append("<%s>" % sendmail(msg))
+    ...     msgids[domain.lower()].append("<%s>" % sendmail(msg))
 
 handleMail will check the timestamp on signed messages, but the signatures
 on our testdata are old, and in these tests we don't care to be told.
