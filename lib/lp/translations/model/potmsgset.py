@@ -245,10 +245,17 @@ class POTMsgSet(SQLBase):
             self._cached_singular_text = self.msgid_singular.msgid
             return self._cached_singular_text
 
-        # Singular text is stored as an "English translation."
-        translation_message = self.getCurrentTranslationMessage(
-            potemplate=None,
-            language=getUtility(ILaunchpadCelebrities).english)
+        # Singular text is stored as an "English translation." Search on
+        # both sides.
+        # XXX henninge 2010-12-14, bug=690196 This may still need some
+        # re-thinking. Maybe even add "getAnyCurrentTranslation".
+        translation_message = self.getCurrentTranslation(
+            None, language=getUtility(ILaunchpadCelebrities).english,
+            TranslationSide.UBUNTU)
+        if translation_message is None:
+            translation_message = self.getCurrentTranslation(
+                None, language=getUtility(ILaunchpadCelebrities).english,
+                TranslationSide.UPSTREAM)
         if translation_message is not None:
             msgstr0 = translation_message.msgstr0
             if msgstr0 is not None:
