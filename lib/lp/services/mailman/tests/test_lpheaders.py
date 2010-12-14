@@ -32,9 +32,9 @@ class TestLaunchpadHeadersTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
+        self.lp_user_email = 'albatros@eg.dom'
         self.lp_user = self.factory.makePerson(
-            name='albatros', email='albatros@eg.dom')
-        self.lp_user_email = self.lp_user.preferredemail.email
+            name='albatros', email=self.lp_user_email)
 
     def tearDown(self):
         super(TestLaunchpadHeadersTestCase, self).tearDown()
@@ -93,7 +93,7 @@ class TestLaunchpadHeadersTestCase(MailmanTestCase):
         self.assertTrue('decoration-data' in msg_data)
         silence = Decorate.process(self.mm_list, message, msg_data)
         self.assertEqual(None, silence)
-        body, footer = message.get_payload().rsplit('-- ', 1)
+        body, footer = message.get_payload()[1].get_payload().rsplit('-- ', 1)
         expected = (
             "\n"
             "Mailing list: http://launchpad.dev/~team-1\n"
