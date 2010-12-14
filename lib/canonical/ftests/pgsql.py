@@ -8,9 +8,12 @@ Test harness for tests needing a PostgreSQL backend.
 __metaclass__ = type
 
 import os
+import random
 import time
 
 import psycopg2
+
+from canonical.config import config
 from canonical.database.postgresql import (
     generateResetSequencesSQL, resetSequences)
 
@@ -159,7 +162,7 @@ class PgTestSetup:
     # Class attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
-    def __init__(self, template=None, dbname=None, dbuser=None,
+    def __init__(self, template=None, dbname=dynamic, dbuser=None,
             host=None, port=None, reset_sequences_sql=None):
         '''Construct the PgTestSetup
 
@@ -169,9 +172,25 @@ class PgTestSetup:
         if template is not None:
             self.template = template
         if dbname is PgTestSetup.dynamic:
+            from canonical.testing.layers import BaseLayer
             if os.environ.get('LP_TEST_INSTANCE'):
                 self.dbname = "%s_%s" % (
                     self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
+                # Stash the name we use in the config if a writable config is
+                # available.
+                # Avoid circular imports
+                section = """[database]
+rw_main_master: dbname=%s
+rw_main_slave:  dbname=%s
+
+""" % (self.dbname, self.dbname)
+                if BaseLayer.config_fixture is not None:
+                    BaseLayer.config_fixture.add_section(section)
+                if BaseLayer.appserver_config_fixture is not None:
+                    BaseLayer.appserver_config_fixture.add_section(section)
+            if config.instance_name in (
+                BaseLayer.config_name, BaseLayer.appserver_config_name):
+                config.reloadConfig()
             else:
                 # Fallback to the class name.
                 self.dbname = self.__class__.dbname
@@ -257,7 +276,8 @@ class PgTestSetup:
                         raise
             finally:
                 con.close()
-            time.sleep(1)
+            # Let the other user complete their copying of the template DB.
+            time.sleep(random.random())
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         PgTestSetup._last_db = (self.template, self.dbname)

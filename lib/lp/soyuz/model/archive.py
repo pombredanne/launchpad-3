@@ -843,6 +843,8 @@ class Archive(SQLBase):
     def getComponentsForSeries(self, distroseries):
         if self.is_partner:
             return [getUtility(IComponentSet)['partner']]
+        elif self.is_ppa:
+            return [getUtility(IComponentSet)['main']]
         else:
             return distroseries.components
 
@@ -1713,7 +1715,7 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
-    
+
     @classmethod
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

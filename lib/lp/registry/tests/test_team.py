@@ -210,3 +210,28 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         self.assertEqual(
             None,
             self.team.visibilityConsistencyWarning(PersonVisibility.PRIVATE))
+
+
+class TestMembershipManagement(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_deactivateAllMembers_cleans_up_team_participation(self):
+        superteam = self.factory.makeTeam(name='super')
+        sharedteam = self.factory.makeTeam(name='shared')
+        anotherteam = self.factory.makeTeam(name='another')
+        targetteam = self.factory.makeTeam(name='target')
+        person = self.factory.makePerson()
+        login_celebrity('admin')
+        person.join(targetteam)
+        person.join(sharedteam)
+        person.join(anotherteam)
+        targetteam.join(superteam, targetteam.teamowner)
+        targetteam.join(sharedteam, targetteam.teamowner)
+        self.assertTrue(superteam in person.teams_participated_in)
+        targetteam.deactivateAllMembers(
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            sorted([sharedteam, anotherteam]),
+            sorted([team for team in person.teams_participated_in]))
