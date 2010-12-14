@@ -78,9 +78,12 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
         extra_bugtasks = 0
         for bug in self.bugs:
             extra_bugtasks += 1
-            self.factory.makeBugTask(bug=bug, target=productseries)
+            bugtask = self.factory.makeBugTask(bug=bug, target=productseries)
+            with person_logged_in(self.product.owner):
+                bugtask.transitionToMilestone(
+                    self.milestone, self.product.owner)
             self.assertEqual(
-                self.bug_count,
+                self.bug_count + extra_bugtasks,
                 self.bugtask_set.search(self.params).count())
 
     def test_search_results_count_with_conjoined_masters(self):
@@ -165,29 +168,42 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
         # productseries that are not the development focus.
+        extra_bugtasks = 0
         for bug, product in self.bug_products.items():
+            extra_bugtasks += 1
             productseries = self.factory.makeProductSeries(product=product)
-            self.factory.makeBugTask(bug=bug, target=productseries)
+            bugtask = self.factory.makeBugTask(bug=bug, target=productseries)
+            with person_logged_in(product.owner):
+                bugtask.transitionToMilestone(
+                    product.getMilestone(self.milestone.name), product.owner)
             self.assertEqual(
-                self.bug_count,
+                self.bug_count + extra_bugtasks,
                 self.bugtask_set.search(self.params).count())
 
     def test_search_results_count_with_conjoined_masters(self):
         # Test with increasing numbers of conjoined masters.
-        conjoined_master_count = 0
+        tasks = list(self.bugtask_set.search(self.params))
         for bug, product in self.bug_products.items():
-            conjoined_master_count += 1
+            self.assertIn(
+                (bug.id, product),
+                [(task.bug.id, task.product) for task in tasks])
             self.factory.makeBugTask(
                 bug=bug, target=product.development_focus)
+            tasks = list(self.bugtask_set.search(self.params))
             self.assertEqual(
-                self.bug_count - conjoined_master_count,
+                self.bug_count,
                 self.bugtask_set.search(self.params).count())
+            self.assertNotIn(
+                (bug.id, product),
+                [(task.bug.id, task.product) for task in tasks])
 
     def test_search_results_count_with_irrelevant_conjoined_masters(self):
         # Verify that a conjoined master in one project of the project
         # group doesn't cause a bugtask on another project in the group
         # to be excluded from the project group milestone's bugs.
+        extra_bugtasks = 0
         for bug, product in self.bug_products.items():
+            extra_bugtasks += 1
             other_product = self.factory.makeProduct(
                 project=self.projectgroup)
             # Create a new milestone with the same name.
@@ -216,14 +232,14 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
             self.factory.makeBugTask(
                 bug=bug, target=product.development_focus)
             for bug, product in self.bug_products.items()]
-        conjoined_master_count = len(masters)
+        unexcluded_count = 0
         for bugtask in masters:
-            conjoined_master_count -= 1
+            unexcluded_count += 1
             with person_logged_in(product.owner):
                 bugtask.transitionToStatus(
                     BugTaskStatus.WONTFIX, bugtask.target.owner)
             self.assertEqual(
-                self.bug_count - conjoined_master_count,
+                self.bug_count + unexcluded_count,
                 self.bugtask_set.search(self.params).count())
 
 
