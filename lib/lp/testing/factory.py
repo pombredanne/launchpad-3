@@ -2295,7 +2295,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         A RecipeBuildRecord is a named tuple. Some records will be created
         with archive of type ArchivePurpose.PRIMARY, others with type
-        ArchivePurpose.PPA.
+        ArchivePurpose.PPA. Some build records with be created with a build
+        status of fully built and some will be created with the daily build
+        option set to True and False. Only those records with daily build set
+        to True and build status to fully built are returned.
         :param num_recent_records: the number of records within the specified
          time window.
         :param num_records_outside_epoch: the number of records outside the
@@ -2365,7 +2368,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                         removeSecurityProxy(recipe),
                         naked_build.date_finished.replace(tzinfo=None))
 
-                    # Only record completed daily builds.
+                    # Only return fully completed daily builds.
                     if daily and build_status == BuildStatus.FULLYBUILT:
                         if x < num_recent_records:
                             records.append(rbr)
