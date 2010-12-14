@@ -21,6 +21,27 @@
 
       <tal:block tal:condition="dailybuilds">
 
+        <form method="get" name="filter" id="filter_form"
+              style="padding-bottom: 0.5em"
+              tal:attributes="action view/form_action|request/URL">
+          Select the number of recently completed builds to display:
+          <tal:build-age-selector replace="structure view/widgets/when_completed_filter"/>
+          <noscript>
+            <input type="submit" value="Filter"/>
+          </noscript>
+        </form>
+
+        <script type="text/javascript">
+          function submit_filter() {
+              getElement('filter_form').submit();
+          }
+
+          function hookUpFilterSubmission () {
+              connect('field.when_completed_filter', 'onchange', submit_filter);
+          }
+          registerLaunchpadFunction(hookUpFilterSubmission);
+        </script>
+
         <tal:needs-batch condition="view/batchnav/has_multiple_pages">
           <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper"/>
         </tal:needs-batch>

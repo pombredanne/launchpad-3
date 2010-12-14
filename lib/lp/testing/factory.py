@@ -2289,15 +2289,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         store.add(bq)
         return bq
 
-    def makeRecipeBuildRecords(self, num_records=1,
+    def makeRecipeBuildRecords(self, num_recent_records=1,
                                num_records_outside_epoch=0, epoch_days=30):
         """Create some recipe build records.
 
         A RecipeBuildRecord is a named tuple. Some records will be created
         with archive of type ArchivePurpose.PRIMARY, others with type
         ArchivePurpose.PPA.
-        :param num_records: the number of records within the specified time
-         window.
+        :param num_recent_records: the number of records within the specified
+         time window.
         :param num_records_outside_epoch: the number of records outside the
          specified time window.
         :param epoch_days: the time window to use when creating records.
@@ -2315,8 +2315,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             name="Recipe_"+sourcepackagename.name,
             distroseries=distroseries)
 
-        result = []
-        for x in range(num_records+num_records_outside_epoch):
+        records = []
+        records_outside_epoch = []
+        for x in range(num_recent_records+num_records_outside_epoch):
             # Ensure we have both ppa and primary archives
             if x%2 == 0:
                 purpose = ArchivePurpose.PPA
@@ -2343,7 +2344,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             from random import randrange
             offset = randrange(0, epoch_days)
             now = datetime.now(UTC)
-            if x >= num_records:
+            if x >= num_recent_records:
                 offset = epoch_days + 1 + offset
             naked_build.date_finished = (
                 now - timedelta(days=offset))
@@ -2356,12 +2357,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 removeSecurityProxy(sprb),
                 naked_build.date_finished.replace(tzinfo=None))
 
-            if x < num_records:
-                result.append(rbr)
+            if x < num_recent_records:
+                records.append(rbr)
+            else:
+                records_outside_epoch.append(rbr)
         # We need to explicitly commit because if don't, the records don't
         # appear in the slave datastore.
         transaction.commit()
-        return result
+        return records, records_outside_epoch
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.
