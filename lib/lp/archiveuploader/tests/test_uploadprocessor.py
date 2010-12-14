@@ -2055,8 +2055,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
-        upload_dir = self.queueUpload("bar_1.0-1_binary",
-                queue_entry=leaf_name)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
         last_stub_mail_count = len(stub.test_emails)
@@ -2064,8 +2064,8 @@ class TestBuildUploadProcessor(TestUploadProcessorBase):
             self.incoming_folder, leaf_name)
         self.layer.txn.commit()
         # The build status is not changed
-        self.assertTrue(os.path.exists(
-            os.path.join(self.incoming_folder, leaf_name)))
+        self.assertTrue(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
         self.assertEquals(BuildStatus.BUILDING, build.status)
         self.assertLogContains(
             "Expected build status to be 'UPLOADING', was BUILDING. "
