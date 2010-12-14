@@ -257,6 +257,7 @@ class TestBranchView(BrowserTestCase):
         view.initialize()
         self.assertTrue(view.is_empty_directory)
         with person_logged_in(branch.owner):
+            # Make it look as though the branch has been pushed.
             branch.branchChanged(
                 None, None, ControlFormat.BZR_METADIR_1, None, None)
         self.assertFalse(view.is_empty_directory)
@@ -267,6 +268,7 @@ class TestBranchView(BrowserTestCase):
         text = self.getMainText(branch)
         self.assertIn('push\n--use-existing', text)
         with person_logged_in(self.user):
+            # Make it look as though the branch has been pushed.
             branch.branchChanged(
                 None, None, ControlFormat.BZR_METADIR_1, None, None)
         text = self.getMainText(branch)
