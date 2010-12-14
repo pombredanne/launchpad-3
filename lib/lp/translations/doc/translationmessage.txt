@@ -21,7 +21,7 @@ This class links the translations submitted by a translator with the
 associated POFile and POTMsgSet.  TranslationMessage and
 DummyTranslationMessage both implement ITranslationMessage:
 
-    >>> translationmessage = factory.makeTranslationMessage(
+    >>> translationmessage = factory.makeCurrentTranslationMessage(
     ...     potmsgset=potmsgset, pofile=pofile_es)
     >>> verifyObject(ITranslationMessage, translationmessage)
     True
@@ -233,7 +233,7 @@ For a message with plurals, it's the POFile's number of plural forms.
     >>> plural_potmsgset = factory.makePOTMsgSet(potemplate=potemplate,
     ...                                          singular=u"%d contact",
     ...                                          plural=u"%d contacts")
-    >>> plural_message = factory.makeTranslationMessage(
+    >>> plural_message = factory.makeCurrentTranslationMessage(
     ...     potmsgset=plural_potmsgset, pofile=pofile_es,
     ...     translations=[u'%d contacto', u'%d contactos'])
     >>> plural_message.translations

@@ -102,8 +102,8 @@ only a single unused suggestion instead:
 A POTMsgSet sequence number is also a link to edit a translation.
 
     >>> anon_browser.getLink('14.').click()
-    >>> anon_browser.url
-    'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/14/+translate'
+    >>> print anon_browser.url
+    http://.../evolution/trunk/+pots/evolution-2.2/es/14/+translate
     >>> print anon_browser.title
     Browsing Spanish translation...
 
@@ -131,7 +131,7 @@ If a person to filter by is not specified, user is notified of that.
 Merged accounts
 ---------------
 
-On the overview page of each translation pofile, users will not see merged 
+On the overview page of each translation pofile, users will not see merged
 accounts.
 
 We'll create two new accounts to demonstrate this.
@@ -152,9 +152,9 @@ We'll create two new accounts to demonstrate this.
     >>> language_code = 'es'
     >>> pofile = factory.makePOFile(language_code, potemplate=template)
     >>> potmsgset = factory.makePOTMsgSet(template)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=merged_translator, potmsgset=potmsgset)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=translator, potmsgset=potmsgset)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(merged_translator).merged = translator

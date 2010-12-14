@@ -38,7 +38,7 @@ class TestTranslationMessage(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_baseline(self):
-        message = self.factory.makeTranslationMessage()
+        message = self.factory.makeCurrentTranslationMessage()
         verifyObject(ITranslationMessage, message)
 
     def test_dummy_translationmessage(self):
@@ -51,15 +51,15 @@ class TestTranslationMessage(TestCaseWithFactory):
         # ITranslationMessage.is_diverged is a little helper to let you
         # say "message.is_diverged" which can be clearer than
         # "message.potemplate is not None."
-        message = self.factory.makeTranslationMessage(force_diverged=False)
+        message = self.factory.makeCurrentTranslationMessage(diverged=False)
         self.assertFalse(message.is_diverged)
 
     def test_is_diverged_true(self):
-        message = self.factory.makeTranslationMessage(force_diverged=True)
+        message = self.factory.makeCurrentTranslationMessage(diverged=True)
         self.assertTrue(message.is_diverged)
 
     def test_markReviewed(self):
-        message = self.factory.makeTranslationMessage()
+        message = self.factory.makeCurrentTranslationMessage()
         reviewer = self.factory.makePerson()
         tomorrow = datetime.now(UTC) + timedelta(days=1)
 
@@ -484,14 +484,14 @@ class TestTranslationMessage(TestCaseWithFactory):
     def test_getOnePOFile(self):
         language = self.factory.makeLanguage('sr@test')
         pofile = self.factory.makePOFile(language.code)
-        tm = self.factory.makeTranslationMessage(pofile=pofile)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         self.assertEquals(pofile, tm.getOnePOFile())
 
     def test_getOnePOFile_shared(self):
         language = self.factory.makeLanguage('sr@test')
         pofile1 = self.factory.makePOFile(language.code)
         pofile2 = self.factory.makePOFile(language.code)
-        tm = self.factory.makeTranslationMessage(pofile=pofile1)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile1)
         # Share this POTMsgSet with the other POTemplate (and POFile).
         tm.potmsgset.setSequence(pofile2.potemplate, 1)
         self.assertTrue(tm.getOnePOFile() in [pofile1, pofile2])
@@ -501,7 +501,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         # is returned.
         language = self.factory.makeLanguage('sr@test')
         pofile = self.factory.makePOFile(language.code)
-        tm = self.factory.makeTranslationMessage(pofile=pofile)
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         tm.potmsgset.setSequence(pofile.potemplate, 0)
         self.assertEquals(None, tm.getOnePOFile())
 
@@ -543,12 +543,12 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
             'foe%d' % form
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
-        self.message = self.factory.makeTranslationMessage(
+        self.message = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,
             translations=self.translation_strings)
         self.message.potemplate = self.template
 
-        self.other_message = self.factory.makeTranslationMessage(
+        self.other_message = self.factory.makeCurrentTranslationMessage(
             pofile=self.other_pofile, potmsgset=self.other_potmsgset,
             translations=self.translation_strings)
         self.other_message.potemplate = self.other_template

@@ -22,6 +22,5 @@ class TestTranslationsPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         translationsperson = ITranslationsPerson(person)
         self.assertFalse(translationsperson.hasTranslated())
-        self.factory.makeTranslationMessage(
-            translator=person, suggestion=True)
+        self.factory.makeSuggestion(translator=person)
         self.assertTrue(translationsperson.hasTranslated())

@@ -68,15 +68,14 @@ those in the original message.
 The sample message has an upstream translation, and an Ubuntu
 in Launchpad that differs from the upstream one.
 
-    >>> ubuntu_message = factory.makeTranslationMessage(
+    >>> ubuntu_message = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
     ...     reviewer=template.owner, translations=[u'%d c'])
     >>> ubuntu_message = removeSecurityProxy(ubuntu_message)
 
-    >>> upstream_message = factory.makeTranslationMessage(
+    >>> upstream_message = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
-    ...     reviewer=template.owner, translations=[u'%d i'],
-    ...     lock_timestamp=datetime.now(UTC))
+    ...     reviewer=template.owner, translations=[u'%d i'])
     >>> upstream_message = removeSecurityProxy(upstream_message)
 
     >>> upstream_message.is_current_ubuntu = False

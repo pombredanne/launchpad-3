@@ -117,7 +117,7 @@ class TestCurrentTranslationMessage_can_dismiss(TestCaseWithFactory):
         allows for the "In Ubuntu" or "In Upstream" line to be grayed out
         upon dismissal. This flag is only used in the view to select the
         right css class to achieve that.
-        
+
         :param can_confirm_and_dismiss: The expected stage of that flag.
         :param can_dismiss_on_empty: The expected stage of that flag.
         :param can_dismiss_on_plural: The expected stage of that flag.
@@ -305,7 +305,7 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def _makeView(self):
-        message = self.factory.makeTranslationMessage()
+        message = self.factory.makeCurrentTranslationMessage()
         request = LaunchpadTestRequest()
         view = CurrentTranslationMessagePageView(message, request)
         view.lock_timestamp = datetime.now(pytz.utc)
@@ -415,7 +415,7 @@ class TestHelpers(TestCaseWithFactory):
         # message, if any.
         new_translations = {0: self.getUniqueString()}
         original_translations = {0: self.getUniqueString()}
-        current_message = self.factory.makeTranslationMessage(
+        current_message = self.factory.makeCurrentTranslationMessage(
             translations=original_translations)
         self.assertEqual(
             original_translations,
@@ -435,7 +435,7 @@ class TestHelpers(TestCaseWithFactory):
         # empty string.
         new_translations = {1: self.getUniqueString()}
         original_translations = {0: self.getUniqueString()}
-        current_message = self.factory.makeTranslationMessage(
+        current_message = self.factory.makeCurrentTranslationMessage(
             translations=original_translations)
         self.assertEqual(
             {1: u''},
